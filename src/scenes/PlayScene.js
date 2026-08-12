@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { RankAssets } from '../utils/RankAssets.js';
-import { Player, RESPAWN_INVULNERABILITY_MS } from '../entities/Player.js';
+import { MAX_BANKED_ORBITAL_CHARGES, Player, RESPAWN_INVULNERABILITY_MS } from '../entities/Player.js';
 import { BonusDrone } from '../entities/BonusDrone.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import {
@@ -66,6 +66,11 @@ import {
   translateText
 } from '../i18n/index.js';
 import { tauntDirector } from '../game/TauntDirector.js';
+import {
+  getSkyVerdictTargetDebugId,
+  isSkyVerdictTargetEligible,
+  selectSkyVerdictSurvivor
+} from '../game/SkyVerdictTargeting.js';
 import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
@@ -6940,21 +6945,7 @@ export class PlayScene {
     console.log(`[BombPowerup] detonated reason=${reason} x=${Math.round(x)} y=${Math.round(y)} radius=${Math.round(radius)}`);
     if (this.player?.runAugmentModifiers?.skyVerdict) {
       this.orbitalStrikeTimer = 0;
-      if (this.player.orbitalStrikeCharges > 0) {
-        this.triggerOrbitalStrike({ targetX: x, targetY: y, fusionId: 'sky_verdict' });
-      } else if (this.player.skyVerdictEmergencyState === 'ready') {
-        this.player.skyVerdictEmergencyState = 'reserved';
-        const triggered = this.triggerOrbitalStrike({
-          targetX: x,
-          targetY: y,
-          fusionId: 'sky_verdict',
-          consumeCharge: false,
-          emergency: true,
-          damageScale: 0.55,
-          radiusScale: 0.72
-        });
-        this.player.skyVerdictEmergencyState = triggered ? 'spent' : 'ready';
-      }
+      this.triggerSkyVerdictAfterBomb();
     }
     return true;
   }
@@ -22164,6 +22155,65 @@ export class PlayScene {
     };
   }
 
+  getSkyVerdictSurvivor(exclude = null) {
+    return selectSkyVerdictSurvivor({
+      enemies: this.enemyManager?.enemies || [],
+      boss: this.enemyManager?.boss || null,
+      hijacker: this.enemyManager?.hijacker || null,
+      exclude
+    });
+  }
+
+  triggerSkyVerdictAfterBomb() {
+    const player = this.player;
+    if (!player?.runAugmentModifiers?.skyVerdict) return false;
+
+    const target = this.getSkyVerdictSurvivor();
+    const chargesBefore = Math.max(0, Number(player.orbitalStrikeCharges) || 0);
+    const emergencyStateBefore = String(player.skyVerdictEmergencyState || 'unavailable');
+    if (!target) {
+      this.lastOrbitalStrikeDebug = {
+        source: 'bomb_fusion',
+        fusionId: 'sky_verdict',
+        chargesBefore,
+        chargesAfter: chargesBefore,
+        emergencyStateBefore,
+        emergencyStateAfter: emergencyStateBefore,
+        reserved: false,
+        released: false,
+        cancelled: true,
+        cancelReason: 'no_survivor',
+        refunded: false,
+        damageEvents: [],
+        completed: false,
+        terminalState: 'cancelled'
+      };
+      return false;
+    }
+
+    const consumeCharge = chargesBefore > 0;
+    const emergency = !consumeCharge && emergencyStateBefore === 'ready';
+    if (!consumeCharge && !emergency) return false;
+
+    if (emergency) player.skyVerdictEmergencyState = 'reserved';
+    const triggered = this.triggerOrbitalStrike({
+      target,
+      fusionId: 'sky_verdict',
+      deterministicTarget: true,
+      trackTarget: true,
+      reacquireOnce: true,
+      source: 'bomb_fusion',
+      consumeCharge,
+      emergency,
+      damageScale: emergency ? 0.55 : 1,
+      radiusScale: emergency ? 0.72 : 1
+    });
+    if (!triggered && emergency && player.skyVerdictEmergencyState === 'reserved') {
+      player.skyVerdictEmergencyState = 'ready';
+    }
+    return triggered;
+  }
+
   updateOrbitalStrike(delta) {
     if (!this.player?.orbitalStrikeActive || !this.player?.orbitalStrikeCharges || this.player.orbitalStrikeCharges <= 0) {
       return;
@@ -22193,7 +22243,9 @@ export class PlayScene {
   triggerOrbitalStrike(options = {}) {
     // Find a random active enemy to target
     const activeEnemies = this.enemyManager.enemies.filter(e => e.active);
-    if (activeEnemies.length === 0) return false;
+    const fusionId = options.fusionId || null;
+    const trackTarget = fusionId === 'sky_verdict' && options.trackTarget === true;
+    if (activeEnemies.length === 0 && !(trackTarget && isSkyVerdictTargetEligible(options.target))) return false;
 
     const requestedX = Number(options.targetX);
     const requestedY = Number(options.targetY);
@@ -22211,30 +22263,50 @@ export class PlayScene {
         return String(a?.id || a?.type || '').localeCompare(String(b?.id || b?.type || ''));
       })
       : activeEnemies;
-    const target = options.target?.active
+    const target = trackTarget && isSkyVerdictTargetEligible(options.target)
+      ? options.target
+      : options.target?.active
       ? options.target
       : hasRequestedTarget
         ? activeEnemies.slice().sort((a, b) => Math.hypot(a.x - requestedX, a.y - requestedY) - Math.hypot(b.x - requestedX, b.y - requestedY))[0]
         : deterministicTarget
           ? deterministicCandidates[0]
           : activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
-    const targetX = hasRequestedTarget ? requestedX : target.x;
-    const targetY = hasRequestedTarget ? requestedY : target.y;
-    const fusionId = options.fusionId || null;
+    if (!target) return false;
+    const targetX = hasRequestedTarget ? requestedX : Number(target.x);
+    const targetY = hasRequestedTarget ? requestedY : Number(target.y);
     const consumeCharge = options.consumeCharge !== false;
     const emergency = options.emergency === true;
+    const source = String(options.source || 'orbital_cadence');
     const damageScale = Math.max(0.25, Math.min(1.5, Number(options.damageScale) || 1));
     const radiusScale = Math.max(0.4, Math.min(1.5, Number(options.radiusScale) || 1));
     if (consumeCharge && (Number(this.player?.orbitalStrikeCharges) || 0) <= 0) return false;
+    if (emergency && this.player?.skyVerdictEmergencyState !== 'reserved') return false;
     const strikeColor = fusionId === 'sky_verdict' ? 0xffb34f : 0xff6600;
+    const initialTargetId = getSkyVerdictTargetDebugId(target);
     const debug = {
       targetX: Math.round(targetX || 0),
       targetY: Math.round(targetY || 0),
+      initialTargetX: Math.round(targetX || 0),
+      initialTargetY: Math.round(targetY || 0),
+      initialTargetId,
+      selectedTargetId: initialTargetId,
+      selectedTargetKind: target.kind || target.type || 'enemy',
       chargesBefore: this.player?.orbitalStrikeCharges || 0,
       fusionId,
       deterministicTarget,
       consumeCharge,
       emergency,
+      source,
+      trackTarget,
+      reserved: trackTarget,
+      reservationType: trackTarget ? (emergency ? 'emergency' : 'orbital') : null,
+      warningDurationMs: 500,
+      warningStartedAt: Date.now(),
+      reacquireCount: 0,
+      refunded: false,
+      released: false,
+      cancelled: false,
       damageScale,
       radiusScale,
       damageEvents: [],
@@ -22243,11 +22315,13 @@ export class PlayScene {
     this.lastOrbitalStrikeDebug = debug;
 
     // Decrement charges
+    const tacticalChargeReserved = consumeCharge && this.player.tacticalOrbitalStrikeCharges > 0;
     if (consumeCharge) {
       this.player.orbitalStrikeCharges--;
-      if (this.player.tacticalOrbitalStrikeCharges > 0) this.player.tacticalOrbitalStrikeCharges--;
+      if (tacticalChargeReserved) this.player.tacticalOrbitalStrikeCharges--;
     }
     debug.chargesAfter = this.player.orbitalStrikeCharges;
+    debug.emergencyStateAfterReservation = this.player?.skyVerdictEmergencyState || 'unavailable';
 
     // Show warning indicator
     const warning = new PIXI.Graphics();
@@ -22258,9 +22332,105 @@ export class PlayScene {
     warning.position.set(targetX, targetY);
     this.gameContainer.addChild(warning);
 
-    // Animate warning pulse
+    let trackedTarget = target;
+    let reacquireAttempted = false;
+    let settled = false;
+    let warningCycle = 0;
+    let currentWarningStartedAt = debug.warningStartedAt;
+    let scheduleImpact = null;
+    const excludedTargets = new Set([target]);
+
+    const cleanupWarning = () => {
+      this.game.app.ticker.remove(pulseTicker);
+      if (warning.parent) warning.parent.removeChild(warning);
+    };
+
+    const refundReservation = () => {
+      if (!trackTarget || debug.refunded) return;
+      if (consumeCharge) {
+        const chargeCapacity = Math.max(
+          MAX_BANKED_ORBITAL_CHARGES,
+          Number(this.player.orbitalStrikeMaxCharges) || 0,
+          Number(debug.chargesBefore) || 0
+        );
+        this.player.orbitalStrikeCharges = Math.min(
+          chargeCapacity,
+          Math.max(0, Number(this.player.orbitalStrikeCharges) || 0) + 1
+        );
+        this.player.orbitalStrikeMaxCharges = Math.max(
+          Number(this.player.orbitalStrikeMaxCharges) || 0,
+          this.player.orbitalStrikeCharges
+        );
+        if (tacticalChargeReserved) {
+          this.player.tacticalOrbitalStrikeCharges = Math.min(
+            this.player.orbitalStrikeCharges,
+            Math.max(0, Number(this.player.tacticalOrbitalStrikeCharges) || 0) + 1
+          );
+        }
+        this.player.orbitalStrikeActive = this.player.orbitalStrikeCharges > 0;
+      } else if (emergency && this.player.skyVerdictEmergencyState === 'reserved') {
+        this.player.skyVerdictEmergencyState = 'ready';
+      }
+      debug.refunded = true;
+      debug.chargesAfterRefund = this.player.orbitalStrikeCharges;
+      debug.emergencyStateAfterRefund = this.player.skyVerdictEmergencyState;
+    };
+
+    const cancelStrike = (cancelReason) => {
+      if (settled) return false;
+      settled = true;
+      cleanupWarning();
+      refundReservation();
+      debug.cancelled = true;
+      debug.cancelReason = cancelReason;
+      debug.cancelledAt = Date.now();
+      debug.warningElapsedMs = Math.max(0, debug.cancelledAt - currentWarningStartedAt);
+      debug.totalWarningElapsedMs = Math.max(0, debug.cancelledAt - debug.warningStartedAt);
+      debug.warningCleaned = !warning.parent;
+      debug.terminalState = 'cancelled';
+      debug.completed = false;
+      return true;
+    };
+
+    const ensureTrackedTarget = () => {
+      if (!trackTarget || isSkyVerdictTargetEligible(trackedTarget)) return true;
+      if (reacquireAttempted || options.reacquireOnce !== true) return false;
+      reacquireAttempted = true;
+      const previousTargetId = getSkyVerdictTargetDebugId(trackedTarget);
+      const replacement = this.getSkyVerdictSurvivor(excludedTargets);
+      if (!replacement) return false;
+      excludedTargets.add(replacement);
+      trackedTarget = replacement;
+      debug.reacquireCount = 1;
+      debug.reacquiredFromTargetId = previousTargetId;
+      debug.reacquiredTargetId = getSkyVerdictTargetDebugId(replacement);
+      debug.selectedTargetId = debug.reacquiredTargetId;
+      debug.selectedTargetKind = replacement.kind || replacement.type || 'enemy';
+      warningCycle += 1;
+      currentWarningStartedAt = Date.now();
+      debug.warningRestartCount = 1;
+      debug.reacquiredWarningStartedAt = currentWarningStartedAt;
+      pulseTime = 0;
+      warning.position.set(Number(replacement.x), Number(replacement.y));
+      scheduleImpact?.(warningCycle);
+      return true;
+    };
+
+    // Animate warning pulse. A tracked Sky Verdict marker follows the selected
+    // survivor. A single replacement receives its own full warning so the
+    // telegraph never lies or releases with an unreadably short lead time.
     let pulseTime = 0;
     const pulseTicker = () => {
+      if (settled) return;
+      if (trackTarget) {
+        if (!ensureTrackedTarget()) {
+          cancelStrike(debug.reacquireCount > 0 ? 'reacquired_target_lost' : 'target_lost_no_survivor');
+          return;
+        }
+        warning.position.set(Number(trackedTarget.x), Number(trackedTarget.y));
+        debug.warningX = Math.round(Number(trackedTarget.x) || 0);
+        debug.warningY = Math.round(Number(trackedTarget.y) || 0);
+      }
       pulseTime += 16.67;
       const pulse = Math.sin(pulseTime * 0.01) * 0.5 + 0.5;
       warning.alpha = 0.5 + pulse * 0.5;
@@ -22268,21 +22438,48 @@ export class PlayScene {
     };
     this.game.app.ticker.add(pulseTicker);
 
-    // Fire strike after delay
-    setTimeout(() => {
-      this.game.app.ticker.remove(pulseTicker);
-      if (warning.parent) warning.parent.removeChild(warning);
+    // Fire after one full warning for the selected target. An obsolete timeout
+    // from before reacquisition cannot release the replacement early.
+    scheduleImpact = (scheduledCycle) => setTimeout(() => {
+      if (settled || scheduledCycle !== warningCycle) return;
+      if (trackTarget && !ensureTrackedTarget()) {
+        cancelStrike(debug.reacquireCount > 0 ? 'reacquired_target_lost' : 'target_lost_no_survivor');
+        return;
+      }
+      if (scheduledCycle !== warningCycle) return;
+      if (emergency && this.player.skyVerdictEmergencyState !== 'reserved') {
+        cancelStrike('emergency_reservation_lost');
+        return;
+      }
+      settled = true;
+      cleanupWarning();
+
+      const impactTarget = trackTarget ? trackedTarget : target;
+      const impactX = trackTarget ? Number(impactTarget.x) : targetX;
+      const impactY = trackTarget ? Number(impactTarget.y) : targetY;
+      debug.targetX = Math.round(impactX || 0);
+      debug.targetY = Math.round(impactY || 0);
+      debug.impactTargetId = getSkyVerdictTargetDebugId(impactTarget);
+      debug.impactX = debug.targetX;
+      debug.impactY = debug.targetY;
+      debug.released = true;
+      debug.releasedAt = Date.now();
+      debug.warningElapsedMs = Math.max(0, debug.releasedAt - currentWarningStartedAt);
+      debug.totalWarningElapsedMs = Math.max(0, debug.releasedAt - debug.warningStartedAt);
+      debug.warningCleaned = !warning.parent;
+      debug.terminalState = 'released';
+      if (emergency) this.player.skyVerdictEmergencyState = 'spent';
 
       // Create beam from top
       const beam = new PIXI.Graphics();
       const screenHeight = this.gameplayGame.getHeight();
-      beam.moveTo(targetX, 0);
-      beam.lineTo(targetX, screenHeight);
+      beam.moveTo(impactX, 0);
+      beam.lineTo(impactX, screenHeight);
       beam.stroke({ color: strikeColor, width: fusionId ? 52 : 40, alpha: 0.6 });
 
       // Add glow effect
-      beam.moveTo(targetX, 0);
-      beam.lineTo(targetX, screenHeight);
+      beam.moveTo(impactX, 0);
+      beam.lineTo(impactX, screenHeight);
       beam.stroke({ color: fusionId ? 0xffffff : 0xffff00, width: fusionId ? 24 : 20, alpha: 0.8 });
 
       this.gameContainer.addChild(beam);
@@ -22296,7 +22493,7 @@ export class PlayScene {
 
       const applyStrikeDamage = (enemy, forceTarget = false) => {
         if (!enemy.active) return;
-        const dist = Math.hypot(enemy.x - targetX, enemy.y - targetY);
+        const dist = Math.hypot(enemy.x - impactX, enemy.y - impactY);
         if (forceTarget || dist <= damageRadius + (enemy.radius || 0)) {
           damagedEnemies.add(enemy);
           const hpBefore = Number(enemy.health) || 0;
@@ -22315,7 +22512,8 @@ export class PlayScene {
             destroyed: Boolean(destroyed)
           });
           if (destroyed) {
-            if (!this.player.isSlowTimeActive?.()) {
+            const targetHandlesOwnScore = enemy.kind === 'hijacker' || enemy === this.enemyManager?.hijacker;
+            if (!targetHandlesOwnScore && !this.player.isSlowTimeActive?.()) {
               const scoreAwarded = this.getComboScore(enemy.scoreValue);
               const appliedScore = this.game.addScore(this.getNormalWaveScoreAward(scoreAwarded, enemy));
               if (this.scorePopupManager) {
@@ -22329,8 +22527,8 @@ export class PlayScene {
       };
 
       this.enemyManager.enemies.forEach(enemy => applyStrikeDamage(enemy, false));
-      if (!fusionId && target?.active && !damagedEnemies.has(target)) {
-        applyStrikeDamage(target, true);
+      if ((!fusionId || trackTarget) && impactTarget?.active && !damagedEnemies.has(impactTarget)) {
+        applyStrikeDamage(impactTarget, true);
       }
       debug.completed = true;
       if (fusionId === 'sky_verdict' && this.player?.tacticalFusionStats) {
@@ -22338,8 +22536,8 @@ export class PlayScene {
         this.player.lastTacticalFusionEvent = {
           id: 'sky_verdict',
           at: Date.now(),
-          targetX: Math.round(targetX),
-          targetY: Math.round(targetY),
+          targetX: Math.round(impactX),
+          targetY: Math.round(impactY),
           damageEvents: debug.damageEvents.length,
           emergency,
           emergencyState: this.player.skyVerdictEmergencyState,
@@ -22352,13 +22550,14 @@ export class PlayScene {
       AudioManager.playSfx('enemy_explode', { volume: 0.7 });
 
       // Create impact explosion at target
-      this.particleManager.createExplosion(targetX, targetY, 0xffaa00);
+      this.particleManager.createExplosion(impactX, impactY, 0xffaa00);
 
       // Remove beam after short duration
       setTimeout(() => {
         if (beam.parent) beam.parent.removeChild(beam);
       }, 150);
-    }, 500); // 0.5 second warning
+    }, 500); // 0.5 second warning per selected target
+    scheduleImpact(warningCycle);
     return true;
   }
 
