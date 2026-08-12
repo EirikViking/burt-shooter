@@ -374,6 +374,12 @@ try {
   const emergencySky = await page.evaluate(() => {
     const play = window.__game.scenes.play;
     const player = play.player;
+    // The preceding fixture removes its final synthetic objective. Re-open the
+    // active wave before inserting this independent emergency target so an
+    // already-committed wave cleanup cannot sweep it during the warning.
+    play.enemyManager.waveEnding = false;
+    play.enemyManager.cleanupTimer = 0;
+    play.enemyManager.cleanupPhase = 'NONE';
     const target = {
       active: true,
       waitingForEntry: false,
