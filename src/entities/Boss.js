@@ -39,6 +39,10 @@ const BOSS_FAST_KILL_GUIDE_MS = 7000;
 const BOSS_ARMOR_BLEED_START_RATIO = 0.22;
 const BOSS_ARMOR_BLEED_MIN_SCALE = 0.06;
 const BOSS_ARMOR_BLEED_MAX_SCALE = 0.68;
+const BOSS_WARNING_FRAME_MS = 16.67;
+const BOSS_WARNING_LONG_FRAME_MS = 250;
+const BOSS_WARNING_INTERRUPTION_RECOVERY_MS = 250;
+const BOSS_WARNING_OUTCOME_HISTORY_LIMIT = 24;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -130,6 +134,9 @@ export class Boss {
     this.signatureCooldown = 0;
     this.telegraph = null;
     this.regularTelegraph = null;
+    this.attackWarningToken = null;
+    this.attackWarningTokenSequence = 0;
+    this.attackWarningOutcomes = [];
     this.safeLanes = [];
     this.chaosPressureReliefUntilMs = 0;
     this.delayedSignature = null;
@@ -482,7 +489,7 @@ export class Boss {
     };
   }
 
-  update(delta, playerX, playerY) {
+  update(delta, playerX, playerY, warningDelta = delta) {
     if (!this.active) return;
 
     // Guard: Sprite might not be ready yet (async creation) or destroyed
@@ -504,23 +511,7 @@ export class Boss {
       this.updateHealthBar();
     }
 
-    // Phase transitions
-    if (this.health < this.maxHealth * 0.75 && this.phase === 1) {
-      this.phase = 2;
-      this.shootDelay = this.getPhaseShootDelay(2);
-      this.color = this.profile?.accent || 0xff8800;
-      this.startPhaseChange(2, playerX, playerY);
-      if (!this.tauntPhase2Shown) {
-        const playScene = this.game?.scenes?.play;
-        if (playScene?.showBossTaunt) playScene.showBossTaunt('boss_phase2');
-        this.tauntPhase2Shown = true;
-      }
-    } else if (this.health < this.maxHealth * 0.40 && this.phase === 2) {
-      this.phase = 3;
-      this.shootDelay = this.getPhaseShootDelay(3);
-      this.color = this.profile?.palette || 0xff0000;
-      this.startPhaseChange(3, playerX, playerY);
-    }
+    this.updatePhaseTransitions(playerX, playerY);
 
     if (!this.tauntHalfShown && this.health <= this.maxHealth * 0.5) {
       const playScene = this.game?.scenes?.play;
@@ -559,25 +550,22 @@ export class Boss {
       console.log(`[BossChaos] delayedSignature phase=${delayed.phase} type=${delayed.type}`);
     }
 
+    this.advanceAttackWarningClock(warningDelta);
     if (this.telegraph) {
-      const elapsed = Date.now() - this.telegraph.start;
-      const progress = clamp(elapsed / this.telegraph.duration, 0, 1);
+      const progress = this.getAttackWarningProgress(this.telegraph);
       this.clearRegularAttackTelegraphVisual();
       this.updateTelegraphVisual(progress, playerX, playerY);
       if (this.nameText) {
         this.nameText.alpha = 1;
       }
-      if (elapsed > this.telegraph.duration) {
-        this.clearTelegraphVisual();
-        this.executeSignatureMove(this.telegraph.type, playerX, playerY);
-        this.telegraph = null;
+      if (this.isAttackWarningReady('signature')) {
+        this.releaseSignatureAttackWarning(playerX, playerY);
       }
     } else if (this.nameText) {
       this.nameText.alpha = 1;
       this.clearTelegraphVisual();
       if (this.regularTelegraph) {
-        const elapsed = Date.now() - this.regularTelegraph.start;
-        const progress = clamp(elapsed / this.regularTelegraph.duration, 0, 1);
+        const progress = this.getAttackWarningProgress(this.regularTelegraph);
         this.updateRegularAttackTelegraphVisual(progress, playerX, playerY);
       } else {
         this.clearRegularAttackTelegraphVisual();
@@ -985,6 +973,7 @@ export class Boss {
 
   triggerDefeatPresentation() {
     if (this.defeatPresentationAt > 0) return;
+    this.cancelAttackWarning('boss_defeated');
     this.defeatPresentationAt = Date.now();
     this.setPresentationState('death', 640);
     const playScene = this.game?.scenes?.play;
@@ -1016,6 +1005,9 @@ export class Boss {
     this.health = Math.min(this.maxHealth, this.health + value);
     const healed = Math.max(0, this.health - before);
     if (healed <= 0) return 0;
+    if (source === 'boss_fuel_ship' || source === 'boss_support') {
+      this.applyRecoveryPause(500, 'boss_refuel');
+    }
     const now = Date.now();
     this.healPulseStartedAt = now;
     this.healPulseUntil = now + 940;
@@ -1037,9 +1029,9 @@ export class Boss {
     const t = this.moveTimer * 0.032;
     const phaseBoost = 1 + (this.phase - 1) * 0.08;
     const telegraphProgress = this.telegraph
-      ? clamp((now - this.telegraph.start) / this.telegraph.duration, 0, 1)
+      ? this.getAttackWarningProgress(this.telegraph)
       : this.regularTelegraph
-        ? clamp((now - this.regularTelegraph.start) / this.regularTelegraph.duration, 0, 1) * 0.65
+        ? this.getAttackWarningProgress(this.regularTelegraph) * 0.65
         : 0;
     const hurtProgress = clamp((this.hurtFlashUntil - now) / BOSS_HURT_FLASH_MS, 0, 1);
     const recoilProgress = clamp((this.fireRecoilUntil - now) / BOSS_FIRE_RECOIL_MS, 0, 1);
@@ -1834,20 +1826,270 @@ export class Boss {
     return Math.round(base * clamp(this.getBossProfileReliefNumber('regularTelegraphMult', 1), 0.75, 1.6));
   }
 
+  updatePhaseTransitions(playerX, playerY) {
+    if (this.health < this.maxHealth * 0.75 && this.phase === 1) {
+      this.phase = 2;
+      this.shootDelay = this.getPhaseShootDelay(2);
+      this.color = this.profile?.accent || 0xff8800;
+      this.startPhaseChange(2, playerX, playerY);
+      if (!this.tauntPhase2Shown) {
+        const playScene = this.game?.scenes?.play;
+        if (playScene?.showBossTaunt) playScene.showBossTaunt('boss_phase2');
+        this.tauntPhase2Shown = true;
+      }
+      return 2;
+    }
+    if (this.health < this.maxHealth * 0.40 && this.phase === 2) {
+      this.phase = 3;
+      this.shootDelay = this.getPhaseShootDelay(3);
+      this.color = this.profile?.palette || 0xff0000;
+      this.startPhaseChange(3, playerX, playerY);
+      return 3;
+    }
+    return null;
+  }
+
+  cloneAttackWarningSafeLanes(safeLanes = this.safeLanes) {
+    return Array.isArray(safeLanes)
+      ? safeLanes.map((lane) => ({ ...lane }))
+      : [];
+  }
+
+  beginAttackWarning(category, details = {}) {
+    const normalizedCategory = category === 'signature' ? 'signature' : 'regular';
+    const ownedSafeLanes = this.cloneAttackWarningSafeLanes(details.safeLanes);
+    this.cancelAttackWarning(`superseded_by_${normalizedCategory}`);
+
+    const durationMs = Math.max(1, Math.round(Number(details.durationMs ?? details.duration) || 1));
+    const startedAt = Date.now();
+    const token = {
+      id: ++this.attackWarningTokenSequence,
+      category: normalizedCategory,
+      attackProfile: Object.freeze({
+        attack: details.attack || null,
+        type: details.type || details.attack || null,
+        phase: this.phase,
+        bossLevel: this.level,
+        profileId: this.profile?.id || null,
+        archetype: this.profile?.archetype || null,
+        movementTimer: this.moveTimer
+      }),
+      lockedAim: Object.freeze({
+        angle: Number.isFinite(details.lockedAngle) ? details.lockedAngle : null,
+        distance: Number.isFinite(details.aimDistance) ? details.aimDistance : null,
+        originX: Number.isFinite(details.originX) ? details.originX : this.x,
+        originY: Number.isFinite(details.originY) ? details.originY : this.y
+      }),
+      safeLanes: Object.freeze(ownedSafeLanes.map((lane) => Object.freeze({ ...lane }))),
+      startedAt,
+      durationMs,
+      visibleElapsedMs: 0,
+      terminalState: 'active',
+      terminalReason: null,
+      endedAt: null,
+      outcomeCount: 0,
+      visible: true,
+      audioCueActive: false,
+      audioTerminalState: 'idle',
+      audioGroup: `boss_warning:${this.level}:${startedAt}:${this.attackWarningTokenSequence}`,
+      rngSnapshot: Object.freeze({
+        // Boss attacks currently make no random draw between warning and release.
+        // Keep that zero-draw state explicit so future profiles cannot add a
+        // release-time roll without extending the token contract and its tests.
+        drawCount: 0,
+        values: Object.freeze([])
+      }),
+      longFrameInterruptions: 0,
+      lastFrameInputMs: 0,
+      // Compatibility fields retained for diagnostics and existing visual helpers.
+      attack: details.attack || null,
+      type: details.type || details.attack || null,
+      label: details.label || null,
+      duration: durationMs,
+      lockedAngle: Number.isFinite(details.lockedAngle) ? details.lockedAngle : null,
+      aimDistance: Number.isFinite(details.aimDistance) ? details.aimDistance : null,
+      movementLocked: Boolean(details.movementLocked),
+      originX: Number.isFinite(details.originX) ? details.originX : this.x,
+      originY: Number.isFinite(details.originY) ? details.originY : this.y,
+      laneOffsets: Array.isArray(details.laneOffsets) ? details.laneOffsets.slice() : null
+    };
+    Object.defineProperty(token, 'durationMs', { writable: false });
+    Object.defineProperty(token, 'duration', { writable: false });
+    Object.defineProperty(token, 'start', {
+      configurable: true,
+      enumerable: true,
+      get: () => Date.now() - token.visibleElapsedMs,
+      set: (value) => {
+        const requestedElapsed = Date.now() - (Number(value) || Date.now());
+        token.visibleElapsedMs = clamp(requestedElapsed, 0, token.durationMs);
+      }
+    });
+
+    this.attackWarningToken = token;
+    this.telegraph = normalizedCategory === 'signature' ? token : null;
+    this.regularTelegraph = normalizedCategory === 'regular' ? token : null;
+    this.safeLanes = this.cloneAttackWarningSafeLanes(ownedSafeLanes);
+    return token;
+  }
+
+  getAttackWarningProgress(token = this.attackWarningToken) {
+    if (!token || token.terminalState !== 'active') return 0;
+    return clamp(token.visibleElapsedMs / Math.max(1, token.durationMs), 0, 1);
+  }
+
+  getAttackWarningRemainingMs(token = this.attackWarningToken) {
+    if (!token || token.terminalState !== 'active') return 0;
+    return Math.max(0, Math.round(token.durationMs - token.visibleElapsedMs));
+  }
+
+  isAttackWarningReady(category = null) {
+    const token = this.attackWarningToken;
+    if (!token || token.terminalState !== 'active') return false;
+    if (category && token.category !== category) return false;
+    return token.visibleElapsedMs >= token.durationMs;
+  }
+
+  advanceAttackWarningClock(deltaFrames = 0) {
+    return this.advanceAttackWarningClockMs(Math.max(0, Number(deltaFrames) || 0) * BOSS_WARNING_FRAME_MS);
+  }
+
+  advanceAttackWarningClockMs(deltaMs = 0) {
+    const token = this.attackWarningToken;
+    if (!token || token.terminalState !== 'active' || token.visible !== true) return 0;
+
+    const expectedAlias = token.category === 'signature' ? this.telegraph : this.regularTelegraph;
+    if (expectedAlias !== token) {
+      this.cancelAttackWarning('warning_alias_detached');
+      return 0;
+    }
+
+    const frameMs = Math.max(0, Number(deltaMs) || 0);
+    token.lastFrameInputMs = frameMs;
+    if (frameMs > BOSS_WARNING_LONG_FRAME_MS) {
+      token.longFrameInterruptions += 1;
+      this.applyRecoveryPause(BOSS_WARNING_INTERRUPTION_RECOVERY_MS, 'long_frame_gap');
+      return 0;
+    }
+    token.visibleElapsedMs = Math.min(token.durationMs, token.visibleElapsedMs + frameMs);
+    return token.visibleElapsedMs;
+  }
+
+  setAttackWarningVisibleElapsedForDebug(elapsedMs = 0) {
+    const token = this.attackWarningToken;
+    if (!token || token.terminalState !== 'active') return 0;
+    token.visibleElapsedMs = clamp(Number(elapsedMs) || 0, 0, token.durationMs);
+    return token.visibleElapsedMs;
+  }
+
+  finishAttackWarning(token, terminalState, reason) {
+    if (!token || token !== this.attackWarningToken || token.terminalState !== 'active') return null;
+    if (terminalState !== 'released' && terminalState !== 'cancelled') return null;
+    if (terminalState === 'released' && token.visibleElapsedMs < token.durationMs) return null;
+
+    token.terminalState = terminalState;
+    token.terminalReason = String(reason || terminalState);
+    token.endedAt = Date.now();
+    token.outcomeCount += 1;
+    token.visible = false;
+    AudioManager.stopSfxGroup?.(token.audioGroup);
+    token.audioCueActive = false;
+    token.audioTerminalState = terminalState;
+    const outcome = {
+      id: token.id,
+      category: token.category,
+      attack: token.attackProfile.attack,
+      type: token.attackProfile.type,
+      phase: token.attackProfile.phase,
+      terminalState,
+      reason: token.terminalReason,
+      outcomeCount: token.outcomeCount,
+      durationMs: token.durationMs,
+      visibleElapsedMs: token.visibleElapsedMs,
+      lockedAngle: token.lockedAim.angle,
+      safeLanes: this.cloneAttackWarningSafeLanes(token.safeLanes),
+      rngSnapshot: {
+        drawCount: token.rngSnapshot.drawCount,
+        values: token.rngSnapshot.values.slice()
+      },
+      longFrameInterruptions: token.longFrameInterruptions,
+      visualsCleaned: true,
+      audioCleaned: true,
+      endedAt: token.endedAt
+    };
+    this.attackWarningOutcomes.push(outcome);
+    if (this.attackWarningOutcomes.length > BOSS_WARNING_OUTCOME_HISTORY_LIMIT) {
+      this.attackWarningOutcomes.splice(0, this.attackWarningOutcomes.length - BOSS_WARNING_OUTCOME_HISTORY_LIMIT);
+    }
+
+    this.attackWarningToken = null;
+    if (this.telegraph === token) this.telegraph = null;
+    if (this.regularTelegraph === token) this.regularTelegraph = null;
+    if (terminalState === 'cancelled' && token.category === 'signature' && this.presentationState === 'charge') {
+      this.presentationState = 'idle';
+      this.presentationStateUntil = 0;
+    }
+    if (token.category === 'signature') this.clearTelegraphVisual();
+    else this.clearRegularAttackTelegraphVisual();
+    if (terminalState === 'cancelled') this.safeLanes = [];
+    return outcome;
+  }
+
+  cancelAttackWarning(reason = 'boss_warning_interrupted', { category = null } = {}) {
+    const token = this.attackWarningToken;
+    if (!token || token.terminalState !== 'active') return null;
+    if (category && token.category !== category) return null;
+    return this.finishAttackWarning(token, 'cancelled', reason);
+  }
+
+  getAttackWarningLifecycleDebugState() {
+    const token = this.attackWarningToken;
+    return {
+      active: token ? {
+        id: token.id,
+        category: token.category,
+        attackProfile: { ...token.attackProfile },
+        lockedAim: { ...token.lockedAim },
+        safeLanes: this.cloneAttackWarningSafeLanes(token.safeLanes),
+        rngSnapshot: {
+          drawCount: token.rngSnapshot.drawCount,
+          values: token.rngSnapshot.values.slice()
+        },
+        durationMs: token.durationMs,
+        visibleElapsedMs: Number(token.visibleElapsedMs.toFixed(3)),
+        remainingMs: this.getAttackWarningRemainingMs(token),
+        terminalState: token.terminalState,
+        longFrameInterruptions: token.longFrameInterruptions,
+        regularOwner: this.regularTelegraph === token,
+        signatureOwner: this.telegraph === token
+      } : null,
+      outcomes: this.attackWarningOutcomes.map((outcome) => ({ ...outcome }))
+    };
+  }
+
   applyRecoveryPause(durationMs = 0, reason = 'boss_recovery') {
     const duration = Math.max(0, Number(durationMs) || 0);
     if (duration <= 0) return 0;
 
     const now = Date.now();
     const cooldownFrames = Math.ceil(duration / 16.67);
-    this.regularTelegraph = null;
-    this.telegraph = null;
-    this.clearRegularAttackTelegraphVisual();
-    this.clearTelegraphVisual();
+    const interruptedSignature = this.attackWarningToken?.category === 'signature'
+      ? {
+        phase: this.attackWarningToken.attackProfile.phase,
+        type: this.attackWarningToken.attackProfile.type
+      }
+      : null;
+    this.cancelAttackWarning(reason);
     this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, now + duration);
     this.shootCooldown = Math.max(this.shootCooldown || 0, cooldownFrames);
     this.signatureCooldown = Math.max(this.signatureCooldown || 0, cooldownFrames);
-    if (this.delayedSignature) {
+    if (interruptedSignature?.type) {
+      this.delayedSignature = {
+        phase: interruptedSignature.phase,
+        type: interruptedSignature.type,
+        dueAt: now + duration,
+        interruptionReason: reason
+      };
+    } else if (this.delayedSignature) {
       this.delayedSignature.dueAt = Math.max(this.delayedSignature.dueAt || 0, now + duration);
     }
     this.chaosPressureReliefUntilMs = Math.max(this.chaosPressureReliefUntilMs || 0, now + duration);
@@ -1944,6 +2186,7 @@ export class Boss {
   startPhaseChange(phase, playerX, playerY) {
     if (this.phaseNotified[phase]) return;
     this.phaseNotified[phase] = true;
+    this.cancelAttackWarning(`phase_${phase}_transition`);
     this.applyPhasePlan(phase);
     const playScene = this.game?.scenes?.play;
     if (playScene?.onBossPhaseChange) {
@@ -1998,15 +2241,17 @@ export class Boss {
     };
   }
 
-  playSignatureTelegraphSfx(type) {
+  playSignatureTelegraphSfx(type, warningToken = this.attackWarningToken) {
     const family = this.getSignatureSfxFamily(type);
     AudioManager.playSfx('boss_charge_lattice', {
       volume: 0.42,
-      minIntervalMs: 720
+      minIntervalMs: 720,
+      sfxGroup: warningToken?.audioGroup
     });
     AudioManager.playSfx(`boss_${family}_telegraph`, {
       volume: family === 'beam' ? 0.6 : 0.52,
-      minIntervalMs: 640
+      minIntervalMs: 640,
+      sfxGroup: warningToken?.audioGroup
     });
   }
 
@@ -2037,17 +2282,19 @@ export class Boss {
     const lockedAngle = aimed
       ? Math.atan2(playerY - this.y, playerX - this.x)
       : null;
-    this.telegraph = {
+    this.telegraph = this.beginAttackWarning('signature', {
       type,
       label: this.getSignatureLabel(type),
-      start: Date.now(),
-      duration: Math.round((type === 'ring' || type === 'adds' ? ringTelegraphMs : aimedTelegraphMs) * telegraphReliefMult),
+      durationMs: Math.round((type === 'ring' || type === 'adds' ? ringTelegraphMs : aimedTelegraphMs) * telegraphReliefMult),
       lockedAngle,
       aimDistance: aimed ? Math.max(240, Math.hypot(playerX - this.x, playerY - this.y)) : null,
       movementLocked: aimed,
       originX: this.x,
-      originY: this.y
-    };
+      originY: this.y,
+      safeLanes: this.safeLanes
+    });
+    this.telegraph.audioCueActive = true;
+    this.telegraph.audioTerminalState = 'playing';
     this.setPresentationState('charge', this.telegraph.duration);
     const playScene = this.game?.scenes?.play;
     diagnostics?.mark?.('boss_event_telegraph_start', {
@@ -2065,7 +2312,7 @@ export class Boss {
         duration: 900
       });
     }
-    this.playSignatureTelegraphSfx(type);
+    this.playSignatureTelegraphSfx(type, this.telegraph);
     measurePerformance('boss_event_telegraph_start.visual_creation', () => this.updateTelegraphVisual(0, playerX, playerY));
   }
 
@@ -2295,8 +2542,7 @@ export class Boss {
 
   getSignatureWarningDebugState() {
     if (this.telegraph) {
-      const elapsed = Date.now() - this.telegraph.start;
-      const progress = clamp(elapsed / Math.max(1, this.telegraph.duration), 0, 1);
+      const progress = this.getAttackWarningProgress(this.telegraph);
       return {
         phase: 'warning',
         type: this.telegraph.type,
@@ -2481,14 +2727,6 @@ export class Boss {
           : 'aim';
     const lockedAngle = Math.atan2(playerY - this.y, playerX - this.x);
     const duration = this.getRegularTelegraphDurationMs();
-    this.regularTelegraph = {
-      attack,
-      type,
-      start: Date.now(),
-      duration,
-      lockedAngle,
-      laneOffsets: type === 'split' ? [-0.18, 0.18] : null
-    };
     if (type === 'wall') {
       this.setWallSafeLane();
     } else if (type === 'radial') {
@@ -2501,13 +2739,24 @@ export class Boss {
         : (attack === 'sniper' ? 0.07 : 0.16);
       this.setAimedSafeLane(type, playerX, playerY, spread);
     }
+    this.regularTelegraph = this.beginAttackWarning('regular', {
+      attack,
+      type,
+      durationMs: duration,
+      lockedAngle,
+      laneOffsets: type === 'split' ? [-0.18, 0.18] : null,
+      originX: this.x,
+      originY: this.y,
+      safeLanes: this.safeLanes
+    });
     this.lastRegularTelegraphStart = {
       attack,
       type,
       lockedAngle,
       laneOffsets: this.regularTelegraph.laneOffsets?.slice?.() || [0],
-      warningAt: this.regularTelegraph.start,
-      releaseNotBefore: this.regularTelegraph.start + duration
+      warningAt: this.regularTelegraph.startedAt,
+      releaseNotBefore: this.regularTelegraph.startedAt + duration,
+      warningTokenId: this.regularTelegraph.id
     };
     const attackLabel = translateText(String(attack).toUpperCase());
     const viewportWidth = this.game?.getWidth?.() || 800;
@@ -2658,9 +2907,9 @@ export class Boss {
     if (this.attackWarningLayer) this.attackWarningLayer.clear();
   }
 
-  executeSignatureMove(type, playerX, playerY) {
-    const lockedAngle = Number.isFinite(this.telegraph?.lockedAngle)
-      ? this.telegraph.lockedAngle
+  executeSignatureMove(type, playerX, playerY, warningToken = this.telegraph) {
+    const lockedAngle = Number.isFinite(warningToken?.lockedAngle)
+      ? warningToken.lockedAngle
       : null;
     const aimPoint = this.getSignatureAimPoint(playerX, playerY);
     this.lastSignatureRelease = {
@@ -2668,6 +2917,8 @@ export class Boss {
       lockedAngle,
       originX: this.x,
       originY: this.y,
+      warningTokenId: warningToken?.id || null,
+      visibleLeadMs: warningToken?.visibleElapsedMs || 0,
       releasedAt: Date.now()
     };
     this.triggerFirePresentation(type, true, aimPoint.x, aimPoint.y);
@@ -2695,6 +2946,14 @@ export class Boss {
       playerY: aimPoint.y,
       lockedAngle
     });
+  }
+
+  releaseSignatureAttackWarning(playerX, playerY) {
+    const token = this.attackWarningToken;
+    if (!token || token.category !== 'signature' || !this.isAttackWarningReady('signature')) return null;
+    this.clearTelegraphVisual();
+    this.executeSignatureMove(token.type, playerX, playerY, token);
+    return this.finishAttackWarning(token, 'released', 'signature_release');
   }
 
   fireCone(playerX, playerY, shots = 7, spread = 0.6, lockedAngle = null) {
@@ -2772,25 +3031,31 @@ export class Boss {
       this.startRegularAttackTelegraph(player?.x ?? this.x, player?.y ?? this.y + 260);
       return false;
     }
-    return now - this.regularTelegraph.start >= this.regularTelegraph.duration;
+    return this.isAttackWarningReady('regular');
   }
 
   shoot(playerX, playerY) {
+    const warningToken = this.attackWarningToken;
+    if (!warningToken || warningToken.category !== 'regular' || !this.isAttackWarningReady('regular')) {
+      return [];
+    }
     const performanceDiagnostics = this.game?.scenes?.play?.performanceDiagnostics;
     const burstStartedAt = performanceDiagnostics?.enabled ? performance.now() : 0;
-    const attack = this.profile?.attack || 'aimed';
+    const attack = warningToken.attackProfile.attack || 'aimed';
+    const releasePhase = warningToken.attackProfile.phase;
     const regularTelegraph = this.regularTelegraph
       ? {
         type: this.regularTelegraph.type,
         attack: this.regularTelegraph.attack,
         lockedAngle: this.regularTelegraph.lockedAngle,
-        warningAt: this.regularTelegraph.start,
-        laneOffsets: this.regularTelegraph.laneOffsets?.slice?.() || null
+        warningAt: this.regularTelegraph.startedAt,
+        laneOffsets: this.regularTelegraph.laneOffsets?.slice?.() || null,
+        warningTokenId: this.regularTelegraph.id,
+        visibleLeadMs: this.regularTelegraph.visibleElapsedMs
       }
       : null;
     this.shootCooldown = this.shootDelay;
     this.regularAttackReadyAt = Date.now() + this.getRegularAttackIntervalMs();
-    this.regularTelegraph = null;
     this.clearRegularAttackTelegraphVisual();
     const releaseAimAngle = Number.isFinite(regularTelegraph?.lockedAngle)
       ? regularTelegraph.lockedAngle
@@ -2802,12 +3067,12 @@ export class Boss {
 
     // Boss FX
     const killSwitch = isWeaponFxKillSwitchActive();
-    const weaponProfile = getBossWeaponProfile(attack, this.phase);
+    const weaponProfile = getBossWeaponProfile(attack, releasePhase);
     const vConfig = (ENABLE_BOSS_WEAPON_FX && !killSwitch)
       ? toBulletVisualConfig(weaponProfile, {
         sourceEnemyType: 'boss',
         sourceFireStyle: attack,
-        spriteScale: (weaponProfile?.spriteScale || 0.5) * (this.phase >= 3 ? 1.08 : 1)
+        spriteScale: (weaponProfile?.spriteScale || 0.5) * (releasePhase >= 3 ? 1.08 : 1)
       })
       : null;
     const pressure = BalanceConfig.difficulty.pressureScalar * this.getBossPressureScalar();
@@ -2828,26 +3093,26 @@ export class Boss {
 
     if (attack === 'fan' || attack === 'burst' || attack === 'fakeout') {
       const firstBoss = this.level <= 1;
-      const configuredBurstCount = this.phase >= 3
+      const configuredBurstCount = releasePhase >= 3
         ? this.getBossProfileReliefNumber('burstShotsPhase3', 5)
         : this.getBossProfileReliefNumber('burstShotsPhase2', 5);
-      const count = this.phase === 1 || firstBoss
+      const count = releasePhase === 1 || firstBoss
         ? 1
         : attack === 'burst'
           ? clamp(Math.round(configuredBurstCount), 1, 5)
           : 3;
-      const spread = this.phase === 1 || firstBoss ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
-      const speed = this.getBossProjectileSpeed(this.phase === 1 || firstBoss ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
+      const spread = releasePhase === 1 || firstBoss ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
+      const speed = this.getBossProjectileSpeed(releasePhase === 1 || firstBoss ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
       for (let i = 0; i < count; i++) {
         const t = count === 1 ? 0 : (i / (count - 1)) - 0.5;
         addBullet(this.x, this.y, aimAngle + t * spread, speed);
       }
     } else if (attack === 'spiral' || attack === 'clock' || attack === 'chord') {
-      const count = attack === 'chord' ? 6 : this.phase === 1 ? 4 : 8;
-      const speed = this.getBossProjectileSpeed(this.phase === 3 ? 3 : 2) * pressure * this.getBossAttackSpeedMultiplier('radial');
+      const count = attack === 'chord' ? 6 : releasePhase === 1 ? 4 : 8;
+      const speed = this.getBossProjectileSpeed(releasePhase === 3 ? 3 : 2) * pressure * this.getBossAttackSpeedMultiplier('radial');
       const offset = attack === 'clock'
-        ? Math.floor(this.moveTimer / 26) * (Math.PI / 8)
-        : this.moveTimer * 0.045;
+        ? Math.floor(warningToken.attackProfile.movementTimer / 26) * (Math.PI / 8)
+        : warningToken.attackProfile.movementTimer * 0.045;
       const safeAngle = this.safeLanes?.[0]?.kind === 'ring-wedge'
         ? Number(this.safeLanes[0].angle)
         : this.getRingSafeAngle(count);
@@ -2856,15 +3121,15 @@ export class Boss {
         : 0.38;
       for (let i = 0; i < count; i++) {
         const angle = (Math.PI * 2 * i) / count + offset;
-        if (attack === 'clock' && this.phase < 3 && i % 4 === 0) continue;
+        if (attack === 'clock' && releasePhase < 3 && i % 4 === 0) continue;
         if (Math.abs(normalizeAngle(angle - safeAngle)) < safeWedge) continue;
         addBullet(this.x, this.y, angle, speed);
       }
     } else if (attack === 'split' || attack === 'sniper' || attack === 'wall') {
-      const speed = this.getBossProjectileSpeed(this.phase === 1 ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
+      const speed = this.getBossProjectileSpeed(releasePhase === 1 ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
       if (attack === 'sniper') {
         addBullet(this.x, this.y, aimAngle, speed * 1.16);
-        if (this.phase >= 3) {
+        if (releasePhase >= 3) {
           addBullet(this.x - 28, this.y, aimAngle + 0.08, speed);
           addBullet(this.x + 28, this.y, aimAngle - 0.08, speed);
         }
@@ -2880,11 +3145,11 @@ export class Boss {
     } else if (attack === 'summon') {
       const speed = this.getBossProjectileSpeed(1) * pressure * this.getBossAttackSpeedMultiplier('radial');
       addBullet(this.x, this.y, aimAngle, speed);
-      if (this.phase >= 2 && this.signatureCooldown <= 0) {
+      if (releasePhase >= 2 && this.signatureCooldown <= 0) {
         this.game?.scenes?.play?.enemyManager?.spawnBossAdds(this.level <= 1 ? 1 : 2);
         this.signatureCooldown = 180;
       }
-    } else if (this.phase === 1) {
+    } else if (releasePhase === 1) {
       // Single aimed shot
       const dx = playerX - this.x;
       const dy = playerY - this.y;
@@ -2903,7 +3168,7 @@ export class Boss {
         false,
         vConfig
       ), attack));
-    } else if (this.phase === 2) {
+    } else if (releasePhase === 2) {
       // 3-shot spread keeps the first boss readable while still punishing tunnel vision.
       for (let i = -1; i <= 1; i++) {
         const angle = Math.atan2(playerY - this.y, playerX - this.x) + i * 0.25;
@@ -2957,19 +3222,23 @@ export class Boss {
       lockedAngle: aimAngle,
       warningAt: regularTelegraph?.warningAt || null,
       releasedAt: Date.now(),
+      warningTokenId: regularTelegraph?.warningTokenId || null,
+      visibleLeadMs: regularTelegraph?.visibleLeadMs || 0,
       laneOffsets: attack === 'split' ? [-0.18, 0.18] : regularTelegraph?.laneOffsets || [0],
       projectileAngles: bullets.map((bullet) => Math.atan2(Number(bullet.vy) || 0, Number(bullet.vx) || 0))
     };
     this.game?.scenes?.play?.performanceDiagnostics?.mark?.('gameplay.boss_action', {
       action: attack,
-      phase: this.phase,
+      phase: releasePhase,
       level: this.level,
       projectiles: bullets.length,
-      summonedAdds: attack === 'summon' && this.phase >= 2
+      summonedAdds: attack === 'summon' && releasePhase >= 2
     });
     if (burstStartedAt > 0) {
       performanceDiagnostics.recordSection('vfx.boss_bullet_burst_creation', performance.now() - burstStartedAt);
     }
+
+    this.finishAttackWarning(warningToken, 'released', 'regular_release');
 
     return bullets;
   }
@@ -3031,6 +3300,7 @@ export class Boss {
     const incomingHealth = this.health - effectiveDamage;
     if (shouldArmorBleed) {
       this.finishGateUntilMs = Math.max(this.finishGateUntilMs || 0, pacingAnchorAt + guideMs);
+      this.applyRecoveryPause(Math.max(1, this.finishGateUntilMs - now), 'armor_finish_gate');
       this.finishGateDamageScale = damageScale;
       this.finishGateLastDamageAt = now;
       this.shootCooldown = Math.max(this.shootCooldown || 0, 80);
@@ -3056,6 +3326,7 @@ export class Boss {
   }
 
   destroy() {
+    this.cancelAttackWarning('boss_destroyed');
     this.clearTelegraphVisual();
     this.clearRegularAttackTelegraphVisual();
     if (this.visualCleanup) {

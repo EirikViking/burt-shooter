@@ -2841,7 +2841,10 @@ export class EnemyManager {
 
       const isBoss = enemy.kind === 'boss';
       this.ensureCombatReadabilityIdentity(enemy);
-      enemy.update(isBoss ? dt : dt * enemySpeedMult, playerX, playerY);
+      // Boss movement keeps the established slow-time scale, while its warning
+      // token owns an unscaled visible clock so slow time does not shorten or
+      // lengthen the shipped reaction window.
+      enemy.update(isBoss ? dt : dt * enemySpeedMult, playerX, playerY, isBoss ? delta : undefined);
 
       if (enemy.challengeFlightReticle) {
         enemy.challengeFlightReticle.rotation += delta * 0.018;
@@ -4687,6 +4690,7 @@ export class EnemyManager {
       warningLeadMs,
       bossHealthAtWarning: Number(this.boss.health) || 0
     };
+    this.boss.cancelAttackWarning?.('boss_support_inbound', { category: 'regular' });
     this.lastBossFuelSupportOrder = {
       state: 'warned',
       count: supportCount,

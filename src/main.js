@@ -1262,6 +1262,7 @@ function buildGameTextState(game) {
         bossSignature: enemy.getSignatureForPhase ? enemy.getSignatureForPhase(enemy.phase || 1) : (enemy.profile?.signature || null),
         bossAnimation: enemy.getAnimationDebugState ? enemy.getAnimationDebugState() : null,
         bossSignatureWarning: enemy.getSignatureWarningDebugState ? enemy.getSignatureWarningDebugState() : null,
+        bossWarningLifecycle: enemy.getAttackWarningLifecycleDebugState ? enemy.getAttackWarningLifecycleDebugState() : null,
         safeLanes: Array.isArray(enemy.safeLanes) ? enemy.safeLanes : [],
         phaseShift: enemy.kind === 'boss' ? {
           anchorOffset: Math.round(enemy.phaseAnchorOffset || 0),
@@ -1276,12 +1277,16 @@ function buildGameTextState(game) {
             ? Number(enemy.telegraph.lockedAngle.toFixed(4))
             : null,
           movementLocked: Boolean(enemy.telegraph.movementLocked),
-          remainingMs: Math.max(0, Math.round((enemy.telegraph.start + enemy.telegraph.duration) - Date.now()))
+          remainingMs: enemy.getAttackWarningRemainingMs
+            ? enemy.getAttackWarningRemainingMs(enemy.telegraph)
+            : Math.max(0, Math.round((enemy.telegraph.start + enemy.telegraph.duration) - Date.now()))
         } : enemy.regularTelegraph ? {
           type: enemy.regularTelegraph.type || null,
           label: 'REGULAR ATTACK TELL',
           attack: enemy.regularTelegraph.attack || null,
-          remainingMs: Math.max(0, Math.round((enemy.regularTelegraph.start + enemy.regularTelegraph.duration) - Date.now()))
+          remainingMs: enemy.getAttackWarningRemainingMs
+            ? enemy.getAttackWarningRemainingMs(enemy.regularTelegraph)
+            : Math.max(0, Math.round((enemy.regularTelegraph.start + enemy.regularTelegraph.duration) - Date.now()))
         } : null,
         type: enemy.type || enemy.constructor?.name || 'enemy'
       }))

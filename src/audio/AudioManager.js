@@ -157,6 +157,7 @@ class AudioController {
     this.lastSfxPlayedAt = {};
     this.sfxVariantBags = {};
     this.lastSfxVariantByEvent = {};
+    this.activeSfxGroups = {};
     this.sfxPriorityLock = null;
     this.lastPowerupVoiceIndex = -1;
     this.lastVoicePlayedAt = {};
@@ -553,6 +554,20 @@ class AudioController {
       audio.playbackRate = playbackRate;
       if ('preservesPitch' in audio) audio.preservesPitch = options.preservePitch === true;
     } catch { }
+    const sfxGroup = options.sfxGroup ? String(options.sfxGroup) : null;
+    if (sfxGroup) {
+      if (!this.activeSfxGroups[sfxGroup]) this.activeSfxGroups[sfxGroup] = new Set();
+      const group = this.activeSfxGroups[sfxGroup];
+      group.add(audio);
+      const releaseFromGroup = () => {
+        group.delete(audio);
+        if (group.size === 0 && this.activeSfxGroups[sfxGroup] === group) {
+          delete this.activeSfxGroups[sfxGroup];
+        }
+      };
+      audio.addEventListener?.('ended', releaseFromGroup, { once: true });
+      audio.addEventListener?.('error', releaseFromGroup, { once: true });
+    }
     audio.play().catch(e => {
       this.handleSfxPlayFailure(eventName, audio.src, e);
     });
@@ -573,6 +588,23 @@ class AudioController {
       frameCounters.lastSfxEvent = eventName;
     }
     return true;
+  }
+
+  stopSfxGroup(groupName) {
+    const key = String(groupName || '');
+    const group = key ? this.activeSfxGroups[key] : null;
+    if (!group) return 0;
+    let stopped = 0;
+    for (const audio of group) {
+      try {
+        audio.pause?.();
+        audio.currentTime = 0;
+        stopped += 1;
+      } catch { }
+    }
+    group.clear();
+    delete this.activeSfxGroups[key];
+    return stopped;
   }
 
   getSpectacleNoiseBuffer() {
