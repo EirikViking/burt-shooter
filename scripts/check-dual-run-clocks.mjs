@@ -1,7 +1,20 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createRunReport, summarizeRunReport } from '../src/game/RunReport.js';
 import { createRunResultFromGame, encodeSteamLeaderboardDetails } from '../src/leaderboard/LeaderboardTypes.js';
 import { RunSessionClock } from '../src/game/RunSessionClock.js';
+
+const mainSource = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+assert.match(
+  mainSource,
+  /const elapsedFrameMs = Number\(delta\.elapsedMS\);[\s\S]*?game\.update\([\s\S]*?clampedDelta,[\s\S]*?elapsedFrameMs/,
+  'the total clock must receive Pixi elapsedMS, the raw uncapped monotonic frame delta'
+);
+assert.doesNotMatch(
+  mainSource,
+  /game\.update\(clampedDelta,\s*Number\(delta\.deltaMS\)/,
+  'Pixi deltaMS is capped and must not drive total elapsed time'
+);
 
 const activeSeconds = 412;
 const totalSeconds = 587;
@@ -66,6 +79,15 @@ const pauseSnapshot = sessionClock.snapshot();
 sessionClock.advanceRealFrame(5000);
 assert.equal(sessionClock.elapsedSeconds, 145, 'user pause remains part of total elapsed');
 assert.equal(pauseSnapshot.running, true);
+
+const throttledFrameClock = new RunSessionClock();
+throttledFrameClock.start();
+throttledFrameClock.advanceRealFrame(1250);
+assert.equal(
+  throttledFrameClock.elapsedSeconds,
+  1.25,
+  'a throttled long frame must retain its full monotonic elapsed duration'
+);
 
 const restoredLegacy = new RunSessionClock();
 restoredLegacy.restore({}, 77);
