@@ -31,7 +31,7 @@ for (const [runMode, expectedLabel] of supportedModes) {
     sectorReached: 6,
     runElapsedSeconds: 90
   });
-  assert.equal(report.version, 15);
+  assert.equal(report.version, 16);
   assert.equal(report.summary.runMode, runMode);
   assert.equal(report.summary.runModeCanonical, runMode);
   assert.equal(report.summary.runModeCompatibility, 'canonical');
