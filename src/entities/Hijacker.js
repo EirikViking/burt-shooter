@@ -24,7 +24,7 @@ const TRACTOR_BEAM_VISUAL_PROFILE = Object.freeze({
  */
 
 export class Hijacker {
-  constructor(x, y, level, game) {
+  constructor(x, y, level, game, options = {}) {
     // Safety: Should never be instantiated if feature disabled
     if (!isHijackerEnabled()) {
       console.warn('[Hijacker] Feature disabled, should not instantiate');
@@ -59,7 +59,10 @@ export class Hijacker {
     this.beamWarningMs = 820;
     this.beamActiveMs = 1850;
     this.beamCooldownMs = Math.max(3100, 4650 - this.level * 115);
-    this.nextBeamAt = Date.now() + 1500 + Math.random() * 900;
+    const initialBeamDelayMs = Number.isFinite(Number(options.initialBeamDelayMs))
+      ? Math.max(0, Number(options.initialBeamDelayMs))
+      : 1500 + Math.random() * 900;
+    this.nextBeamAt = Date.now() + initialBeamDelayMs;
     this.beamStartedAt = 0;
     this.beamTarget = { x, y: y + 360 };
     this.beamPullActive = false;

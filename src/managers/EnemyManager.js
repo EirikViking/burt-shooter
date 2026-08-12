@@ -276,6 +276,7 @@ export class EnemyManager {
     this.hijacker = null;
     this.hijackerSpawnedThisLevel = false;
     this.hijackerSpawnAttemptedThisLevel = false;
+    this.pendingTransitionHijackerSpawn = null;
     this.eliteMiddleShipPlan = [];
     this.eliteMiddleShipsSpawnedThisLevel = 0;
 
@@ -394,6 +395,7 @@ export class EnemyManager {
     this.hijacker = null;
     this.hijackerSpawnedThisLevel = false;
     this.hijackerSpawnAttemptedThisLevel = false;
+    this.pendingTransitionHijackerSpawn = null;
     this.eliteMiddleShipPlan = [];
     this.eliteMiddleShipsSpawnedThisLevel = 0;
 
@@ -525,6 +527,7 @@ export class EnemyManager {
     this.hijacker = null;
     this.hijackerSpawnedThisLevel = false;
     this.hijackerSpawnAttemptedThisLevel = false;
+    this.pendingTransitionHijackerSpawn = null;
     this.eliteMiddleShipPlan = [];
     this.eliteMiddleShipsSpawnedThisLevel = 0;
 
@@ -5865,6 +5868,7 @@ export class EnemyManager {
         busyTransition: survivedMayhemSuperStorm || consumedReinforcementWaveIndices.length > 0
       });
     }
+    this.releasePendingTransitionHijackerSpawn();
 
     if (transitionWaveIndex < this.normalWavesTotal - 1) {
       this.currentWaveIndex = transitionWaveIndex + 1;
@@ -5971,23 +5975,59 @@ export class EnemyManager {
     const chance = this.level >= 3 ? 0.45 : 0.32;
     if (guaranteed || Math.random() < chance) {
       console.log(`[HijackerSpawn] level=${this.level} wave=${clearedWaveNumber} guaranteed=${guaranteed}`);
-      this.spawnHijacker();
+      const centerX = this.game.getWidth() / 2;
+      this.pendingTransitionHijackerSpawn = {
+        level: this.level,
+        clearedWaveNumber,
+        guaranteed,
+        spawnX: centerX + (Math.random() - 0.5) * 200,
+        spawnY: Math.max(112, Math.min(this.game.getHeight() * 0.18, 132)),
+        initialBeamDelayMs: 1500 + Math.random() * 900
+      };
     } else {
       console.log(`[HijackerSpawn] skipped level=${this.level} wave=${clearedWaveNumber} chance=${chance}`);
     }
   }
 
-  spawnHijacker() {
+  releasePendingTransitionHijackerSpawn() {
+    const plan = this.pendingTransitionHijackerSpawn;
+    if (!plan) return false;
+    this.pendingTransitionHijackerSpawn = null;
+    const release = () => {
+      if (this.level !== plan.level || this.hijackerSpawnedThisLevel || this.hijacker?.active) return;
+      this.spawnHijacker(plan);
+    };
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.isCabinetWonderNoAgencyPresentationActive?.()) {
+      return playScene.deferCabinetWonderEnemyRelease?.(release, {
+        kind: 'hijacker',
+        level: plan.level,
+        waveNumber: plan.clearedWaveNumber,
+        spawnX: plan.spawnX,
+        spawnY: plan.spawnY
+      }) === true;
+    }
+    release();
+    return true;
+  }
+
+  spawnHijacker(plan = {}) {
     if (!isHijackerEnabled()) return;
 
     console.log('[EnemyManager] Spawning Hijacker!');
     this.hijackerSpawnedThisLevel = true;
 
     const centerX = this.game.getWidth() / 2;
-    const spawnX = centerX + (Math.random() - 0.5) * 200; // Spawn near center with some variance
-    const spawnY = Math.max(112, Math.min(this.game.getHeight() * 0.18, 132)); // Clear of HUD, still a top-lane threat.
+    const spawnX = Number.isFinite(Number(plan.spawnX))
+      ? Number(plan.spawnX)
+      : centerX + (Math.random() - 0.5) * 200;
+    const spawnY = Number.isFinite(Number(plan.spawnY))
+      ? Number(plan.spawnY)
+      : Math.max(112, Math.min(this.game.getHeight() * 0.18, 132)); // Clear of HUD, still a top-lane threat.
 
-    this.hijacker = new Hijacker(spawnX, spawnY, this.level, this.game);
+    this.hijacker = new Hijacker(spawnX, spawnY, this.level, this.game, {
+      initialBeamDelayMs: plan.initialBeamDelayMs
+    });
     this.container.addChild(this.hijacker.sprite);
 
     // The Hijacker warning is a combat-critical callout, so keep it out of voice pileups.

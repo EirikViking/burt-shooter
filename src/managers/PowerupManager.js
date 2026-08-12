@@ -85,6 +85,7 @@ class Powerup {
     this.createdAt = Date.now();
     this.collectibleAt = Math.max(this.createdAt, Number(options.collectibleAt) || this.createdAt);
     this.lifeTime = 26000;
+    this.lifetimePausedAt = 0;
 
     const data = getPowerupMeta(type) || getPowerupMeta('triple_beam');
     this.color = data.color;
@@ -380,7 +381,7 @@ class Powerup {
   update(delta, scene) {
     if (!this.active) return;
 
-    const age = Date.now() - this.createdAt;
+    const age = this.getLifetimeAgeMs();
 
     // TASK A: Idle bob animation (sine wave vertical movement) - subtle
     this.bobPhase += 0.04 * delta;
@@ -477,6 +478,31 @@ class Powerup {
     if (this.y > screenHeight + offscreenMargin || age > effectiveLifetime) {
       this.active = false;
     }
+  }
+
+  getLifetimeAgeMs(now = Date.now()) {
+    const effectiveNow = this.lifetimePausedAt > 0 ? this.lifetimePausedAt : now;
+    return Math.max(0, effectiveNow - this.createdAt);
+  }
+
+  getLifetimeRemainingMs(now = Date.now()) {
+    return Math.max(0, Math.max(1, Number(this.lifeTime) || 1) - this.getLifetimeAgeMs(now));
+  }
+
+  pauseLifetime(now = Date.now()) {
+    if (this.lifetimePausedAt > 0) return false;
+    this.lifetimePausedAt = Math.max(this.createdAt, Number(now) || Date.now());
+    return true;
+  }
+
+  resumeLifetime(now = Date.now()) {
+    if (this.lifetimePausedAt <= 0) return 0;
+    const resumedAt = Math.max(this.lifetimePausedAt, Number(now) || Date.now());
+    const heldMs = Math.max(0, resumedAt - this.lifetimePausedAt);
+    this.createdAt += heldMs;
+    this.collectibleAt += heldMs;
+    this.lifetimePausedAt = 0;
+    return heldMs;
   }
 
   updateIntentCue(age) {
@@ -1415,6 +1441,22 @@ export class PowerupManager {
     });
   }
 
+  pauseTimedPickupLifetimes(now = Date.now()) {
+    let paused = 0;
+    this.powerups.forEach((powerup) => {
+      if (powerup?.active !== false && powerup?.pauseLifetime?.(now)) paused += 1;
+    });
+    return paused;
+  }
+
+  resumeTimedPickupLifetimes(now = Date.now()) {
+    let resumed = 0;
+    this.powerups.forEach((powerup) => {
+      if (powerup?.resumeLifetime?.(now) > 0) resumed += 1;
+    });
+    return resumed;
+  }
+
   updateDebugPowerups(delta, scene) {
     if (!scene?.debugPowerups) return;
 
@@ -1544,6 +1586,8 @@ export class PowerupManager {
           rewardClaim: powerup.rewardClaim,
           rngIsolated: powerup.rngIsolated,
           lifeTimeMs: powerup.lifeTime,
+          lifetimeRemainingMs: Math.round(powerup.getLifetimeRemainingMs?.() || 0),
+          lifetimePaused: powerup.lifetimePausedAt > 0,
           verticalSpeed: powerup.vy,
           pickupAssistRadius: powerup.pickupAssistRadius,
           collectibleAt: powerup.collectibleAt,
