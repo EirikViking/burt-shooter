@@ -434,7 +434,7 @@ export class HowToPlayOverlay {
     const shortDesktop = !compact && height < 780;
     const spacious = width >= 1800 && height >= 980;
     const panelWidth = Math.min(spacious ? 1320 : 1160, width * (compact ? 0.96 : 0.9));
-    const panelHeight = Math.min(spacious ? 860 : 820, height * (compact ? 0.96 : 0.92));
+    const panelHeight = Math.min(spacious ? 820 : 780, height * (compact ? 0.94 : 0.86));
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const pad = veryShort ? 18 : compact ? 24 : shortDesktop ? 28 : 34;
@@ -456,10 +456,10 @@ export class HowToPlayOverlay {
       Math.floor((gridHeight - gridGap * (visualRows - 1)) / visualRows)
     );
     const titleSize = veryShort ? 24 : spacious ? 48 : compact ? 31 : 42;
-    const subtitleSize = veryShort ? 11 : spacious ? 16 : compact ? 12 : 14;
-    const labelSize = veryShort ? 11 : spacious ? 16 : compact ? 13 : shortDesktop ? 12 : 15;
-    const controlSize = veryShort ? 11 : spacious ? 17 : compact ? 13 : shortDesktop ? 12 : 15;
-    const tipSize = veryShort ? 11 : spacious ? 16 : compact ? 12 : shortDesktop ? 11 : 15;
+    const subtitleSize = veryShort ? 13 : spacious ? 18 : compact ? 15 : 17;
+    const labelSize = veryShort ? 13 : spacious ? 19 : compact ? 16 : shortDesktop ? 15 : 18;
+    const controlSize = veryShort ? 13 : spacious ? 18 : compact ? 16 : shortDesktop ? 15 : 17;
+    const tipSize = veryShort ? 13 : spacious ? 17 : compact ? 15 : shortDesktop ? 14 : 16;
     const cardLayouts = [];
 
     this.container.eventMode = 'static';
@@ -600,8 +600,8 @@ export class HowToPlayOverlay {
       const y = panelY + headerHeight - (veryShort ? 13 : compact ? 17 : 20);
       const tab = this.createPageTab(page.label, x, y, index === this.pageIndex, () => this.setPage(index), {
         width: tabWidth,
-        height: veryShort ? 22 : compact ? 26 : 30,
-        fontSize: veryShort ? 10 : compact ? 11 : 13
+        height: veryShort ? 30 : compact ? 36 : 40,
+        fontSize: veryShort ? 13 : compact ? 15 : 16
       });
       this.container.addChild(tab);
       return tab;
@@ -616,7 +616,7 @@ export class HowToPlayOverlay {
 
     const footer = createText(translateText('ESC / B: BACK'), {
       fontFamily: FONT_BODY,
-      fontSize: veryShort ? 11 : spacious ? 16 : compact ? 12 : 14,
+      fontSize: veryShort ? 13 : spacious ? 17 : compact ? 15 : 16,
       fontWeight: '900',
       fill: '#9ed9e8',
       stroke: '#00111d',
@@ -632,13 +632,13 @@ export class HowToPlayOverlay {
     this.container.addChild(footer);
 
     const buttonWidth = Math.min(compact ? 230 : 260, panelWidth - pad * 2.5);
-    const buttonHeight = veryShort ? 30 : compact ? 34 : 40;
+    const buttonHeight = veryShort ? 38 : compact ? 44 : 48;
     const buttonX = compact ? width / 2 : panelX + panelWidth - pad - buttonWidth / 2 - 8;
     const buttonY = compact ? footerY + footerHeight - 24 : footerY + footerHeight / 2;
     this.closeButton = this.createButton(translateText('BACK'), buttonX, buttonY, () => this.close(), {
       width: buttonWidth,
       height: buttonHeight,
-      fontSize: veryShort ? 13 : compact ? 16 : 18
+      fontSize: veryShort ? 14 : compact ? 16 : 18
     });
     this.container.addChild(this.closeButton);
 
@@ -925,7 +925,7 @@ export class HowToPlayOverlay {
 
     const code = createText(row.code, {
       fontFamily: FONT_DISPLAY,
-      fontSize: veryShort ? 9 : 11,
+      fontSize: veryShort ? 12 : 14,
       fontWeight: '900',
       fill: '#f6fbff',
       align: 'center'
@@ -936,7 +936,7 @@ export class HowToPlayOverlay {
 
     const icon = createText(translateText(row.icon || row.label), {
       fontFamily: FONT_BODY,
-      fontSize: veryShort ? 7 : compact || shortDesktop ? 8 : 9,
+      fontSize: veryShort ? 11 : compact || shortDesktop ? 12 : 13,
       fontWeight: '900',
       fill: '#ffffff',
       stroke: '#00111d',

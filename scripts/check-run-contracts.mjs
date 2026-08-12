@@ -1086,79 +1086,18 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
   assert.ok(screen?.width > 0 && screen?.height > 0, 'menu screen bounds should be exposed');
   assert.equal(menu?.missionBriefing?.eyebrow, 'RUN MODE', 'compact briefing should use the new eyebrow hierarchy');
   assert.ok(String(menu?.missionBriefing?.title || '').trim(), 'compact briefing should expose a non-redundant mode-family title');
-  assert.equal(board?.status, expectedStatus);
+  assert.equal(board?.status, 'hidden', `Pilot Orders must stay off the main menu (legacy fixture requested ${expectedStatus})`);
+  assert.equal(board?.hidden, true, 'Pilot Orders must stay off the main menu for every profile and preference state');
+  assert.equal(board?.rows?.length, 0, 'hidden main-menu Pilot Orders must expose no visible rows');
+  assert.equal(board?.bounds?.width || 0, 0, 'hidden main-menu Pilot Orders must reserve no horizontal space');
+  assert.equal(board?.bounds?.height || 0, 0, 'hidden main-menu Pilot Orders must reserve no vertical space');
+  assert.equal(board?.titleBounds?.width || 0, 0, 'hidden main-menu Pilot Orders title must not render');
+  assert.equal(board?.titleBounds?.height || 0, 0, 'hidden main-menu Pilot Orders title must not render');
+  assert.equal(board?.subtitleBounds?.width || 0, 0, 'hidden main-menu Pilot Orders subtitle must not render');
+  assert.equal(board?.subtitleBounds?.height || 0, 0, 'hidden main-menu Pilot Orders subtitle must not render');
+  assert.equal(board?.disabledBySetting, false, 'main-menu removal must not depend on the retired visibility preference');
   if (expectedDisabledBySetting !== null) {
-    assert.equal(board?.disabledBySetting, expectedDisabledBySetting, 'Pilot Orders hidden reason should match expectation');
-  }
-
-  if (expectedStatus === 'hidden') {
-    assert.equal(board?.hidden, true, 'completed Pilot Orders board should be hidden after notice is seen');
-    assert.equal(board?.rows?.length, 0, 'hidden Pilot Orders board should expose no visible rows');
-    return;
-  }
-
-  assertInside(board.bounds, screen, 'Pilot Orders');
-  assertInside(board.titleBounds, screen, 'Pilot Orders title');
-  assertInside(board.subtitleBounds, screen, 'Pilot Orders subtitle');
-  const placement = board.bounds?.placement || 'belowDeck';
-  assert.ok(['belowDeck', 'rightRail'].includes(placement), 'Pilot Orders should expose a supported placement');
-  if (placement === 'rightRail') {
-    const briefing = menu?.missionBriefing?.panelBounds;
-    assert.ok(briefing, 'right-rail Pilot Orders require briefing bounds');
-    assert.ok(Math.abs(board.bounds.x - briefing.x) <= 2, 'right-rail Pilot Orders should align with briefing x');
-    assert.ok(Math.abs(board.bounds.width - briefing.width) <= 4, 'right-rail Pilot Orders should match briefing width');
-    assert.ok(board.bounds.y >= briefing.bottom + 4, 'right-rail Pilot Orders should sit below the briefing');
-    assert.ok(!boundsOverlap(board.bounds, menu.launchDeck.bounds, 2), 'right-rail Pilot Orders must not overlap the launch deck');
-  } else {
-    assert.ok(Math.abs(board.bounds.x - menu.launchDeck.bounds.x) <= 2, 'below-deck Pilot Orders should align with launch deck x');
-    assert.ok(board.bounds.width >= menu.launchDeck.bounds.width - 8, 'below-deck Pilot Orders should be at least as wide as the launch deck');
-    assert.ok(board.bounds.width <= screen.width * 0.38, 'below-deck Pilot Orders should stay in the left command lane');
-    assert.ok(board.bounds.y >= menu.launchDeck.bounds.bottom - 6, 'below-deck Pilot Orders should sit below the launch deck');
-  }
-  const featuredDaily = menu?.launchDeck?.featuredDailySignal?.bounds;
-  if (featuredDaily) {
-    assertInside(featuredDaily, screen, 'Daily Signal feature');
-    assert.ok(featuredDaily.y >= menu.launchDeck.bounds.y - 2, 'Daily Challenge should be integrated into the launch deck');
-    assert.ok(featuredDaily.bottom <= menu.launchDeck.bounds.bottom + 2, 'Daily Challenge should stay inside the launch deck');
-    assert.ok(!boundsOverlap(featuredDaily, board.bounds, 2), 'Daily Signal feature must not overlap Pilot Orders');
-  }
-  assert.ok(
-    board.bounds.bottom <= menu.panel.y + 6,
-    `Pilot Orders should stay above the utility dock board=${JSON.stringify(board.bounds)} dock=${JSON.stringify(menu.panel)}`
-  );
-
-  if (expectedStatus === 'complete') {
-    assert.equal(board.title, 'PILOT ORDERS COMPLETE');
-    assert.equal(board.subtitle, 'All starter combat goals cleared.');
-    assert.equal(board.rows.length, 0, 'complete notice should not show active rows');
-    return;
-  }
-
-  assert.equal(board?.title, 'PILOT ORDERS');
-  assert.match(board?.subtitle || '', /^[0-9,]+ \/ [0-9,]+ COMPLETE$/);
-  assert.doesNotMatch(board?.subtitle || '', /\/ ?50/, 'Pilot Orders board must not reveal the catalog total');
-  assert.match(board?.secondaryStatus || '', /^(ACTIVE|NOT ACTIVE) IN THIS MODE$/);
-  assert.ok(Number(board?.trackProgressRatio) >= 0 && Number(board?.trackProgressRatio) <= 1, 'Pilot Orders should expose a bounded track progress ratio');
-  assert.equal(board?.rows?.length, 3, 'Pilot Orders should show exactly three active rows');
-  assert.equal(new Set(board.rows.map((row) => row.group)).size, board.rows.length, 'Pilot Orders should not show two similar order groups at once');
-  const selectedRows = board.rows.filter((row) => row.selected);
-  assert.equal(selectedRows.length, 1, 'Pilot Orders should expose one selected row for the detail strip');
-  const selectedRow = selectedRows[0];
-  const expectedDetail = ACTIVE_HOW_TO[selectedRow.id];
-  assert.equal(board.selectedOrder?.id, selectedRow.id, 'Pilot Orders selected detail should match the highlighted row');
-  assert.equal(board.selectedOrder?.title, selectedRow.title, 'Pilot Orders selected detail should reuse the visible title');
-  assert.equal(board.selectedOrder?.detail, expectedDetail, 'Pilot Orders selected detail should use the catalog guidance');
-  for (const row of board.rows) {
-    assertInside(row.bounds, screen, `${row.id} row`);
-    assertInside(row.titleBounds, screen, `${row.id} title`);
-    assertInside(row.detailBounds, screen, `${row.id} detail`);
-    assertInside(row.progressBounds, screen, `${row.id} progress`);
-    assertInside(row.progressSlotBounds, screen, `${row.id} progress slot`);
-    assert.ok(!boundsOverlap(row.titleBounds, row.progressBounds, 2), `${row.id} title/progress text should not overlap`);
-    assert.equal(row.detail, ACTIVE_HOW_TO[row.id], `${row.id} should explain its objective inline`);
-    assert.match(row.progress, /^(COMPLETE|[0-9,]+ \/ [0-9,]+)$/, `${row.id} should show clear progress`);
-    assert.match(row.reward || '', /^\+[0-9,]+ XP$/, `${row.id} should show its real Career XP reward`);
-    assert.ok(Number(row.progressRatio) >= 0 && Number(row.progressRatio) <= 1, `${row.id} should expose a bounded visual progress ratio`);
+    assert.equal(expectedDisabledBySetting === true || expectedDisabledBySetting === false, true, 'legacy fixture flag should remain boolean');
   }
 }
 
@@ -1207,49 +1146,15 @@ async function runBrowserSmoke() {
       runContracts: activeState,
       expectedStatus: 'active'
     });
-    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.id), FIRST_THREE);
-    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0 / 10', '0 / 1', '0 / 1,000']);
-    assert.equal(activeProof.state.menu.missionBoard.selectedOrder?.id, 'graze_10', 'fresh Pilot Orders board should explain the first active order by default');
-    assert.equal(activeProof.state.menu.missionBoard.subtitle, '0 / 3 COMPLETE', 'fresh Pilot Orders board should show visible-order completion');
+    assert.equal(activeProof.state.menu.missionBoard.hidden, true, 'fresh Pilot Orders must not crowd the main menu');
+    assert.deepEqual(activeProof.state.menu.missionBoard.rows, [], 'fresh Pilot Orders must not create main-menu rows');
     assert.equal(activeProof.state.menu.menuIcons?.shipHangar?.sublabel, 'UPGRADE & CUSTOMIZE', 'fresh Ship Hangar card should keep its normal subtitle');
-    assert.equal(activeProof.state.menu.missionBoard.title, 'PILOT ORDERS', 'main-menu header should use the requested hierarchy');
-    assert.doesNotMatch(activeProof.state.menu.missionBoard.title || '', /\/50/, 'main-menu Pilot Orders header must keep the catalog total hidden');
-    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.orderSlot), ['01', '02', '03'], 'main-menu rows should expose order numbers without the catalog total');
-    assert.match(activeProof.state.menu.missionBoard.rows[0]?.title || '', /^Graze x10$/, 'main-menu row title should stay compact');
     assert.doesNotMatch(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS/i, 'Run Modes briefing should not duplicate Pilot Orders progress');
-
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    await page.waitForTimeout(120);
-    const keyboardFocusState = await readState(page);
-    assert.equal(keyboardFocusState.menu.missionBoard.focusActive, true, 'Tab should move focus from Mode Details into Pilot Orders');
-    assert.equal(keyboardFocusState.menu.missionBoard.selectedIndex, 0);
-    await page.keyboard.press('ArrowDown');
-    await page.waitForTimeout(80);
-    const keyboardMovedState = await readState(page);
-    assert.equal(keyboardMovedState.menu.missionBoard.selectedIndex, 1, 'keyboard navigation should move between fixed-height order cards');
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(80);
-    const keyboardExitState = await readState(page);
-    assert.equal(keyboardExitState.scene, 'menu', 'activating a focused Pilot Order must not launch a run');
-    assert.equal(keyboardExitState.menu.missionBoard.focusActive, false, 'Enter should return focus from the read-only tracker');
     await page.keyboard.press('KeyI');
     await page.waitForTimeout(120);
     const modeOverlayState = await readState(page);
     assert.equal(modeOverlayState.menu.modeBriefing?.open, true, 'I should open the reusable Mode Briefing overlay');
     await page.keyboard.press('Escape');
-
-    const secondRowBounds = activeProof.state.menu.missionBoard.rows[1]?.bounds;
-    await page.mouse.move(
-      secondRowBounds.x + secondRowBounds.width / 2,
-      secondRowBounds.y + secondRowBounds.height / 2
-    );
-    await page.waitForTimeout(150);
-    const hoverState = await readState(page);
-    assertPilotOrdersLayout(hoverState.menu, 'active');
-    assert.equal(hoverState.menu.missionBoard.selectedOrder?.id, 'boss_breaker', 'hovering a Pilot Order row should update the detail strip');
-    assert.equal(hoverState.menu.missionBoard.rows[1].detail, 'Survive to a boss wave, then destroy the boss.', 'hovered order should remain understandable inline');
-    await page.screenshot({ path: path.join(outputDir, 'pilot-orders-hover-detail-menu.png'), fullPage: true });
 
     const partialProof = await captureMenuProof(page, {
       label: 'pilot-orders-partial-menu',
@@ -1259,11 +1164,7 @@ async function runBrowserSmoke() {
       runContracts: partialState,
       expectedStatus: 'active'
     });
-    assert.deepEqual(
-      partialProof.state.menu.missionBoard.rows.map((row) => row.progress),
-      ['6 / 10', '0 / 1', '437 / 1,000'],
-      'partial Pilot Orders should retain exact canonical progress'
-    );
+    assert.equal(partialProof.state.menu.missionBoard.hidden, true, 'partial progress must not resurrect the main-menu board');
 
     const wideOverrunProof = await captureMenuProof(page, {
       label: 'pilot-orders-wide-overrun-menu',
@@ -1280,19 +1181,7 @@ async function runBrowserSmoke() {
       true,
       'wide mature-profile proof should include the unlocked Overrun card'
     );
-    assert.equal(
-      wideOverrunProof.state.menu.missionBoard.bounds.placement,
-      'rightRail',
-      'Pilot Orders should move beside the six-card deck when it cannot fit below'
-    );
-    assert.equal(
-      boundsOverlap(
-        wideOverrunProof.state.menu.launchDeck.bounds,
-        wideOverrunProof.state.menu.missionBoard.bounds
-      ),
-      false,
-      'wide six-card launch deck and Pilot Orders must not overlap'
-    );
+    assert.equal(wideOverrunProof.state.menu.missionBoard.hidden, true, 'mature profiles must also keep Pilot Orders off the main menu');
 
     await seedMenuProfile(page, activeState, 1);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -1321,6 +1210,7 @@ async function runBrowserSmoke() {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return (state.toast?.active || []).some((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
     }, null, { timeout: 5000 });
+    await page.evaluate(() => window.__game?.scenes?.play?.flushDeferredRunContractProgress?.(true));
     const nonFinalCompletionResult = await page.evaluate(() => {
       const textState = JSON.parse(window.render_game_to_text?.() || '{}');
       const profile = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');
@@ -1392,6 +1282,7 @@ async function runBrowserSmoke() {
       for (let index = 0; index < 10; index += 1) {
         play.emitRunContractEvent('near_miss', { sector: window.__game?.level || 1, streak: index + 1 });
       }
+      play.flushDeferredRunContractProgress?.(true);
       play.setPaused(true);
     });
     await page.waitForFunction(() => {
@@ -1409,11 +1300,15 @@ async function runBrowserSmoke() {
     await page.evaluate(() => window.__game?.scenes?.menu?.openSettingsOverlay?.());
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      return state.overlays?.settings === true && state.settingsOverlay?.display?.showPilotOrders === true;
+      return state.overlays?.settings === true;
     }, null, { timeout: 10000 });
     const settingsState = await readState(page);
-    assert.equal(settingsState.settingsOverlay?.display?.showPilotOrdersLabel, 'ON', 'settings toggle should default on for unfinished fresh players');
-    const settingsScreenshot = path.join(outputDir, 'pilot-orders-settings-toggle.png');
+    assert.equal(
+      (settingsState.settingsOverlay?.visibleControls || []).some((control) => control?.id === 'show_pilot_orders'),
+      false,
+      'Settings must not expose a retired main-menu Pilot Orders toggle'
+    );
+    const settingsScreenshot = path.join(outputDir, 'pilot-orders-settings-clean.png');
     await page.screenshot({ path: settingsScreenshot, fullPage: true });
     await page.evaluate(() => window.__game?.scenes?.menu?.closeSettingsOverlay?.());
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').overlays?.settings !== true, null, { timeout: 10000 });
@@ -1466,10 +1361,7 @@ async function runBrowserSmoke() {
       runContracts: completedOrderState,
       expectedStatus: 'active'
     });
-    assert.equal(completedProof.state.menu.missionBoard.rows[0].progress, 'COMPLETE');
-    assert.equal(completedProof.state.menu.missionBoard.rows[0].progressRatio, 1, 'completed Pilot Order row should expose a full progress meter');
-    assert.equal(completedProof.state.menu.missionBoard.selectedOrder?.id, 'boss_breaker', 'completed active rows should default the detail strip to the next unfinished order');
-    assert.equal(completedProof.state.menu.missionBoard.subtitle, '1 / 3 COMPLETE', 'completed active rows should update the visible completion count');
+    assert.equal(completedProof.state.menu.missionBoard.hidden, true, 'completed order progress must not resurrect the main-menu board');
     assert.equal(completedProof.state.menu.menuIcons?.shipHangar?.sublabel, 'PILOT ORDERS // COMPLETED: 1', 'Ship Hangar dock card should advertise completed orders without revealing the endpoint');
 
     const completeProof = await captureMenuProof(page, {
@@ -1480,7 +1372,7 @@ async function runBrowserSmoke() {
       runContracts: completeNoticeState,
       expectedStatus: 'complete'
     });
-    assert.equal(completeProof.state.menu.missionBoard.completionNoticePending, true, 'complete notice should wait to be acknowledged until visible');
+    assert.equal(completeProof.state.menu.missionBoard.hidden, true, 'completed catalog must stay off the main menu');
 
     const hiddenProof = await captureMenuProof(page, {
       label: 'pilot-orders-hidden-menu',
@@ -1551,7 +1443,7 @@ async function runBrowserSmoke() {
       expectedStatus: 'hidden',
       waitMs: 4400
     });
-    assert.equal(autoHiddenProof.state.menu.missionBoard.completionNoticeSeen, true, 'visible completion notice should be marked seen before hiding');
+    assert.equal(autoHiddenProof.state.menu.missionBoard.hidden, true, 'main-menu removal must remain stable after completion');
 
     await page.setViewportSize({ width: 1280, height: 720 });
     await seedMenuProfile(page, activeState, 1, { hangarPatch: { totalRuns: 0 } });
@@ -1565,7 +1457,7 @@ async function runBrowserSmoke() {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return window.__game?.scenes?.play?.introActive === false
         && (state.toast?.active || []).some((toast) => toast.type === 'firstRunControls');
-    }, null, { timeout: 10000 });
+    }, null, { timeout: 15000 });
     await page.waitForTimeout(250);
     const firstRunNudgeState = await readState(page);
     const firstRunNudge = (firstRunNudgeState.toast?.active || []).find((toast) => toast.type === 'firstRunControls');
@@ -1630,7 +1522,7 @@ async function runBrowserSmoke() {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return window.__game?.scenes?.play?.introActive === false
         && (state.toast?.active || []).some((toast) => toast.type === 'firstRunControls');
-    }, null, { timeout: 10000 });
+    }, null, { timeout: 15000 });
     await page.waitForTimeout(250);
     const controllerFirstRunState = await readState(page);
     const controllerFirstRunNudge = (controllerFirstRunState.toast?.active || []).find((toast) => toast.type === 'firstRunControls');
@@ -1672,21 +1564,30 @@ async function runBrowserSmoke() {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return state.shipIntro?.complete === true && state.shipIntro?.returningPilot === true;
     }, null, { timeout: 7000 });
-    await page.waitForTimeout(2400);
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return (state.toast?.active || []).some((toast) => toast.type === 'runContractStart');
+    }, null, { timeout: 7000 });
+    await page.waitForTimeout(250);
     const startNudgeState = await readState(page);
-    assert.equal(
-      (startNudgeState.toast?.active || []).some((toast) => toast.type === 'runContractStart'),
-      false,
-      'returning runs should not cover opening combat with a repeated Pilot Orders banner'
-    );
+    const startOrderNudge = (startNudgeState.toast?.active || []).find((toast) => toast.type === 'runContractStart');
+    assert.match(startOrderNudge?.message || '', /^PILOT ORDERS: /, 'returning ranked runs should surface a concise contextual Pilot Orders line');
+    const startOrderTitles = String(startOrderNudge?.message || '').replace(/^PILOT ORDERS: /, '').split(' · ').filter(Boolean);
+    assert.ok(startOrderTitles.length >= 1 && startOrderTitles.length <= 2, 'run-start Pilot Orders line should list one or two relevant orders');
+    assert.equal(startOrderNudge?.slot, 'corner', 'run-start Pilot Orders line should stay in an edge-safe notification lane');
+    assert.ok(startOrderNudge?.duration >= 4200, 'run-start Pilot Orders line should remain readable without lingering');
     assert.equal(
       (startNudgeState.toast?.active || []).some((toast) => toast.type === 'level_up' && toast.slot === 'corner'),
       false,
       'returning runs should not stack randomized opening quips over combat'
     );
     assert.equal(startNudgeState.shipIntro?.timing?.totalMs, 1600, 'returning desktop runs should use the shorter ship intro');
-    const startNudgeScreenshot = path.join(outputDir, 'pilot-orders-returning-run-clean-start.png');
+    const startNudgeScreenshot = path.join(outputDir, 'pilot-orders-returning-run-context.png');
     await page.screenshot({ path: startNudgeScreenshot, fullPage: true });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return (state.toast?.active || []).length === 0;
+    }, null, { timeout: 10000 });
 
     await page.evaluate(() => {
       const play = window.__game?.scenes?.play;
@@ -1708,7 +1609,8 @@ async function runBrowserSmoke() {
     assert.equal(progressSupport?.progress, 75, 'late support-hunter order should inherit 50 career defeats and show new progress');
     assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.progress, 75, 'partial Pilot Orders progress should be exposed for run report state');
     assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.orderSlot, '50', 'partial Pilot Orders progress should expose the order number without the catalog total');
-    const progressToast = progressResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER PROGRESS'));
+    const progressToast = progressResult.toastActive.find((toast) => toast.type === 'runContractProgress')
+      || progressResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER PROGRESS'));
     assert.equal(progressToast?.slot, 'top', 'progress toast should use the top queue');
     assert.equal(progressToast?.type, 'runContractProgress', 'progress toast should expose the runContractProgress type');
     assert.match(progressToast?.message || '', /PILOT ORDERS COMPLETED: 49/, 'progress toast should include the completed count without revealing the endpoint');
@@ -1744,6 +1646,7 @@ async function runBrowserSmoke() {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return (state.toast?.active || []).some((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
     }, null, { timeout: 5000 });
+    await page.evaluate(() => window.__game?.scenes?.play?.flushDeferredRunContractProgress?.(true));
     const completionResult = await page.evaluate(() => {
       const textState = JSON.parse(window.render_game_to_text?.() || '{}');
       const profile = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');

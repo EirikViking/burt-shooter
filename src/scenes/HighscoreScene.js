@@ -24,7 +24,7 @@ import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, res
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const MOBILE_LEADERBOARD_VISIBLE_LIMIT = 10;
-const DESKTOP_TWO_COLUMN_MIN_WIDTH = 980;
+const DESKTOP_TWO_COLUMN_MIN_WIDTH = 1600;
 
 function debugBounds(displayObject) {
   if (!displayObject?.getBounds) return null;
@@ -1052,7 +1052,7 @@ export class HighscoreScene {
       const displayLimit = desktopTwoColumn ? LEADERBOARD_DISPLAY_LIMIT : MOBILE_LEADERBOARD_VISIBLE_LIMIT;
       const visibleEntryCount = Math.min(displayLimit, entriesToDisplay.length || displayLimit);
       const columnCount = desktopTwoColumn
-        ? Math.min(4, Math.max(2, Math.ceil(visibleEntryCount / 10)))
+        ? 2
         : 1;
       const compactDesktopGrid = desktopTwoColumn && columnCount >= 3;
       entriesToDisplay = entriesToDisplay.slice(0, displayLimit);
@@ -1068,8 +1068,8 @@ export class HighscoreScene {
       const rowsBaseY = startY + headerHeight + (isMobile ? 4 : 7);
       const rowsBottom = Math.min(metrics.rowsBottom || metrics.bottom - 48, metrics.bottom - (isMobile ? 44 : 54));
       const availableRowsHeight = Math.max(120, rowsBottom - rowsBaseY);
-      const minRowHeight = isMobile ? 45 : 36;
-      const maxRowHeight = isMobile ? 52 : (layout.height >= 880 ? 56 : 42);
+      const minRowHeight = isMobile ? 54 : 58;
+      const maxRowHeight = isMobile ? 62 : (layout.height >= 880 ? 68 : 62);
       const visibleTargetRows = Math.max(1, Math.min(rowsPerColumnTarget, entriesToDisplay.length || rowsPerColumnTarget));
       const rowSpace = Math.max(minRowHeight, availableRowsHeight / visibleTargetRows);
       const rowHeight = Math.max(minRowHeight, Math.min(maxRowHeight, rowSpace));
@@ -1077,7 +1077,7 @@ export class HighscoreScene {
       const maxRows = Math.max(4, Math.min(displayLimit, entriesToDisplay.length, maxRowsPerColumn * columnCount));
       const rowStyle = {
         fontFamily: FONT_ARCADE,
-        fontSize: isMobile ? 13 : (compactDesktopGrid ? (layout.height < 820 ? 9 : 10) : (layout.height < 820 ? 12 : 14)),
+        fontSize: isMobile ? 15 : (compactDesktopGrid ? 15 : (layout.height < 820 ? 15 : 17)),
         fill: '#e8fcff',
         stroke: '#00131b',
         strokeThickness: 2
@@ -1086,7 +1086,7 @@ export class HighscoreScene {
       const headerStyle = {
         ...rowStyle,
         fill: '#ffdf8a',
-        fontSize: isMobile ? 9 : (compactDesktopGrid ? 7 : (layout.height < 820 ? 9 : 10)),
+        fontSize: isMobile ? 14 : (compactDesktopGrid ? 14 : (layout.height < 820 ? 14 : 15)),
         strokeThickness: 2
       };
 
@@ -1284,7 +1284,7 @@ export class HighscoreScene {
         const nameText = createText(displayName, nameStyle);
         const rankNameText = createText(rankTitle, {
           fontFamily: FONT_ARCADE,
-          fontSize: Math.max(isMobile ? 8 : (compactDesktopGrid ? 6 : 8), rowStyle.fontSize - (isMobile ? 4 : (compactDesktopGrid ? 3 : 4))),
+          fontSize: Math.max(isMobile ? 13 : 15, rowStyle.fontSize - (isMobile ? 2 : 1)),
           fill: isTop3 ? '#ffefaa' : '#9fd7e3',
           stroke: '#00131b',
           strokeThickness: 1
@@ -1296,7 +1296,7 @@ export class HighscoreScene {
         });
         const scoreLabel = createText(index === 0 ? 'LEAD' : 'SCORE', {
           fontFamily: FONT_ARCADE,
-          fontSize: Math.max(compactDesktopGrid ? 6 : 8, rowStyle.fontSize - (isMobile ? 5 : (compactDesktopGrid ? 3 : 4))),
+          fontSize: Math.max(13, rowStyle.fontSize - (isMobile ? 2 : 1)),
           fill: isTop3 ? '#ffe7a8' : '#6fb6c8',
           stroke: '#00131b',
           strokeThickness: 1
@@ -1305,7 +1305,7 @@ export class HighscoreScene {
         const levelText = showLevelColumn
           ? createText(levelDisplay, {
               ...rankStyle,
-              fontSize: Math.max(10, rowStyle.fontSize - (isMobile ? 3 : 2))
+              fontSize: Math.max(13, rowStyle.fontSize - (isMobile ? 2 : 1))
             })
           : null;
 
@@ -1314,14 +1314,14 @@ export class HighscoreScene {
         rankText.y = rowMidY - 2;
         nameText.x = columns.name;
         nameText.y = primaryY;
-        fitTextToWidth(nameText, nameBlockWidth, layout.isMobile ? 9 : (compactDesktopGrid ? 7 : 11));
+        fitTextToWidth(nameText, nameBlockWidth, layout.isMobile ? 11 : 13);
 
         rankNameText.x = columns.name;
         rankNameText.y = Math.max(
           nameText.y + nameText.height + 1,
           rowY + rowHeight - rankNameText.height - (isMobile ? 8 : 5)
         );
-        fitTextToWidth(rankNameText, nameBlockWidth, isMobile ? 7 : (compactDesktopGrid ? 6 : 9));
+        fitTextToWidth(rankNameText, nameBlockWidth, isMobile ? 10 : 11);
 
         scoreText.x = columns.score;
         scoreText.y = primaryY - 1;
@@ -1332,12 +1332,12 @@ export class HighscoreScene {
         );
         scoreText.anchor.set(1, 0);
         scoreLabel.anchor.set(1, 0);
-        fitTextToWidth(scoreText, scoreBlockWidth, isMobile ? 10 : (compactDesktopGrid ? 7 : 12));
+        fitTextToWidth(scoreText, scoreBlockWidth, isMobile ? 11 : 13);
         if (levelText) {
           levelText.x = columns.level;
           levelText.y = rowMidY;
           levelText.anchor.set(0.5);
-          fitTextToWidth(levelText, levelBlockWidth, isMobile ? 8 : (compactDesktopGrid ? 7 : 9));
+          fitTextToWidth(levelText, levelBlockWidth, isMobile ? 10 : 11);
 
           const levelPill = new PIXI.Graphics();
           const pillWidth = isMobile ? 38 : (compactDesktopGrid ? 30 : 46);
@@ -1809,12 +1809,12 @@ export class HighscoreScene {
     this.statsText.text = layout.isMobile
       ? `TFG // ${translatedSyncLabel} // ${countLabel} // ${bestLabel} ${topScore}`
       : `TINYFOUNDRY GAMES // ${translatedSyncLabel} // ${countLabel} // ${bestLabel} ${topScore}`;
-      this.statsText.style.fontSize = layout.isMobile ? 9 : 12;
+      this.statsText.style.fontSize = layout.isMobile ? 12 : 14;
     this.statsText.anchor.set(0, 0.5);
     this.statsText.style.align = 'left';
     this.statsText.x = x;
     this.statsText.y = y + deckHeight / 2;
-    fitTextToWidth(this.statsText, deckWidth, layout.isMobile ? 7 : 9);
+    fitTextToWidth(this.statsText, deckWidth, layout.isMobile ? 10 : 12);
   }
 
   startAnimationLoop() {

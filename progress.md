@@ -2986,3 +2986,48 @@ Original request: continue improving the current non-Unity game and choose three
 - Deterministic lifecycle coverage passes all ten regular profiles, all five signature profiles, both phase thresholds, armor/finish/refuel/support/respawn/long-frame interruptions, queued and active cleanup, idempotence, and normal/experimental isolation.
 - `build:current`, `check:boss-telegraph`, `check:boss-phase-variety`, `check:boss-special-hazards`, `check:notification-orchestration`, `check:i18n`, and all-eight-language `check:i18n-ui` pass. The generated boss-warning, phase, special-hazard, and notification captures were visually inspected.
 - No player-facing copy, balance, attack cadence, experimental design, Steamworks state, package, upload, push, deployment, or publication changed.
+
+## 2026-08-11 Sector 100 private test deployment
+
+- With explicit authorization, source commit `14b9122` was packaged and uploaded only to `sector-continue-test` as BuildID `24667833`, depot manifest `7731640510904034748`.
+- The required release-line, SDK readiness, packaging, native-runtime staging, package-runtime integrity, payload manifest, and VDF gates passed. Per explicit instruction, no smoke or performance tests were run.
+- Fresh Steam app-info showed public/default had independently reached prior BuildID `24667008` before this upload; it remained on `24667008` afterward. `test-build` remained on `23782673`.
+- Receipt and rollback details: `release/steamworks/steam-upload-evidence-20260811-build24667833.md`. No metadata, achievements, leaderboards, Cloud data, store content, public event, Git push, or merge changed.
+
+## 2026-08-11 Sector 100 authored-wave pressure consumption
+
+- Player testing correctly showed that commit `14b9122` fixed only the stored manager difficulty, not the opening gameplay. The installed Steam manifest was confirmed at BuildID `24667833` / depot manifest `7731640510904034748`; installed executable and `app.asar` hashes matched the local payload exactly, and no Nova Swarm process was running.
+- The exact requested three-life Endurance/Tactical/bounded-Pierce/Pulse fixture reproduced the issue. Before this fix, Sector 100 and normal Sector 1 each planned 59 pre-boss enemies, while Sector 100's authored beats consumed weaker average fire scalar (`0.8208` vs `1.2538`), slower fire-delay multiplier (`1.386` vs `1.0746`), and fewer hostile projectiles in the fixed observation windows (`65` vs `75`).
+- Root cause: the authored high-sector shaper calculated and attached Sector 100's existing `1.4` pressure budget as metadata but did not apply it to counts, entry cadence, or attack timing. Sector 101 is not an authored protocol sector, so it resumed generated deep-overrun pressure after the boss.
+- The authored shaper now consumes that existing pressure budget for wave counts, entry cadence, firing scalar, and firing delay. No new balance constants, archetypes, formations, tactics, rewards, localization, or normal Sector 1 behavior changed.
+- The single focused installed-Chrome comparison passes. Sector 100 now plans 82 enemies versus Sector 1's 58, cadence averages `1.3888` versus `1.2344`, spawned enemies average `249.7` versus `364.94` firing delay, movement speed averages `0.5172` versus `0.4566`, and every wave consumes the `deep_overrun` band plus the existing 1800-second run-pressure profile. Scripted all-projectile clearance completed every wave with zero forced removals; human feel verification remains pending.
+- No broad suite, merge, push, package, deploy, Steam mutation, or authoritative D: checkout access was performed.
+
+## 2026-08-11 Sector 100 authored-pressure private Steam deployment
+
+- With explicit authorization, source commit `ef8422e` was rebuilt and uploaded only to `sector-continue-test` as BuildID `24668290`, depot manifest `2054405791691974823`, with build stamp `v2026-08-11_10-29-26`.
+- The release-line, focused production build, SDK readiness, Windows packaging, native-runtime staging, package-runtime integrity, payload manifest, and explicit test-branch VDF gates passed. No smoke, performance, or broad gameplay suites were run.
+- The payload contains 417 files totaling 1,177,769,237 bytes; its manifest SHA-256 is `c6b2a7d7a1ef2302e7c7439cb13a900cfc21c31044b1f173fe0587e7a3a4523e`, unchanged before and after upload.
+- Fresh authenticated app-info confirmed public/default remained on BuildID `24667008`, depot manifest `3742988628549656661`; `test-build` remained on BuildID `23782673`, depot manifest `2965226270349795820`.
+- Receipt and rollback details: `release/steamworks/steam-upload-evidence-20260811-build24668290.md`. No Steamworks metadata, achievements, leaderboards, Cloud data, store content, public event, Git push, merge, or authoritative D: checkout change occurred.
+
+## 2026-08-11 Authored pre-boss danger-pressure parity
+
+- Player report from the exact Standard Sector 75/Tactical/bounded-Pierce/three-life/Pulse fixture confirmed the opening five authored beats remained calm while the subsequent generated path felt like late-game pressure.
+- The focused installed-Chrome reproduction proved the generated Sector 76 path scheduled `deep_overrun` danger moments while Sector 75's authored protocol path explicitly skipped them. The stored difficulty and run-pressure director values were already correct.
+- Authored protocol waves now consume the existing danger-moment density, cadence, attack, projectile, threat-budget, and elite pressure without changing their authored beat names, formations, tactics, protocol identity, global balance values, rewards, or localization.
+- The single focused runtime comparison passes. Sector 75 retained all five authored formations; its two scheduled danger beats spawned their existing elite pressure, produced 48 and 45 hostile projectiles in the fixed 2.2-second windows, consumed the `deep_overrun` band, and completed with zero forced removals. Sector 76 continued using the generated path.
+- The generic web-game helper was attempted after the change but its separate `chromium_headless_shell-1208` executable remains absent; no dependency or browser installation was performed. The repository-native installed-Chrome test and inspected screenshot supplied the focused runtime evidence.
+- Human feel verification remains pending. No merge, push, package, deploy, Steam mutation, or authoritative D: checkout access occurred during the fix/validation slice.
+
+## 2026-08-12 Menu readability and hierarchy redesign
+
+- Verified this direct D: checkout is on `codex/menu-readability-integration-20260812` at merge baseline `75f69b8`, with public-build source `671c985` present in its ancestry. The protected authoritative checkout remains untouched.
+- ChatGPT Pro reviewed the complete live menu set and the first-run design iterations. It approved a direction that preserves the original art while reducing persistent chrome, establishing a minimum readable type hierarchy, keeping Tactical/Pure functionality, removing Pilot Orders from the main menu, and retaining the full archive in the Hangar.
+- Added shared readability tokens and a body-font stack that reserves Orbitron for display/action roles. Settings, How To Play, Mode Details, Hangar, Ship Details, Leaderboard, Threat Codex, Achievements, Game Over, and relevant HUD copy now use larger type, safer spacing, clearer focus, and less compressed rows/panels.
+- Fresh profiles now open on a cyan `START PLAYING` action with a generated up-right arrow and safely framed `NEW PILOT — START HERE` cue. The CTA receives initial action focus, the five modes remain discoverable, utility order is `EXIT GAME | HOW TO PLAY | MUSIC: ON`, and reduced motion keeps the cue static.
+- Permanent Pilot Orders no longer render or reserve space on the main menu, regardless of the legacy preference. First-ever runs prioritize the controls lesson; returning ranked runs receive a compact 4.6-second right-edge line with one or two relevant Orders. The full paginated archive, pause/run-report progress, and completion rewards remain intact.
+- Automated 1920x1080 and 1280x720 captures measure at least 12 px text/frame clearance, strict utility alignment, no Orders board, and zero page errors. Final native evidence is `D:/vibe-coding-e/nova-swarm-menu-audit-20260812/implementation-v8/01-main-menu.png`; contextual evidence is `test-results/run-contracts-2026-08-12T16-42-25-801Z/pilot-orders-active-menu.png`.
+- ChatGPT Pro returned `APPROVED 100%` for the native first-run menu. It rejected the first central Orders banner, then returned `APPROVED 100%` after the banner became a smaller unframed right-edge toast outside the firing lane.
+- The focused Pilot Orders regression passes main-menu absence across fresh, partial, veteran, preference, and completed profiles; first-run keyboard/controller controls; contextual returning-run presentation; Hangar archive paging; pause and report progress; persistence; and completion rewards.
+- No package, deploy, upload, or Steamworks mutation occurred. The protected checkout appeared only in the repository-wide worktree inventory and was not entered or modified.

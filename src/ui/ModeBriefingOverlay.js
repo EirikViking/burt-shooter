@@ -102,12 +102,14 @@ export class ModeBriefingOverlay {
     const compact = width < 1450 || height < 820;
     const veryShort = height < 700;
     const panelWidth = Math.min(1080, Math.round(width * (compact ? 0.75 : 0.72)));
-    const panelHeight = Math.min(Math.round(height * (veryShort ? 0.86 : 0.8)), 820);
+    // The briefing is a decision aid, not a full-screen document. Keep it
+    // content-driven so the rules never float above a dead lower half.
+    const panelHeight = Math.min(Math.round(height * (veryShort ? 0.88 : 0.58)), 620);
     const panelX = Math.round((width - panelWidth) / 2);
     const panelY = Math.round((height - panelHeight) / 2);
     const pad = compact ? 24 : 32;
     const hasVariants = Array.isArray(this.data?.variants) && this.data.variants.length > 1;
-    const headerHeight = hasVariants ? (compact ? 126 : 142) : (compact ? 92 : 108);
+    const headerHeight = hasVariants ? (compact ? 136 : 152) : (compact ? 100 : 116);
     const footerHeight = compact ? 58 : 68;
     const contentTop = panelY + headerHeight;
     const contentBottom = panelY + panelHeight - footerHeight;
@@ -140,7 +142,7 @@ export class ModeBriefingOverlay {
 
     const eyebrow = createText(translateText('MODE BRIEFING'), {
       fontFamily: FONT_DISPLAY,
-      fontSize: compact ? 13 : 15,
+      fontSize: compact ? 15 : 16,
       fontWeight: '900',
       fill: '#7fffd8',
       letterSpacing: 1.4
@@ -184,12 +186,12 @@ export class ModeBriefingOverlay {
     let cursorY = 4;
     const intro = createText(translateText(this.data?.details?.intro || this.data?.summary?.join(' ') || ''), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 15 : 18,
+      fontSize: compact ? 17 : 19,
       fontWeight: '600',
       fill: '#e8f8ff',
       wordWrap: true,
       wordWrapWidth: contentWidth,
-      lineHeight: compact ? 21 : 26
+      lineHeight: compact ? 23 : 27
     });
     intro.position.set(0, cursorY);
     this.content.addChild(intro);
@@ -219,8 +221,8 @@ export class ModeBriefingOverlay {
     this.maxScrollY = Math.max(0, cursorY - contentHeight + 4);
     this.applyScroll();
 
-    const closeWidth = compact ? 190 : 220;
-    const closeHeight = compact ? 40 : 46;
+    const closeWidth = compact ? 200 : 230;
+    const closeHeight = compact ? 44 : 48;
     const close = this.createButton(
       `${translateText('BACK')}  ${this.getBackGlyph()}`,
       panelX + panelWidth / 2,
@@ -266,7 +268,7 @@ export class ModeBriefingOverlay {
       const bg = new PIXI.Graphics();
       const label = createText(translateText(variant.label), {
         fontFamily: FONT_DISPLAY,
-        fontSize: Math.max(11, Math.round(height * 0.35)),
+        fontSize: Math.max(14, Math.round(height * 0.4)),
         fontWeight: '900',
         fill: variant.selected ? '#ffffff' : '#a8dbe7',
         align: 'center'
@@ -290,7 +292,7 @@ export class ModeBriefingOverlay {
     if (!label) return null;
     const text = createText(translateText(label), {
       fontFamily: FONT_DISPLAY,
-      fontSize: compact ? 12 : 14,
+      fontSize: compact ? 14 : 16,
       fontWeight: '900',
       fill: '#ffe7b0'
     });
@@ -314,10 +316,10 @@ export class ModeBriefingOverlay {
   }
 
   getSectionHeight(section, compact) {
-    const base = compact ? 42 : 48;
+    const base = compact ? 46 : 52;
     if (section.upgrades?.length) return compact ? 150 : 174;
     if (section.tiles?.length) return compact ? 104 : 118;
-    if (section.items?.length) return base + section.items.length * (compact ? 25 : 29);
+    if (section.items?.length) return base + section.items.length * (compact ? 28 : 32);
     return compact ? 82 : 94;
   }
 
@@ -337,7 +339,7 @@ export class ModeBriefingOverlay {
 
     const title = createText(translateText(section.title || ''), {
       fontFamily: FONT_DISPLAY,
-      fontSize: compact ? 12 : 14,
+      fontSize: compact ? 16 : 18,
       fontWeight: '900',
       fill: section.tone === 'warning' ? '#ffbd91' : '#7fffd8',
       letterSpacing: 0.7
@@ -359,7 +361,7 @@ export class ModeBriefingOverlay {
         container.addChild(tileBg);
         const label = createText(translateText(tile.label || ''), {
           fontFamily: FONT_DISPLAY,
-          fontSize: compact ? 10 : 11,
+          fontSize: compact ? 14 : 15,
           fontWeight: '900',
           fill: '#8fa9b8'
         });
@@ -367,7 +369,7 @@ export class ModeBriefingOverlay {
         fitText(label, tileWidth - 18, 0.62);
         const value = createText(translateText(tile.value || ''), {
           fontFamily: FONT_DISPLAY,
-          fontSize: compact ? 14 : 17,
+          fontSize: compact ? 18 : 20,
           fontWeight: '900',
           fill: tile.tone === 'warning' ? '#ffb08a' : '#f3fbff'
         });
@@ -379,7 +381,7 @@ export class ModeBriefingOverlay {
       this.createLoadout(section, container, width, bodyTop, compact);
     } else if (section.items?.length) {
       section.items.forEach((item, index) => {
-        const bulletY = bodyTop + index * (compact ? 25 : 29);
+        const bulletY = bodyTop + index * (compact ? 28 : 32);
         const marker = new PIXI.Sprite(GameAssets.getMicroSignalTexture('contact') || PIXI.Texture.EMPTY);
         marker.anchor.set(0.5);
         marker.position.set(18, bulletY + (compact ? 7 : 8));
@@ -396,12 +398,12 @@ export class ModeBriefingOverlay {
         }).catch(() => {});
         const line = createText(translateText(item), {
           fontFamily: FONT_BODY,
-          fontSize: compact ? 14 : 16,
+          fontSize: compact ? 17 : 18,
           fontWeight: '600',
           fill: section.tone === 'warning' ? '#ffd9c7' : '#e2f5ff',
           wordWrap: true,
           wordWrapWidth: width - 42,
-          lineHeight: compact ? 18 : 22
+          lineHeight: compact ? 21 : 23
         });
         line.position.set(29, bulletY);
         container.addChild(marker, line);
@@ -409,7 +411,7 @@ export class ModeBriefingOverlay {
     } else if (section.body) {
       const body = createText(translateText(section.body), {
         fontFamily: FONT_BODY,
-        fontSize: compact ? 14 : 16,
+        fontSize: compact ? 17 : 18,
         fontWeight: '600',
         fill: '#e2f5ff',
         wordWrap: true,
@@ -447,7 +449,7 @@ export class ModeBriefingOverlay {
       }
       const label = createText(translateText(upgrade.name), {
         fontFamily: FONT_DISPLAY,
-        fontSize: compact ? 10 : 12,
+        fontSize: compact ? 13 : 15,
         fontWeight: '900',
         fill: '#f4fbff',
         align: 'left'
@@ -473,7 +475,7 @@ export class ModeBriefingOverlay {
 
     const explanation = createText(translateText(section.body || ''), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 13 : 15,
+      fontSize: compact ? 15 : 17,
       fontWeight: '600',
       fill: '#d9eef7',
       wordWrap: true,
@@ -485,7 +487,7 @@ export class ModeBriefingOverlay {
 
     this.loadoutTooltip = createText('', {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 12 : 14,
+      fontSize: compact ? 14 : 16,
       fontWeight: '600',
       fill: '#ffe7aa',
       wordWrap: true,
@@ -509,7 +511,7 @@ export class ModeBriefingOverlay {
     const bg = new PIXI.Graphics();
     const text = createText(label, {
       fontFamily: FONT_DISPLAY,
-      fontSize: 15,
+      fontSize: 16,
       fontWeight: '900',
       fill: '#ffffff'
     });

@@ -15,19 +15,19 @@ const MOBILE_LAYOUT = Object.freeze({
 });
 
 const DESKTOP_LAYOUT = Object.freeze({
-  width: 178,
-  height: 31,
-  medalStartX: 13,
-  medalSpacing: 16,
-  medalRadius: 5.2,
-  labelX: 62,
-  labelMaxWidth: 55,
-  countRightX: 148,
-  countMaxWidth: 28,
-  dividerX: 155,
-  identityX: 166,
-  identityRadius: 6,
-  identityExtent: 9.2
+  width: 224,
+  height: 38,
+  medalStartX: 17,
+  medalSpacing: 20,
+  medalRadius: 6.4,
+  labelX: 78,
+  labelMaxWidth: 68,
+  countRightX: 184,
+  countMaxWidth: 32,
+  dividerX: 193,
+  identityX: 210,
+  identityRadius: 7,
+  identityExtent: 10.5
 });
 
 export function getShipMasteryBadgeLayout({ mobile = false } = {}) {

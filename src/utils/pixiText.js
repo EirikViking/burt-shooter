@@ -2,8 +2,8 @@ import * as PIXI from 'pixi.js';
 import { getCurrentLayout } from '../ui/responsiveLayout.js';
 
 export const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
-export const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
-export const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
+export const FONT_BODY = 'Rajdhani, Bahnschrift, Segoe UI, Arial, sans-serif';
+export const FONT_MONO = 'Rajdhani, Bahnschrift, Segoe UI, monospace';
 
 function normalizeFontFamily(fontFamily) {
   const family = String(fontFamily || '').trim();

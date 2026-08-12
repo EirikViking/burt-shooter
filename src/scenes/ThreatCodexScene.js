@@ -236,12 +236,14 @@ function getCodexRowCountText(entry, stateItem, labels, discovered) {
 
 function getCategoryLayout(width, height, compact) {
   const count = THREAT_CODEX_CATEGORIES.length;
-  const twoRows = count > 7 && (width < 1450 || height < 780);
+  // Twelve categories remain directly discoverable, but are never squeezed
+  // into a single unreadable strip.
+  const twoRows = count > 7;
   const rows = twoRows ? 2 : 1;
   const columns = twoRows ? Math.ceil(count / 2) : count;
-  const buttonH = twoRows ? (height < 740 ? 44 : 46) : compact ? 44 : 52;
-  const rowGap = twoRows ? 6 : 0;
-  const startY = twoRows ? (height < 740 ? 88 : 96) : compact ? 92 : 112;
+  const buttonH = twoRows ? (height < 740 ? 58 : 66) : compact ? 58 : 66;
+  const rowGap = twoRows ? 8 : 0;
+  const startY = twoRows ? (height < 740 ? 92 : 104) : compact ? 96 : 112;
   const bottom = startY + rows * buttonH + (rows - 1) * rowGap;
   return {
     twoRows,
@@ -812,16 +814,16 @@ export class ThreatCodexScene {
       button.addChild(bg);
 
       const labelText = addText(button, localize(category.label.toUpperCase()), {
-        fontSize: categoryLayout.twoRows ? (height < 740 ? 9 : 10) : compact ? 10 : 12,
+        fontSize: categoryLayout.twoRows ? (height < 740 ? 14 : 16) : compact ? 15 : 17,
         fontWeight: '900',
         fill: selected ? '#ffffff' : '#b9f7ff',
         align: 'center',
         wordWrap: true,
         wordWrapWidth: buttonWidth - 20
-      }, (buttonWidth - 7) / 2, categoryLayout.twoRows ? 6 : compact ? 8 : 8, { x: 0.5, y: 0 });
+      }, (buttonWidth - 7) / 2, categoryLayout.twoRows ? 7 : compact ? 8 : 8, { x: 0.5, y: 0 });
 
       const countText = addText(button, `${counts.discovered}/${counts.total}`, {
-        fontSize: categoryLayout.twoRows ? 9 : compact ? 10 : 12,
+        fontSize: categoryLayout.twoRows ? 14 : compact ? 14 : 15,
         fontWeight: '800',
         fill: selected ? colorCss(accent) : '#6f879a',
         align: 'center'
@@ -870,7 +872,7 @@ export class ThreatCodexScene {
     const listX = width * 0.05;
     const listY = categoryLayout.listY;
     const listW = compact ? width * 0.39 : Math.min(520, width * 0.38);
-    const rowH = compact ? 48 : 56;
+    const rowH = compact ? 68 : 78;
     const maxRows = Math.max(6, Math.floor((height - listY - 82) / rowH));
     const visibleRows = Math.min(maxRows, entries.length);
     const start = Math.max(0, Math.min(this.entryIndex - Math.floor(maxRows / 2), Math.max(0, entries.length - maxRows)));
@@ -938,18 +940,18 @@ export class ThreatCodexScene {
 
       const label = discovered ? entry.name.toUpperCase() : localize('UNKNOWN SIGNAL');
       addText(row, label, {
-        fontSize: compact ? 13 : 16,
+        fontSize: compact ? 17 : 19,
         fontWeight: '900',
         fill: discovered ? '#f3fdff' : '#8fa6b8',
         wordWrap: true,
         breakWords: true,
         wordWrapWidth: listW - 118,
-        lineHeight: compact ? 14 : 17
+        lineHeight: compact ? 18 : 20
       }, rowH - 2, compact ? 9 : 10);
 
       const role = discovered ? String(entry.role || entry.rarity || '').toUpperCase() : String(category.label || '').toUpperCase();
       addText(row, role, {
-        fontSize: compact ? 9 : 10,
+        fontSize: compact ? 15 : 16,
         fontWeight: '800',
         fill: discovered ? colorCss(accent) : '#53697a',
         wordWrap: true,
@@ -960,7 +962,7 @@ export class ThreatCodexScene {
       const labels = getCodexStatLabels(category.id);
       const countText = getCodexRowCountText(entry, stateItem, labels, discovered);
       addText(row, countText, {
-        fontSize: compact ? 12 : 14,
+        fontSize: compact ? 15 : 17,
         fontWeight: '900',
         fill: discovered ? '#ffffff' : '#4e6374'
       }, listW - 14, (rowH - 8) / 2, { x: 1, y: 0.5 });
@@ -1009,7 +1011,7 @@ export class ThreatCodexScene {
     this.container.addChild(scroll);
 
     const count = addText(this.container, `${this.entryIndex + 1}/${totalRows}`, {
-      fontSize: compact ? 10 : 12,
+      fontSize: compact ? 14 : 15,
       fontWeight: '900',
       fill: '#9cfbff',
       stroke: '#001016',

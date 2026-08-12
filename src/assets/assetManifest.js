@@ -13,6 +13,7 @@ export const AssetManifest = {
     generated: {
         menuBackdrop: '/art/generated/nova-swarm/menu/nova-swarm-cinematic-hangar-20260617.webp',
         menuCredits: '/art/generated/nova-swarm/menu/nova-swarm-credits-20260519.png',
+        newPilotArrow: '/art/generated/nova-swarm/menu/nova-swarm-new-pilot-arrow-up-right.png',
         menuIcons: {
             launch: '/art/generated/nova-swarm/menu/icons/approved-menu-icon-launch-run.png',
             sectorChallenge: '/art/generated/nova-swarm/menu/icons/approved-menu-icon-sector-challenge.png',

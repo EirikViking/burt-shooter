@@ -5,6 +5,7 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
+import { READABILITY } from '../ui/readabilityTokens.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
 import { ModeBriefingOverlay } from '../ui/ModeBriefingOverlay.js';
@@ -13,6 +14,7 @@ import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
 import { getMenuSettings } from '../config/MenuSettings.js';
+import { getReducedMotionEnabled } from '../config/AccessibilitySettings.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState, writeHangarProgressState } from '../progression/HangarProgressState.js';
@@ -62,8 +64,8 @@ import { TypewriterText } from '../utils/TypewriterText.js';
 import { getDiscoveryStats } from '../progression/ThreatDiscoveryState.js';
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
-const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
-const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
+const FONT_ARCADE = 'Rajdhani, Bahnschrift, Segoe UI, Arial, sans-serif';
+const FONT_MONO = 'Rajdhani, Bahnschrift, Segoe UI, monospace';
 const FONT_BUTTON = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const SECTOR_START_SELECTION_STORAGE_KEY = 'nova_swarm_sector_start_selection_v1';
 
@@ -287,6 +289,15 @@ export class MenuScene {
     this.runModeDetailsButtonIcon = null;
     this.runModeDetailsButtonText = null;
     this.runModeDetailsFocused = false;
+    this.newPilotCue = null;
+    this.newPilotCueLabelBg = null;
+    this.newPilotCueArrow = null;
+    this.newPilotCueLabel = null;
+    this.newPilotCueTexture = null;
+    this.newPilotCueBaseX = 0;
+    this.newPilotCueBaseY = 0;
+    this.newPilotCueDismissed = false;
+    this.isNewPilot = false;
     this.modeBriefingOverlay = null;
     this.runModeVariantSelector = null;
     this.runModeVariantTabs = [];
@@ -431,6 +442,8 @@ export class MenuScene {
     this.heroBonusCore = null;
     this.heroBonusCore2 = null;
     this.animationTime = 0;
+    this.isNewPilot = (Number(readHangarProgressState()?.totalRuns) || 0) === 0;
+    this.newPilotCueDismissed = false;
     this.launchingRun = false;
     this.refreshDailySignalMenuState({ force: true });
     this.menuGamepadActionWasPressed = false;
@@ -453,6 +466,7 @@ export class MenuScene {
     });
     this.initIdleMotionLayer();
     this.loadMenuIconAssets();
+    this.loadNewPilotCueAsset();
     GameAssets.loadBonusCore().catch((error) => console.warn('[MenuScene] Bonus core preload failed:', error));
     GameAssets.loadCommsPortraits()
       .then(() => GameAssets.loadShips())
@@ -1246,6 +1260,19 @@ export class MenuScene {
     return this.menuIconLoadPromise;
   }
 
+  loadNewPilotCueAsset() {
+    if (this.newPilotCueTexture || !AssetManifest.generated?.newPilotArrow) return;
+    PIXI.Assets.load({
+      alias: 'menu_new_pilot_arrow',
+      src: AssetManifest.generated.newPilotArrow
+    }).then((texture) => {
+      if (!GameAssets.isValidTexture(texture)) return;
+      this.newPilotCueTexture = texture;
+      if (this.newPilotCueArrow) this.newPilotCueArrow.texture = texture;
+      if (this.game?.currentScene === this) this.layoutMenu();
+    }).catch((error) => console.warn('[MenuScene] New-pilot cue asset failed to load:', error));
+  }
+
   createElements() {
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
@@ -1523,6 +1550,27 @@ export class MenuScene {
     });
     this.container.addChild(this.runModeLaunchButton);
 
+    this.newPilotCue = new PIXI.Container();
+    this.newPilotCue.zIndex = 14;
+    this.newPilotCue.eventMode = 'none';
+    this.newPilotCueLabelBg = new PIXI.Graphics();
+    this.newPilotCueArrow = new PIXI.Sprite(this.newPilotCueTexture || PIXI.Texture.EMPTY);
+    this.newPilotCueArrow.anchor.set(0.5);
+    this.newPilotCueLabel = createText(translateText('NEW PILOT — START HERE'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.max(16, Math.round(runModeSize * 1.08)),
+      fontWeight: '900',
+      fill: '#6ff7ff',
+      stroke: '#020711',
+      strokeThickness: 4,
+      align: 'center',
+      wordWrap: true,
+      padding: 8
+    });
+    this.newPilotCueLabel.anchor.set(0.5);
+    this.newPilotCue.addChild(this.newPilotCueLabelBg, this.newPilotCueArrow, this.newPilotCueLabel);
+    this.container.addChild(this.newPilotCue);
+
     this.runModeVariantSelector = new PIXI.Container();
     this.runModeVariantSelector.zIndex = 11;
     this.runModeVariantSelector.alpha = 0;
@@ -1580,7 +1628,10 @@ export class MenuScene {
     this.missionBoardStatus.zIndex = 10;
     this.container.addChild(this.missionBoardStatus);
 
-    this.missionBoardRows = [0, 1, 2].map((index) => this.createMissionBoardRow(index));
+    // The main menu is a glanceable preview. The complete Pilot Orders archive
+    // remains available in the Hangar, while this surface shows the two most
+    // useful next objectives.
+    this.missionBoardRows = [0, 1].map((index) => this.createMissionBoardRow(index));
     for (const row of this.missionBoardRows) this.container.addChild(row);
 
     this.disclaimer = createText(
@@ -2069,7 +2120,7 @@ export class MenuScene {
     resizeMenuFx(this, width, height);
 
     const titleSize = Math.round(clampNumber(width * (isMobileLayout ? 0.076 : 0.035), isMobileLayout ? 38 : 46, isMobileLayout ? 58 : 72) * uiScale);
-    const subtitleSize = Math.round(clampNumber(width * 0.009, isMobileLayout ? 12 : 14, isMobileLayout ? 16 : 18) * uiScale);
+    const subtitleSize = Math.round(clampNumber(width * 0.01, isMobileLayout ? 14 : 16, isMobileLayout ? 18 : 20) * uiScale);
     const controlsSize = getResponsiveFontSize(layout, 'small');
     const titleX = isMobileLayout ? width * 0.5 : clampNumber(width * 0.05, 44, 96);
     const titleY = safeMargin.top + clampNumber(height * 0.075, isMobileLayout ? 46 : 58, isMobileLayout ? 72 : 92);
@@ -2147,7 +2198,7 @@ export class MenuScene {
     const marginX = clampNumber(width * 0.018, 16, 34);
     const gap = clampNumber(width * 0.007, 8, 16);
     const dockWidth = Math.max(0, width - marginX * 2);
-    const dockHeight = clampNumber(height * 0.106 * uiScale, (isShortLayout ? 74 : 86) * uiScale, (isMobileLayout ? 102 : 114) * uiScale);
+    const dockHeight = clampNumber(height * 0.098 * uiScale, (isShortLayout ? 72 : READABILITY.controls.dockHeight) * uiScale, (isMobileLayout ? 98 : 106) * uiScale);
     const safeBottomEdge = Number.isFinite(safeMargin.bottom)
       ? (safeMargin.bottom > height * 0.5 ? safeMargin.bottom : height - safeMargin.bottom)
       : height;
@@ -2176,12 +2227,12 @@ export class MenuScene {
     );
     const titleClearForDeck = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
     const cardGap = clampNumber(height * 0.008, 6, 9);
-    const cardWidth = Math.round(clampNumber(width * 0.176 * uiScale, (isMobileLayout ? 238 : 252) * uiScale, (isMobileLayout ? 310 : 350) * uiScale));
-    const secondaryCardHeight = Math.round(clampNumber(height * 0.05 * uiScale, (isShortLayout ? 43 : 49) * uiScale, (isMobileLayout ? 56 : 60) * uiScale));
+    const cardWidth = Math.round(clampNumber(width * 0.19 * uiScale, (isMobileLayout ? 250 : 280) * uiScale, (isMobileLayout ? 330 : 378) * uiScale));
+    const secondaryCardHeight = Math.round(clampNumber(height * 0.054 * uiScale, (isShortLayout ? 48 : 55) * uiScale, (isMobileLayout ? 60 : 66) * uiScale));
     const tacticalCardHeight = Math.round(clampNumber(
       secondaryCardHeight * 1.46,
-      (isShortLayout ? 64 : 70) * uiScale,
-      (isMobileLayout ? 82 : 88) * uiScale
+      (isShortLayout ? 70 : 78) * uiScale,
+      (isMobileLayout ? 88 : 96) * uiScale
     ));
     const cardHeights = runModeCards.map((button) => (
       button === this.tacticalStartBtn ? tacticalCardHeight : secondaryCardHeight
@@ -2224,14 +2275,14 @@ export class MenuScene {
       button._dockIndex = null;
       button._launchDeckIndex = index;
       button._label.style.fontSize = Math.round(clampNumber(
-        cardWidth * (isMainMode ? 0.056 : 0.048),
-        (isMainMode ? 15 : 12) * uiScale,
-        (isMainMode ? 20 : 16) * uiScale
+        cardWidth * (isMainMode ? 0.055 : 0.046),
+        (isMainMode ? 18 : 16) * uiScale,
+        (isMainMode ? 22 : 19) * uiScale
       ));
       button._sublabel.style.fontSize = Math.round(clampNumber(
-        cardWidth * (isMainMode ? 0.032 : 0.029),
-        (isMainMode ? 9 : 8) * uiScale,
-        (isMainMode ? 12 : 10) * uiScale
+        cardWidth * (isMainMode ? 0.036 : 0.034),
+        (isMainMode ? 14 : 13) * uiScale,
+        (isMainMode ? 16 : 15) * uiScale
       ));
       if (button._bodyLabel) {
         button._bodyLabel.text = '';
@@ -2269,8 +2320,12 @@ export class MenuScene {
       button._btnHeight = tileHeight;
       button._variant = button === this.exitBtn ? 'danger' : 'secondary';
       button._dockIndex = index;
-      button._label.style.fontSize = Math.round(clampNumber(btnWidth * 0.056, 11 * uiScale, 16 * uiScale));
-      button._sublabel.style.fontSize = Math.round(clampNumber(btnWidth * 0.039, 8 * uiScale, 11 * uiScale));
+      button._label.style.fontSize = Math.round(clampNumber(btnWidth * 0.054, 15 * uiScale, 18 * uiScale));
+      // Bottom destinations are deliberately icon + label only. Contextual
+      // helper copy remains in the data model and narration, without adding a
+      // second always-visible line to the already crowded dock.
+      button._sublabel.visible = false;
+      button._sublabel.alpha = 0;
       this.refreshButtonCopy(button, { forceGpuRefresh: forceLabelGpuRefresh });
       button.x = cursorX + btnWidth / 2;
       button.y = dockTop + dockHeight * (isShortLayout ? 0.54 : 0.56);
@@ -2294,9 +2349,9 @@ export class MenuScene {
       Math.max((this.launchDeckBounds?.right || 0) + 42, width * 0.61),
       width - marginX - briefingWidth
     ));
-    const plannedUtilityHeight = isMobileLayout ? 28 : 30;
-    const plannedUtilityGap = isMobileLayout ? 6 : 7;
-    const plannedUtilityBottom = safeMargin.top + (isMobileLayout ? 22 : 28) + plannedUtilityHeight / 2;
+    const plannedUtilityHeight = (isMobileLayout ? 44 : 50) * uiScale;
+    const plannedUtilityGap = (isMobileLayout ? 8 : 10) * uiScale;
+    const plannedUtilityBottom = safeMargin.top + (isMobileLayout ? 28 : 34) + plannedUtilityHeight / 2;
     const utilityBottom = Math.max(
       plannedUtilityBottom,
       boundsForDisplayObject(this.musicBtn)?.bottom || 0,
@@ -2362,20 +2417,20 @@ export class MenuScene {
     this.easter.y = dockBottom + 4;
     this.easter.anchor.set(0, 0.5);
 
-    const utilityWidth = (isMobileLayout ? 112 : 124) * uiScale;
-    const utilityHeight = (isMobileLayout ? 28 : 30) * uiScale;
-    const utilityGap = (isMobileLayout ? 6 : 7) * uiScale;
-    const utilityButtons = [this.musicBtn, this.helpBtn, this.exitBtn].filter(Boolean);
+    const utilityWidth = (isMobileLayout ? 144 : 176) * uiScale;
+    const utilityHeight = (isMobileLayout ? 44 : 50) * uiScale;
+    const utilityGap = (isMobileLayout ? 8 : 10) * uiScale;
+    const utilityButtons = [this.exitBtn, this.helpBtn, this.musicBtn].filter(Boolean);
     utilityButtons.forEach((button, index) => {
       button.visible = true;
       button._btnWidth = utilityWidth;
       button._btnHeight = utilityHeight;
       button._variant = button === this.exitBtn ? 'utilityDanger' : 'utility';
-      button._label.style.fontSize = Math.max(9, controlsSize - 1);
+      button._label.style.fontSize = Math.max(16, controlsSize + 1);
       this.refreshButtonCopy(button, { forceGpuRefresh: forceLabelGpuRefresh });
       button.scale.set(1);
       button.x = width - marginX - utilityWidth / 2 - (utilityButtons.length - 1 - index) * (utilityWidth + utilityGap);
-      button.y = safeMargin.top + (isMobileLayout ? 22 : 28);
+      button.y = safeMargin.top + (isMobileLayout ? 28 : 34);
       button._layoutY = button.y;
       button._motionY = button.y;
       if (!Number.isFinite(button._motionScale)) button._motionScale = 1;
@@ -2505,11 +2560,11 @@ export class MenuScene {
     const innerX = x + padX;
     const innerWidth = width - padX * 2;
     const compactScale = Math.min(1.2, Math.max(1, Number(uiScale) || 1));
-    const eyebrowSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
-    const titleSize = Math.round((isShortLayout ? 18 : 21) * compactScale);
-    const bodySize = Math.round((isShortLayout ? 12 : 15) * compactScale);
-    const selectorY = y + padY + Math.round(44 * compactScale);
-    const selectorHeight = Math.round((isShortLayout ? 29 : 32) * compactScale);
+    const eyebrowSize = Math.round((isShortLayout ? 13 : 14) * compactScale);
+    const titleSize = Math.round((isShortLayout ? 22 : 25) * compactScale);
+    const bodySize = Math.round((isShortLayout ? 15 : 17) * compactScale);
+    const selectorY = y + padY + Math.round(52 * compactScale);
+    const selectorHeight = Math.round((isShortLayout ? 36 : 40) * compactScale);
 
     this.runModeBriefingTitle.style.fontSize = eyebrowSize;
     this.runModeBriefingTitle.style.fill = '#7fffd8';
@@ -2521,12 +2576,12 @@ export class MenuScene {
 
     this.runModeTitle.style.fontSize = titleSize;
     this.runModeTitle.x = innerX;
-    this.runModeTitle.y = y + padY + Math.round(14 * compactScale);
+    this.runModeTitle.y = y + padY + Math.round(18 * compactScale);
     this.runModeTitle.alpha = this.runModeTitle.alpha || 1;
     fitTextToWidth(this.runModeTitle, innerWidth * 0.7, { minScale: 0.72 });
 
-    const badgeHeight = Math.round((isShortLayout ? 22 : 25) * compactScale);
-    this.runModeStatusBadge.style.fontSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
+    const badgeHeight = Math.round((isShortLayout ? 26 : 30) * compactScale);
+    this.runModeStatusBadge.style.fontSize = Math.round((isShortLayout ? 13 : 14) * compactScale);
     this.runModeStatusBadge.updateText?.(false);
     const badgeWidth = Math.min(
       innerWidth * 0.34,
@@ -2566,18 +2621,19 @@ export class MenuScene {
     this.runModeExplainer.y = summaryY;
     this.runModeExplainer.scale.set(1);
     refreshTextTexture(this.runModeExplainer);
-    const summaryMaxHeight = Math.round(bodySize * 2.8);
+    const summaryMaxHeight = Math.round(bodySize * 3.15);
     if ((this.runModeExplainer.height || 0) > summaryMaxHeight) {
       this.runModeExplainer.scale.set(Math.max(0.86, summaryMaxHeight / this.runModeExplainer.height));
     }
     this.runModeExplainer.alpha = this.runModeExplainer.alpha || 1;
 
+    const firstRunMayhem = Boolean(this.isNewPilot && briefing.id === 'launchTactical');
     const summaryHeight = Math.min(summaryMaxHeight, this.runModeExplainer.height || summaryMaxHeight);
     const tilesY = Math.round(summaryY + summaryHeight + 7 * compactScale);
-    const footerHeight = Math.round((isShortLayout ? 30 : 33) * compactScale);
+    const footerHeight = Math.round((firstRunMayhem ? (isShortLayout ? 58 : 72) : (isShortLayout ? 42 : READABILITY.controls.actionHeight)) * compactScale);
     const footerY = y + height - padY - footerHeight;
     const restrictionGap = Math.round(10 * compactScale);
-    this.runModeRestriction.style.fontSize = Math.round((isShortLayout ? 10 : 13) * compactScale);
+    this.runModeRestriction.style.fontSize = Math.round((isShortLayout ? 14 : 15) * compactScale);
     this.runModeRestriction.style.wordWrapWidth = innerWidth;
     this.runModeRestriction.style.lineHeight = Math.round(this.runModeRestriction.style.fontSize * 1.25);
     this.runModeRestriction.scale.set(1);
@@ -2592,7 +2648,7 @@ export class MenuScene {
       : 0;
     const restrictionY = footerY - restrictionGap - restrictionHeight;
     const tileAreaHeight = Math.max(54, restrictionY - tilesY - Math.round(5 * compactScale));
-    this.layoutRunModeInfoTiles(briefing.tiles || [], {
+    this.layoutRunModeInfoTiles(firstRunMayhem ? [] : (briefing.tiles || []), {
       x: innerX,
       y: tilesY,
       width: innerWidth,
@@ -2603,13 +2659,13 @@ export class MenuScene {
     });
 
     this.runModeRestriction.position.set(innerX, restrictionY);
-    this.runModeRestriction.visible = restrictionVisible;
+    this.runModeRestriction.visible = restrictionVisible && !firstRunMayhem;
 
     const launchOptionIds = new Set(['launchTactical', 'dailySignal', 'scout', 'sectorStart', 'overrun']);
     const showLaunch = launchOptionIds.has(this.getSelectedMenuOptionId());
     const actionGap = Math.round(8 * compactScale);
     const launchMinWidth = Math.round(156 * compactScale);
-    const detailsMinWidth = briefing.details ? Math.round(176 * compactScale) : 0;
+    const detailsMinWidth = briefing.details && !firstRunMayhem ? Math.round(176 * compactScale) : 0;
     const requiredActionWidth = launchMinWidth + detailsMinWidth + (detailsMinWidth > 0 ? actionGap : 0);
     const preferredBestWidth = briefing.personalBest
       ? Math.min(innerWidth * 0.26, Math.round(172 * compactScale))
@@ -2620,7 +2676,7 @@ export class MenuScene {
     const bestGap = bestWidth > 0 ? Math.round(9 * compactScale) : 0;
     const actionWidth = Math.max(0, innerWidth - bestWidth - bestGap);
     const detailsMaxWidth = Math.max(0, actionWidth - launchMinWidth - (briefing.details ? actionGap : 0));
-    const detailsWidth = briefing.details
+    const detailsWidth = briefing.details && !firstRunMayhem
       ? Math.min(
         Math.round(230 * compactScale),
         detailsMaxWidth,
@@ -2631,7 +2687,7 @@ export class MenuScene {
     const launchWidth = showLaunch
       ? Math.max(Math.min(actionWidth, Math.round(112 * compactScale)), launchSpace)
       : 0;
-    this.runModePersonalBest.style.fontSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
+    this.runModePersonalBest.style.fontSize = Math.round((isShortLayout ? 13 : 14) * compactScale);
     this.runModePersonalBest.position.set(innerX, footerY + footerHeight / 2);
     fitTextToWidth(this.runModePersonalBest, bestWidth, { minScale: 0.68 });
     this.runModePersonalBest.visible = Boolean(briefing.personalBest);
@@ -2647,8 +2703,13 @@ export class MenuScene {
       launchWidth,
       footerHeight
     );
-    this.runModeLaunchButtonText.text = translateText(briefing.locked ? 'LOCKED' : 'LAUNCH RUN');
-    this.runModeLaunchButtonText.style.fontSize = Math.round((isShortLayout ? 11 : 12) * compactScale);
+    const launchLabel = briefing.locked
+      ? 'LOCKED'
+      : firstRunMayhem
+        ? 'START PLAYING'
+        : 'PLAY';
+    this.runModeLaunchButtonText.text = translateText(launchLabel);
+    this.runModeLaunchButtonText.style.fontSize = Math.round((firstRunMayhem ? (isShortLayout ? 23 : 28) : (isShortLayout ? 14 : 16)) * compactScale);
     this.runModeLaunchButtonText.position.set(0, 0);
     fitTextToWidth(this.runModeLaunchButtonText, launchWidth - Math.round(20 * compactScale), { minScale: 0.68 });
     this.runModeLaunchButton.visible = showLaunch;
@@ -2669,7 +2730,7 @@ export class MenuScene {
       ? 'SELECT START POINT'
       : 'VIEW MODE DETAILS';
     this.runModeDetailsButtonText.text = translateText(detailsLabel) + inputGlyph;
-    this.runModeDetailsButtonText.style.fontSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
+    this.runModeDetailsButtonText.style.fontSize = Math.round((isShortLayout ? 13 : 15) * compactScale);
     const helpTexture = this.menuIconTextures?.help;
     const hasIcon = Boolean(
       helpTexture
@@ -2688,8 +2749,115 @@ export class MenuScene {
       this.runModeDetailsButtonText.position.set(0, 0);
       fitTextToWidth(this.runModeDetailsButtonText, detailsWidth - Math.round(20 * compactScale), { minScale: 0.68 });
     }
-    this.runModeDetailsButton.visible = Boolean(briefing.details);
+    this.runModeDetailsButton.visible = Boolean(briefing.details && !firstRunMayhem);
     this.drawRunModeDetailsButton();
+    this.layoutNewPilotCue({
+      panelX: x,
+      panelY: y,
+      panelWidth: width,
+      panelHeight: height,
+      buttonX: actionX,
+      buttonY: footerY,
+      buttonWidth: launchWidth,
+      buttonHeight: footerHeight,
+      compactScale,
+      isShortLayout
+    });
+  }
+
+  layoutNewPilotCue({
+    panelX,
+    panelY,
+    panelWidth,
+    panelHeight,
+    buttonX,
+    buttonY,
+    buttonWidth,
+    buttonHeight,
+    compactScale,
+    isShortLayout
+  }) {
+    if (!this.newPilotCue || !this.newPilotCueArrow || !this.newPilotCueLabel) return;
+    const visible = Boolean(
+      this.isNewPilot
+      && !this.newPilotCueDismissed
+      && this.getSelectedMenuOptionId() === 'launchTactical'
+      && this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL
+    );
+    this.newPilotCue.visible = visible;
+    if (!visible) return;
+
+    const arrowSize = Math.round((isShortLayout ? 86 : 112) * compactScale);
+    const sourceSize = Math.max(1, this.newPilotCueTexture?.width || 1254, this.newPilotCueTexture?.height || 1254);
+    this.newPilotCueArrow.texture = this.newPilotCueTexture || PIXI.Texture.EMPTY;
+    this.newPilotCueArrow.scale.set(arrowSize / sourceSize);
+    this.newPilotCueArrow.position.set(0, 0);
+    this.newPilotCueLabel.text = translateText('NEW PILOT — START HERE');
+    const labelWidth = Math.round((isShortLayout ? 206 : 250) * compactScale);
+    const labelHeight = Math.round((isShortLayout ? 68 : 82) * compactScale);
+    const labelX = Math.round((isShortLayout ? 112 : 145) * compactScale);
+    const labelY = Math.round((isShortLayout ? 62 : 78) * compactScale);
+    const labelPadX = Math.round(18 * compactScale);
+    const labelPadY = Math.round(12 * compactScale);
+    this.newPilotCueLabel.style.fontSize = Math.round((isShortLayout ? 16 : 20) * compactScale);
+    this.newPilotCueLabel.style.wordWrapWidth = labelWidth - labelPadX * 2;
+    this.newPilotCueLabel.position.set(labelX, labelY);
+    fitTextToWidth(this.newPilotCueLabel, labelWidth - labelPadX * 2, { minScale: 0.78 });
+    this.newPilotCueLabelBg.clear();
+    drawCutPanel(
+      this.newPilotCueLabelBg,
+      labelX - labelWidth / 2,
+      labelY - labelHeight / 2,
+      labelWidth,
+      labelHeight,
+      Math.round(9 * compactScale),
+      { color: 0x031321, alpha: 0.9 },
+      { color: 0x37f5ff, width: Math.max(1, Math.round(1.5 * compactScale)), alpha: 0.82 }
+    );
+    this.newPilotCueLabelBg.rect(
+      labelX - labelWidth / 2 + labelPadX,
+      labelY + labelHeight / 2 - labelPadY,
+      labelWidth - labelPadX * 2,
+      Math.max(1, Math.round(2 * compactScale))
+    );
+    this.newPilotCueLabelBg.fill({ color: 0x7fffd8, alpha: 0.42 });
+
+    const panelBottom = panelY + panelHeight;
+    const clearance = Math.round(18 * compactScale);
+    // The arrow's authored tip sits about 36% of its display size up-right of
+    // its center. Position that tip just outside the run-card frame, aimed at
+    // the lower-left of START PLAYING without crossing either border.
+    const cueX = buttonX - Math.round(2 * compactScale);
+    const cueY = panelBottom + clearance + Math.round(arrowSize * 0.36);
+    this.newPilotCueBaseX = cueX;
+    this.newPilotCueBaseY = cueY;
+    this.newPilotCue.position.set(cueX, cueY);
+    this.newPilotCue.alpha = 1;
+    this.newPilotCue._targetClearance = clearance;
+    this.newPilotCue._targetButtonBounds = {
+      x: buttonX,
+      y: buttonY,
+      width: buttonWidth,
+      right: buttonX + buttonWidth,
+      height: buttonHeight,
+      bottom: buttonY + buttonHeight
+    };
+    this.newPilotCue._labelSafePadding = { x: labelPadX, y: labelPadY };
+    this.newPilotCue._labelFrameRect = {
+      x: labelX - labelWidth / 2,
+      y: labelY - labelHeight / 2,
+      width: labelWidth,
+      height: labelHeight
+    };
+    // Alpha-bounded authored footprint of the generated 1254 px arrow. Keeping
+    // this separately from the transparent texture box lets QA measure the
+    // pixels players actually see against nearby frames.
+    this.newPilotCue._arrowVisibleRect = {
+      x: -arrowSize / 2 + arrowSize * (183 / 1254),
+      y: -arrowSize / 2 + arrowSize * (196 / 1254),
+      width: arrowSize * ((1067 - 183) / 1254),
+      height: arrowSize * ((1087 - 196) / 1254)
+    };
   }
 
   layoutRunModeInfoTiles(tiles, {
@@ -2718,14 +2886,14 @@ export class MenuScene {
         const bg = new PIXI.Graphics();
         const label = createText(translateText(tile.label), {
           fontFamily: FONT_DISPLAY,
-          fontSize: Math.round(9 * compactScale),
+          fontSize: Math.round(13 * compactScale),
           fontWeight: '900',
           fill: '#8fa9b8',
           padding: 24
         });
         const value = createText(translateText(tile.value), {
           fontFamily: FONT_DISPLAY,
-          fontSize: Math.round(12 * compactScale),
+          fontSize: Math.round(16 * compactScale),
           fontWeight: '900',
           fill: tile.tone === 'warning' ? '#ffbd91' : '#f4fbff',
           padding: 24
@@ -2764,8 +2932,8 @@ export class MenuScene {
         bg.rect(0, 4, 1, Math.max(1, tileHeight - 8));
         bg.fill({ color: secondary || accent, alpha: 0.14 });
       }
-      label.style.fontSize = Math.max(7, Math.min(Math.round(9 * compactScale), Math.floor(tileHeight * 0.26)));
-      value.style.fontSize = Math.max(9, Math.min(Math.round(12 * compactScale), Math.floor(tileHeight * 0.36)));
+      label.style.fontSize = Math.max(11, Math.min(Math.round(13 * compactScale), Math.floor(tileHeight * 0.3)));
+      value.style.fontSize = Math.max(14, Math.min(Math.round(16 * compactScale), Math.floor(tileHeight * 0.42)));
       refreshTextTexture(label);
       refreshTextTexture(value);
       label.position.set(Math.round(9 * compactScale), Math.max(2, Math.round(tileHeight * 0.1)));
@@ -2801,6 +2969,11 @@ export class MenuScene {
     const width = Number(button._btnWidth) || 240;
     const height = Number(button._btnHeight) || 34;
     const focused = Boolean(this.runModeLaunchFocused);
+    const newPilotAction = Boolean(
+      this.isNewPilot
+      && this.getSelectedMenuOptionId() === 'launchTactical'
+      && this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL
+    );
     const locked = Boolean(button._locked);
     const accent = locked ? 0x68727c : (this.runModePanel?._briefingAccent || 0x37f5ff);
     this.runModeLaunchButtonBg.clear();
@@ -2811,7 +2984,7 @@ export class MenuScene {
       width,
       height,
       7,
-      { color: locked ? 0x17191d : (focused ? 0xffef7e : 0x66ffdd), alpha: locked ? 0.86 : 0.98 },
+      { color: locked ? 0x17191d : (newPilotAction ? 0x66ffdd : (focused ? 0xffef7e : 0x66ffdd)), alpha: locked ? 0.86 : 0.98 },
       { color: focused ? 0xffffff : accent, width: focused ? 2.4 : 1.6, alpha: focused ? 1 : 0.9 }
     );
     this.runModeLaunchButtonText.style.fill = locked ? '#929da5' : '#03151b';
@@ -2829,6 +3002,9 @@ export class MenuScene {
   }
 
   getRunModeExplainerText(briefing = this.getRunModeBriefing()) {
+    if (this.isNewPilot && briefing.id === 'launchTactical') {
+      return translateText('Fight through sectors, beat bosses, and choose upgrades along the way.');
+    }
     const summary = Array.isArray(briefing.summary)
       ? briefing.summary.slice(0, 2).map((line) => translateText(line)).filter(Boolean)
       : [];
@@ -3727,6 +3903,44 @@ export class MenuScene {
 
   layoutMissionBoard(layout, metrics = {}) {
     if (!this.missionBoardPanel || !this.launchDeckBounds) return;
+    const contextualProgress = readHangarProgressState();
+    const contextualMissionState = getRunContractMenuState(contextualProgress, {
+      forceCompletionVisible: false,
+      showPilotOrders: false
+    });
+    this.missionBoardState = {
+      ...contextualMissionState,
+      status: 'hidden',
+      hidden: true,
+      disabledBySetting: false,
+      active: [],
+      sourceActive: contextualMissionState.active || []
+    };
+    this.missionBoardBounds = {
+      hidden: true,
+      placement: 'contextual',
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      right: 0,
+      bottom: 0
+    };
+    this.missionBoardPanel.clear();
+    this.missionBoardPanel.visible = false;
+    this.missionBoardTitle.visible = false;
+    this.missionBoardSubtitle.visible = false;
+    this.missionBoardStatus.visible = false;
+    this.missionBoardFocusActive = false;
+    this.missionBoardSelectedDetail = null;
+    for (const row of this.missionBoardRows || []) {
+      row.visible = false;
+      row.eventMode = 'none';
+    }
+    return;
+    /* Legacy board layout retained below for the Hangar-derived data model and
+       targeted regression history. The main menu now presents Orders only in
+       contextual gameplay toasts and in the permanent Hangar archive. */
     const width = Number(metrics.width) || this.game.getWidth();
     const height = Number(metrics.height) || this.game.getHeight();
     const uiScale = Number(metrics.uiScale) || 1;
@@ -3738,16 +3952,16 @@ export class MenuScene {
     const belowDeckGap = Math.round(clampNumber(height * 0.006, 5, 8) * belowDeckScale);
     const belowDeckPadY = Math.round((isShortLayout ? 8 : 10) * belowDeckScale);
     const belowDeckRowHeight = Math.round(clampNumber(
-      height * 0.058 * belowDeckScale,
-      (isShortLayout ? 46 : 52) * belowDeckScale,
-      (isMobileLayout ? 50 : 58) * belowDeckScale
+      height * 0.078 * belowDeckScale,
+      (isShortLayout ? 64 : 76) * belowDeckScale,
+      (isMobileLayout ? 76 : 86) * belowDeckScale
     ));
-    const belowDeckHeaderHeight = Math.round((isShortLayout ? 50 : 58) * belowDeckScale);
+    const belowDeckHeaderHeight = Math.round((isShortLayout ? 68 : 78) * belowDeckScale);
     const estimatedBelowDeckBoardHeight = (
       belowDeckPadY * 2 +
       belowDeckHeaderHeight +
-      belowDeckRowHeight * 3 +
-      belowDeckGap * 2
+      belowDeckRowHeight * 2 +
+      belowDeckGap
     );
     const estimatedBelowDeckStackGap = Math.round(
       clampNumber(height * 0.022, isMobileLayout ? 12 : 16, isMobileLayout ? 22 : 30) *
@@ -3773,11 +3987,11 @@ export class MenuScene {
     const padX = Math.round((compactBoard ? 9 : (isMobileLayout ? 10 : 16)) * Math.min(uiScale, 1.2));
     const padY = Math.round((compactBoard ? 4 : (isShortLayout ? 8 : 10)) * boardScale);
     const rowHeight = Math.round(clampNumber(
-      height * (compactBoard ? 0.058 : 0.058) * boardScale,
-      (compactBoard ? 42 : (isShortLayout ? 48 : 52)) * boardScale,
-      (compactBoard ? 48 : (isMobileLayout ? 54 : 60)) * boardScale
+      height * 0.078 * boardScale,
+      (compactBoard ? 64 : (isShortLayout ? 68 : 76)) * boardScale,
+      (compactBoard ? 76 : (isMobileLayout ? 80 : 88)) * boardScale
     ));
-    const headerHeight = Math.round((compactBoard ? 42 : (isShortLayout ? 52 : 58)) * boardScale);
+    const headerHeight = Math.round((compactBoard ? 68 : (isShortLayout ? 72 : 80)) * boardScale);
     let hangarProgress = readHangarProgressState();
     const menuSettings = getMenuSettings({
       defaultShowPilotOrders: getDefaultShowPilotOrders(hangarProgress)
@@ -3800,7 +4014,18 @@ export class MenuScene {
       this.missionBoardCompletionNoticePending = false;
       this.missionBoardCompletionNoticeVisibleMs = 0;
     }
-    this.missionBoardState = missionState;
+    const sourceRows = Array.isArray(missionState.active) ? missionState.active : [];
+    const incompleteRows = sourceRows.filter((entry) => !entry?.completed);
+    const nextObjective = incompleteRows[0] || sourceRows[0] || null;
+    const nearCompletion = incompleteRows
+      .filter((entry) => entry !== nextObjective)
+      .sort((a, b) => {
+        const progressA = (Number(a?.progress) || 0) / Math.max(1, Number(a?.target) || 1);
+        const progressB = (Number(b?.progress) || 0) / Math.max(1, Number(b?.target) || 1);
+        return progressB - progressA;
+      })[0] || sourceRows.find((entry) => entry !== nextObjective) || null;
+    const previewRows = [nextObjective, nearCompletion].filter(Boolean);
+    this.missionBoardState = { ...missionState, active: previewRows, sourceActive: sourceRows };
     const briefingLeft = Number(briefingBounds?.x) || width;
     const availableBoardWidth = Math.max(
       this.launchDeckBounds.width,
@@ -3812,7 +4037,7 @@ export class MenuScene {
     const boardWidth = Math.round(useRightRail
       ? briefingBounds.width
       : Math.min(desiredBoardWidth, availableBoardWidth));
-    const rows = missionState.active || [];
+    const rows = previewRows;
     const completeState = missionState.status === 'complete';
     const hiddenState = missionState.hidden || missionState.status === 'hidden';
     const selectedIndex = this.resolveMissionBoardSelectedIndex(rows);
@@ -3872,11 +4097,11 @@ export class MenuScene {
     }
 
     this.missionBoardPanel.visible = true;
-    const missionTitle = translateText(completeState ? missionState.completionTitle : missionState.title);
-    const activeCompletedCount = rows.filter((entry) => entry?.completed).length;
-    const activeTotal = rows.length;
+    const missionTitle = translateText(completeState ? missionState.completionTitle : 'PILOT ORDERS');
+    const activeCompletedCount = sourceRows.filter((entry) => entry?.completed).length;
+    const activeTotal = sourceRows.length;
     this.missionBoardTitle.text = missionTitle;
-    this.missionBoardTitle.style.fontSize = Math.round((compactBoard ? 12 : (isMobileLayout ? 12 : 15)) * Math.min(uiScale, 1.25));
+    this.missionBoardTitle.style.fontSize = Math.round((compactBoard ? 18 : (isMobileLayout ? 19 : 20)) * Math.min(uiScale, 1.25));
     this.missionBoardTitle.x = boardX + padX;
     this.missionBoardTitle.y = boardY + padY;
     this.missionBoardTitle.alpha = this.missionBoardTitle.alpha || 1;
@@ -3891,7 +4116,7 @@ export class MenuScene {
         total: formatNumber(activeTotal)
       });
     this.missionBoardSubtitle.style.fontFamily = FONT_MONO;
-    this.missionBoardSubtitle.style.fontSize = Math.round((completeState ? 10 : (compactBoard ? 10 : 12)) * Math.min(uiScale, 1.25));
+    this.missionBoardSubtitle.style.fontSize = Math.round((completeState ? 16 : (compactBoard ? 16 : 17)) * Math.min(uiScale, 1.25));
     this.missionBoardSubtitle.style.fontWeight = '900';
     this.missionBoardSubtitle.style.fill = completeState ? '#9feeff' : '#dffcff';
     this.missionBoardSubtitle.style.strokeThickness = 2;
@@ -3900,8 +4125,8 @@ export class MenuScene {
     this.missionBoardSubtitle.style.lineHeight = Math.round(this.missionBoardSubtitle.style.fontSize * 1.08);
     this.missionBoardSubtitle.x = boardX + padX;
     this.missionBoardSubtitle.y = completeState
-      ? boardY + padY + Math.round(22 * uiScale)
-      : boardY + padY + Math.round(21 * boardScale);
+      ? boardY + padY + Math.round(25 * uiScale)
+      : boardY + padY + Math.round(27 * boardScale);
     this.missionBoardSubtitle.alpha = this.missionBoardSubtitle.alpha || 1;
     this.missionBoardSubtitle.visible = true;
     refreshTextTexture(this.missionBoardSubtitle);
@@ -3914,9 +4139,9 @@ export class MenuScene {
     this.missionBoardStatus.text = completeState
       ? ''
       : translateText(activeInMode ? 'ACTIVE IN THIS MODE' : 'NOT ACTIVE IN THIS MODE');
-    this.missionBoardStatus.style.fontSize = Math.round((compactBoard ? 8 : 9) * Math.min(uiScale, 1.25));
+    this.missionBoardStatus.style.fontSize = Math.round((compactBoard ? 15 : 16) * Math.min(uiScale, 1.25));
     this.missionBoardStatus.x = boardX + padX;
-    this.missionBoardStatus.y = boardY + padY + Math.round(35 * boardScale);
+    this.missionBoardStatus.y = boardY + padY + Math.round(48 * boardScale);
     this.missionBoardStatus.alpha = this.missionBoardStatus.alpha || 1;
     this.missionBoardStatus.visible = !completeState;
     refreshTextTexture(this.missionBoardStatus);
@@ -3952,12 +4177,12 @@ export class MenuScene {
       row._title.style.fill = contract.completed ? '#fff3a2' : '#dffcff';
       row._detail.style.fill = contract.completed ? '#d7ffec' : '#9feeff';
       row._progress.style.fill = contract.completed ? '#7dffcc' : '#ffef7e';
-      row._title.style.fontSize = Math.round((compactBoard ? 11 : (isMobileLayout ? 12 : 14)) * Math.min(uiScale, 1.25));
-      row._detail.style.fontSize = Math.round((compactBoard ? 8.5 : (isMobileLayout ? 9 : 10)) * Math.min(uiScale, 1.18));
+      row._title.style.fontSize = Math.round((compactBoard ? 16 : (isMobileLayout ? 17 : 18)) * Math.min(uiScale, 1.25));
+      row._detail.style.fontSize = Math.round((compactBoard ? 15 : (isMobileLayout ? 16 : 17)) * Math.min(uiScale, 1.18));
       row._detail.style.wordWrap = true;
       row._detail.style.lineHeight = Math.round(row._detail.style.fontSize * 1.05);
-      row._progress.style.fontSize = Math.round((compactBoard ? 9 : (isMobileLayout ? 9 : 10)) * Math.min(uiScale, 1.25));
-      row._reward.style.fontSize = Math.round((compactBoard ? 8 : 9) * Math.min(uiScale, 1.2));
+      row._progress.style.fontSize = Math.round((compactBoard ? 15 : (isMobileLayout ? 16 : 17)) * Math.min(uiScale, 1.25));
+      row._reward.style.fontSize = Math.round((compactBoard ? 15 : 16) * Math.min(uiScale, 1.2));
       const iconSize = Math.round(clampNumber(rowHeight * 0.54, 24, 34));
       const contentX = Math.round(12 * uiScale + iconSize);
       const progressValueWidth = Math.round(clampNumber(row._width * 0.22, 70 * uiScale, 112 * uiScale));
@@ -3987,7 +4212,7 @@ export class MenuScene {
       row._rewardIcon.width = Math.round(12 * uiScale);
       row._rewardIcon.height = Math.round(12 * uiScale);
       row._title.x = contentX;
-      row._title.y = Math.round(rowHeight * 0.24);
+      row._title.y = Math.round(rowHeight * 0.16);
       row._detail.x = contentX;
       row._detail.anchor.set(0, 0);
       row._detail.y = Math.round(rowHeight * 0.36);
@@ -4169,32 +4394,17 @@ export class MenuScene {
       };
 
       this.menuPanel.clear();
-      const dockSweep = ((this.animationTime * Math.max(260, panelWidth / 3.6)) % Math.max(1, panelWidth + 240)) - 120;
-      const dockPulse = 0.5 + Math.sin(this.animationTime * 2.2) * 0.5;
       this.menuPanel.roundRect(x + 6, y + 10, panelWidth, panelHeight, 5);
-      this.menuPanel.fill({ color: 0x000000, alpha: 0.46 });
-      drawCutPanel(this.menuPanel, x - 2, y - 2, panelWidth + 4, panelHeight + 4, 12, { color: 0x37f5ff, alpha: 0.045 }, { color: 0x37f5ff, width: 1, alpha: 0.26 });
-      drawCutPanel(this.menuPanel, x, y, panelWidth, panelHeight, 10, { color: 0x020711, alpha: 0.68 }, { color: 0x37f5ff, width: 1, alpha: 0.5 });
-      drawCutPanel(this.menuPanel, x + 6, y + 6, panelWidth - 12, panelHeight - 12, 8, { color: 0x062034, alpha: 0.32 }, { color: 0x7fffd8, width: 1, alpha: 0.2 });
-      this.menuPanel.rect(x + 2, y + 2, panelWidth - 4, Math.max(28, panelHeight * 0.42));
-      this.menuPanel.fill({ color: 0x0b2a42, alpha: 0.28 });
-      this.menuPanel.rect(x + 16, y + 12, panelWidth - 32, 2);
-      this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.5 });
-      const sweepTopX = x + clampNumber(dockSweep, 18, Math.max(18, panelWidth - 142));
-      this.menuPanel.rect(sweepTopX, y + 9, Math.min(180, panelWidth * 0.18), 4);
-      this.menuPanel.fill({ color: 0xdffcff, alpha: 0.3 + dockPulse * 0.18 });
-      this.menuPanel.rect(sweepTopX + 16, y + 14, Math.min(132, panelWidth * 0.12), 1);
-      this.menuPanel.fill({ color: 0x37f5ff, alpha: 0.24 + dockPulse * 0.1 });
-      this.menuPanel.rect(x + 16, y + panelHeight - 15, panelWidth - 32, 2);
-      this.menuPanel.fill({ color: 0xffd15c, alpha: 0.32 });
-      const sweepBottomX = x + clampNumber(dockSweep + 42, 24, Math.max(24, panelWidth - 120));
-      this.menuPanel.rect(sweepBottomX, y + panelHeight - 18, Math.min(142, panelWidth * 0.15), 3);
-      this.menuPanel.fill({ color: 0xffef7e, alpha: 0.28 + dockPulse * 0.14 });
+      this.menuPanel.fill({ color: 0x000000, alpha: 0.4 });
+      drawCutPanel(this.menuPanel, x, y, panelWidth, panelHeight, 10, { color: 0x020711, alpha: 0.62 }, { color: 0x37f5ff, width: 1, alpha: 0.34 });
+      drawCutPanel(this.menuPanel, x + 6, y + 6, panelWidth - 12, panelHeight - 12, 8, { color: 0x062034, alpha: 0.2 }, { color: 0x7fffd8, width: 1, alpha: 0.12 });
+      this.menuPanel.rect(x + 18, y + 11, panelWidth - 36, 2);
+      this.menuPanel.fill({ color: 0x7fffd8, alpha: 0.34 });
+      this.menuPanel.rect(x + 18, y + panelHeight - 13, panelWidth - 36, 1);
+      this.menuPanel.fill({ color: 0x37f5ff, alpha: 0.24 });
       this.menuPanel.moveTo(x + panelWidth * 0.32, y + panelHeight - 3);
       this.menuPanel.lineTo(x + panelWidth * 0.68, y + panelHeight - 3);
-      this.menuPanel.stroke({ color: 0x37f5ff, width: 2, alpha: 0.42 });
-      this.menuPanel.rect(x + 18, y + panelHeight - 9, panelWidth - 36, 1);
-      this.menuPanel.fill({ color: 0x000000, alpha: 0.42 });
+      this.menuPanel.stroke({ color: 0x37f5ff, width: 2, alpha: 0.34 });
       return;
     }
     const contentItems = [
@@ -4759,6 +4969,30 @@ export class MenuScene {
         titleBounds: boundsForDisplayObject(this.runModeBriefingTitle),
         bodyBounds: boundsForDisplayObject(this.runModeExplainer)
       },
+      newPilot: {
+        active: Boolean(this.isNewPilot),
+        cueVisible: Boolean(this.newPilotCue?.visible),
+        cueDismissed: Boolean(this.newPilotCueDismissed),
+        reducedMotion: Boolean(getReducedMotionEnabled()),
+        cueBounds: boundsForDisplayObject(this.newPilotCue?.visible ? this.newPilotCue : null),
+        arrowBounds: boundsForDisplayObject(this.newPilotCue?.visible ? this.newPilotCueArrow : null),
+        arrowVisibleBounds: this.newPilotCue?.visible
+          ? boundsForLocalRect(this.newPilotCue, this.newPilotCue?._arrowVisibleRect)
+          : null,
+        labelBounds: boundsForDisplayObject(this.newPilotCue?.visible ? this.newPilotCueLabel : null),
+        labelFrameBounds: this.newPilotCue?.visible
+          ? boundsForLocalRect(this.newPilotCue, this.newPilotCue?._labelFrameRect)
+          : null,
+        labelSafePadding: this.newPilotCue?._labelSafePadding || null,
+        targetClearance: Number(this.newPilotCue?._targetClearance) || 0,
+        targetButtonBounds: this.newPilotCue?._targetButtonBounds || null
+      },
+      utilities: {
+        order: ['exit', 'help', 'music'],
+        exitBounds: boundsForMenuButtonLayout(this.exitBtn),
+        helpBounds: boundsForMenuButtonLayout(this.helpBtn),
+        musicBounds: boundsForMenuButtonLayout(this.musicBtn)
+      },
       modeBriefing: this.modeBriefingOverlay?.getDebugState?.() || null,
       modeNarration: {
         focusDelayMs: MENU_BOSS_BARK_FOCUS_DELAY_MS,
@@ -4805,10 +5039,12 @@ export class MenuScene {
         bounds: this.missionBoardBounds || boundsForDisplayObject(this.missionBoardPanel),
         titleBounds: boundsForDisplayObject(this.missionBoardTitle),
         subtitleBounds: boundsForDisplayObject(this.missionBoardSubtitle),
-        rows: (this.missionBoardRows || []).filter((row) => row?.visible).map((row, index) => ({
-          id: this.missionBoardState?.active?.[index]?.id || null,
-          group: this.missionBoardState?.active?.[index]?.group || null,
-          orderSlot: this.missionBoardState?.active?.[index]?.orderSlot || null,
+        sourceRowCount: this.missionBoardState?.sourceActive?.length || this.missionBoardState?.active?.length || 0,
+        previewRowCount: this.missionBoardState?.active?.length || 0,
+        rows: (this.missionBoardRows || []).filter((row) => row?.visible).map((row) => ({
+          id: row?._contractId || null,
+          group: this.missionBoardState?.active?.find((entry) => entry?.id === row?._contractId)?.group || null,
+          orderSlot: this.missionBoardState?.active?.find((entry) => entry?.id === row?._contractId)?.orderSlot || null,
           title: row?._title?.text || null,
           detail: row?._detail?.text || null,
           progress: row?._progress?.text || null,
@@ -6143,9 +6379,22 @@ export class MenuScene {
 
     focus.clear();
     if (isFocused) {
-      drawCutPanel(focus, x - 8, y - 8, w + 16, h + 16, 12, { color: hotAccent, alpha: 0.05 + pulse * 0.035 }, { color: hotAccent, width: 2, alpha: 0.78 + pulse * 0.16 });
-      focus.rect(x + w * 0.18, y - 7, w * 0.64, 2);
-      focus.fill({ color: hotAccent, alpha: 0.28 + pulse * 0.12 });
+      drawCutPanel(focus, x - 8, y - 8, w + 16, h + 16, 12, { color: hotAccent, alpha: 0.06 + pulse * 0.025 }, { color: 0xffffff, width: 2.4, alpha: 0.86 + pulse * 0.1 });
+      const bracket = Math.min(30, Math.max(18, w * 0.1));
+      const inset = 12;
+      focus.moveTo(x - inset, y + bracket);
+      focus.lineTo(x - inset, y - inset);
+      focus.lineTo(x + bracket, y - inset);
+      focus.moveTo(x + w - bracket, y - inset);
+      focus.lineTo(x + w + inset, y - inset);
+      focus.lineTo(x + w + inset, y + bracket);
+      focus.moveTo(x + w + inset, y + h - bracket);
+      focus.lineTo(x + w + inset, y + h + inset);
+      focus.lineTo(x + w - bracket, y + h + inset);
+      focus.moveTo(x + bracket, y + h + inset);
+      focus.lineTo(x - inset, y + h + inset);
+      focus.lineTo(x - inset, y + h - bracket);
+      focus.stroke({ color: hotAccent, width: 3, alpha: 0.92 + pulse * 0.06 });
     } else if (isPrimaryMode) {
       drawCutPanel(focus, x - 4, y - 4, w + 8, h + 8, 12, { color: 0xff55d9, alpha: 0.012 }, { color: 0xff55d9, width: 1, alpha: 0.14 });
     }
@@ -6198,7 +6447,7 @@ export class MenuScene {
       label.style.fill = active
         ? '#ffffff'
         : (isSelectedPureMayhem || isPureMayhem ? '#d8c887' : (isPrimaryMode ? '#d8c8d7' : '#bdd7dc'));
-      label.style.strokeThickness = 4;
+      label.style.strokeThickness = 3;
       label.x = x + (compactCard ? 66 : 82);
       label.y = compactCard ? (y + h * 0.38) : (y + 32);
     }
@@ -6207,7 +6456,7 @@ export class MenuScene {
       sublabel.anchor.set(0, 0.5);
       sublabel.style.align = 'left';
       sublabel.style.fill = isSelectedPureMayhem ? '#d6cda4' : (isPrimaryMode ? '#78b7aa' : (isPureMayhem ? '#d6cda4' : '#7caeb5'));
-      sublabel.alpha = sublabel.text ? (active ? 1 : 0.68) : 0;
+      sublabel.alpha = sublabel.text ? (active ? 1 : 0.84) : 0;
       sublabel.x = x + (compactCard ? 66 : 82);
       sublabel.y = compactCard ? (y + h * 0.66) : (y + 56);
     }
@@ -6314,20 +6563,31 @@ export class MenuScene {
     focus?.clear();
     if (isFocused) {
       const focusPulse = 0.5 + Math.sin(this.animationTime * 5.2) * 0.5;
-      drawCutPanel(focus, x - 8, y - 8, w + 16, h + 16, cut + 5, { color: hotAccent, alpha: 0.04 + focusPulse * 0.03 }, { color: hotAccent, width: 1.8, alpha: 0.72 + focusPulse * 0.16 });
-      focus.rect(x + w * 0.22, y - 7, w * 0.56, 2);
-      focus.fill({ color: hotAccent, alpha: 0.22 + focusPulse * 0.12 });
-      focus.rect(x + 14 + (w - 84) * sweep, y - 5, 56, 2);
-      focus.fill({ color: 0xffffff, alpha: 0.2 + focusPulse * 0.12 });
+      drawCutPanel(focus, x - 7, y - 7, w + 14, h + 14, cut + 5, { color: hotAccent, alpha: 0.055 + focusPulse * 0.025 }, { color: 0xffffff, width: 2.4, alpha: 0.86 + focusPulse * 0.1 });
+      const bracket = Math.min(28, Math.max(16, w * 0.1));
+      const inset = 11;
+      focus.moveTo(x - inset, y + bracket);
+      focus.lineTo(x - inset, y - inset);
+      focus.lineTo(x + bracket, y - inset);
+      focus.moveTo(x + w - bracket, y - inset);
+      focus.lineTo(x + w + inset, y - inset);
+      focus.lineTo(x + w + inset, y + bracket);
+      focus.moveTo(x + w + inset, y + h - bracket);
+      focus.lineTo(x + w + inset, y + h + inset);
+      focus.lineTo(x + w - bracket, y + h + inset);
+      focus.moveTo(x + bracket, y + h + inset);
+      focus.lineTo(x - inset, y + h + inset);
+      focus.lineTo(x - inset, y + h - bracket);
+      focus.stroke({ color: hotAccent, width: 3, alpha: 0.9 + focusPulse * 0.08 });
     }
 
     bg.clear();
     drawCutPanel(bg, x + 8, y + 10, w, h, cut, { color: 0x000000, alpha: isPrimary ? 0.58 : 0.48 });
     drawCutPanel(bg, x + 3, y + 4, w, h, cut, { color: 0x000000, alpha: 0.22 });
     drawCutPanel(bg, x + 1, y + h - 4, w - 2, 8, Math.max(2, cut - 5), { color: 0x000000, alpha: isPrimary ? 0.42 : 0.32 });
-    drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, cut + 3, { color: drawAccent, alpha: active ? 0.2 : (isUtilityDanger ? 0.018 : 0.045) }, { color: drawAccent, width: 1, alpha: active ? 0.56 : (isUtilityDanger ? 0.12 : 0.15) });
-    drawCutPanel(bg, x, y, w, h, cut, { color: baseColor, alpha: active ? 0.94 : 0.8 }, { color: active ? hotAccent : drawAccent, width: active ? 2.15 : 1.1, alpha: active ? 0.88 : (isUtility ? 0.28 : 0.34) });
-    drawCutPanel(bg, x + 4, y + 4, w - 8, h - 8, Math.max(2, cut - 3), { color: glassColor, alpha: active ? 0.66 : 0.38 }, { color: 0xffffff, width: 1, alpha: active ? 0.18 : 0.045 });
+    drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, cut + 3, { color: drawAccent, alpha: active ? 0.16 : (isUtilityDanger ? 0.012 : 0.025) }, { color: drawAccent, width: 1, alpha: active ? 0.56 : (isUtilityDanger ? 0.1 : 0.12) });
+    drawCutPanel(bg, x, y, w, h, cut, { color: baseColor, alpha: active ? 0.95 : (isDockButton ? 0.68 : 0.82) }, { color: active ? hotAccent : drawAccent, width: active ? 2.15 : 1.1, alpha: active ? 0.9 : (isUtility ? 0.34 : (isDockButton ? 0.24 : 0.38)) });
+    drawCutPanel(bg, x + 4, y + 4, w - 8, h - 8, Math.max(2, cut - 3), { color: glassColor, alpha: active ? 0.62 : (isDockButton ? 0.24 : 0.36) }, { color: 0xffffff, width: 1, alpha: active ? 0.18 : 0.035 });
     drawCutPanel(bg, x + 8, y + h * 0.17, w - 16, h * 0.48, Math.max(2, cut - 4), { color: isPrimary ? 0x5a3a0b : (isDanger ? 0x3b101b : 0x0a3750), alpha: active ? 0.18 : 0.11 });
     if (isPrimary) {
       bg.rect(x + 16, y + h - 13, w - 32, 5);
@@ -6421,21 +6681,24 @@ export class MenuScene {
         ? '#ffffff'
           : (isPrimary ? '#ffe584' : (isDanger ? '#ff7a86' : (isUtilityDanger ? '#c9fbff' : '#c9fbff')));
       label.style.strokeThickness = isPrimary ? 4 : 3;
-      label.x = x + (isCompact ? 40 : (isPrimary ? 138 : (isNarrowDockButton ? 58 : 92)));
-      label.y = hasSubLabel ? -h * (isPrimary ? 0.095 : 0.085) : 0;
+      label.x = x + (isUtility
+        ? 56
+        : (isCompact ? 40 : (isPrimary ? 138 : (isNarrowDockButton ? 58 : 92))));
+      label.y = isDockButton ? 0 : (hasSubLabel ? -h * (isPrimary ? 0.095 : 0.085) : 0);
     }
     if (sublabel) {
       sublabel.anchor.set(0, 0.5);
       sublabel.style.align = 'left';
       sublabel.style.fill = isPrimary ? '#fff3b6' : (isUtilityDanger ? '#98aab8' : (isDanger ? '#ff9aa5' : '#8deeff'));
-      sublabel.alpha = hasSubLabel ? (active ? 1 : 0.62) : 0;
+      sublabel.alpha = isDockButton ? 0 : (hasSubLabel ? (active ? 1 : 0.72) : 0);
+      sublabel.visible = !isDockButton && hasSubLabel;
       sublabel.x = label?.x || (x + 44);
       sublabel.y = h * (isPrimary ? 0.175 : 0.155);
     }
     if (icon) {
       const iconSize = clampNumber(h * (isCompact ? 0.34 : (isPrimary ? 0.32 : 0.29)), 16, isPrimary ? 30 : 23);
       const iconX = x + (isCompact ? 22 : (isPrimary ? 76 : (isNarrowDockButton ? 34 : 50)));
-      const iconY = hasSubLabel ? -h * 0.08 : 0;
+      const iconY = isDockButton ? 0 : (hasSubLabel ? -h * 0.08 : 0);
       if (useAssetIcon) {
         icon.visible = false;
         iconSprite.visible = true;
@@ -6473,11 +6736,7 @@ export class MenuScene {
     this.animateElement(this.runModePersonalBest, 0.81, 0.4);
     this.animateElement(this.runModeLaunchButton, 0.81, 0.4);
     this.animateElement(this.runModeDetailsButton, 0.82, 0.4);
-    this.animateElement(this.missionBoardPanel, 0.82, 0.42);
-    this.animateElement(this.missionBoardTitle, 0.84, 0.42);
-    this.animateElement(this.missionBoardSubtitle, 0.86, 0.42);
-    this.animateElement(this.missionBoardStatus, 0.87, 0.42);
-    this.missionBoardRows?.forEach((row, index) => this.animateElement(row, 0.88 + index * 0.06, 0.36));
+    if (this.newPilotCue?.visible) this.animateElement(this.newPilotCue, 0.72, 0.36);
     this.animateElement(this.menuPanel, 0.78, 0.45);
     this.animateElement(this.tacticalStartBtn, 0.86, 0.42);
     this.animateElement(this.dailySignalBtn, 0.98, 0.38);
@@ -6489,8 +6748,12 @@ export class MenuScene {
     this.animateElement(this.threatCodexBtn, 1.52, 0.4);
     this.animateElement(this.achievementsBtn, 1.62, 0.4);
     this.animateElement(this.settingsBtn, 1.72, 0.4);
-    this.animateElement(this.exitBtn, 1.82, 0.4);
-    this.animateElement(this.helpBtn, 1.88, 0.4);
+    // The complete utility strip is functional navigation, so reveal it as one
+    // early group instead of leaving Help and Exit absent during the long menu
+    // card cascade.
+    this.animateElement(this.musicBtn, 0.42, 0.34);
+    this.animateElement(this.helpBtn, 0.42, 0.34);
+    this.animateElement(this.exitBtn, 0.42, 0.34);
     this.animateElement(this.disclaimer, 1.94, 0.4);
   }
 
@@ -6572,7 +6835,10 @@ export class MenuScene {
     });
     const restoredIndex = this.menuOptions.findIndex((option) => option.id === previousFocusedId);
     const tacticalIndex = this.menuOptions.findIndex((option) => option.id === 'launchTactical');
-    this.setMenuFocus(restoredIndex >= 0 ? restoredIndex : Math.max(0, tacticalIndex));
+    this.setMenuFocus(this.isNewPilot ? Math.max(0, tacticalIndex) : (restoredIndex >= 0 ? restoredIndex : Math.max(0, tacticalIndex)));
+    this.runModeLaunchFocused = Boolean(this.isNewPilot);
+    this.runModeDetailsFocused = false;
+    this.drawRunModeLaunchButton();
   }
 
   getSelectedMenuOptionId() {
@@ -6594,6 +6860,7 @@ export class MenuScene {
   setMenuFocus(index) {
     if (!this.menuOptions.length) return;
     this.runModeDetailsFocused = false;
+    this.runModeLaunchFocused = false;
     this.missionBoardFocusActive = false;
     const count = this.menuOptions.length;
     const next = ((index % count) + count) % count;
@@ -6775,6 +7042,7 @@ export class MenuScene {
     this.mayhemRunMode = this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL
       ? RUN_MODES.RANKED
       : RUN_MODES.MAYHEM_TACTICAL;
+    if (this.isNewPilot) this.newPilotCueDismissed = true;
     this.tacticalStartBtn._accent = this.mayhemRunMode === RUN_MODES.RANKED ? 0xffd15c : 0xff55d9;
     this.refreshButtonCopy(this.tacticalStartBtn, { forceGpuRefresh: true });
     this.drawMenuButton(this.tacticalStartBtn, false);
@@ -6827,6 +7095,7 @@ export class MenuScene {
   quickStartRun(runMode = RUN_MODES.RANKED) {
     if (this.launchingRun) return;
     this.launchingRun = true;
+    if (this.isNewPilot) this.newPilotCueDismissed = true;
     try {
       AudioManager.init();
       AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.78 });
@@ -7477,6 +7746,13 @@ export class MenuScene {
 
   update(delta) {
     this.animationTime += delta * 0.016;
+    if (this.newPilotCue?.visible) {
+      const offset = getReducedMotionEnabled() ? 0 : (Math.sin(this.animationTime * 2.4) * 4 + 4);
+      this.newPilotCue.position.set(
+        this.newPilotCueBaseX + offset * 0.7,
+        this.newPilotCueBaseY - offset * 0.7
+      );
+    }
     updateMenuFx(this, delta);
     this.drawIdleMotionLayer();
 

@@ -2658,7 +2658,7 @@ export class HUD {
     if (this.highscoreChaseGroup) {
       const chaseWidth = Math.min(
         leftPanelWidth - 24,
-        Math.round((layout.isMobile ? 248 : (isLargeDesktop ? 288 : 276)) * uiScale)
+        Math.round((layout.isMobile ? 248 : (isLargeDesktop ? 332 : 308)) * uiScale)
       );
       const chaseHeight = Math.round((layout.isMobile ? 50 : (isLargeDesktop ? 54 : 52)) * uiScale);
       this.highscoreChaseGroup.__w = chaseWidth;

@@ -154,6 +154,7 @@ import {
   formatRunContractOrderSlotLabel,
   formatRunContractProgressValue,
   getRunContractById,
+  getRunContractCompletionReviewState,
   getRunContractMenuState,
   getRunContractReward,
   getRunContractSessionState,
@@ -4211,6 +4212,45 @@ export class PlayScene {
     }, Number.isFinite(Number(delayMs)) ? Math.max(0, Number(delayMs)) : FIRST_RUN_CONTROLS_DELAY_MS);
   }
 
+  schedulePilotOrdersRunStartToast({ delayMs = 1150 } = {}) {
+    if (!this.runContractSession || this.getFirstRunControlsNudge()) return;
+    const state = getRunContractSessionState(this.runContractSession);
+    const sessionOrders = (state?.active || [])
+      .filter((entry) => entry?.eligible && !entry?.completed);
+    const archiveOrders = getRunContractCompletionReviewState(readHangarProgressState());
+    const active = [
+      ...sessionOrders,
+      ...(archiveOrders?.next || [])
+    ].filter((entry, index, entries) => (
+      entry?.id
+      && entries.findIndex((candidate) => candidate?.id === entry.id) === index
+    )).slice(0, 2);
+    if (!active.length) return;
+    const orders = active
+      .map((entry) => translateText(entry.shortTitle || entry.title || entry.id))
+      .join(' · ');
+    setTimeout(() => {
+      if (this.gameOverSequenceStarted || this.game?.currentScene !== this) return;
+      this.enqueueToast(translateText('PILOT ORDERS: {orders}', { orders }), {
+        fontSize: this.game.getWidth() < 620 ? 14 : 18,
+        fill: '#eafcff',
+        stroke: '#031321',
+        strokeThickness: 4,
+        slot: 'corner',
+        type: 'runContractStart',
+        priority: 2,
+        bypassFocusLock: true,
+        duration: 4600,
+        maxQueueAgeMs: 7600,
+        banner: false,
+        align: 'right',
+        y: Math.max(168, this.game.getHeight() * 0.24),
+        maxWidth: this.game.getWidth() < 620 ? this.game.getWidth() * 0.72 : Math.min(430, this.game.getWidth() * 0.34),
+        accent: 0x7fffd8
+      });
+    }, Math.max(0, Number(delayMs) || 0));
+  }
+
   shouldPersistRunContractProgress(type, result = {}) {
     if ((result.completed || []).length > 0) return true;
     if (type === 'near_miss') {
@@ -4673,6 +4713,8 @@ export class PlayScene {
           });
         }
       });
+    } else if (this.game.level === this.getRunStartSector()) {
+      this.schedulePilotOrdersRunStartToast();
     }
     this.resetRandomTimers();
     this.ambientBonusDroneTimer = 2000 + Math.random() * 3000;

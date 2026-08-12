@@ -315,13 +315,13 @@ export class ShipSelectScene {
       this.getHangarFooterPrompt(),
       {
         fontFamily: FONT_BODY,
-        fontSize: this.layout.isMobile ? 11 : 14,
+        fontSize: this.layout.isMobile ? 14 : 17,
         fill: '#ccefff',
         align: 'center'
       }
     );
     instructions.anchor.set(0.5, 1);
-    instructions.position.set(width / 2, height - 12);
+    instructions.position.set(width / 2, height - 14);
     footerContainer.addChild(instructions);
     this.footerInstructions = instructions;
     this.container.addChild(footerContainer);
@@ -476,7 +476,7 @@ export class ShipSelectScene {
 
     const subtitle = createText('Pick the hull, read the trait, launch the next run.', {
       fontFamily: FONT_BODY,
-      fontSize: this.layout.isMobile ? 12 : 15,
+      fontSize: this.layout.isMobile ? 14 : 17,
       fill: '#9ceeff',
       align: 'center',
       fontWeight: '700'
@@ -927,7 +927,7 @@ export class ShipSelectScene {
 
     const sublineText = createText(String(subline || ''), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 9 : 10,
+      fontSize: compact ? 12 : 14,
       fontWeight: '900',
       fill: '#d8fbff',
       align: 'left',
@@ -939,7 +939,7 @@ export class ShipSelectScene {
 
     const labelText = createText(translateText(label), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 9 : 11,
+      fontSize: compact ? 12 : 14,
       fontWeight: '900',
       fill: hexColor(accent),
       align: 'left',
@@ -966,7 +966,7 @@ export class ShipSelectScene {
 
     const h = createText(translateText(heading), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 11 : 13,
+      fontSize: compact ? 14 : 16,
       fontWeight: '900',
       fill: hexColor(accent),
       letterSpacing: 0
@@ -976,7 +976,7 @@ export class ShipSelectScene {
 
     const p = createText(translateText(copy), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 10 : 12,
+      fontSize: compact ? 13 : 15,
       fontWeight: '700',
       fill: '#d8fbff',
       wordWrap: true,
@@ -1062,7 +1062,7 @@ export class ShipSelectScene {
     const headingLabel = translateText('PILOT ORDERS');
     const heading = createText(headingLabel, {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 11 : 13,
+      fontSize: compact ? 14 : 16,
       fontWeight: '900',
       fill: hexColor(accent),
       letterSpacing: 0
@@ -1075,7 +1075,7 @@ export class ShipSelectScene {
     });
     const count = createText(countLabel, {
       fontFamily: FONT_DISPLAY,
-      fontSize: compact ? 12 : 14,
+      fontSize: compact ? 14 : 16,
       fontWeight: '900',
       fill: '#fff3a2',
       stroke: '#020711',
@@ -1107,7 +1107,7 @@ export class ShipSelectScene {
         ? 2
         : 1;
     const columnGap = columnCount > 1 ? (columnCount >= 3 ? 10 : 14) : 0;
-    const listLineHeight = compact ? 11 : 14;
+    const listLineHeight = compact ? 16 : 19;
     const rowsPerColumn = Math.max(3, Math.floor(listHeight / listLineHeight));
     const rowsPerPage = Math.max(1, rowsPerColumn * columnCount);
     const pageCount = Math.max(1, Math.ceil((lineEntries.length || 1) / rowsPerPage));
@@ -1121,7 +1121,7 @@ export class ShipSelectScene {
     const hintWidth = pageCount > 1 ? Math.max(120, width - 188) : width - 36;
     const hint = createText(archiveSummary, {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 9 : 11,
+      fontSize: compact ? 12 : 14,
       fontWeight: '800',
       fill: '#fff3a2',
       wordWrap: true,
@@ -1136,7 +1136,7 @@ export class ShipSelectScene {
     if (pageCount > 1) {
       const pageLabel = createText(String(currentPage + 1) + '/' + String(pageCount), {
         fontFamily: FONT_BODY,
-        fontSize: compact ? 10 : 12,
+        fontSize: compact ? 13 : 15,
         fontWeight: '900',
         fill: '#ffffff',
         stroke: '#020711',
@@ -1187,7 +1187,7 @@ export class ShipSelectScene {
       columnLists[column].push(entry);
     });
     const denseArchive = rowsPerPage >= 22;
-    const listFontSize = compact ? (denseArchive ? 9 : 10) : (denseArchive ? 10 : 12);
+    const listFontSize = compact ? (denseArchive ? 12 : 13) : (denseArchive ? 13 : 15);
     const toneFill = {
       active: '#fff3a2',
       next: '#9cfbff',
@@ -1397,7 +1397,7 @@ export class ShipSelectScene {
 
     const kicker = createText(translateText(CAREER_INTEL_KICKER), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 10 : 12,
+      fontSize: compact ? 13 : 15,
       fontWeight: '900',
       fill: '#ffef7e',
       align: 'center',
@@ -2283,25 +2283,25 @@ export class ShipSelectScene {
     const panelTop = Math.round((this.layout.isMobile ? 118 : 128) * Math.min(uiScale, 1.45));
 
     if (this.layout.showLeftIntel) {
-      const left = this.createPanel(230, 292, 0x66ffdd);
+      const left = this.createPanel(260, 336, 0x66ffdd);
       left.position.set(panelMargin, panelTop);
       left.scale.set(uiScale);
       left.eventMode = 'static';
       left.cursor = 'pointer';
-      left.hitArea = new PIXI.Rectangle(0, 0, 230, 292);
+      left.hitArea = new PIXI.Rectangle(0, 0, 260, 336);
       left.on('pointerdown', (e) => {
         e.stopPropagation();
         this.openCareerInfoOverlay('pointer');
       });
       const alertGlow = new PIXI.Graphics();
       const rankRail = new PIXI.Graphics();
-      const title = this.createIntelText('CAREER SIGNAL', 16, 12, 15, '#ffffff', '900');
-      const count = this.createIntelText('', 16, 48, 16, '#ffef7e', '900');
-      const progress = this.createIntelText('', 16, 96, 12, '#b8fff1');
-      const stats = this.createIntelText('', 16, 176, 12, '#d8fbff');
-      const hint = this.createIntelText('CLICK FOR CAREER + PILOT ORDERS', 16, 244, 12, '#ffef7e', '900');
+      const title = this.createIntelText('CAREER SIGNAL', 16, 14, 17, '#ffffff', '900');
+      const count = this.createIntelText('', 16, 54, 19, '#ffef7e', '900');
+      const progress = this.createIntelText('', 16, 108, 15, '#b8fff1');
+      const stats = this.createIntelText('', 16, 210, 15, '#d8fbff');
+      const hint = this.createIntelText('CLICK FOR CAREER + PILOT ORDERS', 16, 286, 15, '#ffef7e', '900');
       [progress, stats, hint].forEach(text => {
-        text.style.wordWrapWidth = 196;
+        text.style.wordWrapWidth = 226;
       });
       left.addChild(alertGlow, title, count, rankRail, progress, stats, hint);
       this.leftIntel = { panel: left, alertGlow, rankRail, count, progress, stats, hint };
@@ -2309,27 +2309,27 @@ export class ShipSelectScene {
     }
 
     if (this.layout.showSideIntel) {
-      const right = this.createPanel(262, 380, 0xffd166);
-      right.position.set(width - panelMargin - 262 * uiScale, panelTop);
+      const right = this.createPanel(300, 434, 0xffd166);
+      right.position.set(width - panelMargin - 300 * uiScale, panelTop);
       right.scale.set(uiScale);
-      const title = this.createIntelText('COMBAT READOUT', 16, 10, 13, '#ffffff', '900');
-      const role = this.createIntelText('', 16, 44, 17, '#ffef7e', '900');
-      const weapon = this.createIntelText('', 16, 76, 13, '#d8fbff');
-      const trait = this.createIntelText('', 16, 126, 13, '#9ceeff');
-      const unlock = this.createIntelText('', 16, 302, 13, '#ffd166', '900');
-      role.style.wordWrapWidth = 226;
-      weapon.style.wordWrapWidth = 226;
-      trait.style.wordWrapWidth = 226;
-      unlock.style.wordWrapWidth = 226;
+      const title = this.createIntelText('COMBAT READOUT', 16, 12, 16, '#ffffff', '900');
+      const role = this.createIntelText('', 16, 50, 20, '#ffef7e', '900');
+      const weapon = this.createIntelText('', 16, 96, 15, '#d8fbff');
+      const trait = this.createIntelText('', 16, 158, 15, '#9ceeff');
+      const unlock = this.createIntelText('', 16, 370, 15, '#ffd166', '900');
+      role.style.wordWrapWidth = 268;
+      weapon.style.wordWrapWidth = 268;
+      trait.style.wordWrapWidth = 268;
+      unlock.style.wordWrapWidth = 268;
       const statPanel = createShipStatPanel(this.ships[this.selectedIndex], {
         compact: true,
-        width: 228,
+        width: 266,
         accent: 0xffd166,
         ranges: this.statRanges,
         title: 'LIVE TUNE',
         uiScaleMode: 'none'
       });
-      statPanel.position.set(131, 186);
+      statPanel.position.set(150, 236);
       right.addChild(title, role, weapon, trait, statPanel, unlock);
       this.rightIntel = { panel: right, role, weapon, trait, statPanel, unlock };
       this.intelPanels.addChild(right);
@@ -2607,7 +2607,7 @@ export class ShipSelectScene {
       badgeBg.stroke({ color: 0xffef7e, width: 1.4, alpha: 0.88 });
       const badgeText = createText(tierLabel, {
         fontFamily: FONT_DISPLAY,
-        fontSize: this.layout.isMobile ? 10 : 11,
+        fontSize: this.layout.isMobile ? 12 : 14,
         fill: '#ffef7e',
         align: 'center',
         fontWeight: '900',
@@ -2638,7 +2638,7 @@ export class ShipSelectScene {
       badgeBg.stroke({ color: 0xffef7e, width: 1.8, alpha: 0.96 });
       const badgeText = createText(translateText('FIRST FLIGHT'), {
         fontFamily: FONT_DISPLAY,
-        fontSize: this.layout.isMobile ? 10 : 12,
+        fontSize: this.layout.isMobile ? 13 : 15,
         fill: '#ffef7e',
         align: 'center',
         fontWeight: '900',
@@ -2679,7 +2679,7 @@ export class ShipSelectScene {
     });
     const clearLabel = createText(translateText('CLEARS'), {
       fontFamily: FONT_DISPLAY,
-      fontSize: this.layout.isMobile ? 8 : 9,
+      fontSize: this.layout.isMobile ? 13 : 16,
       fill: mastery.tier.rank > 0 ? hexColor(mastery.tier.color) : '#91a8b8',
       fontWeight: '900',
       stroke: '#000000',
@@ -2695,7 +2695,7 @@ export class ShipSelectScene {
 
     const clearCount = createText(String(Math.max(0, Math.round(Number(mastery.clears) || 0))), {
       fontFamily: FONT_DISPLAY,
-      fontSize: this.layout.isMobile ? 9 : 10,
+      fontSize: this.layout.isMobile ? 14 : 16,
       fill: mastery.tier.rank > 0 ? '#f5ffff' : '#b8cad6',
       fontWeight: '900',
       stroke: '#000000',
@@ -2830,12 +2830,12 @@ export class ShipSelectScene {
     const traitText = this.getShipTraitText(ship);
     const trait = createText(traitText, {
       fontFamily: FONT_BODY,
-      fontSize: this.layout.isMobile ? 12 : 13,
+      fontSize: this.layout.isMobile ? 14 : 16,
       fill: this.toHexText(textAccent),
       align: 'center',
       wordWrap: true,
       wordWrapWidth: this.layout.isMobile ? 330 : 560,
-      lineHeight: 17,
+      lineHeight: this.layout.isMobile ? 19 : 21,
       stroke: '#000000',
       strokeThickness: 2
     });
@@ -3233,10 +3233,10 @@ export class ShipSelectScene {
       if (this.leftIntel.rankRail) {
         const fill = Math.max(0, Math.min(1, Number(rankProgress.progress) || 0));
         this.leftIntel.rankRail.clear();
-        this.leftIntel.rankRail.roundRect(16, 78, 196, 10, 5);
+        this.leftIntel.rankRail.roundRect(16, 86, 226, 12, 6);
         this.leftIntel.rankRail.fill({ color: 0x031323, alpha: 0.92 });
         this.leftIntel.rankRail.stroke({ color: 0x66ffdd, width: 1.2, alpha: 0.52 });
-        this.leftIntel.rankRail.roundRect(18, 80, 192 * fill, 6, 3);
+        this.leftIntel.rankRail.roundRect(18, 88, 222 * fill, 8, 4);
         this.leftIntel.rankRail.fill({ color: 0xffef7e, alpha: 0.94 });
       }
       this.setCareerSignalPulse(Boolean(
@@ -3265,12 +3265,12 @@ export class ShipSelectScene {
       this.rightIntel.role.scale.set(1);
       this.rightIntel.weapon.scale.set(1);
       this.rightIntel.trait.scale.set(1);
-      fitDisplayToBox(this.rightIntel.role, 226, 44, { minScale: 0.78 });
-      this.rightIntel.role.y = 44;
-      this.rightIntel.weapon.y = Math.max(76, bottomOf(this.rightIntel.role) + 6);
-      fitDisplayToBox(this.rightIntel.weapon, 226, 38, { minScale: 0.78 });
-      this.rightIntel.trait.y = Math.max(118, bottomOf(this.rightIntel.weapon) + 18);
-      fitDisplayToBox(this.rightIntel.trait, 226, 68, { minScale: 0.64 });
+      fitDisplayToBox(this.rightIntel.role, 268, 54, { minScale: 0.84 });
+      this.rightIntel.role.y = 50;
+      this.rightIntel.weapon.y = Math.max(96, bottomOf(this.rightIntel.role) + 8);
+      fitDisplayToBox(this.rightIntel.weapon, 268, 46, { minScale: 0.84 });
+      this.rightIntel.trait.y = Math.max(158, bottomOf(this.rightIntel.weapon) + 18);
+      fitDisplayToBox(this.rightIntel.trait, 268, 78, { minScale: 0.76 });
       this.rightIntel.unlock.scale.set(1);
       if (this.rightIntel.statPanel?.parent) {
         this.rightIntel.statPanel.parent.removeChild(this.rightIntel.statPanel);
@@ -3278,17 +3278,17 @@ export class ShipSelectScene {
       const accent = this.getReadableAccent(ship.visuals?.variant);
       const statPanel = createShipStatPanel(ship, {
         compact: true,
-        width: 228,
+        width: 266,
         accent,
         ranges: this.statRanges,
         title: 'LIVE TUNE',
         uiScaleMode: 'none'
       });
-      statPanel.position.set(131, Math.max(188, bottomOf(this.rightIntel.trait) + 12));
+      statPanel.position.set(150, Math.max(236, bottomOf(this.rightIntel.trait) + 14));
       this.rightIntel.panel.addChild(statPanel);
       this.rightIntel.statPanel = statPanel;
-      this.rightIntel.unlock.y = Math.min(330, bottomOf(statPanel) + 16);
-      fitDisplayToBox(this.rightIntel.unlock, 226, 42, { minScale: 0.58 });
+      this.rightIntel.unlock.y = Math.min(380, bottomOf(statPanel) + 16);
+      fitDisplayToBox(this.rightIntel.unlock, 268, 48, { minScale: 0.76 });
     }
 
     if (this.compactIntel) {

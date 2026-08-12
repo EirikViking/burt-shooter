@@ -2065,7 +2065,7 @@ export class GameOverScene {
       liveScore: formatScore(currentScore)
     }), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 13,
+      fontSize: 15,
       fontWeight: '800',
       fill: '#d9feff',
       stroke: '#001018',
@@ -2138,7 +2138,7 @@ export class GameOverScene {
     this.personalBestCarryTitle.style.wordWrapWidth = bannerWidth - 30;
     this.personalBestCarryTitle.position.set(0, mobile ? -27 : -31);
 
-    this.personalBestCarryScore.style.fontSize = mobile ? 11 : 13;
+    this.personalBestCarryScore.style.fontSize = mobile ? 13 : 15;
     this.personalBestCarryScore.style.wordWrap = true;
     this.personalBestCarryScore.style.wordWrapWidth = bannerWidth - 24;
     this.personalBestCarryScore.position.set(0, mobile ? 2 : 1);
@@ -2627,7 +2627,7 @@ export class GameOverScene {
 
     this.retryButtonHint = createText('CLICK / R / SPACE / GAMEPAD A', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: layout.isMobile ? 11 : 13,
+      fontSize: layout.isMobile ? 13 : 15,
       fontWeight: 'bold',
       fill: '#9cfbff',
       stroke: '#031323',
@@ -2760,7 +2760,7 @@ export class GameOverScene {
     }
     if (this.retryButtonHint) {
       this.retryButtonHint.text = config.hint;
-      this.retryButtonHint.style.fontSize = config.runback ? (layout.isMobile ? 12 : compactRunbackDesktop ? 13 : 15) : (layout.isMobile ? 11 : 13);
+      this.retryButtonHint.style.fontSize = config.runback ? (layout.isMobile ? 14 : compactRunbackDesktop ? 15 : 16) : (layout.isMobile ? 13 : 15);
       this.retryButtonHint.style.fill = config.runback ? '#c8ffff' : '#9cfbff';
       this.retryButtonHint.y = config.runback ? (layout.isMobile ? 20 : compactRunbackDesktop ? 18 : 24) : (layout.isMobile ? 15 : 17);
     }
@@ -2791,7 +2791,7 @@ export class GameOverScene {
 
     this.leaderboardButtonHint = createText('L / GAMEPAD Y', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: layout.isMobile ? 10 : 12,
+      fontSize: layout.isMobile ? 13 : 15,
       fontWeight: 'bold',
       fill: '#ffd15c',
       stroke: '#031323',
@@ -2868,7 +2868,7 @@ export class GameOverScene {
       this.leaderboardButtonLabel.y = layout.isMobile ? -7 : -8;
     }
     if (this.leaderboardButtonHint) {
-      this.leaderboardButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
+      this.leaderboardButtonHint.style.fontSize = layout.isMobile ? 13 : 15;
       this.leaderboardButtonHint.y = layout.isMobile ? 14 : 16;
     }
   }
@@ -4711,7 +4711,7 @@ export class GameOverScene {
 
     this.hangarButtonHint = createText('H', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: layout.isMobile ? 10 : 12,
+      fontSize: layout.isMobile ? 13 : 15,
       fontWeight: 'bold',
       fill: '#ffd15c',
       stroke: '#031323',
@@ -4769,7 +4769,7 @@ export class GameOverScene {
       this.hangarButtonLabel.y = layout.isMobile ? -7 : -8;
     }
     if (this.hangarButtonHint) {
-      this.hangarButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
+      this.hangarButtonHint.style.fontSize = layout.isMobile ? 13 : 15;
       this.hangarButtonHint.y = layout.isMobile ? 13 : 15;
     }
   }
@@ -4799,7 +4799,7 @@ export class GameOverScene {
 
     this.mainMenuButtonHint = createText(translateText('ESC / B'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: layout.isMobile ? 10 : 12,
+      fontSize: layout.isMobile ? 13 : 15,
       fontWeight: 'bold',
       fill: '#ffd15c',
       stroke: '#031323',
@@ -4859,7 +4859,7 @@ export class GameOverScene {
     }
     if (this.mainMenuButtonHint) {
       this.mainMenuButtonHint.text = translateText('ESC / B');
-      this.mainMenuButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
+      this.mainMenuButtonHint.style.fontSize = layout.isMobile ? 13 : 15;
       this.mainMenuButtonHint.y = layout.isMobile ? 13 : 15;
     }
   }
@@ -4997,7 +4997,7 @@ export class GameOverScene {
 
     this.runReportButtonHint = createText(translateText('Counter advice'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: layout.isMobile ? 10 : 12,
+      fontSize: layout.isMobile ? 13 : 15,
       fontWeight: 'bold',
       fill: '#9cfbff',
       stroke: '#031323',
@@ -5052,7 +5052,7 @@ export class GameOverScene {
     this.runReportButtonLabel.y = layout.isMobile ? -7 : -8;
     if (this.runReportButtonHint) {
       this.runReportButtonHint.text = translateText(experiment ? 'LOCAL TELEMETRY + COPY' : dailySignal ? 'VIEW + SAVE SHARE CARD' : 'Counter advice');
-      this.runReportButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
+      this.runReportButtonHint.style.fontSize = layout.isMobile ? 13 : 15;
       this.runReportButtonHint.y = layout.isMobile ? 14 : 16;
     }
   }

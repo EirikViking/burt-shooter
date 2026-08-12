@@ -90,7 +90,7 @@ function createStatRow({ label, value, progress, color, y, width, compact, uiSca
   const barHeight = compact ? 9 : 12;
 
   const labelText = makeText(label, {
-    fontSize: compact ? 11 : 13,
+    fontSize: compact ? 13 : 15,
     fontWeight: '800',
     fill: '#aeefff',
     uiScaleMode
@@ -104,7 +104,7 @@ function createStatRow({ label, value, progress, color, y, width, compact, uiSca
   row.addChild(bar);
 
   const valueText = makeText(value, {
-    fontSize: compact ? 12 : 14,
+    fontSize: compact ? 14 : 16,
     fontWeight: '900',
     fill: toHexText(color),
     uiScaleMode
@@ -119,7 +119,7 @@ function createStatRow({ label, value, progress, color, y, width, compact, uiSca
 export function createShipStatPanel(ship = {}, options = {}) {
   const compact = Boolean(options.compact);
   const width = options.width || (compact ? 330 : 560);
-  const height = options.height || (compact ? 96 : 148);
+  const height = options.height || (compact ? 110 : 156);
   const accent = Number.isFinite(options.accent) ? options.accent : 0x00eaff;
   const ranges = options.ranges || DEFAULT_RANGES;
   const stats = ship.stats || {};
@@ -140,7 +140,7 @@ export function createShipStatPanel(ship = {}, options = {}) {
 
   const title = makeText(options.title || 'COMBAT PROFILE', {
     fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
-    fontSize: compact ? 11 : 14,
+    fontSize: compact ? 14 : 16,
     fontWeight: '900',
     fill: '#ffffff',
     uiScaleMode
@@ -150,7 +150,7 @@ export function createShipStatPanel(ship = {}, options = {}) {
   panel.addChild(title);
 
   const roleText = makeText(role, {
-    fontSize: compact ? 11 : 13,
+    fontSize: compact ? 13 : 15,
     fontWeight: '900',
     fill: toHexText(accent),
     uiScaleMode
@@ -189,8 +189,8 @@ export function createShipStatPanel(ship = {}, options = {}) {
     });
   }
 
-  const startY = compact ? 42 : 52;
-  const step = compact ? 18 : 24;
+  const startY = compact ? 46 : 54;
+  const step = compact ? 21 : 25;
   rows.forEach((row, index) => {
     panel.addChild(createStatRow({
       ...row,

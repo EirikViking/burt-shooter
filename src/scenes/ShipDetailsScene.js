@@ -138,7 +138,7 @@ export class ShipDetailsScene {
         const locked = !isShipUnlocked(this.spriteKey, this.unlockProgress);
         const usageText = createText([translateText('YOUR LAUNCHES') + ':', usageCount, '//', translateText('LOCAL PROFILE')].join(' '), {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: 13,
+            fontSize: 16,
             fill: '#999999',
             align: 'center'
         });
@@ -153,7 +153,7 @@ export class ShipDetailsScene {
             : getShipUnlockHistoryLine(this.spriteKey, this.unlockProgress, { translate: translateText });
         const unlockText = createText(unlockLine, {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: isMobile ? 13 : 15,
+            fontSize: isMobile ? 15 : 18,
             fill: locked ? '#ffcc00' : '#ffef7e',
             align: 'center',
             wordWrap: true,
@@ -234,7 +234,7 @@ export class ShipDetailsScene {
             ].filter(Boolean).join(' // ');
             const metaText = createText(metaLine, {
                 fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-                fontSize: isMobile ? 11 : 13,
+                fontSize: isMobile ? 13 : 15,
                 fill: tierLabel ? '#ffef7e' : '#d8fbff',
                 align: 'center',
                 wordWrap: true,
@@ -254,7 +254,7 @@ export class ShipDetailsScene {
         const traitTitleText = 'TRAIT: ' + explanation.label;
         const traitTitle = createText(traitTitleText, {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: isMobile ? 13 : 15,
+            fontSize: isMobile ? 15 : 18,
             fill: '#66ffcc',
             align: 'center',
             stroke: '#000000',
@@ -268,7 +268,7 @@ export class ShipDetailsScene {
 
         const traitBody = createText(explanation.lines.map(line => `- ${line}`).join('\n'), {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: isMobile ? 10 : 12,
+            fontSize: isMobile ? 13 : 15,
             fill: '#d8fbff',
             align: 'left',
             wordWrap: true,
@@ -292,7 +292,7 @@ export class ShipDetailsScene {
 
         const title = createText(translateText('SHIP MASTERY'), {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: isMobile ? 12 : 14,
+            fontSize: isMobile ? 14 : 16,
             fill: '#d8fbff',
             fontWeight: '800'
         });
@@ -323,7 +323,7 @@ export class ShipDetailsScene {
 
         const tierLabel = createText(translateText(mastery.tier.label), {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: isMobile ? 12 : 14,
+            fontSize: isMobile ? 14 : 16,
             fill: mastery.tier.id === 'none' ? '#8298aa' : `#${mastery.tier.color.toString(16).padStart(6, '0')}`,
             fontWeight: '900'
         });
@@ -343,7 +343,7 @@ export class ShipDetailsScene {
                 });
         const goalText = createText(goal, {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: isMobile ? 10 : 12,
+            fontSize: isMobile ? 13 : 15,
             fill: '#91b7c7',
             align: 'center'
         });
@@ -363,7 +363,7 @@ export class ShipDetailsScene {
         for (const para of paragraphs) {
             const paraText = createText(para, {
                 fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-                fontSize: isMobile ? 11 : 13,
+                fontSize: isMobile ? 13 : 15,
                 fill: '#dddddd',
                 align: 'left',
                 wordWrap: true,

@@ -36,7 +36,12 @@ const SOURCE = Object.freeze({
   narrationSector: 'Sector Run. Unranked checkpoint practice. Start from a sector unlocked in Mayhem; records stay local.',
   dailyBeat: 'CLEARED · BEAT {score}',
   dailyBestAttempt: 'CLEAR S{finishSector} · BEST S{sector}',
-  dailyOpen: 'CLEAR S{sector} · {route}'
+  dailyOpen: 'CLEAR S{sector} · {route}',
+  startPlaying: 'START PLAYING',
+  play: 'PLAY',
+  newPilotStart: 'NEW PILOT — START HERE',
+  newPilotMayhem: 'Fight through sectors, beat bosses, and choose upgrades along the way.',
+  pilotOrdersStart: 'PILOT ORDERS: {orders}'
 });
 
 const TRANSLATIONS = Object.freeze({
@@ -78,7 +83,12 @@ const TRANSLATIONS = Object.freeze({
     narrationSector: 'Sector Run. Ungewertetes Checkpoint-Training. Starte in einem in Mayhem freigeschalteten Sektor; Rekorde bleiben lokal.',
     dailyBeat: 'ABGESCHLOSSEN · {score} SCHLAGEN',
     dailyBestAttempt: 'S{finishSector} ABSCHLIESSEN · BESTE S{sector}',
-    dailyOpen: 'S{sector} ABSCHLIESSEN · {route}'
+    dailyOpen: 'S{sector} ABSCHLIESSEN · {route}',
+    startPlaying: 'JETZT SPIELEN',
+    play: 'SPIELEN',
+    newPilotStart: 'NEUER PILOT — HIER STARTEN',
+    newPilotMayhem: 'Kämpfe dich durch Sektoren, besiege Bosse und wähle unterwegs Upgrades.',
+    pilotOrdersStart: 'PILOTENBEFEHLE: {orders}'
   }),
   es: Object.freeze({
     dailyStatic: 'SUPERA S10 · RUTA NUEVA CADA DÍA',
@@ -118,7 +128,12 @@ const TRANSLATIONS = Object.freeze({
     narrationSector: 'Sector Run. Práctica de checkpoints sin clasificación. Empieza en un sector desbloqueado en Mayhem; los récords quedan locales.',
     dailyBeat: 'SUPERADO · BATE {score}',
     dailyBestAttempt: 'SUPERA S{finishSector} · MEJOR S{sector}',
-    dailyOpen: 'SUPERA S{sector} · {route}'
+    dailyOpen: 'SUPERA S{sector} · {route}',
+    startPlaying: 'EMPEZAR A JUGAR',
+    play: 'JUGAR',
+    newPilotStart: 'PILOTO NUEVO — EMPIEZA AQUÍ',
+    newPilotMayhem: 'Atraviesa sectores, derrota jefes y elige mejoras por el camino.',
+    pilotOrdersStart: 'ÓRDENES DE PILOTO: {orders}'
   }),
   ru: Object.freeze({
     dailyStatic: 'ПРОЙТИ S10 · НОВЫЙ МАРШРУТ КАЖДЫЙ ДЕНЬ',
@@ -158,7 +173,12 @@ const TRANSLATIONS = Object.freeze({
     narrationSector: 'Сектор. Нерейтинговая тренировка с контрольной точки. Начните в секторе, открытом в Mayhem; рекорды остаются локальными.',
     dailyBeat: 'ПРОЙДЕНО · ПОБИТЬ {score}',
     dailyBestAttempt: 'ПРОЙТИ S{finishSector} · ЛУЧШЕЕ S{sector}',
-    dailyOpen: 'ПРОЙТИ S{sector} · {route}'
+    dailyOpen: 'ПРОЙТИ S{sector} · {route}',
+    startPlaying: 'НАЧАТЬ ИГРУ',
+    play: 'ИГРАТЬ',
+    newPilotStart: 'НОВЫЙ ПИЛОТ — НАЧНИТЕ ЗДЕСЬ',
+    newPilotMayhem: 'Проходите секторы, побеждайте боссов и выбирайте улучшения по пути.',
+    pilotOrdersStart: 'ПРИКАЗЫ ПИЛОТА: {orders}'
   }),
   'zh-CN': Object.freeze({
     dailyStatic: '通关 S10 · 每日新路线',
@@ -198,7 +218,12 @@ const TRANSLATIONS = Object.freeze({
     narrationSector: '扇区模式。非排位检查点练习。从狂潮模式已解锁的扇区开始；纪录仅保存在本地。',
     dailyBeat: '已通关 · 超越 {score}',
     dailyBestAttempt: '通关 S{finishSector} · 最佳 S{sector}',
-    dailyOpen: '通关 S{sector} · {route}'
+    dailyOpen: '通关 S{sector} · {route}',
+    startPlaying: '开始游戏',
+    play: '游玩',
+    newPilotStart: '新飞行员 — 从这里开始',
+    newPilotMayhem: '穿越各个区域，击败首领，并一路选择升级。',
+    pilotOrdersStart: '飞行员指令: {orders}'
   }),
   'pt-BR': Object.freeze({
     dailyStatic: 'SUPERE S10 · NOVA ROTA DIÁRIA',
@@ -238,7 +263,12 @@ const TRANSLATIONS = Object.freeze({
     narrationSector: 'Sector Run. Treino de checkpoint não ranqueado. Comece em um setor desbloqueado no Mayhem; os recordes ficam locais.',
     dailyBeat: 'CONCLUÍDO · SUPERE {score}',
     dailyBestAttempt: 'SUPERE S{finishSector} · MELHOR S{sector}',
-    dailyOpen: 'SUPERE S{sector} · {route}'
+    dailyOpen: 'SUPERE S{sector} · {route}',
+    startPlaying: 'COMEÇAR A JOGAR',
+    play: 'JOGAR',
+    newPilotStart: 'NOVO PILOTO — COMECE AQUI',
+    newPilotMayhem: 'Atravesse setores, derrote chefes e escolha melhorias pelo caminho.',
+    pilotOrdersStart: 'ORDENS DE PILOTO: {orders}'
   }),
   ko: Object.freeze({
     dailyStatic: 'S10 클리어 · 매일 새로운 경로',
@@ -278,7 +308,12 @@ const TRANSLATIONS = Object.freeze({
     narrationSector: '섹터 런. 비랭크 체크포인트 연습. 메이헴에서 해금한 섹터부터 시작하며 기록은 로컬에 남습니다.',
     dailyBeat: '클리어 · {score} 경신',
     dailyBestAttempt: 'S{finishSector} 클리어 · 최고 S{sector}',
-    dailyOpen: 'S{sector} 클리어 · {route}'
+    dailyOpen: 'S{sector} 클리어 · {route}',
+    startPlaying: '게임 시작',
+    play: '플레이',
+    newPilotStart: '신입 파일럿 — 여기서 시작',
+    newPilotMayhem: '섹터를 돌파하고 보스를 쓰러뜨리며 업그레이드를 선택하세요.',
+    pilotOrdersStart: '파일럿 명령: {orders}'
   }),
   ja: Object.freeze({
     dailyStatic: 'S10クリア · 毎日新ルート',
@@ -318,7 +353,12 @@ const TRANSLATIONS = Object.freeze({
     narrationSector: 'セクターラン。非ランクのチェックポイント練習。メイヘムで解放したセクターから開始し、記録はローカルに残ります。',
     dailyBeat: 'クリア済み · {score}を更新',
     dailyBestAttempt: 'S{finishSector}クリア · ベスト S{sector}',
-    dailyOpen: 'S{sector}クリア · {route}'
+    dailyOpen: 'S{sector}クリア · {route}',
+    startPlaying: 'ゲームを始める',
+    play: 'プレイ',
+    newPilotStart: '新人パイロット — ここから開始',
+    newPilotMayhem: 'セクターを進み、ボスを倒しながらアップグレードを選びましょう。',
+    pilotOrdersStart: 'パイロット指令: {orders}'
   })
 });
 

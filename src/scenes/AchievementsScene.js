@@ -8,7 +8,7 @@ import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
-const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
+const FONT_BODY = 'Rajdhani, Bahnschrift, Segoe UI, Arial, sans-serif';
 const GAMEPAD_DEADZONE = 0.42;
 const ACHIEVEMENT_ICON_BASE = '/art/generated/nova-swarm/achievements';
 
@@ -350,7 +350,7 @@ export class AchievementsScene {
     this.shortLayout = short;
     const titleSize = short ? 30 : Math.round(getResponsiveFontSize(layout, 'title') * (mobile ? 0.82 : 0.9));
     const summarySize = Math.max(15, getResponsiveFontSize(layout, 'body'));
-    const hintSize = Math.max(12, getResponsiveFontSize(layout, 'small'));
+    const hintSize = Math.max(15, getResponsiveFontSize(layout, 'small'));
 
     this.layoutBackdrop(width, height);
     this.backdropShade.clear();
@@ -382,7 +382,7 @@ export class AchievementsScene {
 
     this.columns = width >= 980 ? 2 : 1;
     this.columnGap = this.columns > 1 ? 18 : 0;
-    this.rowHeight = short ? 52 : mobile ? 78 : 82;
+    this.rowHeight = short ? 82 : mobile ? 122 : 148;
     const bottomReserve = short ? 46 : mobile ? 98 : 108;
     this.listTop = this.summary.y + (short ? 20 : mobile ? 32 : 42);
     const listBottom = height - bottomInset - bottomReserve;
@@ -497,7 +497,7 @@ export class AchievementsScene {
     bg.fill({ color: unlocked ? 0xffd15c : 0x496071, alpha: unlocked ? 0.8 : 0.55 });
     container.addChild(bg);
 
-    const iconSize = short ? 38 : 54;
+    const iconSize = short ? 48 : 72;
     const iconX = short ? 22 : 24;
     const iconY = (height - iconSize) / 2;
     const iconFrame = new PIXI.Graphics();
@@ -532,11 +532,11 @@ export class AchievementsScene {
       // The row remains readable with the procedural achievement sigil.
     });
 
-    const textX = short ? 74 : 92;
+    const textX = short ? 82 : 106;
     const textWidth = Math.max(120, this.rowWidth - textX - 18);
     const status = createText(translateText(unlocked ? 'UNLOCKED' : 'LOCKED'), {
       fontFamily: FONT_BODY,
-      fontSize: short ? 9 : 11,
+      fontSize: short ? 15 : 17,
       fontWeight: 'bold',
       fill: unlocked ? '#fff3a2' : '#8fa6b8',
       stroke: '#031323',
@@ -544,12 +544,12 @@ export class AchievementsScene {
       align: 'left'
     });
     status.x = textX;
-    status.y = short ? 6 : 8;
+    status.y = short ? 7 : 10;
     container.addChild(status);
 
     const name = createText(hidden ? translateText('Hidden Achievement') : translateText(achievement.name), {
       fontFamily: FONT_DISPLAY,
-      fontSize: short ? 12 : this.columns > 1 ? 15 : 16,
+      fontSize: short ? 18 : this.columns > 1 ? 21 : 22,
       fontWeight: '800',
       fill: unlocked ? '#c9fbff' : '#b8c6d4',
       stroke: '#031323',
@@ -559,12 +559,12 @@ export class AchievementsScene {
       wordWrapWidth: textWidth
     });
     name.x = textX;
-    name.y = short ? 18 : 23;
+    name.y = short ? 23 : 31;
     container.addChild(name);
 
     const description = createText(hidden ? translateText('Unlock to reveal details.') : translateText(achievement.description), {
       fontFamily: FONT_BODY,
-      fontSize: short ? 10 : 12,
+      fontSize: short ? 16 : 18,
       fill: unlocked ? '#d8e6ff' : '#7e91a3',
       stroke: '#031323',
       strokeThickness: 2,
@@ -573,7 +573,7 @@ export class AchievementsScene {
       wordWrapWidth: textWidth
     });
     description.x = textX;
-    description.y = short ? 34 : 45;
+    description.y = short ? 48 : 69;
     container.addChild(description);
 
     return container;

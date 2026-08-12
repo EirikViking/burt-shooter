@@ -69,6 +69,7 @@ import {
 import { getDefaultShowPilotOrders } from '../progression/RunContracts.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from './MenuFxLayer.js';
 import { applyResponsiveLayout, getCurrentLayout } from './responsiveLayout.js';
+import { READABILITY } from './readabilityTokens.js';
 
 function percent(value) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
@@ -270,8 +271,8 @@ export class SettingsOverlay {
 
     const isCompact = width < 760 || height < 680;
     const twoColumn = width >= 900 && height >= 520;
-    const panelWidth = Math.min(width * (isCompact ? 0.96 : 0.92), twoColumn ? 1240 : 700);
-    const panelHeight = Math.min(height * (isCompact ? 0.96 : 0.92), twoColumn ? 840 : 860);
+    const panelWidth = Math.min(width * (isCompact ? 0.96 : 0.9), twoColumn ? 1240 : 700);
+    const panelHeight = Math.min(height * (isCompact ? 0.94 : 0.74), twoColumn ? 700 : 820);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     this.panelBounds = {
@@ -297,7 +298,7 @@ export class SettingsOverlay {
 
     const titleText = createText(this.title, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: Math.round((isCompact ? 26 : 36) * this.uiScale),
+      fontSize: Math.round((isCompact ? 28 : 38) * this.uiScale),
       fontWeight: 'bold',
       fill: '#f6fbff',
       stroke: '#003344',
@@ -308,16 +309,16 @@ export class SettingsOverlay {
     this.container.addChild(titleText);
 
     const dense = height < 760;
-    const sectionGap = Math.round((dense ? 24 : 28) * this.uiScale);
-    const rowGap = Math.round((dense ? 32 : 36) * this.uiScale);
-    const tighterGap = Math.round((dense ? 29 : 33) * this.uiScale);
-    const sliderGap = Math.round((dense ? 31 : 35) * this.uiScale);
-    const footerButtonHeight = isCompact ? 32 : 38;
+    const sectionGap = Math.round((dense ? 28 : 32) * this.uiScale);
+    const rowGap = Math.round((dense ? 42 : READABILITY.controls.settingsRowHeight) * this.uiScale);
+    const tighterGap = Math.round((dense ? 40 : 46) * this.uiScale);
+    const sliderGap = Math.round((dense ? 40 : 46) * this.uiScale);
+    const footerButtonHeight = isCompact ? 40 : READABILITY.controls.actionHeight;
     const stackedButtonWidth = Math.min(240 * this.uiScale, panelWidth - 56);
     const footerY = panelY + panelHeight - (isCompact ? 26 : 38);
-    const tabsY = panelY + (isCompact ? 88 : 96);
-    this.addSettingsPageTabs(panelX + 28, tabsY, panelWidth - 56, isCompact ? 30 : 34);
-    const contentTop = tabsY + Math.round((isCompact ? 25 : 29) * this.uiScale);
+    const tabsY = panelY + (isCompact ? 88 : 98);
+    this.addSettingsPageTabs(panelX + 28, tabsY, panelWidth - 56, isCompact ? 38 : 44);
+    const contentTop = tabsY + Math.round((isCompact ? 36 : 42) * this.uiScale);
     const contentBottom = footerY - footerButtonHeight / 2 - Math.round((isCompact ? 20 : 26) * this.uiScale);
     const columnPad = twoColumn ? 30 : 28;
     const columnGap = twoColumn ? 26 : 0;
@@ -332,6 +333,7 @@ export class SettingsOverlay {
     };
 
     const columnHeight = Math.max(120, contentBottom - contentTop);
+    this.settingsContentBottom = contentBottom;
     const addFrame = (x, frameWidth, accent, key) => {
       this.drawSettingsSectionFrame(x, contentTop, frameWidth, columnHeight, accent);
       this.sectionBounds.push({
@@ -354,15 +356,6 @@ export class SettingsOverlay {
         onButton: (button) => { this.confirmExitButton = button; }
       });
       y += rowGap;
-      this.addToggleRow('Show Pilot Orders', menuSettings.showPilotOrders, y, (enabled) => saveMenuSettings({
-        showPilotOrders: enabled
-      }, {
-        defaultShowPilotOrders: this.getDefaultShowPilotOrdersSetting()
-      }), {
-        id: 'show_pilot_orders',
-        onButton: (button) => { this.pilotOrdersButton = button; }
-      });
-      y += tighterGap;
       this.addFireInputRow(controlSettings.fireInput, y);
       y += tighterGap;
       this.addToggleRow('Mouse Steering', controlSettings.mouseSteering, y, (enabled) => {
@@ -372,7 +365,7 @@ export class SettingsOverlay {
       this.addKeyboardBindingsRow('KEYBOARD CONTROLS', y);
       return y;
     };
-    const renderAudioPlaybackRows = (start) => {
+    const renderAudioPlaybackRows = (start, { includeAudioTest = true } = {}) => {
       let y = start;
       this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
       y += tighterGap;
@@ -383,10 +376,17 @@ export class SettingsOverlay {
       this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
       y += tighterGap;
       this.addChatterFrequencyRow('Chatter Frequency', settings.chatterFrequency, y);
-      y += Math.round((dense ? 48 : 52) * this.uiScale);
+      // The chatter safety note is intentionally a full readable line below
+      // the selector, so reserve a complete settings row before MUSIC SET.
+      y += Math.round((dense ? 70 : 74) * this.uiScale);
       this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
-      y += tighterGap;
-      this.addAudioTestRow('TEST', y);
+      if (includeAudioTest) {
+        y = Math.min(
+          y + Math.round((dense ? 38 : 42) * this.uiScale),
+          contentBottom - Math.round(18 * this.uiScale)
+        );
+        this.addAudioTestRow('TEST', y);
+      }
       return y;
     };
     const renderVolumeRows = (start) => {
@@ -430,7 +430,7 @@ export class SettingsOverlay {
     if (this.activePage === 'audio') {
       setFormColumn(leftX);
       this.addSectionLabel('PLAYBACK', startY);
-      let y = renderAudioPlaybackRows(startY + sectionGap);
+      let y = renderAudioPlaybackRows(startY + sectionGap, { includeAudioTest: !twoColumn });
       if (!twoColumn) {
         y += nextSectionGap;
         this.addSectionLabel('VOLUME', y);
@@ -438,7 +438,12 @@ export class SettingsOverlay {
       } else {
         setFormColumn(rightX);
         this.addSectionLabel('VOLUME', startY);
-        renderVolumeRows(startY + sectionGap);
+        const volumeEndY = renderVolumeRows(startY + sectionGap);
+        const audioTestY = Math.min(
+          volumeEndY + Math.round((dense ? 48 : 54) * this.uiScale),
+          contentBottom - Math.round(18 * this.uiScale)
+        );
+        this.addAudioTestRow('TEST', audioTestY);
       }
     } else if (this.activePage === 'accessibility') {
       setFormColumn(leftX);
@@ -462,7 +467,10 @@ export class SettingsOverlay {
         const infoTop = y + Math.round(38 * this.uiScale);
         this.addPrototypeInfoCard(infoTop, leftX, columnWidth, Math.max(140, contentBottom - infoTop - Math.round(8 * this.uiScale)));
       } else {
-        this.addPrototypeInfoCard(contentTop + Math.round(24 * this.uiScale), rightX, columnWidth, columnHeight - Math.round(48 * this.uiScale));
+        // The explanation is the primary content of this column. Use the full
+        // framed height so it never has to shrink below the readability floor.
+        const prototypeInfoTop = contentTop + Math.round(4 * this.uiScale);
+        this.addPrototypeInfoCard(prototypeInfoTop, rightX, columnWidth, columnHeight - Math.round(8 * this.uiScale));
       }
     } else {
       setFormColumn(leftX);
@@ -594,7 +602,7 @@ export class SettingsOverlay {
       });
       button.label = `ui_settingsPage_${pageId}`;
       button._label.style.fill = this.activePage === pageId ? '#ffef7e' : '#b8eaff';
-      button._label.style.fontSize = Math.max(12, Math.round(15 * Math.min(1.15, scale)));
+      button._label.style.fontSize = Math.max(14, Math.round(16 * Math.min(1.15, scale)));
       fitTextToWidth(button._label, buttonWidth - 18, { minScale: 0.62 });
       this.pageButtons[pageId] = button;
       this.container.addChild(button);
@@ -609,7 +617,8 @@ export class SettingsOverlay {
   }
 
   renderExperimentLauncher(startY) {
-    const rowGap = Math.round(43 * this.uiScale);
+    const availableHeight = Math.max(240, (this.settingsContentBottom || this.height) - startY);
+    const rowGap = Math.round((availableHeight < 320 ? 39 : 43) * this.uiScale);
     let y = startY;
     const draft = normalizeLateGameExperimentDraft(this.experimentDraft);
     this.experimentDraft = draft;
@@ -757,7 +766,7 @@ export class SettingsOverlay {
     const bodyCopy = translateText('This is a temporary, unranked playground where the developer and experienced players test late-game pressure. It is not an official game mode. Rules, balance, and content may change or disappear. Test runs grant no rankings, achievements, progression, or awards.');
     const body = createText(bodyCopy, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 17,
+      fontSize: 18,
       fontWeight: '600',
       fill: '#d6f8ff',
       align: 'center',
@@ -855,7 +864,10 @@ export class SettingsOverlay {
   }
 
   addPrototypeInfoCard(y, x, width, height) {
-    const pad = Math.max(22, Math.round(30 * this.uiScale));
+    const compactInfo = height < 480;
+    const pad = compactInfo
+      ? Math.max(16, Math.round(20 * this.uiScale))
+      : Math.max(22, Math.round(30 * this.uiScale));
     const textWidth = Math.max(180, width - pad * 2);
     const cardX = x + 18;
     const cardWidth = width - 36;
@@ -867,7 +879,7 @@ export class SettingsOverlay {
 
     const content = new PIXI.Container();
     content.label = 'ui_settingsPrototypeInfoContent';
-    content.position.set(x + pad, y + Math.round(20 * this.uiScale));
+    content.position.set(x + pad, y + Math.round((compactInfo ? 12 : 20) * this.uiScale));
     this.container.addChild(content);
 
     const blocks = [
@@ -913,17 +925,18 @@ export class SettingsOverlay {
       }
     ];
     const scaleCap = Math.min(1.16, this.uiScale);
+    const gapScale = compactInfo ? 0.42 : 1;
     let cursorY = 0;
 
     blocks.forEach(({ kind = 'body', source, accent = false, emphasis = false, gapBefore = 0 }) => {
-      cursorY += Math.round(gapBefore * scaleCap);
+      cursorY += Math.round(gapBefore * scaleCap * gapScale);
       const heading = kind === 'heading';
       const text = createText(translateText(source), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: Math.round((heading ? 17 : 14) * scaleCap),
+        fontSize: Math.round((heading ? 19 : 16) * scaleCap),
         fontWeight: heading ? '900' : (emphasis ? '700' : '500'),
         fill: heading ? '#ffef7e' : (accent ? '#ffc96e' : (emphasis ? '#e9fbff' : '#c9f4ff')),
-        lineHeight: Math.round((heading ? 19 : 18) * scaleCap),
+        lineHeight: Math.round((heading ? (compactInfo ? 21 : 24) : (compactInfo ? 18 : 22)) * scaleCap),
         wordWrap: !heading,
         wordWrapWidth: textWidth,
         breakWords: !heading
@@ -934,7 +947,7 @@ export class SettingsOverlay {
       cursorY += text.height;
     });
 
-    const availableHeight = Math.max(80, height - Math.round(40 * this.uiScale));
+    const availableHeight = Math.max(80, height - Math.round((compactInfo ? 24 : 40) * this.uiScale));
     const measuredWidth = Math.max(1, content.width);
     const measuredHeight = Math.max(1, content.height);
     const contentScale = Math.min(1, textWidth / measuredWidth, availableHeight / measuredHeight);
@@ -1124,7 +1137,7 @@ export class SettingsOverlay {
 
     const hint = createText(selected().hint, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 12,
+      fontSize: 16,
       fill: '#ffc96e'
     });
     hint.anchor.set(0, 0.5);
@@ -1212,7 +1225,7 @@ export class SettingsOverlay {
 
     const hint = createText(translateText(selected().hint), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 12,
+      fontSize: 16,
       fill: '#ffc96e'
     });
     hint.anchor.set(0, 0.5);
@@ -1270,7 +1283,7 @@ export class SettingsOverlay {
     const focus = new PIXI.Graphics();
     const valueText = createText(percent(initialValue), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 15,
+      fontSize: 16,
       fill: '#ffffff'
     });
     valueText.anchor.set(0, 0.5);
@@ -1414,7 +1427,7 @@ export class SettingsOverlay {
   addSectionLabel(label, y) {
     const text = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 14,
+      fontSize: 16,
       fontWeight: '900',
       fill: '#ffef7e',
       letterSpacing: 0
@@ -1559,7 +1572,7 @@ export class SettingsOverlay {
 
     const status = createText(translateText('Display changes apply immediately'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 12,
+      fontSize: 16,
       fill: '#ffc96e'
     });
     status.anchor.set(0, 0.5);
@@ -1600,7 +1613,7 @@ export class SettingsOverlay {
     if (description) {
       const hint = createText(translateText(description), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: 9,
+        fontSize: 15,
         fill: '#ffc96e',
         align: 'center',
         wordWrap: true,
