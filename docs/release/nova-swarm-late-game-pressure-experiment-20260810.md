@@ -25,7 +25,7 @@ No telemetry, copied summary, feedback, browser editor, forum post, or publicati
 
 ## Scenario and fixture contract
 
-Standard Test is the comparable default. It starts at Sector 75 with a deterministic seed, canonical 25-minute elapsed-pressure hydration, exactly three lives, disabled drafts, and a ten-sector window. Reaching the end opens the local report; it is a measurement window, not a proposed ending for ranked Nova Swarm.
+Standard Test is the comparable default. It starts at Sector 75 with a deterministic seed, canonical 25-minute elapsed-pressure hydration, exactly three lives, a fixed starting fixture, and a ten-sector window. Tactical tests retain the normal post-boss augment draft before the next sector; Pure tests remain draft-free. Reaching the end opens the local report; it is a measurement window, not a proposed ending for ranked Nova Swarm.
 
 Endurance Test supports Sectors 60, 75, 100, 120, and 150, with either three lives or a disclosed 12-life mature-stock fixture. It continues until death or voluntary retirement and never presents itself as a naturally reached sector.
 

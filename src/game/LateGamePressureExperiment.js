@@ -228,7 +228,7 @@ export function createLateGamePressureExperimentRun(request = {}) {
     lifeStock: draft.lifeStock,
     lives,
     pressureProfile,
-    draftMode: 'disabled',
+    draftMode: draft.ruleset === LATE_GAME_EXPERIMENT_RULESETS.TACTICAL ? 'enabled' : 'disabled',
     seed,
     launchedAtMs: Date.now(),
     metrics: {

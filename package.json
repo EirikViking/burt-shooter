@@ -339,6 +339,7 @@
     "check:high-sector-runtime": "node scripts/check-high-sector-runtime.mjs",
     "check:high-sector-benchmarks": "node scripts/check-high-sector-benchmarks.mjs",
     "check:late-game-experiment": "node scripts/check-late-game-experiment.mjs",
+    "check:late-game-experiment-draft-flow": "node scripts/check-late-game-experiment-draft-flow.mjs",
     "check:late-game-experiment-report-ui": "node scripts/check-late-game-experiment-report-ui.mjs",
     "analyze:frame-cadence": "node scripts/analyze-frame-cadence-video.mjs",
     "check:frame-pacing-probe:browser": "node scripts/check-frame-pacing-probe-browser.mjs",

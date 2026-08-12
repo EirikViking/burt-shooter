@@ -65,7 +65,7 @@ assert.equal(standardA.startSector, 75);
 assert.equal(standardA.endSectorExclusive, 85);
 assert.equal(standardA.lives, 3);
 assert.equal(standardA.pressureProfile.elapsedSeconds, 1500);
-assert.equal(standardA.draftMode, 'disabled');
+assert.equal(standardA.draftMode, 'enabled', 'Tactical experiments must retain post-boss augment drafts');
 assert.equal(standardA.seed, standardB.seed, 'equivalent Standard fixtures must have deterministic seeds');
 assert.equal(standardA.underlyingRunMode, 'ranked_tactical');
 assert.equal(standardA.permanentPierceContract, 'bounded');
@@ -193,6 +193,7 @@ const pure = createLateGamePressureExperimentRun({
   phasePulseAvailable: false
 });
 assert.equal(pure.underlyingRunMode, 'ranked');
+assert.equal(pure.draftMode, 'disabled', 'Pure experiments must remain draft-free');
 assert.deepEqual(pure.baselineAugmentIds, [], 'Pure experiment must receive zero Tactical augments');
 assert.equal(pure.lives, LATE_GAME_EXPERIMENT_MATURE_LIVES);
 assert.equal(pure.endSectorExclusive, null);
