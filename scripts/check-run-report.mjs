@@ -172,6 +172,8 @@ async function forceRunReportScenario(page) {
     game.level = 6;
     game.lives = 0;
     play.gameTime = 187;
+    game.runTotalElapsedSeconds = 239;
+    game.runSessionClock?.restore?.({ elapsedMs: 239000 }, 187);
     play.totalKills = 73;
     play.bossKills = 2;
     play.wavesCleared = 9;
@@ -280,7 +282,7 @@ function assertOpenReport(state, viewport) {
     assert(overlay.sectionIds?.includes(sectionId), `Run Report overlay missing ${sectionId} section.`);
   }
   const text = overlay.text || '';
-  for (const expected of ['Score:', 'Ship:', 'Kills:', 'Shots intercepted: 17', 'Lives lost:', 'COUNTER ADVICE: LAST DEATH:', 'Powerups:', 'Tactical upgrades:']) {
+  for (const expected of ['Score:', 'Ship:', 'ACTIVE TIME: 3:07', 'TOTAL ELAPSED: 3:59', 'Kills:', 'Shots intercepted: 17', 'Lives lost:', 'COUNTER ADVICE: LAST DEATH:', 'Powerups:', 'Tactical upgrades:']) {
     assert(text.includes(expected), `Run Report overlay missing core field: ${expected}`);
   }
 
@@ -321,6 +323,23 @@ function assertOpenReport(state, viewport) {
     assert(!rectanglesOverlap(section, tactical.bounds), `Report section ${section.id} overlaps Tactical Loadout.`);
   }
   const combatSection = overlay.sections?.find((section) => section.id === 'combat');
+  const runSection = overlay.sections?.find((section) => section.id === 'run');
+  for (const metricId of ['activeTime', 'totalElapsed']) {
+    const metric = runSection?.metrics?.find((entry) => entry.id === metricId);
+    assert(metric, `Run Report missing ${metricId} metric.`);
+    assert(metric.labelScale >= 0.68, `${metricId} label scaled below readability floor.`);
+    assert(metric.valueScale >= 0.68, `${metricId} value scaled below readability floor.`);
+    assertContains(runSection, metric, `${metricId} metric`);
+  }
+  for (const section of overlay.sections || []) {
+    for (const metric of section.metrics || []) {
+      assert(metric.columns <= 2, `${section.id}/${metric.id} was compressed into too many columns.`);
+      assert(metric.labelFontSize >= 11, `${section.id}/${metric.id} label font is too small.`);
+      assert(metric.valueFontSize >= 14, `${section.id}/${metric.id} value font is too small.`);
+      assert(metric.labelScale >= 0.68, `${section.id}/${metric.id} label scale is too small.`);
+      assert(metric.valueScale >= 0.68, `${section.id}/${metric.id} value scale is too small.`);
+    }
+  }
   assert(combatSection?.metrics?.length >= 8, 'Combat section should expose its rendered metric layout.');
   for (const metric of combatSection.metrics) {
     assert(metric.columns <= 2, `Combat metric ${metric.id} was compressed into too many columns.`);

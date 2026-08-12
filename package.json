@@ -97,6 +97,8 @@
     "check:result-screen-status": "node scripts/check-result-screen-status.mjs",
     "check:result-screen-flow": "node scripts/check-result-screen-flow.mjs",
     "check:run-report": "node scripts/check-run-report.mjs",
+    "check:dual-run-clocks": "node scripts/check-dual-run-clocks.mjs",
+    "check:per-ship-overrun-completion": "node scripts/check-per-ship-overrun-completion.mjs",
     "check:run-mode-identity": "node scripts/check-run-mode-identity.mjs",
     "check:overrun-mode": "node scripts/check-overrun-mode.mjs",
     "check:overrun-reinforcements": "node scripts/check-overrun-reinforcements.mjs",

@@ -1845,7 +1845,7 @@ async function init() {
       const rawDelta = delta.deltaTime;
       const clampedDelta = Math.min(rawDelta, MAX_DELTA);
       publishTickerFrameTiming(game, rawDelta, clampedDelta);
-      game.update(clampedDelta);
+      game.update(clampedDelta, Number(delta.deltaMS) || rawDelta * (1000 / 60));
       updatePerfStats(app, game, rawDelta, clampedDelta);
     });
   });

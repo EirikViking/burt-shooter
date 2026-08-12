@@ -8,7 +8,7 @@ import { RUN_MODES, getRunModeReportIdentity } from './RunMode.js';
 import { getCombatDamageSourceLabel } from './CombatTelemetry.js';
 import { getPlayerDamageCause } from './PlayerDamageCause.js';
 
-const RUN_REPORT_VERSION = 15;
+const RUN_REPORT_VERSION = 16;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -129,6 +129,12 @@ function buildRows(entries) {
 
 export function createRunReport(summary = {}) {
   const runtimeSeconds = toWholeNumber(summary.runElapsedSeconds);
+  // Legacy summaries did not own a separate session clock. Falling back to
+  // active time keeps them safe and leaves every competitive consumer intact.
+  const totalElapsedSeconds = Math.max(
+    runtimeSeconds,
+    toWholeNumber(summary.runTotalElapsedSeconds ?? summary.totalElapsedSeconds, runtimeSeconds)
+  );
   const score = toWholeNumber(summary.finalScore ?? summary.score);
   const runModeIdentity = getRunModeReportIdentity(summary.runMode);
   const runMode = runModeIdentity.id || runModeIdentity.rawValue;
@@ -164,12 +170,22 @@ export function createRunReport(summary = {}) {
         bestSector: Math.max(1, toWholeNumber(summary.shipMastery.bestSector, 1)),
         runs: toWholeNumber(summary.shipMastery.runs),
         clears: toWholeNumber(summary.shipMastery.clears),
+        overrunClears: toWholeNumber(summary.shipMastery.overrunClears),
         newTier: summary.newShipMasteryTier?.id
           ? {
               id: String(summary.newShipMasteryTier.id),
               label: String(summary.newShipMasteryTier.label || summary.newShipMasteryTier.id)
             }
           : null
+      }
+    : null;
+  const shipOverrun = summary.shipOverrun || summary.shipMastery;
+  const overrunClears = toWholeNumber(shipOverrun?.overrunClears);
+  const overrunCompletion = overrunClears > 0
+    ? {
+        clears: overrunClears,
+        earnedThisRun: summary.shipOverrunCompletionRecorded === true
+          || summary.overrunCompletionRecorded === true
       }
     : null;
   const scoutAnomaly = canonicalRunMode === RUN_MODES.SCOUT && summary.scoutAnomalyId
@@ -326,9 +342,12 @@ export function createRunReport(summary = {}) {
       sectorReached,
       runtimeSeconds,
       runtimeLabel: formatDuration(runtimeSeconds),
+      totalElapsedSeconds,
+      totalElapsedLabel: formatDuration(totalElapsedSeconds),
       pointDefenseIntercepts: toWholeNumber(summary.pointDefenseIntercepts),
       combatTelemetry,
       shipMastery,
+      overrunCompletion,
       scoutAnomaly,
       runCleared: Boolean(summary.runCleared),
       clearLifeLosses: toWholeNumber(summary.clearLifeLosses ?? summary.lifeLosses),
@@ -350,7 +369,8 @@ export function createRunReport(summary = {}) {
           { id: 'ship', value: shipName, rawValue: shipId || shipName },
           { id: 'score', value: score },
           { id: 'sector', value: sectorReached },
-          { id: 'time', value: formatDuration(runtimeSeconds), rawValue: runtimeSeconds },
+          { id: 'activeTime', value: formatDuration(runtimeSeconds), rawValue: runtimeSeconds },
+          { id: 'totalElapsed', value: formatDuration(totalElapsedSeconds), rawValue: totalElapsedSeconds },
           ...(scoutAnomaly ? [{ id: 'scoutAnomaly', value: scoutAnomaly.name, rawValue: scoutAnomaly }] : [])
         ])
       },
@@ -411,6 +431,11 @@ export function createRunReport(summary = {}) {
           { id: 'powerups', value: toWholeNumber(summary.powerupsCollected) },
           { id: 'careerXp', value: toWholeNumber(summary.pilotXpGained) },
           ...(shipMastery ? [{ id: 'shipMastery', value: shipMastery.tierLabel, rawValue: shipMastery }] : []),
+          ...(overrunCompletion ? [{
+            id: 'overrunClears',
+            value: overrunCompletion.clears,
+            rawValue: overrunCompletion
+          }] : []),
           { id: 'tacticalDrafts', value: tacticalDraftPicks, rawValue: tacticalDraftPicks },
           { id: 'tacticalDirectives', value: tacticalDirectives.completedCount, rawValue: tacticalDirectives },
           { id: 'aceBounties', value: aceBounties.completedCount, rawValue: aceBounties },
@@ -438,9 +463,14 @@ export function summarizeRunReport(report = null) {
     score: report.summary?.score || 0,
     sectorReached: report.summary?.sectorReached || 0,
     runtimeSeconds: report.summary?.runtimeSeconds || 0,
+    totalElapsedSeconds: Math.max(
+      report.summary?.runtimeSeconds || 0,
+      report.summary?.totalElapsedSeconds || report.summary?.runtimeSeconds || 0
+    ),
     pointDefenseIntercepts: report.summary?.pointDefenseIntercepts || 0,
     combatTelemetry: report.summary?.combatTelemetry || null,
     shipMastery: report.summary?.shipMastery || null,
+    overrunCompletion: report.summary?.overrunCompletion || null,
     scoutAnomaly: report.summary?.scoutAnomaly || null,
     pilotOrdersCompleted: Array.isArray(report.summary?.pilotOrdersCompleted) ? report.summary.pilotOrdersCompleted : [],
     tacticalDraftPicks: Array.isArray(report.summary?.tacticalDraftPicks) ? report.summary.tacticalDraftPicks : [],

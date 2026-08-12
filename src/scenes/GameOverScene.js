@@ -111,6 +111,8 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   score: 'Score',
   sector: 'Sector',
   time: 'Time',
+  activeTime: 'ACTIVE TIME',
+  totalElapsed: 'TOTAL ELAPSED',
   kills: 'Kills',
   bossKills: 'Boss kills',
   waves: 'Waves cleared',
@@ -129,6 +131,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   powerups: 'Powerups',
   careerXp: 'Career XP',
   shipMastery: 'Ship mastery',
+  overrunClears: 'OVERRUN CLEARS',
   newRanks: 'New ranks',
   codex: 'Codex discoveries',
   tacticalDrafts: 'Tactical upgrades',
@@ -5286,6 +5289,9 @@ export class GameOverScene {
       return formatLateGameExperimentReportRow(row, translateText);
     }
     if (row.id === 'mode') return translateText(this.getRunReportModeLabel(row.rawValue, row.value));
+    if (row.id === 'activeTime' || row.id === 'totalElapsed') {
+      return this.formatElapsedTime(Math.max(0, Number(row.rawValue) || 0));
+    }
     if (row.id === 'finalHit') return translateText(this.getRunReportDeathSourceLabel(row.rawValue || row.value));
     if (row.id === 'deathCoach') return translateText(row.value || row.rawValue?.advice || '');
     if (row.id === 'dps') {
@@ -5316,6 +5322,12 @@ export class GameOverScene {
           : '{tier} // BEST S{sector}',
         { tier, sector }
       );
+    }
+    if (row.id === 'overrunClears') {
+      const count = Math.max(0, Math.floor(Number(row.rawValue?.clears ?? row.value) || 0));
+      return row.rawValue?.earnedThisRun
+        ? translateText('{count} // NEW THIS RUN', { count })
+        : String(count);
     }
     if (row.id === 'scoutAnomaly') {
       const name = translateText(row.rawValue?.name || row.value || 'CALIBRATION');
@@ -5610,7 +5622,9 @@ export class GameOverScene {
       const rows = (section.rows || [])
         .filter((entry) => entry?.id !== 'pilotOrders' && entry?.id !== 'deathCoach' && entry?.id !== 'tacticalDrafts' && entry?.id !== 'experimentFeedback');
       const isCombatSection = section.id === 'combat';
-      const metricColumns = narrow || sectionWidth < 390 ? 1 : isCombatSection ? 2 : compact ? 3 : 2;
+      // Two columns are the readability ceiling. Three-up cards forced labels
+      // below the legibility floor at supported compact desktop sizes.
+      const metricColumns = narrow || sectionWidth < 390 ? 1 : 2;
       const metricGap = compact ? 3 : 7;
       const metricAreaX = x + 14;
       const metricAreaY = y + 37;
@@ -5638,12 +5652,8 @@ export class GameOverScene {
         metricBg.fill({ color: sectionAccent, alpha: 0.5 });
         this.runReportPanel.addChild(metricBg);
 
-        const metricLabelFontSize = isCombatSection
-          ? (denseMetrics ? 11 : compact ? 12 : 13)
-          : (denseMetrics ? 7 : compact ? 9 : 11);
-        const metricValueFontSize = isCombatSection
-          ? (denseMetrics ? 14 : compact ? 16 : 19)
-          : (denseMetrics ? 10 : compact ? 13 : 17);
+        const metricLabelFontSize = denseMetrics ? 11 : compact ? 12 : 13;
+        const metricValueFontSize = denseMetrics ? 14 : compact ? 16 : 19;
         const metricLabel = createText(label.toUpperCase(), {
           fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
           fontSize: metricLabelFontSize,
@@ -5661,7 +5671,7 @@ export class GameOverScene {
           metricLabel,
           denseMetrics ? metricWidth * 0.58 : metricWidth - 18,
           denseMetrics ? metricHeight - 5 : Math.max(7, metricHeight * 0.32),
-          { minScale: isCombatSection ? 0.68 : 0.52 }
+          { minScale: 0.68 }
         );
 
         const metricValue = createText(value, {
@@ -5685,14 +5695,18 @@ export class GameOverScene {
           metricValue,
           denseMetrics ? metricWidth * 0.37 : metricWidth - 18,
           denseMetrics ? metricHeight - 5 : Math.max(8, metricHeight * 0.5),
-          { minScale: isCombatSection ? 0.68 : 0.52 }
+          { minScale: 0.68 }
         );
         this.runReportPanel.addChild(metricLabel, metricValue);
         sectionDebug.metrics.push({
           id: entry.id,
+          label,
+          value,
           columns: metricColumns,
           labelFontSize: metricLabelFontSize,
           valueFontSize: metricValueFontSize,
+          labelScale: Number(metricLabel.scale?.x) || 1,
+          valueScale: Number(metricValue.scale?.x) || 1,
           dense: denseMetrics,
           x: Math.round(this.runReportPanel.x + metricX),
           y: Math.round(this.runReportPanel.y + metricY),

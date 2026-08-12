@@ -39,6 +39,7 @@ import { RunContentDirector } from './RunContentDirector.js';
 import { GLOBAL_SCORE_TUNING_MULTIPLIER } from '../config/ScoreTuning.js';
 import { awardRunClearScoreBonuses } from './RunClearScoreBonuses.js';
 import { createRunReport } from './RunReport.js';
+import { RunSessionClock } from './RunSessionClock.js';
 import { createLateGameExperimentReport } from './LateGameExperimentReport.js';
 import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import {
@@ -130,8 +131,11 @@ export class Game {
     this.scoreMultiplier = 1;
     this.runStartedAtMs = 0;
     this.runElapsedSeconds = 0;
+    this.runTotalElapsedSeconds = 0;
+    this.runSessionClock = new RunSessionClock();
     this.runCleared = false;
     this.runClearReason = null;
+    this.overrunCompletionEarned = false;
     this.runClearLivesRemaining = 0;
     this.runClearLifeLosses = 0;
     this.noRepairReceiptsLifeLosses = null;
@@ -487,8 +491,11 @@ export class Game {
     this.resetGlobalLeaderboardCues();
     this.runStartedAtMs = Date.now();
     this.runElapsedSeconds = 0;
+    this.runTotalElapsedSeconds = 0;
+    this.runSessionClock.start();
     this.runCleared = false;
     this.runClearReason = null;
+    this.overrunCompletionEarned = false;
     this.runClearLivesRemaining = 0;
     this.runClearLifeLosses = 0;
     this.noRepairReceiptsLifeLosses = null;
@@ -1451,6 +1458,11 @@ export class Game {
       : getDiscoveryStats();
     const discoveries = rewardsSuppressed ? [] : getDiscoveriesThisRun();
     const elapsed = Number(play?.gameTime) || (this.runStartedAtMs ? (Date.now() - this.runStartedAtMs) / 1000 : 0);
+    const totalElapsed = Math.max(
+      elapsed,
+      Number(overrides.runTotalElapsedSeconds) || 0,
+      this.runSessionClock?.elapsedSeconds || 0
+    );
     const levelReached = Math.max(1, Number(this.level) || 1, (Number(play?.bossKills) || 0) + 1);
     const ship = getShipMetadata(this.selectedShipSpriteKey);
     const tacticalAugmentIds = Array.isArray(play?.player?.runAugmentIds) ? play.player.runAugmentIds.slice() : [];
@@ -1458,10 +1470,12 @@ export class Game {
     const summary = {
       score: finalScore,
       finalScore,
+      completedAt: overrides.completedAt || new Date().toISOString(),
       levelReached,
       sectorReached: levelReached,
       startSector: Math.max(1, Number(this.runStartSector) || 1),
       runElapsedSeconds: Math.max(0, elapsed),
+      runTotalElapsedSeconds: Math.max(0, totalElapsed),
       bossesKilled: Number(play?.bossKills) || 0,
       wavesCleared: Number(play?.wavesCleared) || 0,
       totalKills: Number(play?.totalKills) || 0,
@@ -1483,6 +1497,9 @@ export class Game {
       tacticalDoctrine: analyzeTacticalDoctrine(tacticalAugmentIds, tacticalConsumedAugmentIds),
       livesRemaining: this.lives,
       runCleared: Boolean(overrides.runCleared ?? this.runCleared),
+      overrunCompletionEarned: Boolean(overrides.overrunCompletionEarned ?? this.overrunCompletionEarned),
+      isDebugRun: this.isDebugRun === true,
+      lateGameExperimentActive: this.lateGameExperiment?.active === true,
       clearReason: overrides.clearReason || this.runClearReason || null,
       clearLivesRemaining: Math.max(0, Number(overrides.clearLivesRemaining ?? this.runClearLivesRemaining) || 0),
       clearLifeLosses: Math.max(0, Number(overrides.clearLifeLosses ?? this.runClearLifeLosses) || 0),
@@ -1617,7 +1634,11 @@ export class Game {
     this.currentScene?.flushRunPersistenceAtSafePoint?.('run_finalize');
     const finalScore = this.lockFinalScore('run_finalize');
     this.runFinalized = true;
-    this.runSummary = this.buildRunSummary(overrides);
+    this.runTotalElapsedSeconds = (this.runSessionClock?.finalize(this.runElapsedSeconds) || 0) / 1000;
+    this.runSummary = this.buildRunSummary({
+      ...overrides,
+      runTotalElapsedSeconds: overrides.runTotalElapsedSeconds ?? this.runTotalElapsedSeconds
+    });
     if (this.isRankedRun()) {
       this.previousMayhemModeBestScore = getMayhemModeBestScore(this.runMode, {
         legacyPureBest: this.hangarProgressAtRunStart?.bestScore
@@ -1635,7 +1656,8 @@ export class Game {
       && RunPacingConfig.pilotRankProgressionEnabled;
     let result = updatesCareerProgress
       ? applyRunProgression(this.runSummary, {
-          updateCompetitiveBests: this.canUpdateCompetitiveCareerBestsForCurrentRun()
+          updateCompetitiveBests: this.canUpdateCompetitiveCareerBestsForCurrentRun(),
+          completedAt: this.runSummary.completedAt || new Date().toISOString()
         })
       : { previous: previousProgress, next: previousProgress, xpGained: 0, newRanksThisRun: [], newlyUnlockedShipIds: [], rankProgress: null };
     if (updatesCareerProgress && result?.next) {
@@ -1674,7 +1696,10 @@ export class Game {
       rankAchievementsUnlocked: [],
       milestoneAchievementsUnlocked: [],
       newlyUnlockedShips: result.newlyUnlockedShipIds || [],
-      shipMastery: result.shipMastery?.current || null,
+      shipMastery: result.shipMastery?.current || result.shipOverrun?.current || null,
+      shipOverrun: result.shipOverrun?.current || null,
+      shipOverrunCompletionRecorded: result.shipOverrun?.recorded === true,
+      overrunCompletionRecorded: result.shipOverrun?.recorded === true,
       shipMasteryPrevious: result.shipMastery?.previous || null,
       newShipMasteryTier: result.shipMastery?.newTier || null,
       hangarProgress: getHangarProgressSummary(result.next)
@@ -1799,7 +1824,14 @@ export class Game {
     return result;
   }
 
-  update(delta) {
+  update(delta, realDeltaMs = null) {
+    if (!this.runFinalized && this.runSessionClock?.running) {
+      const frameMs = Number.isFinite(Number(realDeltaMs))
+        ? Number(realDeltaMs)
+        : Math.max(0, Number(delta) || 0) * (1000 / 60);
+      this.runSessionClock.advanceRealFrame(frameMs);
+      this.runTotalElapsedSeconds = this.runSessionClock.elapsedSeconds;
+    }
     if (this.currentScene && this.currentScene.update) {
       this.currentScene.update(delta);
     }
