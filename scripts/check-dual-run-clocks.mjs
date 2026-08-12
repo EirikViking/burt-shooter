@@ -50,7 +50,10 @@ const payloadGame = {
   selectedShipSpriteKey: baseSummary.shipId,
   scenes: { play: { gameTime: activeSeconds, totalKills: 42, bossKills: 4, wavesCleared: 18 } }
 };
-const beforePayload = createRunResultFromGame(payloadGame, { runTimeSeconds: activeSeconds });
+const beforePayload = createRunResultFromGame({
+  ...payloadGame,
+  runSummary: { ...baseSummary, runTotalElapsedSeconds: undefined }
+}, { runTimeSeconds: activeSeconds });
 const afterPayload = createRunResultFromGame({
   ...payloadGame,
   runSummary: { ...baseSummary, runTotalElapsedSeconds: totalSeconds },
