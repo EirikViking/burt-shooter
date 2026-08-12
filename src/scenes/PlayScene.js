@@ -4264,6 +4264,11 @@ export class PlayScene {
       this.deferredRunContractCompletions.push({ ...completion });
     }
     this.runContractPersistenceDirty = true;
+    const projectedState = this.getRunContractPresentationMenuState();
+    if (projectedState.allComplete && this.runContractSession) {
+      this.runContractSession.allCompleteThisRun = true;
+      this.runContractSession.allCompletedAt = projectedState.allCompletedAt || completion.completedAt || null;
+    }
   }
 
   queueDeferredRunContractEnemyDefeat(payload = {}) {
@@ -4348,13 +4353,26 @@ export class PlayScene {
     });
   }
 
-  getRunContractDebugState() {
-    const state = getRunContractSessionState(this.runContractSession);
-    if (!state) return state;
-    const menuState = getRunContractMenuState(readHangarProgressState(), {
+  getRunContractPresentationMenuState() {
+    const progress = readHangarProgressState();
+    let runContracts = progress.runContracts;
+    for (const completion of this.deferredRunContractCompletions || []) {
+      if (!completion?.id || runContracts?.completed?.[completion.id]) continue;
+      runContracts = recordRunContractCompletion(runContracts, completion);
+    }
+    if (this.runContractSession) {
+      runContracts = recordRunContractSessionProgress(runContracts, this.runContractSession);
+    }
+    return getRunContractMenuState(runContracts, {
       forceCompletionVisible: true,
       showPilotOrders: true
     });
+  }
+
+  getRunContractDebugState() {
+    const state = getRunContractSessionState(this.runContractSession);
+    if (!state) return state;
+    const menuState = this.getRunContractPresentationMenuState();
     state.completedCount = menuState.completedCount || 0;
     state.total = menuState.total || 0;
     state.progressLabel = menuState.progressLabel || null;
@@ -4375,10 +4393,7 @@ export class PlayScene {
   }
 
   getRunContractTrackProgressLabel() {
-    const menuState = getRunContractMenuState(readHangarProgressState(), {
-      forceCompletionVisible: true,
-      showPilotOrders: true
-    });
+    const menuState = this.getRunContractPresentationMenuState();
     return translateText('COMPLETED: {count}', {
       count: menuState.progressLabel || '0'
     });

@@ -1323,13 +1323,20 @@ async function runBrowserSmoke() {
     }, null, { timeout: 5000 });
     const nonFinalCompletionResult = await page.evaluate(() => {
       const textState = JSON.parse(window.render_game_to_text?.() || '{}');
+      const profile = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');
       return {
         runContracts: textState.runContracts,
         toastActive: textState.toast?.active || [],
-        toastMessages: (textState.toast?.active || []).map((toast) => toast.message)
+        toastMessages: (textState.toast?.active || []).map((toast) => toast.message),
+        savedRunContracts: profile.runContracts || null
       };
     });
     assert.equal(nonFinalCompletionResult.runContracts?.completedCount, 1, 'first Pilot Order completion should update track progress');
+    assert.equal(
+      nonFinalCompletionResult.savedRunContracts?.completed?.graze_10,
+      undefined,
+      'active-combat Pilot Order completion should remain deferred in storage while the live UI advances'
+    );
     assert.equal(nonFinalCompletionResult.runContracts?.next?.[0]?.id, 'support_hunter', 'non-final completion should expose the next queued order');
     assert.equal(nonFinalCompletionResult.runContracts?.next?.[0]?.orderSlot, '04', 'non-final completion should expose the next queued order number without the catalog total');
     assert.ok(
@@ -1752,9 +1759,9 @@ async function runBrowserSmoke() {
     assert.equal(supportOrder?.completed, true, 'in-run 100 Supports order should mark complete');
     assert.equal(completionResult.runContracts?.allCompleteThisRun, true, 'final order completion should be exposed to run report state');
     assert.equal(
-      completionResult.savedRunContracts?.completed?.support_hunter_100?.count,
-      1,
-      'completion should persist to hangar profile'
+      completionResult.savedRunContracts?.completed?.support_hunter_100,
+      undefined,
+      'final active-combat completion should remain deferred in storage until a safe point'
     );
     assert.ok(
       completionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: 100 Supports')),
@@ -1787,6 +1794,15 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const reportState = await readState(page);
+    const persistedAfterRun = await page.evaluate(() => {
+      const profile = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');
+      return profile.runContracts || null;
+    });
+    assert.equal(
+      persistedAfterRun?.completed?.support_hunter_100?.count,
+      1,
+      'final Pilot Order completion should persist when the run reaches the game-over safe point'
+    );
     assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETE\s+COMPLETED: 50\s+100 Supports \+420 XP/);
     assert.doesNotMatch(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS:[^\n]*\/50/, 'final run report must keep the Pilot Orders endpoint hidden');
     const reportScreenshot = path.join(outputDir, 'pilot-orders-run-report.png');
