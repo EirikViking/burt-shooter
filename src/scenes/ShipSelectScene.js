@@ -2757,6 +2757,40 @@ export class ShipSelectScene {
     container.masteryBadge = masteryBadge;
     container.masteryIdentityIcon = identityIcon;
 
+    if (mastery.overrunClears > 0) {
+      const overrunBadge = new PIXI.Container();
+      overrunBadge.label = 'hangarShipOverrunBadge';
+      const overrunWidth = this.layout.isMobile ? 132 : 154;
+      const overrunHeight = this.layout.isMobile ? 23 : 26;
+      overrunBadge.position.set(masteryBadge.x + masteryWidth - overrunWidth, masteryBadge.y + masteryHeight + 6);
+      const overrunBg = new PIXI.Graphics();
+      overrunBg.roundRect(0, 0, overrunWidth, overrunHeight, 7);
+      overrunBg.fill({ color: 0x06111b, alpha: 0.94 });
+      overrunBg.stroke({ color: 0x61f6ff, width: 1.2, alpha: 0.82 });
+      const overrunText = createText(translateText('OVERRUN ×{count}', { count: mastery.overrunClears }), {
+        fontFamily: FONT_DISPLAY,
+        fontSize: this.layout.isMobile ? 9 : 10,
+        fill: '#ffd76a',
+        fontWeight: '900',
+        stroke: '#000000',
+        strokeThickness: 2
+      });
+      overrunText.label = 'hangarShipOverrunText';
+      overrunText.anchor.set(0.5);
+      overrunText.position.set(overrunWidth / 2, overrunHeight / 2);
+      fitDisplayToBox(overrunText, overrunWidth - 18, overrunHeight - 6, { minScale: 0.7 });
+      overrunBadge.addChild(overrunBg, overrunText);
+      overrunBadge.__debugOverrun = {
+        clears: mastery.overrunClears,
+        label: overrunText.text,
+        separateFromRankedMastery: true,
+        visibleOnlyWhenEarned: true,
+        bounds: { width: overrunWidth, height: overrunHeight }
+      };
+      container.addChild(overrunBadge);
+      container.overrunBadge = overrunBadge;
+    }
+
     // Ship name below sprite - LARGER and more readable
     const name = createText(ship.name, {
       fontFamily: FONT_DISPLAY,
@@ -2892,6 +2926,7 @@ export class ShipSelectScene {
         shipContainer.firstFlightBadge.visible = isCenter && this.layout.showSideIntel && !this.compactHangar;
       }
       if (shipContainer.masteryBadge) shipContainer.masteryBadge.visible = isCenter;
+      if (shipContainer.overrunBadge) shipContainer.overrunBadge.visible = isCenter;
       if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter && !this.layout.showSideIntel && !this.compactIntel;
       if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
       if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;

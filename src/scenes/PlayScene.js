@@ -161,7 +161,8 @@ import { getBossProfile, getBossProfileForRun } from '../config/BossRoster.js';
 import {
   RUN_MODES,
   canRunModeUseTacticalDraft,
-  getRunModeNormalWaveScoreXpMultiplier
+  getRunModeNormalWaveScoreXpMultiplier,
+  isOverrunRunMode
 } from '../game/RunMode.js';
 import {
   CABINET_WONDER_VARIANT_COUNT,
@@ -4898,6 +4899,7 @@ export class PlayScene {
       // holds must not tax a score run before the player has agency.
       if (this.isGameplayClockAdvancing()) {
         this.gameTime += delta / 60;
+        this.game.runElapsedSeconds = this.gameTime;
       }
 
       // TASK C: Debug diagnostics removed
@@ -16431,6 +16433,16 @@ export class PlayScene {
       const livesBonus = Math.max(0, Number(this.game.lives) || 0) * 2500;
       const markedClear = this.game.markRunClear?.('target_sector_clear');
       if (!markedClear) return false;
+      if (
+        isOverrunRunMode(this.game?.runMode)
+        && Math.max(1, Math.floor(Number(this.game?.runStartSector) || 1)) === 51
+        && milestoneSector === 60
+        && this.game?.isDebugRun !== true
+        && this.game?.lateGameExperiment?.active !== true
+        && this.game?.overrunCompletionEarned !== true
+      ) {
+        this.game.overrunCompletionEarned = true;
+      }
       this.game.awardRunClearScoreBonuses?.({ clearBonus, livesBonus });
 
       this.overrunCelebratedMilestones.add(milestoneSector);

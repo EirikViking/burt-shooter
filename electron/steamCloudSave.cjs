@@ -992,6 +992,33 @@ function mergeUnlockProgress(localProgress = {}, rendererProgress = {}) {
 function mergeHangarProgress(localProgress = {}, rendererProgress = {}) {
   const local = sanitizeHangarProgress(localProgress);
   const renderer = sanitizeHangarProgress(rendererProgress);
+  const shipIds = new Set([
+    ...Object.keys(local.shipSpecificMilestones || {}),
+    ...Object.keys(renderer.shipSpecificMilestones || {})
+  ]);
+  const shipSpecificMilestones = Object.fromEntries([...shipIds].map((shipId) => {
+    const localRecord = local.shipSpecificMilestones?.[shipId] || {};
+    const rendererRecord = renderer.shipSpecificMilestones?.[shipId] || {};
+    const localTime = Date.parse(localRecord.lastRunAt || '') || 0;
+    const rendererTime = Date.parse(rendererRecord.lastRunAt || '') || 0;
+    return [shipId, {
+      ...(localTime >= rendererTime ? rendererRecord : localRecord),
+      ...(localTime >= rendererTime ? localRecord : rendererRecord),
+      runs: Math.max(sanitizeNumber(localRecord.runs), sanitizeNumber(rendererRecord.runs)),
+      clears: Math.max(sanitizeNumber(localRecord.clears), sanitizeNumber(rendererRecord.clears)),
+      overrunClears: Math.max(
+        sanitizeNumber(localRecord.overrunClears),
+        sanitizeNumber(rendererRecord.overrunClears)
+      ),
+      bestSector: Math.max(sanitizeNumber(localRecord.bestSector), sanitizeNumber(rendererRecord.bestSector)),
+      bestScore: Math.max(sanitizeNumber(localRecord.bestScore), sanitizeNumber(rendererRecord.bestScore)),
+      bestCombo: Math.max(sanitizeNumber(localRecord.bestCombo), sanitizeNumber(rendererRecord.bestCombo)),
+      bestBosses: Math.max(sanitizeNumber(localRecord.bestBosses), sanitizeNumber(rendererRecord.bestBosses)),
+      totalBosses: Math.max(sanitizeNumber(localRecord.totalBosses), sanitizeNumber(rendererRecord.totalBosses)),
+      totalDamage: Math.max(Number(localRecord.totalDamage) || 0, Number(rendererRecord.totalDamage) || 0),
+      lastRunAt: localTime >= rendererTime ? (localRecord.lastRunAt || null) : (rendererRecord.lastRunAt || null)
+    }];
+  }));
   return sanitizeHangarProgress({
     ...local,
     ...renderer,
@@ -1013,10 +1040,7 @@ function mergeHangarProgress(localProgress = {}, rendererProgress = {}) {
     noHitSectors: Math.max(local.noHitSectors, renderer.noHitSectors),
     clearWithLivesRemaining: Math.max(local.clearWithLivesRemaining, renderer.clearWithLivesRemaining),
     highestScoreMultiplier: Math.max(local.highestScoreMultiplier, renderer.highestScoreMultiplier, 1),
-    shipSpecificMilestones: {
-      ...(local.shipSpecificMilestones && typeof local.shipSpecificMilestones === 'object' ? local.shipSpecificMilestones : {}),
-      ...(renderer.shipSpecificMilestones && typeof renderer.shipSpecificMilestones === 'object' ? renderer.shipSpecificMilestones : {})
-    },
+    shipSpecificMilestones,
     discoveredThreatIds: mergeStringArray(local.discoveredThreatIds, renderer.discoveredThreatIds, { maxItems: 5000 }),
     defeatedBossIds: mergeStringArray(local.defeatedBossIds, renderer.defeatedBossIds),
     runThemesSurvived: mergeStringArray(local.runThemesSurvived, renderer.runThemesSurvived),

@@ -1,4 +1,7 @@
 const RANKED_RUN_MODES = new Set(['ranked', 'ranked_tactical']);
+const OVERRUN_RUN_MODES = new Set(['overrun_pure', 'overrun_tactical']);
+const OVERRUN_START_SECTOR = 51;
+const OVERRUN_CLEAR_SECTOR = 60;
 
 export const SHIP_MASTERY_TIERS = Object.freeze({
   none: Object.freeze({ id: 'none', rank: 0, label: 'NO MEDAL', color: 0x718096 }),
@@ -91,6 +94,7 @@ export function normalizeShipMasteryRecord(raw = {}) {
     ...source,
     runs: whole(source.runs),
     clears,
+    overrunClears: whole(source.overrunClears),
     bestSector,
     bestScore: whole(source.bestScore),
     bestCombo: whole(source.bestCombo),
@@ -186,6 +190,7 @@ export function mergeShipMasteryMaps(localMap = {}, cloudMap = {}) {
       ...(aTime >= bTime ? a : b),
       runs: Math.max(a.runs, b.runs),
       clears: Math.max(a.clears, b.clears),
+      overrunClears: Math.max(a.overrunClears, b.overrunClears),
       bestSector: Math.max(a.bestSector, b.bestSector),
       bestScore: Math.max(a.bestScore, b.bestScore),
       bestCombo: Math.max(a.bestCombo, b.bestCombo),
@@ -239,6 +244,47 @@ export function recordShipMasteryRun(rawMap = {}, summary = {}, {
     current,
     tierAdvanced,
     newTier: tierAdvanced ? current.tier : null,
+    recorded: true
+  };
+}
+
+export function recordShipOverrunCompletion(rawMap = {}, summary = {}, {
+  completedAt = new Date().toISOString()
+} = {}) {
+  const milestones = normalizeShipMasteryMap(rawMap);
+  const shipId = normalizeShipId(summary.shipId || summary.selectedShipSpriteKey);
+  const runMode = String(summary.runMode || '').trim();
+  const startedAtOverrun = whole(summary.startSector, 1) === OVERRUN_START_SECTOR;
+  const reachedFirstMilestone = whole(summary.sectorReached ?? summary.levelReached, 1) >= OVERRUN_CLEAR_SECTOR;
+  const eligibleRun = summary.isDebugRun !== true
+    && summary.runRewardsSuppressed !== true
+    && summary.lateGameExperimentActive !== true
+    && summary.quickStart !== true;
+  const legitimateCompletion = Boolean(
+    shipId
+    && OVERRUN_RUN_MODES.has(runMode)
+    && startedAtOverrun
+    && reachedFirstMilestone
+    && eligibleRun
+    && summary.overrunCompletionEarned === true
+    && summary.overrunCompletionRecorded !== true
+  );
+  const previousRecord = normalizeShipMasteryRecord(milestones[shipId]);
+  const previous = getShipMasteryView(previousRecord);
+  if (!legitimateCompletion) {
+    return { milestones, shipId: shipId || null, previous, current: previous, recorded: false };
+  }
+  const nextRecord = normalizeShipMasteryRecord({
+    ...previousRecord,
+    overrunClears: previousRecord.overrunClears + 1,
+    lastRunAt: completedAt
+  });
+  milestones[shipId] = nextRecord;
+  return {
+    milestones,
+    shipId,
+    previous,
+    current: getShipMasteryView(nextRecord),
     recorded: true
   };
 }

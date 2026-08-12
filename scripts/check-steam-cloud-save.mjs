@@ -180,6 +180,10 @@ try {
       unlockedShipIds: ['nova_ship_01', 'nova_ship_09'],
       lastNewlyUnlockedShipIds: ['nova_ship_09'],
       discoveredThreatIds: ['nova_boss_01'],
+      shipSpecificMilestones: {
+        nova_ship_01: { runs: 4, clears: 1, bestSector: 10, overrunClears: 7 },
+        nova_ship_09: { runs: 1, clears: 0, bestSector: 3, overrunClears: 2 }
+      },
       runContracts: makePilotOrdersState()
     },
     threatDiscovery: {
@@ -257,6 +261,8 @@ try {
   assert.equal(merged.hangarProgress.unlockedShipIds.includes('nova_ship_09'), true);
   assert.equal(merged.hangarProgress.runContracts.completed.boss_breaker.count, 1);
   assert.equal(merged.hangarProgress.runContracts.progress.enemy_sweep_1000.progress, 250);
+  assert.equal(merged.hangarProgress.shipSpecificMilestones.nova_ship_01.overrunClears, 7);
+  assert.equal(merged.hangarProgress.shipSpecificMilestones.nova_ship_09.overrunClears, 2);
   assert.equal(merged.threatDiscovery.items.bosses.nova_boss_01.name, 'Sonia');
   assert.deepEqual(merged.threatDiscovery.unreadIds, ['bosses:nova_boss_01']);
   assert.equal(merged.shipUsage.nova_ship_01, 4);
@@ -365,6 +371,10 @@ try {
       bestRank: 6,
       bestLevel: 8,
       unlockedShipIds: ['nova_ship_01', 'nova_ship_04'],
+      shipSpecificMilestones: {
+        nova_ship_01: { runs: 6, clears: 1, bestSector: 10, overrunClears: 3 },
+        nova_ship_04: { runs: 2, clears: 0, bestSector: 4, overrunClears: 5 }
+      },
       runContracts: makePilotOrdersState({
         activeIds: ['support_hunter', 'enemy_variety_50', 'enemy_sweep_1000'],
         completedId: 'support_hunter',
@@ -383,6 +393,8 @@ try {
   assert.equal(collectedSave.hangarProgress.runContracts.completed.boss_breaker.count, 1, 'Steam Cloud should preserve existing Pilot Order completions');
   assert.equal(collectedSave.hangarProgress.runContracts.completed.support_hunter.count, 1, 'Steam Cloud should merge renderer Pilot Order completions');
   assert.equal(collectedSave.hangarProgress.runContracts.progress.enemy_sweep_1000.progress, 250);
+  assert.equal(collectedSave.hangarProgress.shipSpecificMilestones.nova_ship_01.overrunClears, 7, 'Steam Cloud must max-merge Overrun clears');
+  assert.equal(collectedSave.hangarProgress.shipSpecificMilestones.nova_ship_04.overrunClears, 5, 'Steam Cloud must retain new per-ship Overrun clears');
   assert.deepEqual(collectedSave.hangarProgress.runContracts.progress.enemy_variety_50.uniqueIds.sort(), ['diver', 'scout']);
   assert.equal(collectedSave.threatDiscovery.items.enemies.scout.name, 'Scout');
   assert.deepEqual([...collectedSave.threatDiscovery.unreadIds].sort(), ['bosses:nova_boss_01', 'enemies:scout']);

@@ -14,6 +14,7 @@ import { BUILD_ID } from '../buildInfo.js';
 import { getRunContractRewardXpForRun, normalizeRunContractsState } from './RunContracts.js';
 import {
   normalizeShipMasteryMap,
+  recordShipOverrunCompletion,
   recordShipMasteryRun
 } from './ShipMastery.js';
 import { markPersistenceDirty } from '../persistence/PersistenceScheduler.js';
@@ -711,14 +712,20 @@ export function previewRunProgression(summary = {}, baseProgress = readHangarPro
   };
 }
 
-export function applyRunProgression(summary = {}, { updateCompetitiveBests = true } = {}) {
+export function applyRunProgression(summary = {}, {
+  updateCompetitiveBests = true,
+  completedAt = new Date().toISOString()
+} = {}) {
   const previous = readHangarProgressState();
   const xpGained = calculatePilotXpForRun(summary);
   const nextXp = previous.pilotXp + xpGained;
   const nextRank = getRankFromPilotXp(nextXp);
   const shipMastery = updateCompetitiveBests
-    ? recordShipMasteryRun(previous.shipSpecificMilestones, summary)
+    ? recordShipMasteryRun(previous.shipSpecificMilestones, summary, { completedAt })
     : { milestones: previous.shipSpecificMilestones };
+  const shipOverrun = !updateCompetitiveBests
+    ? recordShipOverrunCompletion(shipMastery.milestones, summary, { completedAt })
+    : { milestones: shipMastery.milestones, recorded: false, current: shipMastery.current || null };
   const newRanksThisRun = [];
   for (let rank = previous.pilotRank + 1; rank <= nextRank; rank += 1) {
     newRanksThisRun.push(rank);
@@ -752,7 +759,7 @@ export function applyRunProgression(summary = {}, { updateCompetitiveBests = tru
     discoveredThreatIds: Array.isArray(summary.discoveredThreatIds) ? summary.discoveredThreatIds : [],
     defeatedBossIds: Array.isArray(summary.defeatedBossIds) ? summary.defeatedBossIds : [],
     runThemesSurvived: summary.runTheme ? [summary.runTheme] : [],
-    shipSpecificMilestones: shipMastery.milestones,
+    shipSpecificMilestones: shipOverrun.milestones,
     newRanksThisRun
   }, {
     preserveLastUnlocks: false,
@@ -786,7 +793,8 @@ export function applyRunProgression(summary = {}, { updateCompetitiveBests = tru
     newRanksThisRun,
     newlyUnlockedShipIds: next.lastNewlyUnlockedShipIds,
     rankProgress: next.rankProgress,
-    shipMastery
+    shipMastery,
+    shipOverrun
   };
 }
 
