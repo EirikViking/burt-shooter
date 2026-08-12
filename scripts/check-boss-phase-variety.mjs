@@ -120,18 +120,24 @@ try {
 
     await page.evaluate(async (expectedLevel) => {
       const play = window.__game?.scenes?.play;
-      if (!play?.enemyManager || play.enemyManager.state === 'BOSS_ACTIVE') return;
+      if (!play?.enemyManager) return;
       play.clearPendingEnemyStart?.();
       play.enemyManager.forceBossStart?.(expectedLevel);
-      await play.enemyManager.spawnBoss?.(expectedLevel);
+      play.enemyManager.bossSpawning = true;
+      const boss = await play.enemyManager.spawnBoss?.(expectedLevel);
+      if (!boss?.active) throw new Error(`boss did not activate for level ${expectedLevel}`);
       play.enemyManager.state = 'BOSS_ACTIVE';
       play.enemyManager.bossSpawning = false;
     }, level);
 
     await page.waitForFunction(() => {
-      const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      const boss = window.__game?.scenes?.play?.enemyManager?.boss;
-      return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE' && Boolean(boss?.active);
+      const play = window.__game?.scenes?.play;
+      const boss = play?.enemyManager?.boss;
+      return play?.game?.currentScene === play
+        && play?.enemyManager?.state === 'BOSS_ACTIVE'
+        && Boolean(boss?.active)
+        && Boolean(play?.enemyManager?.enemies?.includes(boss))
+        && Boolean(play?.player?.active);
     }, null, { timeout: 30000 });
 
     const phaseData = await page.evaluate(() => {
@@ -139,7 +145,18 @@ try {
       const play = game?.scenes?.play;
       const boss = play?.enemyManager?.boss;
       const player = play?.player;
-      if (!boss || !player) return { ok: false, reason: 'missing_boss_or_player' };
+      if (!boss || !player) return {
+        ok: false,
+        reason: 'missing_boss_or_player',
+        bossActive: Boolean(boss?.active),
+        bossInEnemies: Boolean(play?.enemyManager?.enemies?.includes(boss)),
+        state: play?.enemyManager?.state || null,
+        enemyKinds: (play?.enemyManager?.enemies || []).map((enemy) => ({
+          kind: enemy?.kind || null,
+          active: Boolean(enemy?.active),
+          profile: enemy?.profile?.id || null
+        }))
+      };
 
       player.x = game.getWidth() / 2;
       player.y = game.getHeight() * 0.82;
@@ -162,6 +179,7 @@ try {
     const phase3Boss = bossFrom(phaseData.phase3);
     const result = {
       level,
+      phaseDataFailure: phaseData.ok ? null : phaseData,
       archetype: phase3Boss?.bossArchetype || beforeBoss?.bossArchetype || null,
       movement: phase3Boss?.bossMovement || beforeBoss?.bossMovement || null,
       baseSignature: beforeBoss?.bossSignature || null,
