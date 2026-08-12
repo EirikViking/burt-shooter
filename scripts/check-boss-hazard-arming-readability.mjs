@@ -101,6 +101,7 @@ page.on('console', (message) => {
 try {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
+    controlSmoke: '1',
     offlineLeaderboard: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
     'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
@@ -110,8 +111,25 @@ try {
 
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE';
-  }, null, { timeout: 30000 });
+    const play = window.__game?.scenes?.play;
+    return state?.scene === 'play' && play?.enemyManager && play?._lastStartedLevel === 6;
+  }, undefined, { timeout: 30000 });
+
+  await page.evaluate(async () => {
+    const play = window.__game?.scenes?.play;
+    if (!play?.enemyManager || play.enemyManager.state === 'BOSS_ACTIVE') return;
+    play.clearPendingEnemyStart?.();
+    play.enemyManager.forceBossStart?.(6);
+    await play.enemyManager.spawnBoss?.(6);
+    play.enemyManager.state = 'BOSS_ACTIVE';
+    play.enemyManager.bossSpawning = false;
+  });
+
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    const boss = window.__game?.scenes?.play?.enemyManager?.boss;
+    return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE' && Boolean(boss?.active);
+  }, undefined, { timeout: 30000 });
 
   const state = await page.evaluate(() => {
     const game = window.__game;

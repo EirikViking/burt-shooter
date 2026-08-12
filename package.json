@@ -192,6 +192,7 @@
     "steamworks:leaderboard-write-diagnose": "node scripts/steamworks-leaderboard-write-diagnose.mjs",
     "check:leaderboard-visuals": "node scripts/check-leaderboard-visuals.mjs",
     "check:boss-telegraph": "node scripts/check-boss-telegraph.mjs",
+    "check:boss-warning-lifecycle": "node scripts/check-boss-warning-lifecycle.mjs",
     "check:boss-contact": "node scripts/check-boss-contact.mjs",
     "check:boss-mercy": "node scripts/check-boss-mercy.mjs",
     "check:boss-fairness-cadence-wall": "node scripts/check-boss-fairness-cadence-wall.mjs",

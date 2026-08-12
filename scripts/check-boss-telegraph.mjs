@@ -59,7 +59,10 @@ async function startPreviewServer() {
   if (await canFetch(baseUrl)) return null;
 
   const { command, args } = viteCommand();
-  const server = spawn(command, [...args, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
+  const serveArgs = existsSync(path.resolve('dist/index.html'))
+    ? [...args, 'preview']
+    : args;
+  const server = spawn(command, [...serveArgs, '--host', host, '--port', String(port), '--strictPort'], {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
@@ -206,6 +209,7 @@ try {
     const lockedAngle = boss.regularTelegraph.lockedAngle;
     player.x = play.game.getWidth() * 0.12;
     player.y = play.game.getHeight() * 0.88;
+    boss.setAttackWarningVisibleElapsedForDebug?.(boss.regularTelegraph.duration);
     const bullets = boss.shoot(player.x, player.y);
     const normalize = (angle) => Math.atan2(Math.sin(angle), Math.cos(angle));
     return {
@@ -232,16 +236,16 @@ try {
     player.x = game.getWidth() * 0.82;
     player.y = game.getHeight() * 0.78;
     boss.startSignatureTelegraph('cone', player.x, player.y);
-    boss.telegraph.start = Date.now() - boss.telegraph.duration * 0.24;
+    boss.setAttackWarningVisibleElapsedForDebug?.(boss.telegraph.duration * 0.24);
     const startPosition = { x: boss.x, y: boss.y };
     const lockedAngle = boss.telegraph.lockedAngle;
-    boss.update(16, player.x, player.y);
+    boss.update(1, player.x, player.y);
     const earlyState = JSON.parse(window.render_game_to_text());
 
     player.x = game.getWidth() * 0.12;
     player.y = game.getHeight() * 0.86;
-    boss.telegraph.start = Date.now() - boss.telegraph.duration * 0.68;
-    boss.update(16, player.x, player.y);
+    boss.setAttackWarningVisibleElapsedForDebug?.(boss.telegraph.duration * 0.68);
+    boss.update(1, player.x, player.y);
     const shiftedState = JSON.parse(window.render_game_to_text());
     const livePlayerAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
     const normalize = (angle) => Math.atan2(Math.sin(angle), Math.cos(angle));
@@ -272,8 +276,8 @@ try {
 
     const lockedAngle = boss.telegraph.lockedAngle;
     const startIndex = play.bulletManager.enemyBullets.length;
-    boss.telegraph.start = Date.now() - boss.telegraph.duration - 1;
-    boss.update(16, player.x, player.y);
+    boss.setAttackWarningVisibleElapsedForDebug?.(boss.telegraph.duration);
+    boss.update(1, player.x, player.y);
     const created = play.bulletManager.enemyBullets
       .slice(startIndex)
       .filter((bullet) => bullet?.sourceFireStyle === 'cone')

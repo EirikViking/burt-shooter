@@ -124,6 +124,8 @@ function simulateRegularShotCount(level, mode, phase) {
   const boss = new Boss(640, 180, level, makeGame(mode, bullets));
   boss.phase = phase;
   boss.profile = getBossProfile(level);
+  boss.startRegularAttackTelegraph(640, 640);
+  boss.setAttackWarningVisibleElapsedForDebug(boss.regularTelegraph.duration);
   const fired = boss.shoot(640, 640) || [];
   return Math.max(bullets.length, fired.length);
 }

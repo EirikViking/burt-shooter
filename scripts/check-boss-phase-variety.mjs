@@ -81,7 +81,7 @@ function findChrome() {
 }
 
 function bossFrom(state) {
-  return state.visibleEnemies?.find((enemy) => enemy.kind === 'boss') || null;
+  return state?.visibleEnemies?.find((enemy) => enemy.kind === 'boss') || null;
 }
 
 const server = await startPreviewServer();
@@ -105,15 +105,33 @@ try {
   for (const level of levelsToCheck) {
     await page.goto(withQuery(baseUrl, {
       autostart: '1',
+      controlSmoke: '1',
       debugBossToken: 'NOVA_DEBUG_2026',
-    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
+      'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
       startAtBoss: '1',
       startLevel: String(level)
     }), { waitUntil: 'domcontentloaded', timeout: 30000 });
 
+    await page.waitForFunction((expectedLevel) => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      const play = window.__game?.scenes?.play;
+      return state?.scene === 'play' && play?.enemyManager && play?._lastStartedLevel === expectedLevel;
+    }, level, { timeout: 30000 });
+
+    await page.evaluate(async (expectedLevel) => {
+      const play = window.__game?.scenes?.play;
+      if (!play?.enemyManager || play.enemyManager.state === 'BOSS_ACTIVE') return;
+      play.clearPendingEnemyStart?.();
+      play.enemyManager.forceBossStart?.(expectedLevel);
+      await play.enemyManager.spawnBoss?.(expectedLevel);
+      play.enemyManager.state = 'BOSS_ACTIVE';
+      play.enemyManager.bossSpawning = false;
+    }, level);
+
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE';
+      const boss = window.__game?.scenes?.play?.enemyManager?.boss;
+      return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE' && Boolean(boss?.active);
     }, null, { timeout: 30000 });
 
     const phaseData = await page.evaluate(() => {
@@ -130,11 +148,11 @@ try {
 
       const before = JSON.parse(window.render_game_to_text());
       boss.health = boss.maxHealth * 0.74;
-      boss.update(16, player.x, player.y);
+      boss.update(1, player.x, player.y);
       const phase2 = JSON.parse(window.render_game_to_text());
-      boss.telegraph = null;
+      boss.cancelAttackWarning?.('phase_variety_fixture');
       boss.health = boss.maxHealth * 0.39;
-      boss.update(16, player.x, player.y);
+      boss.update(1, player.x, player.y);
       const phase3 = JSON.parse(window.render_game_to_text());
       return { ok: true, before, phase2, phase3 };
     });

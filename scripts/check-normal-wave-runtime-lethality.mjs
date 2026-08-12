@@ -346,6 +346,8 @@ try {
       boss.active = true;
       boss.phase = level >= 12 ? 2 : 1;
       boss.shootDelay = 1;
+      boss.startRegularAttackTelegraph(player.x, player.y);
+      boss.setAttackWarningVisibleElapsedForDebug(boss.regularTelegraph.duration);
       const shots = flattenShots(boss.shoot(player.x, player.y));
       const speeds = shots.map(finiteSpeed).filter((speed) => speed > 0);
       clearRuntime('runtime_lethality_boss_compare_done');
