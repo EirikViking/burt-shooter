@@ -2979,3 +2979,10 @@ Original request: continue improving the current non-Unity game and choose three
 - Generated Wonder art now uses a responsive upper-field mask targeting 60% playfield width by 45% height. Ordinary and Reduced Motion runtime captures remain behind the HUD and leave the lower player lane open.
 - Deterministic runtime coverage proves transition overlap, unchanged timed-effect milliseconds at terminal release, no enemy/wave/Hijacker release underneath the Wonder, exact-once progression resume, discrete-input suppression, stale-callback rejection, asset-late cancellation, scene-destruction cleanup, and experimental isolation.
 - The three-variant runtime matrix passed at 1280x720 and 1920x1080 Reduced Motion. ChatGPT Pro reviewed the exact build screenshots and evidence in the internal browser and returned `APPROVED`. No package, upload, Steamworks change, push, or publication was performed.
+
+## 2026-08-12 Boss warning notification ownership cleanup
+
+- Regular and signature boss-warning tokens now own unique notification IDs. Every release or cancellation removes only its own queued or active windup plate, leaving newer signature and unrelated notifications intact.
+- Deterministic lifecycle coverage passes all ten regular profiles, all five signature profiles, both phase thresholds, armor/finish/refuel/support/respawn/long-frame interruptions, queued and active cleanup, idempotence, and normal/experimental isolation.
+- `build:current`, `check:boss-telegraph`, `check:boss-phase-variety`, `check:boss-special-hazards`, `check:notification-orchestration`, `check:i18n`, and all-eight-language `check:i18n-ui` pass. The generated boss-warning, phase, special-hazard, and notification captures were visually inspected.
+- No player-facing copy, balance, attack cadence, experimental design, Steamworks state, package, upload, push, deployment, or publication changed.

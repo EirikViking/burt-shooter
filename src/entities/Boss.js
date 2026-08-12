@@ -1862,8 +1862,9 @@ export class Boss {
 
     const durationMs = Math.max(1, Math.round(Number(details.durationMs ?? details.duration) || 1));
     const startedAt = Date.now();
+    const warningTokenId = ++this.attackWarningTokenSequence;
     const token = {
-      id: ++this.attackWarningTokenSequence,
+      id: warningTokenId,
       category: normalizedCategory,
       attackProfile: Object.freeze({
         attack: details.attack || null,
@@ -1891,7 +1892,10 @@ export class Boss {
       visible: true,
       audioCueActive: false,
       audioTerminalState: 'idle',
-      audioGroup: `boss_warning:${this.level}:${startedAt}:${this.attackWarningTokenSequence}`,
+      audioGroup: `boss_warning:${this.level}:${startedAt}:${warningTokenId}`,
+      notificationId: `boss_attack_warning:${this.level}:${startedAt}:${warningTokenId}`,
+      notificationTerminalState: 'pending',
+      notificationDismissedCount: 0,
       rngSnapshot: Object.freeze({
         // Boss attacks currently make no random draw between warning and release.
         // Keep that zero-draw state explicit so future profiles cannot add a
@@ -1991,6 +1995,15 @@ export class Boss {
     token.endedAt = Date.now();
     token.outcomeCount += 1;
     token.visible = false;
+    const playScene = this.game?.scenes?.play;
+    const notificationCleanupAvailable = typeof playScene?.cancelNotificationById === 'function';
+    token.notificationDismissedCount += Math.max(0, Number(
+      playScene?.cancelNotificationById?.(
+        token.notificationId,
+        `boss_warning_${terminalState}:${token.terminalReason}`
+      )
+    ) || 0);
+    token.notificationTerminalState = terminalState;
     AudioManager.stopSfxGroup?.(token.audioGroup);
     token.audioCueActive = false;
     token.audioTerminalState = terminalState;
@@ -2014,6 +2027,9 @@ export class Boss {
       longFrameInterruptions: token.longFrameInterruptions,
       visualsCleaned: true,
       audioCleaned: true,
+      notificationId: token.notificationId,
+      notificationCleaned: notificationCleanupAvailable,
+      notificationDismissedCount: token.notificationDismissedCount,
       endedAt: token.endedAt
     };
     this.attackWarningOutcomes.push(outcome);
@@ -2059,6 +2075,8 @@ export class Boss {
         remainingMs: this.getAttackWarningRemainingMs(token),
         terminalState: token.terminalState,
         longFrameInterruptions: token.longFrameInterruptions,
+        notificationId: token.notificationId,
+        notificationTerminalState: token.notificationTerminalState,
         regularOwner: this.regularTelegraph === token,
         signatureOwner: this.telegraph === token
       } : null,
@@ -2309,8 +2327,10 @@ export class Boss {
         fill: '#fff45c',
         slot: 'top',
         type: 'boss',
+        notificationId: this.telegraph.notificationId,
         duration: 900
       });
+      this.telegraph.notificationTerminalState = 'owned';
     }
     this.playSignatureTelegraphSfx(type, this.telegraph);
     measurePerformance('boss_event_telegraph_start.visual_creation', () => this.updateTelegraphVisual(0, playerX, playerY));
@@ -2760,20 +2780,25 @@ export class Boss {
     };
     const attackLabel = translateText(String(attack).toUpperCase());
     const viewportWidth = this.game?.getWidth?.() || 800;
-    this.game?.scenes?.play?.enqueueToast?.(translateText('ATTACK: {threat}', { threat: attackLabel }), {
-      fontSize: viewportWidth < 720 ? 13 : 15,
-      fill: '#fff3a0',
-      slot: 'top',
-      channel: 'combat',
-      type: 'boss_attack_windup',
-      priority: 5,
-      duration: Math.max(700, Math.min(1100, duration)),
-      restrained: true,
-      authoredBadge: false,
-      signalPlate: true,
-      signalMinWidth: viewportWidth < 720 ? 144 : 168,
-      maxWidth: Math.min(viewportWidth - 40, viewportWidth < 720 ? viewportWidth * 0.62 : 280)
-    });
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.enqueueToast) {
+      playScene.enqueueToast(translateText('ATTACK: {threat}', { threat: attackLabel }), {
+        fontSize: viewportWidth < 720 ? 13 : 15,
+        fill: '#fff3a0',
+        slot: 'top',
+        channel: 'combat',
+        type: 'boss_attack_windup',
+        notificationId: this.regularTelegraph.notificationId,
+        priority: 5,
+        duration: Math.max(700, Math.min(1100, duration)),
+        restrained: true,
+        authoredBadge: false,
+        signalPlate: true,
+        signalMinWidth: viewportWidth < 720 ? 144 : 168,
+        maxWidth: Math.min(viewportWidth - 40, viewportWidth < 720 ? viewportWidth * 0.62 : 280)
+      });
+      this.regularTelegraph.notificationTerminalState = 'owned';
+    }
     this.updateRegularAttackTelegraphVisual(0, playerX, playerY);
   }
 

@@ -18823,6 +18823,50 @@ export class PlayScene {
     return removed;
   }
 
+  cancelNotificationById(notificationId, reason = 'owner_cancelled') {
+    const wantedId = String(notificationId || '').trim();
+    if (!wantedId) return 0;
+
+    let removed = 0;
+    for (const queue of [this.toastQueue, this.toastTopQueue, this.toastCornerQueue]) {
+      for (let index = queue.length - 1; index >= 0; index -= 1) {
+        const queuedId = String(queue[index]?.options?.notificationId || '').trim();
+        if (queuedId !== wantedId) continue;
+        queue.splice(index, 1);
+        removed += 1;
+      }
+    }
+
+    for (const [slot, display] of [
+      ['center', this.activeBossIntroCard],
+      ['center', this.activeCenterToast],
+      ['top', this.activeTopToast],
+      ['corner', this.activeCornerToast]
+    ]) {
+      const activeId = String(
+        display?.__toastMeta?.notificationId ||
+        display?.__toastMeta?.originalOptions?.notificationId ||
+        ''
+      ).trim();
+      if (activeId !== wantedId) continue;
+      this.dismissToastDisplay(display, slot, { reason });
+      removed += 1;
+    }
+
+    const dossierId = String(
+      this.activeBossDossier?.__toastMeta?.notificationId ||
+      this.activeBossDossier?.__toastMeta?.originalOptions?.notificationId ||
+      ''
+    ).trim();
+    if (dossierId === wantedId) {
+      this.dismissBossDossier(reason);
+      removed += 1;
+    }
+
+    if (removed > 0) this.processToastQueue?.();
+    return removed;
+  }
+
   applyNotificationSupersession(type, { channel = null } = {}) {
     if (type === 'boss_defeated') {
       this.cancelNotificationTypes([
@@ -19349,6 +19393,7 @@ export class PlayScene {
     display.__toastMeta = {
       message,
       type: options.type || 'generic',
+      notificationId: options.notificationId || null,
       channel: options.channel || this.getNotificationChannel(options.type || 'generic', options),
       slot,
       priority: Number.isFinite(options.priority) ? options.priority : 0,

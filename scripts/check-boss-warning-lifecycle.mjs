@@ -22,6 +22,7 @@ globalThis.Audio = class {
 const { Boss } = await import('../src/entities/Boss.js');
 const { BOSS_ROSTER } = await import('../src/config/BossRoster.js');
 const { AudioManager } = await import('../src/audio/AudioManager.js');
+const { PlayScene } = await import('../src/scenes/PlayScene.js');
 
 let fakeNow = 1_000_000;
 const originalDateNow = Date.now;
@@ -37,9 +38,11 @@ function makeLayer() {
   };
 }
 
-function makeGame({ experiment = false } = {}) {
+function makeGame({ experiment = false, notificationMode = 'queued' } = {}) {
   const enemyBullets = [];
   const hazards = [];
+  const notificationCancellationAttempts = [];
+  const notificationDismissals = [];
   const play = {
     player: { x: 640, y: 600 },
     bulletManager: {
@@ -63,12 +66,62 @@ function makeGame({ experiment = false } = {}) {
     registerBossHazardFromBoss(_boss, category, details) {
       hazards.push({ category, ...details });
     },
-    enqueueToast() {},
     showBossTaunt() {},
     onBossPhaseChange() {},
     triggerShockwave() {},
     particleManager: null,
     screenShake: null
+  };
+  play.toastQueue = [];
+  play.toastTopQueue = [];
+  play.toastCornerQueue = [];
+  play.activeBossIntroCard = null;
+  play.activeCenterToast = null;
+  play.activeTopToast = null;
+  play.activeCornerToast = null;
+  play.activeBossDossier = null;
+  play.processToastQueue = () => {};
+  play.dismissBossDossier = () => {};
+  play.dismissToastDisplay = (display, slot, { reason = 'dismissed' } = {}) => {
+    notificationDismissals.push({
+      id: display?.__toastMeta?.notificationId || null,
+      reason,
+      slot
+    });
+    if (play.activeBossIntroCard === display) play.activeBossIntroCard = null;
+    if (play.activeCenterToast === display) play.activeCenterToast = null;
+    if (play.activeTopToast === display) play.activeTopToast = null;
+    if (play.activeCornerToast === display) play.activeCornerToast = null;
+  };
+  play.cancelNotificationById = (notificationId, reason) => {
+    notificationCancellationAttempts.push({ notificationId, reason });
+    return PlayScene.prototype.cancelNotificationById.call(play, notificationId, reason);
+  };
+  play.enqueueToast = (message, options = {}) => {
+    const entry = {
+      message,
+      options: { ...options },
+      priority: Number(options.priority) || 0,
+      createdAt: fakeNow
+    };
+    if (notificationMode === 'active' && !play.activeTopToast) {
+      play.activeTopToast = {
+        __toastMeta: {
+          message,
+          type: options.type || 'generic',
+          notificationId: options.notificationId || null,
+          originalOptions: { ...options }
+        }
+      };
+    } else {
+      const queue = options.slot === 'corner'
+        ? play.toastCornerQueue
+        : options.slot === 'top'
+          ? play.toastTopQueue
+          : play.toastQueue;
+      queue.push(entry);
+    }
+    return options.notificationId || true;
   };
   const game = {
     getWidth: () => 1280,
@@ -77,7 +130,31 @@ function makeGame({ experiment = false } = {}) {
     scenes: { play },
     lateGameExperiment: experiment ? { active: true, version: 'test-only' } : null
   };
-  return { game, play, enemyBullets, hazards };
+  return {
+    game,
+    play,
+    enemyBullets,
+    hazards,
+    notificationCancellationAttempts,
+    notificationDismissals
+  };
+}
+
+function hasNotificationId(play, notificationId) {
+  if (!notificationId) return false;
+  const queued = [play.toastQueue, play.toastTopQueue, play.toastCornerQueue]
+    .some((queue) => queue.some((entry) => entry?.options?.notificationId === notificationId));
+  const active = [
+    play.activeBossIntroCard,
+    play.activeCenterToast,
+    play.activeTopToast,
+    play.activeCornerToast,
+    play.activeBossDossier
+  ].some((display) => (
+    display?.__toastMeta?.notificationId === notificationId ||
+    display?.__toastMeta?.originalOptions?.notificationId === notificationId
+  ));
+  return queued || active;
 }
 
 function makeBoss(profile = BOSS_ROSTER[0], options = {}) {
@@ -122,6 +199,8 @@ function assertTerminalOutcome(outcome, state, reason = null) {
   assert.equal(outcome.outcomeCount, 1, 'each warning token must receive exactly one terminal outcome');
   assert.equal(outcome.visualsCleaned, true);
   assert.equal(outcome.audioCleaned, true);
+  assert.equal(outcome.notificationCleaned, true);
+  assert.ok(outcome.notificationId, 'warning outcome must retain its token-owned notification id');
   if (state === 'released') {
     assert.ok(outcome.visibleElapsedMs >= outcome.durationMs, 'released warning must own a full visible lead time');
   }
@@ -135,11 +214,14 @@ function startRegular(boss, playerX = 930, playerY = 610) {
   assert.equal(token.attackProfile.type, boss.regularTelegraph.type);
   assert.equal(token.lockedAim.angle, boss.regularTelegraph.lockedAngle);
   assert.deepEqual(token.safeLanes, boss.safeLanes);
+  assert.ok(token.notificationId, 'regular warning token must own a unique notification id');
+  assert.equal(token.notificationTerminalState, 'owned');
+  assert.equal(hasNotificationId(boss.game.scenes.play, token.notificationId), true);
   return token;
 }
 
-function cancelFixture(reason, action) {
-  const { boss } = makeBoss();
+function cancelFixture(reason, action, options = {}) {
+  const { boss, play, notificationCancellationAttempts } = makeBoss(BOSS_ROSTER[0], options);
   const token = startRegular(boss);
   advanceFrames(boss, 14);
   boss.attackWarningLayer = makeLayer();
@@ -153,9 +235,14 @@ function cancelFixture(reason, action) {
   assert.ok(boss.attackWarningLayer.clears > 0, `${reason} must clear regular warning visuals`);
   assert.equal(token.audioCueActive, false);
   assert.equal(token.audioTerminalState, 'cancelled');
+  assert.equal(token.notificationTerminalState, 'cancelled');
+  assert.equal(token.notificationDismissedCount, 1);
+  assert.equal(hasNotificationId(play, token.notificationId), false, `${reason} must remove the warning's queued or active notification`);
+  const cancellationAttempts = notificationCancellationAttempts.length;
   assert.equal(boss.finishAttackWarning(token, 'cancelled', 'duplicate'), null, 'terminal token cannot end twice');
+  assert.equal(notificationCancellationAttempts.length, cancellationAttempts, 'repeated terminal transition must not dismiss notifications twice');
   assert.equal(token.outcomeCount, 1);
-  return { boss, token, outcome };
+  return { boss, play, token, outcome };
 }
 
 try {
@@ -167,7 +254,7 @@ try {
   );
 
   const regularResults = regularProfiles.map((profile) => {
-    const { boss } = makeBoss(profile);
+    const { boss, play } = makeBoss(profile);
     const token = startRegular(boss);
     const lockedAngle = token.lockedAim.angle;
     advanceToReady(boss);
@@ -181,6 +268,9 @@ try {
     assert.equal(boss.lastRegularAttackRelease.lockedAngle, lockedAngle);
     assert.equal(boss.attackWarningToken, null);
     assert.equal(token.outcomeCount, 1);
+    assert.equal(token.notificationTerminalState, 'released');
+    assert.equal(token.notificationDismissedCount, 1);
+    assert.equal(hasNotificationId(play, token.notificationId), false, `${profile.attack} release must remove its windup notification`);
     return { attack: profile.attack, type: token.type, bullets: bullets.length };
   });
 
@@ -214,10 +304,13 @@ try {
   const signatureTypes = ['cone', 'ring', 'mirror', 'lance', 'adds'];
   const signatureResults = signatureTypes.map((type, index) => {
     const profile = BOSS_ROSTER.find((candidate) => candidate.signature === type) || BOSS_ROSTER[index];
-    const { boss, enemyBullets } = makeBoss(profile);
+    const { boss, play, enemyBullets } = makeBoss(profile);
     boss.startSignatureTelegraph(type, 940, 610);
     assertExclusiveOwner(boss, 'signature');
     const token = boss.attackWarningToken;
+    assert.ok(token.notificationId, `${type} signature must own a notification id`);
+    assert.equal(token.notificationTerminalState, 'owned');
+    assert.equal(hasNotificationId(play, token.notificationId), true);
     const lockedAngle = token.lockedAim.angle;
     boss.signatureWarningLayer = makeLayer();
     advanceToReady(boss);
@@ -228,6 +321,9 @@ try {
     assert.equal(boss.lastSignatureRelease.warningTokenId, token.id);
     assert.ok(boss.signatureWarningLayer.clears > 0, `${type} release must clean signature warning visuals`);
     assert.equal(token.outcomeCount, 1);
+    assert.equal(token.notificationTerminalState, 'released');
+    assert.equal(token.notificationDismissedCount, 1);
+    assert.equal(hasNotificationId(play, token.notificationId), false, `${type} signature release must remove its windup notification`);
     return { type, bullets: enemyBullets.length };
   });
 
@@ -235,7 +331,7 @@ try {
     { from: 1, healthRatio: 0.74, to: 2 },
     { from: 2, healthRatio: 0.39, to: 3 }
   ]) {
-    const { boss } = makeBoss();
+    const { boss, play } = makeBoss();
     boss.phase = threshold.from;
     const regular = startRegular(boss);
     advanceFrames(boss, 8);
@@ -245,6 +341,8 @@ try {
     assertTerminalOutcome(cancelled, 'cancelled', `phase_${threshold.to}_transition`);
     assertExclusiveOwner(boss, 'signature');
     assert.equal(boss.attackWarningToken.attackProfile.phase, threshold.to);
+    assert.equal(hasNotificationId(play, regular.notificationId), false, 'phase transition must remove the superseded regular windup notification');
+    assert.equal(hasNotificationId(play, boss.attackWarningToken.notificationId), true, 'phase transition must preserve the newer signature windup notification');
   }
 
   cancelFixture('armor_finish_gate', (boss) => {
@@ -260,7 +358,7 @@ try {
 
   cancelFixture('boss_support_inbound', (boss) => {
     boss.cancelAttackWarning('boss_support_inbound', { category: 'regular' });
-  });
+  }, { notificationMode: 'active' });
 
   cancelFixture('boss_refuel', (boss) => {
     boss.health = boss.maxHealth - 20;
@@ -342,7 +440,7 @@ try {
   }
 
   {
-    const { boss } = makeBoss(BOSS_ROSTER[3]);
+    const { boss, play } = makeBoss(BOSS_ROSTER[3], { notificationMode: 'active' });
     AudioManager.enabled = true;
     boss.startSignatureTelegraph('lance', 940, 610);
     const token = boss.attackWarningToken;
@@ -356,6 +454,9 @@ try {
     assert.equal(boss.presentationState, 'idle', 'cancellation must clear transient boss charge presentation');
     assert.equal(boss.presentationStateUntil, 0);
     assert.equal(token.audioCueActive, false);
+    assert.equal(token.notificationTerminalState, 'cancelled');
+    assert.equal(token.notificationDismissedCount, 1);
+    assert.equal(hasNotificationId(play, token.notificationId), false, 'signature cancellation must remove an active top-slot notification');
     AudioManager.enabled = false;
   }
 
@@ -395,11 +496,63 @@ try {
     );
   }
 
+  {
+    const ownedId = 'boss_attack_warning:owner';
+    const newerSignatureId = 'boss_attack_warning:newer_signature';
+    const unrelatedId = 'other_notification';
+    const ownedActive = {
+      __toastMeta: {
+        type: 'boss',
+        notificationId: ownedId,
+        originalOptions: { notificationId: ownedId }
+      }
+    };
+    const unrelatedActive = {
+      __toastMeta: {
+        type: 'trait',
+        notificationId: unrelatedId,
+        originalOptions: { notificationId: unrelatedId }
+      }
+    };
+    const scene = Object.create(PlayScene.prototype);
+    scene.toastQueue = [{ options: { type: 'trait', notificationId: unrelatedId } }];
+    scene.toastTopQueue = [
+      { options: { type: 'boss_attack_windup', notificationId: ownedId } },
+      { options: { type: 'boss', notificationId: newerSignatureId } }
+    ];
+    scene.toastCornerQueue = [];
+    scene.activeBossIntroCard = null;
+    scene.activeCenterToast = null;
+    scene.activeTopToast = ownedActive;
+    scene.activeCornerToast = unrelatedActive;
+    scene.activeBossDossier = null;
+    const dismissals = [];
+    let queuePasses = 0;
+    scene.dismissToastDisplay = (display, slot, { reason } = {}) => {
+      dismissals.push({ display, slot, reason });
+      if (scene.activeTopToast === display) scene.activeTopToast = null;
+      if (scene.activeCornerToast === display) scene.activeCornerToast = null;
+    };
+    scene.dismissBossDossier = () => assert.fail('unowned boss dossier must not be dismissed');
+    scene.processToastQueue = () => { queuePasses += 1; };
+
+    assert.equal(scene.cancelNotificationById(ownedId, 'token_terminal'), 2, 'owner cancellation must remove every queued and active copy of only that token notification');
+    assert.equal(scene.activeTopToast, null);
+    assert.equal(scene.activeCornerToast, unrelatedActive, 'owner cancellation must preserve unrelated active notifications');
+    assert.equal(scene.toastTopQueue.length, 1);
+    assert.equal(scene.toastTopQueue[0].options.notificationId, newerSignatureId, 'older token cancellation must preserve a newer signature warning');
+    assert.equal(scene.toastQueue[0].options.notificationId, unrelatedId, 'owner cancellation must preserve unrelated queued notifications');
+    assert.deepEqual(dismissals.map(({ slot, reason }) => ({ slot, reason })), [{ slot: 'top', reason: 'token_terminal' }]);
+    assert.equal(queuePasses, 1);
+    assert.equal(scene.cancelNotificationById(ownedId, 'duplicate_terminal'), 0, 'notification cleanup must be idempotent');
+    assert.equal(queuePasses, 1, 'idempotent cleanup must not perturb the remaining queue');
+  }
+
   const managerSource = readFileSync('src/managers/EnemyManager.js', 'utf8');
   assert.match(managerSource, /enemy\.update\(isBoss \? dt[^\n]+isBoss \? delta : undefined\)/, 'boss warning clock must receive unscaled frame time while movement preserves slow-time scaling');
   assert.match(managerSource, /cancelAttackWarning\?\.\('boss_support_inbound', \{ category: 'regular' \}\)/, 'normal fuel-support warning must cancel an active regular warning');
 
-  console.log(`[boss-warning-lifecycle] PASS regularProfiles=${regularResults.length} signatureProfiles=${signatureResults.length} phaseThresholds=2 frameThresholds=16,33,100,249,250,251,10000 interruptions=armor,finish,refuel,support,pause,respawn,long-frame transientCleanup=pass experimentIsolation=pass`);
+  console.log(`[boss-warning-lifecycle] PASS regularProfiles=${regularResults.length} signatureProfiles=${signatureResults.length} phaseThresholds=2 frameThresholds=16,33,100,249,250,251,10000 interruptions=armor,finish,refuel,support,pause,respawn,long-frame notificationOwnership=queued+active+idempotent transientCleanup=pass experimentIsolation=pass`);
 } finally {
   Date.now = originalDateNow;
 }
