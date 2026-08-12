@@ -367,13 +367,14 @@ try {
   assert(
     presentationSequences.wonderDuringWaveClear.deferred === true &&
     presentationSequences.wonderDuringWaveClear.active === false &&
-    presentationSequences.wonderDuringWaveClear.pendingKind === 'presentation_release' &&
+    presentationSequences.wonderDuringWaveClear.pendingKind === 'audio_prelude' &&
     presentationSequences.wonderDuringWaveClear.pendingWaveTimerHeld === true &&
     presentationSequences.wonderDuringWaveClear.pendingBossTimerHeld === true &&
     Boolean(presentationSequences.wonderAfterWaveClear.active) &&
     presentationSequences.wonderAfterWaveClear.progressionHold?.activeWaveTimerHeld === true &&
     presentationSequences.wonderAfterWaveClear.progressionHold?.activeBossTimerHeld === true &&
-    presentationSequences.wonderAfterWaveClear.last?.scaleReduction === 0.3 &&
+    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.widthRatio === 0.6 &&
+    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.heightRatio === 0.45 &&
     presentationSequences.wonderAfterWaveClear.last?.ambientAlpha >= 0.25 &&
     presentationSequences.wonderAfterWaveClear.last?.ambientAlpha <= 0.35,
     `Constellation presentation did not defer, shrink, and settle: ${JSON.stringify(presentationSequences)}`
