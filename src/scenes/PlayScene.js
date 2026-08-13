@@ -13368,9 +13368,9 @@ export class PlayScene {
       const pulse = button._pulse || 0;
       focus.clear();
       if (focused) {
-        focus.roundRect(-width / 2 - 7, -height / 2 - 6, width + 14, height + 12, 9);
+        focus.roundRect(-width / 2 + 3, -height / 2 + 3, width - 6, height - 6, 5);
         focus.stroke({ color: 0xffef7e, width: 2.5, alpha: 0.72 + pulse * 0.2 });
-        focus.roundRect(-width / 2 - 13, -height / 2 - 11, width + 26, height + 22, 11);
+        focus.roundRect(-width / 2 + 7, -height / 2 + 7, width - 14, height - 14, 4);
         focus.stroke({ color: accent, width: 1.4, alpha: 0.22 + pulse * 0.24 });
       }
       bg.clear();

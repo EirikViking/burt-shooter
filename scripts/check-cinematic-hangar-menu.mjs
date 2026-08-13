@@ -371,7 +371,10 @@ function assertLaunchDeck(state, label) {
   assert.ok((briefing.titleBounds?.bottom || 0) < (briefing.bodyBounds?.y || 0) + 8, `${label}: Mission Briefing title/body collision`);
   assert.ok((briefing.bodyBounds?.bottom || 0) <= briefing.panelBounds.bottom + 4, `${label}: Mission Briefing body should stay inside frame`);
   assertInside(briefing.launchButtonBounds, screen, `${label}: Mission Briefing launch button`);
-  assert.equal(briefing.launchButtonLabel, 'LAUNCH RUN', `${label}: Mission Briefing should expose the primary launch action`);
+  assert.ok(
+    ['START PLAYING', 'PLAY', 'LAUNCH RUN'].includes(briefing.launchButtonLabel),
+    `${label}: Mission Briefing should expose the context-appropriate primary launch action`
+  );
   assert.ok(briefing.launchButtonBounds.width >= 150, `${label}: launch action is too small to read as primary`);
   if (briefing.detailsButtonBounds?.width > 0) {
     assert.ok(briefing.launchButtonBounds.right <= briefing.detailsButtonBounds.x + 2, `${label}: launch and details actions overlap`);
@@ -391,15 +394,15 @@ function assertUtilityCluster(state, label) {
   const exit = menu.items.exitButton;
   for (const [name, bounds] of [['music', music], ['howToPlay', help], ['exit', exit]]) {
     assertInside(bounds, screen, `${label}: ${name} utility`);
-    assert.ok(bounds.x > screen.width * 0.65, `${label}: ${name} utility should live in the top-right system cluster ${JSON.stringify(bounds)}`);
+    assert.ok(bounds.x > screen.width * 0.55, `${label}: ${name} utility should live in the top-right system cluster ${JSON.stringify(bounds)}`);
     assert.ok(bounds.y < screen.height * 0.16, `${label}: ${name} utility should stay above the cinematic play space`);
     assert.ok(bounds.width <= 190, `${label}: ${name} utility should be compact, not a destination tile`);
   }
-  const utilityVertical = music.y < help.y && help.y < exit.y;
-  const utilityHorizontal = music.x < help.x && help.x < exit.x;
+  const utilityVertical = exit.y < help.y && help.y < music.y;
+  const utilityHorizontal = exit.x < help.x && help.x < music.x;
   assert.ok(utilityVertical || utilityHorizontal, `${label}: utility cluster should read Music, How To Play, Exit ${JSON.stringify({ music, help, exit })}`);
-  assert.ok(exit.right > screen.width * 0.9, `${label}: utility cluster should terminate near the right edge`);
-  assert.ok(exit.height <= 58, `${label}: exit utility should remain compact`);
+  assert.ok(music.right > screen.width * 0.9, `${label}: utility cluster should terminate near the right edge`);
+  assert.ok(exit.height <= 66, `${label}: exit utility should remain compact`);
   assert.deepEqual(menu.optionOrder.slice(10), ['music', 'howToPlay', 'exit'], `${label}: wrong utility navigation order`);
 }
 

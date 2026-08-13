@@ -104,7 +104,7 @@ export class ModeBriefingOverlay {
     const panelWidth = Math.min(1080, Math.round(width * (compact ? 0.75 : 0.72)));
     // The briefing is a decision aid, not a full-screen document. Keep it
     // content-driven so the rules never float above a dead lower half.
-    const panelHeight = Math.min(Math.round(height * (veryShort ? 0.88 : 0.58)), 620);
+    const panelHeight = Math.min(Math.round(height * (veryShort ? 0.9 : (compact ? 0.78 : 0.58))), 620);
     const panelX = Math.round((width - panelWidth) / 2);
     const panelY = Math.round((height - panelHeight) / 2);
     const pad = compact ? 24 : 32;

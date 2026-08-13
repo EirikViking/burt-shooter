@@ -944,34 +944,16 @@ export class HighscoreScene {
     effect.eventMode = 'none';
 
     const glow = new PIXI.Graphics();
-    glow.roundRect(rowX - 8, rowY - 7, rowW + 16, rowHeight + 10, 10);
+    glow.roundRect(rowX + 3, rowY + 3, rowW - 6, rowHeight - 8, 6);
     glow.fill({ color: 0x37f5ff, alpha: 0.2 });
     glow.stroke({ color: 0xffd15c, width: 4, alpha: 0.5 });
     glow.filters = [new PIXI.BlurFilter({ strength: isMobile ? 8 : 12 })];
 
     const pulseFrame = new PIXI.Graphics();
-    pulseFrame.roundRect(rowX - 3, rowY - 3, rowW + 6, rowHeight + 2, 8);
+    pulseFrame.roundRect(rowX + 2, rowY + 2, rowW - 4, rowHeight - 6, 6);
     pulseFrame.stroke({ color: 0xfff15c, width: 2.5, alpha: 0.92 });
-    pulseFrame.roundRect(rowX + 3, rowY + 3, rowW - 6, rowHeight - 8, 6);
+    pulseFrame.roundRect(rowX + 7, rowY + 7, rowW - 14, rowHeight - 16, 4);
     pulseFrame.stroke({ color: 0x37f5ff, width: 1.5, alpha: 0.74 });
-
-    const nameGlow = createText(displayName, {
-      fontFamily: FONT_ARCADE,
-      fontSize: rowStyle.fontSize + (isMobile ? 4 : 8),
-      fontWeight: '900',
-      fill: '#ffffff',
-      stroke: '#37f5ff',
-      strokeThickness: isMobile ? 3 : 5,
-      dropShadow: true,
-      dropShadowColor: '#ff3fd7',
-      dropShadowBlur: isMobile ? 8 : 12,
-      dropShadowDistance: 0,
-      padding: 8
-    });
-    nameGlow.x = columns.name - (isMobile ? 2 : 4);
-    nameGlow.y = rowY + (isMobile ? -1 : -4);
-    nameGlow.alpha = 0.34;
-    fitTextToWidth(nameGlow, nameBlockWidth + (isMobile ? 14 : 34), isMobile ? 10 : 12);
 
     const sweep = new PIXI.Graphics();
     sweep.rect(0, rowY + 3, isMobile ? 20 : 34, rowHeight - 8);
@@ -1010,12 +992,13 @@ export class HighscoreScene {
       sparks.push(spark);
     }
 
-    effect.addChild(glow, nameGlow, sweep, pulseFrame, leftChevron, rightChevron, ...sparks);
+    // Keep the selected-pilot emphasis on the row frame. A second copy of the
+    // name produced visibly doubled text and reduced readability.
+    effect.addChild(glow, sweep, pulseFrame, leftChevron, rightChevron, ...sparks);
     this.rowsContainer.addChild(effect);
     this.playerHighlightEffects.push({
       glow,
       pulseFrame,
-      nameGlow,
       sweep,
       leftChevron,
       rightChevron,
@@ -1030,6 +1013,7 @@ export class HighscoreScene {
   async renderHighscoreRows(startY, layout) {
     this.rowsContainer.removeChildren();
     this.rowLayoutDebug = [];
+    this.manifestRanges = [];
     this.playerHighlightEffects = [];
     const isMobile = layout.isMobile || layout.width < 720;
     const metrics = this.tableMetrics || {
@@ -1140,11 +1124,20 @@ export class HighscoreScene {
         headerBar.fill({ color: 0xffd15c, alpha: 0.38 });
         this.rowsContainer.addChild(headerBar);
 
-        const manifestStart = columnIndex * rowsPerColumnTarget + 1;
-        const manifestEnd = Math.min(displayLimit, manifestStart + rowsPerColumnTarget - 1);
+        // The viewport can fit fewer than the nominal 20 rows per column.
+        // Describe the ranks that are actually rendered, never the request cap.
+        const manifestStart = columnIndex * maxRowsPerColumn + 1;
+        const manifestEnd = Math.min(entriesToDisplay.length, manifestStart + maxRowsPerColumn - 1);
         const manifestLabel = desktopTwoColumn
           ? `PILOT MANIFEST ${manifestStart}-${manifestEnd}`
           : 'PILOT MANIFEST';
+        this.manifestRanges.push({
+          column: columnIndex,
+          start: manifestStart,
+          end: manifestEnd,
+          renderedCount: Math.max(0, Math.min(maxRowsPerColumn, entriesToDisplay.length - manifestStart + 1)),
+          label: manifestLabel
+        });
         const headers = [
           { text: manifestLabel, x: geometry.rowX, anchorX: 0 },
           { text: translateText(getLeaderboardScoreHeader(this.activeLeaderboard)), x: geometry.rowX + geometry.rowW, anchorX: 1 }
@@ -1210,7 +1203,7 @@ export class HighscoreScene {
 
         if (isTop3) {
           const rowAura = new PIXI.Graphics();
-          rowAura.roundRect(rowX - 2, rowY - 2, rowW + 4, rowHeight - 4, 7);
+          rowAura.roundRect(rowX + 2, rowY + 2, rowW - 4, rowHeight - 6, 6);
           rowAura.fill({ color: accent, alpha: index === 0 ? 0.15 : 0.1 });
           rowAura.filters = [new PIXI.BlurFilter({ strength: index === 0 ? 6 : 4 })];
           this.rowsContainer.addChild(rowAura);
@@ -1893,11 +1886,6 @@ export class HighscoreScene {
         const pulse = 0.5 + Math.sin(highlightTime + effect.phase) * 0.5;
         if (effect.glow) effect.glow.alpha = 0.58 + pulse * 0.32;
         if (effect.pulseFrame) effect.pulseFrame.alpha = 0.72 + pulse * 0.26;
-        if (effect.nameGlow) {
-          effect.nameGlow.alpha = 0.2 + pulse * 0.22;
-          const scale = 1 + pulse * 0.035;
-          effect.nameGlow.scale.set(scale);
-        }
         if (effect.sweep) {
           const travel = effect.rowW + 90;
           effect.sweep.x = effect.rowX - 45 + ((highlightTime * 72 + effect.phase * 120) % travel);
@@ -2006,7 +1994,7 @@ export class HighscoreScene {
     if (button._focus) {
       button._focus.clear();
       if (focused) {
-        button._focus.roundRect(x - 5, y - 5, width + 10, height + 10, 8);
+        button._focus.roundRect(x + 3, y + 3, width - 6, height - 6, 5);
         button._focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
       }
     }

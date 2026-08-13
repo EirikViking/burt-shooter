@@ -1486,7 +1486,9 @@ export class MenuScene {
       fontWeight: '900',
       fill: '#ffffff',
       align: 'center',
-      padding: 48
+      // PIXI includes texture padding in measured bounds. Keep it small so a
+      // fitted label cannot appear to cross its own button frame.
+      padding: 8
     });
     this.runModeDetailsButtonText.anchor.set(0.5);
     this.runModeDetailsButton.addChild(
@@ -1525,7 +1527,7 @@ export class MenuScene {
       fontWeight: '900',
       fill: '#03151b',
       align: 'center',
-      padding: 36
+      padding: 8
     });
     this.runModeLaunchButtonText.anchor.set(0.5);
     this.runModeLaunchButton.addChild(this.runModeLaunchButtonBg, this.runModeLaunchButtonText);
@@ -2646,7 +2648,15 @@ export class MenuScene {
         Math.ceil(this.runModeRestriction.height || 0)
       )
       : 0;
-    const restrictionY = footerY - restrictionGap - restrictionHeight;
+    const personalBestLaneHeight = briefing.personalBest
+      ? Math.round((isShortLayout ? 18 : 20) * compactScale)
+      : 0;
+    const personalBestGap = personalBestLaneHeight > 0 ? Math.round(8 * compactScale) : 0;
+    const restrictionY = footerY
+      - personalBestGap
+      - personalBestLaneHeight
+      - restrictionGap
+      - restrictionHeight;
     const tileAreaHeight = Math.max(54, restrictionY - tilesY - Math.round(5 * compactScale));
     this.layoutRunModeInfoTiles(firstRunMayhem ? [] : (briefing.tiles || []), {
       x: innerX,
@@ -2666,15 +2676,7 @@ export class MenuScene {
     const actionGap = Math.round(8 * compactScale);
     const launchMinWidth = Math.round(156 * compactScale);
     const detailsMinWidth = briefing.details && !firstRunMayhem ? Math.round(176 * compactScale) : 0;
-    const requiredActionWidth = launchMinWidth + detailsMinWidth + (detailsMinWidth > 0 ? actionGap : 0);
-    const preferredBestWidth = briefing.personalBest
-      ? Math.min(innerWidth * 0.26, Math.round(172 * compactScale))
-      : 0;
-    const bestWidth = briefing.personalBest
-      ? Math.max(0, Math.min(preferredBestWidth, innerWidth - requiredActionWidth - Math.round(9 * compactScale)))
-      : 0;
-    const bestGap = bestWidth > 0 ? Math.round(9 * compactScale) : 0;
-    const actionWidth = Math.max(0, innerWidth - bestWidth - bestGap);
+    const actionWidth = innerWidth;
     const detailsMaxWidth = Math.max(0, actionWidth - launchMinWidth - (briefing.details ? actionGap : 0));
     const detailsWidth = briefing.details && !firstRunMayhem
       ? Math.min(
@@ -2688,11 +2690,14 @@ export class MenuScene {
       ? Math.max(Math.min(actionWidth, Math.round(112 * compactScale)), launchSpace)
       : 0;
     this.runModePersonalBest.style.fontSize = Math.round((isShortLayout ? 13 : 14) * compactScale);
-    this.runModePersonalBest.position.set(innerX, footerY + footerHeight / 2);
-    fitTextToWidth(this.runModePersonalBest, bestWidth, { minScale: 0.68 });
+    this.runModePersonalBest.position.set(
+      innerX,
+      footerY - personalBestGap - personalBestLaneHeight / 2
+    );
+    fitTextToWidth(this.runModePersonalBest, innerWidth, { minScale: 0.68 });
     this.runModePersonalBest.visible = Boolean(briefing.personalBest);
 
-    const actionX = innerX + bestWidth + bestGap;
+    const actionX = innerX;
     this.runModeLaunchButton.position.set(actionX + launchWidth / 2, footerY + footerHeight / 2);
     this.runModeLaunchButton._btnWidth = launchWidth;
     this.runModeLaunchButton._btnHeight = footerHeight;
@@ -6379,24 +6384,25 @@ export class MenuScene {
 
     focus.clear();
     if (isFocused) {
-      drawCutPanel(focus, x - 8, y - 8, w + 16, h + 16, 12, { color: hotAccent, alpha: 0.06 + pulse * 0.025 }, { color: 0xffffff, width: 2.4, alpha: 0.86 + pulse * 0.1 });
-      const bracket = Math.min(30, Math.max(18, w * 0.1));
-      const inset = 12;
-      focus.moveTo(x - inset, y + bracket);
-      focus.lineTo(x - inset, y - inset);
-      focus.lineTo(x + bracket, y - inset);
-      focus.moveTo(x + w - bracket, y - inset);
-      focus.lineTo(x + w + inset, y - inset);
-      focus.lineTo(x + w + inset, y + bracket);
-      focus.moveTo(x + w + inset, y + h - bracket);
-      focus.lineTo(x + w + inset, y + h + inset);
-      focus.lineTo(x + w - bracket, y + h + inset);
-      focus.moveTo(x + bracket, y + h + inset);
-      focus.lineTo(x - inset, y + h + inset);
-      focus.lineTo(x - inset, y + h - bracket);
+      const focusInset = 5;
+      drawCutPanel(focus, x + focusInset, y + focusInset, w - focusInset * 2, h - focusInset * 2, 9, { color: hotAccent, alpha: 0.06 + pulse * 0.025 }, { color: 0xffffff, width: 2.4, alpha: 0.86 + pulse * 0.1 });
+      const bracket = Math.min(28, Math.max(16, w * 0.09));
+      const inset = 3;
+      focus.moveTo(x + inset, y + bracket);
+      focus.lineTo(x + inset, y + inset);
+      focus.lineTo(x + bracket, y + inset);
+      focus.moveTo(x + w - bracket, y + inset);
+      focus.lineTo(x + w - inset, y + inset);
+      focus.lineTo(x + w - inset, y + bracket);
+      focus.moveTo(x + w - inset, y + h - bracket);
+      focus.lineTo(x + w - inset, y + h - inset);
+      focus.lineTo(x + w - bracket, y + h - inset);
+      focus.moveTo(x + bracket, y + h - inset);
+      focus.lineTo(x + inset, y + h - inset);
+      focus.lineTo(x + inset, y + h - bracket);
       focus.stroke({ color: hotAccent, width: 3, alpha: 0.92 + pulse * 0.06 });
     } else if (isPrimaryMode) {
-      drawCutPanel(focus, x - 4, y - 4, w + 8, h + 8, 12, { color: 0xff55d9, alpha: 0.012 }, { color: 0xff55d9, width: 1, alpha: 0.14 });
+      drawCutPanel(focus, x + 3, y + 3, w - 6, h - 6, 9, { color: 0xff55d9, alpha: 0.012 }, { color: 0xff55d9, width: 1, alpha: 0.14 });
     }
 
     bg.clear();
@@ -6563,21 +6569,22 @@ export class MenuScene {
     focus?.clear();
     if (isFocused) {
       const focusPulse = 0.5 + Math.sin(this.animationTime * 5.2) * 0.5;
-      drawCutPanel(focus, x - 7, y - 7, w + 14, h + 14, cut + 5, { color: hotAccent, alpha: 0.055 + focusPulse * 0.025 }, { color: 0xffffff, width: 2.4, alpha: 0.86 + focusPulse * 0.1 });
+      const focusInset = 5;
+      drawCutPanel(focus, x + focusInset, y + focusInset, w - focusInset * 2, h - focusInset * 2, Math.max(3, cut - 2), { color: hotAccent, alpha: 0.055 + focusPulse * 0.025 }, { color: 0xffffff, width: 2.4, alpha: 0.86 + focusPulse * 0.1 });
       const bracket = Math.min(28, Math.max(16, w * 0.1));
-      const inset = 11;
-      focus.moveTo(x - inset, y + bracket);
-      focus.lineTo(x - inset, y - inset);
-      focus.lineTo(x + bracket, y - inset);
-      focus.moveTo(x + w - bracket, y - inset);
-      focus.lineTo(x + w + inset, y - inset);
-      focus.lineTo(x + w + inset, y + bracket);
-      focus.moveTo(x + w + inset, y + h - bracket);
-      focus.lineTo(x + w + inset, y + h + inset);
-      focus.lineTo(x + w - bracket, y + h + inset);
-      focus.moveTo(x + bracket, y + h + inset);
-      focus.lineTo(x - inset, y + h + inset);
-      focus.lineTo(x - inset, y + h - bracket);
+      const inset = 3;
+      focus.moveTo(x + inset, y + bracket);
+      focus.lineTo(x + inset, y + inset);
+      focus.lineTo(x + bracket, y + inset);
+      focus.moveTo(x + w - bracket, y + inset);
+      focus.lineTo(x + w - inset, y + inset);
+      focus.lineTo(x + w - inset, y + bracket);
+      focus.moveTo(x + w - inset, y + h - bracket);
+      focus.lineTo(x + w - inset, y + h - inset);
+      focus.lineTo(x + w - bracket, y + h - inset);
+      focus.moveTo(x + bracket, y + h - inset);
+      focus.lineTo(x + inset, y + h - inset);
+      focus.lineTo(x + inset, y + h - bracket);
       focus.stroke({ color: hotAccent, width: 3, alpha: 0.9 + focusPulse * 0.08 });
     }
 

@@ -957,8 +957,19 @@ function buildGameTextState(game) {
         count: shipSelectScene.leftIntel.count?.text || null,
         progress: shipSelectScene.leftIntel.progress?.text || null,
         stats: shipSelectScene.leftIntel.stats?.text || null,
-        hint: shipSelectScene.leftIntel.hint?.text || null
+        hint: shipSelectScene.leftIntel.hint?.text || null,
+        panelBounds: getBoundsDebug(shipSelectScene.leftIntel.panel),
+        focusBounds: getBoundsDebug(shipSelectScene.leftIntel.alertGlow),
+        hintBounds: getBoundsDebug(shipSelectScene.leftIntel.hint)
       } : null,
+      centerLayout: {
+        shipBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.sprite),
+        masteryBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.masteryBadge),
+        descriptionBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.descText),
+        traitBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.traitText),
+        rosterBounds: getBoundsDebug(shipSelectScene.rosterStrip),
+        footerBounds: getBoundsDebug(shipSelectScene.footerInstructions)
+      },
       recommended: shipSelectScene.recommendedShip ? {
         shipName: shipSelectScene.recommendedShip.name || null,
         spriteKey: shipSelectScene.recommendedShip.spriteKey || null,
@@ -1079,6 +1090,8 @@ function buildGameTextState(game) {
         level: entry.level || 0,
         source: entry.source || null
       })) || [],
+      rowLayout: highscoreScene.rowLayoutDebug || [],
+      manifestRanges: highscoreScene.manifestRanges || [],
       runtime: game?.leaderboardAdapter?.getRuntimeSummary ? game.leaderboardAdapter.getRuntimeSummary() : null
     } : null,
     achievementsScreen: achievementsScene?.getDebugState ? achievementsScene.getDebugState() : null,

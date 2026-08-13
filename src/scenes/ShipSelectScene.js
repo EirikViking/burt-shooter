@@ -247,6 +247,15 @@ export class ShipSelectScene {
       if (index >= 0) this.selectedIndex = index;
     }
 
+    // A newly unlocked hull is the subject of the presentation, so keep the
+    // Hangar preview aligned with the reveal instead of showing the old hull
+    // behind it. This does not equip the hull until the player presses Start.
+    const pendingRevealKey = this.pendingHangarUnlockShips[0]?.spriteKey;
+    if (pendingRevealKey) {
+      const revealIndex = this.ships.findIndex(ship => ship.spriteKey === pendingRevealKey);
+      if (revealIndex >= 0) this.selectedIndex = revealIndex;
+    }
+
     setSelectedShipKey(activeSpriteKey);
   }
 
@@ -321,7 +330,7 @@ export class ShipSelectScene {
       }
     );
     instructions.anchor.set(0.5, 1);
-    instructions.position.set(width / 2, height - 14);
+    instructions.position.set(width / 2, height - 6);
     footerContainer.addChild(instructions);
     this.footerInstructions = instructions;
     this.container.addChild(footerContainer);
@@ -777,7 +786,7 @@ export class ShipSelectScene {
 
       focus.clear();
       if (focused) {
-        focus.roundRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, 8);
+        focus.roundRect(-width / 2 + 3, -height / 2 + 3, width - 6, height - 6, 5);
         focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.82 });
       }
     };
@@ -2364,7 +2373,10 @@ export class ShipSelectScene {
 
   createNavArrows(width, height) {
     const y = this.carouselContainer.y - (this.layout.isMobile ? 8 : 22);
-    const offset = this.layout.isMobile ? (width / 2 - 64) : Math.min(330, width * 0.28);
+    // Reserve a clear gutter before the side readouts on compact desktop.
+    const offset = this.layout.isMobile
+      ? (width / 2 - 64)
+      : Math.min(width < 1400 && this.layout.showSideIntel ? 280 : 330, width * 0.28);
     this.prevButton = this.createButton('<', width / 2 - offset - 22, y, 44, 44, 0x061426, 0x9ceeff, () => this.navigateLeft());
     this.nextButton = this.createButton('>', width / 2 + offset - 22, y, 44, 44, 0x061426, 0x9ceeff, () => this.navigateRight());
     this.container.addChild(this.prevButton, this.nextButton);
@@ -2472,13 +2484,13 @@ export class ShipSelectScene {
     const art = ship.art || {};
     const heroY = this.layout.isMobile
       ? (Number.isFinite(art.hangarHeroYMobile) ? art.hangarHeroYMobile : -38)
-      : (this.layout.showSideIntel
+      : (!this.compactHangar
         ? (Number.isFinite(art.hangarHeroY) ? art.hangarHeroY : -58)
         : (Number.isFinite(art.hangarHeroYCompact) ? art.hangarHeroYCompact : -58));
     const baseHeroSize = this.layout.isMobile ? 128 : 172;
     const authoredHeroScale = this.layout.isMobile
       ? art.hangarHeroScaleMobile
-      : (this.layout.showSideIntel ? art.hangarHeroScale : art.hangarHeroScaleCompact);
+      : (!this.compactHangar ? art.hangarHeroScale : art.hangarHeroScaleCompact);
     const prestigeScale = Number.isFinite(authoredHeroScale)
       ? authoredHeroScale
       : (art.inscription ? (this.layout.showSideIntel ? 1.24 : 1.05) : 1);
@@ -2600,7 +2612,7 @@ export class ShipSelectScene {
     if (tierLabel) {
       const badgeWidth = this.layout.isMobile ? 156 : 190;
       const badge = new PIXI.Container();
-      badge.position.set(-badgeWidth / 2, this.layout.isMobile ? 50 : 60);
+      badge.position.set(-badgeWidth / 2, this.layout.isMobile ? 50 : (this.compactHangar ? 48 : 60));
       const badgeBg = new PIXI.Graphics();
       badgeBg.roundRect(0, 0, badgeWidth, 24, 6);
       badgeBg.fill({ color: 0x13061f, alpha: 0.9 });
@@ -2794,7 +2806,7 @@ export class ShipSelectScene {
     // Ship name below sprite - LARGER and more readable
     const name = createText(ship.name, {
       fontFamily: FONT_DISPLAY,
-      fontSize: this.layout.isMobile ? 22 : 30,
+      fontSize: this.layout.isMobile ? 22 : (this.compactHangar ? 26 : 30),
       fill: this.toHexText(textAccent),
       align: 'center',
       fontWeight: 'bold',
@@ -2806,7 +2818,7 @@ export class ShipSelectScene {
       dropShadowDistance: 0
     });
     name.anchor.set(0.5, 0);
-    name.position.set(0, this.layout.isMobile ? 77 : 88);
+    name.position.set(0, this.layout.isMobile ? 77 : (this.compactHangar ? 78 : 88));
     container.addChild(name);
     container.nameText = name;
 
@@ -2814,34 +2826,34 @@ export class ShipSelectScene {
     const description = ship.baseDescription || ship.description || '';
     const desc = createText(description, {
       fontFamily: FONT_BODY,
-      fontSize: this.layout.isMobile ? 14 : 16,
+      fontSize: this.layout.isMobile ? 14 : (this.compactHangar ? 15 : 16),
       fill: '#d8fbff',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: this.layout.isMobile ? 310 : (this.compactHangar ? 500 : 560),
-      lineHeight: this.layout.isMobile ? 18 : 21,
+      wordWrapWidth: this.layout.isMobile ? 310 : (this.compactHangar ? 540 : 560),
+      lineHeight: this.layout.isMobile ? 18 : (this.compactHangar ? 19 : 21),
       fontWeight: '700'
     });
     desc.anchor.set(0.5, 0);
-    desc.position.set(0, this.layout.isMobile ? 108 : 126);
+    desc.position.set(0, this.layout.isMobile ? 108 : (this.compactHangar ? 112 : 126));
     container.addChild(desc);
     container.descText = desc;
 
     const traitText = this.getShipTraitText(ship);
     const trait = createText(traitText, {
       fontFamily: FONT_BODY,
-      fontSize: this.layout.isMobile ? 14 : 16,
+      fontSize: this.layout.isMobile ? 14 : (this.compactHangar ? 14 : 16),
       fill: this.toHexText(textAccent),
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: this.layout.isMobile ? 330 : 560,
-      lineHeight: this.layout.isMobile ? 19 : 21,
+      wordWrapWidth: this.layout.isMobile ? 330 : (this.compactHangar ? 600 : 560),
+      lineHeight: this.layout.isMobile ? 19 : (this.compactHangar ? 18 : 21),
       stroke: '#000000',
       strokeThickness: 2
     });
     trait.anchor.set(0.5, 0);
-    trait.position.set(0, bottomOf(desc) + (this.layout.isMobile ? 10 : 12));
-    fitDisplayToBox(trait, this.layout.isMobile ? 330 : 580, this.layout.isMobile ? 62 : (this.compactHangar ? 72 : 82), { minScale: 0.68 });
+    trait.position.set(0, bottomOf(desc) + (this.layout.isMobile ? 10 : (this.compactHangar ? 8 : 12)));
+    fitDisplayToBox(trait, this.layout.isMobile ? 330 : (this.compactHangar ? 600 : 580), this.layout.isMobile ? 62 : (this.compactHangar ? 58 : 82), { minScale: 0.68 });
     container.addChild(trait);
     container.traitText = trait;
 
@@ -2925,8 +2937,8 @@ export class ShipSelectScene {
         // header clear at 1280x720 and 1280x800.
         shipContainer.firstFlightBadge.visible = isCenter && this.layout.showSideIntel && !this.compactHangar;
       }
-      if (shipContainer.masteryBadge) shipContainer.masteryBadge.visible = isCenter;
-      if (shipContainer.overrunBadge) shipContainer.overrunBadge.visible = isCenter;
+      if (shipContainer.masteryBadge) shipContainer.masteryBadge.visible = isCenter && !this.layout.showSideIntel;
+      if (shipContainer.overrunBadge) shipContainer.overrunBadge.visible = isCenter && !this.layout.showSideIntel;
       if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter && !this.layout.showSideIntel && !this.compactIntel;
       if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
       if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;
@@ -3017,7 +3029,9 @@ export class ShipSelectScene {
     const locked = ship ? !isShipUnlocked(ship.spriteKey, this.unlockProgress) : true;
     const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
     const isMobile = width < 640;
-    const buttonY = height - (isMobile ? 80 : 80);
+    // Reserve a real footer lane: buttons sit above the prompt rather than
+    // sharing the same pixels with it.
+    const buttonY = height - (isMobile ? 104 : 94);
     const buttonWidth = isMobile ? 104 : 120;
     const buttonHeight = isMobile ? 36 : 40;
     const buttonSpacing = isMobile ? 10 : 20;
@@ -3065,7 +3079,7 @@ export class ShipSelectScene {
     this.randomButton = this.createButton(
       'RANDOM',
       isMobile ? rowX + buttonWidth * 2 + buttonSpacing * 2 : width - randomWidth - 28,
-      isMobile ? buttonY : height - 53,
+      isMobile ? buttonY : height - 52,
       randomWidth,
       isMobile ? buttonHeight : 30,
       0x101a33,
@@ -3202,6 +3216,7 @@ export class ShipSelectScene {
     const weapon = this.getWeaponSummary(ship);
     const unlockDetails = getShipUnlockProgressDetails(ship.spriteKey, this.unlockProgress);
     const usageCount = getShipUsage(ship.spriteKey);
+    const mastery = getShipMasteryView(this.unlockProgress?.shipSpecificMilestones?.[ship.id], ship);
     const firstFlight = unlocked && usageCount === 0;
     const progressLine = !unlocked && Array.isArray(unlockDetails.requirements) && unlockDetails.requirements.length
       ? unlockDetails.requirements
@@ -3209,11 +3224,18 @@ export class ShipSelectScene {
         .map(item => `${Math.min(Number(item.current) || 0, Number(item.target) || 0)}/${item.target}`)
         .join('  ')
       : '';
+    const masterySummary = [
+      `${translateText('CLEARS')}: ${Math.max(0, Math.round(Number(mastery.clears) || 0))}`,
+      ...(mastery.overrunClears > 0
+        ? [translateText('OVERRUN ×{count}', { count: mastery.overrunClears })]
+        : [])
+    ].join('  //  ');
     const unlock = unlocked
       ? [
         firstFlight
           ? `${translateText('FIRST FLIGHT')} // ${translateText('YOUR LAUNCHES')}: 0`
           : translateText('STATUS: READY FOR LAUNCH'),
+        masterySummary,
         getShipUnlockHistoryLine(ship.spriteKey, this.unlockProgress, { translate: translateText })
       ].join('\n')
       : `${getShipUnlockRequirementLine(ship.spriteKey, { translate: translateText })}${progressLine ? `\n${translateText('PROGRESS')}: ${progressLine}` : ''}`;
@@ -3313,9 +3335,9 @@ export class ShipSelectScene {
       const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
       const glow = this.leftIntel.alertGlow;
       glow.clear();
-      glow.roundRect(-5, -5, 240, 302, 10);
+      glow.roundRect(4, 4, 252, 328, 7);
       glow.stroke({ color: 0xffef7e, width: 2 + pulse * 2, alpha: 0.34 + pulse * 0.38 });
-      glow.roundRect(6, 6, 218, 280, 8);
+      glow.roundRect(10, 10, 240, 316, 6);
       glow.stroke({ color: 0x66ffdd, width: 1.5, alpha: 0.24 + pulse * 0.28 });
       glow.circle(202, 24, 6 + pulse * 5);
       glow.fill({ color: 0xffef7e, alpha: 0.28 + pulse * 0.34 });

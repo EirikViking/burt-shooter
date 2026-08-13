@@ -1120,7 +1120,7 @@ export class HowToPlayOverlay {
 
     const draw = (hovered = false) => {
       focus.clear();
-      focus.roundRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, 8);
+      focus.roundRect(-width / 2 + 3, -height / 2 + 3, width - 6, height - 6, 5);
       focus.stroke({ color: hovered ? 0xffffff : 0xffef7e, width: 2, alpha: hovered ? 0.92 : 0.74 });
       bg.clear();
       bg.roundRect(-width / 2, -height / 2, width, height, 6);

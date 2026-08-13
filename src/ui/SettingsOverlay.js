@@ -1395,7 +1395,7 @@ export class SettingsOverlay {
     const draw = (hovered = false) => {
       focus.clear();
       if (button._focused) {
-        focus.roundRect(-width / 2 - 3, -height / 2 - 3, width + 6, height + 6, 7);
+        focus.roundRect(-width / 2 + 3, -height / 2 + 3, width - 6, height - 6, 5);
         focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
       }
       bg.clear();

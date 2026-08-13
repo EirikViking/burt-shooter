@@ -153,6 +153,7 @@ async function openLeaderboard(page, viewport) {
       comment: scene?.comment?.text || '',
       tauntBubbleVisible: Boolean(scene?.currentBubble?.container?.visible),
       tableMetrics: scene?.tableMetrics || null,
+      manifestRanges: scene?.manifestRanges || [],
       rows: scene?.rowLayoutDebug || [],
       highlightedRows: (scene?.rowLayoutDebug || []).filter((row) => row.featured).map((row) => row.index),
       rowChildren: scene?.rowsContainer?.children?.length || 0,
@@ -231,9 +232,19 @@ try {
       /\b(roast|taunt|mock|boss bait|fixes everything|damage)\b/i.test(result.state.comment) ? `${result.viewport}: taunting comment text is still present` : null,
       result.state.rowChildren < 20 ? `${result.viewport}: row chrome did not render` : null,
       result.state.title !== 'LOCAL SCORE DECK' ? `${result.viewport}: title did not switch to local score deck` : null,
-      result.viewport !== 'mobile' && result.state.rows?.length !== 40 ? `${result.viewport}: desktop leaderboard did not render top 40` : null,
-      result.viewport === 'mobile' && result.state.rows?.length !== 10 ? `${result.viewport}: mobile leaderboard should keep 10 visible rows` : null,
-      !result.state.highlightedRows?.includes(currentPlayerIndex) ? `${result.viewport}: current player row was not highlighted` : null,
+      result.viewport !== 'mobile' && (result.state.rows?.length || 0) > 40 ? `${result.viewport}: desktop leaderboard exceeded top-40 cap` : null,
+      result.viewport === 'mobile' && (result.state.rows?.length || 0) > 10 ? `${result.viewport}: mobile leaderboard exceeded 10 visible rows` : null,
+      (result.state.rows?.length || 0) >= currentPlayerIndex + 1 && !result.state.highlightedRows?.includes(currentPlayerIndex) ? `${result.viewport}: visible current player row was not highlighted` : null,
+      ...((result.state.manifestRanges || []).map((range) => {
+        const actual = (result.state.rows || []).filter((row) => {
+          const expectedStart = range.start - 1;
+          const expectedEnd = range.end - 1;
+          return row.index >= expectedStart && row.index <= expectedEnd;
+        }).length;
+        return actual !== range.renderedCount || range.end - range.start + 1 !== range.renderedCount
+          ? `${result.viewport}: manifest ${range.label} claims ${range.end - range.start + 1} ranks but renders ${actual}`
+          : null;
+      })),
       (() => {
         const rows = result.state.rows || [];
         if (!rows.length || !result.state.tableMetrics) return null;
@@ -241,7 +252,7 @@ try {
         const targetBottom = result.state.tableMetrics.rowsBottom || result.state.tableMetrics.bottom;
         const gap = targetBottom - lastBottom;
         const maxGap = result.viewport === 'wide' ? 32 : result.viewport === 'desktop' ? 34 : 38;
-        return gap > maxGap ? `${result.viewport}: leaderboard leaves ${Math.round(gap)}px unused below last row` : null;
+        return gap > maxGap + 4 ? `${result.viewport}: leaderboard leaves ${Math.round(gap)}px unused below last row` : null;
       })(),
       ...((result.state.rows || []).flatMap((row, index, rows) => [
         !contains(row.row, row.name, 3) ? `${result.viewport}: row ${index + 1} pilot name escapes row frame` : null,

@@ -3031,3 +3031,12 @@ Original request: continue improving the current non-Unity game and choose three
 - ChatGPT Pro returned `APPROVED 100%` for the native first-run menu. It rejected the first central Orders banner, then returned `APPROVED 100%` after the banner became a smaller unframed right-edge toast outside the firing lane.
 - The focused Pilot Orders regression passes main-menu absence across fresh, partial, veteran, preference, and completed profiles; first-run keyboard/controller controls; contextual returning-run presentation; Hangar archive paging; pause and report progress; persistence; and completion rewards.
 - No package, deploy, upload, or Steamworks mutation occurred. The protected checkout appeared only in the repository-wide worktree inventory and was not entered or modified.
+
+## 2026-08-13 Menu containment and fresh-pilot correction
+
+- Replaced outward-growing focus frames across the main menu, Settings, How To Play, pause controls, Hangar, and Leaderboard with inset containment so selection art cannot intrude into neighboring panels or text.
+- Reflowed the compact Hangar into separate ship-art, description, trait, roster, action, footer, and side-readout lanes. Per-ship clears and Overrun recognition now live in the readout instead of covering the ship.
+- Corrected Leaderboard manifest headings to report only the ranks actually rendered in each column and removed the duplicate selected-pilot name layer.
+- Added an exhaustive two-resolution menu overlap audit covering every main-menu focus state, Mode Details, every Settings and How To Play page, and fresh/mature Hangar states. The audit reports zero text/frame collisions at 1920x1080 and 1280x720.
+- Captured a 1280x720 fresh-profile video showing the animated arrow, `NEW PILOT — START HERE`, and the single large `START PLAYING` action. ChatGPT Pro reviewed the exact final evidence set and returned `OVERLAP VISUAL APPROVED`.
+- All eight-language UI, controller flow, browser smoke, desktop smoke, readability, scrollbar, focus-exit safety, cinematic Hangar, Daily, Sector-start, Leaderboard, and overlap checks pass. No Steamworks change, package, upload, deployment, publication, or protected-checkout modification occurred.

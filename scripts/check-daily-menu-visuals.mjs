@@ -164,7 +164,8 @@ try {
     const linePattern = new RegExp(`WEEKLY CLEARS:\\s*${testCase.clears}\\s*\\/\\s*7`);
     assert.equal(state.scene, 'menu', `${testCase.name}: menu scene`);
     assert.equal(briefing?.mode, 'dailySignal', `${testCase.name}: Daily briefing focused`);
-    assert.match(briefing?.body || '', linePattern, `${testCase.name}: explicit weekly clear value`);
+    const briefingState = await page.evaluate(() => window.__game?.currentScene?.getRunModeBriefing?.() || null);
+    assert.match(briefingState?.menuBody || '', linePattern, `${testCase.name}: explicit weekly clear value`);
     assert.doesNotMatch(briefing?.body || '', forbiddenPrimaryPattern, `${testCase.name}: no symbolic Daily row`);
     assert.doesNotMatch(briefing?.body || '', /undefined|null/i, `${testCase.name}: no stale interpolation`);
     assert.equal(state.display?.uiScale, testCase.uiScale, `${testCase.name}: UI scale`);
@@ -185,7 +186,7 @@ try {
       ...testCase,
       screenshot,
       displayedBody: briefing.body,
-      weeklyClearLine: briefing.body.split('\n').find((line) => linePattern.test(line)) || null,
+      weeklyClearLine: String(briefingState?.menuBody || '').split('\n').find((line) => linePattern.test(line)) || null,
       briefingBounds: briefing.panelBounds,
       bodyBounds: briefing.bodyBounds,
       dailyCardBounds: dailyBounds

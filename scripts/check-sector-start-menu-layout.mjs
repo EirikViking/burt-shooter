@@ -168,6 +168,7 @@ async function selectCheckpoint(page, checkpoint) {
       selectedCheckpoint: checkpoints[index]
     };
     menu.updateSectorStartButton?.({ forceGpuRefresh: true });
+    menu.setMenuFocusByButton?.(menu.sectorStartBtn);
     menu.layoutMenu?.({ forceLabelGpuRefresh: true });
   }, checkpoint);
   await page.waitForFunction((targetCheckpoint) => {
@@ -188,10 +189,8 @@ function assertNoMenuOverlap(state, label) {
   const configuredWidth = Number(sector.buttonConfiguredWidth) || coreButton?.width || button?.width || 0;
   const configuredHeight = Number(sector.buttonConfiguredHeight) || coreButton?.height || button?.height || 0;
   const hangar = state.menu?.items?.hangarButton;
-  assert.match(explainerText, /LAUNCH RUN|RANKED(?: RUN)?:/, `${label}: missing launch/ranked run explainer`);
-  assert.match(explainerText, /SECTOR(?: START)?:/, `${label}: missing sector start explainer`);
-  assert.match(explainerText, /leaderboard/i, `${label}: explainer should mention leaderboard behavior`);
-  assert.match(explainerText, /checkpoint/i, `${label}: explainer should mention checkpoint practice`);
+  assert.match(explainerText, /STARTS AT SECTOR/, `${label}: missing selected start-sector explainer`);
+  assert.match(explainerText, /MAYHEM BEST/, `${label}: missing Mayhem progression context`);
   assert.ok(explainer?.width > 0 && explainer?.height > 0, `${label}: missing run mode explainer bounds`);
   if (launch?.height > 0) {
     assert.ok(explainer.bottom <= launch.y + 1, `${label}: run mode explainer overlaps Launch Run button`);
@@ -202,12 +201,9 @@ function assertNoMenuOverlap(state, label) {
   assert.ok(labelBounds.width <= configuredWidth - 30, `${label}: label too wide for Sector Start core button ${JSON.stringify({ labelBounds, configuredWidth, coreButton })}`);
   assert.ok(labelBounds.height <= configuredHeight - 2, `${label}: label too tall for button ${JSON.stringify({ labelBounds, configuredHeight, button })}`);
   assert.ok(Number(sector.labelScale) >= 0.82, `${label}: label scale too small (${sector.labelScale})`);
-  assert.equal(sector.arrowCueVisible, true, `${label}: missing checkpoint switch arrows`);
-  assert.ok((sector.arrowCueBounds?.width || 0) > 0, `${label}: checkpoint switch arrows have no visible bounds`);
-  assert.ok((sector.arrowCueBounds?.height || 0) > 0, `${label}: checkpoint switch arrows have no visible height`);
-  assert.ok(sector.arrowCueBounds.x < coreButton.x - 1, `${label}: left checkpoint arrow should sit outside the Sector Start label lane`);
-  assert.ok(sector.arrowCueBounds.right > coreButton.right + 1, `${label}: right checkpoint arrow should sit outside the Sector Start label lane`);
-  assert.ok(sector.arrowCueBounds.width > coreButton.width, `${label}: checkpoint arrows should read as external selector tabs`);
+  // The redesigned mode stack carries the selected checkpoint in a readable
+  // sublabel. Its compact run-mode card intentionally omits external arrows.
+  assert.match(sector.buttonSubtext || '', /^CHECKPOINT \d+$/, `${label}: missing readable checkpoint selector state`);
   if (hangar?.height > 0) {
     assert.ok(coreButton.y + coreButton.height <= hangar.y + 1, `${label}: Sector Start button overlaps Hangar button`);
   }
@@ -252,11 +248,13 @@ try {
     for (const checkpoint of checkpoints) {
       const state = await selectCheckpoint(page, checkpoint);
       const text = state.menu?.sectorStart?.buttonText || '';
-      assert.match(text, new RegExp(`SECTOR ${checkpoint} CHALLENGE`), `${viewport.name} sector ${checkpoint}: bad label ${text}`);
+      const subtext = state.menu?.sectorStart?.buttonSubtext || '';
+      assert.equal(text, 'SECTOR RUN', `${viewport.name} sector ${checkpoint}: bad primary label ${text}`);
+      assert.match(subtext, new RegExp(`CHECKPOINT ${checkpoint}`), `${viewport.name} sector ${checkpoint}: bad checkpoint sublabel ${subtext}`);
       if (checkpoint === 10) {
-        assert.doesNotMatch(text, /BEST/, `${viewport.name} sector 10 should handle no-record label`);
+        assert.doesNotMatch(subtext, /BEST/, `${viewport.name} sector 10 should handle no-record label`);
       } else {
-        assert.match(text, /BEST/, `${viewport.name} sector ${checkpoint} should show record label`);
+        assert.ok(state.menu?.sectorStart?.selectedRecord, `${viewport.name} sector ${checkpoint} should retain its record`);
       }
       assertNoMenuOverlap(state, `${viewport.name} sector ${checkpoint}`);
       report.cases.push({

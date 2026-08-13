@@ -112,6 +112,8 @@
     "check:hangar-unlock-presentation": "node scripts/check-hangar-unlock-presentation.mjs",
     "check:hangar-profile-repair-notice": "node scripts/check-hangar-profile-repair-notice.mjs",
     "check:menu-exit-focus-safety": "node scripts/check-menu-exit-focus-safety.mjs",
+    "check:menu-overlap-audit": "node scripts/check-menu-overlap-audit.mjs",
+    "capture:new-pilot-menu-video": "node scripts/capture-new-pilot-menu-video.mjs",
     "check:menu-scrollbars": "node scripts/check-menu-scrollbars.mjs",
     "check:display-settings": "node scripts/check-display-settings.mjs",
     "check:ui-scale-4k": "node scripts/check-ui-scale-4k.mjs",
