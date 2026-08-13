@@ -612,8 +612,8 @@ try {
     'confirmed augment was not present in Active Build before combat resumed');
   assert(lockInState.tacticalDraft.confirmHoldMs === 1000,
     `Active Build confirmation should hold for one second, got ${lockInState.tacticalDraft.confirmHoldMs}ms`);
-  assert(lockInState.tacticalDraft.lockInProgress > 0 && lockInState.tacticalDraft.lockInProgress < 1,
-    `lock-in celebration did not animate: ${lockInState.tacticalDraft.lockInProgress}`);
+  assert(lockInState.tacticalDraft.lockInProgress > 0 && lockInState.tacticalDraft.lockInProgress <= 1,
+    `lock-in celebration did not enter its animated hold: ${lockInState.tacticalDraft.lockInProgress}`);
   const lockInScreenshot = path.join(outputDir, 'tactical-draft-lock-in.png');
   await page.screenshot({ path: lockInScreenshot });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
@@ -724,7 +724,9 @@ try {
     `Draft ban milestone was not recorded: ${JSON.stringify(exhaustedState.tacticalDraft.banAward)}`);
   const exhaustedScreenshot = path.join(outputDir, 'tactical-draft-exhausted-one-offer.png');
   await page.screenshot({ path: exhaustedScreenshot });
-  await page.keyboard.press('q');
+  await page.keyboard.down('q');
+  await page.waitForTimeout(120);
+  await page.keyboard.up('q');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
   const passedState = await readState(page);
   assert(passedState.tacticalDraft.history.length === 3,
@@ -736,6 +738,32 @@ try {
   const summaryAfterPass = await page.evaluate(() => window.__game.buildRunSummary());
   assert(summaryAfterPass.tacticalDraftPicks.length === 3,
     'passing a Draft polluted the run-summary upgrade picks');
+
+  await page.evaluate(() => window.__game.scenes.play.openTacticalDraft({ sectorCleared: 16 }));
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.tacticalDraft.passHoldStartedAt = 0;
+    play.tacticalDraft.passHoldSource = 'keyboard';
+    play.tacticalDraft.passHoldProgress = 0.6;
+    play.redrawTacticalDraftPass();
+  });
+  const buildLockProgressState = await readState(page);
+  assert(/LOCKING BUILD/i.test(buildLockProgressState.tacticalDraft.passLabel || ''),
+    `build-lock hold did not expose locking state: ${JSON.stringify(buildLockProgressState.tacticalDraft)}`);
+  const buildLockProgressScreenshot = path.join(outputDir, 'tactical-draft-build-lock-progress.png');
+  await page.screenshot({ path: buildLockProgressScreenshot });
+  await page.evaluate(() => window.__game.scenes.play.lockTacticalDraftBuild('keyboard'));
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.passed === true);
+  const lockedBuildState = await readState(page);
+  assert(lockedBuildState.tacticalDraft.buildLocked === true && lockedBuildState.tacticalDraft.passes.at(-1)?.buildLocked === true,
+    `completed hold did not atomically lock the build: ${JSON.stringify(lockedBuildState.tacticalDraft)}`);
+  const buildLockedScreenshot = path.join(outputDir, 'tactical-draft-build-locked.png');
+  await page.screenshot({ path: buildLockedScreenshot });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active !== true, null, { timeout: 4000 });
+  const futureDraftSuppressed = await page.evaluate(() => window.__game.scenes.play.openTacticalDraft({ sectorCleared: 17 }));
+  assert(futureDraftSuppressed === false, 'locked build allowed a later Tactical Draft to open');
+  await page.evaluate(() => { window.__game.scenes.play.tacticalDraftBuildLocked = false; });
 
   const localeResults = [];
   await page.evaluate(() => {
@@ -1183,6 +1211,7 @@ try {
   assert(consoleErrors.length === 0, `browser errors: ${consoleErrors.join(' | ')}`);
   report.ok = true;
   report.desktop = { screenshot: desktopScreenshot, firstDraftScreenshot, lateDraftScreenshot };
+  report.buildLock = { progressScreenshot: buildLockProgressScreenshot, lockedScreenshot: buildLockedScreenshot };
   report.compact = { screenshot: compactScreenshot };
   report.interactionHistory = state.tacticalDraft.history;
   report.lockInScreenshot = lockInScreenshot;

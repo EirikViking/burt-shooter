@@ -165,7 +165,8 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('SECTOR 5 SCORE CHOICE // 2 BANS + 1 EACH 15 SECTORS'), `${label} should explain the fixed score choice and recurring bans`);
     assert(joined.includes('Combo Anchor is always offered'), `${label} should explain score-route fairness`);
     assert(joined.includes('R / Y: RESCAN // L / X: HOLD // Q / B: PASS'), `${label} should explain Draft rescan, hold, and pass controls`);
-    assert(joined.includes('pass without installing an upgrade'), `${label} should explain that passing a Draft does not install an upgrade`);
+    assert(joined.includes('tap Pass to skip one Draft'), `${label} should explain that tapping Pass skips only one Draft`);
+    assert(joined.includes('hold Pass to lock your current build and stop later Drafts'), `${label} should explain the permanent build lock`);
     assert(joined.includes('OFFENSE + SUPPORT // DUPLICATES STACK'), `${label} should explain the two timed pickup lanes`);
     assert(joined.includes('two-pickup cap'), `${label} should explain bounded duplicate stacking`);
     assert(joined.includes('replaces only its lane'), `${label} should explain same-lane replacement`);
@@ -180,12 +181,13 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('The Ace keeps its normal score value.'), `${label} should explain that the contract does not alter scoring`);
     assert(joined.includes('0.4% WAVE CONTACT'), `${label} should identify the true Extinction Contact rarity`);
     assert(joined.includes('50 ELITES // READ SHAPE, COLOR, SOUND'), `${label} should explain the full elite roster and warning language`);
-    assert(joined.includes('misses do not break no-hit status'), `${label} should explain Skill Flight safety`);
+    assert(joined.includes('touching or missing them cannot damage the ship or break no-hit status'), `${label} should explain Skill Flight safety`);
   }
   if (expectedPage === 'career') {
     assert(joined.includes('OPTIONAL MAYHEM DRILLS'), `${label} should explain Pilot Orders`);
     assert(joined.includes('HULLS // TRAITS // MASTERY MEDALS'), `${label} should explain ship mastery`);
-    assert(joined.includes('Bronze, Silver, and Gold mastery medals'), `${label} should explain mastery goals`);
+    assert(joined.includes('Ranked Mayhem earns Bronze, Silver, and Gold ship medals'), `${label} should explain ranked mastery goals`);
+    assert(joined.includes('Tours count legitimate ten-sector flights in Mayhem, Overrun, or Sector Run'), `${label} should explain the separate Tour counter`);
     assert(joined.includes('DISCOVERIES // PATTERNS // COUNTERS'), `${label} should explain Codex intel`);
     assert(joined.includes('STEAM BOARDS // LOCAL FLIGHT TELEMETRY'), `${label} should distinguish boards from local telemetry`);
     assert(joined.includes('Leaderboard lanes stay separate'), `${label} should preserve leaderboard separation`);

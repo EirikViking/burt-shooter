@@ -325,8 +325,8 @@ try {
   if (!/Steam: Best unchanged/i.test(lowFinalStatus) || !/Best: 87,628/i.test(lowFinalStatus) || !/This run: 2,084/i.test(lowFinalStatus)) {
     throw new Error(`Final low-score runback did not explain unchanged Steam best: ${JSON.stringify(lowRunbackState.gameOver)}`);
   }
-  if (!/Local: Not in local top 40/i.test(lowFinalStatus) || /Local #4[1-9]/i.test(lowFinalStatus)) {
-    throw new Error(`Final low-score runback should not show an outside-visible local placement: ${JSON.stringify(lowRunbackState.gameOver)}`);
+  if (!/Local: #(4[0-9]|50)/i.test(lowFinalStatus) || /Local #5[1-9]/i.test(lowFinalStatus)) {
+    throw new Error(`Final low-score runback should show its valid visible Top 50 placement without inventing an outside-visible rank: ${JSON.stringify(lowRunbackState.gameOver)}`);
   }
   if (/rank pending|top three|number one|Steam: #|New Steam best|Global: #|Steamboard|Steam Board|Steam board/i.test(lowFinalStatus)) {
     throw new Error(`Final low-score runback reused stale or misleading rank copy: ${JSON.stringify(lowRunbackState.gameOver)}`);

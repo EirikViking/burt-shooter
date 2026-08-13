@@ -11,14 +11,14 @@ const baseUrl = process.env.I18N_UI_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.I18N_UI_OUTPUT_DIR || `test-results/i18n-ui-${timestamp()}`);
 
 const allLanguages = [
-  { code: 'en', slug: 'english', settingsLabel: 'English', menuSettings: 'SETTINGS', launch: 'MAYHEM PURE', scorePrefix: 'SCORE', gameOver: 'GAME OVER', leaderboard: 'GLOBAL SCORE DECK', route: 'ROUTE', glyphProbe: 'Nova Swarm' },
-  { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'MAYHEM PUR', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'GLOBALES SCORE-DECK', route: 'ROUTE', glyphProbe: 'äöüÄÖÜß' },
-  { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: '纯粹狂潮', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: '全球计分榜', route: '路线', glyphProbe: '设置排行榜游戏结束' },
-  { code: 'ru', slug: 'russian', settingsLabel: 'Русский', menuSettings: 'НАСТРОЙКИ', launch: 'ЧИСТЫЙ MAYHEM', scorePrefix: 'ОЧКИ', gameOver: 'ИГРА ОКОНЧЕНА', leaderboard: 'ГЛОБАЛЬНАЯ ТАБЛИЦА', route: 'МАРШРУТ', glyphProbe: 'Настройки Очки Игра' },
-  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'MAYHEM PURO', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'MARCADOR GLOBAL', route: 'RUTA', glyphProbe: 'Ajustes Puntuación ñáéíóú' },
-  { code: 'pt-BR', slug: 'portuguese-brazil', settingsLabel: 'Português do Brasil', menuSettings: 'CONFIGURAÇÕES', launch: 'MAYHEM PURO', scorePrefix: 'PONTUAÇÃO', gameOver: 'FIM DE JOGO', leaderboard: 'RANKING GLOBAL', route: 'ROTA', glyphProbe: 'Configurações pontuação á à â ã ç é ê í ó ô õ ú' },
-  { code: 'ko', slug: 'korean', settingsLabel: '한국어', menuSettings: '설정', launch: '메이헴 퓨어', scorePrefix: '점수', gameOver: '게임 오버', leaderboard: '글로벌 순위표', route: '경로', glyphProbe: '한국어 설정 점수 순위표' },
-  { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'メイヘム・ピュア', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'グローバルランキング', route: 'ルート', glyphProbe: '日本語 設定 スコア ランキング' }
+  { code: 'en', slug: 'english', settingsLabel: 'English', menuSettings: 'SETTINGS', launch: 'MAYHEM PURE', scorePrefix: 'SCORE', gameOver: 'GAME OVER', leaderboard: 'STEAM SCORE DECK', route: 'ROUTE', glyphProbe: 'Nova Swarm' },
+  { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'MAYHEM PUR', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'STEAM-PUNKTETAFEL', route: 'ROUTE', glyphProbe: 'äöüÄÖÜß' },
+  { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: '纯粹狂潮', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: 'STEAM 得分榜', route: '路线', glyphProbe: '设置排行榜游戏结束' },
+  { code: 'ru', slug: 'russian', settingsLabel: 'Русский', menuSettings: 'НАСТРОЙКИ', launch: 'ЧИСТЫЙ MAYHEM', scorePrefix: 'ОЧКИ', gameOver: 'ИГРА ОКОНЧЕНА', leaderboard: 'ТАБЛИЦА STEAM', route: 'МАРШРУТ', glyphProbe: 'Настройки Очки Игра' },
+  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'MAYHEM PURO', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'TABLERO STEAM', route: 'RUTA', glyphProbe: 'Ajustes Puntuación ñáéíóú' },
+  { code: 'pt-BR', slug: 'portuguese-brazil', settingsLabel: 'Português do Brasil', menuSettings: 'CONFIGURAÇÕES', launch: 'MAYHEM PURO', scorePrefix: 'PONTUAÇÃO', gameOver: 'FIM DE JOGO', leaderboard: 'PLACAR STEAM', route: 'ROTA', glyphProbe: 'Configurações pontuação á à â ã ç é ê í ó ô õ ú' },
+  { code: 'ko', slug: 'korean', settingsLabel: '한국어', menuSettings: '설정', launch: '메이헴 퓨어', scorePrefix: '점수', gameOver: '게임 오버', leaderboard: 'STEAM 스코어 덱', route: '경로', glyphProbe: '한국어 설정 점수 순위표' },
+  { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'メイヘム・ピュア', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'STEAMスコアデッキ', route: 'ルート', glyphProbe: '日本語 設定 スコア ランキング' }
 ];
 const requestedLanguages = new Set(
   String(process.env.I18N_UI_LANGUAGES || '')

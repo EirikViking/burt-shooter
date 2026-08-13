@@ -8,6 +8,7 @@ import {
 } from '../src/ui/ShipMasteryBadgeLayout.js';
 import { getPlayerDamageCause } from '../src/game/PlayerDamageCause.js';
 import { getSecondPolishSourceText } from '../src/i18n/secondPolishSourceText.js';
+import { getTyrian125SourceText } from '../src/i18n/tyrian125SourceText.js';
 import { setLanguagePreference } from '../src/i18n/index.js';
 import { getMicroMessage } from '../src/text/phrasePool.js';
 
@@ -52,7 +53,7 @@ const damageCauses = Object.fromEntries(Object.entries(expectedCause).map(([sour
 }));
 
 const requiredLocalizedKeys = [
-  'CLEARS',
+  'TOURS',
   'SHIP DOWN',
   'HOSTILE FIRE',
   'ENEMY CONTACT',
@@ -66,7 +67,7 @@ const requiredLocalizedKeys = [
 ];
 const localizedKeys = {};
 for (const locale of ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
-  const entries = getSecondPolishSourceText(locale);
+  const entries = { ...getSecondPolishSourceText(locale), ...getTyrian125SourceText(locale) };
   localizedKeys[locale] = {};
   for (const key of requiredLocalizedKeys) {
     assert(String(entries[key] || '').trim(), `${locale} is missing ${key}`);
@@ -117,7 +118,7 @@ assert.doesNotMatch(enemy, /tier: 'threat_action'/);
 assert.match(enemy, /simplifiedStandard: true/);
 assert.match(enemy, /Number\(this\.maxHealth\) >= 8/);
 
-assert.match(hangar, /translateText\('CLEARS'\)/);
+assert.match(hangar, /translateText\('TOURS'\)/);
 assert.match(hangar, /hangarShipMasteryClearsCount/);
 assert.match(hangar, /setHangarInputDevice\('controller', 'gamepad'\)/);
 assert.match(hangar, /setHangarInputDevice\('keyboard', 'pointerdown'\)/);

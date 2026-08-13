@@ -5,6 +5,7 @@ import {
   getChallengeFlightPattern,
   gradeChallengeFlight
 } from '../src/config/ChallengeFlights.js';
+import { getTyrian125SourceText } from '../src/i18n/tyrian125SourceText.js';
 
 const root = new URL('../', import.meta.url);
 const read = (relativePath) => readFileSync(new URL(relativePath, root), 'utf8');
@@ -38,6 +39,10 @@ assert.match(
 );
 assert.match(managerSource, /showChallengeFlightResult/, 'challenge completion must use the graded presentation');
 assert.match(playSource, /if \(enemy\.challengeFlightTarget\) return;/, 'challenge targets must be harmless on contact');
+assert.match(playSource, /HOLOGRAM TARGETS \/\/ CONTACT SAFE/, 'challenge HUD must explain harmless contact');
+assert.match(managerSource, /reticle\._hologramVisual = true/, 'challenge targets must own an explicit hologram treatment');
+assert.match(managerSource, /enemy\.sprite\.alpha = 0\.56/, 'challenge target hulls must be visibly translucent');
+assert.match(managerSource, /reticle\.blendMode = 'add'/, 'challenge target reticles must use holographic additive light');
 assert.match(playSource, /showChallengeFlightHud\(state = \{\}\)/, 'live challenge HUD is missing');
 assert.match(playSource, /recordChallengeFlightKill/, 'challenge kills are not connected to combat resolution');
 assert.match(mainSource, /challengeFlight: enemyManager\.getChallengeFlightDebugState/, 'render_game_to_text challenge state is missing');
@@ -45,7 +50,8 @@ assert.match(mainSource, /challengeFlight: enemyManager\.getChallengeFlightDebug
 const requiredKeys = [
   'CABINET SKILL FLIGHT',
   'TARGETS {kills}/{total} // {seconds}s',
-  'SKILL FLIGHT: {pattern}\\nBREAK TARGETS BEFORE THEY EXIT',
+  'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE',
+  'HOLOGRAM TARGETS // CONTACT SAFE',
   'STAR PARADE',
   'PINCER POLKA',
   'PERFECT FLIGHT!',
@@ -54,8 +60,9 @@ const requiredKeys = [
 ];
 for (const locale of ['de', 'es', 'pt-BR', 'ru', 'zh-CN', 'ko', 'ja']) {
   const source = read(`src/i18n/locales/${locale}.js`);
+  const tyrian125 = getTyrian125SourceText(locale);
   for (const key of requiredKeys) {
-    assert.ok(source.includes(`\"${key}\"`), `${locale} missing Challenge Flight translation: ${key}`);
+    assert.ok(source.includes(`\"${key}\"`) || Boolean(tyrian125[key]), `${locale} missing Challenge Flight translation: ${key}`);
   }
 }
 

@@ -35,22 +35,22 @@ const selfExcluded = analyzeGlobalRivalProjection(1500, withSelf);
 assert.equal(selfExcluded.targetName, 'NEXT', 'the current player must never become their own rival');
 assert.equal(selfExcluded.targetRank, 2);
 
-const fullBoard = Array.from({ length: 40 }, (_, index) => (
+const fullBoard = Array.from({ length: 50 }, (_, index) => (
   entry(index + 1, 10000 - index * 100, `ACE ${index + 1}`)
 ));
-const gate = analyzeGlobalRivalProjection(6000, fullBoard);
-assert.equal(gate.targetKind, 'board_gate', 'outside a full top 40 must be labeled as a board gate');
-assert.equal(gate.targetRank, 40);
-assert.equal(gate.targetName, 'ACE 40');
-assert.equal(gate.targetScore, 6101);
+const gate = analyzeGlobalRivalProjection(5000, fullBoard);
+assert.equal(gate.targetKind, 'board_gate', 'outside a full top 50 must be labeled as a board gate');
+assert.equal(gate.targetRank, 50);
+assert.equal(gate.targetName, 'ACE 50');
+assert.equal(gate.targetScore, 5101);
 assert.equal(gate.scoreToPass, 101);
-assert.equal(gate.projectedPlacement, null, 'the downloaded top 40 cannot claim an exact outside rank');
+assert.equal(gate.projectedPlacement, null, 'the downloaded top 50 cannot claim an exact outside rank');
 
-const inside = analyzeGlobalRivalProjection(6200, fullBoard);
+const inside = analyzeGlobalRivalProjection(5200, fullBoard);
 assert.equal(inside.targetKind, 'next_rival');
-assert.equal(inside.targetRank, 39);
-assert.equal(inside.targetName, 'ACE 39');
-assert.equal(inside.targetScore, 6201);
+assert.equal(inside.targetRank, 49);
+assert.equal(inside.targetName, 'ACE 49');
+assert.equal(inside.targetScore, 5201);
 assert.equal(inside.scoreToPass, 1);
 
 const numberOne = analyzeGlobalRivalProjection(10001, fullBoard);
@@ -68,4 +68,4 @@ const selfAtTop = analyzeGlobalRivalProjection(10001, [
 assert.equal(selfAtTop.targetKind, 'number_one');
 assert.equal(selfAtTop.projectedPlacement, 1);
 
-console.log('[global-rival-ladder] PASS empty, ordering, ties, self-exclusion, top-40 gate, next rival, projected #1');
+console.log('[global-rival-ladder] PASS empty, ordering, ties, self-exclusion, top-50 gate, next rival, projected #1');

@@ -193,6 +193,7 @@
     "probe:steam-leaderboard-steam-installed": "node scripts/probe-steam-leaderboard-steam-installed.mjs",
     "steamworks:leaderboard-write-diagnose": "node scripts/steamworks-leaderboard-write-diagnose.mjs",
     "check:leaderboard-visuals": "node scripts/check-leaderboard-visuals.mjs",
+    "check:leaderboard-top50-roster": "node scripts/check-leaderboard-top50-roster.mjs",
     "check:boss-telegraph": "node scripts/check-boss-telegraph.mjs",
     "check:boss-warning-lifecycle": "node scripts/check-boss-warning-lifecycle.mjs",
     "check:boss-contact": "node scripts/check-boss-contact.mjs",

@@ -141,7 +141,7 @@ async function setRivalChase(score, target = 1000) {
     const play = game?.scenes?.play;
     const hud = play?.hud;
     if (!game || !play || !hud) return { ok: false, reason: 'missing game/play/hud' };
-    const entries = Array.from({ length: 40 }, (_, index) => ({
+    const entries = Array.from({ length: 50 }, (_, index) => ({
       rank: index + 1,
       score: 5100 - index * 100,
       name: `ORBIT ACE ${index + 1}`,
@@ -296,10 +296,10 @@ try {
   if ((surpassed.debug?.victoryBurstCount || 0) < 6) failures.push(`surpassed victory burst missing: ${JSON.stringify(surpassed.debug)}`);
   if (!/OLD SCORE|HUMILIATED/i.test(surpassed.text?.gap || '')) failures.push(`surpassed text mismatch: ${JSON.stringify(surpassed.text)}`);
   if (boardGate.debug?.targetKind !== 'board_gate') failures.push(`board gate projection mismatch: ${JSON.stringify(boardGate)}`);
-  if (!/TOP 40 GATE/i.test(boardGate.text?.title || '') || !/ORBIT ACE 40/i.test(boardGate.text?.target || '')) {
+  if (!/TOP 50 GATE/i.test(boardGate.text?.title || '') || !/ORBIT ACE 50/i.test(boardGate.text?.target || '')) {
     failures.push(`board gate text mismatch: ${JSON.stringify(boardGate.text)}`);
   }
-  if (!/TOP 40 GATE: #40 ORBIT ACE 40.*81 MORE/i.test(boardGate.gameOverGoal || '')) {
+  if (!/TOP 50 GATE: #50 ORBIT ACE 50.*81 MORE/i.test(boardGate.gameOverGoal || '')) {
     failures.push(`board gate Game Over goal mismatch: ${boardGate.gameOverGoal}`);
   }
   if (nextRival.debug?.targetKind !== 'next_rival' || nextRival.debug?.targetRank !== 39 || nextRival.debug?.scoreToPass !== 51) {
@@ -311,7 +311,7 @@ try {
   if (!/NEXT RIVAL #39: ORBIT ACE 39.*51 MORE/i.test(nextRival.gameOverGoal || '')) {
     failures.push(`next rival Game Over goal mismatch: ${nextRival.gameOverGoal}`);
   }
-  if (!rivalPassFlash.debug?.rivalFlashActive || !/TOP 40 BREACHED/i.test(rivalPassFlash.text?.title || '') || !/ORBIT ACE 40/i.test(rivalPassFlash.text?.target || '')) {
+  if (!rivalPassFlash.debug?.rivalFlashActive || !/TOP 50 BREACHED/i.test(rivalPassFlash.text?.title || '') || !/ORBIT ACE 50/i.test(rivalPassFlash.text?.target || '')) {
     failures.push(`rival pass flash mismatch: ${JSON.stringify(rivalPassFlash)}`);
   }
   if (!projectedNumberOne.debug?.projectedNumberOne || projectedNumberOne.debug?.targetKind !== 'number_one') {

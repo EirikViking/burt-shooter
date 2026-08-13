@@ -73,18 +73,27 @@ function findChrome() {
 }
 
 async function showShipSelect(page) {
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const matureProgress = { bestScore: 150000, bestRank: 19, bestLevel: 60, bestSector: 60, pilotRank: 19 };
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify(matureProgress));
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(matureProgress));
-    window.__game?.showShipSelect?.();
+    await window.__game?.showShipSelect?.();
   });
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'shipSelect'
-      && state.shipSelect?.backButton?.width > 0
-      && state.shipSelect?.startButton?.width > 0;
-  }, { timeout: 10000 });
+  try {
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'shipSelect'
+        && state.shipSelect?.backButton?.width > 0
+        && state.shipSelect?.startButton?.width > 0;
+    }, null, { timeout: 12000 });
+  } catch (error) {
+    const state = await page.evaluate(() => ({
+      game: JSON.parse(window.render_game_to_text?.() || '{}'),
+      href: window.location.href,
+      gameScene: window.__game?.currentSceneName || null
+    }));
+    throw new Error(`Ship selector failed readiness: ${JSON.stringify(state)}`, { cause: error });
+  }
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
@@ -108,6 +117,9 @@ try {
   await page.waitForFunction(() => Boolean(window.__game?.showShipSelect), { timeout: 30000 });
 
   const beforeMenuButton = await showShipSelect(page);
+  mkdirSync(outputDir, { recursive: true });
+  const hangarToursScreenshot = path.join(outputDir, 'hangar-tours.png');
+  await page.screenshot({ path: hangarToursScreenshot, fullPage: true });
   const menuTarget = beforeMenuButton.shipSelect.backButton;
   await page.mouse.move(menuTarget.x + menuTarget.width / 2, menuTarget.y + menuTarget.height / 2);
   await page.mouse.up();
@@ -152,7 +164,6 @@ try {
   await page.mouse.click(clickTarget.x + clickTarget.width / 2, clickTarget.y + clickTarget.height / 2);
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.launchModeChoice?.visible === true, { timeout: 10000 });
   const mouseModeChoice = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
-  mkdirSync(outputDir, { recursive: true });
   const modeChoiceScreenshot = path.join(outputDir, 'hangar-launch-mode-choice.png');
   await page.screenshot({ path: modeChoiceScreenshot, fullPage: true });
   const pureTarget = mouseModeChoice.shipSelect.launchModeChoice.modes.ranked.bounds;
@@ -315,7 +326,8 @@ try {
     pageErrors,
     consoleErrors,
     screenshot,
-    modeChoiceScreenshot
+    modeChoiceScreenshot,
+    hangarToursScreenshot
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
 

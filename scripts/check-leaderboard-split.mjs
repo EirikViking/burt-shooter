@@ -84,7 +84,7 @@ function lowGlobalScores() {
 }
 
 function highGlobalScores() {
-  return Array.from({ length: 40 }, (_, index) => ({
+  return Array.from({ length: 50 }, (_, index) => ({
     name: `PRO${index}`,
     score: 999999 - index * 1000,
     level: 9,

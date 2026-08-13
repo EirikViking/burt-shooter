@@ -1,6 +1,9 @@
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { SFX_CATALOG, SFX_MIX } from '../src/audio/SoundCatalog.js';
+import { GENERATED_ENEMY_DEATH_SFX } from '../src/config/GeneratedEnemyProfiles.js';
 
 const audioManager = readFileSync('src/audio/AudioManager.js', 'utf8');
 const enemyManager = readFileSync('src/managers/EnemyManager.js', 'utf8');
@@ -45,5 +48,23 @@ assert.match(playScene, /cooldownKey:\s*'pickup_spatial'/,
   'ordinary positional pickup accents need one bounded cooldown lane');
 assert.match(playScene, /pitchScale = 0\.94 \+ \(Math\.abs\(hashString\(type\)\) % 7\) \* 0\.02/,
   'ordinary pickup accents need deterministic per-type pitch variety');
+
+assert.ok(!GENERATED_ENEMY_DEATH_SFX.includes('spawn_special'),
+  'generated enemy deaths must not reuse the five-second spawn/engine event');
+for (const eventName of GENERATED_ENEMY_DEATH_SFX) {
+  for (const url of SFX_CATALOG[eventName] || []) {
+    const filePath = path.resolve('public', String(url).replace(/^\//, ''));
+    const probe = spawnSync('ffprobe', [
+      '-v', 'error',
+      '-show_entries', 'format=duration',
+      '-of', 'default=noprint_wrappers=1:nokey=1',
+      filePath
+    ], { encoding: 'utf8' });
+    assert.equal(probe.status, 0, `could not inspect generated death SFX ${url}`);
+    const durationSeconds = Number(probe.stdout);
+    assert.ok(Number.isFinite(durationSeconds) && durationSeconds <= 2.1,
+      `generated death SFX ${url} is ${durationSeconds}s; sustained beds cannot be kill one-shots`);
+  }
+}
 
 console.log('[check-combat-audio-variety] PASS');

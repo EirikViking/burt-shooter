@@ -39,7 +39,7 @@ assert.ok(steamProvider.includes('pickBestCurrentPlayerEntry'), 'Steam provider 
 assert.ok(steamMockCheck.includes('Low Steam score should be marked best unchanged'), 'Steam mock must cover low-score best-unchanged result');
 assert.ok(steamMockCheck.includes('Best: 87,628') && steamMockCheck.includes('This run: 2,084'), 'Steam mock must cover the exact retained-best unchanged regression');
 assert.ok(steamMockCheck.includes('Low Steam score reused stale or misleading rank copy'), 'Steam mock must cover stale-rank protection');
-assert.ok(steamMockCheck.includes('Local: Not in local top 40'), 'Steam mock must cover outside-visible local rank copy');
+assert.ok(steamMockCheck.includes('Local: Not in local top 50'), 'Steam mock must cover outside-visible local rank copy');
 assert.ok(steamMockCheck.includes('Steam rank 3 should get rank-specific global leaderboard celebration copy'), 'Steam mock must keep current top-three rank coverage without visible Top Three heading copy');
 assert.ok(steamMockCheck.includes("lastLeaderboardResult?.steamStatus === 'submitted'"), 'Steam mock must still prove autosubmit is called');
 assert.ok(resultScreenFlowCheck.includes('score: 25286'), 'Result flow check must cover rank-2 good run');
