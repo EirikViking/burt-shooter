@@ -2680,19 +2680,34 @@ export class ShipSelectScene {
     masteryBg.fill({ color: 0x020711, alpha: 0.92 });
     masteryBg.stroke({ color: mastery.tier.color, width: 1.4, alpha: mastery.tier.rank > 0 ? 0.88 : 0.44 });
     masteryBadge.addChild(masteryBg);
+    const rankedLabel = createText(translateText('RANKED MEDALS'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: this.layout.isMobile ? 6 : 8,
+      fill: '#a8c5d2',
+      stroke: '#000000',
+      strokeThickness: 1
+    });
+    rankedLabel.anchor.set(0.5, 0);
+    rankedLabel.position.set(this.layout.isMobile ? 27 : 37, 2);
+    masteryBadge.addChild(rankedLabel);
     [SHIP_MASTERY_TIERS.bronze, SHIP_MASTERY_TIERS.silver, SHIP_MASTERY_TIERS.gold].forEach((tier, medalIndex) => {
       const earned = mastery.tier.rank >= tier.rank;
       const medal = new PIXI.Graphics();
       const medalX = masteryLayout.medalStartX + medalIndex * masteryLayout.medalSpacing;
-      medal.circle(medalX, masteryHeight / 2, masteryLayout.medalRadius);
+      medal.circle(medalX, masteryHeight * 0.62, masteryLayout.medalRadius);
       medal.fill({ color: earned ? tier.color : 0x173044, alpha: earned ? 0.98 : 0.72 });
       medal.stroke({ color: earned ? 0xffffff : 0x527084, width: earned ? 1.2 : 0.8, alpha: earned ? 0.82 : 0.45 });
       masteryBadge.addChild(medal);
     });
-    const clearLabel = createText(translateText('CLEARS'), {
+    const masteryDivider = new PIXI.Graphics();
+    masteryDivider.moveTo(this.layout.isMobile ? 50 : 68, 5);
+    masteryDivider.lineTo(this.layout.isMobile ? 50 : 68, masteryHeight - 5);
+    masteryDivider.stroke({ color: 0x58efff, width: 1.2, alpha: 0.5 });
+    masteryBadge.addChild(masteryDivider);
+    const clearLabel = createText(translateText('TOURS'), {
       fontFamily: FONT_DISPLAY,
       fontSize: this.layout.isMobile ? 13 : 16,
-      fill: mastery.tier.rank > 0 ? hexColor(mastery.tier.color) : '#91a8b8',
+      fill: '#75f3ff',
       fontWeight: '900',
       stroke: '#000000',
       strokeThickness: 2
@@ -2705,7 +2720,7 @@ export class ShipSelectScene {
     clearLabel.scale.set(clearLabelScale);
     masteryBadge.addChild(clearLabel);
 
-    const clearCount = createText(String(Math.max(0, Math.round(Number(mastery.clears) || 0))), {
+    const clearCount = createText(String(Math.max(0, Math.round(Number(mastery.tours) || 0))), {
       fontFamily: FONT_DISPLAY,
       fontSize: this.layout.isMobile ? 14 : 16,
       fill: mastery.tier.rank > 0 ? '#f5ffff' : '#b8cad6',
@@ -2756,6 +2771,7 @@ export class ShipSelectScene {
       medalCount: mastery.medalCount,
       renderedMedalCount: 3,
       clears: mastery.clears,
+      tours: mastery.tours,
       clearLabel: clearLabel.text,
       clearCount: clearCount.text,
       identity: { ...identity },
@@ -2768,40 +2784,6 @@ export class ShipSelectScene {
     container.addChild(masteryBadge);
     container.masteryBadge = masteryBadge;
     container.masteryIdentityIcon = identityIcon;
-
-    if (mastery.overrunClears > 0) {
-      const overrunBadge = new PIXI.Container();
-      overrunBadge.label = 'hangarShipOverrunBadge';
-      const overrunWidth = this.layout.isMobile ? 132 : 154;
-      const overrunHeight = this.layout.isMobile ? 23 : 26;
-      overrunBadge.position.set(masteryBadge.x + masteryWidth - overrunWidth, masteryBadge.y + masteryHeight + 6);
-      const overrunBg = new PIXI.Graphics();
-      overrunBg.roundRect(0, 0, overrunWidth, overrunHeight, 7);
-      overrunBg.fill({ color: 0x06111b, alpha: 0.94 });
-      overrunBg.stroke({ color: 0x61f6ff, width: 1.2, alpha: 0.82 });
-      const overrunText = createText(translateText('OVERRUN ×{count}', { count: mastery.overrunClears }), {
-        fontFamily: FONT_DISPLAY,
-        fontSize: this.layout.isMobile ? 9 : 10,
-        fill: '#ffd76a',
-        fontWeight: '900',
-        stroke: '#000000',
-        strokeThickness: 2
-      });
-      overrunText.label = 'hangarShipOverrunText';
-      overrunText.anchor.set(0.5);
-      overrunText.position.set(overrunWidth / 2, overrunHeight / 2);
-      fitDisplayToBox(overrunText, overrunWidth - 18, overrunHeight - 6, { minScale: 0.7 });
-      overrunBadge.addChild(overrunBg, overrunText);
-      overrunBadge.__debugOverrun = {
-        clears: mastery.overrunClears,
-        label: overrunText.text,
-        separateFromRankedMastery: true,
-        visibleOnlyWhenEarned: true,
-        bounds: { width: overrunWidth, height: overrunHeight }
-      };
-      container.addChild(overrunBadge);
-      container.overrunBadge = overrunBadge;
-    }
 
     // Ship name below sprite - LARGER and more readable
     const name = createText(ship.name, {
@@ -3224,12 +3206,7 @@ export class ShipSelectScene {
         .map(item => `${Math.min(Number(item.current) || 0, Number(item.target) || 0)}/${item.target}`)
         .join('  ')
       : '';
-    const masterySummary = [
-      `${translateText('CLEARS')}: ${Math.max(0, Math.round(Number(mastery.clears) || 0))}`,
-      ...(mastery.overrunClears > 0
-        ? [translateText('OVERRUN ×{count}', { count: mastery.overrunClears })]
-        : [])
-    ].join('  //  ');
+    const masterySummary = `${translateText('TOURS')}: ${Math.max(0, Math.round(Number(mastery.tours) || 0))}`;
     const unlock = unlocked
       ? [
         firstFlight

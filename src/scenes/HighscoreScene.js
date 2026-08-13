@@ -18,12 +18,12 @@ import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
 import { tauntDirector } from '../game/TauntDirector.js';
 import { RUN_MODES } from '../game/RunMode.js';
+import { buildLeaderboardPresentationRoster } from '../leaderboard/LeaderboardPresentationRoster.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
-const MOBILE_LEADERBOARD_VISIBLE_LIMIT = 10;
 const DESKTOP_TWO_COLUMN_MIN_WIDTH = 1600;
 
 function debugBounds(displayObject) {
@@ -97,6 +97,10 @@ export class HighscoreScene {
     this.sectorBtn = null;
     this.friendsBtn = null;
     this.localBtn = null;
+    this.previousPageBtn = null;
+    this.nextPageBtn = null;
+    this.leaderboardPage = 0;
+    this.leaderboardPageCount = 1;
     this.tabButtons = {};
     this.leaderboardTabs = [];
     this.leaderboardAdapter = null;
@@ -106,6 +110,8 @@ export class HighscoreScene {
     this.activeLeaderboard = LeaderboardView.GLOBAL;
     this.entries = [];
     this.entriesNormalized = [];
+    this.leaderboardPage = 0;
+    this.leaderboardPageCount = 1;
     this.lastError = 'none';
     this.loadingTimer = null;
     this.fetchToken = 0;
@@ -336,6 +342,12 @@ export class HighscoreScene {
     this.localBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.LOCAL));
     this.localBtn.zIndex = 5;
     this.container.addChild(this.localBtn);
+    this.previousPageBtn = this.createButton('◀');
+    this.previousPageBtn.on('pointerdown', () => this.changeLeaderboardPage(-1));
+    this.container.addChild(this.previousPageBtn);
+    this.nextPageBtn = this.createButton('▶');
+    this.nextPageBtn.on('pointerdown', () => this.changeLeaderboardPage(1));
+    this.container.addChild(this.nextPageBtn);
     this.tabButtons = {
       [LeaderboardView.GLOBAL]: this.globalBtn,
       [LeaderboardView.TACTICAL]: this.tacticalBtn,
@@ -349,6 +361,8 @@ export class HighscoreScene {
       { id: LeaderboardView.SECTOR, button: this.sectorBtn, activate: () => this.setLeaderboardView(LeaderboardView.SECTOR) },
       { id: LeaderboardView.FRIENDS, button: this.friendsBtn, activate: () => this.setLeaderboardView(LeaderboardView.FRIENDS) },
       { id: LeaderboardView.LOCAL, button: this.localBtn, activate: () => this.setLeaderboardView(LeaderboardView.LOCAL) },
+      { id: 'previousPage', button: this.previousPageBtn, activate: () => this.changeLeaderboardPage(-1) },
+      { id: 'nextPage', button: this.nextPageBtn, activate: () => this.changeLeaderboardPage(1) },
       { id: 'retry', button: this.retryBtn, activate: () => this.fetchHighscores() },
       { id: 'back', button: this.backBtn, activate: () => this.returnToMenu('focus') },
       { id: 'runAgain', button: this.runAgainBtn, activate: () => this.startRunAgain() }
@@ -499,6 +513,7 @@ export class HighscoreScene {
       : (view === LeaderboardView.LOCAL ? LeaderboardView.LOCAL : LeaderboardView.GLOBAL);
     if (this.activeLeaderboard === nextView && this.status !== 'ERROR') return;
     this.activeLeaderboard = nextView;
+    this.leaderboardPage = 0;
     this.game.leaderboardView = nextView;
     playMenuConfirmSfx(0.18);
     this.menuFx?.burst?.(this.game.getWidth() * 0.5, Math.max(120, this.tableMetrics?.y || 120), {
@@ -530,11 +545,19 @@ export class HighscoreScene {
     this.leaderboardTabs = tabs;
     const activeTab = this.leaderboardAdapter?.getTab?.(this.activeLeaderboard) || tabs.find(tab => tab.id === this.activeLeaderboard);
     if (this.title) {
-      this.title.text = translateText(activeTab?.title || (this.activeLeaderboard === LeaderboardView.LOCAL ? 'LOCAL SCORE DECK' : 'GLOBAL SCORE DECK'));
+      this.title.text = translateText(this.activeLeaderboard === LeaderboardView.LOCAL
+        ? 'LOCAL SCORE DECK'
+        : this.activeLeaderboard === LeaderboardView.GLOBAL
+          ? 'STEAM SCORE DECK'
+          : activeTab?.title || 'SCORE DECK');
     }
     if (this.subtitle) {
-      const source = (activeTab?.sourceLabel || this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Score Signal').toUpperCase();
-      this.subtitle.text = `${translateText('PILOT RANK SIGNAL')} // ${translateText(source)}`;
+      if (this.activeLeaderboard === LeaderboardView.GLOBAL) {
+        this.subtitle.text = translateText('STEAM RANK SIGNAL // VERIFIED PILOTS');
+      } else {
+        const source = (activeTab?.sourceLabel || this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Score Signal').toUpperCase();
+        this.subtitle.text = `${translateText('PILOT RANK SIGNAL')} // ${translateText(source)}`;
+      }
     }
     if (this.runAgainBtn?._label) {
       this.runAgainBtn._label.text = translateText(
@@ -584,11 +607,11 @@ export class HighscoreScene {
       width: deckWidth,
       height: deckHeight,
       innerX: deckLeft + (isMobile ? 14 : 30),
-      innerY: deckTop + (isMobile ? 14 : 24),
+      innerY: deckTop + (isMobile ? 12 : 24),
       innerWidth: deckWidth - (isMobile ? 28 : 60),
       bottom: deckTop + deckHeight,
-      rowsBottom: deckTop + deckHeight - (isMobile ? 48 : 36),
-      footerY: deckTop + deckHeight - (isMobile ? 24 : 20)
+      rowsBottom: deckTop + deckHeight - (isMobile ? 64 : 36),
+      footerY: deckTop + deckHeight - (isMobile ? 28 : 20)
     };
 
     this.title.style.fontSize = Math.min(getResponsiveFontSize(layout, 'title') * (isMobile ? 0.66 : 0.76), isMobile ? 30 : 48);
@@ -604,14 +627,14 @@ export class HighscoreScene {
     this.statusText.style.fontSize = getResponsiveFontSize(layout, 'small');
 
     const centerX = deckLeft + deckWidth / 2;
-    const titleY = deckTop + (isMobile ? 56 : 70);
+    const titleY = deckTop + (isMobile ? 42 : 70);
     this.title.x = centerX;
     this.title.y = titleY;
     this.subtitle.x = centerX;
     this.subtitle.y = titleY + (isMobile ? 34 : 42);
     this.drawTitlePlate(width, layout);
 
-    const toggleY = this.subtitle.y + (isMobile ? 40 : 46);
+    const toggleY = this.subtitle.y + (isMobile ? 31 : 46);
     const visibleTabs = (this.leaderboardTabs || []).filter(tab => this.tabButtons?.[tab.id]?.visible !== false);
     if (visibleTabs.length > 0) {
       const buttonW = isMobile
@@ -637,7 +660,7 @@ export class HighscoreScene {
     }
 
     this.stateMessage.visible = this.status !== 'LOADED';
-    let rowsStartY = toggleY + (isMobile ? 46 : 52);
+    let rowsStartY = toggleY + (isMobile ? 39 : 52);
     if (this.stateMessage.visible) {
       this.stateMessage.y = this.comment.visible
         ? this.comment.y + Math.max(isMobile ? 28 : 34, this.comment.height + (isMobile ? 10 : 12))
@@ -648,12 +671,12 @@ export class HighscoreScene {
     }
     this.stateMessage.x = centerX;
     rowsStartY = Math.min(rowsStartY, this.tableMetrics.rowsBottom - (isMobile ? 410 : 390));
-    rowsStartY = Math.max(rowsStartY, toggleY + (isMobile ? 42 : 48));
+    rowsStartY = Math.max(rowsStartY, toggleY + (isMobile ? 37 : 48));
 
     this.drawLeaderboardPanel(width, height, rowsStartY, layout);
-    this.drawStatsDeck(width, height, layout);
 
     await this.renderHighscoreRows(rowsStartY, layout);
+    this.drawStatsDeck(width, height, layout);
 
     // Retry/back & diag
     const panelBottom = this.tableMetrics?.bottom || (height - (isMobile ? 88 : 76));
@@ -679,6 +702,22 @@ export class HighscoreScene {
     this.backBtn.y = buttonY;
     this.runAgainBtn.y = buttonY;
     this.setButtonActive(this.runAgainBtn, true);
+
+    const pageButtonW = isMobile ? 38 : 52;
+    const pageButtonH = isMobile ? 30 : 38;
+    this.resizeButton(this.previousPageBtn, pageButtonW, pageButtonH);
+    this.resizeButton(this.nextPageBtn, pageButtonW, pageButtonH);
+    this.previousPageBtn.x = centerX - (isMobile ? 38 : 48);
+    this.nextPageBtn.x = centerX + (isMobile ? 38 : 48);
+    const pageButtonY = isMobile ? Math.min(buttonY - 32, panelBottom + 16) : buttonY;
+    this.previousPageBtn.y = pageButtonY;
+    this.nextPageBtn.y = pageButtonY;
+    this.previousPageBtn.visible = this.leaderboardPageCount > 1;
+    this.nextPageBtn.visible = this.leaderboardPageCount > 1;
+    this.previousPageBtn.eventMode = this.leaderboardPage > 0 ? 'static' : 'none';
+    this.nextPageBtn.eventMode = this.leaderboardPage < this.leaderboardPageCount - 1 ? 'static' : 'none';
+    this.previousPageBtn.alpha = this.leaderboardPage > 0 ? 1 : 0.38;
+    this.nextPageBtn.alpha = this.leaderboardPage < this.leaderboardPageCount - 1 ? 1 : 0.38;
 
     this.statusText.x = layout.padding;
     this.statusText.y = height - layout.padding * 1.5;
@@ -734,7 +773,10 @@ export class HighscoreScene {
   applyLeaderboardResult(result = {}) {
     this.activeLeaderboardResult = result;
     this.entries = Array.isArray(result.entries) ? result.entries.slice(0, LEADERBOARD_DISPLAY_LIMIT) : [];
-    this.entriesNormalized = this.normalizeEntries(this.entries);
+    this.entriesNormalized = buildLeaderboardPresentationRoster(this.normalizeEntries(this.entries), {
+      view: this.activeLeaderboard,
+      limit: LEADERBOARD_DISPLAY_LIMIT
+    });
     const humorCategory = result.status === 'available' && this.entries.length > 0
       ? 'leaderboard_loaded'
       : result.status === 'empty'
@@ -742,11 +784,9 @@ export class HighscoreScene {
         : 'leaderboard_error';
     this.comment.text = tauntDirector.getRotatingText(humorCategory);
     this.lastLeaderboardHumor = tauntDirector.getRotationDebugState();
-    const status = result.status === 'available'
+    const status = result.status === 'available' || result.status === 'empty'
       ? 'LOADED'
-      : result.status === 'empty'
-        ? 'EMPTY'
-        : 'ERROR';
+      : 'ERROR';
     this.lastError = result.error || 'none';
     this.setState(status);
   }
@@ -857,6 +897,16 @@ export class HighscoreScene {
       }
     });
     return normalized;
+  }
+
+  changeLeaderboardPage(delta = 0) {
+    const count = Math.max(1, Number(this.leaderboardPageCount) || 1);
+    const next = Math.max(0, Math.min(count - 1, (Number(this.leaderboardPage) || 0) + Math.sign(delta)));
+    if (next === this.leaderboardPage) return false;
+    this.leaderboardPage = next;
+    playMenuFocusSfx(0.12);
+    this.layoutHighscore();
+    return true;
   }
 
   normalizePlayerNameForMatch(value) {
@@ -1030,18 +1080,22 @@ export class HighscoreScene {
 
     if (this.status === 'LOADED') {
       const isDebug = window.location.search.includes('debug=1');
-      let entriesToDisplay = [...this.entries];
+      let entriesToDisplay = [...this.entriesNormalized];
 
-      const desktopTwoColumn = !isMobile && layout.width >= DESKTOP_TWO_COLUMN_MIN_WIDTH && entriesToDisplay.length > MOBILE_LEADERBOARD_VISIBLE_LIMIT;
-      const displayLimit = desktopTwoColumn ? LEADERBOARD_DISPLAY_LIMIT : MOBILE_LEADERBOARD_VISIBLE_LIMIT;
-      const visibleEntryCount = Math.min(displayLimit, entriesToDisplay.length || displayLimit);
+      const desktopTwoColumn = !isMobile && layout.width >= DESKTOP_TWO_COLUMN_MIN_WIDTH;
+      const pageSize = desktopTwoColumn ? 20 : 10;
+      this.leaderboardPageCount = Math.max(1, Math.ceil(entriesToDisplay.length / pageSize));
+      this.leaderboardPage = Math.max(0, Math.min(this.leaderboardPageCount - 1, this.leaderboardPage));
+      const pageOffset = this.leaderboardPage * pageSize;
+      entriesToDisplay = entriesToDisplay.slice(pageOffset, pageOffset + pageSize);
+      const displayLimit = pageSize;
+      const visibleEntryCount = entriesToDisplay.length;
       const columnCount = desktopTwoColumn
         ? 2
         : 1;
       const compactDesktopGrid = desktopTwoColumn && columnCount >= 3;
-      entriesToDisplay = entriesToDisplay.slice(0, displayLimit);
       const rowsPerColumnTarget = desktopTwoColumn
-        ? Math.ceil(displayLimit / columnCount)
+        ? Math.ceil(entriesToDisplay.length / columnCount)
         : Math.min(displayLimit, entriesToDisplay.length || displayLimit);
       const columnGap = desktopTwoColumn
         ? (compactDesktopGrid ? (layout.width < 1500 ? 10 : 16) : (layout.width < 1500 ? 20 : 28))
@@ -1052,8 +1106,8 @@ export class HighscoreScene {
       const rowsBaseY = startY + headerHeight + (isMobile ? 4 : 7);
       const rowsBottom = Math.min(metrics.rowsBottom || metrics.bottom - 48, metrics.bottom - (isMobile ? 44 : 54));
       const availableRowsHeight = Math.max(120, rowsBottom - rowsBaseY);
-      const minRowHeight = isMobile ? 54 : 58;
-      const maxRowHeight = isMobile ? 62 : (layout.height >= 880 ? 68 : 62);
+      const minRowHeight = isMobile ? 49 : 52;
+      const maxRowHeight = isMobile ? 58 : (desktopTwoColumn ? 58 : (layout.height >= 880 ? 68 : 62));
       const visibleTargetRows = Math.max(1, Math.min(rowsPerColumnTarget, entriesToDisplay.length || rowsPerColumnTarget));
       const rowSpace = Math.max(minRowHeight, availableRowsHeight / visibleTargetRows);
       const rowHeight = Math.max(minRowHeight, Math.min(maxRowHeight, rowSpace));
@@ -1126,16 +1180,23 @@ export class HighscoreScene {
 
         // The viewport can fit fewer than the nominal 20 rows per column.
         // Describe the ranks that are actually rendered, never the request cap.
-        const manifestStart = columnIndex * maxRowsPerColumn + 1;
-        const manifestEnd = Math.min(entriesToDisplay.length, manifestStart + maxRowsPerColumn - 1);
-        const manifestLabel = desktopTwoColumn
-          ? `PILOT MANIFEST ${manifestStart}-${manifestEnd}`
-          : 'PILOT MANIFEST';
+        const manifestStart = pageOffset + columnIndex * maxRowsPerColumn + 1;
+        const manifestEnd = Math.min(pageOffset + entriesToDisplay.length, manifestStart + maxRowsPerColumn - 1);
+        const columnEntries = entriesToDisplay.slice(
+          columnIndex * maxRowsPerColumn,
+          Math.min(entriesToDisplay.length, (columnIndex + 1) * maxRowsPerColumn)
+        );
+        const cpuOnlyColumn = columnEntries.length > 0 && columnEntries.every((entry) => entry?.isCpuRival === true);
+        const manifestLabel = cpuOnlyColumn
+          ? translateText('CPU RIVALS // NOT STEAM RANKS')
+          : desktopTwoColumn
+            ? `PILOT MANIFEST ${manifestStart}-${manifestEnd}`
+            : 'PILOT MANIFEST';
         this.manifestRanges.push({
           column: columnIndex,
           start: manifestStart,
           end: manifestEnd,
-          renderedCount: Math.max(0, Math.min(maxRowsPerColumn, entriesToDisplay.length - manifestStart + 1)),
+          renderedCount: Math.max(0, Math.min(maxRowsPerColumn, pageOffset + entriesToDisplay.length - manifestStart + 1)),
           label: manifestLabel
         });
         const headers = [
@@ -1185,8 +1246,10 @@ export class HighscoreScene {
           columns
         } = getColumnGeometry(columnIndex);
         const y = rowsBaseY + rowHeight * rowIndex;
-        const isTop3 = index < 3 && !score.isPending;
+        const displayPosition = pageOffset + index;
+        const isTop3 = displayPosition < 3 && !score.isPending && !score.isCpuRival;
         const isPending = score.isPending || false;
+        const isCpuRival = score.isCpuRival === true;
         const isFeaturedPlayer = this.isFeaturedLeaderboardEntry(score, index);
         const rowY = y;
         const primaryY = rowY + (isMobile ? 6 : 7);
@@ -1196,10 +1259,10 @@ export class HighscoreScene {
         const medalFills = [0x1e1607, 0x081d2d, 0x261109];
         const accent = isFeaturedPlayer
           ? 0xfff15c
-          : (isPending ? 0xffaa44 : (isTop3 ? medalAccents[index] : (index % 2 === 0 ? 0x37f5ff : 0x7fffd8)));
+          : (isCpuRival ? 0x8b9aa6 : isPending ? 0xffaa44 : (isTop3 ? medalAccents[displayPosition] : (index % 2 === 0 ? 0x37f5ff : 0x7fffd8)));
         const rowColor = isFeaturedPlayer
           ? 0x102538
-          : (isTop3 ? medalFills[index] : (index % 2 === 0 ? 0x03111f : 0x061827));
+          : (isCpuRival ? 0x080f16 : (isTop3 ? medalFills[displayPosition] : (index % 2 === 0 ? 0x03111f : 0x061827)));
 
         if (isTop3) {
           const rowAura = new PIXI.Graphics();
@@ -1269,7 +1332,7 @@ export class HighscoreScene {
           });
         }
 
-        const rankText = createText(`#${index + 1}`, {
+        const rankText = createText(isCpuRival ? 'CPU' : translateText('#{rank}', { rank: score.rank || displayPosition + 1 }), {
           ...rankStyle,
           fontFamily: FONT_ARCADE,
           fontSize: rowStyle.fontSize + (isTop3 && !isMobile ? 1 : 0)
@@ -1277,7 +1340,7 @@ export class HighscoreScene {
         const nameText = createText(displayName, nameStyle);
         const rankNameText = createText(rankTitle, {
           fontFamily: FONT_ARCADE,
-          fontSize: Math.max(isMobile ? 13 : 15, rowStyle.fontSize - (isMobile ? 2 : 1)),
+          fontSize: Math.max(isMobile ? 12 : 15, rowStyle.fontSize - (isMobile ? 3 : 1)),
           fill: isTop3 ? '#ffefaa' : '#9fd7e3',
           stroke: '#00131b',
           strokeThickness: 1
@@ -1287,7 +1350,7 @@ export class HighscoreScene {
           fontFamily: FONT_ARCADE,
           fontSize: rowStyle.fontSize + (isMobile ? 0 : 1)
         });
-        const scoreLabel = createText(index === 0 ? 'LEAD' : 'SCORE', {
+        const scoreLabel = createText(isCpuRival ? translateText('CPU RIVAL') : displayPosition === 0 ? 'LEAD' : 'SCORE', {
           fontFamily: FONT_ARCADE,
           fontSize: Math.max(13, rowStyle.fontSize - (isMobile ? 2 : 1)),
           fill: isTop3 ? '#ffe7a8' : '#6fb6c8',
@@ -1341,7 +1404,7 @@ export class HighscoreScene {
           this.rowsContainer.addChild(levelPill);
         }
 
-        const rankTexture = rankTextures[index];
+        const rankTexture = isCpuRival ? null : rankTextures[index];
         const displayRank = computeDisplayRank(score);
         if (rankTexture) {
           const badgeGlow = new PIXI.Graphics();
@@ -1369,6 +1432,23 @@ export class HighscoreScene {
           if (isDebug && index < 2) {
             // Debug log removed for stable release
           }
+        } else if (isCpuRival) {
+          const cpuGlyph = new PIXI.Graphics();
+          const glyphSize = Math.min(rowHeight * 0.6, isMobile ? 27 : 38);
+          cpuGlyph.roundRect(columns.badge - glyphSize / 2, rowMidY - glyphSize / 2, glyphSize, glyphSize, 5);
+          cpuGlyph.fill({ color: 0x07131d, alpha: 0.92 });
+          cpuGlyph.stroke({ color: 0x8b9aa6, width: 1.2, alpha: 0.72 });
+          cpuGlyph.moveTo(columns.badge - glyphSize * 0.24, rowMidY);
+          cpuGlyph.lineTo(columns.badge + glyphSize * 0.24, rowMidY);
+          cpuGlyph.moveTo(columns.badge, rowMidY - glyphSize * 0.24);
+          cpuGlyph.lineTo(columns.badge, rowMidY + glyphSize * 0.24);
+          cpuGlyph.circle(columns.badge, rowMidY, glyphSize * 0.26);
+          cpuGlyph.moveTo(columns.badge - glyphSize * 0.38, rowMidY - glyphSize * 0.3);
+          cpuGlyph.lineTo(columns.badge - glyphSize * 0.26, rowMidY - glyphSize * 0.3);
+          cpuGlyph.moveTo(columns.badge + glyphSize * 0.26, rowMidY + glyphSize * 0.3);
+          cpuGlyph.lineTo(columns.badge + glyphSize * 0.38, rowMidY + glyphSize * 0.3);
+          cpuGlyph.stroke({ color: 0x58efff, width: 1.2, alpha: 0.58 });
+          this.rowsContainer.addChild(cpuGlyph);
         } else if (isDebug) {
           const placeholder = new PIXI.Sprite(PIXI.Texture.WHITE);
           const size = layout.isMobile ? 10 : 12;
@@ -1385,7 +1465,8 @@ export class HighscoreScene {
         this.rowsContainer.addChild(rankText, nameText, rankNameText, scoreText, scoreLabel);
         if (levelText) this.rowsContainer.addChild(levelText);
         this.rowLayoutDebug.push({
-          index,
+          index: displayPosition,
+          cpuRival: isCpuRival,
           row: {
             x: Math.round(rowX),
             y: Math.round(rowY),
@@ -1424,6 +1505,12 @@ export class HighscoreScene {
       }
 
       this.fadeInRows();
+      this.previousPageBtn.visible = this.leaderboardPageCount > 1;
+      this.nextPageBtn.visible = this.leaderboardPageCount > 1;
+      this.previousPageBtn.eventMode = this.leaderboardPage > 0 ? 'static' : 'none';
+      this.nextPageBtn.eventMode = this.leaderboardPage < this.leaderboardPageCount - 1 ? 'static' : 'none';
+      this.previousPageBtn.alpha = this.leaderboardPage > 0 ? 1 : 0.38;
+      this.nextPageBtn.alpha = this.leaderboardPage < this.leaderboardPageCount - 1 ? 1 : 0.38;
     } else {
       this.rowsContainer.alpha = 1;
       if (this.status === 'EMPTY') return;
@@ -1759,12 +1846,13 @@ export class HighscoreScene {
     this.statsDeck.clear();
     const metrics = this.tableMetrics;
     const deckWidth = metrics.innerWidth;
-    const deckHeight = layout.isMobile ? 18 : 22;
+    const deckHeight = layout.isMobile ? 34 : 22;
     const x = metrics.innerX;
     const y = metrics.footerY - deckHeight / 2;
     const loadedCount = this.status === 'LOADED' ? this.entries.length : 0;
-    const topScore = loadedCount
-      ? Math.max(...this.entries.map(entry => Number(entry?.score) || 0)).toLocaleString('en-US')
+    const presentationCount = this.status === 'LOADED' ? this.entriesNormalized.length : 0;
+    const topScore = presentationCount
+      ? Math.max(...this.entriesNormalized.map(entry => Number(entry?.score) || 0)).toLocaleString('en-US')
       : '0';
     const viewColor = this.activeLeaderboard === LeaderboardView.LOCAL
       ? 0xffd166
@@ -1796,18 +1884,24 @@ export class HighscoreScene {
     const syncLabel = (this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || (
       this.activeLeaderboard === LeaderboardView.LOCAL ? 'LOCAL MEMORY' : 'LIVE ORBIT'
     )).toUpperCase();
-    const countLabel = loadedCount ? `${loadedCount} ${translateText('SIGNALS')}` : translateText(this.status);
+    const countLabel = presentationCount ? `${presentationCount} ${translateText('SIGNALS')}` : translateText(this.status);
     const translatedSyncLabel = translateText(syncLabel);
     const bestLabel = translateText('BEST');
+    const rosterLegend = translateText('STEAM PILOTS + CPU RIVALS');
+    const pageLabel = translateText('PAGE {page}/{pages}', {
+      page: this.leaderboardPage + 1,
+      pages: this.leaderboardPageCount
+    });
     this.statsText.text = layout.isMobile
-      ? `TFG // ${translatedSyncLabel} // ${countLabel} // ${bestLabel} ${topScore}`
-      : `TINYFOUNDRY GAMES // ${translatedSyncLabel} // ${countLabel} // ${bestLabel} ${topScore}`;
-      this.statsText.style.fontSize = layout.isMobile ? 12 : 14;
+      ? `${rosterLegend}\n${pageLabel} // ${bestLabel} ${topScore}`
+      : `TINYFOUNDRY GAMES // ${translatedSyncLabel} // ${countLabel} // ${rosterLegend} // ${pageLabel} // ${bestLabel} ${topScore}`;
+      this.statsText.style.fontSize = layout.isMobile ? 13 : 14;
+    this.statsText.style.lineHeight = layout.isMobile ? 15 : 16;
     this.statsText.anchor.set(0, 0.5);
     this.statsText.style.align = 'left';
     this.statsText.x = x;
     this.statsText.y = y + deckHeight / 2;
-    fitTextToWidth(this.statsText, deckWidth, layout.isMobile ? 10 : 12);
+    fitTextToWidth(this.statsText, deckWidth, layout.isMobile ? 11 : 12);
   }
 
   startAnimationLoop() {
@@ -2084,6 +2178,16 @@ export class HighscoreScene {
         this.returnToMenu('escape');
         return;
       }
+      if (event.key === 'PageUp') {
+        event.preventDefault();
+        this.changeLeaderboardPage(-1);
+        return;
+      }
+      if (event.key === 'PageDown') {
+        event.preventDefault();
+        this.changeLeaderboardPage(1);
+        return;
+      }
       if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
         event.preventDefault();
         this.moveHighscoreFocus(-1);
@@ -2102,6 +2206,8 @@ export class HighscoreScene {
     updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+    if (nav.pressed.lb) this.changeLeaderboardPage(-1);
+    if (nav.pressed.rb) this.changeLeaderboardPage(1);
     if (nav.pressed.left || nav.pressed.up) this.moveHighscoreFocus(-1);
     if (nav.pressed.right || nav.pressed.down) this.moveHighscoreFocus(1);
     if (nav.pressed.confirm) this.activateHighscoreFocus();

@@ -1083,13 +1083,16 @@ function buildGameTextState(game) {
       tabs: highscoreScene.leaderboardTabs?.map(tab => tab.id) || [],
       status: highscoreScene.status || null,
       sourceLabel: highscoreScene.activeLeaderboardResult?.sourceLabel || null,
-      rows: highscoreScene.entries?.map(entry => ({
+      rows: highscoreScene.entriesNormalized?.map(entry => ({
         rank: entry.rank || null,
         name: entry.name || entry.playerName || null,
         score: entry.score || 0,
         level: entry.level || 0,
-        source: entry.source || null
+        source: entry.source || null,
+        cpuRival: entry.isCpuRival === true
       })) || [],
+      page: (Number(highscoreScene.leaderboardPage) || 0) + 1,
+      pageCount: Number(highscoreScene.leaderboardPageCount) || 1,
       rowLayout: highscoreScene.rowLayoutDebug || [],
       manifestRanges: highscoreScene.manifestRanges || [],
       runtime: game?.leaderboardAdapter?.getRuntimeSummary ? game.leaderboardAdapter.getRuntimeSummary() : null

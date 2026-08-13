@@ -1,5 +1,6 @@
 const RANKED_RUN_MODES = new Set(['ranked', 'ranked_tactical']);
 const OVERRUN_RUN_MODES = new Set(['overrun_pure', 'overrun_tactical']);
+const TOUR_RUN_MODES = new Set([...RANKED_RUN_MODES, ...OVERRUN_RUN_MODES, 'sector_start']);
 const OVERRUN_START_SECTOR = 51;
 const OVERRUN_CLEAR_SECTOR = 60;
 
@@ -90,11 +91,13 @@ export function normalizeShipMasteryRecord(raw = {}) {
   const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
   const bestSector = Math.max(1, whole(source.bestSector ?? source.bestLevel, 1));
   const clears = whole(source.clears ?? source.runClears);
+  const overrunClears = whole(source.overrunClears);
   return {
     ...source,
     runs: whole(source.runs),
     clears,
-    overrunClears: whole(source.overrunClears),
+    overrunClears,
+    tours: whole(source.tours, clears + overrunClears),
     bestSector,
     bestScore: whole(source.bestScore),
     bestCombo: whole(source.bestCombo),
@@ -191,6 +194,7 @@ export function mergeShipMasteryMaps(localMap = {}, cloudMap = {}) {
       runs: Math.max(a.runs, b.runs),
       clears: Math.max(a.clears, b.clears),
       overrunClears: Math.max(a.overrunClears, b.overrunClears),
+      tours: Math.max(a.tours, b.tours),
       bestSector: Math.max(a.bestSector, b.bestSector),
       bestScore: Math.max(a.bestScore, b.bestScore),
       bestCombo: Math.max(a.bestCombo, b.bestCombo),
@@ -277,6 +281,7 @@ export function recordShipOverrunCompletion(rawMap = {}, summary = {}, {
   const nextRecord = normalizeShipMasteryRecord({
     ...previousRecord,
     overrunClears: previousRecord.overrunClears + 1,
+    tours: previousRecord.tours + 1,
     lastRunAt: completedAt
   });
   milestones[shipId] = nextRecord;
@@ -286,6 +291,56 @@ export function recordShipOverrunCompletion(rawMap = {}, summary = {}, {
     previous,
     current: getShipMasteryView(nextRecord),
     recorded: true
+  };
+}
+
+export function recordShipTourCompletion(rawMap = {}, summary = {}, {
+  completedAt = new Date().toISOString()
+} = {}) {
+  const milestones = normalizeShipMasteryMap(rawMap);
+  const shipId = normalizeShipId(summary.shipId || summary.selectedShipSpriteKey);
+  const runMode = String(summary.runMode || '').trim();
+  const startSector = Math.max(1, whole(summary.startSector, 1));
+  const sectorReached = Math.max(1, whole(summary.sectorReached ?? summary.levelReached, 1));
+  const eligibleRun = summary.isDebugRun !== true
+    && summary.runRewardsSuppressed !== true
+    && summary.lateGameExperimentActive !== true
+    && summary.quickStart !== true;
+  const rankedTour = RANKED_RUN_MODES.has(runMode) && summary.runCleared === true;
+  const overrunTour = OVERRUN_RUN_MODES.has(runMode)
+    && startSector === OVERRUN_START_SECTOR
+    && sectorReached >= OVERRUN_CLEAR_SECTOR
+    && summary.overrunCompletionEarned === true
+    && summary.overrunCompletionRecorded !== true;
+  // Sector runs do not own a terminal clear. Reaching the eleventh sector
+  // proves that ten complete sectors were survived from the chosen checkpoint.
+  const sectorTour = runMode === 'sector_start' && sectorReached >= startSector + 10;
+  const legitimateCompletion = Boolean(
+    shipId
+    && TOUR_RUN_MODES.has(runMode)
+    && eligibleRun
+    && (rankedTour || overrunTour || sectorTour)
+    && summary.shipTourCompletionRecorded !== true
+  );
+  const previousRecord = normalizeShipMasteryRecord(milestones[shipId]);
+  const previous = getShipMasteryView(previousRecord);
+  if (!legitimateCompletion) {
+    return { milestones, shipId: shipId || null, previous, current: previous, recorded: false, source: null };
+  }
+  const nextRecord = normalizeShipMasteryRecord({
+    ...previousRecord,
+    tours: previousRecord.tours + 1,
+    overrunClears: previousRecord.overrunClears + (overrunTour ? 1 : 0),
+    lastRunAt: completedAt
+  });
+  milestones[shipId] = nextRecord;
+  return {
+    milestones,
+    shipId,
+    previous,
+    current: getShipMasteryView(nextRecord),
+    recorded: true,
+    source: rankedTour ? 'ranked' : overrunTour ? 'overrun' : 'sector'
   };
 }
 

@@ -171,6 +171,7 @@ export function createRunReport(summary = {}) {
         runs: toWholeNumber(summary.shipMastery.runs),
         clears: toWholeNumber(summary.shipMastery.clears),
         overrunClears: toWholeNumber(summary.shipMastery.overrunClears),
+        tours: toWholeNumber(summary.shipMastery.tours),
         newTier: summary.newShipMasteryTier?.id
           ? {
               id: String(summary.newShipMasteryTier.id),
@@ -179,13 +180,13 @@ export function createRunReport(summary = {}) {
           : null
       }
     : null;
-  const shipOverrun = summary.shipOverrun || summary.shipMastery;
-  const overrunClears = toWholeNumber(shipOverrun?.overrunClears);
-  const overrunCompletion = overrunClears > 0
+  const shipTour = summary.shipTour || summary.shipMastery;
+  const tours = toWholeNumber(shipTour?.tours);
+  const tourCompletion = tours > 0
     ? {
-        clears: overrunClears,
-        earnedThisRun: summary.shipOverrunCompletionRecorded === true
-          || summary.overrunCompletionRecorded === true
+        tours,
+        earnedThisRun: summary.shipTourCompletionRecorded === true,
+        source: String(summary.shipTourCompletionSource || '') || null
       }
     : null;
   const scoutAnomaly = canonicalRunMode === RUN_MODES.SCOUT && summary.scoutAnomalyId
@@ -347,7 +348,7 @@ export function createRunReport(summary = {}) {
       pointDefenseIntercepts: toWholeNumber(summary.pointDefenseIntercepts),
       combatTelemetry,
       shipMastery,
-      overrunCompletion,
+      tourCompletion,
       scoutAnomaly,
       runCleared: Boolean(summary.runCleared),
       clearLifeLosses: toWholeNumber(summary.clearLifeLosses ?? summary.lifeLosses),
@@ -431,10 +432,10 @@ export function createRunReport(summary = {}) {
           { id: 'powerups', value: toWholeNumber(summary.powerupsCollected) },
           { id: 'careerXp', value: toWholeNumber(summary.pilotXpGained) },
           ...(shipMastery ? [{ id: 'shipMastery', value: shipMastery.tierLabel, rawValue: shipMastery }] : []),
-          ...(overrunCompletion ? [{
-            id: 'overrunClears',
-            value: overrunCompletion.clears,
-            rawValue: overrunCompletion
+          ...(tourCompletion ? [{
+            id: 'shipTours',
+            value: tourCompletion.tours,
+            rawValue: tourCompletion
           }] : []),
           { id: 'tacticalDrafts', value: tacticalDraftPicks, rawValue: tacticalDraftPicks },
           { id: 'tacticalDirectives', value: tacticalDirectives.completedCount, rawValue: tacticalDirectives },

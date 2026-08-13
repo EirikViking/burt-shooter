@@ -2852,6 +2852,10 @@ export class EnemyManager {
       if (enemy.challengeFlightReticle) {
         enemy.challengeFlightReticle.rotation += delta * 0.018;
         enemy.challengeFlightReticle.alpha = 0.72 + (Math.sin(Date.now() * 0.009 + (enemy.x || 0) * 0.01) * 0.5 + 0.5) * 0.28;
+        if (enemy.sprite) {
+          const hologramPulse = Math.sin(Date.now() * 0.014 + (enemy.x || 0) * 0.016);
+          enemy.sprite.alpha = 0.48 + (hologramPulse * 0.5 + 0.5) * 0.18;
+        }
       }
 
       if (this.expireChallengeFlightTarget(enemy)) {
@@ -3037,16 +3041,28 @@ export class EnemyManager {
     if (enemy.sprite) {
       const reticle = new PIXI.Graphics();
       const radius = Math.max(23, (Number(enemy.radius) || 16) * 1.65);
+      enemy.sprite.alpha = 0.56;
+      if (enemy.body) enemy.body.alpha = 0.42;
+      if (enemy.hullDetailLayer) enemy.hullDetailLayer.alpha = 0.34;
       reticle.circle(0, 0, radius);
-      reticle.stroke({ color: 0xffdf66, width: 2.5, alpha: 0.9 });
+      reticle.stroke({ color: 0x58efff, width: 2.2, alpha: 0.72 });
       reticle.circle(0, 0, radius + 7);
-      reticle.stroke({ color: 0x7ee9ff, width: 1.4, alpha: 0.62 });
+      reticle.stroke({ color: 0xd56bff, width: 1.2, alpha: 0.46 });
       for (let marker = 0; marker < 4; marker += 1) {
         const angle = marker * Math.PI / 2;
         reticle.moveTo(Math.cos(angle) * (radius + 3), Math.sin(angle) * (radius + 3));
         reticle.lineTo(Math.cos(angle) * (radius + 13), Math.sin(angle) * (radius + 13));
       }
-      reticle.stroke({ color: 0xffffff, width: 2, alpha: 0.8 });
+      reticle.stroke({ color: 0x8ff7ff, width: 1.4, alpha: 0.68 });
+      for (let scanline = -2; scanline <= 2; scanline += 1) {
+        const y = scanline * radius * 0.32;
+        const halfWidth = Math.sqrt(Math.max(0, radius * radius - y * y)) * 0.72;
+        reticle.moveTo(-halfWidth, y);
+        reticle.lineTo(halfWidth, y);
+      }
+      reticle.stroke({ color: 0x58efff, width: 1, alpha: 0.26 });
+      reticle.blendMode = 'add';
+      reticle._hologramVisual = true;
       reticle.label = 'challengeFlightTargetReticle';
       enemy.sprite.addChildAt(reticle, 0);
       enemy.ownedVisuals?.push(reticle);
@@ -5913,7 +5929,7 @@ export class EnemyManager {
       const descriptor = this.getWaveDescriptor(this.pendingWaveConfig);
       const waveLabel = `${translateText('WAVE')} ${this.currentWaveIndex + 1}/${this.normalWavesTotal}`;
       const message = isChallenge
-        ? translateText('SKILL FLIGHT: {pattern}\nBREAK TARGETS BEFORE THEY EXIT', {
+        ? translateText('SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE', {
           pattern: translateText(challengePattern)
         })
         : isAuthoredHighSector

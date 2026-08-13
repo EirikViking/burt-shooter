@@ -233,6 +233,7 @@ const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
 const runWithoutMeasurement = (_label, callback) => callback();
 const TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS = 520;
 const TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES = 24;
+const TACTICAL_DRAFT_BUILD_LOCK_HOLD_MS = 1100;
 const GAME_OVER_CELEBRATION_DURATION_MS = 1700;
 const TACTICAL_DRAFT_CATEGORY_COLORS = Object.freeze({
   offense: 0xff647f,
@@ -310,6 +311,7 @@ export class PlayScene {
     this.tacticalDraft = null;
     this.tacticalDraftHistory = [];
     this.tacticalDraftPassHistory = [];
+    this.tacticalDraftBuildLocked = false;
     this.tacticalDraftRecentOfferIds = [];
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
@@ -909,6 +911,7 @@ export class PlayScene {
     this.clearTacticalDraft('run_reset');
     this.tacticalDraftHistory = [];
     this.tacticalDraftPassHistory = [];
+    this.tacticalDraftBuildLocked = false;
     this.tacticalDraftRecentOfferIds = [];
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
@@ -7030,7 +7033,7 @@ export class PlayScene {
     const height = this.game.getHeight();
     const compact = width < 720;
     const panelWidth = Math.min(width - 28, compact ? 330 : 410);
-    const panelHeight = compact ? 88 : 102;
+    const panelHeight = compact ? 102 : 118;
     const container = new PIXI.Container();
     container.x = 18;
     container.y = height - panelHeight - 18;
@@ -7084,6 +7087,19 @@ export class PlayScene {
     pattern.y = compact ? 32 : 39;
     container.addChild(pattern);
 
+    const safety = createText(translateText('HOLOGRAM TARGETS // CONTACT SAFE'), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 10 : 12,
+      fill: '#9fffd7',
+      fontWeight: '900',
+      letterSpacing: 0.4
+    });
+    safety.x = title.x;
+    safety.y = compact ? 51 : 60;
+    const safetyMaxWidth = panelWidth - safety.x - 16;
+    safety.scale.set(Math.min(1, safetyMaxWidth / Math.max(1, safety.width)));
+    container.addChild(safety);
+
     const status = createText('', {
       fontFamily: FONT_BODY,
       fontSize: compact ? 13 : 15,
@@ -7093,7 +7109,7 @@ export class PlayScene {
     });
     status.anchor.set(1, 0);
     status.x = panelWidth - 15;
-    status.y = compact ? 54 : 63;
+    status.y = compact ? 70 : 82;
     container.addChild(status);
 
     this.uiContainer.addChild(container);
@@ -7117,6 +7133,7 @@ export class PlayScene {
       frame,
       progress,
       pattern,
+      safety,
       status,
       reticle,
       animate,
@@ -7151,6 +7168,7 @@ export class PlayScene {
       ...hud.state,
       title: translateText('CABINET SKILL FLIGHT'),
       pattern: hud.pattern.text,
+      safety: hud.safety.text,
       status: hud.status.text,
       panelWidth: hud.panelWidth,
       panelHeight: hud.panelHeight,
@@ -10015,6 +10033,7 @@ export class PlayScene {
   openTacticalDraft({ sectorCleared = this.game?.level || 1, onComplete = null } = {}) {
     if (this.game?.lateGameExperiment?.draftMode === 'disabled') return false;
     if (!canRunModeUseTacticalDraft(this.game?.runMode)) return false;
+    if (this.tacticalDraftBuildLocked && this.game?.lateGameExperiment?.active !== true) return false;
     if (this.tacticalDraft?.active || !this.player || !this.uiOverlay) return Boolean(this.tacticalDraft?.active);
     this.awardTacticalDraftBanMilestones(sectorCleared);
     const ineffectiveIds = this.getIneffectiveTacticalDraftOfferIds();
@@ -10144,6 +10163,9 @@ export class PlayScene {
       onComplete: typeof onComplete === 'function' ? onComplete : null,
       openedAt: Date.now(),
       inputArmed: false,
+      passHoldStartedAt: 0,
+      passHoldSource: null,
+      passHoldProgress: 0,
       pulse: 0,
       compact: false
     };
@@ -10528,10 +10550,29 @@ export class PlayScene {
       strokeThickness: 2,
       align: 'center'
     });
+    const consequence = createText(translateText('NO MORE DRAFTS THIS RUN'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 8,
+      fill: '#ffdf8a',
+      stroke: '#00111d',
+      strokeThickness: 1,
+      align: 'center'
+    });
     label.anchor.set(0.5);
-    control.addChild(bg, label);
-    control._nodes = { bg, label };
-    control.on('pointertap', () => this.passTacticalDraft('pointer'));
+    consequence.anchor.set(0.5);
+    consequence.y = 10;
+    control.addChild(bg, label, consequence);
+    control._nodes = { bg, label, consequence };
+    control.on('pointerdown', (event) => {
+      event?.stopPropagation?.();
+      this.startTacticalDraftPassHold('pointer');
+    });
+    const release = (event) => {
+      event?.stopPropagation?.();
+      this.releaseTacticalDraftPassHold('pointer');
+    };
+    control.on('pointerup', release);
+    control.on('pointerupoutside', release);
     return control;
   }
 
@@ -10857,7 +10898,8 @@ export class PlayScene {
           width / 2 - controlsWidth / 2 + controlWidth / 2 + index * (controlWidth + controlGap),
           controlY
         );
-        control.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
+        const hitHeight = Number(control._draftLayout?.height) || controlHeight;
+        control.hitArea = new PIXI.Rectangle(-controlWidth / 2, -hitHeight / 2, controlWidth, hitHeight);
       });
       this.redrawTacticalDraftRescan();
       this.redrawTacticalDraftHold();
@@ -11483,14 +11525,37 @@ export class PlayScene {
     const available = Boolean(!state.confirmedId && !state.passed && state.inputArmed);
     nodes.bg.clear();
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
-    nodes.bg.fill({ color: available ? 0x15202a : 0x07111b, alpha: 0.94 });
+    const holdProgress = available ? Math.max(0, Math.min(1, Number(state.passHoldProgress) || 0)) : 0;
+    nodes.bg.fill({ color: holdProgress > 0 ? 0x251d08 : available ? 0x15202a : 0x07111b, alpha: 0.94 });
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
-    nodes.bg.stroke({ color: available ? 0xa9c7d8 : 0x536572, width: 1.2, alpha: available ? 0.72 : 0.36 });
-    nodes.label.text = translateText(state.passed ? 'PASSED' : 'Q / B  PASS');
+    nodes.bg.stroke({ color: holdProgress > 0 ? 0xffd15c : available ? 0xa9c7d8 : 0x536572, width: holdProgress > 0 ? 1.8 : 1.2, alpha: available ? 0.82 : 0.36 });
+    if (holdProgress > 0) {
+      nodes.bg.roundRect(-layout.width / 2 + 3, layout.height / 2 - 6, Math.max(0, (layout.width - 6) * holdProgress), 3, 2);
+      nodes.bg.fill({ color: 0xffd15c, alpha: 0.92 });
+    }
+    nodes.label.text = translateText(state.passed
+      ? (state.result?.buildLocked ? 'BUILD LOCKED' : 'PASSED')
+      : holdProgress > 0
+        ? 'LOCKING BUILD {percent}%'
+        : 'PASS // HOLD: LOCK BUILD', {
+      percent: Math.round(holdProgress * 100)
+    });
     nodes.label.scale.set(1);
     nodes.label.updateText?.(false);
-    nodes.label.scale.set(Math.min(1, Math.max(0.58, (layout.width - 18) / Math.max(1, nodes.label.width))));
-    nodes.label.style.fill = available ? '#d8e8ef' : '#71848f';
+    nodes.label.y = state.passed ? 0 : -7;
+    nodes.label.scale.set(Math.min(1, Math.max(0.4, (layout.width - 18) / Math.max(1, nodes.label.width))));
+    nodes.label.style.fill = holdProgress > 0 ? '#fff3a0' : available ? '#d8e8ef' : '#71848f';
+    if (nodes.consequence) {
+      nodes.consequence.text = translateText(state.passed && state.result?.buildLocked
+        ? 'NO MORE DRAFTS THIS RUN'
+        : 'LOCK BUILD = NO MORE DRAFTS THIS RUN');
+      nodes.consequence.visible = !state.passed || Boolean(state.result?.buildLocked);
+      nodes.consequence.y = 10;
+      nodes.consequence.scale.set(1);
+      nodes.consequence.updateText?.(false);
+      nodes.consequence.scale.set(Math.min(1, Math.max(0.36, (layout.width - 12) / Math.max(1, nodes.consequence.width))));
+      nodes.consequence.style.fill = holdProgress > 0 ? '#fff3a0' : '#ffdf8a';
+    }
     control.alpha = available ? 1 : 0.68;
     control.cursor = available ? 'pointer' : 'default';
   }
@@ -11561,7 +11626,39 @@ export class PlayScene {
     return true;
   }
 
-  passTacticalDraft(source = 'unknown') {
+  startTacticalDraftPassHold(source = 'unknown') {
+    const state = this.tacticalDraft;
+    if (!state?.active || state.confirmedId || state.passed || !state.inputArmed) return false;
+    if (!state.passHoldStartedAt) {
+      state.passHoldStartedAt = Date.now();
+      state.passHoldSource = source;
+      state.passHoldProgress = 0;
+      this.redrawTacticalDraftPass();
+    }
+    return true;
+  }
+
+  releaseTacticalDraftPassHold(source = 'unknown') {
+    const state = this.tacticalDraft;
+    if (!state?.active || !state.passHoldStartedAt || state.passed) return false;
+    const elapsed = Math.max(0, Date.now() - state.passHoldStartedAt);
+    state.passHoldStartedAt = 0;
+    state.passHoldProgress = 0;
+    state.passHoldSource = null;
+    if (elapsed >= TACTICAL_DRAFT_BUILD_LOCK_HOLD_MS) return this.lockTacticalDraftBuild(source);
+    return this.passTacticalDraft(source);
+  }
+
+  lockTacticalDraftBuild(source = 'unknown') {
+    const state = this.tacticalDraft;
+    if (!state?.active || state.confirmedId || state.passed || !state.inputArmed) return false;
+    if (this.game?.lateGameExperiment?.active === true) return this.passTacticalDraft(source);
+    this.tacticalDraftBuildLocked = true;
+    this.tacticalDraftHeldId = null;
+    return this.passTacticalDraft(source, { lockBuild: true });
+  }
+
+  passTacticalDraft(source = 'unknown', { lockBuild = false } = {}) {
     const state = this.tacticalDraft;
     if (!state?.active || state.confirmedId || state.passed) return false;
     if (!state.inputArmed && source !== 'pointer') return false;
@@ -11580,9 +11677,14 @@ export class PlayScene {
     state.passed = true;
     state.passedAt = Date.now();
     state.inputArmed = false;
-    state.result = { passed: true };
-    state.title.text = translateText('DRAFT PASSED');
-    state.subtitle.text = translateText('No upgrade installed. Flight continues.');
+    state.passHoldStartedAt = 0;
+    state.passHoldProgress = 0;
+    state.passHoldSource = null;
+    state.result = { passed: true, buildLocked: Boolean(lockBuild) };
+    state.title.text = translateText(lockBuild ? 'BUILD LOCKED' : 'DRAFT PASSED');
+    state.subtitle.text = translateText(lockBuild
+      ? 'Current upgrades kept. Future Drafts disabled for this run.'
+      : 'No upgrade installed. Flight continues.');
     state.cards.forEach((card) => {
       card.alpha = 0.54;
       this.redrawTacticalDraftCard(card);
@@ -11590,6 +11692,7 @@ export class PlayScene {
     this.tacticalDraftPassHistory.push({
       sectorCleared: state.sectorCleared,
       passed: true,
+      buildLocked: Boolean(lockBuild),
       scoreRouteDecision: state.scoreRouteDecision || null,
       source
     });
@@ -11604,7 +11707,7 @@ export class PlayScene {
       this.clearTacticalDraft('passed');
       this.externalPauseSuppressedUntil = Date.now() + 600;
       if (state.wasPausedBeforeOpen && !this.isPaused) this.setPaused(true);
-      this.enqueueToast(translateText('NO UPGRADE INSTALLED'), {
+      this.enqueueToast(translateText(lockBuild ? 'BUILD LOCKED // NO MORE DRAFTS' : 'NO UPGRADE INSTALLED'), {
         fontSize: 16,
         fill: '#c7d8e0',
         slot: 'top',
@@ -11825,6 +11928,14 @@ export class PlayScene {
       this.updateTacticalDraftLockIn();
       return;
     }
+    if (state.passHoldStartedAt && state.passHoldSource === 'pointer') {
+      state.passHoldProgress = Math.max(0, Math.min(1,
+        (Date.now() - state.passHoldStartedAt) / TACTICAL_DRAFT_BUILD_LOCK_HOLD_MS));
+      if (state.passHoldProgress >= 1) {
+        this.lockTacticalDraftBuild('pointer');
+        return;
+      }
+    }
     const left = this.inputManager?.consumeKeyPress?.('ArrowLeft', 'KeyA', 'a', 'A');
     const right = this.inputManager?.consumeKeyPress?.('ArrowRight', 'KeyD', 'd', 'D');
     const up = this.inputManager?.consumeKeyPress?.('ArrowUp', 'KeyW', 'w', 'W');
@@ -11833,14 +11944,24 @@ export class PlayScene {
     const rescan = this.inputManager?.consumeKeyPress?.('KeyR', 'r', 'R');
     const hold = this.inputManager?.consumeKeyPress?.('KeyL', 'l', 'L');
     const ban = this.inputManager?.consumeKeyPress?.('KeyB', 'b', 'B');
-    const pass = this.inputManager?.consumeKeyPress?.('KeyQ', 'q', 'Q');
+    const keyboardPassDown = Boolean(this.inputManager?.isKeyPressed?.('KeyQ', 'q', 'Q'));
     if (left || up || nav.pressed.left || nav.pressed.up) this.setTacticalDraftFocus(state.focusIndex - 1);
     if (right || down || nav.pressed.right || nav.pressed.down) this.setTacticalDraftFocus(state.focusIndex + 1);
     if (confirm || nav.pressed.confirm) this.confirmTacticalDraft(state.focusIndex, nav.pressed.confirm ? 'gamepad' : 'keyboard');
     if (rescan || nav.pressed.y) this.rescanTacticalDraft(nav.pressed.y ? 'gamepad' : 'keyboard');
     if (hold || nav.pressed.x) this.toggleTacticalDraftHold(nav.pressed.x ? 'gamepad' : 'keyboard');
     if (ban || nav.pressed.rb) this.banTacticalDraftOffer(nav.pressed.rb ? 'gamepad' : 'keyboard');
-    if (pass || nav.pressed.cancel) this.passTacticalDraft(nav.pressed.cancel ? 'gamepad' : 'keyboard');
+    const passDown = Boolean(keyboardPassDown || nav.down.cancel);
+    if (passDown && !state.passHoldStartedAt) {
+      this.startTacticalDraftPassHold(nav.down.cancel ? 'gamepad' : 'keyboard');
+    }
+    if (passDown && state.passHoldStartedAt) {
+      state.passHoldProgress = Math.max(0, Math.min(1,
+        (Date.now() - state.passHoldStartedAt) / TACTICAL_DRAFT_BUILD_LOCK_HOLD_MS));
+      if (state.passHoldProgress >= 1) this.lockTacticalDraftBuild(state.passHoldSource || 'unknown');
+    } else if (!passDown && state.passHoldStartedAt && state.passHoldSource !== 'pointer') {
+      this.releaseTacticalDraftPassHold(state.passHoldSource || 'unknown');
+    }
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
     this.redrawTacticalDraftRescan();
     this.redrawTacticalDraftHold();
@@ -12529,6 +12650,10 @@ export class PlayScene {
       banBounds: boundsOf(state?.ban),
       passLabel: state?.pass?._nodes?.label?.text || null,
       passBounds: boundsOf(state?.pass),
+      buildLocked: Boolean(this.tacticalDraftBuildLocked),
+      passHoldProgress: Number(state?.passHoldProgress) || 0,
+      passHoldMs: state?.passHoldStartedAt ? Math.max(0, Date.now() - state.passHoldStartedAt) : 0,
+      buildLockHoldMs: TACTICAL_DRAFT_BUILD_LOCK_HOLD_MS,
       banAward: this.lastTacticalDraftBanAward ? { ...this.lastTacticalDraftBanAward } : null,
       lastBannedId: state?.lastBannedId || null,
       lastBanSource: state?.lastBanSource || null,

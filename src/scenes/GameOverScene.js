@@ -131,7 +131,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   powerups: 'Powerups',
   careerXp: 'Career XP',
   shipMastery: 'Ship mastery',
-  overrunClears: 'OVERRUN CLEARS',
+  shipTours: 'TOURS',
   newRanks: 'New ranks',
   codex: 'Codex discoveries',
   tacticalDrafts: 'Tactical upgrades',
@@ -1937,7 +1937,7 @@ export class GameOverScene {
       score: this.formatGoalNumber(projection.scoreToPass)
     };
     return projection.targetKind === 'board_gate'
-      ? translateText('TOP 40 GATE: #{rank} {name} // {score} MORE', values)
+      ? translateText('TOP 50 GATE: #{rank} {name} // {score} MORE', values)
       : translateText('NEXT RIVAL #{rank}: {name} // {score} MORE', values);
   }
 
@@ -5323,8 +5323,8 @@ export class GameOverScene {
         { tier, sector }
       );
     }
-    if (row.id === 'overrunClears') {
-      const count = Math.max(0, Math.floor(Number(row.rawValue?.clears ?? row.value) || 0));
+    if (row.id === 'shipTours') {
+      const count = Math.max(0, Math.floor(Number(row.rawValue?.tours ?? row.value) || 0));
       return row.rawValue?.earnedThisRun
         ? translateText('{count} // NEW THIS RUN', { count })
         : String(count);

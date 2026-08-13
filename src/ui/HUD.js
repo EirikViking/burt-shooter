@@ -646,11 +646,11 @@ export class HUD {
       ? 0xffef7e
       : (ratio >= 0.9 ? 0xff55d9 : (isRivalMode ? 0x37f5ff : (ratio >= 0.5 ? 0x7fffd8 : 0x37f5ff)));
     const label = rivalFlashActive
-      ? translateText(this.globalRivalFlash?.passedKind === 'board_gate' ? 'TOP 40 BREACHED' : 'RIVAL PASSED')
+      ? translateText(this.globalRivalFlash?.passedKind === 'board_gate' ? 'TOP 50 BREACHED' : 'RIVAL PASSED')
       : isRivalNumberOne
         ? translateText('PROJECTED #1')
         : rivalProjection?.targetKind === 'board_gate'
-          ? translateText('TOP 40 GATE')
+          ? translateText('TOP 50 GATE')
           : isRivalTarget
             ? translateText('RIVAL TARGET #{rank}', { rank: rivalProjection.targetRank })
             : isDailyClearGoal
@@ -889,6 +889,15 @@ export class HUD {
     }
     const play = this.game?.scenes?.play;
     const manager = play?.enemyManager;
+    const challengeFlight = manager?.getChallengeFlightDebugState?.();
+    if (challengeFlight?.active) {
+      const kills = Math.max(0, Number(challengeFlight.kills) || 0);
+      const total = Math.max(1, Number(challengeFlight.targetCount) || 1);
+      if (this.missionLabel) this.missionLabel.text = translateText('CABINET SKILL FLIGHT');
+      this.missionText.text = translateText('HOLOGRAM TARGETS {kills}/{total} // CONTACT SAFE', { kills, total });
+      this.updateMissionProgress({ state: 'CHALLENGE_FLIGHT', phase: 'SKILL', waveTotal: total, waveIndex: kills + 1, activeEnemies: 0, activeBullets: 0 });
+      return;
+    }
     const activeEnemies = manager?.enemies?.filter(enemy => enemy?.active !== false && enemy?.kind !== 'bonus_drone').length || 0;
     const activeBullets = play?.bulletManager?.enemyBullets?.filter(bullet => bullet?.active !== false).length || 0;
     const waveTotal = manager?.normalWavesTotal || 0;
@@ -997,13 +1006,32 @@ export class HUD {
     const rail = this.directiveProgressBg;
     const fill = this.directiveProgressFill;
     if (!this.directiveText || !rail || !fill) return;
-
     const width = Math.max(0, Number(rail.__w) || 0);
     const height = Math.max(0, Number(rail.__h) || 0);
     const x = Number(rail.__x) || 0;
     const y = Number(rail.__y) || 0;
     rail.clear();
     fill.clear();
+    const challengeFlight = play?.enemyManager?.getChallengeFlightDebugState?.();
+    if (challengeFlight?.active) {
+      const kills = Math.max(0, Number(challengeFlight.kills) || 0);
+      const total = Math.max(1, Number(challengeFlight.targetCount) || 1);
+      const ratio = Math.max(0, Math.min(1, kills / total));
+      this.directiveText.text = translateText('HOLOGRAM TARGETS {kills}/{total} // CONTACT SAFE', { kills, total });
+      this.directiveText.style.fill = '#8ff7ff';
+      this.directiveText.visible = true;
+      this.directiveText.scale.set(1);
+      this.fitTextToWidth(this.directiveText, Math.max(120, width), this.game.getWidth() < 1000 ? 0.78 : 0.62);
+      rail.visible = fill.visible = width > 0 && height > 0;
+      rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+      rail.fill({ color: 0x06141b, alpha: 0.9 });
+      rail.stroke({ color: 0x58efff, width: 0.9, alpha: 0.7 });
+      if (ratio > 0) {
+        fill.roundRect(x, y, Math.max(height, width * ratio), height, Math.max(1, height / 2));
+        fill.fill({ color: 0x58efff, alpha: 0.9 });
+      }
+      return;
+    }
 
     const ace = play?.getAceBountyDebugState?.()?.active;
     const compactAceReady = ace?.spawned && !ace?.completed && Date.now() >= (Number(ace.compactObjectiveReadyAt) || 0);
@@ -2796,7 +2824,7 @@ export class HUD {
     this.livesIcon.visible = false;
     this.livesText.style.fill = critical ? (pulse > 0.52 ? '#ff716d' : '#ffd166') : '#d9ffb8';
     const mastery = this.shipMasteryView || getShipMasteryView();
-    this.shipMasteryText.text = translateText('CLEARS ×{count}', { count: mastery.clears });
+    this.shipMasteryText.text = translateText('TOURS ×{count}', { count: mastery.tours });
     const height = Math.max(54, this.livesText.height + this.shipMasteryText.height + padding + 7);
     this.livesGroup.pivot.set(0, 0);
     this.livesText.x = 48;

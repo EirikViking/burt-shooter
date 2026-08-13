@@ -14,8 +14,8 @@ import { BUILD_ID } from '../buildInfo.js';
 import { getRunContractRewardXpForRun, normalizeRunContractsState } from './RunContracts.js';
 import {
   normalizeShipMasteryMap,
-  recordShipOverrunCompletion,
-  recordShipMasteryRun
+  recordShipMasteryRun,
+  recordShipTourCompletion
 } from './ShipMastery.js';
 import { markPersistenceDirty } from '../persistence/PersistenceScheduler.js';
 import {
@@ -723,9 +723,12 @@ export function applyRunProgression(summary = {}, {
   const shipMastery = updateCompetitiveBests
     ? recordShipMasteryRun(previous.shipSpecificMilestones, summary, { completedAt })
     : { milestones: previous.shipSpecificMilestones };
-  const shipOverrun = !updateCompetitiveBests
-    ? recordShipOverrunCompletion(shipMastery.milestones, summary, { completedAt })
-    : { milestones: shipMastery.milestones, recorded: false, current: shipMastery.current || null };
+  const shipTour = recordShipTourCompletion(shipMastery.milestones, summary, { completedAt });
+  const shipOverrun = {
+    milestones: shipTour.milestones,
+    recorded: shipTour.recorded === true && shipTour.source === 'overrun',
+    current: shipTour.current || shipMastery.current || null
+  };
   const newRanksThisRun = [];
   for (let rank = previous.pilotRank + 1; rank <= nextRank; rank += 1) {
     newRanksThisRun.push(rank);
@@ -759,7 +762,7 @@ export function applyRunProgression(summary = {}, {
     discoveredThreatIds: Array.isArray(summary.discoveredThreatIds) ? summary.discoveredThreatIds : [],
     defeatedBossIds: Array.isArray(summary.defeatedBossIds) ? summary.defeatedBossIds : [],
     runThemesSurvived: summary.runTheme ? [summary.runTheme] : [],
-    shipSpecificMilestones: shipOverrun.milestones,
+    shipSpecificMilestones: shipTour.milestones,
     newRanksThisRun
   }, {
     preserveLastUnlocks: false,
@@ -794,7 +797,8 @@ export function applyRunProgression(summary = {}, {
     newlyUnlockedShipIds: next.lastNewlyUnlockedShipIds,
     rankProgress: next.rankProgress,
     shipMastery,
-    shipOverrun
+    shipOverrun,
+    shipTour
   };
 }
 

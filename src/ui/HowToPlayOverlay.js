@@ -182,7 +182,7 @@ const TACTICS_HELP_ROWS = Object.freeze([
     icon: 'TOOLS',
     label: 'DRAFT TOOLS',
     control: 'R / Y: RESCAN // L / X: HOLD // Q / B: PASS',
-    tip: 'Rescan once, hold one card for the next boss, or pass without installing an upgrade. Drafts continue even when fewer than three valid offers remain.',
+    tip: 'Rescan once, hold one card for the next boss, tap Pass to skip one Draft, or hold Pass to lock your current build and stop later Drafts.',
     accent: 0x37f5ff
   },
   {
@@ -241,7 +241,7 @@ const INTEL_HELP_ROWS = Object.freeze([
     icon: 'SKILL',
     label: 'CABINET SKILL FLIGHT',
     control: 'SAFE TARGET DRILL // GRADED BONUS',
-    tip: 'A harmless one-hit target choreography tests aim during a live run. Break targets before they exit for a grade and bounded bonus score; misses do not break no-hit status.',
+    tip: 'Harmless hologram targets test aim during a live run. Break them before they exit for a grade and bounded bonus; touching or missing them cannot damage the ship or break no-hit status.',
     accent: 0x66ffdd
   },
   {
@@ -268,7 +268,7 @@ const CAREER_HELP_ROWS = Object.freeze([
     icon: 'HULL',
     label: 'SHIP HANGAR',
     control: 'HULLS // TRAITS // MASTERY MEDALS',
-    tip: 'Ranked Mayhem runs now earn per-ship Bronze, Silver, and Gold mastery medals. Inspect each hull, trait, starting loadout, medal goal, unlock condition, and cleared Pilot Order in the Hangar.',
+    tip: 'Ranked Mayhem earns Bronze, Silver, and Gold ship medals. Tours count legitimate ten-sector flights in Mayhem, Overrun, or Sector Run without changing ranked mastery.',
     accent: 0x37f5ff
   },
   {
@@ -320,7 +320,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   'TACTICAL DRAFT': 'Every boss leaves behind up to three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
   'FUSION PROTOCOLS': 'Fusion Protocols unlock only when you own both listed augments. Rift Reprisal returns Phase-cleared bullets; Drone Constellation creates every-fourth-volley crossfire; Aegis Reactor turns shield break into a purge; Sky Verdict routes orbital charges through bomb markers. Inspect active protocols in Tactical upgrades.',
   'SCORE ROUTE & BANS': 'Combo Anchor is the fixed, marked scoring offer in Sector 5, so a serious score attempt never depends on an early random draw. Start with two permanent bans, then earn another every 15 sectors cleared in this run, with up to five banked. Ban an offer to remove that augment from later Drafts.',
-  'DRAFT TOOLS': 'Rescan replaces the available offers once per run and never grants an extra augment. Hold preserves one card for the next boss Draft while you choose another. Pass installs nothing and continues the flight. Drafts remain usable when the valid pool falls below three.',
+  'DRAFT TOOLS': 'Rescan once, hold one card for the next boss, tap Pass to skip one Draft, or hold Pass to lock your current build and stop later Drafts.',
   'DRAFT RESCAN': 'One rescan replaces all three offers and cannot be refunded, photocopied, or argued with. Spend it when the entire page misses your build. Mild disappointment is not an emergency; three dead choices are.',
   'DRAFT HOLD': 'Hold is a promise to your future build. Mark one card, choose something else, and the marked hardware returns after the next boss. Holding a different card replaces the promise; taking the held card closes the contract.',
   'POWERUP OVERLAP': 'The timed rack normally pairs one offense lane with one support lane; a few linked pairs can share a lane. Same-name pickups add time or charges up to a two-pickup cap; a new pickup replaces only its own lane. Hybrid spectacle powerups stay exclusive. Permanent Draft hardware waits underneath and resumes when matching temporary hardware expires.',
@@ -329,9 +329,9 @@ const HELP_DETAIL_COPY = Object.freeze({
   'ACE BOUNTIES': 'One marked Ace appears during every sector. Its four-digit Ace number identifies one of one thousand chassis, flight, and weapon combinations. A five-digit Nemesis number adds one of ten thousand personal protocols. The Ace wave also draws one of ten thousand Rival Wings: formation, discipline, synchronized volley, and morale response. The framed escorts transform with the Ace phase, but enemy count, score value, and leaderboard rules stay unchanged.',
   'EXTINCTION-CLASS CONTACT': 'The 0.4 percent contact is a survival emergency, not a treasure break. Its voice, siren, warning geometry, and three escalation phases announce increasingly lethal patterns. Clear space before each lock, move after the telegraph commits, and punish the rare cooldown. The reward is strong; staying alive is stronger.',
   'ELITE SIGNALS': 'Nova Swarm fields fifty elite hulls, including thirty expanded specialists across ten combat families. Their entry flash, charge sound, colored geometry, and active effect reveal the problem before it lands. Solve the system first: leave the marked lane, break the tether, clear satellites, or destroy the beacon—then focus the hull.',
-  'CABINET SKILL FLIGHT': 'A Skill Flight temporarily introduces a deterministic formation of harmless one-hit targets. The targets do not shoot, collide, or compromise no-hit integrity. Read the choreography, lead your shots, and clear as many as possible before they exit for a PERFECT, A, B, C, or MISS grade and a bounded score bonus.',
+  'CABINET SKILL FLIGHT': 'A Skill Flight temporarily introduces harmless one-hit hologram targets. They never shoot, deal contact damage, or compromise no-hit integrity. Read the choreography, lead your shots, and clear as many as possible before they exit for a PERFECT, A, B, C, or MISS grade and a bounded score bonus.',
   'BOSS WAVES': 'Boss danger often comes from the room around the health bar. Remove healers and support ships, respect phase telegraphs, then commit damage during the safe opening. In Mayhem Tactical, defeating the boss pauses the fight for a three-card Draft. In Mayhem Pure, the battle continues without upgrades.',
-  'SHIP HANGAR': 'The Hangar is the roster and career desk. Each hull now has its own ranked Mayhem mastery track: reach Sector 3 for Bronze, Sector 6 for Silver, and clear a run for Gold. Scout, Sector, and Daily runs never advance these medals.',
+  'SHIP HANGAR': 'The Hangar is the roster and career desk. Each hull has ranked Mayhem medals: Sector 3 for Bronze, Sector 6 for Silver, and a clear for Gold. Tours are separate veteran marks: one legitimate ten-sector flight in Mayhem, Overrun, or Sector Run. Scout and Daily do not award Tours.',
   'THREAT CODEX': 'The Codex records what you have actually encountered. Use its categories to study enemy silhouettes, elite systems, attack patterns, wave tactics, boss behavior, powerups, augments, sectors, themes, Cabinet logs, and rank milestones. Unknown entries remain unknown until you meet them.',
   'RECORDS & LEADERBOARDS': 'Mayhem Pure, Mayhem Tactical, and Sector Run keep their existing separate Steam lanes. Combat telemetry is local feedback only: effective damage, average and peak DPS, projectile accuracy, and top damage source appear in pause and Flight Report without altering score, XP, or submissions.'
 });

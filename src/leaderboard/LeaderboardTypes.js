@@ -7,7 +7,7 @@ import {
   parseRunMode
 } from '../game/RunMode.js';
 
-export const LEADERBOARD_DISPLAY_LIMIT = 40;
+export const LEADERBOARD_DISPLAY_LIMIT = 50;
 export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 export const STEAM_LEADERBOARD_COMMUNITY_NAME = 'Global High Score';
 export const STEAM_TACTICAL_LEADERBOARD_NAME = 'nova_swarm_tactical_score_v1';

@@ -57,16 +57,15 @@ const MAYHEM_NOUNS = [
   'Trophy', 'Panic Button', 'Circuit Judge', 'Snack Machine', 'Tax Orbit', 'Laundry Cannon'
 ];
 
-const MAYHEM_SFX = [
+export const GENERATED_ENEMY_DEATH_SFX = Object.freeze([
   'enemy_explode',
   'explosionCrunch',
   'nova_danger_mid_pop',
   'impactMetal',
-  'spawn_special',
   'boss_damage_armor_crack',
   'nova_fuel_ship_pop',
   'elite_death'
-];
+]);
 
 const EARLY_SURGE_PREFIXES = [
   'Tiny', 'Illegal', 'Velcro', 'Snack', 'Turbo', 'Budget', 'Neon', 'Parking', 'Quantum', 'Wobbly',
@@ -257,7 +256,7 @@ function buildMayhemProfile(extraIndex, unlockLevel, slot, tint, accent) {
       'chrome_snack_uprising'
     ][extraIndex % 8],
     mayhemTier: 1 + Math.floor(extraIndex / 59),
-    deathSfx: MAYHEM_SFX[extraIndex % MAYHEM_SFX.length],
+    deathSfx: GENERATED_ENEMY_DEATH_SFX[extraIndex % GENERATED_ENEMY_DEATH_SFX.length],
     deathBurstCount: 1 + (extraIndex % 3),
     deathBurstRadius: 12 + (extraIndex % 5) * 4,
     deathSparkCount: 8 + (extraIndex % 6) * 2,
@@ -287,7 +286,7 @@ function buildEarlySurgeProfile(surgeIndex, slot, tint, accent) {
     ][surgeIndex % 10],
     surgeIndex,
     behaviorSeed: 100000 + surgeIndex,
-    deathSfx: MAYHEM_SFX[(surgeIndex * 3 + slot) % MAYHEM_SFX.length],
+    deathSfx: GENERATED_ENEMY_DEATH_SFX[(surgeIndex * 3 + slot) % GENERATED_ENEMY_DEATH_SFX.length],
     deathBurstCount: 1 + (surgeIndex % 2),
     deathBurstRadius: 8 + (surgeIndex % 4) * 2,
     deathSparkCount: 4 + (surgeIndex % 5),

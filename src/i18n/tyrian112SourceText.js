@@ -1,3 +1,5 @@
+import { getTyrian125SourceText } from './tyrian125SourceText.js';
+
 const ENTRIES = Object.freeze({
   de: {
     'SPECIAL FIRE': 'SPEZIALSCHUSS',
@@ -142,5 +144,5 @@ const ENTRIES = Object.freeze({
 });
 
 export function getTyrian112SourceText(locale) {
-  return ENTRIES[locale] || {};
+  return { ...(ENTRIES[locale] || {}), ...getTyrian125SourceText(locale) };
 }
