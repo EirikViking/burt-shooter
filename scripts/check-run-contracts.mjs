@@ -1210,7 +1210,6 @@ async function runBrowserSmoke() {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return (state.toast?.active || []).some((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
     }, null, { timeout: 5000 });
-    await page.evaluate(() => window.__game?.scenes?.play?.flushDeferredRunContractProgress?.(true));
     const nonFinalCompletionResult = await page.evaluate(() => {
       const textState = JSON.parse(window.render_game_to_text?.() || '{}');
       const profile = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');
@@ -1646,7 +1645,6 @@ async function runBrowserSmoke() {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return (state.toast?.active || []).some((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
     }, null, { timeout: 5000 });
-    await page.evaluate(() => window.__game?.scenes?.play?.flushDeferredRunContractProgress?.(true));
     const completionResult = await page.evaluate(() => {
       const textState = JSON.parse(window.render_game_to_text?.() || '{}');
       const profile = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');
