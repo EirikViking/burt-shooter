@@ -643,9 +643,8 @@ async function runSmoke() {
         && !toast.imageAlias
       ));
     }, null, { timeout: 15000 });
-    await storyPage.waitForTimeout(500);
-    await storyPage.screenshot({ path: path.join(outputDir, '05-cabinet-log-compact.png'), fullPage: true });
     const storyTransmissionState = await collectGameState(storyPage);
+    await storyPage.screenshot({ path: path.join(outputDir, '05-cabinet-log-compact.png'), fullPage: true });
     await storyPage.close();
     logStep('compact Cabinet Log captured');
 
