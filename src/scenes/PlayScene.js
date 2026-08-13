@@ -81,6 +81,11 @@ import {
   resolveGameplayBackdropMode,
   sampleGameplayBackdropMotion
 } from '../config/GameplayBackdropMotion.js';
+import {
+  getCombatClarityBackdropTreatment,
+  resolveCombatClarityPressure,
+  stepCombatClarityLevel
+} from '../config/CombatClarityPresentation.js';
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import { getShipIntroTiming, isReturningPilot } from '../config/RetentionPresentation.js';
 import { getPowerupMeta } from '../config/PowerupCatalog.js';
@@ -416,9 +421,20 @@ export class PlayScene {
     this.gameplayBackdropElapsedMs = 0;
     this.gameplayBackdropWidth = 0;
     this.gameplayBackdropHeight = 0;
+    this.gameplayBackdropRawAlphas = null;
+    this.cosmicNebulaHaze = null;
+    this.combatBackdropClarity = {
+      level: 0,
+      target: 0,
+      latched: false,
+      hostileProjectiles: 0,
+      attackWarningActive: false,
+      treatment: getCombatClarityBackdropTreatment(0)
+    };
     this.activeMayhemReinforcementWarning = null;
     this.activeMayhemRoutineWarning = null;
     this.novaCommandTacticalAlertUntil = 0;
+    this.routineFocusLaneBlockUntil = 0;
     this.bossDefeatedHudTimeout = null;
     this.lastBossDefeatedLifecycle = null;
     this.lastBossDeathImpact = null;
@@ -1952,7 +1968,9 @@ export class PlayScene {
       priority: 4,
       duration: 1100,
       extraReadTimeMs: 0,
-      accent: 0xffef7e
+      accent: 0xffef7e,
+      routineFocusLane: true,
+      maxQueueAgeMs: 1800
     });
     AudioManager.playSfx('achievement', { force: true, volume: 0.72, minIntervalMs: 280 });
   }
@@ -8484,6 +8502,7 @@ export class PlayScene {
     nebula.fill({ color: 0x4444ff, alpha: 0.03 });
     nebula.circle(width * 0.7, height * 0.6, 200);
     nebula.fill({ color: 0xff4488, alpha: 0.02 });
+    this.cosmicNebulaHaze = nebula;
     this.starfieldContainer.addChildAt(nebula, 0); // Behind stars
 
     const auroraPalette = [0x26e6ff, 0xa85cff, 0xff4fc8];
@@ -8642,23 +8661,38 @@ export class PlayScene {
     this.gameplayBackdropElapsedMs = 0;
     this.gameplayBackdropWidth = 0;
     this.gameplayBackdropHeight = 0;
+    this.gameplayBackdropRawAlphas = null;
+    this.cosmicNebulaHaze = null;
+    this.combatBackdropClarity = {
+      level: 0,
+      target: 0,
+      latched: false,
+      hostileProjectiles: 0,
+      attackWarningActive: false,
+      treatment: getCombatClarityBackdropTreatment(0)
+    };
     this.gameplayBackdropReducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
   }
 
   applyGameplayBackdropAlphas(alphas = getGameplayBackdropProfile(this.gameplayBackdropMode).alphas) {
+    this.gameplayBackdropRawAlphas = { ...alphas };
+    const treatment = this.combatBackdropClarity?.treatment || getCombatClarityBackdropTreatment(0);
+    const decorativeAlphaScale = treatment.decorativeAlphaScale;
     if (this.gameplayBackdrop) {
-      this.gameplayBackdrop.alpha = alphas.base;
-      this.gameplayBackdrop.renderable = alphas.base > 0.005;
+      this.gameplayBackdrop.alpha = alphas.base * decorativeAlphaScale;
+      this.gameplayBackdrop.renderable = this.gameplayBackdrop.alpha > 0.005;
     }
     if (this.gameplayStormBackdrop) {
-      this.gameplayStormBackdrop.alpha = alphas.storm;
-      this.gameplayStormBackdrop.renderable = alphas.storm > 0.005;
+      this.gameplayStormBackdrop.alpha = alphas.storm * decorativeAlphaScale;
+      this.gameplayStormBackdrop.renderable = this.gameplayStormBackdrop.alpha > 0.005;
     }
     if (this.gameplayBossBackdrop) {
-      this.gameplayBossBackdrop.alpha = alphas.boss;
-      this.gameplayBossBackdrop.renderable = alphas.boss > 0.005;
+      this.gameplayBossBackdrop.alpha = alphas.boss * decorativeAlphaScale;
+      this.gameplayBossBackdrop.renderable = this.gameplayBossBackdrop.alpha > 0.005;
     }
-    if (this.gameplayBackdropShade) this.gameplayBackdropShade.alpha = alphas.shade;
+    if (this.gameplayBackdropShade) {
+      this.gameplayBackdropShade.alpha = Math.min(1, alphas.shade + (1 - alphas.shade) * treatment.shadeLift);
+    }
   }
 
   setGameplayBackdropMode(mode, { immediate = false, durationMs = 1050 } = {}) {
@@ -8667,12 +8701,9 @@ export class PlayScene {
       : mode;
     if (!immediate && nextMode === this.gameplayBackdropMode && !this.gameplayBackdropTransition) return false;
     const target = getGameplayBackdropProfile(nextMode).alphas;
-    const current = {
-      base: Number(this.gameplayBackdrop?.alpha ?? target.base),
-      storm: Number(this.gameplayStormBackdrop?.alpha ?? target.storm),
-      boss: Number(this.gameplayBossBackdrop?.alpha ?? target.boss),
-      shade: Number(this.gameplayBackdropShade?.alpha ?? target.shade)
-    };
+    const current = this.gameplayBackdropRawAlphas
+      ? { ...this.gameplayBackdropRawAlphas }
+      : { ...target };
     this.gameplayBackdropMode = nextMode;
     this.layoutGameplayBackdrops();
     if (immediate || this.gameplayBackdropReducedMotion || !this.gameplayBackdrop) {
@@ -8721,8 +8752,9 @@ export class PlayScene {
   }
 
   updateGameplayBackdrop(delta = 0) {
-    if (!this.gameplayBackdrop) return;
     const deltaMs = Math.max(0, Math.min(100, (Number(delta) || 0) * 16.67));
+    this.updateCombatBackdropClarity(deltaMs);
+    if (!this.gameplayBackdrop) return;
     this.gameplayBackdropElapsedMs += deltaMs;
     const transition = this.gameplayBackdropTransition;
     if (transition) {
@@ -8757,6 +8789,59 @@ export class PlayScene {
     }
   }
 
+  updateCombatBackdropClarity(deltaMs = 0) {
+    const state = this.combatBackdropClarity || {
+      level: 0,
+      target: 0,
+      latched: false,
+      hostileProjectiles: 0,
+      attackWarningActive: false,
+      treatment: getCombatClarityBackdropTreatment(0)
+    };
+    const enemyBullets = this.bulletManager?.enemyBullets || [];
+    const hostileProjectiles = enemyBullets.reduce((count, bullet) => count + Number(
+      bullet?.active !== false && bullet?.visible !== false
+    ), 0);
+    const warningToken = this.enemyManager?.boss?.attackWarningToken;
+    const attackWarningActive = Boolean(
+      warningToken && warningToken.terminalState === 'active' && warningToken.visibleElapsedMs >= 0
+    );
+    const resolved = resolveCombatClarityPressure({
+      activeHostileProjectiles: hostileProjectiles,
+      attackWarningActive,
+      latched: state.latched,
+      experimentalMode: this.game?.lateGameExperiment?.active === true
+    });
+    state.latched = resolved.latched;
+    state.target = resolved.pressure;
+    state.hostileProjectiles = hostileProjectiles;
+    state.attackWarningActive = attackWarningActive;
+    state.level = stepCombatClarityLevel(state.level, state.target, deltaMs, {
+      reducedMotion: Boolean(this.gameplayBackdropReducedMotion)
+    });
+    state.treatment = getCombatClarityBackdropTreatment(state.level);
+    this.combatBackdropClarity = state;
+    if (this.gameplayBackdropRawAlphas) {
+      this.applyGameplayBackdropAlphas(this.gameplayBackdropRawAlphas);
+    }
+    return state;
+  }
+
+  getCombatBackdropClarityDebugState() {
+    const state = this.combatBackdropClarity || {};
+    return {
+      enabled: this.game?.lateGameExperiment?.active !== true,
+      level: Number((Number(state.level) || 0).toFixed(4)),
+      target: Number((Number(state.target) || 0).toFixed(4)),
+      latched: Boolean(state.latched),
+      hostileProjectiles: Math.max(0, Number(state.hostileProjectiles) || 0),
+      attackWarningActive: Boolean(state.attackWarningActive),
+      suppression: Number((Number(state.treatment?.suppression) || 0).toFixed(4)),
+      maxSuppression: 0.18,
+      decorativeOnly: true
+    };
+  }
+
   updateStarfield(delta) {
     if (!this.starLayers || !this.game?.app?.screen) return;
 
@@ -8783,6 +8868,7 @@ export class PlayScene {
         }
         if (star.x < -12) star.x = width + 12;
         if (star.x > width + 12) star.x = -12;
+        star.alpha = this.combatBackdropClarity?.treatment?.decorativeAlphaScale ?? 1;
       });
     });
 
@@ -8796,7 +8882,8 @@ export class PlayScene {
         }
         if (item.x < -60) item.x = width + 60;
         if (item.x > width + 60) item.x = -60;
-        item.alpha = reducedMotion ? 0.35 : 0.72 + Math.sin(this.cosmicTravelElapsed * 2.4 + item._phase + layerIndex) * 0.18;
+        const baseAlpha = reducedMotion ? 0.35 : 0.72 + Math.sin(this.cosmicTravelElapsed * 2.4 + item._phase + layerIndex) * 0.18;
+        item.alpha = baseAlpha * (this.combatBackdropClarity?.treatment?.decorativeAlphaScale ?? 1);
       });
     });
 
@@ -8805,8 +8892,12 @@ export class PlayScene {
       band.y = band._baseY + Math.sin(time * (0.32 + index * 0.05) + band._phase) * (reducedMotion ? 3 : 38 + index * 9);
       band.x = Math.cos(time * 0.21 + band._phase) * (reducedMotion ? 2 : 52);
       band.rotation = Math.sin(time * 0.17 + band._phase) * (reducedMotion ? 0.001 : 0.018);
-      band.alpha = reducedMotion ? 0.42 : 0.78 + Math.sin(time * 0.43 + band._phase) * 0.16;
+      const baseAlpha = reducedMotion ? 0.42 : 0.78 + Math.sin(time * 0.43 + band._phase) * 0.16;
+      band.alpha = baseAlpha * (this.combatBackdropClarity?.treatment?.decorativeAlphaScale ?? 1);
     });
+    if (this.cosmicNebulaHaze) {
+      this.cosmicNebulaHaze.alpha = this.combatBackdropClarity?.treatment?.decorativeAlphaScale ?? 1;
+    }
   }
 
   createUltrawideSideAmbience() {
@@ -17750,6 +17841,7 @@ export class PlayScene {
       const baseDuration = Number(normalizedOptions.duration) || 1100;
       const extraReadTime = Math.max(0, Number(normalizedOptions.extraReadTimeMs) || 0);
       this.deferSideToastsForTacticalAlert(baseDuration + extraReadTime + 40, `tactical_${type}`);
+      this.deferRoutineFocusLaneForActionWarning(baseDuration + extraReadTime + 40, `tactical_${type}`);
     }
     this.applyNotificationSupersession(type, { channel, priority });
     const lockUntil = this.getToastSlotLockUntil(slot);
@@ -17767,6 +17859,9 @@ export class PlayScene {
     }
     if (slot === 'corner' && channel === 'side') {
       notBefore = Math.max(notBefore, this.getTacticalAlertBlockUntil(now));
+    }
+    if (normalizedOptions.routineFocusLane === true) {
+      notBefore = Math.max(notBefore, this.getRoutineFocusLaneBlockUntil(now));
     }
     const duplicateKey = this.getToastDuplicateKey(message, type);
     if (duplicateKey && this.hasActiveDuplicateToast(duplicateKey)) {
@@ -17790,6 +17885,11 @@ export class PlayScene {
       expiresAt: now + queueAgeMs,
       duplicateKey
     };
+    if (normalizedOptions.routineFocusLane === true) {
+      entry.routineFamily = this.getRoutineFocusFamily(type);
+      entry.options.routineFamily = entry.routineFamily;
+      this.coalesceRoutineFocusLane(entry);
+    }
 
     if (priority >= 3) {
       if (tacticalAlert) {
@@ -18066,6 +18166,7 @@ export class PlayScene {
     this.clearBossDefeatedHudSchedule('toast_state_cleared');
     this.lastBossDefeatedLifecycle = null;
     this.novaCommandTacticalAlertUntil = 0;
+    this.routineFocusLaneBlockUntil = 0;
     this.hud?.setNotificationFocus?.('none');
     this.centerToastLockUntil = 0;
     this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
@@ -18157,6 +18258,7 @@ export class PlayScene {
   processToastQueue() {
     if (this.overrunMilestoneInterlude?.active) return;
     const now = Date.now();
+    this.deferQueuedRoutineFocusLane(now);
     if (this.activeBossDossier?.parent) {
       const delayedTop = !this.activeTopToast ? this.peekReadyToast(this.toastTopQueue, now) : null;
       const delayedCorner = !this.activeCornerToast ? this.peekReadyToast(this.toastCornerQueue, now) : null;
@@ -18765,7 +18867,21 @@ export class PlayScene {
         decorativeAccents: options.decorativeAccents !== false
       };
     }
-    const transitionTypes = new Set(['wave_start', 'sector_arrival', 'level_up']);
+    const routineFocusTypes = new Set([
+      'level_up',
+      'rank_boost',
+      'repair',
+      'bonus_core',
+      'powerup',
+      'score_boost',
+      'info',
+      'trait',
+      'unlock',
+      'discovery',
+      'tacticalDirective',
+      'side_status'
+    ]);
+    const transitionTypes = new Set(['wave_start', 'sector_arrival', ...routineFocusTypes]);
     if (transitionTypes.has(type)) {
       const rawLines = String(message || '')
         .split(/\r?\n/)
@@ -18787,7 +18903,11 @@ export class PlayScene {
         ).trim(),
         accent: NOVA_COMMAND_HUD_TOKENS.primaryEdge,
         semanticTone: 'neutral_transition',
-        decorativeAccents: options.decorativeAccents !== false
+        decorativeAccents: options.decorativeAccents !== false,
+        routineFocusLane: routineFocusTypes.has(type),
+        maxQueueAgeMs: routineFocusTypes.has(type)
+          ? Math.min(1800, Number(options.maxQueueAgeMs) || 1800)
+          : options.maxQueueAgeMs
       };
     }
     if (options.novaCommandVariant) return options;
@@ -18800,17 +18920,9 @@ export class PlayScene {
       'bonus',
       'storm_survived',
       'bonus_core',
-      'powerup',
-      'repair',
-      'score_boost',
       'score_popup',
-      'info',
-      'trait',
-      'unlock',
-      'discovery',
-      'tacticalDirective',
       'aceBounty',
-      'side_status'
+      'flawlessWave'
     ]);
     if (!routineSideTypes.has(type)) return options;
 
@@ -18856,6 +18968,97 @@ export class PlayScene {
       return Math.max(explicitUntil, now + 80);
     }
     return explicitUntil > now ? explicitUntil : 0;
+  }
+
+  getRoutineFocusFamily(type = 'generic') {
+    if (['powerup', 'repair', 'bonus_core', 'trait', 'info', 'side_status'].includes(type)) return 'systems';
+    if (type === 'tacticalDirective') return 'objective';
+    if (['unlock', 'rank_boost', 'level_up', 'score_boost', 'discovery'].includes(type)) return 'progression';
+    return `type:${String(type || 'generic')}`;
+  }
+
+  isRoutineFocusLaneEntry(entry) {
+    const options = entry?.options || entry?.originalOptions || entry?.__toastMeta?.originalOptions || {};
+    return options.routineFocusLane === true || entry?.__toastMeta?.originalOptions?.routineFocusLane === true;
+  }
+
+  getRoutineFocusLaneBlockUntil(now = Date.now()) {
+    const tacticalBlock = this.getTacticalAlertBlockUntil(now);
+    const explicitBlock = Math.max(0, Number(this.routineFocusLaneBlockUntil) || 0);
+    return Math.max(tacticalBlock, explicitBlock > now ? explicitBlock : 0);
+  }
+
+  coalesceRoutineFocusLane(entry) {
+    if (!entry || !this.isRoutineFocusLaneEntry(entry)) return 0;
+    const family = entry.routineFamily || this.getRoutineFocusFamily(entry.options?.type);
+    let removed = 0;
+    for (let index = this.toastTopQueue.length - 1; index >= 0; index -= 1) {
+      const queued = this.toastTopQueue[index];
+      if (!this.isRoutineFocusLaneEntry(queued)) continue;
+      const queuedFamily = queued.routineFamily || queued.options?.routineFamily || this.getRoutineFocusFamily(queued.options?.type);
+      if (queuedFamily !== family) continue;
+      this.toastTopQueue.splice(index, 1);
+      removed += 1;
+    }
+    const active = this.activeTopToast;
+    const meta = active?.__toastMeta;
+    if (active && this.isRoutineFocusLaneEntry(meta)) {
+      const activeFamily = meta.originalOptions?.routineFamily || this.getRoutineFocusFamily(meta.type);
+      if (activeFamily === family) {
+        this.dismissToastDisplay(active, 'top', { reason: 'routine_focus_coalesced' });
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
+  deferQueuedRoutineFocusLane(now = Date.now()) {
+    const blockUntil = this.getRoutineFocusLaneBlockUntil(now);
+    if (blockUntil <= now) return 0;
+    let deferred = 0;
+    for (const entry of this.toastTopQueue) {
+      if (!this.isRoutineFocusLaneEntry(entry)) continue;
+      entry.notBefore = Math.max(Number(entry.notBefore) || 0, blockUntil);
+      entry.options = { ...entry.options, notBefore: entry.notBefore };
+      deferred += 1;
+    }
+    return deferred;
+  }
+
+  deferRoutineFocusLaneForActionWarning(durationMs = 0, reason = 'action_warning') {
+    const now = Date.now();
+    const blockUntil = now + Math.max(0, Number(durationMs) || 0);
+    this.routineFocusLaneBlockUntil = Math.max(Number(this.routineFocusLaneBlockUntil) || 0, blockUntil);
+    this.deferQueuedRoutineFocusLane(now);
+
+    const active = this.activeTopToast;
+    const meta = active?.__toastMeta;
+    if (!active || !this.isRoutineFocusLaneEntry(meta)) return blockUntil;
+    const expiresAt = (Number(meta.createdAt) || now) + 1800;
+    const remainingMs = Math.max(0, (Number(meta.duration) || 0) - (now - (Number(meta.createdAt) || now)));
+    this.dismissToastDisplay(active, 'top', { reason });
+    if (expiresAt > blockUntil && remainingMs >= 280) {
+      this.toastTopQueue.push({
+        message: meta.message,
+        options: {
+          ...meta.originalOptions,
+          slot: 'top',
+          channel: 'transition',
+          duration: remainingMs,
+          extraReadTimeMs: 0,
+          notBefore: blockUntil,
+          routineFocusLane: true
+        },
+        priority: Number(meta.priority) || 0,
+        createdAt: Number(meta.createdAt) || now,
+        notBefore: blockUntil,
+        expiresAt,
+        duplicateKey: meta.duplicateKey,
+        routineFamily: meta.originalOptions?.routineFamily || this.getRoutineFocusFamily(meta.type)
+      });
+      this.toastTopQueue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
+    }
+    return blockUntil;
   }
 
   deferSideToastsForTacticalAlert(durationMs = 0, reason = 'tactical_alert') {
@@ -23827,6 +24030,7 @@ export class PlayScene {
       : NOVA_COMMAND_HUD_TOKENS.warning;
     const titleLabel = String(requestedTitleText || translateText('INCOMING REINFORCEMENTS'));
     this.deferSideToastsForTacticalAlert(duration + 40, 'tactical_reinforcement');
+    this.deferRoutineFocusLaneForActionWarning(duration + 40, 'tactical_reinforcement');
     let root = null;
     let ticker = null;
     let cleaned = false;

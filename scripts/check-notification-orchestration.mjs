@@ -390,12 +390,14 @@ try {
     const play = window.__game.scenes.play;
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     const sample = () => ({
-      type: play.activeCornerToast?.__toastMeta?.type || null,
-      duration: play.activeCornerToast?.__toastMeta?.duration || 0,
-      phase: play.activeCornerToast?._debugNovaCommandHud?.motionPhase || null,
-      introMs: play.activeCornerToast?.__novaCommandHudFx?.introMs || 0,
-      exitMs: play.activeCornerToast?.__novaCommandHudFx?.exitMs || 0,
-      alpha: play.activeCornerToast?.alpha ?? null
+      type: play.activeTopToast?.__toastMeta?.type || null,
+      slot: play.activeTopToast?.__toastMeta?.slot || null,
+      routineFocusLane: play.activeTopToast?.__toastMeta?.originalOptions?.routineFocusLane === true,
+      duration: play.activeTopToast?.__toastMeta?.duration || 0,
+      phase: play.activeTopToast?._debugNovaCommandHud?.motionPhase || null,
+      introMs: play.activeTopToast?.__novaCommandHudFx?.introMs || 0,
+      exitMs: play.activeTopToast?.__novaCommandHudFx?.exitMs || 0,
+      alpha: play.activeTopToast?.alpha ?? null
     });
 
     play.clearToastState();
@@ -421,8 +423,9 @@ try {
     await wait(60);
     const interrupted = {
       tacticalActive: Boolean(play.activeMayhemRoutineWarning?.root?.parent),
-      activeCornerType: play.activeCornerToast?.__toastMeta?.type || null,
-      queuedCornerTypes: play.toastCornerQueue.map((entry) => entry.options?.type)
+      activeTopType: play.activeTopToast?.__toastMeta?.type || null,
+      queuedTopTypes: play.toastTopQueue.map((entry) => entry.options?.type),
+      activeCornerType: play.activeCornerToast?.__toastMeta?.type || null
     };
     await wait(760);
     play.processToastQueue();
@@ -444,18 +447,20 @@ try {
 
   assert(
     directiveTiming.entrance.type === 'tacticalDirective' &&
+    directiveTiming.entrance.slot === 'top' &&
+    directiveTiming.entrance.routineFocusLane === true &&
     directiveTiming.entrance.duration === 1100 &&
-    directiveTiming.entrance.introMs === 150 &&
-    directiveTiming.entrance.exitMs === 220 &&
+    directiveTiming.entrance.introMs === 165 &&
+    directiveTiming.entrance.exitMs === 240 &&
     [null, 'entrance'].includes(directiveTiming.entrance.phase),
-    `Side Directive entrance/timing contract regressed: ${JSON.stringify(directiveTiming)}`
+    `Focus-lane Directive entrance/timing contract regressed: ${JSON.stringify(directiveTiming)}`
   );
   assert(
     directiveTiming.holdStart.phase === 'hold' &&
     directiveTiming.holdEnd.phase === 'hold' &&
     directiveTiming.holdEnd.alpha === 1 &&
-    directiveTiming.entrance.duration - directiveTiming.entrance.introMs - directiveTiming.entrance.exitMs === 730,
-    `Side Directive readable hold is not 730ms: ${JSON.stringify(directiveTiming)}`
+    directiveTiming.entrance.duration - directiveTiming.entrance.introMs - directiveTiming.entrance.exitMs === 695,
+    `Focus-lane Directive readable hold is not 695ms: ${JSON.stringify(directiveTiming)}`
   );
   assert(
     directiveTiming.exit.phase === 'exit' &&
@@ -464,10 +469,12 @@ try {
   );
   assert(
     directiveTiming.interrupted.tacticalActive === true &&
+    directiveTiming.interrupted.activeTopType === null &&
     directiveTiming.interrupted.activeCornerType === null &&
-    directiveTiming.interrupted.queuedCornerTypes.includes('tacticalDirective') &&
-    directiveTiming.resumed.type === 'tacticalDirective',
-    `Higher-priority tactical alert did not interrupt and resume Side Directive correctly: ${JSON.stringify(directiveTiming)}`
+    directiveTiming.interrupted.queuedTopTypes.includes('tacticalDirective') &&
+    directiveTiming.resumed.type === 'tacticalDirective' &&
+    directiveTiming.resumed.slot === 'top',
+    `Higher-priority tactical alert did not interrupt and resume Focus-lane Directive correctly: ${JSON.stringify(directiveTiming)}`
   );
 
   const resolutionReports = [];
@@ -480,7 +487,7 @@ try {
       const play = game.scenes.play;
       play.clearToastState();
       play.enqueueToast('SEKTORSTATUS AKTUALISIERT // VERSTÄRKUNGSSIGNAL BESTÄTIGT', {
-        type: 'side_status',
+        type: 'nearMiss',
         channel: 'side',
         slot: 'corner',
         duration: 3000,
