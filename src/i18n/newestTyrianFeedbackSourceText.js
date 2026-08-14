@@ -13,13 +13,13 @@ const ENTRIES = Object.freeze({
     'SCORE / SECTOR': 'PUNKTE / SEKTOR',
     'UI VOL': 'UI-LAUTSTÄRKE',
     FLASH: 'BLITZINTENSITÄT',
-    'REDUCED MOTION': 'REDUZIERTE BEWEGUNG'
+    'REDUCED MOTION': 'BEWEGUNG RED.'
   },
   es: {
-    'Fire Input': 'Entrada de disparo',
+    'Fire Input': 'Modo disparo',
     HOLD: 'MANTENER',
     TOGGLE: 'ALTERNAR',
-    'Mouse Steering': 'Control con ratón',
+    'Mouse Steering': 'Control ratón',
     'AUTO FIRE ON': 'DISPARO AUTOMÁTICO ACTIVO',
     'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Mantén pulsado para disparar o activa Alternar en Ajustes. El control con ratón sigue el puntero; el mando siempre usa mantener.',
     'VIEWING HULL {current} OF {total}': 'VIENDO CASCO {current} DE {total}',
@@ -35,7 +35,7 @@ const ENTRIES = Object.freeze({
     'Fire Input': 'Режим огня',
     HOLD: 'УДЕРЖАНИЕ',
     TOGGLE: 'ПЕРЕКЛЮЧЕНИЕ',
-    'Mouse Steering': 'Управление мышью',
+    'Mouse Steering': 'Упр. мышью',
     'AUTO FIRE ON': 'АВТООГОНЬ ВКЛ',
     'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Удерживайте огонь или включите переключение в настройках. Управление мышью следует за указателем; огонь с геймпада всегда работает удержанием.',
     'VIEWING HULL {current} OF {total}': 'ПРОСМОТР КОРПУСА {current} ИЗ {total}',
@@ -43,9 +43,9 @@ const ENTRIES = Object.freeze({
     'VIEW RECOMMENDED [J]': 'ПОКАЗАТЬ РЕКОМЕНДАЦИЮ [J]',
     'DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}': 'ДИРЕКТИВА {current}/{cap} В ОЧЕРЕДИ // СЕКТОР {sector}',
     'SCORE / SECTOR': 'ОЧКИ / СЕКТОР',
-    'UI VOL': 'ГРОМКОСТЬ ИНТЕРФЕЙСА',
+    'UI VOL': 'ГРОМК. UI',
     FLASH: 'ВСПЫШКИ',
-    'REDUCED MOTION': 'МЕНЬШЕ ДВИЖЕНИЯ'
+    'REDUCED MOTION': 'СНИЖ.ДВИЖ.'
   },
   'zh-CN': {
     'Fire Input': '开火输入',
@@ -64,10 +64,10 @@ const ENTRIES = Object.freeze({
     'REDUCED MOTION': '减少动态效果'
   },
   'pt-BR': {
-    'Fire Input': 'Entrada de tiro',
+    'Fire Input': 'Modo de tiro',
     HOLD: 'SEGURAR',
     TOGGLE: 'ALTERNAR',
-    'Mouse Steering': 'Controle pelo mouse',
+    'Mouse Steering': 'Controle mouse',
     'AUTO FIRE ON': 'TIRO AUTOMÁTICO ATIVO',
     'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Segure para atirar ou ative Alternar nas Configurações. O controle pelo mouse segue o ponteiro; o controle sempre usa segurar.',
     'VIEWING HULL {current} OF {total}': 'VENDO NAVE {current} DE {total}',
@@ -75,7 +75,7 @@ const ENTRIES = Object.freeze({
     'VIEW RECOMMENDED [J]': 'VER RECOMENDADA [J]',
     'DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}': 'DIRETRIZ {current}/{cap} NA FILA // SETOR {sector}',
     'SCORE / SECTOR': 'PONTOS / SETOR',
-    'UI VOL': 'VOL. DA INTERFACE',
+    'UI VOL': 'VOL. UI',
     FLASH: 'FLASHES',
     'REDUCED MOTION': 'MOVIMENTO REDUZIDO'
   },

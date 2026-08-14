@@ -10,7 +10,10 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || 'test-results/menu-overlap-audit');
 const auditUiScale = Math.max(1, Math.min(2, Number(process.env.CHECK_UI_SCALE) || 1));
+const auditLanguage = String(process.env.CHECK_LANGUAGE || 'en').trim() || 'en';
+const settingsOnly = process.env.CHECK_SETTINGS_ONLY === '1';
 const scaleTag = `scale-${String(auditUiScale).replace('.', '_')}`;
+const languageTag = auditLanguage.replace(/[^a-z0-9_-]+/gi, '_');
 const allViewports = [
   { name: 'desktop-1920', width: 1920, height: 1080 },
   { name: 'supported-1280', width: 1280, height: 720 },
@@ -115,11 +118,11 @@ function assertTextInside(frame, text, label, padding = 6) {
 }
 
 async function seed(page) {
-  await page.addInitScript(() => {
+  await page.addInitScript(({ language }) => {
     const progressed = new URL(window.location.href).searchParams.get('auditProfile') === 'progressed';
     const uiScale = Math.max(1, Math.min(2, Number(new URL(window.location.href).searchParams.get('auditScale')) || 1));
     localStorage.clear();
-    localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
+    localStorage.setItem('novaSwarm.languagePreference.v1', language);
     localStorage.setItem('nova_ui_scale_v1', String(uiScale));
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
       totalRuns: progressed ? 64 : 0,
@@ -129,7 +132,7 @@ async function seed(page) {
       totalBossesDefeated: progressed ? 72 : 0,
       totalWavesCleared: progressed ? 360 : 0
     }));
-  });
+  }, { language: auditLanguage });
 }
 
 function assertLaneSequence(bounds, label, gap = 4) {
@@ -267,26 +270,30 @@ for (const viewport of viewports) {
   await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
   await page.waitForTimeout(2200);
 
-  const optionIds = await auditMainMenu(page, viewport, 'fresh');
+  const optionIds = settingsOnly ? [] : await auditMainMenu(page, viewport, 'fresh');
 
-  await page.goto(`${baseUrl}/?skipIntro=1&offlineLeaderboard=1&auditProfile=progressed&auditScale=${auditUiScale}`, { waitUntil: 'domcontentloaded' });
-  await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
-  await page.waitForTimeout(1000);
-  await auditMainMenu(page, viewport, 'progressed');
+  if (!settingsOnly) {
+    await page.goto(`${baseUrl}/?skipIntro=1&offlineLeaderboard=1&auditProfile=progressed&auditScale=${auditUiScale}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
+    await page.waitForTimeout(1000);
+    await auditMainMenu(page, viewport, 'progressed');
+  }
 
-  await page.evaluate(() => {
-    const menu = window.__game?.currentScene;
-    menu?.setMenuFocus?.(0);
-    menu?.openModeBriefing?.();
-  });
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.modeBriefing?.open === true);
-  const modeBriefing = (await state(page)).menu.modeBriefing;
-  assert.ok(modeBriefing.panel?.height > 0, `${viewport.name}: mode briefing panel missing`);
-  assert.ok(modeBriefing.content?.height > 0, `${viewport.name}: mode briefing content viewport missing`);
-  assert.ok(modeBriefing.content.y >= modeBriefing.panel.y, `${viewport.name}: mode briefing content crosses panel top`);
-  assert.ok(modeBriefing.content.y + modeBriefing.content.height <= modeBriefing.panel.y + modeBriefing.panel.height, `${viewport.name}: mode briefing content crosses panel footer`);
-  await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${scaleTag}-mode-details.png`) });
-  await page.evaluate(() => window.__game?.currentScene?.closeModeBriefing?.());
+  if (!settingsOnly) {
+    await page.evaluate(() => {
+      const menu = window.__game?.currentScene;
+      menu?.setMenuFocus?.(0);
+      menu?.openModeBriefing?.();
+    });
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.modeBriefing?.open === true);
+    const modeBriefing = (await state(page)).menu.modeBriefing;
+    assert.ok(modeBriefing.panel?.height > 0, `${viewport.name}: mode briefing panel missing`);
+    assert.ok(modeBriefing.content?.height > 0, `${viewport.name}: mode briefing content viewport missing`);
+    assert.ok(modeBriefing.content.y >= modeBriefing.panel.y, `${viewport.name}: mode briefing content crosses panel top`);
+    assert.ok(modeBriefing.content.y + modeBriefing.content.height <= modeBriefing.panel.y + modeBriefing.panel.height, `${viewport.name}: mode briefing content crosses panel footer`);
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${scaleTag}-mode-details.png`) });
+    await page.evaluate(() => window.__game?.currentScene?.closeModeBriefing?.());
+  }
 
   await page.evaluate(() => window.__game?.currentScene?.openSettingsOverlay?.());
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').overlays?.settings === true);
@@ -299,27 +306,93 @@ for (const viewport of viewports) {
       assertTextInside(pageState.bounds, pageState.labelBounds, `${viewport.name}/settings/${id} tab`, 4);
     }
     for (const control of settings.visibleControls || []) {
+      const locatorBounds = control.bounds || control.rowBounds;
+      const locatorCenter = locatorBounds ? {
+        x: locatorBounds.x + locatorBounds.width / 2,
+        y: locatorBounds.y + locatorBounds.height / 2
+      } : null;
+      const owningSection = locatorCenter
+        ? (settings.sectionBounds || []).find((section) => (
+          locatorCenter.x >= section.x && locatorCenter.x <= section.right
+          && locatorCenter.y >= section.y && locatorCenter.y <= section.bottom
+        ))
+        : null;
       if (control.bounds && control.valueLabelBounds) {
         assertTextInside(control.bounds, control.valueLabelBounds, `${viewport.name}/settings/${pageId}/${control.id} value`, 4);
       }
       if (control.rowBounds && control.labelBounds) {
         assert.ok(contains(control.rowBounds, control.labelBounds, 0), `${viewport.name}/settings/${pageId}/${control.id}: label escapes row`);
+        assert.ok(owningSection && contains(owningSection, control.labelBounds, 10), `${viewport.name}/settings/${pageId}/${control.id}: label touches or crosses section frame: ${JSON.stringify({ owningSection, labelBounds: control.labelBounds })}`);
+      }
+      if (control.bounds && control.hintBounds) {
+        const hintGap = control.hintBounds.x - control.bounds.right;
+        assert.ok(hintGap >= 10, `${viewport.name}/settings/${pageId}/${control.id}: status hint is only ${hintGap}px from its control`);
+        assert.ok(owningSection && contains(owningSection, control.hintBounds, 10), `${viewport.name}/settings/${pageId}/${control.id}: status hint touches or crosses section frame`);
       }
     }
     const visibleSettingsControls = settings.visibleControls || [];
     visibleSettingsControls.forEach((control, index) => {
       if (!control.descriptionBounds) return;
       assert.ok(contains(settings.panelBounds, control.descriptionBounds, 8), `${viewport.name}/settings/${pageId}/${control.id}: description escapes panel`);
+      const locatorBounds = control.bounds || control.rowBounds;
+      const locatorCenter = locatorBounds ? {
+        x: locatorBounds.x + locatorBounds.width / 2,
+        y: locatorBounds.y + locatorBounds.height / 2
+      } : null;
+      const owningSection = locatorCenter
+        ? (settings.sectionBounds || []).find((section) => (
+          locatorCenter.x >= section.x && locatorCenter.x <= section.right
+          && locatorCenter.y >= section.y && locatorCenter.y <= section.bottom
+        ))
+        : null;
+      assert.ok(owningSection && contains(owningSection, control.descriptionBounds, 10), `${viewport.name}/settings/${pageId}/${control.id}: helper text touches or crosses section frame`);
+      if (control.bounds) {
+        const ownGap = control.descriptionBounds.y - control.bounds.bottom;
+        assert.ok(ownGap >= 5, `${viewport.name}/settings/${pageId}/${control.id}: helper text touches its own control (${ownGap}px)`);
+      }
       visibleSettingsControls.slice(index + 1).forEach((other) => {
         const otherBounds = other.bounds || other.rowBounds;
         if (otherBounds) {
           assert.ok(!intersects(control.descriptionBounds, otherBounds, 4), `${viewport.name}/settings/${pageId}/${control.id}: description overlaps ${other.id}`);
+          const sharesHorizontalLane = control.descriptionBounds.x < otherBounds.right
+            && control.descriptionBounds.right > otherBounds.x;
+          if (sharesHorizontalLane && otherBounds.y >= control.descriptionBounds.y) {
+            const gap = otherBounds.y - control.descriptionBounds.bottom;
+            assert.ok(gap >= 10, `${viewport.name}/settings/${pageId}/${control.id}: helper text is only ${gap}px from ${other.id}`);
+          }
         }
       });
     });
-    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${scaleTag}-settings-${pageId}.png`) });
+    if (pageId === 'prototype') {
+      const primarySection = (settings.sectionBounds || []).find((section) => section.key === 'primary');
+      const experimentControls = visibleSettingsControls.filter((control) => control.id?.startsWith('experiment_'));
+      assert.ok(primarySection, `${viewport.name}/settings/prototype: primary section bounds missing`);
+      experimentControls.forEach((control) => {
+        const controlBounds = control.bounds || control.rowBounds;
+        assert.ok(contains(primarySection, controlBounds, 12), `${viewport.name}/settings/prototype/${control.id}: control touches or crosses section frame: ${JSON.stringify({ primarySection, controlBounds })}`);
+        if (control.descriptionBounds) {
+          assert.ok(contains(primarySection, control.descriptionBounds, 12), `${viewport.name}/settings/prototype/${control.id}: helper text touches or crosses section frame`);
+        }
+      });
+      experimentControls.forEach((control, index) => {
+        const controlBounds = control.bounds || control.rowBounds;
+        experimentControls.slice(index + 1).forEach((other) => {
+          const otherBounds = other.bounds || other.rowBounds;
+          assert.ok(!intersects(controlBounds, otherBounds, 6), `${viewport.name}/settings/prototype: ${control.id} collides with ${other.id}: ${JSON.stringify({ controlBounds, otherBounds })}`);
+        });
+      });
+      assert.ok(contains(primarySection, settings.prototype?.launchButton, 12), `${viewport.name}/settings/prototype: launch action touches or crosses section frame`);
+    }
+    await page.screenshot({ path: path.join(outputDir, `${viewport.name}-${scaleTag}-${languageTag}-settings-${pageId}.png`) });
   }
   await page.evaluate(() => window.__game?.currentScene?.settingsOverlay?.close?.());
+
+  if (settingsOnly) {
+    assert.deepEqual(errors, [], `${viewport.name}: page errors: ${errors.join(' | ')}`);
+    report.push({ viewport, menuStates: optionIds, pageErrors: errors });
+    await page.close();
+    continue;
+  }
 
   await page.evaluate(() => window.__game?.currentScene?.openHowToPlayOverlay?.());
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').overlays?.howToPlay === true);
@@ -429,4 +502,4 @@ for (const viewport of viewports) {
 
 await browser.close();
 server?.kill();
-console.log(JSON.stringify({ status: 'passed', outputDir, report }, null, 2));
+console.log(JSON.stringify({ status: 'passed', outputDir, language: auditLanguage, uiScale: auditUiScale, report }, null, 2));

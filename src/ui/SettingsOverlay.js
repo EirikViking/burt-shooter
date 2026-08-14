@@ -273,7 +273,10 @@ export class SettingsOverlay {
     const isCompact = width < 760 || height < 680;
     const twoColumn = width >= 900 && height >= 520;
     const panelWidth = Math.min(width * (isCompact ? 0.96 : 0.9), twoColumn ? 1240 : 700);
-    const panelHeight = Math.min(height * (isCompact ? 0.94 : 0.74), twoColumn ? 700 : 820);
+    // Short desktop layouts need the same vertical budget as compact layouts.
+    // The old 74% height left a large unused strip of screen while forcing the
+    // Experimental controls and helper copy into one another.
+    const panelHeight = Math.min(height * (isCompact ? 0.94 : 0.9), twoColumn ? 700 : 820);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     this.panelBounds = {
@@ -363,7 +366,7 @@ export class SettingsOverlay {
         saveControlSettings({ ...getControlSettings(), mouseSteering: enabled });
       }, { id: 'mouse_steering' });
       y += tighterGap;
-      this.addKeyboardBindingsRow('KEYBOARD CONTROLS', y);
+      this.addKeyboardBindingsRow('KEYBOARD', y);
       return y;
     };
     const renderAudioPlaybackRows = (start, { includeAudioTest = true } = {}) => {
@@ -376,13 +379,18 @@ export class SettingsOverlay {
       y += tighterGap;
       this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
       y += tighterGap;
-      const chatterRow = this.addChatterFrequencyRow('Chatter Frequency', settings.chatterFrequency, y);
+      const chatterRow = this.addChatterFrequencyRow('CHATTER RATE', settings.chatterFrequency, y);
       // Flow from the rendered safety note rather than an assumed line count;
       // accessibility scale and localized copy can make it wrap.
-      const chatterHelperHeight = Math.ceil(chatterRow?._description?.height || 0);
+      const chatterHelperHeight = Math.ceil(
+        chatterRow?._descriptionLaneHeight
+        || chatterRow?._description?.height
+        || 0
+      );
+      const chatterHelperTop = Math.ceil(chatterRow?._descriptionTopOffset || 0);
       y += Math.max(
-        Math.round((dense ? 70 : 74) * this.uiScale),
-        chatterHelperHeight + Math.round(38 * this.uiScale)
+        Math.round((dense ? 72 : 76) * this.uiScale),
+        chatterHelperTop + chatterHelperHeight + Math.round(28 * this.uiScale)
       );
       this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
       if (includeAudioTest) {
@@ -422,7 +430,7 @@ export class SettingsOverlay {
       y += rowGap;
       this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
       y += rowGap;
-      this.addToggleRow('REDUCED MOTION', accessibility.reducedMotion, y, setReducedMotionEnabled, { id: 'reduced_motion' });
+      this.addToggleRow('REDUCE MOTION', accessibility.reducedMotion, y, setReducedMotionEnabled, { id: 'reduced_motion' });
       return y;
     };
 
@@ -466,7 +474,9 @@ export class SettingsOverlay {
     } else if (this.activePage === 'prototype') {
       setFormColumn(leftX);
       this.addSectionLabel('LATE-GAME PRESSURE TEST', startY);
-      let y = startY + sectionGap;
+      // At the widest accessibility scale, keep the first control close enough
+      // to its section heading to preserve the action button's bottom inset.
+      let y = startY + Math.min(sectionGap, 35);
       y = this.renderExperimentLauncher(y);
       if (!twoColumn) {
         const infoTop = y + Math.round(38 * this.uiScale);
@@ -573,13 +583,13 @@ export class SettingsOverlay {
 
   getFormRowMetrics() {
     const columnWidth = this.getFormColumnWidth();
-    const compactColumn = columnWidth < 540;
+    const compactColumn = columnWidth < 500;
     return {
       compactColumn,
-      labelX: compactColumn ? -104 : -142,
-      labelWidth: compactColumn ? 100 : 120,
-      choiceX: compactColumn ? 58 : 34,
-      choiceWidth: compactColumn ? Math.min(180, Math.max(150, columnWidth * 0.43)) : 190,
+      labelX: compactColumn ? -98 : -130,
+      labelWidth: compactColumn ? 96 : 120,
+      choiceX: compactColumn ? 50 : 34,
+      choiceWidth: compactColumn ? Math.min(205, Math.max(174, columnWidth * 0.52)) : 230,
       sliderWidth: compactColumn
         ? Math.min(190, Math.max(150, columnWidth - 228))
         : Math.min(250, Math.max(178, columnWidth - 230))
@@ -623,11 +633,27 @@ export class SettingsOverlay {
 
   renderExperimentLauncher(startY) {
     const availableHeight = Math.max(240, (this.settingsContentBottom || this.height) - startY);
-    const rowGap = Math.round((availableHeight < 320 ? 39 : 43) * this.uiScale);
+    const controlScale = Math.max(1, Math.min(2, Number(this.uiScale) || 1));
+    const choiceHalfHeight = Math.round(30 * controlScale) / 2;
+    const actionHalfHeight = Math.round(38 * controlScale) / 2;
+    // Keep ordinary rows comfortably separated without letting accessibility
+    // scale consume the finite panel height. Text remains full-sized; only the
+    // empty space is budgeted.
+    const rowGap = availableHeight < 380
+      ? 40
+      : Math.min(44, Math.max(42, Math.round((availableHeight < 320 ? 39 : 43) * controlScale)));
+    const helperToNextControlGap = 12;
+    const actionGap = 7;
     let y = startY;
     const draft = normalizeLateGameExperimentDraft(this.experimentDraft);
     this.experimentDraft = draft;
     const fixture = getLateGameExperimentFixture(draft.fixtureId);
+    const fullFixtureLabel = translateText(fixture?.label || '--');
+    const redundantRulesetPrefix = `${translateText('TACTICAL')} // `;
+    const fixtureChoiceLabel = draft.ruleset === LATE_GAME_EXPERIMENT_RULESETS.TACTICAL
+      && fullFixtureLabel.startsWith(redundantRulesetPrefix)
+      ? fullFixtureLabel.slice(redundantRulesetPrefix.length)
+      : fullFixtureLabel;
     const scenarioOptions = [
       { id: LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD, label: 'STANDARD TEST' },
       { id: LATE_GAME_EXPERIMENT_SCENARIOS.ENDURANCE, label: 'ENDURANCE TEST' }
@@ -651,8 +677,20 @@ export class SettingsOverlay {
         description,
         onButton: (button) => { this.experimentChoiceButtons[id] = button; }
       });
-      const helperHeight = description ? Math.ceil(row?._description?.height || 0) : 0;
-      y += rowGap + (helperHeight > 0 ? helperHeight + Math.round(8 * this.uiScale) : 0);
+      if (description) {
+        // Do not read PIXI text height during construction. Its texture may not
+        // exist yet, which previously produced a zero-height lane and visible
+        // collisions in the shipped overlay.
+        y += Math.max(
+          rowGap,
+          Math.ceil(row?._descriptionTopOffset || choiceHalfHeight)
+            + Math.ceil(row?._descriptionLaneHeight || 36)
+            + helperToNextControlGap
+            + choiceHalfHeight
+        );
+      } else {
+        y += rowGap;
+      }
     };
 
     addExperimentChoice('SCENARIO', scenarioOptions.find((item) => item.id === draft.scenario)?.label, 'scenario', (direction) => {
@@ -666,7 +704,7 @@ export class SettingsOverlay {
     });
 
     const fixtures = getLateGameExperimentFixtures(draft.ruleset);
-    addExperimentChoice('FIXTURE', fixture?.label || '--', 'fixture', (direction) => {
+    addExperimentChoice('FIXTURE', fixtureChoiceLabel, 'fixture', (direction) => {
       const next = cycle(fixtures, draft.fixtureId, direction);
       this.updateExperimentDraft({ fixtureId: next.id });
     }, fixture?.description || null);
@@ -680,8 +718,8 @@ export class SettingsOverlay {
       const next = cycle(sectorItems, draft.startSector, direction);
       this.updateExperimentDraft({ startSector: next.id });
     }, draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD
-      ? 'Standard Test uses the fixed Sector-75 comparison start.'
-      : 'This is a test preset, not a naturally reached sector.');
+      ? 'STANDARD TEST STARTS AT SECTOR 75.'
+      : 'TEST PRESET // NOT A NATURAL SECTOR.');
 
     addExperimentChoice('LIFE STOCK', lifeOptions.find((item) => item.id === draft.lifeStock)?.label, 'life_stock', (direction) => {
       if (draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD) return;
@@ -698,7 +736,8 @@ export class SettingsOverlay {
       : this.game?.lateGameExperiment?.active
         ? 'TEST ACTIVE // RETURN TO MENU TO RECONFIGURE'
         : 'AVAILABLE FROM MAIN MENU';
-    const action = this.createButton(actionLabel, this.getFormCenterX(), y + Math.round(8 * this.uiScale), () => {
+    const actionY = y - rowGap + choiceHalfHeight + actionGap + actionHalfHeight;
+    const action = this.createButton(actionLabel, this.getFormCenterX(), actionY, () => {
       if (this.allowExperimentLaunch) this.openExperimentConfirmation();
     }, { width: 330, height: 38 });
     action.label = 'ui_settings_experiment_launch';
@@ -714,7 +753,7 @@ export class SettingsOverlay {
       button: action,
       label: actionLabel
     });
-    return y + Math.round(50 * this.uiScale);
+    return actionY + actionHalfHeight;
   }
 
   updateExperimentDraft(patch = {}) {
@@ -1003,7 +1042,7 @@ export class SettingsOverlay {
     });
     labelText.anchor.set(1, 0.5);
     labelText.x = metrics.labelX;
-    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.68 });
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
     let enabled = Boolean(initialValue);
@@ -1050,7 +1089,7 @@ export class SettingsOverlay {
     });
     labelText.anchor.set(1, 0.5);
     labelText.x = metrics.labelX;
-    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
     const button = this.createButton('REMAP', metrics.choiceX, 0, () => this.openKeyBindingsPanel(), {
@@ -1083,7 +1122,7 @@ export class SettingsOverlay {
     });
     labelText.anchor.set(1, 0.5);
     labelText.x = metrics.labelX;
-    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
     const sfxButton = this.createButton('SFX', -46, 0, () => this.playAudioTest('sfx'), { width: 96, height: 30 });
@@ -1120,7 +1159,7 @@ export class SettingsOverlay {
     });
     labelText.anchor.set(1, 0.5);
     labelText.x = metrics.labelX;
-    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
     const options = getLanguageOptions();
@@ -1199,6 +1238,7 @@ export class SettingsOverlay {
         id: 'chatter_frequency',
         buttonWidth: 190,
         description: 'Only non-critical chatter is reduced. Boss warnings and mission updates always play.',
+        descriptionLines: 3,
         onButton: (button) => {
           buttonRef = button;
         }
@@ -1218,12 +1258,16 @@ export class SettingsOverlay {
     });
     labelText.anchor.set(1, 0.5);
     labelText.x = metrics.labelX;
-    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
     let selectedIndex = Math.max(0, MUSIC_PACK_OPTIONS.findIndex((option) => option.id === initialPack));
     const selected = () => MUSIC_PACK_OPTIONS[selectedIndex] || MUSIC_PACK_OPTIONS[0];
-    const button = this.createButton(selected().label, metrics.compactColumn ? 50 : 18, 0, () => cycleMusicPack(1), { width: 170, height: 30 });
+    const buttonX = metrics.compactColumn ? 38 : 18;
+    const button = this.createButton(selected().label, buttonX, 0, () => cycleMusicPack(1), {
+      width: metrics.compactColumn ? 150 : 170,
+      height: 30
+    });
     button.label = 'ui_settingsMusicPack';
     this.musicPackButton = button;
     button._fitLabel?.();
@@ -1235,8 +1279,9 @@ export class SettingsOverlay {
       fill: '#ffc96e'
     });
     hint.anchor.set(0, 0.5);
-    hint.x = metrics.compactColumn ? 150 : 116;
-    fitTextToWidth(hint, metrics.compactColumn ? 52 : 118, { minScale: 0.62 });
+    hint.x = button.x + button._buttonWidth / 2 + 12;
+    const hintWidth = Math.max(48, Math.min(118, this.getFormColumnWidth() / 2 - hint.x - 12));
+    fitTextToWidth(hint, hintWidth, { minScale: 0.62 });
     row.addChild(hint);
 
     const updateDisplay = (pack) => {
@@ -1245,7 +1290,7 @@ export class SettingsOverlay {
       button._label.text = translateText(option.label);
       button._fitLabel?.();
       hint.text = translateText(option.hint);
-      fitTextToWidth(hint, 118, { minScale: 0.68 });
+      fitTextToWidth(hint, hintWidth, { minScale: 0.62 });
     };
     function cycleMusicPack(direction = 1) {
       selectedIndex = ((selectedIndex + Math.sign(direction || 1)) % MUSIC_PACK_OPTIONS.length + MUSIC_PACK_OPTIONS.length) % MUSIC_PACK_OPTIONS.length;
@@ -1260,6 +1305,7 @@ export class SettingsOverlay {
       button,
       row,
       labelText,
+      hintText: hint,
       label: 'MUSIC SET',
       cycle: cycleMusicPack
     });
@@ -1280,7 +1326,7 @@ export class SettingsOverlay {
     });
     labelText.anchor.set(1, 0.5);
     labelText.x = metrics.labelX;
-    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
     const trackWidth = metrics.sliderWidth;
@@ -1609,7 +1655,13 @@ export class SettingsOverlay {
     this.registerControl({ type: 'button', id: 'display_reset', button, label });
   }
 
-  addChoiceRow(label, valueLabel, y, onCycle, { id, buttonWidth = 190, onButton = null, description = null } = {}) {
+  addChoiceRow(label, valueLabel, y, onCycle, {
+    id,
+    buttonWidth = 190,
+    onButton = null,
+    description = null,
+    descriptionLines = 2
+  } = {}) {
     const row = new PIXI.Container();
     row.position.set(this.getFormCenterX(), y);
     const metrics = this.getFormRowMetrics();
@@ -1621,7 +1673,7 @@ export class SettingsOverlay {
     });
     labelText.anchor.set(1, 0.5);
     labelText.x = metrics.labelX;
-    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
     const cycle = (direction = 1) => {
@@ -1634,19 +1686,26 @@ export class SettingsOverlay {
     onButton?.(button);
 
     if (description) {
+      const descriptionGap = 6;
+      const descriptionLineHeight = 18;
+      const descriptionLaneHeight = descriptionLineHeight * Math.max(1, Math.round(descriptionLines));
       const hint = createText(translateText(description), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: 15,
         fill: '#ffc96e',
         align: 'center',
         wordWrap: true,
-        wordWrapWidth: Math.max(210, this.getFormColumnWidth() - 44)
+        wordWrapWidth: Math.max(210, this.getFormColumnWidth() - 44),
+        lineHeight: descriptionLineHeight
       });
       hint.anchor.set(0.5, 0);
-      hint.position.set(0, 15);
+      const descriptionTopOffset = button._buttonHeight / 2 + descriptionGap;
+      hint.position.set(0, descriptionTopOffset);
       fitTextToWidth(hint, Math.max(210, this.getFormColumnWidth() - 44), { minScale: 0.45 });
       row.addChild(hint);
       row._description = hint;
+      row._descriptionTopOffset = descriptionTopOffset;
+      row._descriptionLaneHeight = descriptionLaneHeight;
     }
 
     this.container.addChild(row);
@@ -2970,6 +3029,7 @@ export class SettingsOverlay {
         rowBounds: debugBounds(control.row),
         labelBounds: debugBounds(control.labelText),
         valueLabelBounds: debugBounds(control.button?._label),
+        hintBounds: debugBounds(control.hintText),
         descriptionBounds: debugBounds(control.row?._description)
       })),
       prototype: {

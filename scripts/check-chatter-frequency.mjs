@@ -63,7 +63,7 @@ for (const token of [
   assert.ok(audioSource.includes(token), `AudioManager missing chatter contract: ${token}`);
 }
 for (const token of [
-  "addChatterFrequencyRow('Chatter Frequency'",
+  "addChatterFrequencyRow('CHATTER RATE'",
   'CHATTER_FREQUENCY_OPTIONS',
   'Only non-critical chatter is reduced. Boss warnings and mission updates always play.'
 ]) {
@@ -76,7 +76,7 @@ for (const token of ['chatterFrequency: CHATTER_FREQUENCY_KEY', 'audio.chatterFr
 for (const localePath of ['de.js', 'es.js', 'ja.js', 'ko.js', 'pt-BR.js', 'ru.js', 'zh-CN.js']) {
   const locale = read(`../src/i18n/locales/${localePath}`);
   for (const key of [
-    'Chatter Frequency',
+    'CHATTER RATE',
     'Full',
     'Reduced',
     'Minimal',
