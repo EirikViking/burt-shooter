@@ -464,11 +464,6 @@ export class ShipSelectScene {
     const headerContainer = new PIXI.Container();
     const capWidth = Math.min(width - 32, this.layout.isMobile ? 420 : 760);
     const cap = new PIXI.Graphics();
-    cap.roundRect(-capWidth / 2, 12, capWidth, this.layout.isMobile ? 78 : 84, 8);
-    cap.fill({ color: 0x020916, alpha: 0.74 });
-    cap.stroke({ color: 0x00ffcc, width: 1.5, alpha: 0.52 });
-    cap.rect(-capWidth / 2 + 2, 14, capWidth - 4, 18);
-    cap.fill({ color: 0x00ffcc, alpha: 0.08 });
     cap.x = width / 2;
     headerContainer.addChild(cap);
 
@@ -486,7 +481,8 @@ export class ShipSelectScene {
       letterSpacing: 0
     });
     title.anchor.set(0.5, 0);
-    title.position.set(width / 2, 20);
+    title.position.set(width / 2, 18);
+    fitDisplayToBox(title, capWidth - 32, this.layout.isMobile ? 38 : 50, { minScale: 0.58 });
     headerContainer.addChild(title);
 
     const subtitle = createText('Pick the hull, read the trait, launch the next run.', {
@@ -497,7 +493,8 @@ export class ShipSelectScene {
       fontWeight: '700'
     });
     subtitle.anchor.set(0.5, 0);
-    subtitle.position.set(width / 2, this.layout.isMobile ? 52 : 58);
+    subtitle.position.set(width / 2, Math.ceil(bottomOf(title) + 2));
+    fitDisplayToBox(subtitle, capWidth - 32, this.layout.isMobile ? 20 : 24, { minScale: 0.7 });
     headerContainer.addChild(subtitle);
 
     this.selectionInfoText = createText('', {
@@ -510,11 +507,31 @@ export class ShipSelectScene {
       fontWeight: '900'
     });
     this.selectionInfoText.anchor.set(0.5, 0);
-    this.selectionInfoText.position.set(width / 2, this.layout.isMobile ? 75 : 82);
+    this.selectionInfoText.position.set(width / 2, Math.ceil(bottomOf(subtitle) + 3));
     headerContainer.addChild(this.selectionInfoText);
 
     this.container.addChild(headerContainer);
     this.updateSelectionInfo();
+    fitDisplayToBox(this.selectionInfoText, capWidth - 32, this.layout.isMobile ? 18 : 22, { minScale: 0.68 });
+    const capHeight = Math.max(
+      this.layout.isMobile ? 78 : 84,
+      Math.ceil(bottomOf(this.selectionInfoText) + 9 - 12)
+    );
+    cap.clear();
+    cap.roundRect(-capWidth / 2, 12, capWidth, capHeight, 8);
+    cap.fill({ color: 0x020916, alpha: 0.74 });
+    cap.stroke({ color: 0x00ffcc, width: 1.5, alpha: 0.52 });
+    cap.rect(-capWidth / 2 + 2, 14, capWidth - 4, 18);
+    cap.fill({ color: 0x00ffcc, alpha: 0.08 });
+    this.hangarHeaderBounds = {
+      x: width / 2 - capWidth / 2,
+      y: 12,
+      width: capWidth,
+      height: capHeight,
+      right: width / 2 + capWidth / 2,
+      bottom: 12 + capHeight
+    };
+    this.hangarHeaderNodes = { title, subtitle, selection: this.selectionInfoText };
   }
 
   createBackButton(width, height) {
@@ -1747,7 +1764,13 @@ export class ShipSelectScene {
     const jumpWidth = compact ? 0 : 166;
     const banner = new PIXI.Container();
     banner.label = 'ui_shipRecommendationBanner';
-    banner.position.set(width / 2 - bannerWidth / 2, Math.round((compact ? 86 : 100) * Math.min(uiScale, 1.45)));
+    banner.position.set(
+      width / 2 - bannerWidth / 2,
+      Math.max(
+        Math.round((compact ? 86 : 100) * Math.min(uiScale, 1.45)),
+        Math.ceil((this.hangarHeaderBounds?.bottom || 0) + 8)
+      )
+    );
     banner.zIndex = 50;
     banner.bannerWidth = bannerWidth;
     banner.textWidth = bannerWidth - dismissWidth - jumpWidth - 54;
@@ -2369,14 +2392,17 @@ export class ShipSelectScene {
     }
 
     if (!this.layout.showSideIntel) {
-      const strip = this.createPanel(Math.min(width - 24, 560), 82, 0x00ffcc);
-      strip.position.set((width - strip.width) / 2, height - (this.layout.isMobile ? 224 : 204));
-      const role = this.createIntelText('', 14, 10, this.layout.isMobile ? 13 : 15, '#ffef7e', '900');
-      const weapon = this.createIntelText('', 14, 39, this.layout.isMobile ? 12 : 13, '#d8fbff');
+      const stripHeight = this.layout.isMobile ? 94 : 88;
+      const strip = this.createPanel(Math.min(width - 24, 560), stripHeight, 0x00ffcc);
+      strip.position.set((width - strip.width) / 2, height - (this.layout.isMobile ? 238 : 222));
+      const role = this.createIntelText('', 14, 8, this.layout.isMobile ? 13 : 14, '#ffef7e', '900');
+      const weapon = this.createIntelText('', 14, 32, this.layout.isMobile ? 12 : 13, '#d8fbff');
+      const trait = this.createIntelText('', 14, 54, this.layout.isMobile ? 12 : 13, '#ff8be8', '700');
       role.style.wordWrapWidth = strip.width - 28;
       weapon.style.wordWrapWidth = strip.width - 28;
-      strip.addChild(role, weapon);
-      this.compactIntel = { panel: strip, role, weapon };
+      trait.style.wordWrapWidth = strip.width - 28;
+      strip.addChild(role, weapon, trait);
+      this.compactIntel = { panel: strip, role, weapon, trait };
       this.intelPanels.addChild(strip);
     }
 
@@ -2504,6 +2530,17 @@ export class ShipSelectScene {
     const textAccent = this.getReadableAccent(variant);
     const glowColor = variant?.glow || variant?.tint || 0x00ff00;
     const tierLabel = getShipTierLabel(ship);
+    const defaultNarrativeWidth = this.layout.isMobile ? 310 : (this.compactHangar ? 540 : 560);
+    let narrativeWidth = defaultNarrativeWidth;
+    if (this.layout.showSideIntel) {
+      const uiScale = Math.max(1, Math.min(2, Number(this.layout.uiScale) || 1));
+      const panelMargin = Math.round(22 * Math.min(uiScale, 1.45));
+      const rightPanelLeft = this.layout.width - panelMargin - 300 * uiScale;
+      const leftPanelRight = this.layout.showLeftIntel ? panelMargin + 260 * uiScale : panelMargin;
+      const centerX = this.layout.width / 2;
+      const safeHalfWidth = Math.max(180, Math.min(centerX - leftPanelRight, rightPanelLeft - centerX) - 24);
+      narrativeWidth = Math.max(360, Math.min(defaultNarrativeWidth, (safeHalfWidth * 2) / this.centerScale));
+    }
 
     const art = ship.art || {};
     const heroY = this.layout.isMobile
@@ -2836,7 +2873,7 @@ export class ShipSelectScene {
       fill: '#d8fbff',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: this.layout.isMobile ? 310 : (this.compactHangar ? 540 : 560),
+      wordWrapWidth: narrativeWidth,
       lineHeight: this.layout.isMobile ? 18 : (this.compactHangar ? 19 : 21),
       fontWeight: '700'
     });
@@ -2852,14 +2889,14 @@ export class ShipSelectScene {
       fill: this.toHexText(textAccent),
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: this.layout.isMobile ? 330 : (this.compactHangar ? 600 : 560),
+      wordWrapWidth: this.layout.isMobile ? 330 : Math.min(this.compactHangar ? 600 : 560, narrativeWidth),
       lineHeight: this.layout.isMobile ? 19 : (this.compactHangar ? 18 : 21),
       stroke: '#000000',
       strokeThickness: 2
     });
     trait.anchor.set(0.5, 0);
     trait.position.set(0, bottomOf(desc) + (this.layout.isMobile ? 10 : (this.compactHangar ? 8 : 12)));
-    fitDisplayToBox(trait, this.layout.isMobile ? 330 : (this.compactHangar ? 600 : 580), this.layout.isMobile ? 62 : (this.compactHangar ? 58 : 82), { minScale: 0.68 });
+    fitDisplayToBox(trait, this.layout.isMobile ? 330 : Math.min(this.compactHangar ? 600 : 580, narrativeWidth), this.layout.isMobile ? 62 : (this.compactHangar ? 58 : 82), { minScale: 0.68 });
     container.addChild(trait);
     container.traitText = trait;
 
@@ -2934,8 +2971,9 @@ export class ShipSelectScene {
       shipContainer.visible = !hidden || targetAlpha > 0.01;
       shipContainer.zIndex = isCenter ? 10 : Math.max(0, 4 - Math.abs(shipContainer.shipIndex - this.selectedIndex));
       if (shipContainer.nameText) shipContainer.nameText.visible = isCenter;
-      if (shipContainer.descText) shipContainer.descText.visible = isCenter;
-      if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
+      const showCenterNarrative = isCenter && !this.compactIntel;
+      if (shipContainer.descText) shipContainer.descText.visible = showCenterNarrative;
+      if (shipContainer.traitText) shipContainer.traitText.visible = showCenterNarrative;
       if (shipContainer.tierBadge) shipContainer.tierBadge.visible = isCenter;
       if (shipContainer.firstFlightBadge) {
         // Compact desktop already states FIRST FLIGHT in the right-side combat
@@ -3042,10 +3080,8 @@ export class ShipSelectScene {
     const buttonHeight = isMobile ? 36 : 40;
     const buttonSpacing = isMobile ? 10 : 20;
     const randomWidth = isMobile ? 104 : 112;
-    const rowWidth = isMobile
-      ? buttonWidth * 2 + randomWidth + buttonSpacing * 2
-      : buttonWidth * 2 + buttonSpacing;
-    const rowX = isMobile ? Math.max(12, (width - rowWidth) / 2) : (width - rowWidth) / 2;
+    const rowWidth = buttonWidth * 2 + randomWidth + buttonSpacing * 2;
+    const rowX = Math.max(12, (width - rowWidth) / 2);
 
     this.detailsButton = this.createButton(
       'DETAILS',
@@ -3084,10 +3120,10 @@ export class ShipSelectScene {
 
     this.randomButton = this.createButton(
       'RANDOM',
-      isMobile ? rowX + buttonWidth * 2 + buttonSpacing * 2 : width - randomWidth - 28,
-      isMobile ? buttonY : height - 52,
+      rowX + buttonWidth * 2 + buttonSpacing * 2,
+      buttonY,
       randomWidth,
-      isMobile ? buttonHeight : 30,
+      buttonHeight,
       0x101a33,
       0x66ffff,
       () => this.navigateRandom()
@@ -3323,6 +3359,12 @@ export class ShipSelectScene {
         : getShipUnlockLabel(ship.spriteKey);
       this.compactIntel.role.text = [roleLine, compactStatus].join(' | ');
       this.compactIntel.weapon.text = weapon;
+      const compactTrait = ship?.trait || ship?.visuals?.trait;
+      this.compactIntel.trait.text = translateText(`TRAIT: ${compactTrait?.label || 'BALANCED TUNE'}`);
+      [this.compactIntel.role, this.compactIntel.weapon, this.compactIntel.trait].forEach((text) => text.scale.set(1));
+      fitDisplayToBox(this.compactIntel.role, this.compactIntel.panel.width - 28, 20, { minScale: 0.78 });
+      fitDisplayToBox(this.compactIntel.weapon, this.compactIntel.panel.width - 28, 18, { minScale: 0.76 });
+      fitDisplayToBox(this.compactIntel.trait, this.compactIntel.panel.width - 28, 18, { minScale: 0.82 });
     }
   }
 

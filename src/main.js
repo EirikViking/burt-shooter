@@ -965,10 +965,40 @@ function buildGameTextState(game) {
       centerLayout: {
         shipBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.sprite),
         masteryBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.masteryBadge),
-        descriptionBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.descText),
-        traitBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.traitText),
+        descriptionBounds: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.descText?.visible
+          ? getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.descText)
+          : null,
+        traitBounds: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.traitText?.visible
+          ? getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.traitText)
+          : null,
+        compactIntelBounds: shipSelectScene.compactIntel?.panel?.visible !== false
+          ? getBoundsDebug(shipSelectScene.compactIntel?.panel)
+          : null,
         rosterBounds: getBoundsDebug(shipSelectScene.rosterStrip),
         footerBounds: getBoundsDebug(shipSelectScene.footerInstructions)
+      },
+      headerLayout: shipSelectScene.hangarHeaderNodes ? {
+        panelBounds: shipSelectScene.hangarHeaderBounds || null,
+        titleBounds: getBoundsDebug(shipSelectScene.hangarHeaderNodes.title),
+        subtitleBounds: getBoundsDebug(shipSelectScene.hangarHeaderNodes.subtitle),
+        selectionBounds: getBoundsDebug(shipSelectScene.hangarHeaderNodes.selection),
+        recommendationBounds: getBoundsDebug(shipSelectScene.recommendationBanner)
+      } : null,
+      intelLayout: {
+        leftPanelBounds: getBoundsDebug(shipSelectScene.leftIntel?.panel),
+        leftProgressBounds: getBoundsDebug(shipSelectScene.leftIntel?.progress),
+        leftStatsBounds: getBoundsDebug(shipSelectScene.leftIntel?.stats),
+        leftHintBounds: getBoundsDebug(shipSelectScene.leftIntel?.hint),
+        rightPanelBounds: getBoundsDebug(shipSelectScene.rightIntel?.panel),
+        rightRoleBounds: getBoundsDebug(shipSelectScene.rightIntel?.role),
+        rightWeaponBounds: getBoundsDebug(shipSelectScene.rightIntel?.weapon),
+        rightTraitBounds: getBoundsDebug(shipSelectScene.rightIntel?.trait),
+        rightTuneBounds: getBoundsDebug(shipSelectScene.rightIntel?.statPanel),
+        rightUnlockBounds: getBoundsDebug(shipSelectScene.rightIntel?.unlock),
+        compactPanelBounds: getBoundsDebug(shipSelectScene.compactIntel?.panel),
+        compactRoleBounds: getBoundsDebug(shipSelectScene.compactIntel?.role),
+        compactWeaponBounds: getBoundsDebug(shipSelectScene.compactIntel?.weapon),
+        compactTraitBounds: getBoundsDebug(shipSelectScene.compactIntel?.trait)
       },
       recommended: shipSelectScene.recommendedShip ? {
         shipName: shipSelectScene.recommendedShip.name || null,

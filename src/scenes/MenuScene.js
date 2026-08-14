@@ -2065,10 +2065,22 @@ export class MenuScene {
       }
       return;
     }
+    const isUtilityButton = button._variant === 'utility' || button._variant === 'utilityDanger';
+    if (isUtilityButton) {
+      const w = button._btnWidth || 180;
+      const compactUtility = Boolean(button._compactUtility);
+      const labelMaxWidth = Math.max(48, w - (compactUtility ? 24 : 72));
+      this.refreshMenuButtonLabel(button, labelMaxWidth, {
+        minScale: compactUtility ? 0.48 : 0.58,
+        forceGpuRefresh,
+        texturePadding: compactUtility ? 20 : 28
+      });
+      return;
+    }
     const isPrimaryButton = button._variant === 'primary';
     const isCompactButton = (button._btnHeight || 0) <= 38;
     const isDockButton = Number.isFinite(button._dockIndex);
-    const isNarrowDockButton = isDockButton && !isPrimaryButton && (button._btnWidth || 0) < 158;
+    const isNarrowDockButton = isDockButton && !isPrimaryButton && (button._btnWidth || 0) < 220;
     const labelInset = button._iconType
       ? (isPrimaryButton ? 138 : (isCompactButton ? 40 : (isNarrowDockButton ? 58 : 92)))
       : (isCompactButton ? 36 : 48);
@@ -2117,27 +2129,34 @@ export class MenuScene {
     const isMobileLayout = layout.isMobile || width < 760;
     const isShortLayout = height < 820;
     const uiScale = Math.max(1, Math.min(2, Number(responsiveLayout?.uiScale) || 1));
+    // The logo is orientation, not reading content. Let accessibility scaling
+    // benefit actionable copy without allowing decorative branding to consume
+    // the launch cards beneath it.
+    const brandScale = Math.min(uiScale, 1.25);
+    const brandCopyScale = Math.min(uiScale, 1.5);
+    const geometryScale = Math.min(uiScale, 1.55);
     this.layoutBackdrop(width, height);
     this.layoutMissionConsole(width, height);
     resizeMenuFx(this, width, height);
 
-    const titleSize = Math.round(clampNumber(width * (isMobileLayout ? 0.076 : 0.035), isMobileLayout ? 38 : 46, isMobileLayout ? 58 : 72) * uiScale);
-    const subtitleSize = Math.round(clampNumber(width * 0.01, isMobileLayout ? 14 : 16, isMobileLayout ? 18 : 20) * uiScale);
+    const titleSize = Math.round(clampNumber(width * (isMobileLayout ? 0.076 : 0.035), isMobileLayout ? 38 : 46, isMobileLayout ? 58 : 72) * brandScale);
+    const subtitleSize = Math.round(clampNumber(width * 0.01, isMobileLayout ? 14 : 16, isMobileLayout ? 18 : 20) * brandCopyScale);
     const controlsSize = getResponsiveFontSize(layout, 'small');
     const titleX = isMobileLayout ? width * 0.5 : clampNumber(width * 0.05, 44, 96);
     const titleY = safeMargin.top + clampNumber(height * 0.075, isMobileLayout ? 46 : 58, isMobileLayout ? 72 : 92);
-    const titleWidth = isMobileLayout ? width * 0.88 : Math.min(width * 0.5, 560 * uiScale);
+    const titleWidth = isMobileLayout ? width * 0.88 : Math.min(width * 0.5, 560 * brandScale);
 
     this.kicker.visible = false;
     this.kicker.alpha = 0;
     this.title.style.fontSize = titleSize;
-    this.title.style.stroke = { color: '#031527', width: Math.round((isMobileLayout ? 5 : 7) * uiScale) };
+    this.title.style.stroke = { color: '#031527', width: Math.round((isMobileLayout ? 5 : 7) * brandScale) };
     this.title.style.letterSpacing = 0;
-    this.title.style.padding = Math.round((isMobileLayout ? 12 : 26) * uiScale);
+    this.title.style.padding = Math.round((isMobileLayout ? 12 : 26) * brandScale);
     this.title.anchor.set(isMobileLayout ? 0.5 : 0, 0.5);
     this.title.x = titleX;
     this.title.y = titleY;
     this.subtitle.text = this.getCinematicSubtitleText();
+    this.subtitle.visible = uiScale < 1.75 && !(isShortLayout && uiScale > 1.15);
     this.subtitle.style.fontSize = subtitleSize;
     this.subtitle.style.align = isMobileLayout ? 'center' : 'left';
     this.subtitle.style.wordWrap = true;
@@ -2177,6 +2196,11 @@ export class MenuScene {
     this.runModeExplainer.updateText?.(false);
     fitTextToWidth(this.title, titleWidth, { minScale: 0.54 });
     fitTextToWidth(this.subtitle, titleWidth, { minScale: 0.72 });
+    if (this.subtitle.visible) {
+      const titleBottom = boundsForDisplayObject(this.title)?.bottom || titleY + titleSize / 2;
+      this.subtitle.y = Math.ceil(titleBottom + 4 + this.subtitle.height / 2);
+      this.subtitle._layoutY = this.subtitle.y;
+    }
 
     this.refreshSectorStartState();
     this.overrunStartState = getOverrunStartState(readHangarProgressState());
@@ -2200,7 +2224,7 @@ export class MenuScene {
     const marginX = clampNumber(width * 0.018, 16, 34);
     const gap = clampNumber(width * 0.007, 8, 16);
     const dockWidth = Math.max(0, width - marginX * 2);
-    const dockHeight = clampNumber(height * 0.098 * uiScale, (isShortLayout ? 72 : READABILITY.controls.dockHeight) * uiScale, (isMobileLayout ? 98 : 106) * uiScale);
+    const dockHeight = clampNumber(height * 0.098 * geometryScale, (isShortLayout ? 72 : READABILITY.controls.dockHeight) * geometryScale, (isMobileLayout ? 98 : 106) * geometryScale);
     const safeBottomEdge = Number.isFinite(safeMargin.bottom)
       ? (safeMargin.bottom > height * 0.5 ? safeMargin.bottom : height - safeMargin.bottom)
       : height;
@@ -2215,6 +2239,39 @@ export class MenuScene {
       right: marginX + dockWidth,
       bottom: Math.min(height - 8, dockTop + dockHeight)
     };
+    const utilityScale = Math.min(1.25, uiScale);
+    const utilityGap = (isMobileLayout ? 8 : 10) * utilityScale;
+    const desiredUtilityWidth = (isMobileLayout ? 144 : 176) * utilityScale;
+    const utilityHeight = (isMobileLayout ? 44 : 50) * utilityScale;
+    const utilityButtons = [this.exitBtn, this.helpBtn, this.musicBtn].filter(Boolean);
+    const headerTextRight = titleX + titleWidth;
+    const utilityHeaderGap = Math.round(16 * utilityScale);
+    const availableUtilityWidth = Math.max(
+      0,
+      width - marginX - headerTextRight - utilityHeaderGap - utilityGap * Math.max(0, utilityButtons.length - 1)
+    );
+    const utilityWidth = Math.max(
+      104,
+      Math.min(desiredUtilityWidth, availableUtilityWidth / Math.max(1, utilityButtons.length))
+    );
+    const utilityY = safeMargin.top + (isMobileLayout ? 28 : 34) * utilityScale;
+    utilityButtons.forEach((button, index) => {
+      button.visible = true;
+      button._btnWidth = utilityWidth;
+      button._btnHeight = utilityHeight;
+      button._variant = button === this.exitBtn ? 'utilityDanger' : 'utility';
+      button._compactUtility = utilityWidth < 148 * utilityScale;
+      button._label.style.fontSize = Math.max(13, Math.round((controlsSize + 1) * utilityScale));
+      this.refreshButtonCopy(button, { forceGpuRefresh: forceLabelGpuRefresh });
+      button.scale.set(1);
+      button.x = width - marginX - utilityWidth / 2 - (utilityButtons.length - 1 - index) * (utilityWidth + utilityGap);
+      button.y = utilityY;
+      button._layoutY = button.y;
+      button._motionY = button.y;
+      if (!Number.isFinite(button._motionScale)) button._motionScale = 1;
+      this.drawMenuButton(button, false);
+    });
+
     const briefingScale = Math.max(1, Math.min(2, uiScale));
     const briefingResponsiveScale = Math.min(briefingScale, isMobileLayout ? 1.25 : 1.6);
     const responsiveBriefingHeight = Math.round(clampNumber(
@@ -2222,19 +2279,28 @@ export class MenuScene {
       (isShortLayout ? 240 : 276) * briefingScale,
       (isShortLayout ? 250 : 342) * briefingScale
     ));
-    const briefingHeight = Math.round(
+    const denseBriefing = Boolean(
+      !(this.isNewPilot && runModeBriefing.id === 'launchTactical')
+      && ((runModeBriefing.tiles || []).length || runModeBriefing.restriction || runModeBriefing.personalBest)
+    );
+    let briefingHeight = Math.round(
       !isMobileLayout && uiScale > 1.2
         ? Math.min(responsiveBriefingHeight, height * 0.37)
         : responsiveBriefingHeight
     );
-    const titleClearForDeck = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
+    if (denseBriefing) {
+      briefingHeight += Math.round((isShortLayout ? 60 : 74) * Math.min(briefingScale, 1.25));
+    }
+    const titleClearForDeck = (this.subtitle?.visible
+      ? (boundsForDisplayObject(this.subtitle)?.bottom || safeMargin.top)
+      : (boundsForDisplayObject(this.title)?.bottom || safeMargin.top)) + 12;
     const cardGap = clampNumber(height * 0.008, 6, 9);
     const cardWidth = Math.round(clampNumber(width * 0.19 * uiScale, (isMobileLayout ? 250 : 280) * uiScale, (isMobileLayout ? 330 : 378) * uiScale));
-    const secondaryCardHeight = Math.round(clampNumber(height * 0.054 * uiScale, (isShortLayout ? 48 : 55) * uiScale, (isMobileLayout ? 60 : 66) * uiScale));
+    const secondaryCardHeight = Math.round(clampNumber(height * 0.054 * geometryScale, (isShortLayout ? 48 : 55) * geometryScale, (isMobileLayout ? 60 : 66) * geometryScale));
     const tacticalCardHeight = Math.round(clampNumber(
       secondaryCardHeight * 1.46,
-      (isShortLayout ? 70 : 78) * uiScale,
-      (isMobileLayout ? 88 : 96) * uiScale
+      (isShortLayout ? 70 : 78) * geometryScale,
+      (isMobileLayout ? 88 : 96) * geometryScale
     ));
     const cardHeights = runModeCards.map((button) => (
       button === this.tacticalStartBtn ? tacticalCardHeight : secondaryCardHeight
@@ -2311,7 +2377,10 @@ export class MenuScene {
     });
 
     const remainingWidth = dockWidth - gap * (dockButtons.length - 1);
-    const secondaryWidth = Math.max((isMobileLayout ? 132 : 156) * uiScale, remainingWidth / Math.max(1, dockButtons.length));
+    // The dock owns a fixed screen-wide lane. Accessibility scale increases
+    // type and height, but must never make five destinations wider than that
+    // lane and push Settings off-screen.
+    const secondaryWidth = remainingWidth / Math.max(1, dockButtons.length);
     let cursorX = marginX;
 
     dockButtons.forEach((button, index) => {
@@ -2351,21 +2420,23 @@ export class MenuScene {
       Math.max((this.launchDeckBounds?.right || 0) + 42, width * 0.61),
       width - marginX - briefingWidth
     ));
-    const plannedUtilityHeight = (isMobileLayout ? 44 : 50) * uiScale;
-    const plannedUtilityGap = (isMobileLayout ? 8 : 10) * uiScale;
-    const plannedUtilityBottom = safeMargin.top + (isMobileLayout ? 28 : 34) + plannedUtilityHeight / 2;
+    const plannedUtilityBottom = utilityY + utilityHeight / 2;
     const utilityBottom = Math.max(
       plannedUtilityBottom,
       boundsForDisplayObject(this.musicBtn)?.bottom || 0,
       boundsForDisplayObject(this.helpBtn)?.bottom || 0,
       boundsForDisplayObject(this.exitBtn)?.bottom || 0
     );
-    const titleClearY = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 14;
-    const briefingY = Math.round(clampNumber(
-      Math.max(titleClearY, utilityBottom + clampNumber(height * 0.02, 14, 24)),
-      safeMargin.top + clampNumber(height * 0.12, 92, 142),
-      Math.max(safeMargin.top + 90, dockTop - briefingHeight - 24)
+    const titleClearY = (this.subtitle?.visible
+      ? (boundsForDisplayObject(this.subtitle)?.bottom || safeMargin.top)
+      : (boundsForDisplayObject(this.title)?.bottom || safeMargin.top)) + 14;
+    const briefingY = Math.round(Math.max(
+      titleClearY,
+      utilityBottom + clampNumber(height * 0.02, 14, 24),
+      safeMargin.top + clampNumber(height * 0.12, 92, 142)
     ));
+    const availableBriefingHeight = Math.max(180, dockTop - briefingY - 24);
+    briefingHeight = Math.round(Math.min(briefingHeight, availableBriefingHeight));
     const briefingPadX = Math.round((isMobileLayout ? 18 : 22) * briefingScale);
     const briefingPadY = Math.round((isShortLayout ? 12 : 14) * briefingScale);
     this.runModePanel.alpha = this.runModePanel.alpha || 1;
@@ -2419,26 +2490,6 @@ export class MenuScene {
     this.easter.y = dockBottom + 4;
     this.easter.anchor.set(0, 0.5);
 
-    const utilityWidth = (isMobileLayout ? 144 : 176) * uiScale;
-    const utilityHeight = (isMobileLayout ? 44 : 50) * uiScale;
-    const utilityGap = (isMobileLayout ? 8 : 10) * uiScale;
-    const utilityButtons = [this.exitBtn, this.helpBtn, this.musicBtn].filter(Boolean);
-    utilityButtons.forEach((button, index) => {
-      button.visible = true;
-      button._btnWidth = utilityWidth;
-      button._btnHeight = utilityHeight;
-      button._variant = button === this.exitBtn ? 'utilityDanger' : 'utility';
-      button._label.style.fontSize = Math.max(16, controlsSize + 1);
-      this.refreshButtonCopy(button, { forceGpuRefresh: forceLabelGpuRefresh });
-      button.scale.set(1);
-      button.x = width - marginX - utilityWidth / 2 - (utilityButtons.length - 1 - index) * (utilityWidth + utilityGap);
-      button.y = safeMargin.top + (isMobileLayout ? 28 : 34);
-      button._layoutY = button.y;
-      button._motionY = button.y;
-      if (!Number.isFinite(button._motionScale)) button._motionScale = 1;
-      this.drawMenuButton(button, false);
-    });
-
     if (this.buildStamp) {
       this.buildStamp.x = width - layout.padding / 2;
       this.buildStamp.y = height - layout.padding / 2;
@@ -2449,6 +2500,7 @@ export class MenuScene {
       this.installButton.x = width / 2;
       this.installButton.y = height - 100;
     }
+    this.runModeLayoutStateSignature = this.getRunModeLayoutStateSignature();
     this.applyMenuModalDimming();
     this.layoutSectorSelector(layout, width, height);
     this.layoutQuitConfirmation(width, height);
@@ -2630,7 +2682,10 @@ export class MenuScene {
     this.runModeExplainer.alpha = this.runModeExplainer.alpha || 1;
 
     const firstRunMayhem = Boolean(this.isNewPilot && briefing.id === 'launchTactical');
-    const summaryHeight = Math.min(summaryMaxHeight, this.runModeExplainer.height || summaryMaxHeight);
+    // Reserve the text's rendered height, including the readability scale
+    // floor. Capping this to the desired height placed following tiles under
+    // the still-visible final line in longer/localized summaries.
+    const summaryHeight = Math.ceil(this.runModeExplainer.height || summaryMaxHeight);
     const tilesY = Math.round(summaryY + summaryHeight + 7 * compactScale);
     const footerHeight = Math.round((firstRunMayhem ? (isShortLayout ? 58 : 72) : (isShortLayout ? 42 : READABILITY.controls.actionHeight)) * compactScale);
     const footerY = y + height - padY - footerHeight;
@@ -2657,7 +2712,7 @@ export class MenuScene {
       - personalBestLaneHeight
       - restrictionGap
       - restrictionHeight;
-    const tileAreaHeight = Math.max(54, restrictionY - tilesY - Math.round(5 * compactScale));
+    const tileAreaHeight = Math.max(0, restrictionY - tilesY - Math.round(8 * compactScale));
     this.layoutRunModeInfoTiles(firstRunMayhem ? [] : (briefing.tiles || []), {
       x: innerX,
       y: tilesY,
@@ -2875,13 +2930,22 @@ export class MenuScene {
     compactScale
   }) {
     const visibleStatus = String(this.runModeStatusBadge?.text || '').trim().toUpperCase();
+    const gap = Math.round(6 * compactScale);
+    const columns = 2;
+    // The type inside a tile has an intentional readability floor (11px label,
+    // 14px value). Never allocate a shorter visual lane and then let that text
+    // spill into the restriction below; compact layouts omit lower-priority
+    // tiles when a complete readable row does not fit.
+    const minimumTileHeight = Math.max(32, Math.round(32 * compactScale));
+    const maxRows = Math.max(0, Math.floor((Math.max(0, height) + gap) / (minimumTileHeight + gap)));
+    const maxVisibleTiles = maxRows * columns;
     const safeTiles = (Array.isArray(tiles) ? tiles : [])
       .filter((tile) => {
         const label = String(tile?.label || '').trim().toUpperCase();
         const value = String(tile?.value || '').trim().toUpperCase();
         return !(visibleStatus && label === 'RANKING' && value === visibleStatus);
       })
-      .slice(0, 4);
+      .slice(0, Math.min(4, maxVisibleTiles));
     const signature = safeTiles.map((tile) => `${tile.label}:${tile.value}:${tile.tone || ''}`).join('|');
     if (signature !== this.runModeInfoTileSignature) {
       this.runModeInfoTiles.removeChildren().forEach((child) => child.destroy?.({ children: true }));
@@ -2913,14 +2977,12 @@ export class MenuScene {
     }
     this.runModeInfoTiles.position.set(x, y);
     this.runModeInfoTiles.visible = safeTiles.length > 0;
-    const gap = Math.round(6 * compactScale);
-    const columns = 2;
     const rows = Math.max(1, Math.ceil(safeTiles.length / columns));
     const tileWidth = (width - gap) / columns;
-    const tileHeight = clampNumber(
-      (height - gap * (rows - 1)) / rows,
-      28,
-      Math.round(46 * compactScale)
+    const availableTileHeight = Math.max(0, (height - gap * (rows - 1)) / rows);
+    const tileHeight = Math.max(
+      0,
+      Math.min(availableTileHeight, Math.round(46 * compactScale))
     );
     this.runModeInfoTileItems.forEach((item, index) => {
       const column = index % columns;
@@ -3190,6 +3252,24 @@ export class MenuScene {
     if (this.modeBriefingOverlay) {
       this.modeBriefingOverlay.rebuild(this.getModeBriefingOverlayData(briefing));
     }
+  }
+
+  getRunModeLayoutStateSignature() {
+    return [
+      Math.round(this.game?.getWidth?.() || 0),
+      Math.round(this.game?.getHeight?.() || 0),
+      this.getSelectedMenuOptionId() || '',
+      this.isNewPilot ? 1 : 0,
+      this.mayhemRunMode || '',
+      this.overrunRunMode || '',
+      this.scoutAnomaly?.id || '',
+      this.runModeTitle?.text || '',
+      this.runModeExplainer?.text || '',
+      this.runModeStatusBadge?.text || '',
+      this.runModeRestriction?.text || '',
+      this.runModePersonalBest?.text || '',
+      this.getRunModeVariantOptions().length
+    ].join('|');
   }
 
   getModeBriefingOverlayData(briefing = this.getRunModeBriefing()) {
@@ -4928,6 +5008,12 @@ export class MenuScene {
       optionOrder: this.menuOptions?.map((option) => option.id).filter(Boolean) || [],
       inputDevice: this.lastInputDevice,
       menuIconVariant: this.menuIconVariant,
+      brand: {
+        titleBounds: boundsForDisplayObject(this.title),
+        subtitleBounds: this.subtitle?.visible ? boundsForDisplayObject(this.subtitle) : null,
+        launchDeckBounds: this.launchDeckBounds || null,
+        dockBounds: this.menuDockBounds || null
+      },
       missionBriefing: {
         eyebrow: this.runModeBriefingTitle?.text || null,
         title: this.runModeTitle?.text || null,
@@ -4963,7 +5049,7 @@ export class MenuScene {
         detailsButtonIconBounds: this.runModeDetailsButtonIcon?.visible
           ? boundsForDisplayObject(this.runModeDetailsButtonIcon)
           : null,
-        tiles: this.runModeInfoTileItems.map((item) => ({
+        tiles: (this.runModeInfoTiles?.visible ? this.runModeInfoTileItems : []).map((item) => ({
           label: item?._nodes?.label?.text || null,
           value: item?._nodes?.value?.text || null,
           bounds: boundsForDisplayObject(item),
@@ -6531,11 +6617,12 @@ export class MenuScene {
     const y = -h / 2;
     const isPrimary = container._variant === 'primary';
     const isUtility = container._variant === 'utility' || container._variant === 'utilityDanger';
+    const isCompactUtility = isUtility && Boolean(container._compactUtility);
     const isUtilityDanger = container._variant === 'utilityDanger';
     const isDanger = container._variant === 'danger';
     const isCompact = h <= 38;
     const isDockButton = Number.isFinite(container._dockIndex);
-    const isNarrowDockButton = isDockButton && !isPrimary && !isUtility && w < 158;
+    const isNarrowDockButton = isDockButton && !isPrimary && !isUtility && w < 220;
     const accent = container._accent || 0x37f5ff;
     const isModalOpen = Boolean(this.sectorSelectorOpen);
     const isFocused = Boolean(container._focused && !isModalOpen);
@@ -6629,7 +6716,7 @@ export class MenuScene {
     bg.lineTo(x + 6 + Math.min(26, w * 0.12), y + h * 0.56);
     bg.stroke({ color: 0xffffff, width: 1, alpha: active ? 0.22 : 0.1 });
 
-    if (!isCompact && icon) {
+    if (!isCompact && !isCompactUtility && icon) {
       const iconCenterX = x + (isPrimary ? 76 : (isNarrowDockButton ? 34 : 50));
       const iconCenterY = hasSubLabel ? -h * 0.08 : 0;
       const plateX = iconCenterX - iconPlateSize / 2;
@@ -6682,13 +6769,15 @@ export class MenuScene {
     shine.stroke({ color: drawAccent, width: active ? 2 : 1, alpha: isPrimary ? 0.5 : 0.28 });
 
     if (label) {
-      label.anchor.set(0, 0.5);
-      label.style.align = 'left';
+      label.anchor.set(isCompactUtility ? 0.5 : 0, 0.5);
+      label.style.align = isCompactUtility ? 'center' : 'left';
       label.style.fill = active
         ? '#ffffff'
           : (isPrimary ? '#ffe584' : (isDanger ? '#ff7a86' : (isUtilityDanger ? '#c9fbff' : '#c9fbff')));
       label.style.strokeThickness = isPrimary ? 4 : 3;
-      label.x = x + (isUtility
+      label.x = isCompactUtility
+        ? 0
+        : x + (isUtility
         ? 56
         : (isCompact ? 40 : (isPrimary ? 138 : (isNarrowDockButton ? 58 : 92))));
       label.y = isDockButton ? 0 : (hasSubLabel ? -h * (isPrimary ? 0.095 : 0.085) : 0);
@@ -6703,6 +6792,10 @@ export class MenuScene {
       sublabel.y = h * (isPrimary ? 0.175 : 0.155);
     }
     if (icon) {
+      if (isCompactUtility) {
+        icon.visible = false;
+        if (iconSprite) iconSprite.visible = false;
+      } else {
       const iconSize = clampNumber(h * (isCompact ? 0.34 : (isPrimary ? 0.32 : 0.29)), 16, isPrimary ? 30 : 23);
       const iconX = x + (isCompact ? 22 : (isPrimary ? 76 : (isNarrowDockButton ? 34 : 50)));
       const iconY = isDockButton ? 0 : (hasSubLabel ? -h * 0.08 : 0);
@@ -6719,6 +6812,7 @@ export class MenuScene {
         if (iconSprite) iconSprite.visible = false;
         icon.visible = true;
         this.drawMenuButtonIcon(icon, container._iconType, iconX, iconY, iconSize, active ? hotAccent : drawAccent, active ? 1 : 0.62);
+      }
       }
     }
     container.hitArea = new PIXI.Rectangle(x, y, w, h);
@@ -7753,6 +7847,21 @@ export class MenuScene {
 
   update(delta) {
     this.animationTime += delta * 0.016;
+    const layoutGuardNow = Date.now();
+    if (
+      layoutGuardNow >= (this.nextRunModeLayoutGuardAt || 0)
+      && !this.settingsOverlay
+      && !this.howToPlayOverlay
+      && !this.modeBriefingOverlay
+      && !this.sectorSelectorOpen
+      && !this.quitConfirmOpen
+    ) {
+      this.nextRunModeLayoutGuardAt = layoutGuardNow + 160;
+      const currentLayoutSignature = this.getRunModeLayoutStateSignature();
+      if (currentLayoutSignature !== this.runModeLayoutStateSignature) {
+        this.layoutMenu({ forceLabelGpuRefresh: true });
+      }
+    }
     if (this.newPilotCue?.visible) {
       const offset = getReducedMotionEnabled() ? 0 : (Math.sin(this.animationTime * 2.4) * 4 + 4);
       this.newPilotCue.position.set(

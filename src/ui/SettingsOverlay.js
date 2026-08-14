@@ -242,6 +242,7 @@ export class SettingsOverlay {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const requestedUiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+    this.requestedUiScale = requestedUiScale;
     const viewportScaleCap = Math.max(1, Math.min(2, width / 1500, height / 900));
     this.uiScale = Math.min(requestedUiScale, viewportScaleCap);
     const settings = AudioManager.getSettings();
@@ -375,10 +376,14 @@ export class SettingsOverlay {
       y += tighterGap;
       this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
       y += tighterGap;
-      this.addChatterFrequencyRow('Chatter Frequency', settings.chatterFrequency, y);
-      // The chatter safety note is intentionally a full readable line below
-      // the selector, so reserve a complete settings row before MUSIC SET.
-      y += Math.round((dense ? 70 : 74) * this.uiScale);
+      const chatterRow = this.addChatterFrequencyRow('Chatter Frequency', settings.chatterFrequency, y);
+      // Flow from the rendered safety note rather than an assumed line count;
+      // accessibility scale and localized copy can make it wrap.
+      const chatterHelperHeight = Math.ceil(chatterRow?._description?.height || 0);
+      y += Math.max(
+        Math.round((dense ? 70 : 74) * this.uiScale),
+        chatterHelperHeight + Math.round(38 * this.uiScale)
+      );
       this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
       if (includeAudioTest) {
         y = Math.min(
@@ -603,7 +608,7 @@ export class SettingsOverlay {
       button.label = `ui_settingsPage_${pageId}`;
       button._label.style.fill = this.activePage === pageId ? '#ffef7e' : '#b8eaff';
       button._label.style.fontSize = Math.max(14, Math.round(16 * Math.min(1.15, scale)));
-      fitTextToWidth(button._label, buttonWidth - 18, { minScale: 0.62 });
+      button._fitLabel?.();
       this.pageButtons[pageId] = button;
       this.container.addChild(button);
       this.registerControl({
@@ -640,13 +645,14 @@ export class SettingsOverlay {
       return items[(currentIndex + Math.sign(direction || 1) + items.length) % items.length];
     };
     const addExperimentChoice = (label, valueLabel, id, onCycle, description = null) => {
-      this.addChoiceRow(label, translateText(valueLabel), y, onCycle, {
+      const row = this.addChoiceRow(label, translateText(valueLabel), y, onCycle, {
         id: `experiment_${id}`,
         buttonWidth: 230,
         description,
         onButton: (button) => { this.experimentChoiceButtons[id] = button; }
       });
-      y += rowGap;
+      const helperHeight = description ? Math.ceil(row?._description?.height || 0) : 0;
+      y += rowGap + (helperHeight > 0 ? helperHeight + Math.round(8 * this.uiScale) : 0);
     };
 
     addExperimentChoice('SCENARIO', scenarioOptions.find((item) => item.id === draft.scenario)?.label, 'scenario', (direction) => {
@@ -1006,7 +1012,7 @@ export class SettingsOverlay {
       const nextLabel = translateText(enabled ? 'ON' : 'OFF');
       if (button._label.text !== nextLabel) button._label.text = nextLabel;
       button._label.style.fill = enabled ? '#ffffff' : '#9fb5c2';
-      fitTextToWidth(button._label, Math.max(80, metrics.choiceWidth - 20), { minScale: 0.72 });
+      button._fitLabel?.();
       return enabled;
     };
     const button = this.createButton(enabled ? 'ON' : 'OFF', metrics.choiceX, 0, () => {
@@ -1163,7 +1169,7 @@ export class SettingsOverlay {
   updateLanguageButton(option) {
     if (this.languageButton?._label && option?.label) {
       this.languageButton._label.text = option.label;
-      fitTextToWidth(this.languageButton._label, 132);
+      this.languageButton._fitLabel?.();
     }
     if (this.languageHint && option?.hint) {
       this.languageHint.text = option.hint;
@@ -1177,9 +1183,9 @@ export class SettingsOverlay {
     const updateButton = () => {
       if (!buttonRef?._label) return;
       buttonRef._label.text = translateText(getChatterFrequencyLabel(CHATTER_FREQUENCY_OPTIONS[selectedIndex]));
-      fitTextToWidth(buttonRef._label, 150, { minScale: 0.7 });
+      buttonRef._fitLabel?.();
     };
-    this.addChoiceRow(
+    return this.addChoiceRow(
       label,
       translateText(getChatterFrequencyLabel(CHATTER_FREQUENCY_OPTIONS[selectedIndex])),
       y,
@@ -1220,7 +1226,7 @@ export class SettingsOverlay {
     const button = this.createButton(selected().label, metrics.compactColumn ? 50 : 18, 0, () => cycleMusicPack(1), { width: 170, height: 30 });
     button.label = 'ui_settingsMusicPack';
     this.musicPackButton = button;
-    fitTextToWidth(button._label, 132);
+    button._fitLabel?.();
     row.addChild(button);
 
     const hint = createText(translateText(selected().hint), {
@@ -1237,7 +1243,7 @@ export class SettingsOverlay {
       const option = getMusicPackOption(pack);
       selectedIndex = Math.max(0, MUSIC_PACK_OPTIONS.findIndex((entry) => entry.id === option.id));
       button._label.text = translateText(option.label);
-      fitTextToWidth(button._label, 132);
+      button._fitLabel?.();
       hint.text = translateText(option.hint);
       fitTextToWidth(hint, 118, { minScale: 0.68 });
     };
@@ -1387,10 +1393,12 @@ export class SettingsOverlay {
       fill: '#ffffff'
     });
     text.anchor.set(0.5);
-    fitTextToWidth(text, width - 18, { minScale: 0.72 });
-    fitDisplayToBox(text, width - 18, height - 8, { minScale: 0.68 });
     button.addChild(text);
     button._label = text;
+    button._buttonWidth = width;
+    button._buttonHeight = height;
+    button._fitLabel = () => this.fitSettingsButtonLabel(button);
+    button._fitLabel();
 
     const draw = (hovered = false) => {
       focus.clear();
@@ -1422,6 +1430,21 @@ export class SettingsOverlay {
       onPress?.();
     });
     return button;
+  }
+
+  fitSettingsButtonLabel(button) {
+    const text = button?._label;
+    if (!text) return;
+    const width = Number(button._buttonWidth) || 120;
+    const height = Number(button._buttonHeight) || 30;
+    const requestedScale = Math.max(1, Number(this.requestedUiScale) || 1);
+    const controlScale = Math.max(1, Number(this.uiScale) || 1);
+    text.scale.set(1);
+    fitTextToWidth(text, width - 18, { minScale: 0.56 });
+    // Settings can shrink as a whole on short screens. Reserve padding in
+    // proportion to the requested UI scale before that final transform so the
+    // value text still clears the frame after fitting.
+    fitDisplayToBox(text, width - 18, height - Math.round(8 * Math.max(controlScale, requestedScale)), { minScale: 0.5 });
   }
 
   addSectionLabel(label, y) {
@@ -1478,15 +1501,15 @@ export class SettingsOverlay {
     const settings = getDisplaySettings();
     if (this.displayModeButton?._label) {
       this.displayModeButton._label.text = this.getModeLabel(settings.mode);
-      fitTextToWidth(this.displayModeButton._label, 174);
+      this.displayModeButton._fitLabel?.();
     }
     if (this.displaySizeButton?._label) {
       this.displaySizeButton._label.text = this.getSizeLabel(settings.windowSize);
-      fitTextToWidth(this.displaySizeButton._label, 174);
+      this.displaySizeButton._fitLabel?.();
     }
     if (this.uiScaleButton?._label) {
       this.uiScaleButton._label.text = getUiScaleLabel(settings.uiScale);
-      fitTextToWidth(this.uiScaleButton._label, 174);
+      this.uiScaleButton._fitLabel?.();
     }
   }
 
@@ -1637,6 +1660,7 @@ export class SettingsOverlay {
       label,
       cycle
     });
+    return row;
   }
 
   addFireInputRow(initialMode, y) {
@@ -2945,7 +2969,8 @@ export class SettingsOverlay {
         bounds: debugBounds(control.button || control.row),
         rowBounds: debugBounds(control.row),
         labelBounds: debugBounds(control.labelText),
-        valueLabelBounds: debugBounds(control.button?._label)
+        valueLabelBounds: debugBounds(control.button?._label),
+        descriptionBounds: debugBounds(control.row?._description)
       })),
       prototype: {
         enabled: false,
