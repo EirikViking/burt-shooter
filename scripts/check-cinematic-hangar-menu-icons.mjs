@@ -224,10 +224,15 @@ async function seedUnreadProfile(page) {
 
 async function setUnreadState(page, unread) {
   const payload = unreadDiscoveryPayload(unread);
-  await page.evaluate((nextPayload) => {
+  await page.evaluate(async (nextPayload) => {
     localStorage.setItem('nova.threatDiscovery.v1', JSON.stringify(nextPayload));
+    const discoveryState = await import('/src/progression/ThreatDiscoveryState.js');
+    discoveryState.invalidateThreatDiscoveryStateCache();
     const menu = window.__game?.scenes?.menu;
-    if (menu) menu.codexCuePollMs = 0;
+    if (menu) {
+      menu.codexCuePollMs = 0;
+      menu.updateCodexSignalCue?.(0);
+    }
   }, payload);
 }
 

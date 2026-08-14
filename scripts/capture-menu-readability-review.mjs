@@ -8,6 +8,8 @@ const viewport = {
   width: Number(process.env.CHECK_WIDTH) || 1920,
   height: Number(process.env.CHECK_HEIGHT) || 1080
 };
+const auditUiScale = Number(process.env.CHECK_UI_SCALE) || 1;
+const auditProgressedProfile = process.env.CHECK_PROGRESS === '1';
 const chromePath = [
   process.env.CHROME_PATH,
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
@@ -20,19 +22,20 @@ const page = await browser.newPage({ viewport });
 const pageErrors = [];
 page.on('pageerror', (error) => pageErrors.push(error?.message || String(error)));
 
-await page.addInitScript(() => {
+await page.addInitScript(({ uiScale, progressed }) => {
+  localStorage.setItem('nova_ui_scale_v1', String(uiScale));
   const raw = localStorage.getItem('nova.hangarProgress.v1');
   const progress = raw ? JSON.parse(raw) : {};
   localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
     ...progress,
-    totalRuns: 0,
-    bestScore: 0,
-    bestSector: 1,
-    bestLevel: 1,
-    totalBossesDefeated: 0,
-    totalWavesCleared: 0
+    totalRuns: progressed ? 64 : 0,
+    bestScore: progressed ? 420000 : 0,
+    bestSector: progressed ? 60 : 1,
+    bestLevel: progressed ? 60 : 1,
+    totalBossesDefeated: progressed ? 72 : 0,
+    totalWavesCleared: progressed ? 360 : 0
   }));
-});
+}, { uiScale: auditUiScale, progressed: auditProgressedProfile });
 
 await page.goto(`${baseUrl}/?skipIntro=1&offlineLeaderboard=1`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
@@ -48,33 +51,36 @@ const utilities = menu?.utilities;
 if (missionBoard && missionBoard.hidden !== true) {
   throw new Error('Permanent Pilot Orders board must be hidden on the main menu.');
 }
-if (missionBriefing?.launchButtonLabel !== 'START PLAYING') {
-  throw new Error(`Fresh-profile CTA must be START PLAYING, got ${missionBriefing?.launchButtonLabel || 'missing'}.`);
+const expectedLaunchLabel = auditProgressedProfile ? 'PLAY' : 'START PLAYING';
+if (missionBriefing?.launchButtonLabel !== expectedLaunchLabel) {
+  throw new Error(`CTA must be ${expectedLaunchLabel}, got ${missionBriefing?.launchButtonLabel || 'missing'}.`);
 }
-if (missionBriefing?.launchFocused !== true) {
+if (!auditProgressedProfile && missionBriefing?.launchFocused !== true) {
   throw new Error('Fresh-profile START PLAYING action must receive initial focus.');
 }
-if (newPilot?.cueVisible !== true) {
+if (!auditProgressedProfile && newPilot?.cueVisible !== true) {
   throw new Error('Fresh-profile new-pilot cue must be visible.');
 }
-if (!newPilot?.arrowVisibleBounds || !newPilot?.labelFrameBounds || !newPilot?.labelBounds) {
+if (!auditProgressedProfile && (!newPilot?.arrowVisibleBounds || !newPilot?.labelFrameBounds || !newPilot?.labelBounds)) {
   throw new Error('Fresh-profile cue must expose measurable arrow, label, and frame bounds.');
 }
-if (newPilot.targetClearance < 12) {
+if (!auditProgressedProfile && newPilot.targetClearance < 12) {
   throw new Error(`New-pilot cue must keep at least 12 px from the run-card frame, got ${newPilot.targetClearance}.`);
 }
 const frame = newPilot.labelFrameBounds;
 const label = newPilot.labelBounds;
 const minimumTextClearance = Math.min(12, Math.max(8, Math.round(viewport.width / 160)));
-const textClearance = {
+const textClearance = frame && label ? {
   left: label.x - frame.x,
   top: label.y - frame.y,
   right: frame.right - label.right,
   bottom: frame.bottom - label.bottom
-};
-for (const [edge, clearance] of Object.entries(textClearance)) {
-  if (clearance < minimumTextClearance) {
-    throw new Error(`New-pilot label ${edge} clearance is ${clearance}px; requires ${minimumTextClearance}px.`);
+} : null;
+if (!auditProgressedProfile) {
+  for (const [edge, clearance] of Object.entries(textClearance || {})) {
+    if (clearance < minimumTextClearance) {
+      throw new Error(`New-pilot label ${edge} clearance is ${clearance}px; requires ${minimumTextClearance}px.`);
+    }
   }
 }
 const launchFrame = missionBriefing?.launchButtonBounds;
