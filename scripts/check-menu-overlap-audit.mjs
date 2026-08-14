@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
+import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
 
-const baseUrl = process.env.CHECK_URL || 'http://127.0.0.1:4746';
+const host = process.env.CHECK_HOST || '127.0.0.1';
+const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4746));
+const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || 'test-results/menu-overlap-audit');
 const auditUiScale = Math.max(1, Math.min(2, Number(process.env.CHECK_UI_SCALE) || 1));
 const scaleTag = `scale-${String(auditUiScale).replace('.', '_')}`;
@@ -25,6 +29,56 @@ const chromePath = [
 
 mkdirSync(outputDir, { recursive: true });
 
+async function isPortAvailable(candidatePort) {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => server.close(() => resolve(true)));
+    server.listen(candidatePort, host);
+  });
+}
+
+async function findAvailablePort(startPort) {
+  for (let candidate = startPort; candidate < startPort + 40; candidate += 1) {
+    if (await isPortAvailable(candidate)) return candidate;
+  }
+  throw new Error(`No available menu overlap audit port found starting at ${startPort}`);
+}
+
+async function canFetch(url) {
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function viteCommand() {
+  const viteEntry = path.resolve('node_modules/vite/bin/vite.js');
+  if (existsSync(viteEntry)) return { command: process.execPath, args: [viteEntry] };
+  return { command: process.platform === 'win32' ? 'npx.cmd' : 'npx', args: ['vite'] };
+}
+
+async function startDevServer() {
+  if (await canFetch(baseUrl)) return null;
+  const { command, args } = viteCommand();
+  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort'], {
+    cwd: process.cwd(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true
+  });
+  server.stdout.on('data', (chunk) => process.stdout.write(`[vite] ${chunk}`));
+  server.stderr.on('data', (chunk) => process.stderr.write(`[vite] ${chunk}`));
+  const start = Date.now();
+  while (Date.now() - start < 20000) {
+    if (await canFetch(baseUrl)) return server;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  server.kill();
+  throw new Error(`Dev server did not become ready at ${baseUrl}`);
+}
+
 function contains(outer, inner, padding = 0) {
   if (!outer || !inner) return false;
   const outerRight = Number.isFinite(outer.right) ? outer.right : outer.x + outer.width;
@@ -40,6 +94,19 @@ function contains(outer, inner, padding = 0) {
 function intersects(a, b, gap = 0) {
   if (!a || !b) return false;
   return a.x < b.right + gap && a.right + gap > b.x && a.y < b.bottom + gap && a.bottom + gap > b.y;
+}
+
+function textInkBounds(bounds, padding = 0) {
+  if (!bounds) return null;
+  const inset = Math.max(0, Math.min(Number(padding) || 0, bounds.width / 2, bounds.height / 2));
+  return {
+    x: bounds.x + inset,
+    y: bounds.y + inset,
+    width: Math.max(0, bounds.width - inset * 2),
+    height: Math.max(0, bounds.height - inset * 2),
+    right: bounds.right - inset,
+    bottom: bounds.bottom - inset
+  };
 }
 
 function assertTextInside(frame, text, label, padding = 6) {
@@ -79,10 +146,26 @@ async function state(page) {
 }
 
 function assertBriefingLanes(briefing, label) {
+  const eyebrowInk = textInkBounds(briefing.eyebrowBounds, briefing.renderPadding?.eyebrow);
+  const titleInk = textInkBounds(briefing.titleBounds, briefing.renderPadding?.title);
+  const bodyInk = textInkBounds(briefing.bodyBounds, briefing.renderPadding?.body);
+  if (briefing.eyebrowBounds) assertTextInside(briefing.panelBounds, briefing.eyebrowBounds, `${label} briefing eyebrow`, 8);
   assertTextInside(briefing.panelBounds, briefing.titleBounds, `${label} briefing title`, 8);
   if (briefing.bodyBounds) assertTextInside(briefing.panelBounds, briefing.bodyBounds, `${label} briefing body`, 8);
-  if (briefing.variantSelectorBounds && briefing.bodyBounds) {
-    assert.ok(!intersects(briefing.variantSelectorBounds, briefing.bodyBounds, 5), `${label}: briefing body overlaps variant selector`);
+  if (eyebrowInk && titleInk) {
+    assert.ok(!intersects(eyebrowInk, titleInk, 2), `${label}: briefing eyebrow overlaps title`);
+  }
+  if (titleInk && briefing.variantSelectorBounds) {
+    assert.ok(!intersects(titleInk, briefing.variantSelectorBounds, 5), `${label}: briefing title overlaps variant selector`);
+  }
+  if (briefing.statusBounds && briefing.variantSelectorBounds) {
+    assert.ok(!intersects(briefing.statusBounds, briefing.variantSelectorBounds, 5), `${label}: status badge overlaps variant selector`);
+  }
+  if (titleInk && bodyInk) {
+    assert.ok(!intersects(titleInk, bodyInk, 5), `${label}: briefing title overlaps body`);
+  }
+  if (briefing.variantSelectorBounds && bodyInk) {
+    assert.ok(!intersects(briefing.variantSelectorBounds, bodyInk, 5), `${label}: briefing body overlaps variant selector`);
   }
   const tileBounds = (briefing.tiles || []).map((tile) => tile.visualBounds || tile.bounds).filter(Boolean);
   tileBounds.forEach((tile, index) => {
@@ -114,6 +197,13 @@ function assertBriefingLanes(briefing, label) {
   }
   if (briefing.detailsButtonBounds?.width > 0 && briefing.detailsButtonLabelBounds) {
     assertTextInside(briefing.detailsButtonBounds, briefing.detailsButtonLabelBounds, `${label} details button`, 6);
+    assert.ok(
+      briefing.detailsButtonLabelBounds.width <= briefing.detailsButtonBounds.width - 12,
+      `${label}: details label exceeds its safe text width`
+    );
+    if (briefing.mode === 'launchTactical') {
+      assert.equal(briefing.detailsButtonLabel, 'VIEW MODE DETAILS', `${label}: Mayhem details label must remain complete`);
+    }
   }
   if (briefing.personalBestBounds && briefing.launchButtonBounds) {
     assert.ok(!intersects(briefing.personalBestBounds, briefing.launchButtonBounds, 3), `${label}: personal best overlaps play button`);
@@ -163,6 +253,8 @@ async function auditMainMenu(page, viewport, profileName) {
   return optionIds;
 }
 
+const server = await startDevServer();
+process.once('exit', () => server?.kill());
 const browser = await chromium.launch({ headless: true, ...(chromePath ? { executablePath: chromePath } : {}) });
 const report = [];
 
@@ -336,4 +428,5 @@ for (const viewport of viewports) {
 }
 
 await browser.close();
+server?.kill();
 console.log(JSON.stringify({ status: 'passed', outputDir, report }, null, 2));

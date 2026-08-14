@@ -65,6 +65,58 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/run-contracts-${timestamp()}`);
 
+function rectsOverlap(a, b, gap = 0) {
+  if (!a || !b || a.width <= 0 || a.height <= 0 || b.width <= 0 || b.height <= 0) return false;
+  return a.x < b.x + b.width + gap
+    && a.x + a.width + gap > b.x
+    && a.y < b.y + b.height + gap
+    && a.y + a.height + gap > b.y;
+}
+
+function assertInsideViewport(bounds, width, height, label, padding = 4) {
+  assert.ok(bounds?.width > 0 && bounds?.height > 0, `${label}: missing bounds`);
+  assert.ok(bounds.x >= padding && bounds.y >= padding, `${label}: crosses top/left viewport edge`);
+  assert.ok(bounds.x + bounds.width <= width - padding, `${label}: crosses right viewport edge`);
+  assert.ok(bounds.y + bounds.height <= height - padding, `${label}: crosses bottom viewport edge`);
+}
+
+function assertInsideFrame(frame, content, label, padding = 8) {
+  assert.ok(frame?.width > 0 && frame?.height > 0, `${label}: missing frame bounds`);
+  assert.ok(content?.width > 0 && content?.height > 0, `${label}: missing content bounds`);
+  assert.ok(content.x >= frame.x + padding && content.y >= frame.y + padding, `${label}: content touches top/left frame`);
+  assert.ok(content.x + content.width <= frame.x + frame.width - padding, `${label}: content touches right frame`);
+  assert.ok(content.y + content.height <= frame.y + frame.height - padding, `${label}: content touches bottom frame`);
+}
+
+function assertFirstFlightLayout(firstFlight, viewport, label) {
+  const bounds = firstFlight?.bounds || {};
+  if (bounds.achievement?.width > 0) {
+    assertInsideViewport(bounds.achievement, viewport.width, viewport.height, `${label} achievement`);
+    assert.equal(rectsOverlap(bounds.achievement, bounds.title, 4), false, `${label}: achievement overlaps title`);
+  }
+  assertInsideViewport(bounds.summaryFrame, viewport.width, viewport.height, `${label} summary frame`);
+  assertInsideViewport(bounds.unlockFrame, viewport.width, viewport.height, `${label} unlock frame`);
+  assertInsideFrame(bounds.summaryFrame, bounds.score, `${label} summary text`, 8);
+  assertInsideFrame(bounds.unlockFrame, bounds.unlock, `${label} unlock text`, 8);
+  const vertical = [bounds.title, bounds.score, bounds.unlock, bounds.advice, bounds.retry]
+    .filter((entry) => entry?.width > 0 && entry?.height > 0);
+  vertical.forEach((entry, index) => {
+    assertInsideViewport(entry, viewport.width, viewport.height, `${label} vertical lane ${index + 1}`);
+    vertical.slice(index + 1).forEach((other, offset) => {
+      assert.equal(rectsOverlap(entry, other, 5), false, `${label}: vertical lane ${index + 1} overlaps lane ${index + offset + 2}`);
+    });
+  });
+  const secondary = [bounds.details, bounds.hangar, bounds.menu].filter((entry) => entry?.width > 0 && entry?.height > 0);
+  assert.equal(secondary.length, 3, `${label}: expected exactly three secondary actions`);
+  secondary.forEach((entry, index) => {
+    assertInsideViewport(entry, viewport.width, viewport.height, `${label} secondary action ${index + 1}`);
+    secondary.slice(index + 1).forEach((other, offset) => {
+      assert.equal(rectsOverlap(entry, other, 5), false, `${label}: secondary action ${index + 1} overlaps action ${index + offset + 2}`);
+    });
+    assert.equal(rectsOverlap(bounds.retry, entry, 5), false, `${label}: retry overlaps secondary action ${index + 1}`);
+  });
+}
+
 const FIRST_THREE = ['graze_10', 'boss_breaker', 'enemy_sweep_1000'];
 const SECOND_THREE = ['support_hunter', 'phase_runner', 'powerup_collector_10'];
 const EXPECTED_ORDER_IDS = [
@@ -1503,7 +1555,31 @@ async function runBrowserSmoke() {
     }));
     assert.equal(earlyGameOverAchievement.active, true, 'an achievement deferred by onboarding should transfer to an early Game Over scene');
     assert.equal(earlyGameOverAchievement.pending, 0, 'transferred early-run achievements should leave the game-level queue');
+    const firstFlightResultState = await readState(page);
+    assert.equal(firstFlightResultState.gameOver?.firstFlight?.active, true, 'first legitimate ranked death should use the focused first-flight result');
+    assert.equal(firstFlightResultState.gameOver?.firstFlight?.title, 'FIRST FLIGHT COMPLETE');
+    assert.match(firstFlightResultState.gameOver?.firstFlight?.score || '', /^SCORE: .+\/\/.*REACHED SECTOR 1$/);
+    assert.match(firstFlightResultState.gameOver?.firstFlight?.unlock || '', /^SHIP UNLOCKED: /);
+    assert.equal(firstFlightResultState.gameOver?.primaryCta?.label, 'ONE MORE RUN');
+    assert.equal(firstFlightResultState.gameOver?.leaderboardCta?.visible, false, 'first-flight surface should defer the leaderboard');
+    assert.deepEqual(firstFlightResultState.gameOver?.firstFlight?.hiddenDetailNodes, {
+      rankProgress: true,
+      shipProgress: true,
+      shipReveal: true,
+      nextGoal: true,
+      leaderboard: true
+    });
+    assertFirstFlightLayout(firstFlightResultState.gameOver.firstFlight, { width: 1280, height: 720 }, 'first flight 1280x720');
     await page.screenshot({ path: path.join(outputDir, 'pilot-orders-first-run-early-gameover-achievement.png'), fullPage: true });
+
+    await page.setViewportSize({ width: 960, height: 640 });
+    await page.waitForTimeout(220);
+    const compactFirstFlightState = await readState(page);
+    assert.equal(compactFirstFlightState.gameOver?.firstFlight?.active, true, 'compact first-flight surface should remain active after resize');
+    assertFirstFlightLayout(compactFirstFlightState.gameOver.firstFlight, { width: 960, height: 640 }, 'first flight 960x640');
+    await page.screenshot({ path: path.join(outputDir, 'pilot-orders-first-run-early-gameover-960x640.png'), fullPage: true });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.waitForTimeout(120);
 
     await seedMenuProfile(page, activeState, 1, { hangarPatch: { totalRuns: 0 } });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
