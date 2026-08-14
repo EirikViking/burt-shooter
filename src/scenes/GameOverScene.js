@@ -36,7 +36,13 @@ import {
 import { translateText } from '../i18n/index.js';
 import { CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID } from '../progression/HangarProgressState.js';
 import { formatRunContractProgressValue } from '../progression/RunContracts.js';
-import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
+import {
+  MAX_RANK_INDEX,
+  formatCareerInteger,
+  getCareerRankProgress,
+  getRankTitle
+} from '../shared/RankPolicy.js';
+import { getReducedMotionEnabled } from '../config/AccessibilitySettings.js';
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { RUN_MODES, getRunModeProfile, isOverrunRunMode } from '../game/RunMode.js';
 import { getDeathCoachAdvice as getRunDeathCoachAdvice } from '../game/RunReport.js';
@@ -130,6 +136,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   deathCoach: 'COUNTER ADVICE: LAST DEATH',
   powerups: 'Powerups',
   careerXp: 'Career XP',
+  careerRank: 'Career Rank',
   shipMastery: 'Ship mastery',
   shipTours: 'TOURS',
   newRanks: 'New ranks',
@@ -215,10 +222,6 @@ function getConfirmedGlobalPlacement(score, entries = []) {
   };
 }
 
-function getDisplayRankNumber(rankIndex) {
-  return Math.min(MAX_RANK_INDEX + 1, Math.max(1, Math.floor(Number(rankIndex) || 0) + 1));
-}
-
 function getValidPlacementNumber(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric) || numeric <= 0) return null;
@@ -245,6 +248,8 @@ export class GameOverScene {
     this.unlockText = null;
     this.rankProgressBg = null;
     this.rankProgressText = null;
+    this.endlessRankHalo = null;
+    this.endlessRankCelebrationPlayed = false;
     this.shipUnlockProgressBg = null;
     this.shipUnlockProgressText = null;
     this.newlyUnlockedShips = [];
@@ -484,6 +489,7 @@ export class GameOverScene {
     this.removeInputOverlay();
     this.nameInput = '';
     this.state = 'prompt';
+    this.endlessRankCelebrationPlayed = false;
     this.runbackReason = null;
     this.selectedCtaLine = null;
     this.ctaVoicePlayed = false;
@@ -673,6 +679,14 @@ export class GameOverScene {
     this.rankProgressBg = new PIXI.Graphics();
     this.rankProgressBg.zIndex = 1;
     this.container.addChild(this.rankProgressBg);
+
+    this.endlessRankHalo = PIXI.Sprite.from(AssetManifest.sprites.rankPresentation.endlessHalo);
+    this.endlessRankHalo.anchor.set(0.5);
+    this.endlessRankHalo.alpha = 0.48;
+    this.endlessRankHalo.blendMode = 'add';
+    this.endlessRankHalo.visible = false;
+    this.endlessRankHalo.zIndex = 1;
+    this.container.addChild(this.endlessRankHalo);
 
     this.rankProgressText = createText('', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -1576,12 +1590,19 @@ export class GameOverScene {
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
       return translateText('SCOUT RUN: NO CAREER XP OR RANKED PROGRESS');
     }
-    const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
-    if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
-      return `${translateText('NEXT RANK')}: ${getRankTitle(MAX_RANK_INDEX)}  |  ${translateText('XP TO NEXT')}: 0`;
-    }
-    const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1));
-    return `${translateText('NEXT RANK')}: ${nextTitle}  |  ${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
+    const rankProgress = getCareerRankProgress(currentProgress.pilotXpExact ?? currentProgress.pilotXp ?? 0);
+    const nextTitle = rankProgress.postCap
+      ? `${translateText('RANK')} ${formatCareerInteger((BigInt(rankProgress.displayRankExact) + 1n).toString(), { maxPlainDigits: 6 })}`
+      : getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1));
+    const earnedCareerRank = this.shouldCelebrateEndlessRank()
+      ? translateText('NEW CAREER RANK: {rank}', {
+          rank: formatCareerInteger(this.game?.runSummary?.careerRankAfter || rankProgress.displayRankExact, { maxPlainDigits: 6 })
+        })
+      : '';
+    return [
+      earnedCareerRank,
+      `${translateText('NEXT RANK')}: ${nextTitle}  |  ${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`
+    ].filter(Boolean).join('\n');
   }
 
   createRunbackShipProgressSummary(currentProgress = this.currentProgressForResult || {}) {
@@ -1687,6 +1708,9 @@ export class GameOverScene {
     if (this.rankProgressText) {
       this.rankProgressText.text = finalLines.rankProgress;
       this.rankProgressText.visible = Boolean(finalLines.rankProgress);
+    }
+    if (this.endlessRankHalo) {
+      this.endlessRankHalo.visible = Boolean(finalLines.rankProgress && this.shouldCelebrateEndlessRank());
     }
     if (this.shipUnlockProgressText) {
       this.shipUnlockProgressText.text = finalLines.shipProgress;
@@ -2454,6 +2478,12 @@ export class GameOverScene {
     if (rankProgressVisible) {
       this.rankProgressText.x = width / 2;
       this.rankProgressText.y = placeCenteredElement(this.rankProgressText, layout.isMobile ? 14 : 18, rankProgressHeight);
+      if (this.endlessRankHalo) {
+        const haloSize = Math.min(layout.isMobile ? 150 : 210, rankProgressHeight * 3.4);
+        this.endlessRankHalo.position.set(this.rankProgressText.x, this.rankProgressText.y);
+        this.endlessRankHalo.width = haloSize;
+        this.endlessRankHalo.height = haloSize;
+      }
     }
 
     if (shipProgressVisible) {
@@ -3724,6 +3754,9 @@ export class GameOverScene {
 
   update(delta = 1) {
     updateMenuFx(this, delta);
+    if (this.endlessRankHalo?.visible && !getReducedMotionEnabled()) {
+      this.endlessRankHalo.rotation += 0.0012 * Math.max(0, Number(delta) || 0);
+    }
     this.updateCeremonyEffects();
     this.updatePersonalBestCarry(delta);
     if (this.shipUnlockReveal?.visible) {
@@ -4069,13 +4102,12 @@ export class GameOverScene {
   }
 
   createPilotRankLine(currentProgress = {}) {
-    const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
+    const rankProgress = getCareerRankProgress(currentProgress.pilotXpExact ?? currentProgress.pilotXp ?? 0);
     const rankTitle = String(rankProgress.title || getRankTitle(currentProgress.pilotRank || 0)).toUpperCase();
-    const displayRank = getDisplayRankNumber(rankProgress.rankIndex);
-    if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
-      return `${translateText('RANK')} ${displayRank}: ${rankTitle} ${translateText('MAX')}`;
-    }
-    const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
+    const displayRank = formatCareerInteger(rankProgress.displayRankExact, { maxPlainDigits: 6 });
+    const nextTitle = rankProgress.postCap
+      ? `${translateText('RANK')} ${formatCareerInteger((BigInt(rankProgress.displayRankExact) + 1n).toString(), { maxPlainDigits: 6 })}`
+      : getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
     const percent = Math.max(0, Math.min(99, Math.round((rankProgress.progress || 0) * 100)));
     return `${translateText('RANK')} ${displayRank}: ${rankTitle}\n${percent}% ${translateText('TO')} ${nextTitle}`;
   }
@@ -4083,17 +4115,12 @@ export class GameOverScene {
   createPilotXpLine(currentProgress = {}) {
     const summary = this.game?.runSummary || {};
     const gained = Math.max(0, Number(summary.pilotXpGained) || 0);
-    const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
+    const rankProgress = getCareerRankProgress(currentProgress.pilotXpExact ?? currentProgress.pilotXp ?? 0);
     const rankTitle = String(rankProgress.title || getRankTitle(currentProgress.pilotRank || 0)).toUpperCase();
-    const displayRank = getDisplayRankNumber(rankProgress.rankIndex);
-    if (rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1) {
-      return [
-        `${translateText('CAREER XP')}: +${gained.toLocaleString('en-US')}`,
-        `${translateText('RANK')} ${displayRank}: ${rankTitle}`,
-        translateText('MAX RANK')
-      ].join('\n');
-    }
-    const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
+    const displayRank = formatCareerInteger(rankProgress.displayRankExact, { maxPlainDigits: 6 });
+    const nextTitle = rankProgress.postCap
+      ? `${translateText('RANK')} ${formatCareerInteger((BigInt(rankProgress.displayRankExact) + 1n).toString(), { maxPlainDigits: 6 })}`
+      : getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
     const percent = Math.max(0, Math.min(99, Math.round((rankProgress.progress || 0) * 100)));
     return [
       `${translateText('CAREER XP')}: +${gained.toLocaleString('en-US')}`,
@@ -4220,9 +4247,9 @@ export class GameOverScene {
     const clearLabel = summary.runCleared ? 'RUN CLEAR' : 'GAME OVER';
     const elapsedSeconds = Math.max(0, Math.floor(Number(summary.runElapsedSeconds) || 0));
     const gained = Math.max(0, Number(summary.pilotXpGained) || 0);
-    const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
+    const rankProgress = getCareerRankProgress(currentProgress.pilotXpExact ?? currentProgress.pilotXp ?? 0);
     const rankTitle = String(rankProgress.title || getRankTitle(currentProgress.pilotRank || 0)).toUpperCase();
-    const displayRank = getDisplayRankNumber(rankProgress.rankIndex);
+    const displayRank = formatCareerInteger(rankProgress.displayRankExact, { maxPlainDigits: 6 });
     const modeLabel = translateText(getRunModeProfile(this.game?.runMode).resultLabel || 'RUN');
     const mastery = summary.shipMastery;
     const masteryTier = mastery?.tier?.label ? translateText(mastery.tier.label) : null;
@@ -6463,6 +6490,40 @@ export class GameOverScene {
     this.layoutScreen();
   }
 
+  shouldCelebrateEndlessRank() {
+    const summary = this.game?.runSummary || {};
+    if (summary.careerRankIncreased !== true) return false;
+    try {
+      return BigInt(String(summary.careerRankAfter || '0')) > 40n;
+    } catch {
+      return false;
+    }
+  }
+
+  playEndlessRankCelebration() {
+    if (this.endlessRankCelebrationPlayed || !this.shouldCelebrateEndlessRank()) return false;
+    this.endlessRankCelebrationPlayed = true;
+    this.ctaVoicePlayed = true;
+    AudioManager.duckMusic(0.2, 4200);
+    AudioManager.playSfx('nova_rank_fanfare', { force: true, volume: 0.82, minIntervalMs: 0 });
+    this.scheduleSceneTimeout(() => {
+      AudioManager.playSfx('nova_endless_rank_ascent', { force: true, volume: 0.96, minIntervalMs: 0 });
+    }, 180);
+    this.scheduleSceneTimeout(() => {
+      AudioManager.playVoice('mission_control_endless_rank', {
+        force: true,
+        stopOtherVoices: true,
+        exclusiveGroup: 'announcer',
+        cooldownMs: 0,
+        eventCooldownMs: 0,
+        duckMs: 4200,
+        duckFactor: 0.3,
+        volume: 0.98
+      });
+    }, 620);
+    return true;
+  }
+
   enterRunbackStage(reason = 'runback') {
     if (this.state === 'runback') return;
     this.clearSceneTimeouts();
@@ -6503,7 +6564,9 @@ export class GameOverScene {
       this.instructions.text = this.getInstructionsText();
     }
 
-    if (this.globalPlacement?.qualified) {
+    if (this.shouldCelebrateEndlessRank()) {
+      this.playEndlessRankCelebration();
+    } else if (this.globalPlacement?.qualified) {
       this.playGlobalQualificationFanfare();
     } else {
       AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });

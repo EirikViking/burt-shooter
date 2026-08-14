@@ -488,6 +488,14 @@ function estimateScoreLevel(score) {
   return Math.max(1, Math.min(99, Math.floor(normalizedScore / 5000) + 1));
 }
 
+function normalizeCareerRankExact(value, fallback = '1') {
+  if (value === null || value === undefined || value === '') return null;
+  const text = String(value).trim();
+  if (!/^\d+$/.test(text)) return String(fallback);
+  const normalized = text.replace(/^0+(?=\d)/, '');
+  return normalized === '0' ? String(fallback) : normalized;
+}
+
 function sanitizeScoreEntry(entry = {}) {
   const name = String(entry.name || 'PILOT').trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 14) || 'PILOT';
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
@@ -499,6 +507,7 @@ function sanitizeScoreEntry(entry = {}) {
     level,
     rankIndex,
     rank_index: rankIndex,
+    careerRankExact: normalizeCareerRankExact(entry.careerRankExact, String(rankIndex + 1)),
     shipId: entry.shipId ?? entry.ship_id ?? null,
     shipName: entry.shipName ?? entry.ship_name ?? null,
     runTimeSeconds: entry.runTimeSeconds ?? entry.runtimeSeconds ?? null,

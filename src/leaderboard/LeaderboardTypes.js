@@ -1,5 +1,11 @@
 import { BUILD_ID } from '../buildInfo.js';
-import { MAX_RANK_INDEX, getRankFromLevel } from '../shared/RankPolicy.js';
+import {
+  MAX_RANK_INDEX,
+  formatCareerInteger,
+  getCareerDisplayRankExact,
+  getRankFromLevel,
+  normalizePilotXpExact
+} from '../shared/RankPolicy.js';
 import { getSelectableShips, getShipMetadata } from '../config/ShipMetadata.js';
 import {
   canRunModeSubmitGlobalLeaderboard,
@@ -14,6 +20,10 @@ export const STEAM_TACTICAL_LEADERBOARD_NAME = 'nova_swarm_tactical_score_v1';
 export const STEAM_TACTICAL_LEADERBOARD_COMMUNITY_NAME = 'Tactical Mayhem Score';
 export const STEAM_SECTOR_LEADERBOARD_NAME = 'nova_swarm_sector_start_score_v1';
 export const STEAM_SECTOR_LEADERBOARD_COMMUNITY_NAME = 'Sector Run Score';
+export const CAREER_RANK_DETAILS_MARKER = 20260814;
+export const GLOBAL_COMPETITIVE_DETAILS_COUNT = 6;
+export const SECTOR_COMPETITIVE_DETAILS_COUNT = 7;
+const STEAM_DETAILS_INT32_MAX = 2147483647;
 
 export const LeaderboardView = {
   GLOBAL: 'global',
@@ -85,6 +95,50 @@ function numeric(value, fallback = 0) {
 
 function numericInt(value, fallback = 0) {
   return Math.floor(numeric(value, fallback));
+}
+
+export function encodeCareerRankExtension(careerRankExact) {
+  const exact = normalizePilotXpExact(careerRankExact, '1');
+  const digitCount = Math.min(STEAM_DETAILS_INT32_MAX, exact.length);
+  const leadingNineDigits = Math.max(1, Number.parseInt(exact.slice(0, 9), 10) || 1);
+  const exactInt32 = exact.length <= 10 && BigInt(exact) <= BigInt(STEAM_DETAILS_INT32_MAX)
+    ? Number(exact)
+    : 0;
+  return [CAREER_RANK_DETAILS_MARKER, digitCount, leadingNineDigits, exactInt32];
+}
+
+export function replaceCareerRankDetails(details = [], careerRankExact, competitiveDetailsCount = GLOBAL_COMPETITIVE_DETAILS_COUNT) {
+  const preserved = readLeaderboardDetails(details).slice(0, Math.max(0, competitiveDetailsCount));
+  return [...preserved, ...encodeCareerRankExtension(careerRankExact)];
+}
+
+export function readCareerRankStatus(details = [], competitiveDetailsCount = GLOBAL_COMPETITIVE_DETAILS_COUNT) {
+  const values = readLeaderboardDetails(details);
+  const markerIndex = Math.max(0, competitiveDetailsCount);
+  if (values[markerIndex] !== CAREER_RANK_DETAILS_MARKER) return null;
+  const digitCount = Math.max(1, numericInt(values[markerIndex + 1], 0));
+  const leadingNineDigits = Math.max(1, numericInt(values[markerIndex + 2], 0));
+  const exactInt32 = Math.max(0, numericInt(values[markerIndex + 3], 0));
+  if (!digitCount || !leadingNineDigits) return null;
+  if (exactInt32 > 0) {
+    const exact = String(exactInt32);
+    return {
+      exact,
+      label: formatCareerInteger(exact, { maxPlainDigits: 6 }),
+      digitCount,
+      leadingNineDigits,
+      version: CAREER_RANK_DETAILS_MARKER
+    };
+  }
+  const leading = String(leadingNineDigits).padStart(Math.min(9, digitCount), '0');
+  const fraction = leading.slice(1, 3).replace(/0+$/, '');
+  return {
+    exact: null,
+    label: `${leading[0]}${fraction ? `.${fraction}` : ''}e${digitCount - 1}`,
+    digitCount,
+    leadingNineDigits,
+    version: CAREER_RANK_DETAILS_MARKER
+  };
 }
 
 function firstFiniteInt(values = [], fallback = 0) {
@@ -284,6 +338,15 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
     }
   }
   const rankIndex = Math.max(0, Math.min(MAX_RANK_INDEX, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
+  const competitiveDetailsCount = sectorEntry ? SECTOR_COMPETITIVE_DETAILS_COUNT : GLOBAL_COMPETITIVE_DETAILS_COUNT;
+  const encodedCareerRank = readCareerRankStatus(details, competitiveDetailsCount);
+  const localCareerRankExact = raw.careerRankExact ?? raw.metadata?.careerRankExact ?? null;
+  const careerRankExact = localCareerRankExact == null
+    ? encodedCareerRank?.exact ?? null
+    : normalizePilotXpExact(localCareerRankExact, String(rankIndex + 1));
+  const careerRankLabel = careerRankExact
+    ? formatCareerInteger(careerRankExact, { maxPlainDigits: 6 })
+    : encodedCareerRank?.label ?? String(rankIndex + 1);
   const runTimeSeconds = sectorEntry
     ? (raw.runTimeSeconds ?? raw.runtimeSeconds ?? raw.metadata?.runTimeSeconds ?? details[4] ?? null)
     : (raw.runTimeSeconds ?? raw.runtimeSeconds ?? raw.metadata?.runTimeSeconds ?? null);
@@ -303,6 +366,13 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
     level,
     rank_index: rankIndex,
     rankIndex,
+    careerRankExact,
+    careerRankLabel,
+    careerRankStatusSource: localCareerRankExact != null
+      ? 'exact'
+      : encodedCareerRank
+        ? 'steam_details'
+        : 'authored_fallback',
     shipId,
     shipName,
     shipTier,
@@ -364,6 +434,13 @@ export function createRunResultFromGame(game, overrides = {}) {
     level: levelReached,
     levelReached,
     rankIndex: Math.max(0, numericInt(overrides.rankIndex ?? game?.rankIndex, 0)),
+    careerRankExact: normalizePilotXpExact(
+      overrides.careerRankExact
+        ?? game?.getCareerDisplayRankExact?.()
+        ?? game?.runSummary?.careerRankAfter
+        ?? getCareerDisplayRankExact(game?.runSummary?.pilotXpExact ?? game?.runSummary?.pilotXp ?? 0),
+      '1'
+    ),
     playerName: overrides.playerName || overrides.name || null,
     submissionId: overrides.submissionId || null,
     shipId: shipMetadata?.id || selectedShipSpriteKey || null,
@@ -421,6 +498,13 @@ export function createSectorStartRunResultFromGame(game, overrides = {}) {
     level: highestSectorReached,
     levelReached: highestSectorReached,
     rankIndex: Math.max(0, numericInt(overrides.rankIndex ?? game?.rankIndex, 0)),
+    careerRankExact: normalizePilotXpExact(
+      overrides.careerRankExact
+        ?? game?.getCareerDisplayRankExact?.()
+        ?? summary.careerRankAfter
+        ?? getCareerDisplayRankExact(summary.pilotXpExact ?? summary.pilotXp ?? 0),
+      '1'
+    ),
     playerName: overrides.playerName || overrides.name || null,
     submissionId: overrides.submissionId || null,
     shipId: shipMetadata?.id || selectedShipSpriteKey || null,
@@ -446,18 +530,19 @@ export function createSectorStartRunResultFromGame(game, overrides = {}) {
 
 export function encodeSteamLeaderboardDetails(runResult = {}) {
   const levelReached = runResult.levelReached ?? runResult.level;
-  return [
+  const competitiveDetails = [
     Math.max(0, numericInt(levelReached, 0)),
     Math.max(0, numericInt(runResult.shipNumericId ?? getShipNumericId(runResult.selectedShipSpriteKey), 0)),
     Math.max(0, numericInt(runResult.runTimeSeconds, 0)),
     Math.max(0, numericInt(runResult.kills, 0)),
     Math.max(0, numericInt(runResult.bossKills, 0)),
     Math.max(0, numericInt(runResult.wavesCleared, 0))
-  ].map(value => Math.max(0, Math.min(2147483647, value)));
+  ].map(value => Math.max(0, Math.min(STEAM_DETAILS_INT32_MAX, value)));
+  return replaceCareerRankDetails(competitiveDetails, runResult.careerRankExact ?? String((runResult.rankIndex || 0) + 1), GLOBAL_COMPETITIVE_DETAILS_COUNT);
 }
 
 export function encodeSteamSectorLeaderboardDetails(runResult = {}) {
-  return [
+  const competitiveDetails = [
     Math.max(0, numericInt(runResult.startSector ?? runResult.sectorStart, 0)),
     Math.max(0, numericInt(runResult.highestSectorReached ?? runResult.levelReached ?? runResult.level, 0)),
     Math.max(0, numericInt(runResult.finalSector ?? runResult.levelReached ?? runResult.level, 0)),
@@ -465,5 +550,6 @@ export function encodeSteamSectorLeaderboardDetails(runResult = {}) {
     Math.max(0, numericInt(runResult.runTimeSeconds, 0)),
     Math.max(0, numericInt(runResult.bossKills, 0)),
     Math.max(0, numericInt(runResult.wavesCleared, 0))
-  ].map(value => Math.max(0, Math.min(2147483647, value)));
+  ].map(value => Math.max(0, Math.min(STEAM_DETAILS_INT32_MAX, value)));
+  return replaceCareerRankDetails(competitiveDetails, runResult.careerRankExact ?? String((runResult.rankIndex || 0) + 1), SECTOR_COMPETITIVE_DETAILS_COUNT);
 }

@@ -319,6 +319,9 @@ export const AssetManifest = {
             ),
             '/art/generated/nova-swarm/ranks/nova-rank-badge-40-20260724.png'
         ],
+        rankPresentation: {
+            endlessHalo: '/art/generated/nova-swarm/ranks/nova-endless-signal-halo-20260814.png'
+        },
 
         // Damage Overlays
         damage: {
@@ -430,6 +433,7 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_overrun_clear_sector_50_01.mp3',
             '/audio/voice/mission-control/mission_control_overrun_clear_far_signal_01.mp3',
             '/audio/voice/mission-control/mission_control_credits_01.mp3',
+            '/audio/voice/mission-control/mission_control_endless_rank_01.mp3',
             ...Array.from({ length: 50 }, (_, i) => `/audio/voice/cta/one_more_run_${String(i + 1).padStart(2, '0')}.mp3`),
             ...Array.from({ length: 100 }, (_, i) => `/audio/voice/boss-death/boss_death_agony_${String(i + 1).padStart(3, '0')}.mp3`),
             ...menuBossBarkLines.map((line) => `/audio/voice/menu-boss-barks/${line.id}.mp3`),
@@ -507,6 +511,7 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_miracle_purge.mp3',
             '/audio/sfx/nova-swarm/nova_shield_snap.mp3',
             '/audio/sfx/nova-swarm/nova_rank_fanfare.mp3',
+            '/audio/sfx/nova-swarm/nova_endless_rank_ascent.mp3',
             '/audio/sfx/nova-swarm/nova_highscore_chime.mp3',
             '/audio/sfx/nova-swarm/nova_global_near_fanfare.mp3',
             '/audio/sfx/nova-swarm/nova_global_slot_fanfare.mp3',

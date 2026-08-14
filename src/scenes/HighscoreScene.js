@@ -78,6 +78,19 @@ function getLeaderboardLevelDisplay(entry = {}, view = LeaderboardView.GLOBAL) {
   return `${label} ${level}`;
 }
 
+function isPostCapCareerRank(entry = {}) {
+  if (entry.careerRankExact != null) {
+    try {
+      return BigInt(String(entry.careerRankExact)) > 40n;
+    } catch {
+      return false;
+    }
+  }
+  const label = String(entry.careerRankLabel || '').trim().toLowerCase();
+  if (label.includes('e')) return true;
+  return Number(label.replace(/[^0-9]/g, '')) > 40;
+}
+
 export class HighscoreScene {
   constructor(game) {
     this.game = game;
@@ -1313,6 +1326,10 @@ export class HighscoreScene {
             sector: Math.max(1, Math.floor(Number(score.highestSectorReached ?? score.level ?? score.sectorStart) || 1))
           })
           : getRankTitle(clampedRank);
+        const careerRankLabel = String(score.careerRankLabel || (clampedRank + 1));
+        const rankStatusText = isCpuRival
+          ? rankTitle
+          : `${translateText('Career Rank').toUpperCase()} ${careerRankLabel} // ${rankTitle}`;
         const displayName = (score.name || '??').slice(0, isMobile ? 13 : (compactDesktopGrid ? 11 : 18)).toUpperCase();
 
         if (isFeaturedPlayer) {
@@ -1338,7 +1355,7 @@ export class HighscoreScene {
           fontSize: rowStyle.fontSize + (isTop3 && !isMobile ? 1 : 0)
         });
         const nameText = createText(displayName, nameStyle);
-        const rankNameText = createText(rankTitle, {
+        const rankNameText = createText(rankStatusText, {
           fontFamily: FONT_ARCADE,
           fontSize: Math.max(isMobile ? 12 : 15, rowStyle.fontSize - (isMobile ? 3 : 1)),
           fill: isTop3 ? '#ffefaa' : '#9fd7e3',
@@ -1407,6 +1424,17 @@ export class HighscoreScene {
         const rankTexture = isCpuRival ? null : rankTextures[index];
         const displayRank = computeDisplayRank(score);
         if (rankTexture) {
+          if (isPostCapCareerRank(score) && AssetManifest.sprites.rankPresentation?.endlessHalo) {
+            const endlessHalo = PIXI.Sprite.from(AssetManifest.sprites.rankPresentation.endlessHalo);
+            endlessHalo.anchor.set(0.5);
+            const haloSize = Math.min(rowHeight * 1.08, layout.isMobile ? 42 : 62);
+            endlessHalo.width = haloSize;
+            endlessHalo.height = haloSize;
+            endlessHalo.position.set(columns.badge, rowMidY);
+            endlessHalo.alpha = isTop3 ? 0.38 : 0.22;
+            endlessHalo.blendMode = 'add';
+            this.rowsContainer.addChild(endlessHalo);
+          }
           const badgeGlow = new PIXI.Graphics();
           const glowSize = Math.min(rowHeight * 0.82, layout.isMobile ? 34 : 52);
           badgeGlow.circle(columns.badge, rowMidY, glowSize * 0.54);
@@ -1478,6 +1506,8 @@ export class HighscoreScene {
           rank: debugBounds(rankText),
           name: debugBounds(nameText),
           rankTitle: debugBounds(rankNameText),
+          careerRankLabel,
+          careerRankStatusSource: score.careerRankStatusSource || null,
           score: debugBounds(scoreText),
           scoreLabel: debugBounds(scoreLabel),
           level: debugBounds(levelText),

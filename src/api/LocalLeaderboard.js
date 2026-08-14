@@ -1,4 +1,4 @@
-import { MAX_RANK_INDEX, getRankFromLevel } from '../shared/RankPolicy.js';
+import { MAX_RANK_INDEX, getRankFromLevel, normalizePilotXpExact } from '../shared/RankPolicy.js';
 import { estimateLeaderboardLevelFromScore, readLeaderboardLevel } from '../leaderboard/LeaderboardTypes.js';
 
 export const LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
@@ -54,6 +54,9 @@ function normalizeEntry(raw, fallbackIndex = 0) {
     levelReached: level,
     rankIndex,
     rank_index: rankIndex,
+    careerRankExact: raw.careerRankExact == null
+      ? null
+      : normalizePilotXpExact(raw.careerRankExact, String(rankIndex + 1)),
     shipId: raw.shipId ?? raw.ship_id ?? null,
     shipName: raw.shipName ?? raw.ship_name ?? null,
     runTimeSeconds: raw.runTimeSeconds ?? raw.runtimeSeconds ?? null,
@@ -133,6 +136,7 @@ export const LocalLeaderboard = {
       score,
       level: readLeaderboardLevel(entry, estimateLeaderboardLevelFromScore(score)),
       rankIndex: entry.rankIndex ?? entry.rank_index ?? getRankFromLevel(readLeaderboardLevel(entry, estimateLeaderboardLevelFromScore(score))),
+      careerRankExact: entry.careerRankExact,
       shipId: entry.shipId,
       shipName: entry.shipName,
       runTimeSeconds: entry.runTimeSeconds,

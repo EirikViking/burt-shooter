@@ -7,8 +7,9 @@ import { TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP } from '../config/TacticalDirecti
 import { RUN_MODES, getRunModeReportIdentity } from './RunMode.js';
 import { getCombatDamageSourceLabel } from './CombatTelemetry.js';
 import { getPlayerDamageCause } from './PlayerDamageCause.js';
+import { formatCareerInteger, normalizePilotXpExact } from '../shared/RankPolicy.js';
 
-const RUN_REPORT_VERSION = 16;
+const RUN_REPORT_VERSION = 17;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -197,6 +198,22 @@ export function createRunReport(summary = {}) {
       }
     : null;
   const pilotOrdersCompleted = getPilotOrdersCompleted(summary.runContracts);
+  const careerRankExact = normalizePilotXpExact(
+    summary.careerRankAfter ?? summary.rankProgress?.displayRankExact ?? String(Math.max(1, toWholeNumber(summary.pilotRank) + 1)),
+    '1'
+  );
+  const careerRankLabel = formatCareerInteger(careerRankExact, { maxPlainDigits: 6 });
+  const careerRankBeforeExact = normalizePilotXpExact(summary.careerRankBefore ?? careerRankExact, careerRankExact);
+  let careerRanksEarnedExact = '0';
+  try {
+    const earned = BigInt(careerRankExact) - BigInt(careerRankBeforeExact);
+    careerRanksEarnedExact = earned > 0n ? earned.toString() : '0';
+  } catch {
+    careerRanksEarnedExact = '0';
+  }
+  const careerRanksEarnedLabel = careerRanksEarnedExact !== '0'
+    ? formatCareerInteger(careerRanksEarnedExact, { maxPlainDigits: 6 })
+    : Array.isArray(summary.newRanksThisRun) ? summary.newRanksThisRun.length : 0;
   const tacticalDraftPicks = (Array.isArray(summary.tacticalDraftPicks) ? summary.tacticalDraftPicks : [])
     .map((entry) => ({
       id: String(entry?.id || '').trim(),
@@ -354,6 +371,8 @@ export function createRunReport(summary = {}) {
       clearLifeLosses: toWholeNumber(summary.clearLifeLosses ?? summary.lifeLosses),
       deathCoach,
       pilotOrdersCompleted,
+      careerRankExact,
+      careerRankLabel,
       tacticalDraftPicks,
       tacticalDoctrine,
       tacticalDirectives,
@@ -431,6 +450,7 @@ export function createRunReport(summary = {}) {
         rows: buildRows([
           { id: 'powerups', value: toWholeNumber(summary.powerupsCollected) },
           { id: 'careerXp', value: toWholeNumber(summary.pilotXpGained) },
+          { id: 'careerRank', value: careerRankLabel, rawValue: careerRankExact },
           ...(shipMastery ? [{ id: 'shipMastery', value: shipMastery.tierLabel, rawValue: shipMastery }] : []),
           ...(tourCompletion ? [{
             id: 'shipTours',
@@ -441,7 +461,7 @@ export function createRunReport(summary = {}) {
           { id: 'tacticalDirectives', value: tacticalDirectives.completedCount, rawValue: tacticalDirectives },
           { id: 'aceBounties', value: aceBounties.completedCount, rawValue: aceBounties },
           { id: 'nemesisProtocols', value: nemesisProtocols.completedCount, rawValue: nemesisProtocols },
-          { id: 'newRanks', value: Array.isArray(summary.newRanksThisRun) ? summary.newRanksThisRun.length : 0 },
+          { id: 'newRanks', value: careerRanksEarnedLabel, rawValue: careerRanksEarnedExact },
           { id: 'codex', value: toWholeNumber(summary.codexDiscoveries) },
           { id: 'pilotOrders', value: pilotOrdersCompleted, rawValue: pilotOrdersCompleted }
         ])
@@ -474,6 +494,8 @@ export function summarizeRunReport(report = null) {
     overrunCompletion: report.summary?.overrunCompletion || null,
     scoutAnomaly: report.summary?.scoutAnomaly || null,
     pilotOrdersCompleted: Array.isArray(report.summary?.pilotOrdersCompleted) ? report.summary.pilotOrdersCompleted : [],
+    careerRankExact: report.summary?.careerRankExact || null,
+    careerRankLabel: report.summary?.careerRankLabel || null,
     tacticalDraftPicks: Array.isArray(report.summary?.tacticalDraftPicks) ? report.summary.tacticalDraftPicks : [],
     tacticalDirectives: report.summary?.tacticalDirectives || null,
     aceBounties: report.summary?.aceBounties || null,

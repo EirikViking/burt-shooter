@@ -477,7 +477,9 @@ export class HUD {
       }
     }
 
-    this.rankText.text = rankManager.getRankString(this.game.rankIndex);
+    this.rankText.text = rankManager.getCareerRankString(
+      this.game.getCareerDisplayRankExact?.() || String(Math.max(1, Number(this.game.rankIndex || 0) + 1))
+    );
     const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
     const rankPanelWidth = 164 * uiScale;
     const rankTextX = 56 * uiScale;

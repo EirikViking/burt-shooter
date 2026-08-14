@@ -44,7 +44,12 @@ import {
 } from './progression/HangarProgressState.js';
 import { mergeRunContractsState } from './progression/RunContracts.js';
 import { mergeShipMasteryMaps } from './progression/ShipMastery.js';
-import { getPilotXpThreshold } from './shared/RankPolicy.js';
+import {
+  getPilotXpCompatibilityNumber,
+  getPilotXpThreshold,
+  maxPilotXpExact,
+  normalizePilotXpExact
+} from './shared/RankPolicy.js';
 import { CHATTER_FREQUENCY_KEY, normalizeChatterFrequency } from './audio/VoicePolicy.js';
 import {
   KEYBOARD_BINDINGS_KEY,
@@ -302,10 +307,12 @@ function mergeShipUnlockHistory(localHistory = {}, cloudHistory = {}) {
 function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
   const local = localProgress && typeof localProgress === 'object' ? localProgress : {};
   const cloud = cloudProgress && typeof cloudProgress === 'object' ? cloudProgress : {};
+  const pilotXpExact = maxPilotXpExact(local.pilotXpExact ?? local.pilotXp, cloud.pilotXpExact ?? cloud.pilotXp);
   return {
     ...local,
     ...cloud,
-    pilotXp: mergeNumberMax(local, cloud, 'pilotXp'),
+    pilotXp: getPilotXpCompatibilityNumber(pilotXpExact),
+    pilotXpExact,
     pilotRank: mergeNumberMax(local, cloud, 'pilotRank'),
     highestPilotRank: mergeNumberMax(local, cloud, 'highestPilotRank'),
     totalRuns: mergeNumberMax(local, cloud, 'totalRuns'),
@@ -570,7 +577,7 @@ function recoverPreviouslyClampedLegacyRescue(progress = {}, {
   );
   const recovered = {
     ...base,
-    pilotXp: Math.max(Math.floor(Number(base.pilotXp) || 0), getPilotXpThreshold(recoveredRank)),
+    pilotXpExact: maxPilotXpExact(base.pilotXpExact ?? base.pilotXp, getPilotXpThreshold(recoveredRank)),
     pilotRank: recoveredRank,
     highestPilotRank: Math.max(Math.floor(Number(base.highestPilotRank) || 0), recoveredRank),
     bestRank: Math.max(Math.floor(Number(base.bestRank) || 0), recoveredRank),
@@ -599,6 +606,7 @@ function recoverPreviouslyClampedLegacyRescue(progress = {}, {
     integrityRepairVersion: 2,
     integrityRepairReason: 'legacy_codex_rescue_preserved'
   };
+  recovered.pilotXp = getPilotXpCompatibilityNumber(recovered.pilotXpExact);
   recovered.unlockedShipIds = recalculateUnlockedShipIds(recovered);
   return recovered;
 }
@@ -641,7 +649,8 @@ function repairHangarProgressFromPersistence(progress = {}, {
     Math.floor(Number(progression?.bestRank) || 0)
   );
   return markLegacyRescuePreservedHangar(mergeHangarProgress(base, {
-    pilotXp: Math.floor(Number(base.pilotXp) || 0),
+    pilotXp: getPilotXpCompatibilityNumber(normalizePilotXpExact(base.pilotXpExact ?? base.pilotXp)),
+    pilotXpExact: normalizePilotXpExact(base.pilotXpExact ?? base.pilotXp),
     pilotRank: Math.floor(Number(base.pilotRank) || 0),
     highestPilotRank: Math.floor(Number(base.highestPilotRank) || 0),
     bestScore,

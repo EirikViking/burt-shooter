@@ -301,6 +301,7 @@ export const SFX_MIX = {
     nova_miracle_purge: { volume: 0.9, minIntervalMs: 60000 },
     nova_shield_snap: { volume: 0.54, minIntervalMs: 140 },
     nova_rank_fanfare: { volume: 0.62, minIntervalMs: 800 },
+    nova_endless_rank_ascent: { volume: 0.78, minIntervalMs: 1200 },
     nova_highscore_chime: { volume: 0.62, minIntervalMs: 500 },
     nova_global_near_fanfare: { volume: 0.68, minIntervalMs: 900 },
     nova_global_slot_fanfare: { volume: 0.84, minIntervalMs: 900 },
@@ -468,7 +469,8 @@ export const VOICE_MIX = {
     mission_control_overrun_clear_sector_40: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
     mission_control_overrun_clear_sector_50: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
     mission_control_overrun_clear_far_signal: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
-    mission_control_credits: { volume: 0.9, duckFactor: 0.34, duckMs: 3600, cooldownMs: 0 }
+    mission_control_credits: { volume: 0.9, duckFactor: 0.34, duckMs: 3600, cooldownMs: 0 },
+    mission_control_endless_rank: { volume: 0.98, duckFactor: 0.3, duckMs: 4200, cooldownMs: 0, eventCooldownMs: 0, priority: 8 }
 };
 
 export const VOICE_EVENT_FALLBACKS = {
@@ -503,6 +505,7 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_hijacker: 'mission_control_hijacker_01.mp3',
     mission_control_tractor_hijack: 'mission_control_tractor_hijack_01.mp3',
     mission_control_overrun_clear: 'mission_control_overrun_clear_01.mp3',
+    mission_control_endless_rank: 'mission_control_endless_rank_01.mp3',
     mission_control_overrun_clear_sector_10: 'mission_control_overrun_clear_sector_10_01.mp3',
     mission_control_overrun_clear_sector_20: 'mission_control_overrun_clear_sector_20_01.mp3',
     mission_control_overrun_clear_sector_30: 'mission_control_overrun_clear_sector_30_01.mp3',
@@ -877,6 +880,7 @@ export const SFX_CATALOG = {
     'mission_control_hijacker': numberedVoicePool('mission_control_hijacker', 2),
     'mission_control_tractor_hijack': numberedVoicePool('mission_control_tractor_hijack', 3),
     'mission_control_overrun_clear': numberedVoicePool('mission_control_overrun_clear', 1),
+    'mission_control_endless_rank': numberedVoicePool('mission_control_endless_rank', 1),
     'mission_control_overrun_clear_sector_10': numberedVoicePool('mission_control_overrun_clear_sector_10', 1),
     'mission_control_overrun_clear_sector_20': numberedVoicePool('mission_control_overrun_clear_sector_20', 1),
     'mission_control_overrun_clear_sector_30': numberedVoicePool('mission_control_overrun_clear_sector_30', 1),
@@ -933,6 +937,9 @@ export const SFX_CATALOG = {
     ],
     'nova_rank_fanfare': [
         getSfx('nova_rank_fanfare')
+    ],
+    'nova_endless_rank_ascent': [
+        getSfx('nova_endless_rank_ascent')
     ],
     'nova_highscore_chime': [
         getSfx('nova_highscore_chime')

@@ -128,6 +128,7 @@ export class LocalLeaderboardProvider {
       level: levelReached,
       levelReached,
       rankIndex: runResult.rankIndex,
+      careerRankExact: runResult.careerRankExact || null,
       submissionId: runResult.submissionId,
       shipId: runResult.shipId,
       shipName: runResult.shipName,

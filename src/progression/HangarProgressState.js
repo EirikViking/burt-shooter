@@ -6,8 +6,12 @@ import {
 } from '../config/ShipUnlockConfig.js';
 import {
   MAX_RANK_INDEX,
-  getPilotRankProgress,
-  getRankFromPilotXp
+  addPilotXpExact,
+  comparePilotXpExact,
+  getAuthoredRankFromPilotXpExact,
+  getCareerRankProgress,
+  getPilotXpCompatibilityNumber,
+  normalizePilotXpExact
 } from '../shared/RankPolicy.js';
 import { getRunModeNormalWaveScoreXpMultiplier, getRunModeProfile } from '../game/RunMode.js';
 import { BUILD_ID } from '../buildInfo.js';
@@ -95,6 +99,7 @@ export function createDefaultHangarProgress() {
     version: HANGAR_PROGRESS_VERSION,
     unlockTuningVersion: HANGAR_UNLOCK_TUNING_VERSION,
     pilotXp: 0,
+    pilotXpExact: '0',
     pilotRank: 0,
     highestPilotRank: 0,
     totalRuns: 0,
@@ -299,11 +304,12 @@ export function normalizeHangarProgress(raw = {}) {
   const defaults = createDefaultHangarProgress();
   const legacy = readLegacyUnlockProgress();
   const previousTuningVersion = floor(raw.unlockTuningVersion);
-  const rawPilotXp = floor(raw.pilotXp);
-  const pilotXp = previousTuningVersion > 0 && previousTuningVersion < 2
-    ? Math.floor(rawPilotXp * 0.25)
-    : rawPilotXp;
-  const pilotRank = Math.min(MAX_RANK_INDEX, getRankFromPilotXp(pilotXp));
+  const rawPilotXpExact = normalizePilotXpExact(raw.pilotXpExact ?? raw.pilotXp);
+  const pilotXpExact = previousTuningVersion > 0 && previousTuningVersion < 2
+    ? (BigInt(rawPilotXpExact) / 4n).toString()
+    : rawPilotXpExact;
+  const pilotXp = getPilotXpCompatibilityNumber(pilotXpExact);
+  const pilotRank = getAuthoredRankFromPilotXpExact(pilotXpExact);
   const legacySector = legacyLevelToSector(legacy.bestLevel);
   const reachedSector = Math.max(
     1,
@@ -323,13 +329,14 @@ export function normalizeHangarProgress(raw = {}) {
     ...raw,
     unlockTuningVersion: HANGAR_UNLOCK_TUNING_VERSION,
     pilotXp,
+    pilotXpExact,
     pilotRank,
-    highestPilotRank: Math.max(pilotRank, floor(raw.highestPilotRank)),
+    highestPilotRank: Math.min(MAX_RANK_INDEX, Math.max(pilotRank, floor(raw.highestPilotRank))),
     totalRuns: floor(raw.totalRuns),
     bestScore: Math.max(floor(raw.bestScore), legacy.bestScore),
     bestSector,
     bestLevel,
-    bestRank: Math.max(floor(raw.bestRank), legacy.bestRank, pilotRank),
+    bestRank: Math.min(MAX_RANK_INDEX, Math.max(floor(raw.bestRank), legacy.bestRank, pilotRank)),
     bestRunTimeSeconds: floor(raw.bestRunTimeSeconds),
     survivedSeconds: floor(raw.survivedSeconds),
     totalBossesDefeated: floor(raw.totalBossesDefeated),
@@ -351,7 +358,9 @@ export function normalizeHangarProgress(raw = {}) {
     unlockedShipIds: [...unlocked],
     shipUnlockHistory: normalizeShipUnlockHistory(raw.shipUnlockHistory),
     lastNewlyUnlockedShipIds: Array.isArray(raw.lastNewlyUnlockedShipIds) ? raw.lastNewlyUnlockedShipIds.map(String) : [],
-    newRanksThisRun: Array.isArray(raw.newRanksThisRun) ? raw.newRanksThisRun.map(Number).filter(Number.isFinite) : [],
+    newRanksThisRun: Array.isArray(raw.newRanksThisRun)
+      ? raw.newRanksThisRun.map(Number).filter((rank) => Number.isFinite(rank) && rank >= 0 && rank <= MAX_RANK_INDEX)
+      : [],
     rankAchievementsUnlocked: Array.isArray(raw.rankAchievementsUnlocked) ? raw.rankAchievementsUnlocked.map(String) : [],
     overrunUnlockCelebrationPending: Boolean(raw.overrunUnlockCelebrationPending)
       && !Boolean(raw.overrunUnlockCelebrationSeen),
@@ -455,7 +464,9 @@ export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true,
     const merged = normalizeHangarProgress({
       ...previous,
       ...partial,
-      pilotXp: partial.pilotXp !== undefined ? floor(partial.pilotXp) : previous.pilotXp,
+      pilotXpExact: partial.pilotXpExact !== undefined
+        ? normalizePilotXpExact(partial.pilotXpExact, previous.pilotXpExact)
+        : (partial.pilotXp !== undefined ? normalizePilotXpExact(partial.pilotXp) : previous.pilotXpExact),
       totalRuns: Math.max(previous.totalRuns, floor(partial.totalRuns, previous.totalRuns)),
       bestScore: Math.max(previous.bestScore, floor(partial.bestScore, previous.bestScore)),
       bestSector: Math.max(previous.bestSector, floor(partial.bestSector, previous.bestSector)),
@@ -490,7 +501,7 @@ export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true,
       },
       lastNewlyUnlockedShipIds: preserveLastUnlocks ? previous.lastNewlyUnlockedShipIds : []
     });
-    merged.pilotRank = getRankFromPilotXp(merged.pilotXp);
+    merged.pilotRank = getAuthoredRankFromPilotXpExact(merged.pilotXpExact);
     merged.highestPilotRank = Math.max(previous.highestPilotRank, merged.pilotRank);
     merged.bestRank = Math.max(merged.bestRank, merged.highestPilotRank);
     const before = new Set(previous.unlockedShipIds);
@@ -686,8 +697,9 @@ export function calculatePilotXpForRun(summary = {}) {
 export function previewRunProgression(summary = {}, baseProgress = readHangarProgressState()) {
   const previous = normalizeHangarProgress(baseProgress);
   const xpGained = calculatePilotXpForRun(summary);
-  const nextXp = previous.pilotXp + xpGained;
-  const nextRank = getRankFromPilotXp(nextXp);
+  const nextXpExact = addPilotXpExact(previous.pilotXpExact, xpGained);
+  const nextXp = getPilotXpCompatibilityNumber(nextXpExact);
+  const nextRank = getAuthoredRankFromPilotXpExact(nextXpExact);
   const newRanksThisRun = [];
   for (let rank = previous.pilotRank + 1; rank <= nextRank; rank += 1) {
     newRanksThisRun.push(rank);
@@ -695,18 +707,24 @@ export function previewRunProgression(summary = {}, baseProgress = readHangarPro
   const next = normalizeHangarProgress({
     ...previous,
     pilotXp: nextXp,
+    pilotXpExact: nextXpExact,
     pilotRank: nextRank,
     highestPilotRank: Math.max(previous.highestPilotRank, nextRank),
     bestRank: Math.max(previous.bestRank, nextRank),
     newRanksThisRun
   });
   next.newRanksThisRun = newRanksThisRun;
-  next.rankProgress = getPilotRankProgress(next.pilotXp);
+  next.rankProgress = getCareerRankProgress(next.pilotXpExact);
+  const previousCareerRank = getCareerRankProgress(previous.pilotXpExact).displayRankExact;
+  const nextCareerRank = next.rankProgress.displayRankExact;
   return {
     previous,
     next,
     xpGained,
     newRanksThisRun,
+    careerRankBefore: previousCareerRank,
+    careerRankAfter: nextCareerRank,
+    careerRankIncreased: comparePilotXpExact(nextCareerRank, previousCareerRank) > 0,
     newlyUnlockedShipIds: [],
     rankProgress: next.rankProgress
   };
@@ -718,8 +736,9 @@ export function applyRunProgression(summary = {}, {
 } = {}) {
   const previous = readHangarProgressState();
   const xpGained = calculatePilotXpForRun(summary);
-  const nextXp = previous.pilotXp + xpGained;
-  const nextRank = getRankFromPilotXp(nextXp);
+  const nextXpExact = addPilotXpExact(previous.pilotXpExact, xpGained);
+  const nextXp = getPilotXpCompatibilityNumber(nextXpExact);
+  const nextRank = getAuthoredRankFromPilotXpExact(nextXpExact);
   const shipMastery = updateCompetitiveBests
     ? recordShipMasteryRun(previous.shipSpecificMilestones, summary, { completedAt })
     : { milestones: previous.shipSpecificMilestones };
@@ -735,6 +754,7 @@ export function applyRunProgression(summary = {}, {
   }
   const next = updateHangarProgress({
     pilotXp: nextXp,
+    pilotXpExact: nextXpExact,
     pilotRank: nextRank,
     highestPilotRank: Math.max(previous.highestPilotRank, nextRank),
     totalRuns: previous.totalRuns + 1,
@@ -779,7 +799,9 @@ export function applyRunProgression(summary = {}, {
     }
   });
   next.newRanksThisRun = newRanksThisRun;
-  next.rankProgress = getPilotRankProgress(next.pilotXp);
+  next.rankProgress = getCareerRankProgress(next.pilotXpExact);
+  const previousCareerRank = getCareerRankProgress(previous.pilotXpExact).displayRankExact;
+  const nextCareerRank = next.rankProgress.displayRankExact;
   if (
     updateCompetitiveBests
     && previous.bestSector < 30
@@ -794,6 +816,9 @@ export function applyRunProgression(summary = {}, {
     next,
     xpGained,
     newRanksThisRun,
+    careerRankBefore: previousCareerRank,
+    careerRankAfter: nextCareerRank,
+    careerRankIncreased: comparePilotXpExact(nextCareerRank, previousCareerRank) > 0,
     newlyUnlockedShipIds: next.lastNewlyUnlockedShipIds,
     rankProgress: next.rankProgress,
     shipMastery,
@@ -915,6 +940,7 @@ export function getShipUnlockRequirementLine(shipId, { translate = interpolateSo
 export function getHangarProgressSummary(progress = readHangarProgressState()) {
   return {
     pilotXp: progress.pilotXp,
+    pilotXpExact: progress.pilotXpExact,
     pilotRank: progress.pilotRank,
     highestPilotRank: progress.highestPilotRank,
     totalRuns: progress.totalRuns,
@@ -932,6 +958,6 @@ export function getHangarProgressSummary(progress = readHangarProgressState()) {
     unlockedShipIds: progress.unlockedShipIds.slice(),
     shipUnlockHistory: { ...progress.shipUnlockHistory },
     newlyUnlockedShipIds: progress.lastNewlyUnlockedShipIds.slice(),
-    rankProgress: getPilotRankProgress(progress.pilotXp)
+    rankProgress: getCareerRankProgress(progress.pilotXpExact ?? progress.pilotXp ?? 0)
   };
 }

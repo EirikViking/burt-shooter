@@ -148,6 +148,7 @@ export class Game {
     this.runSummary = null;
     this.lastRunReport = null;
     this.runProgressionResult = null;
+    this.careerRankMetadataRefreshPromise = null;
     this.runPressureDirector = null;
     this.contentDirector = null;
     this.threatResponse = buildShipThreatResponse(getShipMetadata(getDefaultShipKey()), 0);
@@ -508,6 +509,7 @@ export class Game {
     this.runSummary = null;
     this.lastRunReport = null;
     this.runProgressionResult = null;
+    this.careerRankMetadataRefreshPromise = null;
     this.liveRankProgression = null;
     this.liveRankBaseProgress = null;
     this.liveRankNotifiedRanks = new Set();
@@ -1370,6 +1372,19 @@ export class Game {
     return false; // Handling rank up in addScore event now
   }
 
+  getCurrentCareerRankProgress() {
+    if (this.liveRankProgression?.rankProgress?.displayRankExact) return this.liveRankProgression.rankProgress;
+    if (this.runProgressionResult?.rankProgress?.displayRankExact) return this.runProgressionResult.rankProgress;
+    const currentProgress = this.currentSceneName === 'play'
+      ? (this.hangarProgressAtRunStart || readHangarProgressState())
+      : readHangarProgressState();
+    return rankManager.getCareerRankProgress(currentProgress.pilotXpExact ?? currentProgress.pilotXp);
+  }
+
+  getCareerDisplayRankExact() {
+    return this.getCurrentCareerRankProgress().displayRankExact;
+  }
+
   getRankProgress() {
     if (
       this.currentSceneName === 'play' &&
@@ -1379,11 +1394,7 @@ export class Game {
     ) {
       return Math.max(0, Math.min(1, Number(this.liveRankProgression.rankProgress.progress)));
     }
-    const currentPilotXp = this.runProgressionResult?.next?.pilotXp
-      ?? this.liveRankProgression?.next?.pilotXp
-      ?? (this.currentSceneName === 'play' ? this.hangarProgressAtRunStart?.pilotXp : null)
-      ?? readHangarProgressState().pilotXp;
-    return rankManager.getPilotRankProgress(currentPilotXp).progress;
+    return this.getCurrentCareerRankProgress().progress;
   }
 
   loseLife(options = {}) {
@@ -1689,8 +1700,12 @@ export class Game {
       ...this.runSummary,
       pilotXpGained: result.xpGained || 0,
       pilotXp: result.next?.pilotXp ?? 0,
+      pilotXpExact: result.next?.pilotXpExact ?? String(result.next?.pilotXp ?? 0),
       pilotRank: result.next?.pilotRank ?? 0,
       highestPilotRank: result.next?.highestPilotRank ?? 0,
+      careerRankBefore: result.careerRankBefore || result.previous?.rankProgress?.displayRankExact || null,
+      careerRankAfter: result.careerRankAfter || result.rankProgress?.displayRankExact || null,
+      careerRankIncreased: Boolean(result.careerRankIncreased),
       newRanksThisRun: result.newRanksThisRun || [],
       rankProgress: result.rankProgress || null,
       rankAchievementsUnlocked: [],
@@ -1820,6 +1835,18 @@ export class Game {
     this.lastRunReport = this.lateGameExperiment?.active === true
       ? createLateGameExperimentReport(this.lateGameExperiment, this.runSummary)
       : createRunReport(this.runSummary);
+    if (
+      result.careerRankIncreased === true
+      && BigInt(String(result.careerRankAfter || '0')) > 40n
+    ) {
+      this.careerRankMetadataRefreshPromise = this.getLeaderboardAdapter()
+        .refreshCareerRankMetadata(result.careerRankAfter)
+        .catch((error) => ({
+          status: 'pending',
+          reason: error?.message || 'refresh_failed',
+          careerRankExact: result.careerRankAfter
+        }));
+    }
     if (this.runPolicy?.allowCloudProgressSync === true) {
       markPersistenceDirty('runResults', { scheduleFlush: false });
       void flushPersistence({ reason: 'run_finalize', force: true });

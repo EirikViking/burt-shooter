@@ -418,12 +418,22 @@ function sanitizeScoreEntry(entry = {}, fallbackIndex = 0) {
     .replace(/[^A-Z0-9 ]/g, '')
     .trim()
     .slice(0, 14) || 'PILOT';
+  const rawCareerRank = entry.careerRankExact;
+  const careerRankText = rawCareerRank === null || rawCareerRank === undefined || rawCareerRank === ''
+    ? null
+    : String(rawCareerRank).trim();
+  const normalizedCareerRank = careerRankText && /^\d+$/.test(careerRankText)
+    ? careerRankText.replace(/^0+(?=\d)/, '')
+    : null;
   return {
     name,
     score,
     level,
     rankIndex,
     rank_index: rankIndex,
+    careerRankExact: normalizedCareerRank && normalizedCareerRank !== '0'
+      ? normalizedCareerRank
+      : null,
     shipId: entry.shipId ?? entry.ship_id ?? null,
     shipName: entry.shipName ?? entry.ship_name ?? null,
     runTimeSeconds: entry.runTimeSeconds ?? entry.runtimeSeconds ?? null,
@@ -483,6 +493,34 @@ function sanitizeNumber(value, fallback = 0, { min = 0, max = 2147483647 } = {})
   const number = Number(value);
   if (!Number.isFinite(number)) return fallback;
   return Math.max(min, Math.min(max, Math.floor(number)));
+}
+
+function normalizePilotXpExact(value, fallback = '0') {
+  if (typeof value === 'bigint') return value >= 0n ? value.toString() : normalizePilotXpExact(fallback, '0');
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^\d+$/.test(trimmed)) return trimmed.replace(/^0+(?=\d)/, '');
+    return normalizePilotXpExact(fallback, '0');
+  }
+  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return BigInt(Math.floor(value)).toString();
+  return fallback === value ? '0' : normalizePilotXpExact(fallback, '0');
+}
+
+function comparePilotXpExact(a, b) {
+  const left = normalizePilotXpExact(a);
+  const right = normalizePilotXpExact(b);
+  if (left.length !== right.length) return left.length < right.length ? -1 : 1;
+  return left === right ? 0 : (left < right ? -1 : 1);
+}
+
+function maxPilotXpExact(a, b) {
+  return comparePilotXpExact(a, b) >= 0 ? normalizePilotXpExact(a) : normalizePilotXpExact(b);
+}
+
+function pilotXpCompatibilityNumber(value) {
+  const exact = BigInt(normalizePilotXpExact(value));
+  const max = BigInt(Number.MAX_SAFE_INTEGER);
+  return Number(exact > max ? max : exact);
 }
 
 function sanitizeJsonValue(value, depth = 2) {
@@ -770,6 +808,7 @@ function mergeRunContractsState(localState = {}, rendererState = {}) {
 
 function sanitizeHangarProgress(progress = {}) {
   const raw = progress && typeof progress === 'object' ? progress : {};
+  const pilotXpExact = normalizePilotXpExact(raw.pilotXpExact ?? raw.pilotXp);
   const reachedSector = Math.max(
     1,
     sanitizeNumber(raw.bestSector ?? raw.bestLevel, 1, { min: 1 }),
@@ -781,14 +820,15 @@ function sanitizeHangarProgress(progress = {}) {
   return {
     version: Math.max(1, sanitizeNumber(raw.version, 1)),
     unlockTuningVersion: sanitizeNumber(raw.unlockTuningVersion, 0),
-    pilotXp: sanitizeNumber(raw.pilotXp, 0),
-    pilotRank: sanitizeNumber(raw.pilotRank, 0, { min: 0, max: 20 }),
-    highestPilotRank: sanitizeNumber(raw.highestPilotRank, 0, { min: 0, max: 20 }),
+    pilotXp: pilotXpCompatibilityNumber(pilotXpExact),
+    pilotXpExact,
+    pilotRank: sanitizeNumber(raw.pilotRank, 0, { min: 0, max: 39 }),
+    highestPilotRank: sanitizeNumber(raw.highestPilotRank, 0, { min: 0, max: 39 }),
     totalRuns: sanitizeNumber(raw.totalRuns, 0),
     bestScore: sanitizeNumber(raw.bestScore, 0),
     bestSector: reachedSector,
     bestLevel: reachedSector,
-    bestRank: sanitizeNumber(raw.bestRank, 0, { min: 0, max: 20 }),
+    bestRank: sanitizeNumber(raw.bestRank, 0, { min: 0, max: 39 }),
     bestRunTimeSeconds: sanitizeNumber(raw.bestRunTimeSeconds, 0),
     survivedSeconds: sanitizeNumber(raw.survivedSeconds, 0),
     totalBossesDefeated: sanitizeNumber(raw.totalBossesDefeated, 0),
@@ -809,7 +849,7 @@ function sanitizeHangarProgress(progress = {}) {
     shipUnlockHistory: sanitizeShipUnlockHistory(raw.shipUnlockHistory),
     lastNewlyUnlockedShipIds: sanitizeStringArray(raw.lastNewlyUnlockedShipIds),
     newRanksThisRun: sanitizeStringArray(raw.newRanksThisRun, { maxItems: 32, maxLength: 12 })
-      .map((value) => sanitizeNumber(value, 0, { min: 0, max: 20 })),
+      .map((value) => sanitizeNumber(value, 0, { min: 0, max: 39 })),
     rankAchievementsUnlocked: sanitizeStringArray(raw.rankAchievementsUnlocked),
     overrunUnlockCelebrationPending: Boolean(raw.overrunUnlockCelebrationPending)
       && !Boolean(raw.overrunUnlockCelebrationSeen),
@@ -992,6 +1032,7 @@ function mergeUnlockProgress(localProgress = {}, rendererProgress = {}) {
 function mergeHangarProgress(localProgress = {}, rendererProgress = {}) {
   const local = sanitizeHangarProgress(localProgress);
   const renderer = sanitizeHangarProgress(rendererProgress);
+  const pilotXpExact = maxPilotXpExact(local.pilotXpExact, renderer.pilotXpExact);
   const shipIds = new Set([
     ...Object.keys(local.shipSpecificMilestones || {}),
     ...Object.keys(renderer.shipSpecificMilestones || {})
@@ -1022,7 +1063,8 @@ function mergeHangarProgress(localProgress = {}, rendererProgress = {}) {
   return sanitizeHangarProgress({
     ...local,
     ...renderer,
-    pilotXp: Math.max(local.pilotXp, renderer.pilotXp),
+    pilotXp: pilotXpCompatibilityNumber(pilotXpExact),
+    pilotXpExact,
     pilotRank: Math.max(local.pilotRank, renderer.pilotRank),
     highestPilotRank: Math.max(local.highestPilotRank, renderer.highestPilotRank),
     totalRuns: Math.max(local.totalRuns, renderer.totalRuns),
@@ -1540,7 +1582,7 @@ function repairHangarProgressFromPersistence(progress = {}, {
     shipUsage
   });
   return mergeHangarProgress(base, {
-    pilotXp: Math.max(base.pilotXp, highestRank >= 0 ? pilotXpThreshold(highestRank) : 0),
+    pilotXpExact: maxPilotXpExact(base.pilotXpExact ?? base.pilotXp, highestRank >= 0 ? pilotXpThreshold(highestRank) : 0),
     pilotRank: Math.max(base.pilotRank, highestRank),
     highestPilotRank: Math.max(base.highestPilotRank, highestRank),
     bestScore: Math.max(base.bestScore, sanitizeNumber(progression?.bestScore, 0), bestScoreFromScores(localHighscores)),

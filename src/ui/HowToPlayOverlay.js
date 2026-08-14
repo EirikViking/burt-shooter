@@ -257,10 +257,10 @@ const INTEL_HELP_ROWS = Object.freeze([
 const CAREER_HELP_ROWS = Object.freeze([
   {
     code: '28',
-    icon: 'ORDER',
-    label: 'PILOT ORDERS',
-    control: 'OPTIONAL MAYHEM DRILLS',
-    tip: 'Use main-menu Pilot Orders as optional combat drills. Review cleared orders in Ship Hangar Career Intel.',
+    icon: 'RANK',
+    label: 'Career Rank',
+    control: 'ENDLESS STATUS // REWARDS CAP AT 40',
+    tip: 'Career Rank keeps climbing forever. Rank 40 remains the final unlock and power milestone; higher ranks are status only and appear on leaderboard rows.',
     accent: 0x7fffd8
   },
   {

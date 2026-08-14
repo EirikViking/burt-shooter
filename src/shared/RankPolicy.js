@@ -3,6 +3,8 @@
 
 export const NUM_RANKS = 40;
 export const MAX_RANK_INDEX = 39;
+export const MAX_AUTHORED_RANK_NUMBER = 40;
+export const POST_CAP_PILOT_XP_STEP = 640000;
 export const START_LEVEL = 1;
 export const END_LEVEL = 410;
 
@@ -190,6 +192,123 @@ function sanitizePilotXp(pilotXp) {
         return 0;
     }
     return Math.floor(pilotXp);
+}
+
+const MAX_SAFE_PILOT_XP = BigInt(Number.MAX_SAFE_INTEGER);
+const FINAL_AUTHORED_PILOT_XP = BigInt(PILOT_XP_THRESHOLDS[MAX_RANK_INDEX]);
+const POST_CAP_PILOT_XP_STEP_BIGINT = BigInt(POST_CAP_PILOT_XP_STEP);
+
+export function normalizePilotXpExact(value, fallback = '0') {
+    if (typeof value === 'bigint') return value >= 0n ? value.toString() : normalizePilotXpExact(fallback, '0');
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (/^\d+$/.test(trimmed)) return trimmed.replace(/^0+(?=\d)/, '');
+        return normalizePilotXpExact(fallback, '0');
+    }
+    if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
+        return BigInt(Math.floor(value)).toString();
+    }
+    return fallback === value ? '0' : normalizePilotXpExact(fallback, '0');
+}
+
+export function comparePilotXpExact(a, b) {
+    const left = normalizePilotXpExact(a);
+    const right = normalizePilotXpExact(b);
+    if (left.length !== right.length) return left.length < right.length ? -1 : 1;
+    return left === right ? 0 : (left < right ? -1 : 1);
+}
+
+export function maxPilotXpExact(a, b) {
+    return comparePilotXpExact(a, b) >= 0 ? normalizePilotXpExact(a) : normalizePilotXpExact(b);
+}
+
+export function addPilotXpExact(pilotXpExact, xpGained) {
+    const base = BigInt(normalizePilotXpExact(pilotXpExact));
+    const addition = BigInt(normalizePilotXpExact(xpGained));
+    return (base + addition).toString();
+}
+
+export function getPilotXpCompatibilityNumber(pilotXpExact) {
+    const exact = BigInt(normalizePilotXpExact(pilotXpExact));
+    return Number(exact > MAX_SAFE_PILOT_XP ? MAX_SAFE_PILOT_XP : exact);
+}
+
+export function getAuthoredRankFromPilotXpExact(pilotXpExact) {
+    const exact = BigInt(normalizePilotXpExact(pilotXpExact));
+    for (let i = PILOT_XP_THRESHOLDS.length - 1; i >= 0; i--) {
+        if (exact >= BigInt(PILOT_XP_THRESHOLDS[i])) return i;
+    }
+    return 0;
+}
+
+export function getCareerDisplayRankExact(pilotXpExact) {
+    const exact = BigInt(normalizePilotXpExact(pilotXpExact));
+    if (exact < FINAL_AUTHORED_PILOT_XP) {
+        return String(getAuthoredRankFromPilotXpExact(exact) + 1);
+    }
+    return (BigInt(MAX_AUTHORED_RANK_NUMBER) + ((exact - FINAL_AUTHORED_PILOT_XP) / POST_CAP_PILOT_XP_STEP_BIGINT)).toString();
+}
+
+export function getCareerRankProgress(pilotXpExact) {
+    const exactString = normalizePilotXpExact(pilotXpExact);
+    const exact = BigInt(exactString);
+    const authoredRankIndex = getAuthoredRankFromPilotXpExact(exact);
+    const displayRankExact = getCareerDisplayRankExact(exact);
+
+    if (exact < FINAL_AUTHORED_PILOT_XP) {
+        const currentThreshold = BigInt(PILOT_XP_THRESHOLDS[authoredRankIndex]);
+        const nextThreshold = BigInt(PILOT_XP_THRESHOLDS[authoredRankIndex + 1]);
+        const xpIntoRank = exact - currentThreshold;
+        const spread = nextThreshold - currentThreshold;
+        return {
+            rankIndex: authoredRankIndex,
+            authoredRankIndex,
+            title: getRankTitle(authoredRankIndex),
+            pilotXp: getPilotXpCompatibilityNumber(exact),
+            pilotXpExact: exactString,
+            displayRankExact,
+            currentThreshold: Number(currentThreshold),
+            currentThresholdExact: currentThreshold.toString(),
+            nextThreshold: Number(nextThreshold),
+            nextThresholdExact: nextThreshold.toString(),
+            xpIntoRank: Number(xpIntoRank),
+            xpIntoRankExact: xpIntoRank.toString(),
+            xpToNextRank: Number(nextThreshold - exact),
+            xpToNextRankExact: (nextThreshold - exact).toString(),
+            progress: Number(xpIntoRank) / Number(spread),
+            postCap: false
+        };
+    }
+
+    const completedPostCapRanks = (exact - FINAL_AUTHORED_PILOT_XP) / POST_CAP_PILOT_XP_STEP_BIGINT;
+    const currentThreshold = FINAL_AUTHORED_PILOT_XP + completedPostCapRanks * POST_CAP_PILOT_XP_STEP_BIGINT;
+    const nextThreshold = currentThreshold + POST_CAP_PILOT_XP_STEP_BIGINT;
+    const xpIntoRank = exact - currentThreshold;
+    return {
+        rankIndex: MAX_RANK_INDEX,
+        authoredRankIndex: MAX_RANK_INDEX,
+        title: getRankTitle(MAX_RANK_INDEX),
+        pilotXp: getPilotXpCompatibilityNumber(exact),
+        pilotXpExact: exactString,
+        displayRankExact,
+        currentThreshold: getPilotXpCompatibilityNumber(currentThreshold),
+        currentThresholdExact: currentThreshold.toString(),
+        nextThreshold: getPilotXpCompatibilityNumber(nextThreshold),
+        nextThresholdExact: nextThreshold.toString(),
+        xpIntoRank: Number(xpIntoRank),
+        xpIntoRankExact: xpIntoRank.toString(),
+        xpToNextRank: Number(nextThreshold - exact),
+        xpToNextRankExact: (nextThreshold - exact).toString(),
+        progress: Number(xpIntoRank) / POST_CAP_PILOT_XP_STEP,
+        postCap: true
+    };
+}
+
+export function formatCareerInteger(value, { maxPlainDigits = 9 } = {}) {
+    const exact = normalizePilotXpExact(value);
+    if (exact.length <= Math.max(1, Math.floor(maxPlainDigits))) return BigInt(exact).toLocaleString('en-US');
+    const fraction = exact.slice(1, 3).replace(/0+$/, '');
+    return `${exact[0]}${fraction ? `.${fraction}` : ''}e${exact.length - 1}`;
 }
 
 export function getRankFromLevel(level) {

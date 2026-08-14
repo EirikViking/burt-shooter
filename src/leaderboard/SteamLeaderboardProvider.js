@@ -3,11 +3,15 @@ import {
   STEAM_LEADERBOARD_NAME,
   STEAM_TACTICAL_LEADERBOARD_NAME,
   STEAM_SECTOR_LEADERBOARD_NAME,
+  GLOBAL_COMPETITIVE_DETAILS_COUNT,
+  SECTOR_COMPETITIVE_DETAILS_COUNT,
   LeaderboardView,
   encodeSteamLeaderboardDetails,
   encodeSteamSectorLeaderboardDetails,
   normalizeLeaderboardEntries,
+  readLeaderboardDetails,
   readExplicitLeaderboardLevel,
+  replaceCareerRankDetails,
   toPublicPilotName
 } from './LeaderboardTypes.js';
 
@@ -575,6 +579,94 @@ export class SteamLeaderboardProvider {
       bestUnchanged,
       response,
       rank: response?.rank ?? response?.globalRank ?? response?.m_nGlobalRank ?? null
+    };
+  }
+
+  async refreshCareerRankMetadata(options = {}) {
+    if (!await this.isAvailable()) throw new Error('Steam leaderboard unavailable');
+    const leaderboardName = resolveLeaderboardName(options.leaderboardName || this.leaderboardName);
+    const leaderboardKind = resolveLeaderboardKind({
+      leaderboardName,
+      leaderboardKind: options.leaderboardKind,
+      view: options.view
+    });
+    const competitiveDetailsCount = leaderboardKind === 'sector_start'
+      ? SECTOR_COMPETITIVE_DETAILS_COUNT
+      : GLOBAL_COMPETITIVE_DETAILS_COUNT;
+    let previousBest = await callFirst(this.bridge, ['getPlayerBest', 'getBestScore'], { leaderboardName });
+    let previousDetails = readLeaderboardDetails(previousBest || {});
+    if (previousBest && previousDetails.length < competitiveDetailsCount) {
+      const downloadedBest = await this.getDownloadedPlayerBest({ leaderboardName, leaderboardKind }).catch(() => null);
+      const downloadedDetails = readLeaderboardDetails(downloadedBest || {});
+      if (downloadedDetails.length >= competitiveDetailsCount) {
+        previousBest = downloadedBest;
+        previousDetails = downloadedDetails;
+      }
+    }
+    const storedScore = Math.max(0, Math.floor(Number(previousBest?.score ?? previousBest?.m_nScore) || 0));
+    if (!previousBest || storedScore <= 0) {
+      return {
+        status: 'skipped',
+        reason: 'no_existing_row',
+        leaderboardName,
+        leaderboardKind
+      };
+    }
+    if (previousDetails.length < competitiveDetailsCount) {
+      throw new Error(`Steam ${leaderboardKind} best row is missing competitive details`);
+    }
+    const details = replaceCareerRankDetails(
+      previousDetails,
+      options.careerRankExact,
+      competitiveDetailsCount
+    );
+    const payload = {
+      leaderboardName,
+      score: storedScore,
+      details,
+      uploadMethod: 'force_update',
+      sortMethod: 'descending',
+      displayType: 'numeric',
+      metadata: {
+        ...(previousBest?.metadata && typeof previousBest.metadata === 'object' ? previousBest.metadata : {}),
+        leaderboardKind,
+        leaderboardName,
+        careerRankExact: String(options.careerRankExact || ''),
+        careerRankMetadataRefresh: true,
+        competitiveDetailsCount,
+        oneEntryPerPlayer: true,
+        uploadMethod: 'force_update'
+      }
+    };
+    const response = await callFirst(this.bridge, [
+      'submitScore',
+      'uploadScore',
+      'uploadLeaderboardScore'
+    ], payload);
+    const responseScore = Math.max(0, Math.floor(Number(
+      response?.entry?.score
+        ?? response?.score
+        ?? response?.m_nScore
+        ?? response?.currentScore
+        ?? 0
+    ) || 0));
+    const verifiedBest = responseScore > 0
+      ? null
+      : await this.getPlayerBest({ leaderboardName });
+    const verifiedScore = responseScore || Math.max(0, Math.floor(Number(
+      verifiedBest?.score ?? verifiedBest?.m_nScore ?? 0
+    ) || 0));
+    if (verifiedScore !== storedScore) {
+      throw new Error(`Career Rank metadata refresh changed or could not verify the stored score (${storedScore} -> ${verifiedScore})`);
+    }
+    return {
+      status: 'refreshed',
+      leaderboardName,
+      leaderboardKind,
+      score: storedScore,
+      details,
+      previousDetails,
+      response
     };
   }
 

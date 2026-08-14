@@ -15,9 +15,15 @@ import {
   canRunModeSubmitGlobalLeaderboard,
   canRunModeUnlockAchievements
 } from '../game/RunMode.js';
+import {
+  comparePilotXpExact,
+  maxPilotXpExact,
+  normalizePilotXpExact
+} from '../shared/RankPolicy.js';
 
 const STEAM_UPLOAD_DIAGNOSTICS_KEY = 'novaSwarm.lastSteamUploadDiagnostics.v1';
 export const PENDING_STEAM_SUBMISSIONS_KEY = 'novaSwarm.pendingSteamLeaderboardSubmits.v1';
+export const PENDING_CAREER_RANK_METADATA_KEY = 'novaSwarm.pendingCareerRankMetadata.v1';
 const MAX_PENDING_STEAM_SUBMISSIONS = 8;
 
 function safeWindow() {
@@ -86,6 +92,7 @@ function sanitizePendingRunResult(runResult = {}) {
     level: Math.max(1, Math.floor(Number(runResult.level ?? runResult.levelReached) || 1)),
     levelReached: Math.max(1, Math.floor(Number(runResult.levelReached ?? runResult.level) || 1)),
     rankIndex: Math.max(0, Math.floor(Number(runResult.rankIndex) || 0)),
+    careerRankExact: normalizePilotXpExact(runResult.careerRankExact ?? String(Math.max(1, Number(runResult.rankIndex || 0) + 1)), '1'),
     submissionId: runResult.submissionId || null,
     shipId: runResult.shipId || null,
     shipNumericId: Math.max(0, Math.floor(Number(runResult.shipNumericId) || 0)),
@@ -212,6 +219,9 @@ export class LeaderboardAdapter {
       this.retryPendingSteamSubmissions({ reason: 'availability' }).catch((error) => {
         console.warn('[LeaderboardAdapter] pending Steam retry failed:', error?.message || error);
       });
+      this.retryPendingCareerRankMetadata({ reason: 'availability' }).catch((error) => {
+        console.warn('[LeaderboardAdapter] pending Career Rank refresh failed:', error?.message || error);
+      });
     }
     return this.availability;
   }
@@ -275,6 +285,9 @@ export class LeaderboardAdapter {
 
   async getScores(view = LeaderboardView.GLOBAL, options = {}) {
     await this.ensureAvailability();
+    if (this.availability.steam && this.getPendingCareerRankMetadata()) {
+      await this.retryPendingCareerRankMetadata({ reason: 'leaderboard_read' }).catch(() => null);
+    }
     const normalizedView = this.normalizeView(view);
     const limit = Number(options.limit) || LEADERBOARD_DISPLAY_LIMIT;
     try {
@@ -653,6 +666,111 @@ export class LeaderboardAdapter {
 
   getPendingSteamSubmissions() {
     return normalizePendingQueue(readJsonStorage(PENDING_STEAM_SUBMISSIONS_KEY, { version: 1, entries: [] }));
+  }
+
+  getPendingCareerRankMetadata() {
+    const raw = readJsonStorage(PENDING_CAREER_RANK_METADATA_KEY, null);
+    if (!raw?.careerRankExact) return null;
+    return {
+      careerRankExact: normalizePilotXpExact(raw.careerRankExact, '1'),
+      attempts: Math.max(0, Math.floor(Number(raw.attempts) || 0)),
+      queuedAt: raw.queuedAt || new Date().toISOString(),
+      updatedAt: raw.updatedAt || raw.queuedAt || new Date().toISOString(),
+      lastError: raw.lastError || null
+    };
+  }
+
+  writePendingCareerRankMetadata(value = null) {
+    const win = safeWindow();
+    if (!win) return false;
+    try {
+      if (!value) {
+        win.localStorage?.removeItem(PENDING_CAREER_RANK_METADATA_KEY);
+        return true;
+      }
+      return writeJsonStorage(PENDING_CAREER_RANK_METADATA_KEY, value);
+    } catch {
+      return false;
+    }
+  }
+
+  queueCareerRankMetadataRefresh(careerRankExact, options = {}) {
+    const existing = this.getPendingCareerRankMetadata();
+    const requested = normalizePilotXpExact(careerRankExact, '1');
+    const latest = existing
+      ? maxPilotXpExact(existing.careerRankExact, requested)
+      : requested;
+    const now = new Date().toISOString();
+    const value = {
+      careerRankExact: latest,
+      attempts: Math.max(0, Number(existing?.attempts) || 0) + (options.incrementAttempt ? 1 : 0),
+      queuedAt: existing?.queuedAt || now,
+      updatedAt: now,
+      lastError: options.lastError || existing?.lastError || null
+    };
+    this.writePendingCareerRankMetadata(value);
+    return value;
+  }
+
+  async refreshCareerRankMetadata(careerRankExact, options = {}) {
+    const requested = normalizePilotXpExact(careerRankExact, '1');
+    await this.ensureAvailability();
+    if (!this.availability.steam) {
+      const pending = this.queueCareerRankMetadataRefresh(requested, {
+        lastError: 'Steam leaderboard unavailable'
+      });
+      return { status: 'pending', reason: 'steam_unavailable', careerRankExact: pending.careerRankExact, results: [] };
+    }
+    const boards = [
+      { leaderboardName: STEAM_LEADERBOARD_NAME, leaderboardKind: 'global', view: LeaderboardView.GLOBAL },
+      { leaderboardName: STEAM_TACTICAL_LEADERBOARD_NAME, leaderboardKind: 'mayhem_tactical', view: LeaderboardView.TACTICAL },
+      { leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME, leaderboardKind: 'sector_start', view: LeaderboardView.SECTOR }
+    ];
+    const results = [];
+    let firstError = null;
+    for (const board of boards) {
+      try {
+        results.push(await this.steamProvider.refreshCareerRankMetadata({
+          ...board,
+          careerRankExact: requested
+        }));
+      } catch (error) {
+        firstError ||= error;
+        results.push({
+          status: 'failed',
+          leaderboardName: board.leaderboardName,
+          leaderboardKind: board.leaderboardKind,
+          error: error?.message || 'unknown'
+        });
+      }
+    }
+    if (firstError) {
+      if (options.queueOnFailure !== false) {
+        this.queueCareerRankMetadataRefresh(requested, {
+          incrementAttempt: true,
+          lastError: firstError.message || 'unknown'
+        });
+      }
+      return { status: 'pending', reason: firstError.message || 'refresh_failed', careerRankExact: requested, results };
+    }
+    const pending = this.getPendingCareerRankMetadata();
+    if (!pending || comparePilotXpExact(pending.careerRankExact, requested) <= 0) {
+      this.writePendingCareerRankMetadata(null);
+    }
+    return { status: 'refreshed', careerRankExact: requested, results };
+  }
+
+  async retryPendingCareerRankMetadata(options = {}) {
+    const pending = this.getPendingCareerRankMetadata();
+    if (!pending) return { status: 'empty', reason: options.reason || null };
+    const result = await this.refreshCareerRankMetadata(pending.careerRankExact, { queueOnFailure: false });
+    if (result.status !== 'refreshed') {
+      this.queueCareerRankMetadataRefresh(pending.careerRankExact, {
+        incrementAttempt: true,
+        lastError: result.reason || 'refresh_failed'
+      });
+    }
+    return result;
   }
 
   writePendingSteamSubmissions(entries = []) {

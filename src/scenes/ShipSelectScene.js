@@ -23,7 +23,13 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { computeShipStatRanges, createShipStatPanel, getShipCombatRole, getShipTierLabel } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitHudHint } from '../config/ShipTraitDescriptions.js';
-import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
+import {
+  MAX_RANK_INDEX,
+  formatCareerInteger,
+  getCareerRankProgress,
+  getRankTitle
+} from '../shared/RankPolicy.js';
+import { getReducedMotionEnabled } from '../config/AccessibilitySettings.js';
 import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
@@ -1117,7 +1123,7 @@ export class ShipSelectScene {
         : 1;
     const columnGap = columnCount > 1 ? (columnCount >= 3 ? 10 : 14) : 0;
     const listLineHeight = compact ? 16 : 19;
-    const rowsPerColumn = Math.max(3, Math.floor(listHeight / listLineHeight));
+    const rowsPerColumn = Math.max(1, Math.floor(listHeight / listLineHeight));
     const rowsPerPage = Math.max(1, rowsPerColumn * columnCount);
     const pageCount = Math.max(1, Math.ceil((lineEntries.length || 1) / rowsPerPage));
     const currentPage = Math.max(0, Math.min(pageCount - 1, Math.floor(Number(this.careerInfoPilotOrdersPage) || 0)));
@@ -1256,6 +1262,7 @@ export class ShipSelectScene {
       pageCount,
       rowsPerPage,
       visibleCount: displayLines.length,
+      listTexts,
       summary: archiveSummary
     };
     return panel;
@@ -1290,7 +1297,7 @@ export class ShipSelectScene {
   }
 
   startCareerInfoAnimation() {
-    if (this.careerInfoTicker) return;
+    if (this.careerInfoTicker || this.careerInfoReducedMotion) return;
     this.careerInfoTicker = () => {
       if (!this.careerInfoOverlay?.visible) return;
       const now = Date.now();
@@ -1343,6 +1350,7 @@ export class ShipSelectScene {
         pageCount: refs.pilotOrdersArchive._pilotOrdersArchive?.pageCount || 1,
         rowsPerPage: refs.pilotOrdersArchive._pilotOrdersArchive?.rowsPerPage || 0,
         visibleCount: refs.pilotOrdersArchive._pilotOrdersArchive?.visibleCount || 0,
+        lines: (refs.pilotOrdersArchive._pilotOrdersArchive?.listTexts || []).map((line) => bounds(line)),
         summary: refs.pilotOrdersArchive._pilotOrdersArchive?.summary || ''
       } : null,
       backButton: bounds(refs.close)
@@ -1370,12 +1378,14 @@ export class ShipSelectScene {
     const panelHeight = Math.min(compact ? height - 18 : Math.min(640, height - 44), height - 22);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
-    const progress = getPilotRankProgress(this.unlockProgress.pilotXp || 0);
+    const progress = getCareerRankProgress(this.unlockProgress.pilotXpExact ?? this.unlockProgress.pilotXp ?? 0);
     const rankProgress = Math.max(0, Math.min(1, Number(progress.progress) || 0));
-    const displayRank = getDisplayRankNumber(progress.rankIndex);
-    const nextRank = progress.rankIndex >= MAX_RANK_INDEX
-      ? translateText('MAX')
+    const displayRank = formatCareerInteger(progress.displayRankExact, { maxPlainDigits: 6 });
+    const nextCareerRank = formatCareerInteger((BigInt(progress.displayRankExact) + 1n).toString(), { maxPlainDigits: 6 });
+    const nextRank = progress.postCap
+      ? `${translateText('RANK')} ${nextCareerRank}`
       : getRankTitle(Math.min(MAX_RANK_INDEX, progress.rankIndex + 1)).toUpperCase();
+    this.careerInfoReducedMotion = Boolean(getReducedMotionEnabled());
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
     const nextUnlock = this.getNextShipUnlockSummary(this.unlockProgress);
     const pilotOrdersReview = getRunContractCompletionReviewState(this.unlockProgress);
@@ -1462,6 +1472,18 @@ export class ShipSelectScene {
     gauge.label = 'ui_careerIntelRankGauge';
     gauge.position.set(narrow ? width / 2 : leftX + leftW / 2, contentTop + (compact ? 64 : 82));
     const gaugeRadius = compact ? 58 : 78;
+    if (progress.postCap && AssetManifest.sprites.rankPresentation?.endlessHalo) {
+      const endlessHalo = PIXI.Sprite.from(AssetManifest.sprites.rankPresentation.endlessHalo);
+      endlessHalo.anchor.set(0.5);
+      endlessHalo.width = gaugeRadius * 2.75;
+      endlessHalo.height = gaugeRadius * 2.75;
+      endlessHalo.alpha = 0.66;
+      endlessHalo.blendMode = 'add';
+      gauge.addChild(endlessHalo);
+      if (!this.careerInfoReducedMotion) {
+        this.careerInfoAnimatedNodes.push({ node: endlessHalo, kind: 'ring', speed: -0.0012 });
+      }
+    }
     const ring = new PIXI.Graphics();
     ring.circle(0, 0, gaugeRadius + 18);
     ring.stroke({ color: 0xff55d9, width: 1.4, alpha: 0.38 });
@@ -1474,7 +1496,7 @@ export class ShipSelectScene {
     gauge.addChild(ring);
     this.careerInfoAnimatedNodes.push({ node: ring, kind: 'ring', speed: 0.006 });
 
-    const rankNumber = createText(String(displayRank), {
+    const rankNumber = createText(displayRank, {
       fontFamily: FONT_DISPLAY,
       fontSize: compact ? 42 : 56,
       fontWeight: '900',
@@ -1486,7 +1508,8 @@ export class ShipSelectScene {
     });
     rankNumber.anchor.set(0.5);
     rankNumber.y = -10;
-    const rankLabel = createText(translateText('PILOT RANK'), {
+    fitDisplayToBox(rankNumber, gaugeRadius * 1.55, gaugeRadius * 0.82, { minScale: 0.34 });
+    const rankLabel = createText(translateText(progress.postCap ? 'Career Rank' : 'PILOT RANK').toUpperCase(), {
       fontFamily: FONT_BODY,
       fontSize: compact ? 10 : 12,
       fontWeight: '900',
@@ -1539,7 +1562,8 @@ export class ShipSelectScene {
       letterSpacing: 0
     });
     flowTitle.position.set(12, 8);
-    const flowValueText = [`${Math.round(rankProgress * 100)}%`, translateText('TO'), nextRank].join(' ');
+    const rankProgressPercent = Math.min(99.9, Math.floor(rankProgress * 1000) / 10);
+    const flowValueText = [`${Number.isInteger(rankProgressPercent) ? rankProgressPercent.toFixed(0) : rankProgressPercent.toFixed(1)}%`, translateText('TO'), nextRank].join(' ');
     const flowValue = createText(flowValueText, {
       fontFamily: FONT_BODY,
       fontSize: compact ? 10 : 12,
@@ -1594,7 +1618,7 @@ export class ShipSelectScene {
     const cards = [pilotOrdersArchive];
 
     const snapshot = createText(
-      `${translateText('PROFILE SNAPSHOT')}: ${translateText('RANK')} ${displayRank} / ${translateText('NEXT RANK')} ${nextRank} / ${translateText('TOTAL RUNS')} ${this.unlockProgress.totalRuns || 0} / ${translateText('BEST SECTOR')} ${this.unlockProgress.bestSector || 1}`,
+      `${translateText('PROFILE SNAPSHOT')}: ${translateText(progress.postCap ? 'Career Rank' : 'RANK')} ${displayRank} / ${translateText('NEXT RANK')} ${progress.postCap ? nextCareerRank : nextRank} / ${translateText('TOTAL RUNS')} ${this.unlockProgress.totalRuns || 0} / ${translateText('BEST SECTOR')} ${this.unlockProgress.bestSector || 1}`,
       {
         fontFamily: FONT_BODY,
         fontSize: compact ? 9 : 12,
@@ -3219,16 +3243,19 @@ export class ShipSelectScene {
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
 
     if (this.leftIntel) {
-      const rankProgress = getPilotRankProgress(this.unlockProgress.pilotXp || 0);
+      const rankProgress = getCareerRankProgress(this.unlockProgress.pilotXpExact ?? this.unlockProgress.pilotXp ?? 0);
       const rankTitle = String(rankProgress.title || getRankTitle(this.unlockProgress.pilotRank || 0)).toUpperCase();
-      const isMaxRank = rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1;
-      const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
-      const displayRank = getDisplayRankNumber(rankProgress.rankIndex);
-      const rankLine = isMaxRank
-        ? [rankTitle, translateText('MAX RANK')].join('  ')
-        : `${Math.round((rankProgress.progress || 0) * 100)}% ${translateText('TO')} ${nextTitle}`;
+      const displayRank = formatCareerInteger(rankProgress.displayRankExact, { maxPlainDigits: 6 });
+      const nextRank = formatCareerInteger((BigInt(rankProgress.displayRankExact) + 1n).toString(), { maxPlainDigits: 6 });
+      const nextTitle = rankProgress.postCap
+        ? `${translateText('RANK')} ${nextRank}`
+        : getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
+      const rawPercent = Math.max(0, Math.min(1, Number(rankProgress.progress) || 0));
+      const progressPercent = Math.min(99.9, Math.floor(rawPercent * 1000) / 10);
+      const percentLabel = Number.isInteger(progressPercent) ? progressPercent.toFixed(0) : progressPercent.toFixed(1);
+      const rankLine = `${percentLabel}% ${translateText('TO')} ${nextTitle}`;
       this.leftIntel.count.text = translateText(`${unlockedCount}/${this.ships.length} HULLS READY`);
-      this.leftIntel.progress.text = `${translateText('PILOT RANK')} ${displayRank}: ${rankTitle}\n${rankLine}\n${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
+      this.leftIntel.progress.text = `${translateText(rankProgress.postCap ? 'Career Rank' : 'PILOT RANK').toUpperCase()} ${displayRank}: ${rankTitle}\n${rankLine}\n${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
       if (this.leftIntel.rankRail) {
         const fill = Math.max(0, Math.min(1, Number(rankProgress.progress) || 0));
         this.leftIntel.rankRail.clear();
