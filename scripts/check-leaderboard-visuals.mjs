@@ -86,11 +86,17 @@ function seededScores(count = 40) {
     'STAR HAGGLER', 'ORBIT MOTH', 'VOID CLERK', 'NOVA TELLER', 'SWARM DENT',
     'BULLET POET', 'HULL MONK', 'RANK KNIFE', 'SCORE VICE', 'FINAL COIN'
   ];
+  const foreverCareerRanks = [
+    '157',
+    '88',
+    '1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890'
+  ];
   return Array.from({ length: count }, (_, index) => ({
     name: names[index],
     score: 240000 - index * 4200,
     level: Math.max(3, 12 - Math.floor(index / 2)),
     rank_index: Math.max(0, 12 - index),
+    careerRankExact: foreverCareerRanks[index] || null,
     isCurrentPlayer: index === currentPlayerIndex
   }));
 }
@@ -270,6 +276,9 @@ try {
       /\b(roast|taunt|mock|boss bait|fixes everything|damage)\b/i.test(result.state.comment) ? `${result.viewport}: taunting comment text is still present` : null,
       result.state.rowChildren < 20 ? `${result.viewport}: row chrome did not render` : null,
       result.state.title !== 'LOCAL SCORE DECK' ? `${result.viewport}: title did not switch to local score deck` : null,
+      result.state.rows?.[0]?.careerRankLabel !== '157' ? `${result.viewport}: exact post-cap rank 157 is not visible` : null,
+      result.state.rows?.[1]?.careerRankLabel !== '88' ? `${result.viewport}: exact post-cap rank 88 is not visible` : null,
+      result.state.rows?.[2]?.careerRankLabel !== '1.23e99' ? `${result.viewport}: 100-digit career rank did not compact to 1.23e99` : null,
       result.viewport !== 'mobile' && (result.state.rows?.length || 0) > 50 ? `${result.viewport}: desktop leaderboard exceeded top-50 cap` : null,
       result.viewport === 'mobile' && (result.state.rows?.length || 0) > 10 ? `${result.viewport}: mobile leaderboard exceeded 10 visible rows` : null,
       (result.state.rows?.length || 0) >= currentPlayerIndex + 1 && !result.state.highlightedRows?.includes(currentPlayerIndex) ? `${result.viewport}: visible current player row was not highlighted` : null,

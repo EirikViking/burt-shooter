@@ -103,7 +103,7 @@ try {
   await page.waitForFunction(() => window.__game?.scenes?.play?.player && window.__game?.scenes?.play?.createRankUpAnimation, null, { timeout: 30000 });
   await page.waitForTimeout(500);
 
-  const state = await page.evaluate(() => {
+  let state = await page.evaluate(() => {
     const game = window.__game;
     const play = game?.scenes?.play;
     const player = play?.player;
@@ -127,7 +127,26 @@ try {
     };
   });
 
-  await page.waitForTimeout(320);
+  await page.waitForFunction(() => {
+    const play = window.__game?.scenes?.play;
+    return play?.uiOverlay?.children
+      ?.find?.((child) => child?.label === 'ui_rank_up_badge')
+      ?._debugRankUpClarity?.authoredFlourishReady === true;
+  }, null, { timeout: 3000 }).catch(() => {});
+  state = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const player = play?.player;
+    return {
+      ok: Boolean(game && play && player),
+      badgeCount: play?.uiOverlay?.children?.filter?.((child) => child?.label === 'ui_rank_up_badge')?.length || 0,
+      badgeDebug: play?.uiOverlay?.children?.find?.((child) => child?.label === 'ui_rank_up_badge')?._debugRankUpClarity || null,
+      auraDebug: player?.boostAura?._debugRankBoostAura || null,
+      auraVisible: Boolean(player?.boostAura?.visible),
+      rankBoostType: player?.rankBoost?.type || null
+    };
+  });
+  await page.waitForTimeout(120);
   const screenshot = path.join(outputDir, 'rank-up-clarity.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 

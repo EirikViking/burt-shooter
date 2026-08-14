@@ -129,16 +129,17 @@ try {
   assert.equal(initialized.achievements.unlocked.length, 0);
 
   saveSystem.mirrorLocalHighscores([
-    { name: 'ZEN', score: 2400, level: 6, rankIndex: 4, timestamp: '2026-01-02T00:00:00.000Z' }
+    { name: 'ZEN', score: 2400, level: 6, rankIndex: 4, careerRankExact: '123456789012345678901', timestamp: '2026-01-02T00:00:00.000Z' }
   ]);
   const mirrored = JSON.parse(readFileSync(paths.cloudSavePath, 'utf8'));
   assert.equal(mirrored.localHighscores[0].name, 'ZEN');
   assert.equal(mirrored.localHighscores[0].score, 2400);
+  assert.equal(mirrored.localHighscores[0].careerRankExact, '123456789012345678901');
 
   const merged = saveSystem.mergeRendererState({
     language: { preference: 'de', current: 'de' },
     localHighscores: [
-      { name: 'LOCALACE', score: 3333, level: 7, rankIndex: 5, timestamp: '2026-01-05T00:00:00.000Z' }
+      { name: 'LOCALACE', score: 3333, level: 7, rankIndex: 5, careerRankExact: '999999999999999999999', timestamp: '2026-01-05T00:00:00.000Z' }
     ],
     achievements: {
       version: 1,
@@ -254,6 +255,7 @@ try {
   });
   assert.deepEqual(merged.language, { preference: 'de', current: 'de' });
   assert.equal(merged.localHighscores[0].name, 'LOCALACE');
+  assert.equal(merged.localHighscores[0].careerRankExact, '999999999999999999999');
   assert.deepEqual(merged.achievements.unlocked, ['first_launch', 'score_10000']);
   assert.equal(merged.selectedShipKey, 'nova-player-ship-04.png');
   assert.deepEqual(merged.progression, { bestScore: 9000, bestRank: 7, bestLevel: 12 });

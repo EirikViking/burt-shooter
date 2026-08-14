@@ -1,5 +1,12 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-08-14 Unbounded Career Rank
+
+- Current prompt: make Nova Swarm support forever players with a genuinely unbounded Career Rank chase, reflected visibly on existing leaderboards, while all authored rewards, unlocks, achievements, difficulty, and combat power remain capped at the shipped Rank 40 ceiling.
+- Isolated worktree: `D:\vibe-coding-e\nova-swarm-unbounded-career-rank-20260814-7f3a`; branch `codex/unbounded-career-rank-20260814-7f3a`; verified clean baseline `d453bdb06ea4f0269f1be874dc892a6878cb31d4`. Protected development and authoritative checkouts remain untouched.
+- ChatGPT Pro approved the arbitrary-precision XP design, the ImageGen/ElevenLabs presentation, and the final leaderboard contract. Leaderboards stay ordered only by their existing scores. On Career Rank gain, existing personal rows are refreshed by ForceUpdating the exact stored best score with untouched competitive detail slots plus an appended versioned rank extension; missing rows are never created.
+- In progress: exact decimal-string XP persistence and max merge, status-only post-cap rank calculation, HUD/Hangar/Run Report/leaderboard presentation, retry-safe Steam metadata refresh, all-locale copy, focused regression coverage, native screenshots, audio inspection, and final Pro evidence review.
+
 ## 2026-08-09 High-sector first slice
 
 - Current prompt: continue from immutable tag `nova-swarm-high-sector-handoff-20260809-build24637691` and implement the bounded, disabled-by-default Sector 60+ escalation prototype with deterministic benchmarks, four protocols, one Sector 80 boss support modifier, eight locales, accessibility, debug state, fairness tests, visual/runtime QA, and local commits only.
@@ -3040,3 +3047,14 @@ Original request: continue improving the current non-Unity game and choose three
 - Added an exhaustive two-resolution menu overlap audit covering every main-menu focus state, Mode Details, every Settings and How To Play page, and fresh/mature Hangar states. The audit reports zero text/frame collisions at 1920x1080 and 1280x720.
 - Captured a 1280x720 fresh-profile video showing the animated arrow, `NEW PILOT — START HERE`, and the single large `START PLAYING` action. ChatGPT Pro reviewed the exact final evidence set and returned `OVERLAP VISUAL APPROVED`.
 - All eight-language UI, controller flow, browser smoke, desktop smoke, readability, scrollbar, focus-exit safety, cinematic Hangar, Daily, Sector-start, Leaderboard, and overlap checks pass. No Steamworks change, package, upload, deployment, publication, or protected-checkout modification occurred.
+
+## 2026-08-14 Endless Career Rank
+
+- Career Rank now continues forever from the exact cumulative XP total while the authored Rank 40 ceiling remains unchanged for ships, boosts, achievements, difficulty, and every other gameplay reward.
+- Exact XP and Career Rank use decimal-string save boundaries with arbitrary-precision calculations, legacy numeric compatibility, deterministic migration, and max-based Steam Cloud merging. Local score mirrors also retain the exact rank.
+- Existing Steam leaderboard scores, ordering, tie-break details, and board definitions remain unchanged. A versioned append-only detail extension displays Career Rank on existing real rows; it never creates a missing score row and retries safely after offline failures.
+- HUD, Career Intel, How To Play, Run Report, rank celebration, and Leaderboard surfaces now explain and display the endless status. Huge values compact safely, near-threshold progress never rounds to 100%, and the post-cap celebration is coalesced once per newly earned rank.
+- Added the generated endless-signal halo plus ElevenLabs Mission Control and ascent audio. Reduced Motion keeps the halo static, and promotion audio runs only after the run.
+- ChatGPT Pro reviewed the final 1280x720 and 960x640 evidence, required four concrete copy/report corrections, then returned `ENDLESS IMPLEMENTATION APPROVED` after the rebuilt correction set.
+- Focused exact-rank, leaderboard compatibility, Steam Cloud, all-language UI, controller, browser smoke, desktop smoke, release-line, current build, and full build checks pass. The inherited rank-art harness readiness race was fixed and then passed twice unchanged.
+- No package, upload, deployment, Steamworks definition, public branch, experimental-mode design, or protected-checkout change was made by this implementation.

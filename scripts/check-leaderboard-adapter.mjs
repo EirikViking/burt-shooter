@@ -95,7 +95,7 @@ assert.equal(encodedRun.level, 9, 'run result should prefer explicit levelReache
 assert.equal(encodedRun.levelReached, 9, 'run result should carry levelReached alias');
 assert.equal(encodeSteamLeaderboardDetails(encodedRun)[0], 9, 'Steam details must encode reached level in slot 0');
 assert.deepEqual(
-  encodeSteamSectorLeaderboardDetails({ startSector: 20, highestSectorReached: 24, finalSector: 23, shipNumericId: 7, runTimeSeconds: 88, bossKills: 2, wavesCleared: 9 }),
+  encodeSteamSectorLeaderboardDetails({ startSector: 20, highestSectorReached: 24, finalSector: 23, shipNumericId: 7, runTimeSeconds: 88, bossKills: 2, wavesCleared: 9 }).slice(0, 7),
   [20, 24, 23, 7, 88, 2, 9],
   'Steam sector details must encode start/highest/final sectors without touching global level details'
 );
