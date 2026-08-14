@@ -1,4 +1,5 @@
 import {
+  copyFileSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -111,7 +112,12 @@ const sdkRequired = [
   path.join('sdk', 'redistributable_bin', 'steam_api.dll')
 ];
 assertFiles(sourceSteamSdk, sdkRequired, 'source Steam SDK');
-copyRuntimePackage(sourceSteamSdk, packagedSteamSdk);
+rmSync(packagedSteamSdk, { recursive: true, force: true });
+for (const relativePath of sdkRequired) {
+  const destination = path.join(packagedSteamSdk, relativePath);
+  mkdirSync(path.dirname(destination), { recursive: true });
+  copyFileSync(path.join(sourceSteamSdk, relativePath), destination);
+}
 assertFiles(packagedSteamSdk, sdkRequired, 'packaged Steam SDK');
 
 console.log(`[stage-steam-native-runtime] PASS package=${path.relative(root, packageRoot).replaceAll(path.sep, '/')} modules=${packages.map(({ name }) => name).join(',')} sdk=steam_sdk`);

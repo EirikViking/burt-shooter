@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
@@ -41,6 +41,17 @@ function requiredPackageFiles() {
   ];
 }
 
+function listFilesRecursive(directory) {
+  if (!existsSync(directory)) return [];
+  const files = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) files.push(...listFilesRecursive(fullPath));
+    else if (entry.isFile()) files.push(fullPath);
+  }
+  return files;
+}
+
 function optionalDependencyPath() {
   try {
     return require.resolve('steamworks-ffi-node');
@@ -56,10 +67,18 @@ const bridgeStatus = bridge.createSteamLeaderboardBridge({
 }).getStatus();
 const files = requiredPackageFiles().map(fileReport);
 const errors = [];
+const packagedSteamSdkRoot = path.join(packageRoot, 'resources', 'app.asar.unpacked', 'steam_sdk');
+const packagedSteamSdkFiles = listFilesRecursive(packagedSteamSdkRoot)
+  .map((file) => path.relative(packagedSteamSdkRoot, file).replaceAll(path.sep, '/'))
+  .sort();
+const expectedSteamSdkFiles = sdkRuntimeFiles().sort();
 
 if (!existsSync(packageRoot)) errors.push(`missing package root: ${rel(packageRoot)}`);
 for (const file of files) {
   if (!file.exists) errors.push(`missing packaged Steam runtime file: ${file.path}`);
+}
+if (JSON.stringify(packagedSteamSdkFiles) !== JSON.stringify(expectedSteamSdkFiles)) {
+  errors.push(`packaged Steam SDK must contain only runtime DLLs; found ${packagedSteamSdkFiles.join(', ') || 'none'}`);
 }
 if (bridge.DEFAULT_STEAM_APP_ID !== 4765070 || bridgeStatus.appId !== 4765070) {
   errors.push(`Steam bridge app id must default to 4765070, got ${bridgeStatus.appId ?? 'missing'}`);
@@ -74,6 +93,7 @@ const report = {
   appId: bridgeStatus.appId,
   leaderboardName: bridgeStatus.leaderboardName,
   optionalDependencyPath: optionalDependencyPath() ? rel(optionalDependencyPath()) : null,
+  packagedSteamSdkFiles,
   files,
   errors
 };
@@ -88,3 +108,10 @@ if (errors.length) {
 
 assert.equal(report.status, 'passed');
 console.log(`[steam-package-runtime] PASS app=${report.appId} leaderboard=${report.leaderboardName} report=${rel(reportPath)}`);
+
+function sdkRuntimeFiles() {
+  return [
+    'sdk/redistributable_bin/steam_api.dll',
+    'sdk/redistributable_bin/win64/steam_api64.dll'
+  ];
+}
