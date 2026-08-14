@@ -1481,14 +1481,17 @@ export class MenuScene {
     this.runModeDetailsButtonIcon.anchor.set(0.5);
     this.runModeDetailsButtonIcon.visible = false;
     this.runModeDetailsButtonText = createText('', {
-      fontFamily: FONT_DISPLAY,
+      // Use the metrically reliable UI face here. Orbitron's trailing glyph
+      // overhang clips the final letters of long localized action labels.
+      fontFamily: FONT_ARCADE,
       fontSize: Math.max(10, Math.round(runModeSize * 0.9)),
       fontWeight: '900',
       fill: '#ffffff',
       align: 'center',
-      // PIXI includes texture padding in measured bounds. Keep it small so a
-      // fitted label cannot appear to cross its own button frame.
-      padding: 8
+      // The display face overhangs its reported glyph metrics. Give the text
+      // texture enough breathing room to preserve the final letters; width
+      // fitting below accounts for this padding before placing the label.
+      padding: 24
     });
     this.runModeDetailsButtonText.anchor.set(0.5);
     this.runModeDetailsButton.addChild(
@@ -2617,7 +2620,7 @@ export class MenuScene {
     const eyebrowSize = Math.round((isShortLayout ? 13 : 14) * compactScale);
     const titleSize = Math.round((isShortLayout ? 22 : 25) * compactScale);
     const bodySize = Math.round((isShortLayout ? 15 : 17) * compactScale);
-    const selectorY = y + padY + Math.round(52 * compactScale);
+    let selectorY = y + padY + Math.round(52 * compactScale);
     const selectorHeight = Math.round((isShortLayout ? 36 : 40) * compactScale);
 
     this.runModeBriefingTitle.style.fontSize = eyebrowSize;
@@ -2658,6 +2661,21 @@ export class MenuScene {
     this.runModeStatusBadge.visible = Boolean(briefing.status);
     this.runModeStatusBadgeBg.visible = Boolean(briefing.status);
 
+    // Place every following lane from the text that actually rendered. Font
+    // loading, localization and accessibility scaling can all change those
+    // bounds after the nominal font-size calculation; fixed offsets allowed a
+    // late refresh to put the selector and summary on top of each other.
+    const titleBottom = boundsForDisplayObject(this.runModeTitle)?.bottom
+      || (this.runModeTitle.y + titleSize);
+    const badgeBottom = this.runModeStatusBadgeBg.visible
+      ? (boundsForDisplayObject(this.runModeStatusBadgeBg)?.bottom || (badgeY + badgeHeight))
+      : 0;
+    selectorY = Math.ceil(Math.max(
+      selectorY,
+      titleBottom + Math.round(7 * compactScale),
+      badgeBottom + Math.round(7 * compactScale)
+    ));
+
     const selectorOffset = this.layoutRunModeVariantSelector({
       x: innerX,
       y: selectorY,
@@ -2665,8 +2683,11 @@ export class MenuScene {
       height: selectorHeight,
       accent: briefing.accent
     });
-    const summaryY = selectorOffset > 0
-      ? selectorY + selectorOffset
+    const selectorBounds = selectorOffset > 0
+      ? boundsForDisplayObject(this.runModeVariantSelector)
+      : null;
+    const summaryY = selectorBounds?.bottom
+      ? Math.ceil(selectorBounds.bottom + Math.round(9 * compactScale))
       : y + padY + Math.round(48 * compactScale);
     this.runModeExplainer.style.fontSize = bodySize;
     this.runModeExplainer.style.wordWrapWidth = innerWidth;
@@ -2791,6 +2812,8 @@ export class MenuScene {
       : 'VIEW MODE DETAILS';
     this.runModeDetailsButtonText.text = translateText(detailsLabel) + inputGlyph;
     this.runModeDetailsButtonText.style.fontSize = Math.round((isShortLayout ? 13 : 15) * compactScale);
+    this.runModeDetailsButtonText.style.padding = 24;
+    refreshTextTexture(this.runModeDetailsButtonText, { forceGpuRefresh: true });
     const helpTexture = this.menuIconTextures?.help;
     const hasIcon = Boolean(
       helpTexture
@@ -2807,7 +2830,7 @@ export class MenuScene {
       fitTextToWidth(this.runModeDetailsButtonText, detailsWidth - Math.round(50 * compactScale), { minScale: 0.68 });
     } else {
       this.runModeDetailsButtonText.position.set(0, 0);
-      fitTextToWidth(this.runModeDetailsButtonText, detailsWidth - Math.round(20 * compactScale), { minScale: 0.68 });
+      fitTextToWidth(this.runModeDetailsButtonText, detailsWidth - Math.round(24 * compactScale), { minScale: 0.6 });
     }
     this.runModeDetailsButton.visible = Boolean(briefing.details && !firstRunMayhem);
     this.drawRunModeDetailsButton();
@@ -5034,8 +5057,12 @@ export class MenuScene {
           launch: Number(this.runModeLaunchButtonText?.style?.padding) || 0,
           details: Number(this.runModeDetailsButtonText?.style?.padding) || 0
         },
-        statusBounds: boundsForDisplayObject(this.runModeStatusBadgeBg),
-        variantSelectorBounds: boundsForDisplayObject(this.runModeVariantSelector),
+        statusBounds: this.runModeStatusBadgeBg?.visible
+          ? boundsForDisplayObject(this.runModeStatusBadgeBg)
+          : null,
+        variantSelectorBounds: this.runModeVariantSelector?.visible
+          ? boundsForDisplayObject(this.runModeVariantSelector)
+          : null,
         restrictionBounds: this.runModeRestriction?.visible
           ? boundsForDisplayObject(this.runModeRestriction)
           : null,
@@ -5057,7 +5084,8 @@ export class MenuScene {
         })),
         mode: this.getRunModeBriefing().id,
         panelBounds: this.runModePanel?._briefingBounds || boundsForDisplayObject(this.runModePanel),
-        titleBounds: boundsForDisplayObject(this.runModeBriefingTitle),
+        eyebrowBounds: boundsForDisplayObject(this.runModeBriefingTitle),
+        titleBounds: boundsForDisplayObject(this.runModeTitle),
         bodyBounds: boundsForDisplayObject(this.runModeExplainer)
       },
       newPilot: {

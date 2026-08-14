@@ -1054,6 +1054,7 @@ function buildGameTextState(game) {
       nameInput: gameOverScene.nameInput || '',
       controllerNameCursor: Number.isFinite(gameOverScene.controllerNameCursor) ? gameOverScene.controllerNameCursor : null,
       inputDevice: gameOverScene.lastInputDevice || null,
+      firstFlight: gameOverScene.getFirstFlightDebugState ? gameOverScene.getFirstFlightDebugState() : null,
       primaryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       retryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       leaderboardCta: gameOverScene.getLeaderboardCtaDebugState ? gameOverScene.getLeaderboardCtaDebugState() : null,

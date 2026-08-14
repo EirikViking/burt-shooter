@@ -264,6 +264,11 @@ export class GameOverScene {
     this.shipUnlockVoicePlayed = false;
     this.nextGoal = null;
     this.currentProgressForResult = null;
+    this.firstFlightResult = false;
+    this.firstFlightPreviousRuns = 0;
+    this.firstFlightCurrentRuns = 0;
+    this.firstFlightAchievementDeferred = false;
+    this.firstFlightLayoutDebug = null;
     this.runbackProgressSummary = '';
     this.nextGoalGroup = null;
     this.nextGoalBg = null;
@@ -505,6 +510,11 @@ export class GameOverScene {
     this.experimentCopyDebug = null;
     this.experimentCopyStatusText = null;
     this.counterAdviceCardDebug = null;
+    this.firstFlightResult = false;
+    this.firstFlightPreviousRuns = 0;
+    this.firstFlightCurrentRuns = 0;
+    this.firstFlightAchievementDeferred = false;
+    this.firstFlightLayoutDebug = null;
     this.pendingRunbackReason = null;
     this.submittedHoldContinueReadyAt = 0;
     this.resultHoldContinueReadyAt = 0;
@@ -582,6 +592,16 @@ export class GameOverScene {
     this.nearMissVoicePlayed = false;
     const currentProgress = this.game.runProgressionResult?.next || getShipUnlockProgress();
     this.currentProgressForResult = currentProgress;
+    this.firstFlightPreviousRuns = Math.max(0, Math.floor(Number(previousProgress?.totalRuns) || 0));
+    this.firstFlightCurrentRuns = Math.max(0, Math.floor(Number(currentProgress?.totalRuns) || 0));
+    this.firstFlightResult = Boolean(
+      this.isRankedRun
+      && !this.isLateGameExperimentResult()
+      && !this.isDailySignalResult()
+      && (this.game?.runMode === RUN_MODES.RANKED || this.game?.runMode === RUN_MODES.MAYHEM_TACTICAL)
+      && this.firstFlightPreviousRuns === 0
+      && this.firstFlightCurrentRuns === 1
+    );
     this.game.rankIndex = currentProgress.pilotRank || this.game.rankIndex || 0;
     this.newlyUnlockedShips = this.getNewlyUnlockedShips(previousProgress, currentProgress);
     this.levelSummary = this.createLevelSummary(previousProgress, currentProgress);
@@ -1655,6 +1675,19 @@ export class GameOverScene {
     };
   }
 
+  isFirstFlightResultStage() {
+    return Boolean(this.firstFlightResult && this.state === 'runback');
+  }
+
+  getFirstFlightUnlockLine() {
+    const names = (this.newlyUnlockedShips || [])
+      .slice(0, 2)
+      .map((ship) => String(ship?.name || '').trim())
+      .filter(Boolean)
+      .join(' + ');
+    return names ? `${translateText('SHIP UNLOCKED')}: ${names}` : '';
+  }
+
   getScoreResultText() {
     if (this.isLateGameExperimentResult()) return translateText('EXPERIMENTAL TEST // NO AWARDS');
     return translateText('SCORE') + ': ' + this.formatScoreNumber(this.finalScore);
@@ -1695,36 +1728,39 @@ export class GameOverScene {
 
     if (this.state !== 'runback') return;
     const finalLines = this.getFinalResultScreenLines();
-    this.title.text = finalLines.title;
+    const firstFlight = this.isFirstFlightResultStage();
+    this.title.text = firstFlight ? translateText('FIRST FLIGHT COMPLETE') : finalLines.title;
     this.scoreText.visible = true;
     if (this.levelText) {
-      this.levelText.text = finalLines.runSummary;
+      this.levelText.text = firstFlight
+        ? translateText('REACHED SECTOR {sector}', { sector: this.finalLevel || 1 })
+        : finalLines.runSummary;
       this.levelText.visible = true;
     }
     if (this.unlockText) {
-      this.unlockText.text = finalLines.progress;
-      this.unlockText.visible = false;
+      this.unlockText.text = firstFlight ? this.getFirstFlightUnlockLine() : finalLines.progress;
+      this.unlockText.visible = Boolean(firstFlight && this.unlockText.text);
     }
     if (this.rankProgressText) {
       this.rankProgressText.text = finalLines.rankProgress;
-      this.rankProgressText.visible = Boolean(finalLines.rankProgress);
+      this.rankProgressText.visible = Boolean(!firstFlight && finalLines.rankProgress);
     }
     if (this.endlessRankHalo) {
-      this.endlessRankHalo.visible = Boolean(finalLines.rankProgress && this.shouldCelebrateEndlessRank());
+      this.endlessRankHalo.visible = Boolean(!firstFlight && finalLines.rankProgress && this.shouldCelebrateEndlessRank());
     }
     if (this.shipUnlockProgressText) {
       this.shipUnlockProgressText.text = finalLines.shipProgress;
-      this.shipUnlockProgressText.visible = Boolean(finalLines.shipProgress);
+      this.shipUnlockProgressText.visible = Boolean(!firstFlight && finalLines.shipProgress);
     }
-    if (this.shipUnlockReveal) this.shipUnlockReveal.visible = this.newlyUnlockedShips.length > 0;
+    if (this.shipUnlockReveal) this.shipUnlockReveal.visible = Boolean(!firstFlight && this.newlyUnlockedShips.length > 0);
     if (this.comment) {
       this.comment.text = finalLines.leaderboard;
-      this.comment.visible = true;
+      this.comment.visible = !firstFlight;
     }
     if (this.counterAdviceCard) this.counterAdviceCard.visible = this.shouldShowCounterAdviceCard();
     if (this.nextGoal) this.nextGoal = { text: finalLines.nextGoal, tone: 'leaderboard' };
     if (this.nextGoalText) this.nextGoalText.text = finalLines.nextGoal;
-    if (this.nextGoalGroup) this.nextGoalGroup.visible = Boolean(finalLines.nextGoal);
+    if (this.nextGoalGroup) this.nextGoalGroup.visible = Boolean(!firstFlight && finalLines.nextGoal);
     if (this.leaderboardStatusText) {
       this.leaderboardStatusText.text = finalLines.leaderboard;
       this.leaderboardStatusText.visible = false;
@@ -2312,6 +2348,7 @@ export class GameOverScene {
     this.layoutBackdrop(width, height);
     this.layoutCeremonyVisuals(width, height, layout);
     this.layoutPersonalBestCarryBanner(width, height, responsiveLayout);
+    this.layoutAchievementToast(width, height);
     this.drawCounterAdviceCard(layout);
     const counterAdviceVisible = Boolean(this.counterAdviceCard?.visible);
     this.drawRetryButton(layout);
@@ -2346,6 +2383,11 @@ export class GameOverScene {
       this.notQualifiedText,
       this.nameDisplay
     ].forEach(node => node?.updateText?.(false));
+
+    if (this.isFirstFlightResultStage()) {
+      this.layoutFirstFlightResult(layout, responsiveLayout);
+      return;
+    }
 
     // Calculate content height for centering
     const compactRunbackDesktop = !layout.isMobile && this.state === 'runback' && height < 820;
@@ -2600,6 +2642,182 @@ export class GameOverScene {
     this.layoutRunReportOverlay(layout);
   }
 
+  layoutFirstFlightResult(layout, responsiveLayout = getCurrentLayout()) {
+    const { width, height } = this.game.app.screen;
+    const safe = responsiveLayout?.safeArea || { top: 0, right: 0, bottom: 0, left: 0 };
+    const safeLeft = Math.max(0, Number(safe.left) || 0);
+    const safeRightEdge = Number.isFinite(Number(safe.right))
+      ? (Number(safe.right) > width * 0.5 ? Number(safe.right) : width - Number(safe.right))
+      : width;
+    const safeTopEdge = Math.max(0, Number(safe.top) || 0);
+    const safeBottomEdge = Number.isFinite(Number(safe.bottom))
+      ? (Number(safe.bottom) > height * 0.5 ? Number(safe.bottom) : height - Number(safe.bottom))
+      : height;
+    const safeWidth = Math.max(320, safeRightEdge - safeLeft);
+    const compact = height < 700 || width < 1100;
+    const narrow = width < 820;
+    const renderedHeight = (node) => {
+      try {
+        const bounds = node?.getBounds?.();
+        return Math.max(0, Number(bounds?.height) || 0);
+      } catch {
+        return 0;
+      }
+    };
+    const titleHeight = compact ? 44 : 58;
+    const summaryHeight = compact ? 52 : 60;
+    const unlockHeight = compact ? 46 : 54;
+    const adviceHeight = this.counterAdviceCard?.visible
+      ? Math.max(this.counterAdviceCardHeight || 0, renderedHeight(this.counterAdviceCard), compact ? 66 : 76)
+      : 0;
+    const retryHeight = Math.max(this.retryButtonHeight || 0, renderedHeight(this.retryButton), compact ? 74 : 94);
+    const secondaryHeight = Math.max(
+      this.runReportButtonHeight || 0,
+      this.hangarButtonHeight || 0,
+      this.mainMenuButtonHeight || 0,
+      renderedHeight(this.runReportButton),
+      renderedHeight(this.hangarButton),
+      renderedHeight(this.mainMenuButton),
+      compact ? 42 : 46
+    );
+    const gaps = {
+      title: compact ? 10 : 14,
+      summary: compact ? 9 : 12,
+      unlock: compact ? 10 : 14,
+      advice: adviceHeight > 0 ? (compact ? 20 : 26) : 0,
+      retry: compact ? 22 : 28
+    };
+    const contentHeight = titleHeight + summaryHeight + unlockHeight + adviceHeight + retryHeight + secondaryHeight
+      + gaps.title + gaps.summary + gaps.unlock + gaps.advice + gaps.retry;
+    const minTop = Math.max(14, safeTopEdge) + 12;
+    const maxTop = Math.max(minTop, safeBottomEdge - contentHeight - 14);
+    let cursorY = Math.max(minTop, Math.min(maxTop, (height - contentHeight) / 2));
+    const centerX = width / 2;
+
+    const hideNode = (node) => {
+      if (!node) return;
+      node.visible = false;
+      if ('eventMode' in node) node.eventMode = 'none';
+    };
+    [
+      this.rankProgressText,
+      this.endlessRankHalo,
+      this.shipUnlockProgressText,
+      this.shipUnlockReveal,
+      this.nextGoalGroup,
+      this.comment,
+      this.leaderboardStatusText,
+      this.promptText,
+      this.notQualifiedText,
+      this.nameDisplay,
+      this.instructions,
+      this.leaderboardButton
+    ].forEach(hideNode);
+    this.rankProgressBg?.clear?.();
+    this.leaderboardStatusBg?.clear?.();
+
+    this.title.visible = true;
+    this.title.alpha = 1;
+    this.title.text = translateText('FIRST FLIGHT COMPLETE');
+    this.title.style.fontSize = compact ? (narrow ? 30 : 38) : 48;
+    this.title.style.lineHeight = Math.round(Number(this.title.style.fontSize) * 1.05);
+    this.title.style.wordWrapWidth = Math.max(300, safeWidth - 80);
+    this.title.updateText?.(false);
+    fitDisplayToBox(this.title, Math.max(300, width * (compact ? 0.72 : 0.66)), titleHeight, { minScale: 0.72 });
+    this.title.position.set(centerX, cursorY + titleHeight / 2);
+    cursorY += titleHeight + gaps.title;
+
+    const summaryWidth = Math.max(320, Math.min(safeWidth - 48, compact ? 620 : 700));
+    const summaryY = cursorY + summaryHeight / 2;
+    this.scoreText.visible = true;
+    this.scoreText.alpha = 1;
+    this.scoreText.zIndex = 2;
+    this.scoreText.text = [
+      `${translateText('SCORE')}: ${this.formatScoreNumber(this.finalScore)}`,
+      translateText('REACHED SECTOR {sector}', { sector: this.finalLevel || 1 })
+    ].join('  //  ');
+    this.scoreText.style.fontSize = compact ? (narrow ? 22 : 26) : 30;
+    this.scoreText.style.wordWrap = false;
+    this.scoreText.scale.set(1);
+    this.scoreText.position.set(centerX, summaryY);
+    this.scoreText.updateText?.(false);
+    this.levelText.visible = false;
+    this.levelText.text = translateText('REACHED SECTOR {sector}', { sector: this.finalLevel || 1 });
+    this.levelText.updateText?.(false);
+    fitDisplayToBox(this.scoreText, summaryWidth - 34, summaryHeight - 16, { minScale: 0.68 });
+    this.runSectionBg?.clear?.();
+    if (this.runSectionBg) {
+      this.runSectionBg.roundRect(centerX - summaryWidth / 2, cursorY, summaryWidth, summaryHeight, 10);
+      this.runSectionBg.fill({ color: 0x041323, alpha: 0.9 });
+      this.runSectionBg.stroke({ color: 0x37f5ff, width: 2, alpha: 0.82 });
+    }
+    cursorY += summaryHeight + gaps.summary;
+
+    const unlockWidth = Math.min(summaryWidth, compact ? 620 : 700);
+    this.unlockText.visible = Boolean(this.getFirstFlightUnlockLine());
+    this.unlockText.alpha = 1;
+    this.unlockText.zIndex = 2;
+    this.unlockText.text = this.getFirstFlightUnlockLine();
+    this.unlockText.style.fontSize = compact ? (narrow ? 17 : 20) : 24;
+    this.unlockText.style.wordWrap = false;
+    this.unlockText.style.wordWrapWidth = unlockWidth - 36;
+    this.unlockText.style.lineHeight = Math.round(Number(this.unlockText.style.fontSize) * 1.18);
+    this.unlockText.scale.set(1);
+    this.unlockText.position.set(centerX, cursorY + unlockHeight / 2);
+    this.unlockText.updateText?.(false);
+    fitDisplayToBox(this.unlockText, unlockWidth - 36, unlockHeight - 14, { minScale: 0.72 });
+    this.shipUnlockProgressBg?.clear?.();
+    if (this.shipUnlockProgressBg && this.unlockText.visible) {
+      this.shipUnlockProgressBg.roundRect(centerX - unlockWidth / 2, cursorY, unlockWidth, unlockHeight, 10);
+      this.shipUnlockProgressBg.fill({ color: 0x06101c, alpha: 0.92 });
+      this.shipUnlockProgressBg.stroke({ color: 0xffd75f, width: 2.2, alpha: 0.9 });
+      this.shipUnlockProgressBg.rect(centerX - unlockWidth / 2, cursorY, 7, unlockHeight);
+      this.shipUnlockProgressBg.fill({ color: 0xffd75f, alpha: 0.9 });
+    }
+    cursorY += unlockHeight + gaps.unlock;
+
+    if (this.counterAdviceCard?.visible) {
+      this.counterAdviceCard.position.set(centerX, cursorY + adviceHeight / 2);
+      cursorY += adviceHeight + gaps.advice;
+    }
+
+    this.retryButton.visible = true;
+    this.retryButton.position.set(centerX, cursorY + retryHeight / 2);
+    cursorY += retryHeight + gaps.retry;
+
+    const secondaryButtons = [this.runReportButton, this.hangarButton, this.mainMenuButton]
+      .filter((node) => Boolean(node?.visible));
+    // Secondary frames include a seven-pixel focus plate outside the nominal
+    // button box. Keep explicit breathing room between those visible plates.
+    const secondaryGap = compact ? 20 : 24;
+    const secondaryWidth = secondaryButtons.reduce((sum, node) => {
+      if (node === this.runReportButton) return sum + (this.runReportButtonWidth || 0);
+      if (node === this.hangarButton) return sum + (this.hangarButtonWidth || 0);
+      return sum + (this.mainMenuButtonWidth || 0);
+    }, 0) + Math.max(0, secondaryButtons.length - 1) * secondaryGap;
+    let secondaryX = centerX - secondaryWidth / 2;
+    secondaryButtons.forEach((node) => {
+      const nodeWidth = node === this.runReportButton
+        ? this.runReportButtonWidth
+        : node === this.hangarButton
+          ? this.hangarButtonWidth
+          : this.mainMenuButtonWidth;
+      node.position.set(secondaryX + nodeWidth / 2, cursorY + secondaryHeight / 2);
+      secondaryX += nodeWidth + secondaryGap;
+    });
+
+    this.firstFlightLayoutDebug = {
+      active: true,
+      contentTop: Math.round(Math.max(minTop, Math.min(maxTop, (height - contentHeight) / 2))),
+      contentBottom: Math.round(cursorY + secondaryHeight),
+      contentHeight: Math.round(contentHeight),
+      viewportWidth: width,
+      viewportHeight: height,
+      secondaryCount: secondaryButtons.length
+    };
+    this.layoutRunReportOverlay(layout);
+  }
+
   drawResultSectionCard(graphics, textNode, layout, accent = 0x37f5ff, options = {}) {
     if (!graphics || !textNode || textNode.visible === false) {
       graphics?.clear?.();
@@ -2842,6 +3060,7 @@ export class GameOverScene {
 
   shouldShowLeaderboardButton() {
     if (this.isSubmitting) return false;
+    if (this.isFirstFlightResultStage()) return false;
     if (this.isLateGameExperimentResult()) return false;
     if (this.game?.runMode === RUN_MODES.SCOUT || this.isDailySignalResult() || this.isOverrunResult()) return false;
     return this.isResultActionStage() && (
@@ -3104,6 +3323,17 @@ export class GameOverScene {
             ? translateText('A: TEST SETUP  |  B: MENU')
             : translateText('ENTER / SPACE / CLICK - TEST SETUP'),
           disabled: false,
+          runback: true
+        };
+      }
+      if (this.isFirstFlightResultStage()) {
+        return {
+          mode: 'restart',
+          label: translateText('ONE MORE RUN'),
+          hint: this.lastInputDevice === 'controller'
+            ? translateText('A: PLAY AGAIN')
+            : translateText('ENTER / SPACE / CLICK - SAME SHIP'),
+          disabled: this.isSubmitting,
           runback: true
         };
       }
@@ -3683,6 +3913,12 @@ export class GameOverScene {
         return;
       }
 
+      if (this.isFirstFlightResultStage() && this.shouldShowRunReportButton() && (e.key === 'v' || e.key === 'V')) {
+        e.preventDefault();
+        this.openRunReport();
+        return;
+      }
+
       if (this.shouldShowLeaderboardButton() && (e.key === 'l' || e.key === 'L')) {
         e.preventDefault();
         this.openLeaderboard();
@@ -3832,6 +4068,11 @@ export class GameOverScene {
     }
     if (this.state === 'input') {
       this.handleGamepadNameInput(nav);
+      return;
+    }
+
+    if (nav.pressed.y && this.isFirstFlightResultStage() && this.shouldShowRunReportButton()) {
+      this.openRunReport();
       return;
     }
 
@@ -4538,6 +4779,8 @@ export class GameOverScene {
       : Math.min(width * 0.32, 360);
     const bannerHeight = compact ? (celebrationMode ? 56 : 70) : (celebrationMode ? 58 : 78);
     const banner = new PIXI.Container();
+    banner.__layoutWidth = bannerWidth;
+    banner.__layoutHeight = bannerHeight;
     banner.zIndex = 60;
     banner.x = !compact
       ? width - bannerWidth / 2 - 28
@@ -4584,8 +4827,13 @@ export class GameOverScene {
     name.y = compact ? (celebrationMode ? 10 : 13) : (celebrationMode ? 11 : 15);
     banner.addChild(name);
 
+    const visualBounds = banner.getLocalBounds?.();
+    banner.__layoutWidth = Math.max(bannerWidth, Number(visualBounds?.width) || 0);
+    banner.__layoutHeight = Math.max(bannerHeight, Number(visualBounds?.height) || 0);
+
     this.container.addChild(banner);
     this.achievementToast = banner;
+    this.layoutAchievementToast(width, height);
 
     let elapsed = 0;
     const duration = 3400;
@@ -4762,10 +5010,13 @@ export class GameOverScene {
     const visible = this.shouldShowHangarButton();
     const compact = visible && this.shouldShowMainMenuButton();
     const compactRunbackDesktop = this.state === 'runback' && !layout.isMobile && layout.height < 820;
-    const buttonWidth = compact
+    const firstFlight = this.isFirstFlightResultStage();
+    const buttonWidth = firstFlight
+      ? Math.min(layout.width * 0.25, 220)
+      : compact
       ? Math.min(layout.width * (layout.isMobile ? 0.72 : 0.26), layout.isMobile ? 280 : 300)
       : Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
-    const buttonHeight = layout.isMobile ? 46 : compactRunbackDesktop ? 44 : 52;
+    const buttonHeight = firstFlight ? (layout.height < 700 ? 42 : 46) : layout.isMobile ? 46 : compactRunbackDesktop ? 44 : 52;
     const halfWidth = buttonWidth / 2;
     const halfHeight = buttonHeight / 2;
     const radius = layout.isMobile ? 8 : 10;
@@ -4792,8 +5043,10 @@ export class GameOverScene {
     this.hangarButtonBg.fill({ color: 0xffd15c, alpha: 0.26 });
 
     if (this.hangarButtonLabel) {
-      this.hangarButtonLabel.style.fontSize = layout.isMobile ? 17 : 21;
+      this.hangarButtonLabel.text = translateText(firstFlight ? 'HANGAR' : 'BACK TO HANGAR');
+      this.hangarButtonLabel.style.fontSize = firstFlight ? (layout.height < 700 ? 15 : 17) : layout.isMobile ? 17 : 21;
       this.hangarButtonLabel.y = layout.isMobile ? -7 : -8;
+      fitDisplayToBox(this.hangarButtonLabel, buttonWidth - 24, buttonHeight * 0.48, { minScale: 0.68 });
     }
     if (this.hangarButtonHint) {
       this.hangarButtonHint.style.fontSize = layout.isMobile ? 13 : 15;
@@ -4850,10 +5103,13 @@ export class GameOverScene {
     const visible = this.shouldShowMainMenuButton();
     const compact = visible && this.shouldShowHangarButton();
     const compactRunbackDesktop = this.state === 'runback' && !layout.isMobile && layout.height < 820;
-    const buttonWidth = compact
+    const firstFlight = this.isFirstFlightResultStage();
+    const buttonWidth = firstFlight
+      ? Math.min(layout.width * 0.25, 220)
+      : compact
       ? Math.min(layout.width * (layout.isMobile ? 0.72 : 0.26), layout.isMobile ? 280 : 300)
       : Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
-    const buttonHeight = layout.isMobile ? 46 : compactRunbackDesktop ? 44 : 52;
+    const buttonHeight = firstFlight ? (layout.height < 700 ? 42 : 46) : layout.isMobile ? 46 : compactRunbackDesktop ? 44 : 52;
     const halfWidth = buttonWidth / 2;
     const halfHeight = buttonHeight / 2;
     const radius = layout.isMobile ? 8 : 10;
@@ -4880,9 +5136,10 @@ export class GameOverScene {
     this.mainMenuButtonBg.fill({ color: 0x7dffcc, alpha: 0.26 });
 
     if (this.mainMenuButtonLabel) {
-      this.mainMenuButtonLabel.text = translateText('BACK TO MAIN MENU');
-      this.mainMenuButtonLabel.style.fontSize = layout.isMobile ? 17 : 21;
+      this.mainMenuButtonLabel.text = translateText(firstFlight ? 'MAIN MENU' : 'BACK TO MAIN MENU');
+      this.mainMenuButtonLabel.style.fontSize = firstFlight ? (layout.height < 700 ? 15 : 17) : layout.isMobile ? 17 : 21;
       this.mainMenuButtonLabel.y = layout.isMobile ? -7 : -8;
+      fitDisplayToBox(this.mainMenuButtonLabel, buttonWidth - 24, buttonHeight * 0.48, { minScale: 0.68 });
     }
     if (this.mainMenuButtonHint) {
       this.mainMenuButtonHint.text = translateText('ESC / B');
@@ -4929,13 +5186,16 @@ export class GameOverScene {
   drawCounterAdviceCard(layout) {
     if (!this.counterAdviceCard || !this.counterAdviceCardBg || !this.counterAdviceLabel || !this.counterAdviceBody) return;
     const visible = this.shouldShowCounterAdviceCard();
-    const cardWidth = Math.min(layout.width * (layout.isMobile ? 0.88 : 0.5), layout.isMobile ? 500 : 560);
+    const firstFlight = this.isFirstFlightResultStage();
+    const cardWidth = firstFlight
+      ? Math.min(layout.width * 0.66, 680)
+      : Math.min(layout.width * (layout.isMobile ? 0.88 : 0.5), layout.isMobile ? 500 : 560);
     const padX = layout.isMobile ? 16 : 20;
     const padTop = layout.isMobile ? 11 : 12;
     const labelSize = layout.isMobile ? 13 : 15;
     const bodySize = layout.isMobile ? 14 : 17;
     const adviceText = visible ? this.getCounterAdviceText() : '';
-    const labelText = translateText('COUNTER ADVICE: LAST DEATH').toLocaleUpperCase();
+    const labelText = translateText(firstFlight ? 'NEXT TRY' : 'COUNTER ADVICE: LAST DEATH').toLocaleUpperCase();
 
     this.counterAdviceLabel.text = labelText;
     this.counterAdviceLabel.style.fontSize = labelSize;
@@ -5047,8 +5307,11 @@ export class GameOverScene {
     if (!this.runReportButton || !this.runReportButtonBg || !this.runReportButtonLabel) return;
     const visible = this.shouldShowRunReportButton();
     const compactRunbackDesktop = this.state === 'runback' && !layout.isMobile && layout.height < 820;
-    const buttonWidth = Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
-    const buttonHeight = layout.isMobile ? 48 : compactRunbackDesktop ? 46 : 54;
+    const firstFlight = this.isFirstFlightResultStage();
+    const buttonWidth = firstFlight
+      ? Math.min(layout.width * 0.25, 220)
+      : Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
+    const buttonHeight = firstFlight ? (layout.height < 700 ? 42 : 46) : layout.isMobile ? 48 : compactRunbackDesktop ? 46 : 54;
     const halfWidth = buttonWidth / 2;
     const halfHeight = buttonHeight / 2;
     const radius = layout.isMobile ? 8 : 10;
@@ -5074,12 +5337,13 @@ export class GameOverScene {
 
     const dailySignal = this.isDailySignalResult();
     const experiment = this.isLateGameExperimentResult();
-    this.runReportButtonLabel.text = translateText(experiment ? 'TEST REPORT' : dailySignal ? 'FLIGHT REPORT' : 'RUN REPORT');
-    this.runReportButtonLabel.style.fontSize = layout.isMobile ? 18 : 22;
+    this.runReportButtonLabel.text = translateText(firstFlight ? 'VIEW DETAILS' : experiment ? 'TEST REPORT' : dailySignal ? 'FLIGHT REPORT' : 'RUN REPORT');
+    this.runReportButtonLabel.style.fontSize = firstFlight ? (layout.height < 700 ? 15 : 17) : layout.isMobile ? 18 : 22;
     this.runReportButtonLabel.y = layout.isMobile ? -7 : -8;
+    fitDisplayToBox(this.runReportButtonLabel, buttonWidth - 24, buttonHeight * 0.48, { minScale: 0.68 });
     if (this.runReportButtonHint) {
-      this.runReportButtonHint.text = translateText(experiment ? 'LOCAL TELEMETRY + COPY' : dailySignal ? 'VIEW + SAVE SHARE CARD' : 'Counter advice');
-      this.runReportButtonHint.style.fontSize = layout.isMobile ? 13 : 15;
+      this.runReportButtonHint.text = translateText(firstFlight ? 'V / Y' : experiment ? 'LOCAL TELEMETRY + COPY' : dailySignal ? 'VIEW + SAVE SHARE CARD' : 'Counter advice');
+      this.runReportButtonHint.style.fontSize = firstFlight ? 11 : layout.isMobile ? 13 : 15;
       this.runReportButtonHint.y = layout.isMobile ? 14 : 16;
     }
   }
@@ -6336,6 +6600,7 @@ export class GameOverScene {
   }
 
   getRunbackTitle() {
+    if (this.firstFlightResult) return translateText('FIRST FLIGHT COMPLETE');
     if (this.isLateGameExperimentResult()) return translateText('EXPERIMENTAL TEST COMPLETE');
     if (this.isDailySignalResult()) return this.getCeremonyTitle();
     if (this.isOverrunResult()) return translateText('OVERRUN COMPLETE');
@@ -6524,6 +6789,27 @@ export class GameOverScene {
     return true;
   }
 
+  layoutAchievementToast(width = this.game?.app?.screen?.width || 0, height = this.game?.app?.screen?.height || 0) {
+    const banner = this.achievementToast;
+    if (!banner || width <= 0 || height <= 0) return;
+    const bannerWidth = Math.max(1, Number(banner.__layoutWidth) || banner.getBounds?.().width || 1);
+    const bannerHeight = Math.max(1, Number(banner.__layoutHeight) || banner.getBounds?.().height || 1);
+    const compact = width < 720;
+    const firstFlightCompactScale = this.isFirstFlightResultStage() && width >= 720 && width < 1100
+      ? 0.68
+      : 1;
+    banner.scale.set(firstFlightCompactScale);
+    const visibleWidth = bannerWidth * firstFlightCompactScale;
+    const visibleHeight = bannerHeight * firstFlightCompactScale;
+    const celebrationMode = Boolean(this.globalPlacement?.qualified || this.globalQualified);
+    const preferredX = compact ? width / 2 : width - visibleWidth / 2 - 28;
+    const preferredY = celebrationMode
+      ? Math.max(compact ? 36 : 40, height * 0.055)
+      : Math.max(52, height * 0.09);
+    banner.x = Math.max(visibleWidth / 2 + 14, Math.min(width - visibleWidth / 2 - 14, preferredX));
+    banner.y = Math.max(visibleHeight / 2 + 14, Math.min(height - visibleHeight / 2 - 14, preferredY));
+  }
+
   enterRunbackStage(reason = 'runback') {
     if (this.state === 'runback') return;
     this.clearSceneTimeouts();
@@ -6652,6 +6938,56 @@ export class GameOverScene {
     } catch {
       return fallback;
     }
+  }
+
+  getFirstFlightDebugState() {
+    const readBounds = (node) => {
+      try {
+        if (!node?.getBounds) return null;
+        const bounds = node.getBounds();
+        return {
+          x: Math.round(bounds.x || 0),
+          y: Math.round(bounds.y || 0),
+          width: Math.round(bounds.width || 0),
+          height: Math.round(bounds.height || 0)
+        };
+      } catch {
+        return null;
+      }
+    };
+    return {
+      eligible: Boolean(this.firstFlightResult),
+      active: this.isFirstFlightResultStage(),
+      previousRuns: this.firstFlightPreviousRuns || 0,
+      currentRuns: this.firstFlightCurrentRuns || 0,
+      title: this.title?.text || null,
+      score: this.scoreText?.text || null,
+      sector: this.levelText?.text || null,
+      unlock: this.unlockText?.text || null,
+      achievementDeferred: Boolean(this.firstFlightAchievementDeferred),
+      hiddenDetailNodes: {
+        rankProgress: !this.rankProgressText?.visible,
+        shipProgress: !this.shipUnlockProgressText?.visible,
+        shipReveal: !this.shipUnlockReveal?.visible,
+        nextGoal: !this.nextGoalGroup?.visible,
+        leaderboard: !this.leaderboardButton?.visible
+      },
+      bounds: {
+        title: readBounds(this.title),
+        achievement: readBounds(this.achievementToast),
+        summaryFrame: readBounds(this.runSectionBg),
+        score: readBounds(this.scoreText),
+        sector: readBounds(this.levelText),
+        unlockFrame: readBounds(this.shipUnlockProgressBg),
+        unlock: readBounds(this.unlockText),
+        advice: readBounds(this.counterAdviceCard),
+        retry: readBounds(this.retryButton),
+        details: readBounds(this.runReportButton),
+        hangar: readBounds(this.hangarButton),
+        menu: readBounds(this.mainMenuButton)
+      },
+      layout: this.firstFlightLayoutDebug || null
+    };
   }
 
   getLeaderboardCtaDebugState() {
