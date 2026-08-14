@@ -20,6 +20,7 @@ import { getSecondPolishSourceText } from '../secondPolishSourceText.js';
 import { getTyrian112SourceText } from '../tyrian112SourceText.js';
 import { getHighSectorSourceText } from '../highSectorSourceText.js';
 import { getLateGameExperimentSourceText } from '../lateGameExperimentSourceText.js';
+import { getFirstRunRetentionSourceText } from '../firstRunRetentionSourceText.js';
 
 const sourceText = Object.freeze({
   "ROUTE": "ROUTE",
@@ -2254,6 +2255,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getTyrianFeedbackSourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de'), ...getNewestTyrianFeedbackSourceText('de'), ...getSecondPolishSourceText('de'), ...getTyrian112SourceText('de'), ...getHighSectorSourceText('de'), ...getLateGameExperimentSourceText('de') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getTyrianFeedbackSourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de'), ...getNewestTyrianFeedbackSourceText('de'), ...getSecondPolishSourceText('de'), ...getTyrian112SourceText('de'), ...getHighSectorSourceText('de'), ...getLateGameExperimentSourceText('de'), ...getFirstRunRetentionSourceText('de') }),
   patterns
 };

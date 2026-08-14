@@ -24,6 +24,10 @@ import { getHighSectorSourceText } from '../highSectorSourceText.js';
 import { getLateGameExperimentSourceText } from '../lateGameExperimentSourceText.js';
 
 const sourceText = Object.freeze({
+  'MOVE — WASD / ARROWS  •  SHOOT — SPACE': '이동 — WASD / 방향키  •  발사 — SPACE',
+  'MOVE — STICK / D-PAD  •  SHOOT — A / RT': '이동 — 스틱 / D-PAD  •  발사 — A / RT',
+  'PHASE — SHIFT  •  FOCUS — CTRL': '위상 — SHIFT  •  집중 — CTRL',
+  'PHASE — B / LB  •  FOCUS — LT': '위상 — B / LB  •  집중 — LT',
   "ROUTE": "\uacbd\ub85c",
   "ACE CONTACT": "\uc5d0\uc774\uc2a4 \uc811\ucd09",
   "ACE CONTRACT": "\uc5d0\uc774\uc2a4 \uacc4\uc57d",

@@ -24,6 +24,10 @@ import { getHighSectorSourceText } from '../highSectorSourceText.js';
 import { getLateGameExperimentSourceText } from '../lateGameExperimentSourceText.js';
 
 const sourceText = Object.freeze({
+  'MOVE — WASD / ARROWS  •  SHOOT — SPACE': 'MOVER — WASD / SETAS  •  ATIRAR — ESPAÇO',
+  'MOVE — STICK / D-PAD  •  SHOOT — A / RT': 'MOVER — ANALÓGICO / D-PAD  •  ATIRAR — A / RT',
+  'PHASE — SHIFT  •  FOCUS — CTRL': 'FASE — SHIFT  •  FOCO — CTRL',
+  'PHASE — B / LB  •  FOCUS — LT': 'FASE — B / LB  •  FOCO — LT',
   "ROUTE": "ROTA",
   "ACE CONTACT": "CONTATO AS",
   "ACE CONTRACT": "CONTRATO DE AS",
