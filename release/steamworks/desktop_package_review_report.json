@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-08-14T11:48:26.800Z",
+  "generatedAt": "2026-08-14T15:02:32.070Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-08-14_13-33-46",
-    "timestamp": "2026-08-14T11:33:46.926Z"
+    "version": "v2026-08-14_16-50-08",
+    "timestamp": "2026-08-14T14:50:08.344Z"
   },
-  "packagedSmokeMode": "local",
+  "packagedSmokeMode": "steam",
   "desktopPayload": {
     "path": "release/desktop/win-unpacked/Nova Swarm.exe",
     "sizeBytes": 226698752,
-    "modifiedAt": "2026-08-14T11:39:59.298Z"
+    "modifiedAt": "2026-08-14T14:55:36.813Z"
   },
   "steamApiPayload": {
     "path": "release/desktop/win-unpacked/steam_api64.dll",
@@ -17,10 +17,10 @@
     "modifiedAt": "2026-03-10T23:13:48.000Z"
   },
   "latestElectronSmoke": {
-    "reportPath": "test-results/electron-smoke-2026-08-14T11-44-37-763Z/report.json",
-    "screenshotPath": "test-results/electron-smoke-2026-08-14T11-44-37-763Z/01-electron-menu.png",
+    "reportPath": "test-results/electron-smoke-2026-08-14T15-02-19-385Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-08-14T15-02-19-385Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-08-14_13-33-46",
+    "build": "v2026-08-14_16-50-08",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "menu",
     "introTitle": null,
@@ -39,10 +39,10 @@
     "consoleEvents": []
   },
   "latestPackagedExeSmoke": {
-    "reportPath": "test-results/packaged-exe-smoke-2026-08-14T11-45-49-538Z/report.json",
-    "screenshotPath": "test-results/packaged-exe-smoke-2026-08-14T11-45-49-538Z/01-electron-menu.png",
+    "reportPath": "test-results/packaged-exe-smoke-2026-08-14T15-01-12-191Z/report.json",
+    "screenshotPath": "test-results/packaged-exe-smoke-2026-08-14T15-01-12-191Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-08-14_13-33-46",
+    "build": "v2026-08-14_16-50-08",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "menu",
     "introTitle": null,
@@ -58,24 +58,24 @@
       "ready": true
     },
     "steamRuntimeValidation": {
-      "mode": "local",
-      "required": false,
+      "mode": "steam",
+      "required": true,
       "passed": true,
       "errors": []
     },
     "consoleEvents": []
   },
   "latestPackagedControlsSmoke": {
-    "reportPath": "test-results/packaged-control-smoke-2026-08-14T11-45-54-681Z/report.json",
+    "reportPath": "test-results/packaged-control-smoke-2026-08-14T14-58-01-063Z/report.json",
     "screenshotPaths": [
-      "test-results/packaged-control-smoke-2026-08-14T11-45-54-681Z/00-control-start.png",
-      "test-results/packaged-control-smoke-2026-08-14T11-45-54-681Z/01-keyboard-run.png",
-      "test-results/packaged-control-smoke-2026-08-14T11-45-54-681Z/02-keyboard-pause.png",
-      "test-results/packaged-control-smoke-2026-08-14T11-45-54-681Z/03-gamepad-run.png",
-      "test-results/packaged-control-smoke-2026-08-14T11-45-54-681Z/04-gamepad-pause.png"
+      "test-results/packaged-control-smoke-2026-08-14T14-58-01-063Z/00-control-start.png",
+      "test-results/packaged-control-smoke-2026-08-14T14-58-01-063Z/01-keyboard-run.png",
+      "test-results/packaged-control-smoke-2026-08-14T14-58-01-063Z/02-keyboard-pause.png",
+      "test-results/packaged-control-smoke-2026-08-14T14-58-01-063Z/03-gamepad-run.png",
+      "test-results/packaged-control-smoke-2026-08-14T14-58-01-063Z/04-gamepad-pause.png"
     ],
     "status": "passed",
-    "build": "v2026-08-14_13-33-46",
+    "build": "v2026-08-14_16-50-08",
     "checks": {
       "keyboardMovement": true,
       "keyboardFire": true,
@@ -88,18 +88,16 @@
     "errors": []
   },
   "latestPackagedPerfSmoke": {
-    "reportPath": "test-results/packaged-perf-smoke-2026-08-14T11-46-11-776Z/report.json",
-    "screenshotPath": "test-results/packaged-perf-smoke-2026-08-14T11-46-11-776Z/01-electron-perf-final.png",
+    "reportPath": "test-results/packaged-perf-smoke-2026-08-14T14-58-46-285Z/report.json",
+    "screenshotPath": "test-results/packaged-perf-smoke-2026-08-14T14-58-46-285Z/01-electron-perf-final.png",
     "status": "passed",
-    "build": "v2026-08-14_13-33-46",
-    "minFps": 59.88023952091634,
-    "avgFps": 60.07699824884424,
+    "build": "v2026-08-14_16-50-08",
+    "minFps": 59.523809523799216,
+    "avgFps": 60.012199892890436,
     "minRequiredFps": 50,
     "consoleEvents": [],
     "errors": []
   },
   "errors": [],
-  "warnings": [
-    "Packaged Steam runtime validation skipped by explicit NOVA_SWARM_PACKAGED_SMOKE_MODE=local"
-  ]
+  "warnings": []
 }
