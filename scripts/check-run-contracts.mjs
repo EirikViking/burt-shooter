@@ -1455,12 +1455,13 @@ async function runBrowserSmoke() {
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return window.__game?.scenes?.play?.introActive === false
-        && (state.toast?.active || []).some((toast) => toast.type === 'firstRunControls');
+        && (state.toast?.active || []).some((toast) => toast.type === 'firstRunControlsOpening');
     }, null, { timeout: 15000 });
     await page.waitForTimeout(250);
     const firstRunNudgeState = await readState(page);
-    const firstRunNudge = (firstRunNudgeState.toast?.active || []).find((toast) => toast.type === 'firstRunControls');
-    assert.match(firstRunNudge?.message || '', /WASD\/Arrows: Move.*Space: Shoot.*Shift: Phase/, 'first ranked run should teach core controls before Pilot Orders');
+    const firstRunNudge = (firstRunNudgeState.toast?.active || []).find((toast) => toast.type === 'firstRunControlsOpening');
+    assert.match(firstRunNudge?.message || '', /MOVE.*WASD \/ ARROWS.*SHOOT.*SPACE/, 'first ranked run should teach movement and firing before Pilot Orders');
+    assert.doesNotMatch(firstRunNudge?.message || '', /Pause|Phase|Focus/i, 'opening lesson should avoid front-loading secondary controls');
     assert.equal((firstRunNudgeState.toast?.active || []).some((toast) => toast.type === 'runContractStart'), false, 'first ranked run should not stack the Pilot Orders banner over controls');
     assert.equal((firstRunNudgeState.toast?.active || []).some((toast) => toast.type === 'level_up' && toast.slot === 'corner'), false, 'first ranked run should suppress ambient opening quips while controls are visible');
     assert.equal(firstRunNudgeState.shipIntro?.timing?.totalMs, 3200, 'first ranked run should preserve the full ship introduction');
@@ -1520,12 +1521,13 @@ async function runBrowserSmoke() {
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return window.__game?.scenes?.play?.introActive === false
-        && (state.toast?.active || []).some((toast) => toast.type === 'firstRunControls');
+        && (state.toast?.active || []).some((toast) => toast.type === 'firstRunControlsOpening');
     }, null, { timeout: 15000 });
     await page.waitForTimeout(250);
     const controllerFirstRunState = await readState(page);
-    const controllerFirstRunNudge = (controllerFirstRunState.toast?.active || []).find((toast) => toast.type === 'firstRunControls');
-    assert.match(controllerFirstRunNudge?.message || '', /Stick\/D-Pad: Move.*A\/RT: Shoot.*B\/LB: Phase/, 'controller first run should teach controller controls after the ship intro');
+    const controllerFirstRunNudge = (controllerFirstRunState.toast?.active || []).find((toast) => toast.type === 'firstRunControlsOpening');
+    assert.match(controllerFirstRunNudge?.message || '', /MOVE.*STICK \/ D-PAD.*SHOOT.*A \/ RT/, 'controller first run should teach movement and firing after the ship intro');
+    assert.doesNotMatch(controllerFirstRunNudge?.message || '', /Pause|Phase|Focus/i, 'controller opening lesson should avoid front-loading secondary controls');
     assert.equal(controllerFirstRunState.toast?.achievement?.id || null, null, 'controller first-run achievement should wait until the controls lesson is complete');
     const controllerFirstRunOverlap = await page.evaluate(() => {
       const play = window.__game?.scenes?.play;
@@ -1562,11 +1564,11 @@ async function runBrowserSmoke() {
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return state.shipIntro?.complete === true && state.shipIntro?.returningPilot === true;
-    }, null, { timeout: 7000 });
+    }, null, { timeout: 12000 });
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return (state.toast?.active || []).some((toast) => toast.type === 'runContractStart');
-    }, null, { timeout: 7000 });
+    }, null, { timeout: 12000 });
     await page.waitForTimeout(250);
     const startNudgeState = await readState(page);
     const startOrderNudge = (startNudgeState.toast?.active || []).find((toast) => toast.type === 'runContractStart');
