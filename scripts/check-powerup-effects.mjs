@@ -1320,6 +1320,9 @@ try {
     const player = play?.player;
     const input = play?.inputManager;
     if (!play || !player || !input) throw new Error('Missing play state for Special Fire probe');
+    play.introActive = false;
+    play.introComplete = true;
+    play.setShipIntroAgencyState?.('complete', 'powerup_effects_special_fire_probe');
     player.resetPowerups?.();
     const target = {
       active: true,
@@ -1359,6 +1362,15 @@ try {
       bombShotsLeft: player.bombShotsLeft,
       grazeBreakReady: play.grazeBreakReady,
       lastIntent: play.lastSpecialFireIntent ? { ...play.lastSpecialFireIntent } : null,
+      bombTriggerIntent: player.lastBombTriggerIntent ? { ...player.lastBombTriggerIntent } : null,
+      bombCommitState: player.getBombCommitState?.(player.getGameplayClockMs()) || null,
+      gameplayClockAdvancing: play.isGameplayClockAdvancing?.() === true,
+      enemyState: play.enemyManager?.state || null,
+      isPaused: Boolean(play.isPaused),
+      introActive: Boolean(play.introActive),
+      shipIntroAgencyBlocked: play.isShipIntroAgencyBlocked?.() === true,
+      specialFireQueuedUntil: Number(play.specialFireQueuedUntil || 0),
+      shootCooldown: Number(player.shootCooldown || 0),
       bombMuzzleFlash: player.lastMuzzleFlashDebug ? { ...player.lastMuzzleFlashDebug } : null,
       specialBinding: [...(input.keyboardBindings?.specialFire || [])]
     };
