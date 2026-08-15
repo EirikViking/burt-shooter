@@ -228,8 +228,13 @@ const GAMEPLAY_MESSAGE_EXTRA_READ_MS = 1000;
 const SECTOR_ARRIVAL_STINGER_MS = 1100 + GAMEPLAY_MESSAGE_EXTRA_READ_MS;
 const FIRST_RUN_CONTROLS_DELAY_MS = 240;
 const FIRST_RUN_OPENING_DURATION_MS = 3800;
-const FIRST_RUN_THREAT_DURATION_MS = 4000;
+const FIRST_RUN_PHASE_DURATION_MS = 4000;
+const FIRST_RUN_FOCUS_DURATION_MS = 4000;
 const FIRST_RUN_THREAT_WAIT_FALLBACK_MS = 12000;
+const FIRST_RUN_FOCUS_ENTER_RATIO = 0.4;
+const FIRST_RUN_FOCUS_EXIT_RATIO = 0.15;
+const FIRST_RUN_FOCUS_ENTER_HOLD_MS = 250;
+const FIRST_RUN_FOCUS_EXIT_HOLD_MS = 500;
 const RANK_UP_PRESENTATION_MS = 2610;
 const COLLISION_GRID_CELL_SIZE = 96;
 const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
@@ -443,6 +448,10 @@ export class PlayScene {
     this.firstRunOnboardingCompletionTimeout = null;
     this.firstRunControlsShownAt = 0;
     this.firstRunThreatShownAt = 0;
+    this.firstRunFocusShownAt = 0;
+    this.firstRunFocusDensityAboveSince = null;
+    this.firstRunFocusDensityBelowSince = null;
+    this.firstRunFocusDensityDebug = null;
     this.firstRunOnboardingStage = 'complete';
     this.firstRunOnboardingActions = null;
     this.firstRunEnemyStart = null;
@@ -874,6 +883,10 @@ export class PlayScene {
     this.firstRunOnboardingUntil = 0;
     this.firstRunControlsShownAt = 0;
     this.firstRunThreatShownAt = 0;
+    this.firstRunFocusShownAt = 0;
+    this.firstRunFocusDensityAboveSince = null;
+    this.firstRunFocusDensityBelowSince = null;
+    this.firstRunFocusDensityDebug = null;
     this.firstRunOnboardingStage = this.getFirstRunControlsNudge() ? 'opening_pending' : 'complete';
     this.firstRunOnboardingActions = {
       moved: false,
@@ -4188,23 +4201,46 @@ export class PlayScene {
   completeFirstRunOnboarding(reason = 'complete', { flushAchievements = true } = {}) {
     if (this.firstRunOnboardingComplete) return false;
     this.clearFirstRunOnboardingCompletion();
-    this.cancelNotificationTypes?.(['firstRunControlsOpening', 'firstRunControlsThreat'], `first_run_${reason}`);
     this.firstRunOnboardingComplete = true;
     this.firstRunOnboardingUntil = 0;
     this.firstRunOnboardingCompletionTimeout = null;
     this.firstRunOnboardingStage = 'complete';
     this.firstRunEnemyStart = null;
+    this.firstRunFocusDensityAboveSince = null;
+    this.firstRunFocusDensityBelowSince = null;
+    this.cancelNotificationTypes?.(
+      ['firstRunControlsOpening', 'firstRunControlsPhase', 'firstRunControlsFocus'],
+      `first_run_${reason}`
+    );
+    if (this.toastSlotLockUntil) this.toastSlotLockUntil.top = 0;
     this.lastFirstRunOnboardingCompletion = {
       reason,
       at: Date.now(),
       actions: { ...(this.firstRunOnboardingActions || {}) }
     };
-    if (flushAchievements) this.game?.flushAchievementToasts?.(this);
-    if (flushAchievements && !this.activeAchievementToast && this.achievementToastQueue.length > 0) {
+    if (flushAchievements) this.flushFirstRunAchievementHold();
+    return true;
+  }
+
+  flushFirstRunAchievementHold() {
+    this.game?.flushAchievementToasts?.(this);
+    if (!this.activeAchievementToast && this.achievementToastQueue.length > 0) {
       const next = this.achievementToastQueue.shift();
       this.showAchievementToastNow(next);
     }
-    return true;
+  }
+
+  isFirstRunOnboardingBlockingAchievements() {
+    if (this.firstRunOnboardingComplete) return false;
+    return new Set([
+      'opening_pending',
+      'opening',
+      'awaiting_phase',
+      'phase_pending',
+      'phase',
+      'focus_queued',
+      'focus'
+    ]).has(this.firstRunOnboardingStage);
   }
 
   getFirstRunControlsNudge(stage = 'opening') {
@@ -4212,33 +4248,48 @@ export class PlayScene {
     if ((Number(progress?.totalRuns) || 0) > 0) return null;
     if (this.game?.lateGameExperiment?.active === true) return null;
     const usingController = this.game?.runStartInputDevice === 'controller';
-    if (stage === 'threat') {
+    if (stage === 'phase') {
       return translateText(usingController
-        ? 'PHASE — B / LB  •  FOCUS — LT'
-        : 'PHASE — SHIFT  •  FOCUS — CTRL');
+        ? 'PHASE — B / LB'
+        : 'PHASE — SHIFT');
+    }
+    if (stage === 'focus') {
+      return translateText(usingController
+        ? 'FOCUS — LT'
+        : 'FOCUS — CTRL');
     }
     return translateText(usingController
       ? 'MOVE — STICK / D-PAD  •  SHOOT — A / RT'
       : 'MOVE — WASD / ARROWS  •  SHOOT — SPACE');
   }
 
+  releaseFirstRunEnemyStart(reason = 'opening_complete') {
+    const enemyStart = this.firstRunEnemyStart;
+    if (!enemyStart) return false;
+    this.firstRunEnemyStart = null;
+    this.scheduleEnemyStartForLevel(enemyStart.level, {
+      startAtBoss: enemyStart.startAtBoss,
+      delayMs: 0,
+      source: `${enemyStart.source}:first_run_${reason}`
+    });
+    return true;
+  }
+
   finishFirstRunOpening(reason = 'actions_complete') {
     if (this.firstRunOnboardingComplete || this.firstRunOnboardingStage !== 'opening') return false;
     this.clearFirstRunOnboardingCompletion();
     this.cancelNotificationTypes?.(['firstRunControlsOpening'], `first_run_opening_${reason}`);
-    this.firstRunOnboardingStage = 'awaiting_threat';
+    if (this.toastSlotLockUntil) this.toastSlotLockUntil.top = 0;
+    this.firstRunOnboardingStage = 'awaiting_phase';
     this.firstRunOnboardingUntil = Date.now() + FIRST_RUN_THREAT_WAIT_FALLBACK_MS;
-    const enemyStart = this.firstRunEnemyStart;
-    if (enemyStart) {
-      this.scheduleEnemyStartForLevel(enemyStart.level, {
-        startAtBoss: enemyStart.startAtBoss,
-        delayMs: 0,
-        source: `${enemyStart.source}:first_run_${reason}`
-      });
+    this.releaseFirstRunEnemyStart(reason);
+    if (this.firstRunOnboardingActions?.phased) {
+      this.resolveFirstRunPhase('phase_prelearned');
+      return true;
     }
     this.firstRunOnboardingCompletionTimeout = setTimeout(() => {
-      if (this.firstRunOnboardingStage === 'awaiting_threat') {
-        this.completeFirstRunOnboarding('no_visible_threat_timeout');
+      if (this.firstRunOnboardingStage === 'awaiting_phase') {
+        this.resolveFirstRunPhase('no_visible_threat_timeout');
       }
     }, FIRST_RUN_THREAT_WAIT_FALLBACK_MS);
     return true;
@@ -4257,12 +4308,29 @@ export class PlayScene {
     )));
   }
 
-  showFirstRunThreatNudge() {
-    if (this.firstRunOnboardingComplete || this.firstRunOnboardingStage !== 'awaiting_threat') return false;
-    const controls = this.getFirstRunControlsNudge('threat');
+  resolveFirstRunPhase(reason = 'phase_resolved') {
+    if (this.firstRunOnboardingComplete) return false;
+    if (!['awaiting_phase', 'phase_pending', 'phase'].includes(this.firstRunOnboardingStage)) return false;
+    this.clearFirstRunOnboardingCompletion();
+    this.firstRunOnboardingStage = 'focus_pending';
+    this.firstRunOnboardingUntil = 0;
+    this.firstRunFocusDensityAboveSince = null;
+    this.firstRunFocusDensityBelowSince = null;
+    this.cancelNotificationTypes?.(['firstRunControlsPhase'], `first_run_${reason}`);
+    if (this.toastSlotLockUntil) this.toastSlotLockUntil.top = 0;
+    this.flushFirstRunAchievementHold();
+    if (this.firstRunOnboardingActions?.focused) {
+      this.completeFirstRunOnboarding('focus_prelearned');
+    }
+    return true;
+  }
+
+  showFirstRunPhaseNudge() {
+    if (this.firstRunOnboardingComplete || this.firstRunOnboardingStage !== 'awaiting_phase') return false;
+    const controls = this.getFirstRunControlsNudge('phase');
     if (!controls) return false;
     this.clearFirstRunOnboardingCompletion();
-    this.firstRunOnboardingStage = 'threat_pending';
+    this.firstRunOnboardingStage = 'phase_pending';
     const compactHud = this.game.getWidth() < 620;
     this.enqueueToast(controls, {
       fontSize: compactHud ? 15 : 19,
@@ -4270,10 +4338,10 @@ export class PlayScene {
       stroke: '#031321',
       strokeThickness: compactHud ? 3 : 4,
       slot: 'top',
-      type: 'firstRunControlsThreat',
+      type: 'firstRunControlsPhase',
       priority: 2,
       bypassFocusLock: true,
-      duration: FIRST_RUN_THREAT_DURATION_MS,
+      duration: FIRST_RUN_PHASE_DURATION_MS,
       extraReadTimeMs: 0,
       minVisibleMs: 520,
       banner: true,
@@ -4283,18 +4351,152 @@ export class PlayScene {
       accent: 0xffd15c,
       onShown: ({ shownAt }) => {
         this.firstRunThreatShownAt = shownAt;
-        this.firstRunOnboardingStage = 'threat';
+        this.firstRunOnboardingStage = 'phase';
         this.firstRunOnboardingActions.phased = false;
-        this.firstRunOnboardingActions.focused = false;
-        this.firstRunOnboardingUntil = shownAt + FIRST_RUN_THREAT_DURATION_MS;
-        this.clearFirstRunOnboardingCompletion();
-        this.firstRunOnboardingCompletionTimeout = setTimeout(
-          () => this.completeFirstRunOnboarding('threat_timeout'),
-          FIRST_RUN_THREAT_DURATION_MS + 80
-        );
+        this.firstRunOnboardingUntil = shownAt + FIRST_RUN_PHASE_DURATION_MS;
+      },
+      onDismissed: ({ reason }) => {
+        if (this.firstRunOnboardingStage === 'phase') {
+          this.resolveFirstRunPhase(reason === 'completed' ? 'phase_timeout' : `phase_${reason}`);
+        }
       }
     });
     return true;
+  }
+
+  getFirstRunFocusDensityState() {
+    const diagnostics = this.bulletManager?.cleanupDiagnostics?.friendlyVfxCompression || {};
+    const startCount = Math.max(0, Math.floor(Number(
+      diagnostics.startCount ?? this.bulletManager?.friendlyVfxCompressionStartCount
+    ) || 0));
+    const fullCount = Math.max(startCount + 1, Math.floor(Number(
+      diagnostics.fullCount ?? this.bulletManager?.friendlyVfxCompressionFullCount
+    ) || (startCount + 1)));
+    const range = Math.max(1, fullCount - startCount);
+    const enterCount = Math.ceil(startCount + range * FIRST_RUN_FOCUS_ENTER_RATIO);
+    const exitCount = Math.floor(startCount + range * FIRST_RUN_FOCUS_EXIT_RATIO);
+    const activeRoutineCount = Math.max(0, Math.floor(Number(diagnostics.activeRoutineCount) || 0));
+    const target = Math.max(0, Number(diagnostics.target ?? this.bulletManager?.friendlyVfxCompressionTarget) || 0);
+    const level = Math.max(0, Number(diagnostics.level ?? this.bulletManager?.friendlyVfxCompression) || 0);
+    return {
+      activeRoutineCount,
+      startCount,
+      fullCount,
+      enterCount,
+      exitCount,
+      target,
+      level,
+      meaningful: activeRoutineCount >= enterCount && (target > 0 || level > 0)
+    };
+  }
+
+  canShowFirstRunFocusNudge() {
+    if (
+      this.firstRunOnboardingComplete
+      || !['focus_pending', 'focus_armed'].includes(this.firstRunOnboardingStage)
+      || this.introActive
+      || this.isPaused
+      || this.gameOverSequenceStarted
+      || this.tacticalDraft?.active
+      || this.overrunMilestoneInterlude?.active
+      || this.isCabinetWonderNoAgencyPresentationActive?.()
+    ) return false;
+    if (this.activeTopToast || this.activeBossIntroCard) return false;
+    const higherPriorityActive = [this.activeCenterToast, this.activeCornerToast]
+      .some((display) => Number(display?.__toastMeta?.priority) >= 3);
+    if (higherPriorityActive) return false;
+    const now = Date.now();
+    return this.getToastSlotLockUntil('top') <= now
+      && this.getRoutineFocusLaneBlockUntil(now) <= now
+      && this.getTacticalAlertBlockUntil(now) <= now;
+  }
+
+  showFirstRunFocusNudge(density = this.getFirstRunFocusDensityState()) {
+    if (!this.canShowFirstRunFocusNudge() || !density?.meaningful) return false;
+    const controls = this.getFirstRunControlsNudge('focus');
+    if (!controls) return false;
+    const compactHud = this.game.getWidth() < 620;
+    this.firstRunOnboardingStage = 'focus_queued';
+    this.firstRunFocusDensityBelowSince = null;
+    this.enqueueToast(controls, {
+      fontSize: compactHud ? 15 : 19,
+      fill: '#fff3a2',
+      stroke: '#031321',
+      strokeThickness: compactHud ? 3 : 4,
+      slot: 'top',
+      type: 'firstRunControlsFocus',
+      priority: 2,
+      bypassFocusLock: false,
+      duration: FIRST_RUN_FOCUS_DURATION_MS,
+      extraReadTimeMs: 0,
+      minVisibleMs: 520,
+      maxQueueAgeMs: 1800,
+      banner: true,
+      align: 'center',
+      y: Math.max(compactHud ? 154 : 184, this.game.getHeight() * 0.17),
+      maxWidth: compactHud ? this.game.getWidth() * 0.84 : Math.min(620, this.game.getWidth() * 0.5),
+      accent: 0xffd15c,
+      onShown: ({ shownAt }) => {
+        this.firstRunFocusShownAt = shownAt;
+        this.firstRunOnboardingStage = 'focus';
+        this.firstRunOnboardingUntil = shownAt + FIRST_RUN_FOCUS_DURATION_MS;
+      },
+      onDismissed: ({ reason }) => {
+        if (this.firstRunOnboardingStage !== 'focus') return;
+        if (reason === 'completed') {
+          this.completeFirstRunOnboarding('focus_timeout');
+          return;
+        }
+        this.firstRunOnboardingStage = 'focus_pending';
+        this.firstRunOnboardingUntil = 0;
+        this.firstRunFocusDensityAboveSince = null;
+        this.firstRunFocusDensityBelowSince = null;
+      }
+    });
+    return true;
+  }
+
+  updateFirstRunFocusOpportunity(gameplayClockMs = this.getGameplayClockMs()) {
+    if (this.firstRunOnboardingComplete) return;
+    const stage = this.firstRunOnboardingStage;
+    if (!['focus_pending', 'focus_armed', 'focus_queued', 'focus'].includes(stage)) return;
+    if (this.firstRunOnboardingActions?.focused) {
+      this.completeFirstRunOnboarding('actions_complete');
+      return;
+    }
+    if (stage === 'focus') return;
+
+    const density = this.getFirstRunFocusDensityState();
+    this.firstRunFocusDensityDebug = density;
+    const clockMs = Math.max(0, Number(gameplayClockMs) || 0);
+    const belowExit = density.activeRoutineCount <= density.exitCount;
+    if (belowExit) {
+      if (this.firstRunFocusDensityBelowSince === null) this.firstRunFocusDensityBelowSince = clockMs;
+      const belowForMs = Math.max(0, clockMs - this.firstRunFocusDensityBelowSince);
+      if (belowForMs >= FIRST_RUN_FOCUS_EXIT_HOLD_MS && ['focus_armed', 'focus_queued'].includes(stage)) {
+        this.firstRunOnboardingStage = 'focus_pending';
+        this.firstRunFocusDensityAboveSince = null;
+        this.firstRunFocusDensityBelowSince = null;
+        this.cancelNotificationTypes?.(['firstRunControlsFocus'], 'first_run_focus_density_stale');
+        return;
+      }
+    } else {
+      this.firstRunFocusDensityBelowSince = null;
+    }
+
+    if (density.meaningful) {
+      if (this.firstRunFocusDensityAboveSince === null) this.firstRunFocusDensityAboveSince = clockMs;
+      const aboveForMs = Math.max(0, clockMs - this.firstRunFocusDensityAboveSince);
+      if (aboveForMs >= FIRST_RUN_FOCUS_ENTER_HOLD_MS && stage === 'focus_pending') {
+        this.firstRunOnboardingStage = 'focus_armed';
+      }
+    } else if (stage === 'focus_pending') {
+      this.firstRunFocusDensityAboveSince = null;
+    }
+
+    if (this.firstRunOnboardingStage === 'focus_armed' && density.meaningful) {
+      this.showFirstRunFocusNudge(density);
+    }
   }
 
   updateFirstRunOnboarding() {
@@ -4320,13 +4522,15 @@ export class PlayScene {
       this.finishFirstRunOpening('actions_complete');
       return;
     }
-    if (this.firstRunOnboardingStage === 'awaiting_threat' && this.hasVisibleHostileProjectile()) {
-      this.showFirstRunThreatNudge();
+    if (['awaiting_phase', 'phase_pending', 'phase'].includes(this.firstRunOnboardingStage) && actions.phased) {
+      this.resolveFirstRunPhase('actions_complete');
       return;
     }
-    if (this.firstRunOnboardingStage === 'threat' && actions.phased && actions.focused) {
-      this.completeFirstRunOnboarding('actions_complete');
+    if (this.firstRunOnboardingStage === 'awaiting_phase' && this.hasVisibleHostileProjectile()) {
+      this.showFirstRunPhaseNudge();
+      return;
     }
+    this.updateFirstRunFocusOpportunity();
   }
 
   scheduleRunContractStartNudge({ delayMs = null, onFirstRunControlsShown = null } = {}) {
@@ -9397,6 +9601,10 @@ export class PlayScene {
     this.firstRunOnboardingUntil = 0;
     this.firstRunControlsShownAt = 0;
     this.firstRunThreatShownAt = 0;
+    this.firstRunFocusShownAt = 0;
+    this.firstRunFocusDensityAboveSince = null;
+    this.firstRunFocusDensityBelowSince = null;
+    this.firstRunFocusDensityDebug = null;
     this.firstRunOnboardingStage = 'complete';
     this.firstRunOnboardingActions = null;
     this.firstRunEnemyStart = null;
@@ -15833,7 +16041,7 @@ export class PlayScene {
       achievement,
       createdAt: Date.now()
     };
-    if (!this.firstRunOnboardingComplete && this.getFirstRunControlsNudge()) {
+    if (this.isFirstRunOnboardingBlockingAchievements() && this.getFirstRunControlsNudge()) {
       return false;
     }
     if (this.activeAchievementToast) {
@@ -18696,11 +18904,23 @@ export class PlayScene {
         stage: this.firstRunOnboardingStage || 'complete',
         controlsShownAt: Number(this.firstRunControlsShownAt) || 0,
         threatShownAt: Number(this.firstRunThreatShownAt) || 0,
+        focusShownAt: Number(this.firstRunFocusShownAt) || 0,
         actions: {
           moved: Boolean(this.firstRunOnboardingActions?.moved),
           fired: Boolean(this.firstRunOnboardingActions?.fired),
           phased: Boolean(this.firstRunOnboardingActions?.phased),
           focused: Boolean(this.firstRunOnboardingActions?.focused)
+        },
+        focusDensity: {
+          ...(this.firstRunFocusDensityDebug || this.getFirstRunFocusDensityState()),
+          aboveForMs: this.firstRunFocusDensityAboveSince !== null
+            ? Math.max(0, this.getGameplayClockMs() - this.firstRunFocusDensityAboveSince)
+            : 0,
+          belowForMs: this.firstRunFocusDensityBelowSince !== null
+            ? Math.max(0, this.getGameplayClockMs() - this.firstRunFocusDensityBelowSince)
+            : 0,
+          enterHoldMs: FIRST_RUN_FOCUS_ENTER_HOLD_MS,
+          exitHoldMs: FIRST_RUN_FOCUS_EXIT_HOLD_MS
         },
         completion: this.lastFirstRunOnboardingCompletion,
         remainingMs: Math.max(0, (Number(this.firstRunOnboardingUntil) || 0) - Date.now())
