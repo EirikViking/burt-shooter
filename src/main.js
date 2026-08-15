@@ -43,6 +43,13 @@ import {
 } from './i18n/index.js';
 import { installPixiTextLocalization } from './i18n/pixiTextLocalization.js';
 import {
+  UI_FONT_PREFLIGHT_TIMEOUT_MS,
+  getUiFontPolicyDebugState,
+  installPixiFontPolicy,
+  pinUiFontFallback,
+  preflightCriticalUiFonts
+} from './ui/UiFontPolicy.js';
+import {
   collectSteamCloudPersistenceState,
   restoreSteamCloudPersistenceToStorage,
   summarizeSteamCloudPersistence
@@ -55,10 +62,12 @@ import {
 } from './persistence/PersistenceScheduler.js';
 
 installConsoleLogFilter();
+installPixiFontPolicy(PIXI);
 installPixiTextLocalization(PIXI);
 
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;
+const UI_FONT_BOOT_STEP_TIMEOUT_MS = UI_FONT_PREFLIGHT_TIMEOUT_MS + 250;
 const PERF_SAMPLE_MS = 500;
 const MAX_DELTA = 2;
 const urlParams = new URLSearchParams(window.location.search);
@@ -1767,6 +1776,24 @@ async function init() {
   window.__perfStats = perfState;
 
   await runBootStep(bootLogger, 'dom ready', waitForDomReady, { timeoutMs: DOM_READY_TIMEOUT_MS });
+  const uiFontResult = await runBootStep(
+    bootLogger,
+    'load critical UI fonts',
+    async () => {
+      const state = await preflightCriticalUiFonts({ timeoutMs: UI_FONT_PREFLIGHT_TIMEOUT_MS });
+      return { bootDetail: `${state.mode}:${Math.round(state.elapsedMs)}ms` };
+    },
+    { timeoutMs: UI_FONT_BOOT_STEP_TIMEOUT_MS, logFailure: false }
+  );
+  if (!uiFontResult.ok) {
+    pinUiFontFallback(
+      uiFontResult.timedOut ? 'font_boot_step_timeout' : 'font_boot_step_failed',
+      { elapsedMs: UI_FONT_BOOT_STEP_TIMEOUT_MS }
+    );
+  }
+  window.__novaUiFontPolicy = Object.freeze({
+    getState: () => getUiFontPolicyDebugState()
+  });
   createPerfOverlay(perfState.enabled);
   registerBootErrorHandlers();
 
