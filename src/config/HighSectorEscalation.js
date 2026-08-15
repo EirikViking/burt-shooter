@@ -3,6 +3,10 @@ const PROTOCOL_START_SECTOR = 75;
 const PROTOCOL_REPEAT_WINDOW_SECTORS = 15;
 const AUTHORED_BEAT_COUNT = 5;
 const CONDITION_READ_MS = 1200;
+const VOCABULARY_INTRO_END_SECTOR = 60;
+const FULL_PROTOCOL_START_SECTOR = 75;
+const SHIFTING_FRONT_MIN_WARNING_LEAD_MS = 3200;
+const SLOWEST_ELIGIBLE_SHIP_SPEED_PER_FRAME = 4.8;
 
 export const HIGH_SECTOR_ENCOUNTER_BEATS = Object.freeze([
   Object.freeze({
@@ -172,22 +176,32 @@ export function getHighSectorProtocolSchedule(seed, sectors = [75, 80, 85, 90, 9
   }));
 }
 
-function createAuthoredBossSupportEvent({ config, sector, seed }) {
+function getHighSectorProgressionTier(active, sector) {
+  if (!active) return null;
+  if (sector < VOCABULARY_INTRO_END_SECTOR) return 'vocabulary_intro';
+  if (sector < FULL_PROTOCOL_START_SECTOR) return 'pressure_build';
+  return 'deep_space_protocol';
+}
+
+function createAuthoredBossSupportEvent({ config, sector, seed, progressionTier }) {
   const formations = ['ARC', 'STAGGERED_WING', 'DOUBLE_ARC'];
   const tactics = ['comet_queue', 'paperclip_parade', 'sidewinder_choir'];
   const selection = Math.floor(seededUnit(seed, `boss-support:${sector}`) * formations.length) % formations.length;
   const safeSide = seededUnit(seed, `boss-support-safe-side:${sector}`) < 0.5 ? 'left' : 'right';
+  const isVocabularyIntro = progressionTier === 'vocabulary_intro';
   return {
     id: 'authored_ordinary_support_intercept',
     name: 'BOSS SUPPORT INTERCEPT',
     cue: 'ORDINARY SUPPORT INBOUND // SAFE LANE: {side}',
     warningDelayMs: 900,
-    warningLeadMs: Math.max(1400, Number(config.bossSupportWarningLeadMs) || 1600),
-    count: 3,
+    warningLeadMs: isVocabularyIntro
+      ? Math.max(2000, Number(config.bossSupportWarningLeadMs) || 1600)
+      : Math.max(1400, Number(config.bossSupportWarningLeadMs) || 1600),
+    count: isVocabularyIntro ? 2 : 3,
     formation: formations[selection],
     tactic: tactics[selection],
     safeSide,
-    safeCorridorRatio: 0.32,
+    safeCorridorRatio: isVocabularyIntro ? 0.4 : 0.32,
     entryDurationMs: Math.max(1080, Number(config.minEntryDurationMs) || 1080),
     eventBudget: 1,
     ordinaryEnemiesOnly: true,
@@ -211,13 +225,16 @@ export function createHighSectorEscalationState({
   const safeSector = Math.max(1, Math.floor(Number(sector) || 1));
   const activationSector = Math.max(51, Math.floor(Number(config.activationSector) || 60));
   const active = Boolean(armed && safeSector >= activationSector);
+  const progressionTier = getHighSectorProgressionTier(active, safeSector);
   const pressureStep = active ? Math.max(0, Math.floor((safeSector - activationSector) / 5)) : 0;
   const pressureBudget = active
     ? clamp(1 + pressureStep * (Number(config.pressureBudgetPerFiveSectors) || 0.05), 1, Number(config.pressureBudgetMax) || 1.45)
     : 1;
   const protocol = active ? getHighSectorProtocolForSector(seed, safeSector) : null;
   const depthProfile = protocol ? getTacticalDepthProfile(safeSector) : null;
-  const bossSupportEvent = active ? createAuthoredBossSupportEvent({ config, sector: safeSector, seed }) : null;
+  const bossSupportEvent = active
+    ? createAuthoredBossSupportEvent({ config, sector: safeSector, seed, progressionTier })
+    : null;
 
   return {
     profileId: config.id || 'high_sector_authored_v2',
@@ -233,6 +250,7 @@ export function createHighSectorEscalationState({
     preserveNativePressure: Boolean(preserveNativePressure),
     pressureStep,
     pressureBudget,
+    progressionTier,
     protocol,
     tacticalDepthProfile: depthProfile ? { ...depthProfile, formations: [...depthProfile.formations], tactics: [...depthProfile.tactics] } : null,
     bossSupportEvent,
@@ -258,6 +276,31 @@ export function createHighSectorEscalationState({
       : null,
     authoredEncounterBeatCount: protocol ? AUTHORED_BEAT_COUNT : null,
     conditionReadMs: protocol ? CONDITION_READ_MS : null
+  };
+}
+
+export function getShiftingFrontSafetyContract({
+  screenWidth = 1280,
+  safeCorridorRatio = 0.32,
+  slowestSpeedPerFrame = SLOWEST_ELIGIBLE_SHIP_SPEED_PER_FRAME
+} = {}) {
+  const width = Math.max(640, Number(screenWidth) || 1280);
+  const corridorRatio = clamp(safeCorridorRatio, 0.28, 0.42);
+  const speedPerFrame = Math.max(SLOWEST_ELIGIBLE_SHIP_SPEED_PER_FRAME, Number(slowestSpeedPerFrame) || 0);
+  const horizontalMargin = 40;
+  const worstCaseTravelPx = Math.max(0, width * (1 - corridorRatio) - horizontalMargin);
+  const travelMs = Math.ceil(worstCaseTravelPx / (speedPerFrame * 60 / 1000));
+  const warningLeadMs = Math.round(Math.max(SHIFTING_FRONT_MIN_WARNING_LEAD_MS, travelMs + 500));
+  return {
+    safeCorridorRatio: corridorRatio,
+    slowestSpeedPerFrame: speedPerFrame,
+    worstCaseTravelPx: Math.round(worstCaseTravelPx),
+    travelMs,
+    warningLeadMs,
+    guaranteedTravelMarginMs: warningLeadMs - travelMs,
+    bounded: true,
+    repositionsPlayer: false,
+    createsCollisionBarrier: false
   };
 }
 
@@ -312,8 +355,9 @@ function applyProtocolBeat(shaped, protocol, beat, beatIndex) {
 
   if (protocol.id === 'shifting_front' && (beatIndex === 0 || beatIndex === 4)) {
     shaped.highSectorShift = {
-      warningAtMs: 1800,
-      shiftAtMs: 3400,
+      warningAtMs: 1200,
+      shiftAtMs: 4400,
+      safeCorridorRatio: 0.32,
       initialSafeSide: protocol.initialSafeSide,
       shiftedSafeSide: protocol.shiftedSafeSide
     };

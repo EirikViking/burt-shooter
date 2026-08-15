@@ -38,6 +38,7 @@ import { getBossProfileForRun } from '../config/BossRoster.js';
 import {
   capHighSectorBossHealth,
   createHighSectorEscalationState,
+  getShiftingFrontSafetyContract,
   shapeHighSectorWaves
 } from '../config/HighSectorEscalation.js';
 import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
@@ -2247,8 +2248,14 @@ export class EnemyManager {
   refreshHighSectorEscalationState(level = this.level) {
     const config = BalanceConfig.difficulty?.highSectorEscalation || {};
     const diagnostic = this.game?.highSectorEscalationProfile || {};
+    const experimentActivationSector = this.game?.lateGameExperiment?.active === true
+      ? Number(this.game.lateGameExperiment.escalationActivationSector) || 51
+      : null;
+    const effectiveConfig = experimentActivationSector == null
+      ? config
+      : { ...config, activationSector: experimentActivationSector };
     this.highSectorEscalationState = createHighSectorEscalationState({
-      config,
+      config: effectiveConfig,
       armed: config.enabled === true || diagnostic.armed === true,
       sector: level,
       seed: this.game?.contentDirector?.seed || this.game?.gameId || 'nova-swarm',
@@ -2304,6 +2311,16 @@ export class EnemyManager {
 
   beginHighSectorProtocolRuntime(config = {}) {
     const shift = config.highSectorShift;
+    const shiftSafety = shift
+      ? getShiftingFrontSafetyContract({
+          screenWidth: this.game.getWidth(),
+          safeCorridorRatio: shift.safeCorridorRatio
+        })
+      : null;
+    const warningAtMs = Math.max(1200, Number(shift?.warningAtMs) || 1200);
+    const shiftAtMs = shift
+      ? Math.max(Number(shift.shiftAtMs) || 0, warningAtMs + shiftSafety.warningLeadMs)
+      : 0;
     this.highSectorProtocolRuntime = shift ? {
       protocolId: config.highSectorProtocolId || 'shifting_front',
       waveIndex: this.currentWaveIndex,
@@ -2313,8 +2330,10 @@ export class EnemyManager {
       initialSafeSide: shift.initialSafeSide,
       currentSafeSide: shift.initialSafeSide,
       shiftedSafeSide: shift.shiftedSafeSide,
-      warningAtMs: Math.max(1200, Number(shift.warningAtMs) || 3100),
-      shiftAtMs: Math.max(2600, Number(shift.shiftAtMs) || 5000),
+      warningAtMs,
+      shiftAtMs,
+      warningLeadMs: shiftAtMs - warningAtMs,
+      safety: shiftSafety,
       reducedMotion: Boolean(this.highSectorEscalationState?.reducedMotion)
     } : null;
     if (config.highSectorProtocolId) {

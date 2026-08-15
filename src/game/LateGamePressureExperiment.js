@@ -3,7 +3,7 @@ import { RUN_MODES } from './RunMode.js';
 export const LATE_GAME_PRESSURE_EXPERIMENT_VERSION = 'late-game-pressure-2026-08-10-a';
 export const LATE_GAME_EXPERIMENT_LABEL = 'EXPERIMENTAL TEST // NO AWARDS';
 export const LATE_GAME_EXPERIMENT_STANDARD_SECTORS = 10;
-export const LATE_GAME_EXPERIMENT_START_SECTORS = Object.freeze([60, 75, 100, 120, 150]);
+export const LATE_GAME_EXPERIMENT_START_SECTORS = Object.freeze([51, 60, 75, 100, 120, 150]);
 export const LATE_GAME_EXPERIMENT_MATURE_LIVES = 12;
 export const LATE_GAME_EXPERIMENT_PHASE_PULSE_MAX_RADIUS = 72;
 export const LATE_GAME_EXPERIMENT_PHASE_PULSE_RECHARGE_MS = 2000;
@@ -84,6 +84,7 @@ const FIXTURE_DEFINITIONS = Object.freeze([
 const FIXTURES_BY_ID = new Map(FIXTURE_DEFINITIONS.map((fixture) => [fixture.id, fixture]));
 
 const PRESSURE_PROFILES = Object.freeze({
+  51: Object.freeze({ id: 'sector_51_vocabulary_intro', elapsedSeconds: 900, tier: 'vocabulary_intro' }),
   60: Object.freeze({ id: 'sector_60_late_pressure', elapsedSeconds: 1200, tier: 'late_pressure' }),
   75: Object.freeze({ id: 'sector_75_canonical_overrun', elapsedSeconds: 1500, tier: 'overrun_pressure' }),
   100: Object.freeze({ id: 'sector_100_deep_control', elapsedSeconds: 1800, tier: 'deep_control' }),
@@ -228,6 +229,7 @@ export function createLateGamePressureExperimentRun(request = {}) {
     lifeStock: draft.lifeStock,
     lives,
     pressureProfile,
+    escalationActivationSector: 51,
     draftMode: draft.ruleset === LATE_GAME_EXPERIMENT_RULESETS.TACTICAL ? 'enabled' : 'disabled',
     seed,
     launchedAtMs: Date.now(),
