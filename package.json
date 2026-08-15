@@ -248,6 +248,7 @@
     "check:rank-up-clarity": "node scripts/check-rank-up-clarity.mjs",
     "check:wave-pacing": "node scripts/check-wave-pacing.mjs",
     "check:wave-clear-effect": "node scripts/check-wave-clear-effect.mjs",
+    "audit:wave-transition-combat-readability": "node scripts/audit-wave-transition-combat-readability.mjs",
     "check:nova-command-hud-pilot": "node scripts/check-nova-command-hud-pilot.mjs",
     "check:packaged-nova-command-hud-pilot": "node scripts/check-packaged-nova-command-hud-pilot.mjs",
     "check:packaged-nova-command-hud-gate4": "node scripts/check-packaged-nova-command-hud-gate4.mjs",

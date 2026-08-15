@@ -7145,7 +7145,7 @@ export class PlayScene {
       : [label, secondaryLine].filter(Boolean).join(' ');
     const type = isSectorClear ? 'sector_clear' : 'wave_clear';
     const duration = isSectorClear ? 1650 : WAVE_CLEARED_COMMAND_HUD_TOKENS.durationMs;
-    this.enqueueToast(message, {
+    const accepted = this.enqueueToast(message, {
       fontSize: isSectorClear ? (compactHud ? 24 : 32) : (compactHud ? 14 : 17),
       fill: isSectorClear ? '#fff3a2' : '#d8fbff',
       stroke: '#02131f',
@@ -7200,7 +7200,7 @@ export class PlayScene {
       volume: isSectorClear ? 0.66 : 0.42,
       minIntervalMs: 620
     });
-    return true;
+    return accepted === true;
     }
 
     const { width, height } = this.game.app.screen;
@@ -18378,6 +18378,7 @@ export class PlayScene {
     if (toastStartedAt > 0) {
       this.performanceDiagnostics.recordSection('ui.toast_message_construction', performance.now() - toastStartedAt);
     }
+    return true;
   }
 
   getToastQueueForSlot(slot) {

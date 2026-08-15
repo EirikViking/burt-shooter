@@ -3068,3 +3068,11 @@ Original request: continue improving the current non-Unity game and choose three
 - ChatGPT Pro reviewed the final 1280x720 and 960x640 evidence, required four concrete copy/report corrections, then returned `ENDLESS IMPLEMENTATION APPROVED` after the rebuilt correction set.
 - Focused exact-rank, leaderboard compatibility, Steam Cloud, all-language UI, controller, browser smoke, desktop smoke, release-line, current build, and full build checks pass. The inherited rank-art harness readiness race was fixed and then passed twice unchanged.
 - No package, upload, deployment, Steamworks definition, public branch, experimental-mode design, or protected-checkout change was made by this implementation.
+
+## 2026-08-16 Ordinary wave-transition combat readability
+
+- A deterministic eleven-layout audit measured the ordinary inter-wave presentation at 1920x1080, 1280x720, and 960x640 with keyboard, controller, Reduced Motion, and all eight locales.
+- Before the correction, the queued `WAVE 2/2` plate appeared only after `WAVE CLEARED` released the top lane, then remained over actionable combat for up to 785 ms with up to 369 ms of enemy/plate overlap.
+- The accepted `WAVE CLEARED` plate now owns the matching ordinary next-wave announcement because its subtitle already communicates `NEXT WAVE`. Initial waves, rejected/missing-clear fallback, challenge, authored high-sector, boss, and Draft paths retain their existing announcements.
+- No wave, spawn, entry-safety, gameplay-clock, RNG, input, score, balance, copy, or plate-duration behavior changed. Fixed-seed enemy identity/count/order matches the fallback control and unrelated queued messages still release.
+- Post-fix evidence measures 0 ms actionable transition overlap, 0 ms enemy/plate overlap, 0 ms projectile/plate overlap, and zero locale-bound overflow. ChatGPT Pro inspected the exact 1280x720 and 960x640 contact sheets and returned `APPROVED 100%`.

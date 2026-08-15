@@ -251,6 +251,7 @@ export class EnemyManager {
     this.pendingWaveConfig = null;
     this.waveBriefingTimer = 0;
     this.waveBriefingAnnounced = false;
+    this.waveBriefingAnnouncementCoveredIndex = null;
     this.currentWaveTactic = null;
     this.spawning = false;
     this.waveSpawnPendingCount = 0;
@@ -390,6 +391,7 @@ export class EnemyManager {
     this.pendingWaveConfig = null;
     this.waveBriefingTimer = 0;
     this.waveBriefingAnnounced = false;
+    this.waveBriefingAnnouncementCoveredIndex = null;
     this.challengeFlightState = null;
 
     // Reset hijacker state for new level
@@ -5832,13 +5834,16 @@ export class EnemyManager {
         const transitionLabel = hasUpcomingWave
           ? translateText('WAVE CLEARED!')
           : translateText('SECTOR CLEAR');
-        this.measurePerformance('first_use_asset_effect_creation.wave_bonus_effect', () => {
+        const waveClearPresented = this.measurePerformance('first_use_asset_effect_creation.wave_bonus_effect', () => (
           this.game.scenes.play.showWaveBonusEffect(appliedBonus, transitionLabel, {
             compact: hasUpcomingWave,
             subtitle: `${nextLabel}${repairLabel}`,
             sfxKey: hasUpcomingWave ? 'nova_wave_clear_sweep' : 'levelComplete'
-          });
-        });
+          })
+        ));
+        this.waveBriefingAnnouncementCoveredIndex = hasUpcomingWave && waveClearPresented
+          ? transitionWaveIndex + 1
+          : null;
       }
     }
 
@@ -5943,6 +5948,18 @@ export class EnemyManager {
       const openingMomentum = this.getOpeningMomentumTuning();
       const isChallenge = Boolean(this.pendingWaveConfig?.isChallenge || this.pendingWaveConfig?.type === 'bonus_challenge');
       const isAuthoredHighSector = this.pendingWaveConfig?.highSectorAuthoredEncounter === true;
+      const announcementCovered = this.waveBriefingAnnouncementCoveredIndex === this.currentWaveIndex
+        && !isChallenge
+        && !isAuthoredHighSector;
+      this.waveBriefingAnnouncementCoveredIndex = null;
+      if (announcementCovered) {
+        this.markPerformance('incoming_wave_banner', {
+          phase: 'covered_by_wave_clear',
+          level: this.level,
+          wave: this.currentWaveIndex + 1
+        });
+        return false;
+      }
       const challengePattern = this.pendingWaveConfig?.challengeFlightPatternLabel ||
         getChallengeFlightPattern(this.pendingWaveConfig?.sourceLevel || this.level, this.currentWaveIndex).label;
       const descriptor = this.getWaveDescriptor(this.pendingWaveConfig);
