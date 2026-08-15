@@ -102,6 +102,7 @@
     "check:per-ship-overrun-completion": "node scripts/check-per-ship-overrun-completion.mjs",
     "check:run-mode-identity": "node scripts/check-run-mode-identity.mjs",
     "check:overrun-mode": "node scripts/check-overrun-mode.mjs",
+    "check:overrun-opening-tempo": "node scripts/check-overrun-opening-tempo.mjs",
     "check:overrun-reinforcements": "node scripts/check-overrun-reinforcements.mjs",
     "check:pause-context-chips": "node scripts/check-pause-context-chips.mjs",
     "check:nova-humor": "node scripts/check-nova-humor-everywhere.mjs",

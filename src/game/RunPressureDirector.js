@@ -10,7 +10,14 @@ import {
   getNormalWaveDangerMoment as getNormalWaveDangerMomentForLevel,
   getNormalWavePressureTuning as getNormalWavePressureTuningForLevel
 } from '../config/BalanceConfig.js';
-import { getRunModeProfile } from './RunMode.js';
+import { RUN_MODES, getRunModeProfile } from './RunMode.js';
+
+const OVERRUN_OPENING_TEMPO_FLOOR = Object.freeze({
+  untilSeconds: 300,
+  fireChanceMult: 1.15,
+  projectileSpeedMult: 1.06,
+  enemySpeedMult: 1.04
+});
 
 function finite(value, fallback = 1) {
   const number = Number(value);
@@ -49,13 +56,29 @@ export class RunPressureDirector {
         contentRarityMult: finite(profileMultipliers.contentRarityMult)
       };
     }
-    const runtime = getPressureMultipliers(this.getElapsedSeconds());
-    return Object.fromEntries(
+    const elapsedSeconds = this.getElapsedSeconds();
+    const runtime = getPressureMultipliers(elapsedSeconds);
+    const combined = Object.fromEntries(
       Object.entries(runtime).map(([key, value]) => [
         key,
         Number((finite(value) * finite(profileMultipliers[key])).toFixed(4))
       ])
     );
+    if (this.isOverrunOpeningTempoFloorActive(elapsedSeconds)) {
+      combined.fireChanceMult = Math.max(combined.fireChanceMult, OVERRUN_OPENING_TEMPO_FLOOR.fireChanceMult);
+      combined.projectileSpeedMult = Math.max(combined.projectileSpeedMult, OVERRUN_OPENING_TEMPO_FLOOR.projectileSpeedMult);
+      combined.enemySpeedMult = Math.max(combined.enemySpeedMult, OVERRUN_OPENING_TEMPO_FLOOR.enemySpeedMult);
+    }
+    return combined;
+  }
+
+  isOverrunOpeningTempoFloorActive(elapsedSeconds = this.getElapsedSeconds()) {
+    if (this.game?.lateGameExperiment?.active === true) return false;
+    const runMode = this.game?.runMode;
+    return (
+      runMode === RUN_MODES.OVERRUN_PURE ||
+      runMode === RUN_MODES.OVERRUN_TACTICAL
+    ) && elapsedSeconds < OVERRUN_OPENING_TEMPO_FLOOR.untilSeconds;
   }
 
   getRunModeProfile() {
@@ -119,7 +142,12 @@ export class RunPressureDirector {
   }
 
   getDebugState() {
-    this.lastDebugState = getRunPacingDebugState(this.game);
+    const elapsedSeconds = this.getElapsedSeconds();
+    this.lastDebugState = {
+      ...getRunPacingDebugState(this.game),
+      pressureMultipliers: this.getMultipliers(),
+      overrunOpeningTempoFloorActive: this.isOverrunOpeningTempoFloorActive(elapsedSeconds)
+    };
     return this.lastDebugState;
   }
 }
