@@ -212,6 +212,7 @@ async function runCase({ name, resultKind, inputKind }) {
 
     const setup = await page.evaluate(async ({ resultKind: kind }) => {
       const game = window.__game;
+      let selectedHullReadyAtGameOver = true;
       window.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__ = true;
       const startAndFinish = async () => {
         await game.startGame(game.selectedShipSpriteKey, {
@@ -219,6 +220,12 @@ async function runCase({ name, resultKind, inputKind }) {
           inputDevice: 'keyboard',
           countShipUsage: false
         });
+        const waitStarted = performance.now();
+        while (game.scenes.play?.shipIntroAgencyState !== 'complete' && performance.now() - waitStarted < 10000) {
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+        selectedHullReadyAtGameOver &&= game.scenes.play?.shipIntroAgencyState === 'complete'
+          && Boolean(game.scenes.play?.player?.shipSprite?.texture);
         game.gameOver();
       };
       await startAndFinish();
@@ -255,6 +262,7 @@ async function runCase({ name, resultKind, inputKind }) {
         naturalRunback,
         state: scene.state,
         firstFlightResult: Boolean(scene.firstFlightResult),
+        selectedHullReadyAtGameOver,
         cta: scene.getPrimaryCtaConfig?.() || null,
         build: JSON.parse(window.render_game_to_text?.() || '{}')?.gitSha || null
       };
@@ -291,6 +299,7 @@ for (const resultKind of ['first_flight', 'ordinary']) {
 
 for (const entry of matrix) {
   assert(entry.setup.naturalRunback, `${entry.name}: runback CTA did not become ready naturally`);
+  assert(entry.setup.selectedHullReadyAtGameOver, `${entry.name}: selected hull was not ready before the warm retry`);
   assert.equal(entry.timing.sceneHistory.includes('menu'), false, `${entry.name}: flashed menu during restart`);
   assert.equal(entry.timing.sceneHistory.includes('shipSelect'), false, `${entry.name}: flashed Hangar during restart`);
   assert.equal(entry.timing.introTiming?.totalMs, 420, `${entry.name}: did not use the warm retry intro`);
