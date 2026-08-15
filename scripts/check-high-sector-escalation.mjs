@@ -8,6 +8,7 @@ import {
   capHighSectorBossHealth,
   createHighSectorEscalationState,
   getHighSectorProtocolSchedule,
+  getShiftingFrontSafetyContract,
   shapeHighSectorWaves,
   validateHighSectorProtocolWindow
 } from '../src/config/HighSectorEscalation.js';
@@ -80,6 +81,7 @@ const sector60 = makeState(60);
 const sector80 = makeState(80);
 const sector150 = makeState(150);
 assert.equal(sector60.active, true);
+assert.equal(sector60.progressionTier, 'pressure_build');
 assert.equal(sector60.pressureBudget, 1);
 assert.equal(sector60.protocol, null);
 assert.equal(sector60.bossSupportEvent?.id, 'authored_ordinary_support_intercept');
@@ -90,6 +92,26 @@ assert.equal(sector60.bossSupportEvent?.allowHealing, false);
 assert.equal(sector60.bossSupportEvent?.allowLossOfControl, false);
 assert.equal(sector60.bossSupportEvent?.allowLaneDenial, false);
 assert.equal(sector60.bossSupportEvent?.bossHealthMultiplier, 1);
+
+const experimentConfig = { ...config, activationSector: 51 };
+const sector51Experiment = createHighSectorEscalationState({
+  config: experimentConfig,
+  armed: true,
+  sector: 51,
+  seed,
+  preserveNativePressure: true
+});
+assert.equal(sector51Experiment.active, true);
+assert.equal(sector51Experiment.progressionTier, 'vocabulary_intro');
+assert.equal(sector51Experiment.protocol, null, 'Sector 51 must teach vocabulary without a full Protocol');
+assert.equal(sector51Experiment.bossSupportEvent?.count, 2, 'Sector 51 must use the lighter support introduction');
+assert.ok(sector51Experiment.bossSupportEvent?.warningLeadMs >= 2000);
+assert.ok(sector51Experiment.bossSupportEvent?.safeCorridorRatio >= 0.4);
+assert.equal(sector60.bossSupportEvent?.count, 3, 'Sector 60 must tighten the support pressure');
+assert.ok(sector60.bossSupportEvent?.warningLeadMs < sector51Experiment.bossSupportEvent?.warningLeadMs);
+assert.ok(sector60.bossSupportEvent?.safeCorridorRatio < sector51Experiment.bossSupportEvent?.safeCorridorRatio);
+assert.equal(makeState(75).progressionTier, 'deep_space_protocol');
+assert.equal(makeState(75).authoredEncounterBeatCount, 5);
 assert.equal('bossModifier' in sector80, false, 'the redundant Sector-80 support modifier must be gone');
 assert.equal(sector80.bossSupportEvent?.id, sector60.bossSupportEvent?.id);
 assert.ok(sector150.pressureBudget <= config.pressureBudgetMax);
@@ -177,6 +199,16 @@ for (const entry of schedule.slice(0, HIGH_SECTOR_PROTOCOLS.length)) {
   }
 }
 
+for (const screenWidth of [960, 1280, 1920]) {
+  const safety = getShiftingFrontSafetyContract({ screenWidth });
+  assert.ok(safety.warningLeadMs >= safety.travelMs + 500,
+    `${screenWidth}px Shifting Front must leave a 500ms margin after slow-hull traversal`);
+  assert.equal(safety.slowestSpeedPerFrame, 4.8);
+  assert.equal(safety.bounded, true);
+  assert.equal(safety.repositionsPlayer, false);
+  assert.equal(safety.createsCollisionBarrier, false);
+}
+
 const depthProof = [75, 100, 120, 150].map((sector) => {
   const state = makeState(sector, { seed: `depth-proof-${sector}` });
   const shaped = shapeHighSectorWaves(baseWaves, state);
@@ -201,6 +233,9 @@ await assert.rejects(
 );
 const escalationSource = await readFile(new URL('../src/config/HighSectorEscalation.js', import.meta.url), 'utf8');
 assert.equal(/slice\(\s*0\s*,\s*5\s*\)/.test(escalationSource), false, 'authored planning must not use slice(0, 5)');
+const managerSource = await readFile(new URL('../src/managers/EnemyManager.js', import.meta.url), 'utf8');
+assert.match(managerSource, /lateGameExperiment\?\.active\s*===\s*true[\s\S]{0,180}escalationActivationSector/,
+  'Sector-51 activation must be sourced only from an acknowledged experiment run');
 
 assert.equal(capHighSectorBossHealth(450, sector80), config.maxBossHealth);
 assert.equal(capHighSectorBossHealth(220, sector80), 220, 'boss cap must never increase health');

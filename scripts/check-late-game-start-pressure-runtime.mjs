@@ -158,7 +158,11 @@ async function createScenarioPage(context, { sector, experiment }) {
       runMode: game.runMode,
       pressureFloor: manager.highSectorEscalationState?.preserveNativePressure === true,
       escalationActive: manager.highSectorEscalationState?.active === true,
+      progressionTier: manager.highSectorEscalationState?.progressionTier || null,
       protocol: manager.highSectorEscalationState?.protocol?.id || null,
+      bossSupport: manager.highSectorEscalationState?.bossSupportEvent
+        ? { ...manager.highSectorEscalationState.bossSupportEvent }
+        : null,
       managerDifficulty: manager.currentNormalWaveDifficultyLevel,
       expectedDifficulty: game.runPressureDirector.getNormalWaveDifficultyLevel(targetSector),
       elapsedSeconds: game.runPressureDirector.getElapsedSeconds(),
@@ -223,7 +227,7 @@ try {
   });
 
   const results = [];
-  for (const sector of [75, 100, 120, 150]) {
+  for (const sector of [51, 60, 75, 100, 120, 150]) {
     const nativeReference = await createScenarioPage(context, { sector, experiment: false });
     const experiment = await createScenarioPage(context, { sector, experiment: true });
     assert.equal(experiment.pressureFloor, true, `Sector ${sector} must enable the experiment-only pressure floor`);
@@ -239,14 +243,28 @@ try {
       `Sector ${sector} experiment must keep native danger moments`);
     assert.ok(experiment.eliteTotal >= nativeReference.eliteTotal,
       `Sector ${sector} experiment must keep native elite pressure`);
-    assert.equal(experiment.authoredWaves, 5,
-      `Sector ${sector} must layer exactly five authored beats`);
-    assert.equal(experiment.bridgeWaves, experiment.waveCount - 5,
-      `Sector ${sector} must retain native bridge waves`);
-    assert.ok(experiment.waves.every((wave) => wave.fireScalar >= 1 && wave.fireDelayMult <= 1),
-      `Sector ${sector} authored pressure must never soften firing`);
+    if (sector < 75) {
+      assert.equal(experiment.authoredWaves, 0,
+        `Sector ${sector} must not start a full Deep Space Protocol early`);
+      assert.equal(experiment.bridgeWaves, 0);
+      assert.equal(experiment.protocol, null);
+      assert.equal(experiment.progressionTier, sector < 60 ? 'vocabulary_intro' : 'pressure_build');
+      assert.equal(experiment.bossSupport?.count, sector < 60 ? 2 : 3);
+      if (sector === 51) {
+        assert.ok(experiment.bossSupport?.warningLeadMs >= 2000);
+        assert.ok(experiment.bossSupport?.safeCorridorRatio >= 0.4);
+      }
+    } else {
+      assert.equal(experiment.progressionTier, 'deep_space_protocol');
+      assert.equal(experiment.authoredWaves, 5,
+        `Sector ${sector} must layer exactly five authored beats`);
+      assert.equal(experiment.bridgeWaves, experiment.waveCount - 5,
+        `Sector ${sector} must retain native bridge waves`);
+      assert.ok(experiment.waves.every((wave) => wave.fireScalar >= 1 && wave.fireDelayMult <= 1),
+        `Sector ${sector} authored pressure must never soften firing`);
+    }
     assert.equal(experiment.runtime.managerDifficulty, nativeReference.runtime.managerDifficulty);
-    assert.equal(experiment.runtime.tacticPressureBand, 'deep_overrun');
+    if (sector >= 75) assert.equal(experiment.runtime.tacticPressureBand, 'deep_overrun');
     results.push({ sector, nativeReference, experiment });
   }
 

@@ -744,26 +744,33 @@ try {
   await page.evaluate(() => {
     const play = window.__game.scenes.play;
     play.tacticalDraft.passHoldStartedAt = 0;
-    play.tacticalDraft.passHoldSource = 'keyboard';
-    play.tacticalDraft.passHoldProgress = 0.6;
-    play.redrawTacticalDraftPass();
+    window.__burtGamepadOverride = { connected: true, axes: [0, 0], buttons: [] };
   });
+  await page.waitForTimeout(100);
+  await page.evaluate(() => { window.__burtGamepadOverride.buttons[1] = { pressed: true, value: 1 }; });
+  await page.waitForTimeout(650);
   const buildLockProgressState = await readState(page);
   assert(/LOCKING BUILD/i.test(buildLockProgressState.tacticalDraft.passLabel || ''),
     `build-lock hold did not expose locking state: ${JSON.stringify(buildLockProgressState.tacticalDraft)}`);
   const buildLockProgressScreenshot = path.join(outputDir, 'tactical-draft-build-lock-progress.png');
   await page.screenshot({ path: buildLockProgressScreenshot });
-  await page.evaluate(() => window.__game.scenes.play.lockTacticalDraftBuild('keyboard'));
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.passed === true, null, { timeout: 3000 });
+  await page.evaluate(() => { window.__burtGamepadOverride.buttons[1] = { pressed: false, value: 0 }; });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.passed === true);
   const lockedBuildState = await readState(page);
   assert(lockedBuildState.tacticalDraft.buildLocked === true && lockedBuildState.tacticalDraft.passes.at(-1)?.buildLocked === true,
     `completed hold did not atomically lock the build: ${JSON.stringify(lockedBuildState.tacticalDraft)}`);
+  assert(lockedBuildState.tacticalDraft.passes.at(-1)?.source === 'gamepad',
+    `controller hold did not own the build-lock result: ${JSON.stringify(lockedBuildState.tacticalDraft.passes)}`);
   const buildLockedScreenshot = path.join(outputDir, 'tactical-draft-build-locked.png');
   await page.screenshot({ path: buildLockedScreenshot });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active !== true, null, { timeout: 4000 });
   const futureDraftSuppressed = await page.evaluate(() => window.__game.scenes.play.openTacticalDraft({ sectorCleared: 17 }));
   assert(futureDraftSuppressed === false, 'locked build allowed a later Tactical Draft to open');
-  await page.evaluate(() => { window.__game.scenes.play.tacticalDraftBuildLocked = false; });
+  await page.evaluate(() => {
+    window.__game.scenes.play.tacticalDraftBuildLocked = false;
+    delete window.__burtGamepadOverride;
+  });
 
   const localeResults = [];
   await page.evaluate(() => {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
   DEFAULT_LATE_GAME_EXPERIMENT_DRAFT,
+  LATE_GAME_EXPERIMENT_START_SECTORS,
   LATE_GAME_EXPERIMENT_MATURE_LIVES,
   createLateGamePressureExperimentRun,
   getLateGameExperimentFixtures
@@ -51,6 +52,7 @@ class MemoryStorage {
 }
 
 assert.equal(createLateGamePressureExperimentRun(DEFAULT_LATE_GAME_EXPERIMENT_DRAFT), null, 'launch must require acknowledgement');
+assert.deepEqual(LATE_GAME_EXPERIMENT_START_SECTORS, [51, 60, 75, 100, 120, 150]);
 
 const standardA = createLateGamePressureExperimentRun({
   ...DEFAULT_LATE_GAME_EXPERIMENT_DRAFT,
@@ -69,6 +71,7 @@ assert.equal(standardA.draftMode, 'enabled', 'Tactical experiments must retain p
 assert.equal(standardA.seed, standardB.seed, 'equivalent Standard fixtures must have deterministic seeds');
 assert.equal(standardA.underlyingRunMode, 'ranked_tactical');
 assert.equal(standardA.permanentPierceContract, 'bounded');
+assert.equal(standardA.escalationActivationSector, 51);
 assert.deepEqual(standardA.phasePulse, { available: true, maxRadius: 72, rechargeMs: 2000 });
 assert.ok(standardA.baselineAugmentIds.includes('phase_wake'), 'pulse-on Tactical fixtures must own Phase Wake');
 
@@ -202,6 +205,20 @@ assert.equal(pure.pressureProfile.elapsedSeconds, 2100);
 assert.equal(pure.phasePulseAvailable, false);
 assert.deepEqual(pure.phasePulse, { available: false, maxRadius: 72, rechargeMs: 2000 });
 assert.deepEqual(pure.baselineAugmentIds, [], 'Pure must never gain Phase Wake from the comparison switch');
+
+const vocabularyIntro = createLateGamePressureExperimentRun({
+  acknowledged: true,
+  scenario: 'endurance',
+  ruleset: 'pure',
+  fixtureId: 'pure_control',
+  startSector: 51,
+  phasePulseAvailable: false
+});
+assert.equal(vocabularyIntro.startSector, 51);
+assert.equal(vocabularyIntro.pressureProfile.id, 'sector_51_vocabulary_intro');
+assert.equal(vocabularyIntro.pressureProfile.tier, 'vocabulary_intro');
+assert.equal(vocabularyIntro.pressureProfile.elapsedSeconds, 900);
+assert.equal(vocabularyIntro.endSectorExclusive, null, 'Sector-51 vocabulary study belongs to endless Endurance, not the fixed resolution test');
 
 const tacticalNoPulse = createLateGamePressureExperimentRun({
   acknowledged: true,

@@ -169,7 +169,7 @@ async function readProof(page) {
       objectiveText: play.hud?.missionText?.text || null,
       projectileCap: play.bulletManager.maxEnemyBullets,
       hostileProjectiles: play.bulletManager.enemyBullets.filter((bullet) => bullet?.active !== false).length,
-      player: { x: play.player.x, y: play.player.y },
+      player: { x: play.player.x, y: play.player.y, speed: play.player.speed },
       phaseAvailable: (Number(play.player.dodgeCooldown) || 0) <= 0 && !play.player.isDodging,
       playerBullets: play.bulletManager.playerBullets.filter((bullet) => bullet?.active !== false).length
     };
@@ -184,8 +184,8 @@ const browser = await chromium.launch({ headless: true, executablePath, args: ['
 
 try {
   const hullMatrix = [
-    { hullClass: 'slow', hull: 'nova-player-ship-06.png' },
     { hullClass: 'standard', hull: 'nova-player-ship-01.png' },
+    { hullClass: 'slow', hull: 'nova-player-ship-06.png' },
     { hullClass: 'fast', hull: 'nova-player-ship-04.png' }
   ];
   const protocolSectors = [75, 80, 85];
@@ -257,18 +257,46 @@ try {
       await run.page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.enemyManager?.highSectorProtocolRuntime), null, { timeout: 5000 });
       const shiftedRuntime = await run.page.evaluate(() => {
         const manager = window.__game.scenes.play.enemyManager;
+        const game = window.__game;
+        const player = game.scenes.play.player;
+        const runtime = manager.highSectorProtocolRuntime;
+        player.x = runtime.shiftedSafeSide === 'right' ? 40 : game.getWidth() - 40;
+        player.sprite.x = player.x;
+        const playerXBefore = player.x;
         manager.state = 'WAVE_ACTIVE';
         manager.waveEnding = false;
-        for (let frame = 0; frame < 360; frame += 1) manager.updateHighSectorProtocolRuntime(1);
-        return { ...manager.highSectorProtocolRuntime };
+        const framesToShift = Math.ceil(runtime.shiftAtMs / 16.67) + 2;
+        for (let frame = 0; frame < framesToShift; frame += 1) manager.updateHighSectorProtocolRuntime(1);
+        return {
+          ...manager.highSectorProtocolRuntime,
+          playerXBefore,
+          playerXAfter: player.x,
+          actualSlowHullTravelCapacityPx: Math.floor(
+            player.speed * 60 * (manager.highSectorProtocolRuntime.warningLeadMs / 1000)
+          )
+        };
       });
       shifted = await readProof(run.page);
       shifted.runtime = shiftedRuntime;
       assert.equal(shiftedRuntime.shifted, true);
+      assert.ok(shiftedRuntime.warningLeadMs >= shiftedRuntime.safety.travelMs + 500);
+      assert.equal(shiftedRuntime.safety.slowestSpeedPerFrame, 4.8);
+      assert.equal(shiftedRuntime.safety.repositionsPlayer, false);
+      assert.equal(shiftedRuntime.safety.createsCollisionBarrier, false);
+      assert.equal(shiftedRuntime.playerXAfter, shiftedRuntime.playerXBefore,
+        'Shifting Front must not move or edge-lock the player');
+      assert.ok(shiftedRuntime.actualSlowHullTravelCapacityPx >= shiftedRuntime.safety.worstCaseTravelPx,
+        'the selected slow hull must be able to traverse the measured worst-case route during the warning');
       assert.equal(
         shiftedRuntime.currentSafeSide,
         before.waves.find((wave) => wave.shift)?.shift.shiftedSafeSide
       );
+      const clearedRuntime = await run.page.evaluate(() => {
+        const manager = window.__game.scenes.play.enemyManager;
+        manager.beginHighSectorProtocolRuntime({});
+        return manager.highSectorProtocolRuntime;
+      });
+      assert.equal(clearedRuntime, null, 'Shifting Front ownership must end at the next non-shift wave');
     }
     await run.page.screenshot({ path: path.join(outputDir, `sector-${scenario.sector}-${scenario.hullClass}-${before.protocolId}.png`), fullPage: true });
     assert.deepEqual(run.pageErrors, []);

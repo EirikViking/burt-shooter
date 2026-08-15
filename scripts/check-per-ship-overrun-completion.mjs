@@ -44,12 +44,43 @@ assert.equal(rankedTour.recorded, true);
 assert.equal(rankedTour.source, 'ranked');
 assert.equal(rankedTour.current.tours, 1);
 assert.equal(rankedTour.current.clears, 0, 'Tour recognition must not write ranked mastery itself');
+const rankedTacticalTour = recordShipTourCompletion(base, {
+  ...legitimate,
+  runMode: 'ranked_tactical',
+  startSector: 1,
+  sectorReached: 10,
+  runCleared: true
+});
+assert.equal(rankedTacticalTour.recorded, true, 'ranked Tactical Mayhem must award one Tour');
 const sectorTour = recordShipTourCompletion(base, { ...legitimate, runMode: 'sector_start', startSector: 55, sectorReached: 65, overrunCompletionEarned: false });
 assert.equal(sectorTour.recorded, true);
 assert.equal(sectorTour.source, 'sector');
 assert.equal(sectorTour.current.tours, 1);
 assert.equal(recordShipTourCompletion(base, { ...legitimate, runMode: 'sector_start', startSector: 55, sectorReached: 64 }).recorded, false);
 assert.equal(recordShipTourCompletion(base, { ...legitimate, shipTourCompletionRecorded: true }).recorded, false);
+for (const invalidTour of [
+  { ...legitimate, runMode: 'daily_signal', runCleared: true },
+  { ...legitimate, runMode: 'scout', runCleared: true },
+  { ...legitimate, runMode: 'ranked', runCleared: false },
+  { ...legitimate, isDebugRun: true },
+  { ...legitimate, lateGameExperimentActive: true },
+  { ...legitimate, runRewardsSuppressed: true }
+]) {
+  assert.equal(recordShipTourCompletion(base, invalidTour).recorded, false,
+    `${invalidTour.runMode} invalid/unranked path must not award a Tour`);
+}
+const longOverrunFirst = recordShipTourCompletion(base, {
+  ...legitimate,
+  sectorReached: 130,
+  overrunCompletionEarned: true
+});
+assert.equal(longOverrunFirst.recorded, true);
+assert.equal(recordShipTourCompletion(longOverrunFirst.milestones, {
+  ...legitimate,
+  sectorReached: 150,
+  overrunCompletionEarned: true,
+  shipTourCompletionRecorded: true
+}).recorded, false, 'one long Overrun flight must not award another Tour at later ten-sector milestones');
 
 const report = createRunReport({
   ...legitimate, runElapsedSeconds: 600, runTotalElapsedSeconds: 780, finalScore: 500000,
