@@ -1406,7 +1406,7 @@ export class HUD {
     const paddingX = 7;
     const paddingTop = 6;
     const rowGap = 5;
-    const rowHeight = Math.round((isMobile ? 38 : 44) * uiScale);
+    const rowHeight = Math.round((isMobile ? 44 : 48) * uiScale);
     const titleHeight = Math.round((isMobile ? 16 : 18) * uiScale);
     const height = paddingTop + titleHeight + activeStates.length * rowHeight + Math.max(0, activeStates.length - 1) * rowGap + 7;
 
@@ -1917,11 +1917,11 @@ export class HUD {
     row.label.y = Math.round(2 * uiScale);
     this.fitTextToWidth(row.label, Math.max(42, width - textX - rightPad - chargeReserve), 0.68);
     row.meta.x = textX;
-    row.meta.y = Math.round((isMobile ? 18 : 22) * uiScale);
+    row.meta.y = Math.round((isMobile ? 21 : 23) * uiScale);
     this.fitTextToWidth(row.meta, Math.max(42, width - textX - rightPad - urgencyReserve), 0.58);
 
     const barX = textX;
-    const barY = height - 8;
+    const barY = height - 5;
     const barWidth = Math.max(34, width - barX - 7);
     row.barBg.clear();
     row.barBg.roundRect(barX, barY, barWidth, 4, 2);
@@ -1989,6 +1989,12 @@ export class HUD {
         y: Number(row.meta.y.toFixed(2)),
         width: Number(row.meta.width.toFixed(2)),
         height: Number(row.meta.height.toFixed(2))
+      },
+      barBounds: {
+        x: Number(barX.toFixed(2)),
+        y: Number(barY.toFixed(2)),
+        width: Number(barWidth.toFixed(2)),
+        height: 4
       },
       textOverlap: (
         row.label.x < row.meta.x + row.meta.width
@@ -2139,7 +2145,7 @@ export class HUD {
 
   formatPowerupMeta(state) {
     const remaining = Math.max(0, Math.ceil((state.remainingMs || 0) / 1000));
-    const detail = String(state.detail || '').trim();
+    const detail = translateText(String(state.detail || '').trim());
     const charges = Number(state.charges || 0);
     if (state.spent) return translateText(detail || 'EMPTY');
     if (remaining && detail) return `${remaining}s | ${detail}`;

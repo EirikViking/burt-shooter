@@ -22,7 +22,8 @@ const SOURCE = Object.freeze([
   'TAP FIRE // TARGET LOCKED',
   'BANKED // AIM AT BOSS / CLUSTER',
   'Shots intercepted',
-  'P-DEF'
+  'P-DEF',
+  'SLOW TIME'
 ]);
 
 const TRANSLATIONS = Object.freeze({
@@ -50,7 +51,8 @@ const TRANSLATIONS = Object.freeze({
     'FEUER TIPPEN // ZIEL ERFASST',
     'GESPEICHERT // AUF BOSS / GRUPPE ZIELEN',
     'Geschosse abgefangen',
-    'P-ABW'
+    'P-ABW',
+    'ZEITLUPE'
   ]),
   es: Object.freeze([
     'un anillo cian que intercepta automáticamente los disparos hostiles',
@@ -76,7 +78,8 @@ const TRANSLATIONS = Object.freeze({
     'PULSA DISPARO // OBJETIVO FIJADO',
     'GUARDADA // APUNTA A JEFE / GRUPO',
     'Disparos interceptados',
-    'DEF. P.'
+    'DEF. P.',
+    'TIEMPO RALENTIZADO'
   ]),
   ru: Object.freeze([
     'голубое кольцо, автоматически перехватывающее вражеские снаряды',
@@ -102,7 +105,8 @@ const TRANSLATIONS = Object.freeze({
     'НАЖМИТЕ ОГОНЬ // ЦЕЛЬ ЗАХВАЧЕНА',
     'В ЗАПАСЕ // ЦЕЛЬТЕСЬ В БОССА / ГРУППУ',
     'Снарядов перехвачено',
-    'П-ОБОР'
+    'П-ОБОР',
+    'ЗАМЕДЛЕНИЕ ВРЕМЕНИ'
   ]),
   'zh-CN': Object.freeze([
     '自动拦截敌方弹体的青色防御环',
@@ -128,7 +132,8 @@ const TRANSLATIONS = Object.freeze({
     '轻按射击 // 目标已锁定',
     '已储存 // 瞄准首领 / 敌群',
     '已拦截弹体',
-    '点防御'
+    '点防御',
+    '时间减缓'
   ]),
   'pt-BR': Object.freeze([
     'um anel ciano que intercepta automaticamente disparos hostis',
@@ -154,7 +159,8 @@ const TRANSLATIONS = Object.freeze({
     'TOQUE PARA ATIRAR // ALVO TRAVADO',
     'ARMAZENADA // MIRE NO CHEFE / GRUPO',
     'Disparos interceptados',
-    'DEF. P.'
+    'DEF. P.',
+    'TEMPO DESACELERADO'
   ]),
   ko: Object.freeze([
     '적탄을 자동 요격하는 청록색 방어 링',
@@ -180,7 +186,8 @@ const TRANSLATIONS = Object.freeze({
     '발사 누르기 // 목표 잠금',
     '저장됨 // 보스 / 적 무리 조준',
     '요격한 탄환',
-    'P-DEF'
+    'P-DEF',
+    '시간 감속'
   ]),
   ja: Object.freeze([
     '敵弾を自動迎撃するシアンのリング',
@@ -206,7 +213,8 @@ const TRANSLATIONS = Object.freeze({
     '射撃を押す // ターゲットロック',
     '保存中 // ボス / 敵群を狙う',
     '迎撃した敵弾',
-    'P-DEF'
+    'P-DEF',
+    'スロータイム'
   ])
 });
 

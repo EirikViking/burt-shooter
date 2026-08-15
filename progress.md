@@ -1,5 +1,15 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-08-15 Temporary powerup HUD containment and localization
+
+- ChatGPT Pro selected first timed-powerup pickup-to-expiry comprehension as the next bounded retention audit. The existing pickup confirmation and world-pickup expiry cues passed, but the active-powerup HUD reproduced two deterministic text collisions: compact `NOVA BLOOM` label/status bands overlapped by 1 px and the status intruded 2 px into its progress rail; normal desktop metadata intruded 4 px into the rail.
+- Pro rejected the first 42 px proposal as too tight, approved the revised geometry, and returned `APPROVED 100%` after inspecting exact final 1280x720, 960x640 German, and 640x480 captures.
+- Mobile rows are now 44 px and desktop rows 48 px. Label, metadata, and progress rails have measured clearance of at least 2 px, and the rail remains inside the row. The focused matrix proves screen and trait-HUD containment for one, two, and four rows across all eight locales; Japanese covers Reduced Motion.
+- The matrix also exposed raw English `AUTO-INTERCEPTS` inside timed metadata and untranslated `SLOW TIME` in every non-English locale. Pro approved the narrow correction: translate detail before composing the timer string and add `SLOW TIME` to the existing seven-locale player-feedback source map.
+- Passing gates: `check:powerup-hud-affordances`, `check:powerup-pickup-confirmation`, `check:powerup-expiry-readability`, `check:hud-readability`, `check:i18n`, `check:i18n-ui` (all eight; zero errors/leaks/placeholders), `check:controller-flow`, `build:current` (900 modules), `smoke`, and `desktop:smoke:current`. Browser and isolated desktop smoke both passed; the desktop Steam bridge loaded but reported the expected standalone `steam_user_not_logged_on` state.
+- Honest unrelated findings: `check:ui-readability` rejects an invisible 0x0 high-score chase group as an overlap; this did not involve the powerup HUD. `check:powerup-effects` reproducibly fails its Special Fire/Bomb spending scenario with `lastIntent.fired=false`; the HUD-only diff does not touch Player/input behavior, so preserve this evidence for the next separate gameplay audit. The generic skill client was attempted and remains unavailable because its C: Playwright cache lacks `chromium_headless_shell-1208`; repository-native installed-Chrome suites are authoritative.
+- No powerup duration, state, balance, drop rate, RNG, score, input, combat, save, leaderboard, experiment, Steamworks, package, or upload behavior changed in this slice.
+
 ## 2026-08-14 Unbounded Career Rank
 
 - Current prompt: make Nova Swarm support forever players with a genuinely unbounded Career Rank chase, reflected visibly on existing leaderboards, while all authored rewards, unlocks, achievements, difficulty, and combat power remain capped at the shipped Rank 40 ceiling.

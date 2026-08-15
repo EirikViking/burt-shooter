@@ -231,10 +231,89 @@ try {
   const compactScreenshot = path.join(outputDir, 'powerup-hud-nova-bloom-compact.png');
   await page.screenshot({ path: compactScreenshot, fullPage: true });
 
+  const localeMatrix = [];
+  const localeCodes = ['en', 'de', 'zh-CN', 'ru', 'es', 'pt-BR', 'ko', 'ja'];
+  for (let index = 0; index < localeCodes.length; index += 1) {
+    const language = localeCodes[index];
+    await page.setViewportSize({ width: 960, height: 640 });
+    const localeState = await page.evaluate(async ({ language, reducedMotion }) => {
+      await window.__novaI18n?.setLanguagePreference?.(language);
+      localStorage.setItem('nova_accessibility_reduced_motion', reducedMotion ? '1' : '0');
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      const hud = play?.hud;
+      const player = play?.player;
+      if (!game || !play || !hud || !player) return { ok: false, reason: 'missing locale game/play/hud/player' };
+      player.getActivePowerupStates = () => ([
+        {
+          type: 'point_defense',
+          iconType: 'point_defense',
+          label: 'P-DEF',
+          detail: 'AUTO-INTERCEPTS',
+          remainingMs: 4200,
+          durationMs: 10000,
+          color: 0x66ffff
+        },
+        {
+          type: 'slow_time',
+          iconType: 'slow_time',
+          label: 'SLOW TIME',
+          remainingMs: 900,
+          durationMs: 8000,
+          color: 0x9a8cff
+        }
+      ]);
+      hud.update();
+      hud.updateActivePowerup();
+      const traitBounds = hud.traitGroup?.visible ? hud.traitGroup.getBounds?.() : null;
+      return {
+        ok: true,
+        language,
+        reducedMotion,
+        reducedMotionPreference: localStorage.getItem('nova_accessibility_reduced_motion'),
+        title: hud.activePowerupTitle?.text || '',
+        group: {
+          visible: Boolean(hud.activePowerupGroup?.visible),
+          x: Math.round(hud.activePowerupGroup?.x || 0),
+          y: Math.round(hud.activePowerupGroup?.y || 0),
+          width: Math.round(hud.activePowerupGroup?.width || 0),
+          height: Math.round(hud.activePowerupGroup?.height || 0)
+        },
+        traitBounds: traitBounds ? {
+          x: Math.round(traitBounds.x),
+          y: Math.round(traitBounds.y),
+          width: Math.round(traitBounds.width),
+          height: Math.round(traitBounds.height)
+        } : null,
+        rows: (hud.activePowerupRows || [])
+          .filter((row) => row?.container?.visible)
+          .map((row) => row.container._debugPowerupState || {})
+      };
+    }, { language, reducedMotion: index === localeCodes.length - 1 });
+    await page.waitForTimeout(100);
+    const localeSlug = language.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const screenshot = path.join(outputDir, `powerup-hud-960x640-${localeSlug}${localeState.reducedMotion ? '-reduced' : ''}.png`);
+    await page.screenshot({ path: screenshot, fullPage: true });
+    localeMatrix.push({ ...localeState, screenshot });
+  }
+
   const failures = [];
+  const validateRowGeometry = (row, label) => {
+    if (!row) return;
+    const labelBottom = Number(row.labelBounds?.y || 0) + Number(row.labelBounds?.height || 0);
+    const metaTop = Number(row.metaBounds?.y || 0);
+    const metaBottom = metaTop + Number(row.metaBounds?.height || 0);
+    const barTop = Number(row.barBounds?.y || 0);
+    const barBottom = barTop + Number(row.barBounds?.height || 0);
+    if (row.textOverlap) failures.push(`${label} label overlaps status: ${JSON.stringify(row)}`);
+    if (metaTop - labelBottom < 2) failures.push(`${label} label/status clearance below 2px: ${JSON.stringify(row)}`);
+    if (barTop - metaBottom < 2) failures.push(`${label} status/bar clearance below 2px: ${JSON.stringify(row)}`);
+    if (barBottom > Number(row.rowHeight || 0)) failures.push(`${label} progress bar exceeds row: ${JSON.stringify(row)}`);
+  };
   if (!state.ok) failures.push(state.reason || 'setup failed');
   if (!state.group?.visible) failures.push('active powerup HUD is not visible');
   if (state.rows?.length !== 4) failures.push(`expected 4 powerup rows, got ${state.rows?.length || 0}`);
+  state.rows?.forEach((row) => validateRowGeometry(row, `desktop ${row.type || 'powerup'}`));
   const shield = state.rows?.find((row) => row.type === 'shield');
   const bomb = state.rows?.find((row) => row.type === 'bomb');
   const slowTime = state.rows?.find((row) => row.type === 'slow_time');
@@ -255,12 +334,36 @@ try {
   if (compactState.row?.type !== 'nova_bloom' || compactState.row?.meta !== 'BANKED // COMBAT PAUSED') {
     failures.push(`compact Nova Bloom state is wrong: ${JSON.stringify(compactState)}`);
   }
-  if (compactState.row?.textOverlap) failures.push(`compact Nova Bloom label overlaps status: ${JSON.stringify(compactState.row)}`);
-  if ((compactState.row?.labelBounds?.y || 0) + (compactState.row?.labelBounds?.height || 0) > (compactState.row?.metaBounds?.y || 0)) {
-    failures.push(`compact Nova Bloom name/status bands intersect: ${JSON.stringify(compactState.row)}`);
-  }
+  validateRowGeometry(compactState.row, 'compact Nova Bloom');
   if ((compactState.row?.metaBounds?.x || 0) + (compactState.row?.metaBounds?.width || 0) > (compactState.row?.rowWidth || 0) - 7) {
     failures.push(`compact Nova Bloom status exceeds its row: ${JSON.stringify(compactState.row)}`);
+  }
+  for (const localeState of localeMatrix) {
+    if (!localeState.ok || !localeState.group?.visible) failures.push(`${localeState.language} powerup HUD is not visible`);
+    localeState.rows?.forEach((row) => validateRowGeometry(row, `${localeState.language} ${row.type || 'powerup'}`));
+    if (localeState.language !== 'en') {
+      if (localeState.rows?.some((row) => String(row.meta || '').includes('AUTO-INTERCEPTS'))) {
+        failures.push(`${localeState.language} retained English AUTO-INTERCEPTS in timed metadata: ${JSON.stringify(localeState.rows)}`);
+      }
+      if (localeState.rows?.some((row) => String(row.label || '') === 'SLOW TIME')) {
+        failures.push(`${localeState.language} retained English SLOW TIME label: ${JSON.stringify(localeState.rows)}`);
+      }
+    }
+    const groupRight = Number(localeState.group?.x || 0) + Number(localeState.group?.width || 0);
+    const groupBottom = Number(localeState.group?.y || 0) + Number(localeState.group?.height || 0);
+    if (Number(localeState.group?.x || 0) < 0 || Number(localeState.group?.y || 0) < 0 || groupRight > 960 || groupBottom > 640) {
+      failures.push(`${localeState.language} powerup group escaped 960x640: ${JSON.stringify(localeState.group)}`);
+    }
+    const trait = localeState.traitBounds;
+    if (trait) {
+      const overlapsTrait = (
+        Number(localeState.group.x) < trait.x + trait.width
+        && groupRight > trait.x
+        && Number(localeState.group.y) < trait.y + trait.height
+        && groupBottom > trait.y
+      );
+      if (overlapsTrait) failures.push(`${localeState.language} powerup group overlaps trait HUD: ${JSON.stringify({ group: localeState.group, trait })}`);
+    }
   }
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
@@ -270,6 +373,7 @@ try {
     baseUrl,
     screenshot,
     compactScreenshot,
+    localeMatrix,
     state,
     compactState,
     failures,
