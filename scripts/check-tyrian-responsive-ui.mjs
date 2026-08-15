@@ -245,7 +245,10 @@ async function auditVisibleText(page, rootKind = 'scene') {
               right: Math.round(rect.x + rect.width),
               bottom: Math.round(rect.y + rect.height)
             };
-            if (sample.x < -4 || sample.y < -4 || sample.right > width + 4 || sample.bottom > height + 4) {
+            const outsideViewport = sample.x < -4 || sample.y < -4 || sample.right > width + 4 || sample.bottom > height + 4;
+            const fullyOutsideViewport = sample.right < -4 || sample.bottom < -4 || sample.x > width + 4 || sample.y > height + 4;
+            const belongsToEnteringEnemy = String(sample.grandparentLabel || '').startsWith('enemy_visual:');
+            if (outsideViewport && !(belongsToEnteringEnemy && fullyOutsideViewport)) {
               failures.push(`text outside ${width}x${height}: ${JSON.stringify(sample)}`);
             }
             samples.push(sample);
@@ -301,8 +304,8 @@ async function prepareGameplay(page) {
     play.debugInvincible = true;
     play.player.invulnerable = true;
     play.player.invulnerableTime = 600000;
-    play.player.x = game.getWidth() * 0.5;
-    play.player.y = game.getHeight() * 0.74;
+    play.player.x = play.player.game.getWidth() * 0.5;
+    play.player.y = play.player.game.getHeight() * 0.74;
     if (play.player.sprite) {
       play.player.sprite.x = play.player.x;
       play.player.sprite.y = play.player.y;
