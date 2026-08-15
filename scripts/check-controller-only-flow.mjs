@@ -491,11 +491,26 @@ try {
   });
   assert(submitted.gameOver?.lastLeaderboardResult?.name, 'Controller name entry did not save a leaderboard name');
 
-  await tapButton(page, 3);
-  const highscore = await waitForState(page, (state) => state.scene === 'highscore' && state.highscore?.focusedControl, 'highscores opened by controller Y');
-  checkpoint('highscores-open', highscore, { screenshot: await screenshot(page, '17-highscores-open') });
-  await tapButton(page, 1);
-  const backToMenu = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, 'highscores returned to menu by controller B');
+  if (submitted.gameOver?.firstFlight?.active) {
+    await tapButton(page, 3);
+    const firstFlightDetails = await waitForState(page, (state) =>
+      state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.open === true,
+    'first-flight details opened by controller Y');
+    checkpoint('first-flight-details-open', firstFlightDetails, {
+      screenshot: await screenshot(page, '16-first-flight-details-open')
+    });
+    await tapButton(page, 0);
+    await waitForState(page, (state) =>
+      state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.open === false,
+    'first-flight details closed by controller A');
+    await tapButton(page, 1);
+  } else {
+    await tapButton(page, 3);
+    const highscore = await waitForState(page, (state) => state.scene === 'highscore' && state.highscore?.focusedControl, 'highscores opened by controller Y');
+    checkpoint('highscores-open', highscore, { screenshot: await screenshot(page, '17-highscores-open') });
+    await tapButton(page, 1);
+  }
+  const backToMenu = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, 'controller returned to menu from result flow');
   checkpoint('return-menu', backToMenu, { screenshot: await screenshot(page, '18-return-menu') });
 
   const report = {
