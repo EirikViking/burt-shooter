@@ -610,10 +610,8 @@ try {
   assert.equal(webPreviewMenu.menu?.launchDeck?.cards?.overrun?.available, true);
   assert.equal(webPreviewMenu.menu?.launchDeck?.cards?.overrun?.progressionUnlocked, false);
   assert.equal(webPreviewMenu.menu?.launchDeck?.cards?.overrun?.previewAccess, true);
-  assert.equal(webPreviewMenu.menu?.missionBoard?.hidden, false, 'fresh web-preview profiles should show Pilot Orders');
-  assert.equal(webPreviewMenu.menu?.missionBoard?.rows?.length, 3, 'fresh web-preview profiles should show three Pilot Orders');
-  assert.equal(webPreviewMenu.menu?.missionBoard?.bounds?.placement, 'rightRail');
-  assertInside(webPreviewMenu.menu?.missionBoard?.bounds, webPreviewMenu.menu?.screen, 'web-preview Pilot Orders');
+  assert.equal(webPreviewMenu.menu?.missionBoard?.hidden, true, 'fresh Pilot Orders must not crowd the web-preview main menu');
+  assert.deepEqual(webPreviewMenu.menu?.missionBoard?.rows, [], 'fresh Pilot Orders must not create web-preview main-menu rows');
   await focusMenuOption(page, 'overrun');
   await page.screenshot({ path: path.join(outputDir, 'menu-overrun-web-preview.png'), fullPage: false });
   const webPreviewStarted = await page.evaluate(() => window.__game?.currentScene?.startOverrunRun?.());
@@ -881,9 +879,17 @@ try {
     overrunFocus.menu?.missionBriefing?.body || '',
     /Start at Sector 51 with five fixed upgrades[\s\S]*Boss victories still offer new upgrade choices/i
   );
+  const overrunBriefingTiles = await page.evaluate(() => (
+    window.__game?.scenes?.menu?.getRunModeBriefing?.()?.tiles || []
+  ));
   assert.deepEqual(
-    overrunFocus.menu?.missionBriefing?.tiles?.map(({ label, value }) => [label, value]),
+    overrunBriefingTiles.map(({ label, value }) => [label, value]),
     [['START', 'SECTOR 51'], ['SCORE', 'STARTS AT 0'], ['CAREER XP', '85% OF NORMAL'], ['BOSS DRAFTS', 'CONTINUE']]
+  );
+  assert.deepEqual(
+    overrunFocus.menu?.missionBriefing?.tiles,
+    [],
+    'the short main-menu briefing must omit tiles that cannot keep their readability floor'
   );
   await page.screenshot({ path: path.join(outputDir, 'menu-overrun-tactical-focused.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.cycleOverrunRunMode?.(-1, { force: true }));
