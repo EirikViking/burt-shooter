@@ -8374,7 +8374,11 @@ export class PlayScene {
               balanceSource: `boss_bullet:${bullet.sourceFireStyle || bullet.weaponProfileId || 'unknown'}`,
               shieldShake: 4,
               sourceX: bullet.x,
-              sourceY: bullet.y
+              sourceY: bullet.y,
+              impactX: this.player.x,
+              impactY: this.player.y,
+              directionX: -Number(bullet.vx),
+              directionY: -Number(bullet.vy)
             });
             return;
           }
@@ -8386,6 +8390,10 @@ export class PlayScene {
                 source: 'enemy_bullet',
                 sourceX: bullet.x,
                 sourceY: bullet.y,
+                impactX: this.player.x,
+                impactY: this.player.y,
+                directionX: -Number(bullet.vx),
+                directionY: -Number(bullet.vy),
                 color: bullet.visualConfig?.color || bullet.color || 0xff6677
               });
               this.recordBalanceDamage('enemy_bullet');
@@ -8436,6 +8444,8 @@ export class PlayScene {
                   source: 'ambient_hazard_contact',
                   sourceX: bonusDrone.x,
                   sourceY: bonusDrone.y,
+                  impactX: this.player.x,
+                  impactY: this.player.y,
                   color: 0xffaa00
                 });
                 this.recordBalanceDamage('ambient_hazard_contact');
@@ -8574,6 +8584,8 @@ export class PlayScene {
                 source: 'enemy_contact',
                 sourceX: enemy.x,
                 sourceY: enemy.y,
+                impactX: this.player.x,
+                impactY: this.player.y,
                 color: enemy.color || enemy.visualVariant?.accent || 0xff6677
               });
               this.recordBalanceDamage('enemy_contact');
@@ -14451,8 +14463,7 @@ export class PlayScene {
 
   triggerPlayerDamageDirectionCue(options = {}) {
     if (!this.gameContainer || !this.game?.app?.ticker) return false;
-    const playerLayer = this.player?.sprite || null;
-    const targetLayer = playerLayer || this.uiOverlay || this.gameContainer;
+    const targetLayer = this.gameContainer;
     const toTargetLocalFromGlobal = (point) => {
       if (!targetLayer?.toLocal) return point;
       return targetLayer.toLocal(point);
@@ -14465,7 +14476,7 @@ export class PlayScene {
     let renderedPlayer = null;
     try {
       const bounds = this.player?.shipSprite?.getBounds?.();
-      if (!playerLayer && bounds && (Number(bounds.width) || 0) > 0 && (Number(bounds.height) || 0) > 0) {
+      if (bounds && (Number(bounds.width) || 0) > 0 && (Number(bounds.height) || 0) > 0) {
         const globalCenter = new PIXI.Point(
           Number(bounds.x || 0) + Number(bounds.width || 0) / 2,
           Number(bounds.y || 0) + Number(bounds.height || 0) / 2
@@ -14485,11 +14496,11 @@ export class PlayScene {
     const fallbackWorldX = Number.isFinite(spriteX) ? spriteX : Number.isFinite(Number(this.player?.x)) ? Number(this.player.x) : width / 2;
     const fallbackWorldY = Number.isFinite(spriteY) ? spriteY : Number.isFinite(Number(this.player?.y)) ? Number(this.player.y) : height * 0.7;
     const fallbackPlayer = toTargetLocalFromWorld(fallbackWorldX, fallbackWorldY);
-    const impactPoint = playerLayer
-      ? new PIXI.Point(0, 0)
-      : Number.isFinite(Number(options.impactX)) && Number.isFinite(Number(options.impactY))
-        ? toTargetLocalFromWorld(Number(options.impactX), Number(options.impactY))
-        : (renderedPlayer || fallbackPlayer);
+    const worldImpactX = Number.isFinite(Number(options.impactX)) ? Number(options.impactX) : fallbackWorldX;
+    const worldImpactY = Number.isFinite(Number(options.impactY)) ? Number(options.impactY) : fallbackWorldY;
+    const impactPoint = Number.isFinite(Number(options.impactX)) && Number.isFinite(Number(options.impactY))
+      ? toTargetLocalFromWorld(worldImpactX, worldImpactY)
+      : (renderedPlayer || fallbackPlayer);
     const fallbackSource = new PIXI.Point(impactPoint.x, impactPoint.y - 1);
     const sourcePoint = Number.isFinite(Number(options.sourceX)) && Number.isFinite(Number(options.sourceY))
       ? toTargetLocalFromWorld(Number(options.sourceX), Number(options.sourceY))
@@ -14500,8 +14511,14 @@ export class PlayScene {
     const sourceY = Number.isFinite(Number(sourcePoint?.y)) ? Number(sourcePoint.y) : impactY - 1;
     const source = String(options.source || 'unknown');
     const color = Number.isFinite(Number(options.color)) ? Number(options.color) : 0xff6677;
-    let dx = sourceX - impactX;
-    let dy = sourceY - impactY;
+    const suppliedDirectionX = Number(options.directionX);
+    const suppliedDirectionY = Number(options.directionY);
+    const suppliedDirectionLength = Math.hypot(suppliedDirectionX, suppliedDirectionY);
+    const hasSuppliedDirection = Number.isFinite(suppliedDirectionX)
+      && Number.isFinite(suppliedDirectionY)
+      && suppliedDirectionLength >= 0.001;
+    let dx = hasSuppliedDirection ? suppliedDirectionX : sourceX - impactX;
+    let dy = hasSuppliedDirection ? suppliedDirectionY : sourceY - impactY;
     let length = Math.hypot(dx, dy);
     if (length < 1) {
       dx = 0;
@@ -14515,7 +14532,8 @@ export class PlayScene {
     const angle = Math.atan2(ny, nx);
     const chevronCount = 3;
     const ringCount = 2;
-    const durationMs = 760;
+    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const durationMs = reducedMotion ? 310 : 470;
 
     if (this.playerDamageDirectionCue?.ticker) {
       this.game.app.ticker.remove(this.playerDamageDirectionCue.ticker);
@@ -14534,7 +14552,7 @@ export class PlayScene {
     targetLayer.addChild(layer);
     targetLayer.sortChildren?.();
 
-    const setDebug = (visible, elapsedMs = 0) => {
+    const setDebug = (visible, elapsedMs = 0, visualState = {}) => {
       layer._debugDamageDirectionCue = {
         visible,
         source,
@@ -14542,10 +14560,20 @@ export class PlayScene {
         sourceY: Math.round(sourceY),
         impactX: Math.round(impactX),
         impactY: Math.round(impactY),
+        worldImpactX: Math.round(worldImpactX),
+        worldImpactY: Math.round(worldImpactY),
+        directionMode: hasSuppliedDirection ? 'explicit_vector' : 'source_position',
+        directionX: Number(nx.toFixed(4)),
+        directionY: Number(ny.toFixed(4)),
         directionAngle: Number(angle.toFixed(3)),
         chevronCount: visible ? chevronCount : 0,
         ringCount: visible ? ringCount : 0,
-        elapsedMs: Math.round(elapsedMs)
+        elapsedMs: Math.round(elapsedMs),
+        durationMs,
+        reducedMotion,
+        parentSpace: 'gameContainer',
+        baseRadius: Number(Number(visualState.baseRadius || 0).toFixed(3)),
+        pulse: Number(Number(visualState.pulse || 0).toFixed(3))
       };
       this.lastPlayerDamageDirectionCueDebug = { ...layer._debugDamageDirectionCue };
     };
@@ -14553,8 +14581,9 @@ export class PlayScene {
     const drawCue = (elapsedMs) => {
       const t = Math.max(0, Math.min(1, elapsedMs / durationMs));
       const fade = Math.max(0, 1 - t);
-      const pulse = 0.5 + Math.sin(elapsedMs * 0.022) * 0.5;
-      const baseRadius = 34 + t * 16;
+      const visualT = reducedMotion ? 0 : t;
+      const pulse = reducedMotion ? 0 : 0.5 + Math.sin(elapsedMs * 0.022) * 0.5;
+      const baseRadius = 34 + visualT * 16;
       layer.clear();
       layer.circle(0, 0, baseRadius);
       layer.stroke({ color, width: 3.1, alpha: 0.62 * fade });
@@ -14566,7 +14595,7 @@ export class PlayScene {
       layer.lineTo(nx * (baseRadius + 76), ny * (baseRadius + 76));
       layer.stroke({ color, width: 1.25, alpha: 0.2 * fade });
       for (let i = 0; i < chevronCount; i += 1) {
-        const r = baseRadius + 25 + i * 13 + t * 9;
+        const r = baseRadius + 25 + i * 13 + visualT * 9;
         const tipR = r - 14;
         const spread = 10 + i * 0.8;
         const wingInset = 3 + i * 1.7;
@@ -14590,7 +14619,7 @@ export class PlayScene {
       layer.circle(nx * (baseRadius + 42), ny * (baseRadius + 42), 5.6 + pulse * 1.1);
       layer.stroke({ color: 0xffffff, width: 1.9, alpha: 0.55 * fade });
       layer.visible = true;
-      setDebug(true, elapsedMs);
+      setDebug(true, elapsedMs, { baseRadius, pulse });
     };
 
     let elapsedMs = 0;
@@ -14612,7 +14641,16 @@ export class PlayScene {
     this.game.app.ticker.add(ticker);
     if (!this._activeTickers) this._activeTickers = [];
     this._activeTickers.push(ticker);
-    this.playerDamageDirectionCue = { layer, ticker, source, startedAtMs: Date.now(), durationMs };
+    this.playerDamageDirectionCue = {
+      layer,
+      ticker,
+      source,
+      startedAtMs: Date.now(),
+      durationMs,
+      reducedMotion,
+      worldImpactX,
+      worldImpactY
+    };
     return true;
   }
 
@@ -15767,6 +15805,8 @@ export class PlayScene {
 
   handleBossCausedPlayerHit(source, boss = this.enemyManager?.boss, options = {}) {
     if (!this.player?.active || this.player.isGhostActive?.()) return false;
+    const impactX = Number.isFinite(Number(options.impactX)) ? Number(options.impactX) : Number(this.player.x);
+    const impactY = Number.isFinite(Number(options.impactY)) ? Number(options.impactY) : Number(this.player.y);
     if (!this.canBossCauseLifeLoss(source, boss)) {
       this.particleManager?.createHitSpark(this.player.x, this.player.y, boss?.color || 0x8fffd5);
       return false;
@@ -15796,6 +15836,10 @@ export class PlayScene {
       source,
       sourceX: Number.isFinite(Number(options.sourceX)) ? Number(options.sourceX) : boss?.x,
       sourceY: Number.isFinite(Number(options.sourceY)) ? Number(options.sourceY) : boss?.y,
+      impactX,
+      impactY,
+      directionX: Number(options.directionX),
+      directionY: Number(options.directionY),
       color: boss?.color || 0xff55d9
     });
     this.triggerCabinetLog('boss-mercy-read', {

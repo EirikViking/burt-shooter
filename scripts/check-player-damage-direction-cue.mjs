@@ -127,6 +127,8 @@ try {
       source: 'enemy_bullet',
       sourceX: impactX + 180,
       sourceY: impactY - 80,
+      directionX: 0,
+      directionY: 0,
       color: 0xff6677
     });
     window.__damageDirectionCueLayer = play.playerDamageDirectionCue?.layer || null;
@@ -174,6 +176,7 @@ try {
   if (!Number.isFinite(active.debug?.directionAngle) || active.debug.directionAngle >= 0 || active.debug.directionAngle <= -1.2) {
     failures.push(`cue direction angle should point up-right from player: ${JSON.stringify(active.debug)}`);
   }
+  if (active.debug?.directionMode !== 'source_position') failures.push(`zero-vector fallback failed: ${JSON.stringify(active.debug)}`);
   if ((active.bounds.width || 0) < 70 || (active.bounds.height || 0) < 70) failures.push(`cue bounds too small: ${JSON.stringify(active.bounds)}`);
   if (active.debug?.sourceX <= active.debug?.impactX) failures.push(`cue source should be to the right of impact: ${JSON.stringify(active.debug)}`);
   if (faded.currentCue || faded.oldLayerParent || faded.lastDebug?.visible) failures.push(`cue did not fade/clean up: ${JSON.stringify(faded)}`);
