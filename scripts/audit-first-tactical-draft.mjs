@@ -174,6 +174,7 @@ async function collectMetrics(page) {
 
 function analyzeScenario(scenario, metrics) {
   const findings = [];
+  const verticalClearance = (top, bottom) => bottom.bounds.y - (top.bounds.y + top.bounds.height);
   for (const [index, card] of metrics.cards.entries()) {
     const nodes = Object.fromEntries(Object.entries(card.nodes).map(([key, value]) => [key, value ? { ...value, bounds: rect(value.bounds) } : null]));
     const visible = (key) => nodes[key]?.visible ? nodes[key] : null;
@@ -190,6 +191,50 @@ function analyzeScenario(scenario, metrics) {
       if (!visible(left) || !visible(right)) continue;
       const collision = overlap(nodes[left].bounds, nodes[right].bounds);
       if (collision.area > 1) findings.push({ type: 'overlap', card: index, left, right, ...collision });
+    }
+    if (!metrics.compact && visible('fusionBadge')) {
+      for (const [top, bottom] of [
+        ['doctrineBadge', 'permanenceBadge'],
+        ['permanenceBadge', 'fusionBadge'],
+        ['fusionBadge', 'chooseBg']
+      ]) {
+        const clearance = verticalClearance(nodes[top], nodes[bottom]);
+        if (clearance < 4) findings.push({ type: 'desktop_band_clearance', card: index, top, bottom, clearance });
+      }
+    }
+    if (metrics.compact && visible('fusionBadge') && visible('description')) {
+      for (const [top, bottom, minimum] of [
+        ['name', 'description', 4],
+        ['description', 'impactBadge', 4],
+        ['impactBadge', 'doctrineBadge', 2]
+      ]) {
+        const clearance = verticalClearance(nodes[top], nodes[bottom]);
+        if (clearance < minimum) findings.push({
+          type: 'compact_fusion_band_clearance',
+          card: index,
+          top,
+          bottom,
+          clearance,
+          minimum
+        });
+      }
+      if (nodes.description.fontSize !== 13 || nodes.description.scaleY < 0.999) {
+        findings.push({
+          type: 'compact_primary_effect_scaled',
+          card: index,
+          fontSize: nodes.description.fontSize,
+          scaleY: nodes.description.scaleY
+        });
+      }
+      if (nodes.description.estimatedLines > 2) {
+        findings.push({ type: 'compact_primary_effect_over_two_lines', card: index, lines: nodes.description.estimatedLines });
+      }
+      const cardBottomInset = rect(card.bounds).bottom - nodes.doctrineBadge.bounds.bottom;
+      if (cardBottomInset < 3) findings.push({
+        type: 'compact_doctrine_frame_clearance',
+        card: index,
+        inset: cardBottomInset
+      });
     }
     if (nodes.description?.visible && nodes.description.fontSize < 12) {
       findings.push({ type: 'primary_effect_below_floor', card: index, fontSize: nodes.description.fontSize, scale: nodes.description.scaleX });
@@ -288,10 +333,10 @@ try {
     ...entry.pageErrors.map((error) => `${entry.scenario.id}: pageerror: ${error}`),
     ...entry.consoleErrors.map((error) => `${entry.scenario.id}: console: ${error}`)
   ]);
-  assert.deepEqual(allErrors, [], `Tactical Draft audit runtime errors: ${allErrors.join('; ')}`);
-  assert.deepEqual(allFindings, [], `Tactical Draft readability findings: ${JSON.stringify(allFindings)}`);
   report.findings = allFindings;
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
+  assert.deepEqual(allErrors, [], `Tactical Draft audit runtime errors: ${allErrors.join('; ')}`);
+  assert.deepEqual(allFindings, [], `Tactical Draft readability findings: ${JSON.stringify(allFindings)}`);
   console.log(`[first-tactical-draft-audit] PASS scenarios=${report.scenarios.length} findings=${allFindings.length}`);
   console.log(`[first-tactical-draft-audit] report=${path.join(outputDir, 'report.json')}`);
   console.log(JSON.stringify(allFindings, null, 2));

@@ -11403,6 +11403,7 @@ export class PlayScene {
       card._draftLayout = { width: cardWidth, height: cardHeight, compact };
       const nodes = card._nodes;
       const hasFusionBlueprint = Boolean(card._offer?.fusionBlueprints?.length);
+      let desktopChooseButtonHeight = 42;
       const fitTextWidth = (node, maxWidth, minimumScale = 0.55) => {
         if (!node) return;
         node.scale.set(1);
@@ -11443,20 +11444,27 @@ export class PlayScene {
         nodes.description.anchor.set(0, 0.5);
         nodes.description.style.fontSize = shortCompact ? 8 : 13;
         nodes.description.style.align = 'left';
-        nodes.description.style.wordWrapWidth = hasFusionBlueprint ? Math.max(175, cardWidth * 0.46) : cardWidth - 190;
-        nodes.description.position.set(-cardWidth / 2 + 86, shortCompact ? -7 : -2);
+        nodes.description.style.wordWrap = true;
+        nodes.description.style.wordWrapWidth = hasFusionBlueprint ? Math.max(175, cardWidth * 0.5) : cardWidth - 190;
+        const stackedCompactFusion = hasFusionBlueprint && !shortCompact;
+        nodes.description.position.set(-cardWidth / 2 + 86, shortCompact ? -7 : stackedCompactFusion ? 5 : -2);
         nodes.description.visible = !shortCompact;
-        fitTextBox(
-          nodes.description,
-          nodes.description.style.wordWrapWidth,
-          shortCompact ? 18 : 30,
-          shortCompact ? 0.42 : 0.55
-        );
+        if (stackedCompactFusion) {
+          nodes.description.scale.set(1);
+          nodes.description.updateText?.(false);
+        } else {
+          fitTextBox(
+            nodes.description,
+            nodes.description.style.wordWrapWidth,
+            shortCompact ? 18 : 30,
+            shortCompact ? 0.42 : 0.55
+          );
+        }
         const compactImpactWidth = hasFusionBlueprint ? Math.max(170, cardWidth * 0.34) : Math.min(270, cardWidth - 210);
         const compactImpactX = -cardWidth / 2 + 86 + compactImpactWidth / 2;
-        const compactImpactY = cardHeight / 2 - 44;
+        const compactImpactY = stackedCompactFusion ? 36.5 : cardHeight / 2 - 44;
         nodes.impactBadge.position.set(compactImpactX, compactImpactY);
-        nodes.impactBadge._pillLayout = { width: compactImpactWidth, height: shortCompact ? 24 : 30 };
+        nodes.impactBadge._pillLayout = { width: compactImpactWidth, height: shortCompact || stackedCompactFusion ? 24 : 30 };
         nodes.impactLabel.anchor.set(0.5);
         nodes.impactLabel.style.fontSize = 7;
         nodes.impactLabel.position.set(compactImpactX, compactImpactY - 6);
@@ -11466,11 +11474,15 @@ export class PlayScene {
         nodes.impactValue.position.set(compactImpactX, compactImpactY + 7);
         fitTextWidth(nodes.impactValue, compactImpactWidth - 16, 0.58);
         nodes.doctrineTitle.visible = false;
-        nodes.doctrineBadge.position.set(-cardWidth / 2 + 86 + Math.min(230, cardWidth * 0.43) / 2, cardHeight / 2 - 18);
-        nodes.doctrineBadge._pillLayout = { width: Math.min(230, cardWidth * 0.43), height: 18 };
+        const compactDoctrineY = stackedCompactFusion ? 59 : cardHeight / 2 - 18;
+        nodes.doctrineBadge.position.set(-cardWidth / 2 + 86 + Math.min(230, cardWidth * 0.43) / 2, compactDoctrineY);
+        nodes.doctrineBadge._pillLayout = {
+          width: Math.min(230, cardWidth * 0.43),
+          height: stackedCompactFusion ? 15 : 18
+        };
         nodes.doctrine.anchor.set(0, 0.5);
         nodes.doctrine.style.fontSize = 7;
-        nodes.doctrine.position.set(-cardWidth / 2 + 94, cardHeight / 2 - 18);
+        nodes.doctrine.position.set(-cardWidth / 2 + 94, compactDoctrineY);
         fitTextWidth(nodes.doctrine, Math.min(214, cardWidth * 0.4), 0.54);
         nodes.permanenceBadge.position.set(-cardWidth / 2 + 86 + Math.min(230, cardWidth * 0.43) / 2, cardHeight / 2 - 5);
         nodes.permanenceBadge._pillLayout = { width: Math.min(230, cardWidth * 0.43), height: 15 };
@@ -11534,6 +11546,7 @@ export class PlayScene {
         nodes.description.anchor.set(0.5);
         nodes.description.style.fontSize = 16;
         nodes.description.style.align = 'center';
+        nodes.description.style.wordWrap = true;
         nodes.description.style.wordWrapWidth = cardWidth - 48;
         nodes.description.position.set(0, -cardHeight / 2 + 184);
         const impactY = -cardHeight / 2 + 252;
@@ -11550,15 +11563,20 @@ export class PlayScene {
         nodes.impactValue.style.fontSize = 16;
         nodes.impactValue.position.set(0, impactY + 11);
         fitTextWidth(nodes.impactValue, cardWidth - 76, 0.62);
-        const chooseY = cardHeight / 2 - 20;
         const denseDesktop = cardHeight < 440;
         const doctrineY = impactY + (hasFusionBlueprint
           ? (denseDesktop ? 34 : 46)
           : (denseDesktop ? 52 : 62));
-        const fusionY = doctrineY + (denseDesktop ? 42 : 54);
+        const permanenceBadgeHeight = hasFusionBlueprint && denseDesktop ? 18 : 22;
+        const fusionBadgeHeight = hasFusionBlueprint && denseDesktop ? 38 : 46;
         const permanenceY = hasFusionBlueprint
-          ? fusionY + (denseDesktop ? 34 : 48)
+          ? doctrineY + 17 + 4 + permanenceBadgeHeight / 2
           : doctrineY + (denseDesktop ? 42 : 64);
+        const fusionY = hasFusionBlueprint
+          ? permanenceY + permanenceBadgeHeight / 2 + 4 + fusionBadgeHeight / 2
+          : doctrineY + (denseDesktop ? 42 : 54);
+        const chooseY = cardHeight / 2 - 20;
+        desktopChooseButtonHeight = hasFusionBlueprint && denseDesktop ? 38 : 42;
         nodes.doctrineBadge.position.set(0, doctrineY);
         nodes.doctrineBadge._pillLayout = { width: cardWidth - 58, height: 34 };
         nodes.doctrineTitle.visible = true;
@@ -11569,7 +11587,10 @@ export class PlayScene {
         nodes.doctrine.position.set(0, doctrineY + 7);
         fitTextWidth(nodes.doctrine, cardWidth - 78, 0.58);
         nodes.permanenceBadge.position.set(0, permanenceY);
-        nodes.permanenceBadge._pillLayout = { width: Math.min(cardWidth - 90, nodes.permanence.width + 24), height: 22 };
+        nodes.permanenceBadge._pillLayout = {
+          width: Math.min(cardWidth - 90, nodes.permanence.width + 24),
+          height: permanenceBadgeHeight
+        };
         nodes.permanence.anchor.set(0.5);
         nodes.permanence.style.fontSize = 10;
         nodes.permanence.position.set(0, permanenceY);
@@ -11579,7 +11600,7 @@ export class PlayScene {
         nodes.choose.style.fontSize = 17;
         if (hasFusionBlueprint) {
           const badgeWidth = cardWidth - 40;
-          const badgeHeight = 46;
+          const badgeHeight = fusionBadgeHeight;
           const badgeX = 0;
           const badgeY = fusionY;
           nodes.fusionBadge.position.set(badgeX, badgeY);
@@ -11625,7 +11646,7 @@ export class PlayScene {
       nodes.chooseBg.position.copyFrom(nodes.choose.position);
       nodes.chooseBg._buttonLayout = {
         width: compact ? Math.min(158, Math.max(112, cardWidth * 0.27)) : Math.min(230, cardWidth - 74),
-        height: compact ? 27 : 42,
+        height: compact ? 27 : desktopChooseButtonHeight,
         align: compact ? 'right' : 'center'
       };
       this.redrawTacticalDraftCard(card);
@@ -13097,6 +13118,11 @@ export class PlayScene {
       lockInProgress: Number(state?.lockInProgress) || 0,
       inputArmed: Boolean(state?.inputArmed),
       compact: Boolean(state?.compact),
+      permanenceScopeVisible: Boolean(
+        state?.subtitle?.visible !== false &&
+        !state?.scoreRouteOfferId &&
+        state?.subtitle?.text === translateText('Choose one permanent run upgrade.')
+      ),
       materialReady: Boolean(state?.material?.visible && GameAssets.isValidTexture(state.material.texture)),
       title: state?.title?.text || null,
       eyebrow: state?.eyebrow?.text || null,

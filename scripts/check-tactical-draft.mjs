@@ -147,14 +147,22 @@ function assertDraftLayout(state, width, height, label, expectedOfferCount = 3) 
   }
   state.tacticalDraft.offers.forEach((offer, index) => {
     const card = bounds[index];
-    for (const [name, textBounds] of [
+    const requiredCardBounds = [
       ['name', offer.nameBounds],
       ['description', offer.descriptionBounds],
       ['category badge', offer.categoryBadgeBounds],
       ['impact badge', offer.impactBadgeBounds],
-      ['doctrine badge', offer.doctrineBadgeBounds],
-      ['permanence badge', offer.permanenceBadgeBounds]
-    ]) {
+      ['doctrine badge', offer.doctrineBadgeBounds]
+    ];
+    if (state.tacticalDraft.compact) {
+      assert(!offer.permanenceBadgeBounds?.width && !offer.permanenceBadgeBounds?.height,
+        `${label}: compact permanence badge ${index} should stay intentionally hidden`);
+      assert(state.tacticalDraft.permanenceScopeVisible,
+        `${label}: compact Draft does not visibly communicate permanent-run scope`);
+    } else {
+      requiredCardBounds.push(['permanence badge', offer.permanenceBadgeBounds]);
+    }
+    for (const [name, textBounds] of requiredCardBounds) {
       assert(textBounds && textBounds.width > 0 && textBounds.height > 0, `${label}: ${name} ${index} has invalid bounds`);
       assert(textBounds.x >= card.x - 2 && textBounds.y >= card.y - 2 && textBounds.x + textBounds.width <= card.x + card.width + 2 && textBounds.y + textBounds.height <= card.y + card.height + 2, `${label}: ${name} ${index} escapes card`);
     }
