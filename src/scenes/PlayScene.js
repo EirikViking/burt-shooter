@@ -779,6 +779,10 @@ export class PlayScene {
 
     // --- Hud & UI ---
     this.hud = new HUD(this.uiContainer, this.game);
+    if (this.hud?.highscoreChaseGroup && this.shouldSuppressFirstFlightHighscoreChase()) {
+      this.hud.highscoreChaseGroup.visible = false;
+      this.hud.highscoreChaseGroup.renderable = false;
+    }
     // Note: HUD creates itself in constructor
     this.initMetaProgress();
     this.createSynergyBadge();
@@ -4263,6 +4267,12 @@ export class PlayScene {
       : 'MOVE — WASD / ARROWS  •  SHOOT — SPACE');
   }
 
+  shouldSuppressFirstFlightHighscoreChase() {
+    if (this.game?.isDebugRun === true) return false;
+    if (this.game?.lateGameExperiment?.active === true) return false;
+    return (Number(this.game?.hangarProgressAtRunStart?.totalRuns) || 0) === 0;
+  }
+
   releaseFirstRunEnemyStart(reason = 'opening_complete') {
     const enemyStart = this.firstRunEnemyStart;
     if (!enemyStart) return false;
@@ -5964,7 +5974,8 @@ export class PlayScene {
             );
           this.hud?.update?.({ skipHighscoreChase });
           if (this.hud?.highscoreChaseGroup) {
-            const showHighscoreChase = !perfOptions?.hideHighscoreChase;
+            const showHighscoreChase = !perfOptions?.hideHighscoreChase
+              && !this.shouldSuppressFirstFlightHighscoreChase();
             this.hud.highscoreChaseGroup.visible = showHighscoreChase;
             this.hud.highscoreChaseGroup.renderable = showHighscoreChase;
           }
