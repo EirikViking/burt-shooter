@@ -11441,7 +11441,7 @@ export class PlayScene {
         nodes.name.style.fontSize = 17;
         nodes.name.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 39);
         nodes.description.anchor.set(0, 0.5);
-        nodes.description.style.fontSize = shortCompact ? 8 : 11;
+        nodes.description.style.fontSize = shortCompact ? 8 : 13;
         nodes.description.style.align = 'left';
         nodes.description.style.wordWrapWidth = hasFusionBlueprint ? Math.max(175, cardWidth * 0.46) : cardWidth - 190;
         nodes.description.position.set(-cardWidth / 2 + 86, shortCompact ? -7 : -2);
@@ -11474,9 +11474,11 @@ export class PlayScene {
         fitTextWidth(nodes.doctrine, Math.min(214, cardWidth * 0.4), 0.54);
         nodes.permanenceBadge.position.set(-cardWidth / 2 + 86 + Math.min(230, cardWidth * 0.43) / 2, cardHeight / 2 - 5);
         nodes.permanenceBadge._pillLayout = { width: Math.min(230, cardWidth * 0.43), height: 15 };
+        nodes.permanenceBadge.visible = false;
         nodes.permanence.anchor.set(0, 0.5);
         nodes.permanence.style.fontSize = 7;
         nodes.permanence.position.set(-cardWidth / 2 + 94, cardHeight / 2 - 5);
+        nodes.permanence.visible = false;
         fitTextWidth(nodes.permanence, Math.min(214, cardWidth * 0.4), 0.54);
         nodes.holdBadge.position.set(cardWidth / 2 - 98, -cardHeight / 2 + 17);
         nodes.choose.anchor.set(1, 0.5);
@@ -11504,6 +11506,8 @@ export class PlayScene {
         }
       } else {
         nodes.description.visible = true;
+        nodes.permanenceBadge.visible = true;
+        nodes.permanence.visible = true;
         nodes.choose.anchor.set(0.5);
         nodes.category.anchor.set(0.5);
         nodes.category.position.set(0, -cardHeight / 2 + 24);
