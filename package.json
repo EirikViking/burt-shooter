@@ -74,6 +74,7 @@
     "check:low-hanging-fun": "node scripts/check-low-hanging-fun.mjs",
     "check:retention-presentation": "node scripts/check-retention-presentation.mjs",
     "check:first-tactical-draft-readability": "node scripts/audit-first-tactical-draft.mjs",
+    "check:post-draft-reentry": "node scripts/audit-post-draft-reentry.mjs",
     "check:runback-agency-lifecycle": "node scripts/check-runback-agency-lifecycle.mjs",
     "check:packaged-runback-latency": "node scripts/audit-packaged-runback-latency.mjs",
     "check:tactical-draft": "node scripts/check-tactical-draft.mjs",
