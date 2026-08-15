@@ -2,7 +2,18 @@ export function isReturningPilot(progress = {}) {
   return Math.max(0, Math.floor(Number(progress?.totalRuns) || 0)) > 0;
 }
 
-export function getShipIntroTiming({ compact = false, returningPilot = false } = {}) {
+export function getShipIntroTiming({ compact = false, returningPilot = false, runbackRestart = false } = {}) {
+  if (runbackRestart) {
+    return {
+      flightMs: 320,
+      totalMs: 420,
+      fadeInMs: 90,
+      holdUntilMs: 270,
+      impactStartMs: 220,
+      impactEndMs: 300
+    };
+  }
+
   if (returningPilot) {
     return compact
       ? {

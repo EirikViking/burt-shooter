@@ -4695,6 +4695,7 @@ export class GameOverScene {
               : RUN_MODES.RANKED,
             inputDevice: this.lastInputDevice
           };
+    restartOptions.runStartSource = 'game_over_runback';
     Promise.resolve(this.game.startGame(this.game.selectedShipSpriteKey, restartOptions))
       .then((started) => {
         if (started === false) this.returnToMenu();

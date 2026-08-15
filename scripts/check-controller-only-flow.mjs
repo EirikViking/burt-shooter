@@ -376,6 +376,7 @@ try {
     if (play) {
       play.introActive = false;
       play.introComplete = true;
+      play.setShipIntroAgencyState?.('complete', 'controller_flow_fixture');
     }
     if (game) game.lives = Math.max(game.lives || 0, 3);
     if (player) {

@@ -20,11 +20,14 @@ const firstIntro = getShipIntroTiming({ compact: false, returningPilot: false })
 const returningIntro = getShipIntroTiming({ compact: false, returningPilot: true });
 const compactFirstIntro = getShipIntroTiming({ compact: true, returningPilot: false });
 const compactReturningIntro = getShipIntroTiming({ compact: true, returningPilot: true });
+const runbackIntro = getShipIntroTiming({ compact: false, returningPilot: true, runbackRestart: true });
 assert.equal(firstIntro.totalMs, 3200);
 assert.equal(compactFirstIntro.totalMs, 2600);
 assert.ok(returningIntro.totalMs <= firstIntro.totalMs * 0.5, 'returning desktop intro should take at most half the first-run time');
 assert.ok(compactReturningIntro.totalMs <= compactFirstIntro.totalMs * 0.55, 'returning compact intro should be materially faster');
-for (const timing of [firstIntro, returningIntro, compactFirstIntro, compactReturningIntro]) {
+assert.equal(runbackIntro.totalMs, 420);
+assert.ok(runbackIntro.totalMs <= 750, 'warm runback arrival must fit the control-ready budget');
+for (const timing of [firstIntro, returningIntro, compactFirstIntro, compactReturningIntro, runbackIntro]) {
   assert.ok(timing.fadeInMs < timing.holdUntilMs);
   assert.ok(timing.holdUntilMs < timing.totalMs);
   assert.ok(timing.impactStartMs < timing.impactEndMs);
@@ -70,6 +73,7 @@ const report = {
   returningIntro,
   compactFirstIntro,
   compactReturningIntro,
+  runbackIntro,
   floatingComboMilestones,
   recoveryExamples: {
     sector3Vs60: getRecoverySectorGoal({ currentSector: 3, bestSector: 60 }),

@@ -73,6 +73,8 @@
     "check:invulnerability-window-readability": "node scripts/check-invulnerability-window-readability.mjs",
     "check:low-hanging-fun": "node scripts/check-low-hanging-fun.mjs",
     "check:retention-presentation": "node scripts/check-retention-presentation.mjs",
+    "check:runback-agency-lifecycle": "node scripts/check-runback-agency-lifecycle.mjs",
+    "check:packaged-runback-latency": "node scripts/audit-packaged-runback-latency.mjs",
     "check:tactical-draft": "node scripts/check-tactical-draft.mjs",
     "check:tactical-score-route": "node scripts/check-tactical-score-route.mjs",
     "check:tactical-doctrine": "node scripts/check-tactical-doctrine.mjs",

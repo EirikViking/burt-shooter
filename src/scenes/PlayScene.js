@@ -550,6 +550,8 @@ export class PlayScene {
     this.introStartTime = 0;
     this.shipIntroTiming = null;
     this.shipIntroReturningPilot = false;
+    this.shipIntroAgencyState = 'complete';
+    this.shipIntroAgencyHistory = [];
     this.shipCatalogReady = Promise.resolve();
     this.shipCatalogLoaded = false;
     this.shipIntroAssetGatePending = false;
@@ -1001,6 +1003,8 @@ export class PlayScene {
     this.introStartTime = 0;
     this.shipIntroTiming = null;
     this.shipIntroReturningPilot = false;
+    this.shipIntroAgencyState = 'pending';
+    this.shipIntroAgencyHistory = [{ state: 'pending', at: Date.now(), reason: 'scene_init' }];
     this.shipIntroToken += 1;
     if (this.introOverlay?.parent) {
       this.introOverlay.parent.removeChild(this.introOverlay);
@@ -1059,6 +1063,9 @@ export class PlayScene {
     const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
     const selectedShipTextureIndex = getShipMetadata(spriteKey)?.textureIndex ?? 0;
     const controlSmoke = params.get('controlSmoke') === '1';
+    const runbackRestart = this.game?.runStartSource === 'game_over_runback';
+    const runbackTextureReady = runbackRestart
+      && GameAssets.isValidTexture(GameAssets.getRankShipTexture(selectedShipTextureIndex));
     this.controlSmokeMode = controlSmoke;
     this.maintainerDevtoolsEnabled = isMaintainerDevtoolsEnabled();
     const logShipDebug = () => {
@@ -1080,6 +1087,7 @@ export class PlayScene {
       if (controlSmoke) {
         this.introActive = false;
         this.introComplete = true;
+        this.setShipIntroAgencyState('complete', 'controlSmoke');
         this.startLevelWhenWarm('controlSmoke');
       } else {
         this.startShipIntro(spriteKey);
@@ -1136,6 +1144,7 @@ export class PlayScene {
     }
     this.player = new Player(width / 2, height - 100, this.inputManager, this.gameplayGame, spriteKey);
     this.gameContainer.addChild(this.player.sprite);
+    if (this.player.sprite) this.player.sprite.alpha = 0;
     this.bindGameplayPointerSurface();
     if (this.player.setRank) {
       this.player.setRank(initialRank, 'init_placeholder');
@@ -1150,6 +1159,7 @@ export class PlayScene {
       .filter((id) => this.player.applyRunAugment?.(id)?.applied);
     this.applySeasonCosmetics();
     this.startNextTacticalDirective('run_start');
+    if (runbackTextureReady) startIntroFromPlayer('runback_cached_texture');
 
     // Create enemy manager
     this.enemyManager = new EnemyManager(this.gameContainer, this.gameplayGame, capHandler);
@@ -5588,20 +5598,27 @@ export class PlayScene {
       // Player update
       measure('player', () => {
         if (!(this.game.lives > 0 && this.player)) return;
+        const introAgencyBlocked = this.isShipIntroAgencyBlocked();
         // Pass touch input to player
         if (this.touchControls) {
           const touchInput = this.touchControls.getInput();
-          this.player.touchInput = { moveX: touchInput.moveX, moveY: touchInput.moveY };
+          this.player.touchInput = introAgencyBlocked
+            ? { moveX: 0, moveY: 0 }
+            : { moveX: touchInput.moveX, moveY: touchInput.moveY };
         }
 
-        this.player.update(delta);
-        this.updateRunContractActionWatchers();
-        this.updateFirstRunOnboarding();
+        if (!introAgencyBlocked) {
+          this.player.update(delta);
+          this.updateRunContractActionWatchers();
+          this.updateFirstRunOnboarding();
+        }
         const sprite = this.player.sprite;
         if (sprite) {
           sprite.visible = true;
           sprite.renderable = true;
-          if ((!Number.isFinite(sprite.alpha) || sprite.alpha <= 0) &&
+          if (this.shipIntroAgencyState === 'pending') {
+            sprite.alpha = 0;
+          } else if ((!Number.isFinite(sprite.alpha) || sprite.alpha <= 0) &&
             !this.player.isDodging &&
             !this.player.invulnerable &&
             !this.player.isGhostActive?.()) {
@@ -5724,7 +5741,7 @@ export class PlayScene {
       // bonus-drone, and tractor-ship windows. Projectiles naturally leave the
       // playfield, so suppressing the button here only creates dead input and
       // consumes while-firing powerup time without producing a shot.
-      if ((firePressed || specialFireRequested) && this.player && !this.introActive) {
+      if ((firePressed || specialFireRequested) && this.player && !this.isShipIntroAgencyBlocked()) {
         measure('shooting', () => {
           if (!this.player.canShoot()) return;
           const bullets = measure('vfx.player_bullet_burst_creation', () => this.player.shoot());
@@ -26259,6 +26276,7 @@ export class PlayScene {
     console.log('[Intro] start');
 
     this.introActive = true;
+    this.setShipIntroAgencyState('active', 'ship_intro_started');
     this.introStartTime = Date.now();
     const introToken = ++this.shipIntroToken;
 
@@ -26269,7 +26287,8 @@ export class PlayScene {
     const introGameplayHeight = this.gameplayGame.getHeight();
     const isNarrowIntro = introWidth < 620;
     const returningPilot = isReturningPilot(this.game?.hangarProgressAtRunStart);
-    const introTiming = getShipIntroTiming({ compact: isNarrowIntro, returningPilot });
+    const runbackRestart = this.game?.runStartSource === 'game_over_runback';
+    const introTiming = getShipIntroTiming({ compact: isNarrowIntro, returningPilot, runbackRestart });
     this.shipIntroReturningPilot = returningPilot;
     this.shipIntroTiming = introTiming;
     const maxTextWidth = Math.max(260, introWidth * 0.9);
@@ -26473,6 +26492,8 @@ export class PlayScene {
     return {
       active: Boolean(this.introActive),
       complete: Boolean(this.introComplete),
+      agencyState: this.shipIntroAgencyState,
+      agencyHistory: this.shipIntroAgencyHistory.map((entry) => ({ ...entry })),
       returningPilot: Boolean(this.shipIntroReturningPilot),
       elapsedMs: startedAt ? Math.max(0, Date.now() - startedAt) : 0,
       timing: this.shipIntroTiming ? { ...this.shipIntroTiming } : null
@@ -26482,6 +26503,7 @@ export class PlayScene {
   completeShipIntro() {
     this.introActive = false;
     this.introComplete = true;
+    this.setShipIntroAgencyState('complete', 'ship_intro_complete');
     if (this.game?.currentScene && this.game.currentScene !== this) {
       return;
     }
@@ -26502,5 +26524,19 @@ export class PlayScene {
     }
 
     console.log('[PlayScene] Ship intro complete, gameplay enabled');
+  }
+
+  isShipIntroAgencyBlocked() {
+    return this.shipIntroAgencyState !== 'complete';
+  }
+
+  setShipIntroAgencyState(state, reason = 'runtime') {
+    if (!['pending', 'active', 'complete'].includes(state)) return false;
+    if (this.shipIntroAgencyState === state) return false;
+    if (this.shipIntroAgencyState === 'complete' && state !== 'pending') return false;
+    if (this.shipIntroAgencyState === 'active' && state === 'pending') return false;
+    this.shipIntroAgencyState = state;
+    this.shipIntroAgencyHistory.push({ state, at: Date.now(), reason });
+    return true;
   }
 }

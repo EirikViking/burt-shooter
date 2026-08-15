@@ -469,6 +469,9 @@ export class Game {
     this.sectorStartPlaySector = sectorStartPlaySector;
     this.sectorStartHighestReached = sectorStartCheckpoint ? getSectorStartState(startingProgress).highestReachedSector : null;
     this.runStartSector = runStartSector;
+    this.runStartSource = options.runStartSource === 'game_over_runback'
+      ? 'game_over_runback'
+      : null;
     this.overrunSeenBossMaxSector = overrunStartState?.available
       ? Math.min(50, overrunStartState.highestReachedSector)
       : null;
