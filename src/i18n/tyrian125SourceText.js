@@ -4,7 +4,7 @@ const COPY = Object.freeze({
     'Q / B PASS // HOLD: LOCK BUILD': 'Q / B PASS // HALTEN: BUILD SPERREN', 'LOCK BUILD {percent}%': 'BUILD SPERREN {percent}%',
     'BUILD LOCKED': 'BUILD GESPERRT', 'Current upgrades kept. Future Drafts disabled for this run.': 'Aktuelle Upgrades bleiben. Weitere Drafts sind für diesen Run deaktiviert.', 'BUILD LOCKED // NO MORE DRAFTS': 'BUILD GESPERRT // KEINE WEITEREN DRAFTS',
     'HOLOGRAM TARGETS // CONTACT SAFE': 'HOLOGRAMM-ZIELE // KONTAKT SICHER', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': 'SKILL-FLUG: {pattern}\nHOLOGRAMM-ZIELE TREFFEN // KONTAKT SICHER',
-    'CPU RIVAL': 'CPU-RIVALE', 'STEAM PILOTS + CPU RIVALS': 'STEAM-PILOTEN + CPU-RIVALEN', 'PAGE {page}/{pages}': 'SEITE {page}/{pages}',
+    'CPU RIVAL': 'CPU-RIVALE', 'STEAM PILOTS + CPU RIVALS': 'STEAM-PILOTEN + CPU-RIVALEN', 'PAGE {page}/{pages}': 'SEITE {page}/{pages}', 'PILOT MANIFEST {start}-{end}': 'PILOTENMANIFEST {start}-{end}', 'TOP 50 // RANKS {start}-{end} // {total}': 'TOP 50 // RÄNGE {start}-{end} // {total}',
     'TOP 50 BREACHED': 'TOP 50 DURCHBROCHEN', 'TOP 50 GATE': 'TOP-50-SCHRANKE', 'TOP 50 GATE: #{rank} {name} // {score} MORE': 'TOP-50-SCHRANKE: #{rank} {name} // {score} MEHR'
   }),
   es: Object.freeze({
@@ -12,7 +12,7 @@ const COPY = Object.freeze({
     'Q / B PASS // HOLD: LOCK BUILD': 'Q / B PASAR // MANTÉN: BLOQUEAR BUILD', 'LOCK BUILD {percent}%': 'BLOQUEAR BUILD {percent}%',
     'BUILD LOCKED': 'BUILD BLOQUEADA', 'Current upgrades kept. Future Drafts disabled for this run.': 'Conservas las mejoras actuales. Los próximos Drafts quedan desactivados en esta partida.', 'BUILD LOCKED // NO MORE DRAFTS': 'BUILD BLOQUEADA // SIN MÁS DRAFTS',
     'HOLOGRAM TARGETS // CONTACT SAFE': 'BLANCOS HOLOGRÁFICOS // CONTACTO SEGURO', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': 'VUELO DE HABILIDAD: {pattern}\nROMPE BLANCOS HOLOGRÁFICOS // CONTACTO SEGURO',
-    'CPU RIVAL': 'RIVAL CPU', 'STEAM PILOTS + CPU RIVALS': 'PILOTOS STEAM + RIVALES CPU', 'PAGE {page}/{pages}': 'PÁGINA {page}/{pages}',
+    'CPU RIVAL': 'RIVAL CPU', 'STEAM PILOTS + CPU RIVALS': 'PILOTOS STEAM + RIVALES CPU', 'PAGE {page}/{pages}': 'PÁGINA {page}/{pages}', 'PILOT MANIFEST {start}-{end}': 'MANIFIESTO DE PILOTOS {start}-{end}', 'TOP 50 // RANKS {start}-{end} // {total}': 'TOP 50 // PUESTOS {start}-{end} // {total}',
     'TOP 50 BREACHED': 'TOP 50 SUPERADO', 'TOP 50 GATE': 'ACCESO AL TOP 50', 'TOP 50 GATE: #{rank} {name} // {score} MORE': 'ACCESO TOP 50: #{rank} {name} // FALTAN {score}'
   }),
   ru: Object.freeze({
@@ -20,31 +20,31 @@ const COPY = Object.freeze({
     'Q / B PASS // HOLD: LOCK BUILD': 'Q / B ПАС // УДЕРЖ.: ЗАКРЕПИТЬ БИЛД', 'LOCK BUILD {percent}%': 'ЗАКРЕПИТЬ БИЛД {percent}%',
     'BUILD LOCKED': 'БИЛД ЗАКРЕПЛЁН', 'Current upgrades kept. Future Drafts disabled for this run.': 'Текущие улучшения сохранены. Дальнейшие драфты в этом забеге отключены.', 'BUILD LOCKED // NO MORE DRAFTS': 'БИЛД ЗАКРЕПЛЁН // ДРАФТОВ БОЛЬШЕ НЕТ',
     'HOLOGRAM TARGETS // CONTACT SAFE': 'ГОЛОЦЕЛИ // КОНТАКТ БЕЗОПАСЕН', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': 'ПОЛЁТ МАСТЕРСТВА: {pattern}\nРАЗБЕЙТЕ ГОЛОЦЕЛИ // КОНТАКТ БЕЗОПАСЕН',
-    'CPU RIVAL': 'CPU-СОПЕРНИК', 'STEAM PILOTS + CPU RIVALS': 'ПИЛОТЫ STEAM + CPU-СОПЕРНИКИ', 'PAGE {page}/{pages}': 'СТР. {page}/{pages}',
+    'CPU RIVAL': 'CPU-СОПЕРНИК', 'STEAM PILOTS + CPU RIVALS': 'ПИЛОТЫ STEAM + CPU-СОПЕРНИКИ', 'PAGE {page}/{pages}': 'СТР. {page}/{pages}', 'PILOT MANIFEST {start}-{end}': 'МАНИФЕСТ ПИЛОТОВ {start}-{end}', 'TOP 50 // RANKS {start}-{end} // {total}': 'ТОП-50 // МЕСТА {start}-{end} // {total}',
     'TOP 50 BREACHED': 'ТОП-50 ПРОБИТ', 'TOP 50 GATE': 'ПОРОГ ТОП-50', 'TOP 50 GATE: #{rank} {name} // {score} MORE': 'ПОРОГ ТОП-50: #{rank} {name} // ЕЩЁ {score}'
   }),
   'zh-CN': Object.freeze({
     'TOURS': '巡航', 'TOURS ×{count}': '巡航 ×{count}', 'Q / B PASS // HOLD: LOCK BUILD': 'Q / B 跳过 // 长按：锁定配置', 'LOCK BUILD {percent}%': '锁定配置 {percent}%',
     'BUILD LOCKED': '配置已锁定', 'Current upgrades kept. Future Drafts disabled for this run.': '保留当前升级。本次航程不再出现战术选秀。', 'BUILD LOCKED // NO MORE DRAFTS': '配置已锁定 // 不再选秀',
-    'HOLOGRAM TARGETS // CONTACT SAFE': '全息目标 // 接触安全', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': '技巧飞行：{pattern}\n击破全息目标 // 接触安全', 'CPU RIVAL': 'CPU 对手', 'STEAM PILOTS + CPU RIVALS': 'STEAM 飞行员 + CPU 对手', 'PAGE {page}/{pages}': '第 {page}/{pages} 页',
+    'HOLOGRAM TARGETS // CONTACT SAFE': '全息目标 // 接触安全', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': '技巧飞行：{pattern}\n击破全息目标 // 接触安全', 'CPU RIVAL': 'CPU 对手', 'STEAM PILOTS + CPU RIVALS': 'STEAM 飞行员 + CPU 对手', 'PAGE {page}/{pages}': '第 {page}/{pages} 页', 'PILOT MANIFEST {start}-{end}': '飞行员名册 {start}-{end}', 'TOP 50 // RANKS {start}-{end} // {total}': '前50 // 排名 {start}-{end} // {total}',
     'TOP 50 BREACHED': '已突破前50', 'TOP 50 GATE': '前50门槛', 'TOP 50 GATE: #{rank} {name} // {score} MORE': '前50门槛：#{rank} {name} // 还差 {score}'
   }),
   'pt-BR': Object.freeze({
     'TOURS': 'TURNÊS', 'TOURS ×{count}': 'TURNÊS ×{count}', 'Q / B PASS // HOLD: LOCK BUILD': 'Q / B PASSAR // SEGURE: TRAVAR BUILD', 'LOCK BUILD {percent}%': 'TRAVAR BUILD {percent}%',
     'BUILD LOCKED': 'BUILD TRAVADA', 'Current upgrades kept. Future Drafts disabled for this run.': 'Melhorias atuais mantidas. Próximos Drafts desativados nesta partida.', 'BUILD LOCKED // NO MORE DRAFTS': 'BUILD TRAVADA // SEM MAIS DRAFTS',
-    'HOLOGRAM TARGETS // CONTACT SAFE': 'ALVOS HOLOGRÁFICOS // CONTATO SEGURO', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': 'VOO DE HABILIDADE: {pattern}\nQUEBRE ALVOS HOLOGRÁFICOS // CONTATO SEGURO', 'CPU RIVAL': 'RIVAL CPU', 'STEAM PILOTS + CPU RIVALS': 'PILOTOS STEAM + RIVAIS CPU', 'PAGE {page}/{pages}': 'PÁGINA {page}/{pages}',
+    'HOLOGRAM TARGETS // CONTACT SAFE': 'ALVOS HOLOGRÁFICOS // CONTATO SEGURO', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': 'VOO DE HABILIDADE: {pattern}\nQUEBRE ALVOS HOLOGRÁFICOS // CONTATO SEGURO', 'CPU RIVAL': 'RIVAL CPU', 'STEAM PILOTS + CPU RIVALS': 'PILOTOS STEAM + RIVAIS CPU', 'PAGE {page}/{pages}': 'PÁGINA {page}/{pages}', 'PILOT MANIFEST {start}-{end}': 'MANIFESTO DE PILOTOS {start}-{end}', 'TOP 50 // RANKS {start}-{end} // {total}': 'TOP 50 // RANKS {start}-{end} // {total}',
     'TOP 50 BREACHED': 'TOP 50 ROMPIDO', 'TOP 50 GATE': 'PORTA DO TOP 50', 'TOP 50 GATE: #{rank} {name} // {score} MORE': 'PORTA DO TOP 50: #{rank} {name} // MAIS {score}'
   }),
   ko: Object.freeze({
     'TOURS': '투어', 'TOURS ×{count}': '투어 ×{count}', 'Q / B PASS // HOLD: LOCK BUILD': 'Q / B 패스 // 길게: 빌드 잠금', 'LOCK BUILD {percent}%': '빌드 잠금 {percent}%',
     'BUILD LOCKED': '빌드 잠금', 'Current upgrades kept. Future Drafts disabled for this run.': '현재 업그레이드를 유지합니다. 이번 런의 이후 드래프트는 비활성화됩니다.', 'BUILD LOCKED // NO MORE DRAFTS': '빌드 잠금 // 이후 드래프트 없음',
-    'HOLOGRAM TARGETS // CONTACT SAFE': '홀로그램 표적 // 접촉 안전', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': '스킬 플라이트: {pattern}\n홀로그램 표적 파괴 // 접촉 안전', 'CPU RIVAL': 'CPU 라이벌', 'STEAM PILOTS + CPU RIVALS': 'STEAM 파일럿 + CPU 라이벌', 'PAGE {page}/{pages}': '페이지 {page}/{pages}',
+    'HOLOGRAM TARGETS // CONTACT SAFE': '홀로그램 표적 // 접촉 안전', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': '스킬 플라이트: {pattern}\n홀로그램 표적 파괴 // 접촉 안전', 'CPU RIVAL': 'CPU 라이벌', 'STEAM PILOTS + CPU RIVALS': 'STEAM 파일럿 + CPU 라이벌', 'PAGE {page}/{pages}': '페이지 {page}/{pages}', 'PILOT MANIFEST {start}-{end}': '파일럿 목록 {start}-{end}', 'TOP 50 // RANKS {start}-{end} // {total}': 'TOP 50 // 순위 {start}-{end} // {total}',
     'TOP 50 BREACHED': 'TOP 50 돌파', 'TOP 50 GATE': 'TOP 50 관문', 'TOP 50 GATE: #{rank} {name} // {score} MORE': 'TOP 50 관문: #{rank} {name} // {score} 더'
   }),
   ja: Object.freeze({
     'TOURS': 'ツアー', 'TOURS ×{count}': 'ツアー ×{count}', 'Q / B PASS // HOLD: LOCK BUILD': 'Q / B パス // 長押し：ビルド固定', 'LOCK BUILD {percent}%': 'ビルド固定 {percent}%',
     'BUILD LOCKED': 'ビルド固定', 'Current upgrades kept. Future Drafts disabled for this run.': '現在のアップグレードを維持し、このランの以降のドラフトを無効にします。', 'BUILD LOCKED // NO MORE DRAFTS': 'ビルド固定 // 以降ドラフトなし',
-    'HOLOGRAM TARGETS // CONTACT SAFE': 'ホログラム標的 // 接触安全', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': 'スキルフライト：{pattern}\nホログラム標的を破壊 // 接触安全', 'CPU RIVAL': 'CPUライバル', 'STEAM PILOTS + CPU RIVALS': 'STEAMパイロット + CPUライバル', 'PAGE {page}/{pages}': 'ページ {page}/{pages}',
+    'HOLOGRAM TARGETS // CONTACT SAFE': 'ホログラム標的 // 接触安全', 'SKILL FLIGHT: {pattern}\nBREAK HOLOGRAM TARGETS // CONTACT SAFE': 'スキルフライト：{pattern}\nホログラム標的を破壊 // 接触安全', 'CPU RIVAL': 'CPUライバル', 'STEAM PILOTS + CPU RIVALS': 'STEAMパイロット + CPUライバル', 'PAGE {page}/{pages}': 'ページ {page}/{pages}', 'PILOT MANIFEST {start}-{end}': 'パイロット名簿 {start}-{end}', 'TOP 50 // RANKS {start}-{end} // {total}': 'トップ50 // 順位 {start}-{end} // {total}',
     'TOP 50 BREACHED': 'トップ50突破', 'TOP 50 GATE': 'トップ50ゲート', 'TOP 50 GATE: #{rank} {name} // {score} MORE': 'トップ50ゲート: #{rank} {name} // あと {score}'
   })
 });

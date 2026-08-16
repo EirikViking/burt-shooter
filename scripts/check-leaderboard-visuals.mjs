@@ -161,6 +161,9 @@ async function openLeaderboard(page, viewport) {
       tableMetrics: scene?.tableMetrics || null,
       manifestRanges: scene?.manifestRanges || [],
       rows: scene?.rowLayoutDebug || [],
+      pageRange: scene?.leaderboardPageRange || null,
+      pageSize: scene?.leaderboardPageSize || 0,
+      unrendered: scene?.unrenderedLeaderboardEntries || 0,
       highlightedRows: (scene?.rowLayoutDebug || []).filter((row) => row.featured).map((row) => row.index),
       rowChildren: scene?.rowsContainer?.children?.length || 0,
       title: scene?.title?.text || ''
@@ -232,7 +235,10 @@ try {
       pageCount: scene.leaderboardPageCount,
       statsText: scene.statsText?.text || '',
       manifestRanges: scene.manifestRanges || [],
-      rows: scene.rowLayoutDebug || []
+      rows: scene.rowLayoutDebug || [],
+      pageRange: scene.leaderboardPageRange || null,
+      pageSize: scene.leaderboardPageSize || 0,
+      unrendered: scene.unrenderedLeaderboardEntries || 0
     };
   });
   await page.waitForTimeout(250);
@@ -281,6 +287,8 @@ try {
       result.state.rows?.[2]?.careerRankLabel !== '1.23e99' ? `${result.viewport}: 100-digit career rank did not compact to 1.23e99` : null,
       result.viewport !== 'mobile' && (result.state.rows?.length || 0) > 50 ? `${result.viewport}: desktop leaderboard exceeded top-50 cap` : null,
       result.viewport === 'mobile' && (result.state.rows?.length || 0) > 10 ? `${result.viewport}: mobile leaderboard exceeded 10 visible rows` : null,
+      result.state.unrendered > 0 ? `${result.viewport}: ${result.state.unrendered} leaderboard entries were not rendered on the active page` : null,
+      result.state.pageRange?.total !== 50 ? `${result.viewport}: page chrome did not disclose the full Top 50 roster` : null,
       (result.state.rows?.length || 0) >= currentPlayerIndex + 1 && !result.state.highlightedRows?.includes(currentPlayerIndex) ? `${result.viewport}: visible current player row was not highlighted` : null,
       ...((result.state.manifestRanges || []).map((range) => {
         const actual = (result.state.rows || []).filter((row) => {
@@ -322,9 +330,11 @@ try {
     cpuPageState.rows.length !== 10 || !cpuPageState.rows.every((row) => row.cpuRival) ? 'wide page 3 must show ten disclosed CPU rivals' : null,
     !cpuPageState.manifestRanges.every((range) => /CPU RIVALS/i.test(range.label)) ? 'wide CPU page headers must disclose CPU rivals' : null,
     !/PAGE 3\/3/i.test(cpuPageState.statsText) ? 'wide CPU page must show PAGE 3/3' : null,
+    cpuPageState.unrendered > 0 ? 'wide CPU page dropped entries outside the rendered rows' : null,
+    cpuPageState.pageRange?.start !== 41 || cpuPageState.pageRange?.end !== 50 || cpuPageState.pageRange?.total !== 50 ? 'wide CPU page must disclose ranks 41-50 of Top 50' : null,
     globalWide.title !== 'STEAM SCORE DECK' || !/VERIFIED PILOTS/i.test(globalWide.subtitle) ? 'global leaderboard identity is not explicit' : null,
     mobile.rows.length !== 10 ? `mobile leaderboard must render ten actual rows, got ${mobile.rows.length}` : null,
-    !/STEAM SCORE DECK/i.test(mobile.title) || !/PAGE 1\/5/i.test(mobile.statsText) ? 'mobile global identity or page indicator is missing' : null
+    !/STEAM SCORE DECK/i.test(mobile.title) || !/PAGE 1\/5/i.test(mobile.statsText) || !/TOP 50/i.test(mobile.statsText) ? 'mobile global identity or Top-50 page indicator is missing' : null
   ].filter(Boolean);
 
   const report = { ok: failures.length === 0, baseUrl, results, globalWide, globalWideShot, mobile, mobileShot, cpuPageState, cpuPageShot, tacticalRunButton, tacticalButtonShot, failures, pageErrors, consoleErrors };

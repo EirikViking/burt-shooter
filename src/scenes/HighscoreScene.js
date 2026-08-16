@@ -56,6 +56,20 @@ function fitTextToWidth(textObject, maxWidth, minFontSize = 9) {
   }
 }
 
+function getLeaderboardPageRange(totalEntries = 0, page = 0, pageSize = 1) {
+  const total = Math.max(0, Math.floor(Number(totalEntries) || 0));
+  const size = Math.max(1, Math.floor(Number(pageSize) || 1));
+  const safePage = Math.max(0, Math.floor(Number(page) || 0));
+  if (!total) return { start: 0, end: 0, total, page: safePage };
+  const start = safePage * size + 1;
+  return {
+    start,
+    end: Math.min(total, (safePage + 1) * size),
+    total,
+    page: safePage
+  };
+}
+
 function hasLeaderboardLevelColumn(view = LeaderboardView.GLOBAL) {
   return view === LeaderboardView.SECTOR || view === LeaderboardView.LOCAL;
 }
@@ -114,6 +128,9 @@ export class HighscoreScene {
     this.nextPageBtn = null;
     this.leaderboardPage = 0;
     this.leaderboardPageCount = 1;
+    this.leaderboardPageSize = 20;
+    this.leaderboardPageRange = { start: 0, end: 0, total: 0, page: 0 };
+    this.unrenderedLeaderboardEntries = 0;
     this.tabButtons = {};
     this.leaderboardTabs = [];
     this.leaderboardAdapter = null;
@@ -1078,6 +1095,7 @@ export class HighscoreScene {
     this.rowLayoutDebug = [];
     this.manifestRanges = [];
     this.playerHighlightEffects = [];
+    this.unrenderedLeaderboardEntries = 0;
     const isMobile = layout.isMobile || layout.width < 720;
     const metrics = this.tableMetrics || {
       x: layout.padding,
@@ -1096,20 +1114,15 @@ export class HighscoreScene {
       let entriesToDisplay = [...this.entriesNormalized];
 
       const desktopTwoColumn = !isMobile && layout.width >= DESKTOP_TWO_COLUMN_MIN_WIDTH;
-      const pageSize = desktopTwoColumn ? 20 : 10;
-      this.leaderboardPageCount = Math.max(1, Math.ceil(entriesToDisplay.length / pageSize));
-      this.leaderboardPage = Math.max(0, Math.min(this.leaderboardPageCount - 1, this.leaderboardPage));
-      const pageOffset = this.leaderboardPage * pageSize;
-      entriesToDisplay = entriesToDisplay.slice(pageOffset, pageOffset + pageSize);
-      const displayLimit = pageSize;
-      const visibleEntryCount = entriesToDisplay.length;
+      const requestedPageSize = desktopTwoColumn ? 20 : 10;
+      let pageSize = requestedPageSize;
+      let pageOffset = 0;
+      let displayLimit = pageSize;
+      let visibleEntryCount = 0;
       const columnCount = desktopTwoColumn
         ? 2
         : 1;
       const compactDesktopGrid = desktopTwoColumn && columnCount >= 3;
-      const rowsPerColumnTarget = desktopTwoColumn
-        ? Math.ceil(entriesToDisplay.length / columnCount)
-        : Math.min(displayLimit, entriesToDisplay.length || displayLimit);
       const columnGap = desktopTwoColumn
         ? (compactDesktopGrid ? (layout.width < 1500 ? 10 : 16) : (layout.width < 1500 ? 20 : 28))
         : 0;
@@ -1121,11 +1134,41 @@ export class HighscoreScene {
       const availableRowsHeight = Math.max(120, rowsBottom - rowsBaseY);
       const minRowHeight = isMobile ? 49 : 52;
       const maxRowHeight = isMobile ? 58 : (desktopTwoColumn ? 58 : (layout.height >= 880 ? 68 : 62));
-      const visibleTargetRows = Math.max(1, Math.min(rowsPerColumnTarget, entriesToDisplay.length || rowsPerColumnTarget));
-      const rowSpace = Math.max(minRowHeight, availableRowsHeight / visibleTargetRows);
-      const rowHeight = Math.max(minRowHeight, Math.min(maxRowHeight, rowSpace));
-      const maxRowsPerColumn = Math.max(4, Math.min(rowsPerColumnTarget, Math.floor((availableRowsHeight + 8) / rowHeight)));
+      let rowsPerColumnTarget = desktopTwoColumn
+        ? Math.ceil(pageSize / columnCount)
+        : pageSize;
+      let rowHeight = minRowHeight;
+      let maxRowsPerColumn = 1;
+
+      // Work out how many rows the viewport can really hold before slicing the
+      // page. If a short window cannot fit the nominal page, shrink the page
+      // to the measured capacity so every advertised rank is rendered and
+      // reachable instead of silently disappearing below the fold.
+      for (let pass = 0; pass < 3; pass += 1) {
+        this.leaderboardPageCount = Math.max(1, Math.ceil(this.entriesNormalized.length / pageSize));
+        this.leaderboardPage = Math.max(0, Math.min(this.leaderboardPageCount - 1, this.leaderboardPage));
+        pageOffset = this.leaderboardPage * pageSize;
+        entriesToDisplay = this.entriesNormalized.slice(pageOffset, pageOffset + pageSize);
+        displayLimit = pageSize;
+        visibleEntryCount = entriesToDisplay.length;
+        rowsPerColumnTarget = desktopTwoColumn
+          ? Math.max(1, Math.ceil(entriesToDisplay.length / columnCount))
+          : Math.max(1, Math.min(displayLimit, entriesToDisplay.length || displayLimit));
+        const visibleTargetRows = Math.max(1, Math.min(rowsPerColumnTarget, entriesToDisplay.length || rowsPerColumnTarget));
+        const rowSpace = Math.max(minRowHeight, availableRowsHeight / visibleTargetRows);
+        rowHeight = Math.max(minRowHeight, Math.min(maxRowHeight, rowSpace));
+        maxRowsPerColumn = Math.max(1, Math.min(rowsPerColumnTarget, Math.floor((availableRowsHeight + 8) / rowHeight)));
+        const measuredPageSize = maxRowsPerColumn * columnCount;
+        // Do not let a short final page redefine the global page size. The
+        // last page may contain fewer entries by design; it still belongs to
+        // the same Top-50 pagination (for example ranks 41-50 on page 3/3).
+        if (entriesToDisplay.length < pageSize || measuredPageSize >= pageSize || pageSize <= columnCount) break;
+        pageSize = Math.max(columnCount, measuredPageSize);
+      }
+      this.leaderboardPageSize = pageSize;
+      this.leaderboardPageRange = getLeaderboardPageRange(this.entriesNormalized.length, this.leaderboardPage, pageSize);
       const maxRows = Math.max(4, Math.min(displayLimit, entriesToDisplay.length, maxRowsPerColumn * columnCount));
+      this.unrenderedLeaderboardEntries = Math.max(0, entriesToDisplay.length - maxRows);
       const rowStyle = {
         fontFamily: FONT_ARCADE,
         fontSize: isMobile ? 15 : (compactDesktopGrid ? 15 : (layout.height < 820 ? 15 : 17)),
@@ -1184,6 +1227,11 @@ export class HighscoreScene {
 
       for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
         const geometry = getColumnGeometry(columnIndex);
+        const columnEntries = entriesToDisplay.slice(
+          columnIndex * maxRowsPerColumn,
+          Math.min(entriesToDisplay.length, (columnIndex + 1) * maxRowsPerColumn)
+        );
+        if (!columnEntries.length) continue;
         const headerBar = new PIXI.Graphics();
         headerBar.rect(geometry.rowX, startY + headerHeight - 3, geometry.rowW, 1);
         headerBar.fill({ color: 0x7fffd8, alpha: 0.42 });
@@ -1194,22 +1242,16 @@ export class HighscoreScene {
         // The viewport can fit fewer than the nominal 20 rows per column.
         // Describe the ranks that are actually rendered, never the request cap.
         const manifestStart = pageOffset + columnIndex * maxRowsPerColumn + 1;
-        const manifestEnd = Math.min(pageOffset + entriesToDisplay.length, manifestStart + maxRowsPerColumn - 1);
-        const columnEntries = entriesToDisplay.slice(
-          columnIndex * maxRowsPerColumn,
-          Math.min(entriesToDisplay.length, (columnIndex + 1) * maxRowsPerColumn)
-        );
+        const manifestEnd = manifestStart + columnEntries.length - 1;
         const cpuOnlyColumn = columnEntries.length > 0 && columnEntries.every((entry) => entry?.isCpuRival === true);
         const manifestLabel = cpuOnlyColumn
-          ? translateText('CPU RIVALS // NOT STEAM RANKS')
-          : desktopTwoColumn
-            ? `PILOT MANIFEST ${manifestStart}-${manifestEnd}`
-            : 'PILOT MANIFEST';
+          ? `${translateText('CPU RIVALS // NOT STEAM RANKS')} // ${manifestStart}-${manifestEnd}`
+          : translateText('PILOT MANIFEST {start}-{end}', { start: manifestStart, end: manifestEnd });
         this.manifestRanges.push({
           column: columnIndex,
           start: manifestStart,
           end: manifestEnd,
-          renderedCount: Math.max(0, Math.min(maxRowsPerColumn, pageOffset + entriesToDisplay.length - manifestStart + 1)),
+          renderedCount: columnEntries.length,
           label: manifestLabel
         });
         const headers = [
@@ -1525,14 +1567,6 @@ export class HighscoreScene {
           }
         });
       });
-
-      if (entriesToDisplay.length > maxRows) {
-        const moreGeometry = getColumnGeometry(columnCount - 1);
-        const more = createText('...', rowStyle);
-        more.x = moreGeometry.columns.name;
-        more.y = rowsBaseY + rowHeight * Math.min(maxRowsPerColumn, maxRows) + 3;
-        this.rowsContainer.addChild(more);
-      }
 
       this.fadeInRows();
       this.previousPageBtn.visible = this.leaderboardPageCount > 1;
@@ -1876,7 +1910,7 @@ export class HighscoreScene {
     this.statsDeck.clear();
     const metrics = this.tableMetrics;
     const deckWidth = metrics.innerWidth;
-    const deckHeight = layout.isMobile ? 34 : 22;
+    const deckHeight = layout.isMobile ? 48 : 28;
     const x = metrics.innerX;
     const y = metrics.footerY - deckHeight / 2;
     const loadedCount = this.status === 'LOADED' ? this.entries.length : 0;
@@ -1922,11 +1956,17 @@ export class HighscoreScene {
       page: this.leaderboardPage + 1,
       pages: this.leaderboardPageCount
     });
+    const pageRange = this.leaderboardPageRange || getLeaderboardPageRange(presentationCount, this.leaderboardPage, this.leaderboardPageSize);
+    const top50Label = translateText('TOP 50 // RANKS {start}-{end} // {total}', {
+      start: pageRange.start,
+      end: pageRange.end,
+      total: pageRange.total || LEADERBOARD_DISPLAY_LIMIT
+    });
     this.statsText.text = layout.isMobile
-      ? `${rosterLegend}\n${pageLabel} // ${bestLabel} ${topScore}`
-      : `TINYFOUNDRY GAMES // ${translatedSyncLabel} // ${countLabel} // ${rosterLegend} // ${pageLabel} // ${bestLabel} ${topScore}`;
-      this.statsText.style.fontSize = layout.isMobile ? 13 : 14;
-    this.statsText.style.lineHeight = layout.isMobile ? 15 : 16;
+      ? `${top50Label}\n${rosterLegend} // ${pageLabel}`
+      : `${top50Label} // ${translatedSyncLabel} // ${countLabel} // ${rosterLegend} // ${pageLabel} // ${bestLabel} ${topScore}`;
+    this.statsText.style.fontSize = layout.isMobile ? 12 : 15;
+    this.statsText.style.lineHeight = layout.isMobile ? 16 : 18;
     this.statsText.anchor.set(0, 0.5);
     this.statsText.style.align = 'left';
     this.statsText.x = x;
