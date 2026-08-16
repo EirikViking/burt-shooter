@@ -73,6 +73,7 @@
     "check:invulnerability-window-readability": "node scripts/check-invulnerability-window-readability.mjs",
     "check:low-hanging-fun": "node scripts/check-low-hanging-fun.mjs",
     "check:retention-presentation": "node scripts/check-retention-presentation.mjs",
+    "check:first-run-notification-sovereignty": "node scripts/check-first-run-notification-sovereignty.mjs",
     "check:first-tactical-draft-readability": "node scripts/audit-first-tactical-draft.mjs",
     "check:post-draft-reentry": "node scripts/audit-post-draft-reentry.mjs",
     "check:boss-clear-to-draft": "node scripts/audit-boss-clear-to-draft.mjs",
