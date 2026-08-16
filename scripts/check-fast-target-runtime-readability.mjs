@@ -163,11 +163,11 @@ try {
   if (!state.ok) failures.push(state.reason || 'state setup failed');
   if (!state.usingGeneratedEnemyTexture) failures.push(`fast target did not use a real generated enemy texture: ${JSON.stringify(state.profile)}`);
   if (!state.hasBodySpriteTexture || state.bodySize?.width < 20 || state.bodySize?.height < 20) failures.push(`fast target body texture missing/small: ${JSON.stringify(state.bodySize)}`);
-  if (!state.layerVisible || !state.threatFrame?.visible) failures.push(`fast threat frame not visible: ${JSON.stringify(state.threatFrame)}`);
-  if (state.threatFrame?.tier !== 'fast') failures.push(`expected fast threat-frame tier: ${JSON.stringify(state.threatFrame)}`);
-  if ((state.threatFrame?.markerCount || 0) < 4) failures.push(`fast marker count too low: ${JSON.stringify(state.threatFrame)}`);
-  if ((state.threatFrame?.radius || 0) < 32) failures.push(`fast frame radius too small: ${JSON.stringify(state.threatFrame)}`);
-  if ((state.threatFrame?.motionTrailCount || 0) < 3) failures.push(`fast motion trails missing: ${JSON.stringify(state.threatFrame)}`);
+  if (state.layerVisible || state.threatFrame?.visible) failures.push(`ordinary fast target retained a persistent threat ring: ${JSON.stringify(state.threatFrame)}`);
+  if (state.threatFrame?.tier != null) failures.push(`ordinary fast target should rely on motion/action telegraphs, not a threat-frame tier: ${JSON.stringify(state.threatFrame)}`);
+  if ((state.threatFrame?.orbitalPipCount || 0) !== 0 || (state.threatFrame?.warningBracketCount || 0) !== 0 || (state.threatFrame?.vectorArrowCount || 0) !== 0) {
+    failures.push(`ordinary fast target left persistent threat-frame markers: ${JSON.stringify(state.threatFrame)}`);
+  }
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 
@@ -182,7 +182,7 @@ try {
   };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   assert(report.ok, `[fast-target-runtime-readability] ${failures.join('; ')}`);
-  console.log(`[fast-target-runtime-readability] PASS screenshot=${screenshot}`);
+  console.log(`[fast-target-runtime-readability] PASS ordinary fast mover uses readable body/motion without a persistent bullet-obscuring ring screenshot=${screenshot}`);
 } finally {
   await browser.close();
   if (server) server.kill();

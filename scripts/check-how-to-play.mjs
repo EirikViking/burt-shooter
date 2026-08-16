@@ -26,7 +26,7 @@ const expectedRows = {
   modes: ['DAILY CHALLENGE', 'MAYHEM PURE', 'MAYHEM TACTICAL', 'SCOUT RUN', 'SECTOR RUN', 'OVERRUN'],
   tactics: ['SIDE DIRECTIVES', 'TACTICAL DRAFT', 'FUSION PROTOCOLS', 'SCORE ROUTE & BANS', 'DRAFT TOOLS', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE'],
   intel: ['ACE BOUNTIES', 'EXTINCTION-CLASS CONTACT', 'ELITE SIGNALS', 'CABINET SKILL FLIGHT', 'BOSS WAVES'],
-  career: ['PILOT ORDERS', 'SHIP HANGAR', 'THREAT CODEX', 'RECORDS & LEADERBOARDS']
+  career: ['Career Rank', 'SHIP HANGAR', 'THREAT CODEX', 'RECORDS & LEADERBOARDS']
 };
 
 function timestamp() {
@@ -184,7 +184,8 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('touching or missing them cannot damage the ship or break no-hit status'), `${label} should explain Skill Flight safety`);
   }
   if (expectedPage === 'career') {
-    assert(joined.includes('OPTIONAL MAYHEM DRILLS'), `${label} should explain Pilot Orders`);
+    assert(joined.includes('ENDLESS STATUS // REWARDS CAP AT 40'), `${label} should explain endless Career Rank without extending rewards`);
+    assert(joined.includes('Career Rank keeps climbing forever'), `${label} should explain endless Career Rank status`);
     assert(joined.includes('HULLS // TRAITS // MASTERY MEDALS'), `${label} should explain ship mastery`);
     assert(joined.includes('Ranked Mayhem earns Bronze, Silver, and Gold ship medals'), `${label} should explain ranked mastery goals`);
     assert(joined.includes('Tours count legitimate ten-sector flights in Mayhem, Overrun, or Sector Run'), `${label} should explain the separate Tour counter`);
