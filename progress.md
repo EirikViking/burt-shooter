@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-08-16 First-run HUD progressive-disclosure review
+
+- Current goal: continue evidence-led retention improvements, always review visual changes with ChatGPT Pro, and keep the private three-hour Steam candidate cadence gated by a clean release package.
+- Clean isolated worktree `D:\vibe-coding-e\nova-swarm-first-run-hud-20260816-b19f`, branch `codex/first-run-hud-20260816-b19f`, baseline `de70b1c6d32a3797a9a4bb9acb3233a253903c30`.
+- Fresh-profile retention suite passed all six scenarios. Exact screenshots show the contextual MOVE+SHOOT, PHASE, and FOCUS lessons are clear, but the first MOVE+SHOOT frame exposes unrelated Directive, Tours, and ship-trait metadata.
+- ChatGPT Pro selected a narrowly scoped progressive-disclosure slice: hide only Directive metadata, Tours, and the full trait chip during the canonical first-run MOVE+SHOOT stage; preserve Rank, Score, mission frame/status, Lives, sector identity, player and all gameplay visuals. Restore on the existing action/fallback boundary, target 160ms, immediate under Reduced Motion. PHASE/FOCUS and all returning runs must use the complete ordinary HUD.
+- Pro has not approved production implementation yet. It requires exact test-only mock captures at 1280x720 and 960x640, keyboard/controller, restoration midpoint/completion, PHASE/FOCUS full HUD, and one longest-locale opening. `scripts/audit-first-run-hud-disclosure.mjs` was added solely to generate that evidence; production behavior remains unchanged.
+
 ## 2026-08-15 Temporary powerup HUD containment and localization
 
 - ChatGPT Pro selected first timed-powerup pickup-to-expiry comprehension as the next bounded retention audit. The existing pickup confirmation and world-pickup expiry cues passed, but the active-powerup HUD reproduced two deterministic text collisions: compact `NOVA BLOOM` label/status bands overlapped by 1 px and the status intruded 2 px into its progress rail; normal desktop metadata intruded 4 px into the rail.
@@ -3088,3 +3096,12 @@ Original request: continue improving the current non-Unity game and choose three
 - ChatGPT Pro rejected a one-line compact fix because it would shrink primary text, approved the two-line geometry contract, inspected the exact final desktop/Russian/Spanish captures, and returned `APPROVED 100%`.
 - The attempted npm alias `check:late-game-start-pressure-runtime` does not exist; the repository's exact direct script `node scripts/check-late-game-start-pressure-runtime.mjs` is the applicable command and is reported as such.
 - No gameplay balance, normal-mode behavior, player-facing copy, localization source, Steamworks state, upload, deployment, or publication changed.
+
+## 2026-08-16 First-run HUD progressive disclosure
+
+- The existing first-run retention flow already teaches MOVE + SHOOT before enemy release, then waits for visible projectile pressure before PHASE and meaningful density before FOCUS. Exact 1280x720 keyboard and 960x640 controller captures showed that three unrelated secondary HUD surfaces still competed with that first action.
+- A test-only eight-state prototype hid the Directive metadata/rail, `TOURS ×0` medals/tally, and the complete Trait/Dodge-Pulse chip while retaining Rank, Score, Mission, Lives, sector identity, gameplay, and the MOVE + SHOOT prompt. ChatGPT Pro inspected all exact captures and returned `PRODUCTION IMPLEMENTATION APPROVED`.
+- Production now suppresses exactly those three surfaces from the first constructed frame of the canonical `totalRuns === 0` opening. Their underlying state continues updating and their display objects cannot intercept input.
+- The existing movement-plus-fire completion or 4.08-second fallback starts one restoration after enemy release is scheduled. Normal motion restores exact production opacity over 160 ms; Reduced Motion restores immediately. PHASE, FOCUS, returning runs, and experiments use the complete ordinary HUD.
+- The strengthened retention suite passes seven scenarios, including action/fallback restoration, keyboard/controller, pre-learned actions, returning parity, Reduced Motion, and all eight locales at 1920x1080, 1280x720, and 960x640. The production-backed eight-capture visual audit passes with zero page errors and no runtime mock.
+- No copy, localization, gameplay clock, input, enemy timing, RNG, score, saves, achievements, leaderboards, difficulty, combat behavior, Steamworks state, upload, deployment, or publication changed.

@@ -64,14 +64,15 @@ function findChrome() {
   ].filter(Boolean).find((candidate) => existsSync(candidate));
 }
 
-async function seedProfile(page, totalRuns, locale = 'en', uiScale = 1) {
+async function seedProfile(page, totalRuns, locale = 'en', uiScale = 1, { reducedMotion = false } = {}) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.evaluate(({ runs, language, scale }) => {
+  await page.evaluate(({ runs, language, scale, reduced }) => {
     localStorage.clear();
     localStorage.setItem('novaSwarm.languagePreference.v1', language);
     localStorage.setItem('nova_ui_scale_v1', String(scale));
+    localStorage.setItem('nova_accessibility_reduced_motion', reduced ? '1' : '0');
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({ version: 1, totalRuns: runs }));
-  }, { runs: totalRuns, language: locale, scale: uiScale });
+  }, { runs: totalRuns, language: locale, scale: uiScale, reduced: reducedMotion });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'menu', null, { timeout: 30000 });
 }
@@ -85,6 +86,30 @@ async function startRanked(page, inputDevice = 'keyboard') {
 
 async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+}
+
+function assertDisclosureHidden(disclosure, context) {
+  assert.equal(disclosure?.phase, 'hidden', `${context}: disclosure phase`);
+  assert.equal(disclosure?.progress, 0, `${context}: disclosure progress`);
+  assert.equal(disclosure?.restoreCount, 0, `${context}: restore count`);
+  const targets = Object.values(disclosure?.targets || {});
+  assert.equal(targets.length, 6, `${context}: exact hidden target count`);
+  for (const target of targets) {
+    assert.equal(target.renderable, false, `${context}: hidden target must not render`);
+    assert.equal(target.alpha, 0, `${context}: hidden target alpha`);
+    assert.equal(target.eventMode, 'none', `${context}: hidden target cannot intercept input`);
+  }
+}
+
+function assertDisclosureRestored(disclosure, context) {
+  assert.equal(disclosure?.phase, 'restored', `${context}: disclosure phase`);
+  assert.equal(disclosure?.progress, 1, `${context}: disclosure progress`);
+  assert.equal(disclosure?.restoreCount, 1, `${context}: restore exactly once`);
+  for (const target of Object.values(disclosure?.targets || {})) {
+    assert.equal(target.renderable, true, `${context}: restored target must render`);
+    assert.equal(target.alpha, target.productionAlpha, `${context}: exact production alpha`);
+    assert.equal(target.eventMode, 'none', `${context}: restored visual remains non-interactive`);
+  }
 }
 
 async function driveFocusDensity(page, { activeCount, target = 0, level = target, advanceMs = 0 } = {}) {
@@ -164,6 +189,9 @@ try {
   assert.equal(openingRuntime.enemies, 0, 'enemies must remain held before the opening beat is demonstrated');
   assert.equal(openingRuntime.pendingEnemyStart, true, 'opening beat must own a finite enemy-start hold');
   assert.equal(openingRuntime.experimentPrompt, null, 'experimental runs must not inherit normal first-run onboarding');
+  assertDisclosureHidden(opening.toast.firstRunOnboarding.hudDisclosure, 'keyboard opening');
+  assert.ok(opening.toast.firstRunOnboarding.hudDisclosure.targets.directiveText.visible, 'Directive state still updates while hidden');
+  assert.ok(opening.toast.firstRunOnboarding.hudDisclosure.targets.traitGroup.visible, 'Trait state still updates while hidden');
   const openingShot = path.join(outputDir, 'keyboard-opening-1280x720.png');
   await keyboard.screenshot({ path: openingShot, fullPage: true });
 
@@ -176,9 +204,19 @@ try {
   assert.ok(actionElapsedMs < 2500, `demonstrated opening actions should dismiss early (${actionElapsedMs}ms)`);
   await keyboard.evaluate(() => { delete window.__burtKeyboardOverride; });
   const afterOpening = await readState(keyboard);
+  assert.equal(afterOpening.toast.firstRunOnboarding.hudDisclosure.restoreCount, 1, 'action completion starts one restoration');
+  assert.ok(['restoring', 'restored'].includes(afterOpening.toast.firstRunOnboarding.hudDisclosure.phase));
   assert.equal((afterOpening.toast?.active || []).some((toast) => toast.type === 'firstRunControlsOpening'), false);
   assert.equal((afterOpening.toast?.active || []).some((toast) => toast.type === 'firstRunControlsPhase'), false, 'Phase lesson must wait for a visible hostile projectile');
   assert.equal((afterOpening.toast?.active || []).some((toast) => toast.type === 'firstRunControlsFocus'), false, 'Focus lesson must wait for meaningful friendly density');
+  await keyboard.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').toast?.firstRunOnboarding?.hudDisclosure?.phase === 'restored', null, { timeout: 1000 });
+  const restoredAfterOpening = await readState(keyboard);
+  assertDisclosureRestored(restoredAfterOpening.toast.firstRunOnboarding.hudDisclosure, 'keyboard action restoration');
+  assert.ok(
+    restoredAfterOpening.toast.firstRunOnboarding.hudDisclosure.restoreCompletedAtMs
+      - restoredAfterOpening.toast.firstRunOnboarding.hudDisclosure.restoreStartedAtMs <= 220,
+    'normal restoration must complete within deterministic frame tolerance'
+  );
 
   await keyboard.evaluate(() => {
     const play = window.__game?.scenes?.play;
@@ -292,7 +330,11 @@ try {
   }, null, { timeout: 5200 });
   const fallbackElapsedMs = Date.now() - fallbackStartedAt;
   assert.ok(fallbackElapsedMs >= 3300 && fallbackElapsedMs <= 5000, `opening fallback must remain finite and near 3.8s (${fallbackElapsedMs}ms)`);
-  report.scenarios.push({ id: 'opening-fallback', elapsedMs: fallbackElapsedMs });
+  await fallback.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').toast?.firstRunOnboarding?.hudDisclosure?.phase === 'restored', null, { timeout: 1000 });
+  const fallbackState = await readState(fallback);
+  assertDisclosureRestored(fallbackState.toast.firstRunOnboarding.hudDisclosure, 'fallback restoration');
+  assert.equal(fallbackState.toast.firstRunOnboarding.hudDisclosure.restoreReason, 'opening_timeout');
+  report.scenarios.push({ id: 'opening-fallback', elapsedMs: fallbackElapsedMs, disclosure: fallbackState.toast.firstRunOnboarding.hudDisclosure });
   await fallback.close();
 
   const controller = await browser.newPage({ viewport: { width: 960, height: 640 } });
@@ -310,6 +352,7 @@ try {
   const controllerState = await readState(controller);
   const controllerToast = controllerState.toast.active.find((toast) => toast.type === 'firstRunControlsOpening');
   assert.match(controllerToast?.message || '', /MOVE.*STICK \/ D-PAD.*SHOOT.*A \/ RT/);
+  assertDisclosureHidden(controllerState.toast.firstRunOnboarding.hudDisclosure, 'controller opening');
   const controllerShot = path.join(outputDir, 'controller-opening-960x640.png');
   await controller.screenshot({ path: controllerShot, fullPage: true });
   await controller.evaluate(() => {
@@ -324,6 +367,8 @@ try {
   });
   await controller.waitForFunction(() => (JSON.parse(window.render_game_to_text?.() || '{}').toast?.active || []).some((toast) => toast.type === 'firstRunControlsPhase'), null, { timeout: 3000 });
   const controllerPhase = await readState(controller);
+  await controller.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').toast?.firstRunOnboarding?.hudDisclosure?.phase === 'restored', null, { timeout: 1000 });
+  assertDisclosureRestored((await readState(controller)).toast.firstRunOnboarding.hudDisclosure, 'controller restoration');
   assert.match(controllerPhase.toast.active.find((toast) => toast.type === 'firstRunControlsPhase')?.message || '', /PHASE.*B \/ LB/);
   assert.doesNotMatch(controllerPhase.toast.active.find((toast) => toast.type === 'firstRunControlsPhase')?.message || '', /FOCUS|LT/);
   await controller.evaluate(() => {
@@ -374,6 +419,7 @@ try {
   const returningState = await readState(returning);
   assert.equal(returningState.toast?.firstRunOnboarding?.complete, true);
   assert.equal((returningState.toast?.active || []).some((toast) => /firstRunControls/.test(toast.type || '')), false, 'returning runs must preserve shipped presentation');
+  assert.equal(returningState.toast?.firstRunOnboarding?.hudDisclosure?.phase, 'ordinary', 'returning runs never create disclosure state');
   report.scenarios.push({ id: 'returning-run-parity' });
   await returning.close();
 
@@ -401,6 +447,7 @@ try {
       await seedProfile(page, 0, locale, 2);
       await startRanked(page);
       await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', null, { timeout: 20000 });
+      assertDisclosureHidden((await readState(page)).toast.firstRunOnboarding.hudDisclosure, `${locale} ${viewport.id} opening`);
       await page.evaluate(() => {
         const play = window.__game?.scenes?.play;
         play.clearFirstRunOnboardingCompletion();
@@ -414,6 +461,7 @@ try {
         play.firstRunOnboardingActions.fired = true;
         play.firstRunOnboardingActions.phased = true;
         play.firstRunOnboardingActions.focused = false;
+        play.hud.restoreFirstRunOpeningDisclosure({ reason: 'localized_focus_fixture', reducedMotion: true });
       });
       await page.evaluate(() => {
         const play = window.__game?.scenes?.play;
@@ -435,6 +483,7 @@ try {
       const toast = state.toast.active.find((entry) => entry.type === 'firstRunControlsFocus');
       assert.match(toast?.message || '', expectedCopy, `${locale} Focus copy`);
       assert.equal(state.toast.firstRunOnboarding.stage, 'focus');
+      assertDisclosureRestored(state.toast.firstRunOnboarding.hudDisclosure, `${locale} ${viewport.id} Focus`);
       assert.equal((state.toast.active || []).filter((entry) => /firstRunControls/.test(entry.type || '')).length, 1);
       const bounds = toast?.bounds || {};
       assert.ok(Number(bounds.x) >= 8, `${locale} ${viewport.id} Focus left clearance`);
@@ -449,6 +498,28 @@ try {
     }
   }
   report.scenarios.push({ id: 'localized-focus-layout-matrix', captures: localizedScreenshots });
+
+  const reduced = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await seedProfile(reduced, 0, 'en', 1, { reducedMotion: true });
+  await startRanked(reduced);
+  await reduced.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').toast?.firstRunOnboarding?.stage === 'opening', null, { timeout: 20000 });
+  assertDisclosureHidden((await readState(reduced)).toast.firstRunOnboarding.hudDisclosure, 'Reduced Motion opening');
+  await reduced.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    play.firstRunOnboardingActions.moved = true;
+    play.firstRunOnboardingActions.fired = true;
+    play.finishFirstRunOpening('reduced_motion_fixture');
+  });
+  const reducedState = await readState(reduced);
+  assertDisclosureRestored(reducedState.toast.firstRunOnboarding.hudDisclosure, 'Reduced Motion immediate restoration');
+  assert.equal(reducedState.toast.firstRunOnboarding.hudDisclosure.reducedMotion, true);
+  assert.equal(
+    reducedState.toast.firstRunOnboarding.hudDisclosure.restoreCompletedAtMs,
+    reducedState.toast.firstRunOnboarding.hudDisclosure.restoreStartedAtMs,
+    'Reduced Motion must not animate'
+  );
+  report.scenarios.push({ id: 'reduced-motion-immediate-restoration', disclosure: reducedState.toast.firstRunOnboarding.hudDisclosure });
+  await reduced.close();
 
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
   console.log(`[first-run-retention] PASS scenarios=${report.scenarios.length}`);
