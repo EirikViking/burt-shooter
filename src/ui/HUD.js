@@ -22,6 +22,7 @@ import { getShipMasteryView, SHIP_MASTERY_TIERS } from '../progression/ShipMaste
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
+const FIRST_RUN_HUD_RESTORE_DURATION_MS = 160;
 
 function normalizeFontFamily(fontFamily) {
   const family = String(fontFamily || '').trim();
@@ -88,6 +89,7 @@ export class HUD {
     this.globalRivalFlashUntil = 0;
     this.notificationFocus = 'none';
     this.missionPriorityState = {};
+    this.firstRunOpeningDisclosure = null;
 
     // Rank Elements
     this.rankGroup = new PIXI.Container();
@@ -561,6 +563,126 @@ export class HUD {
     } else if (this.highscoreChaseGroup) {
       this.highscoreChaseGroup._debugSkippedRealtime = true;
     }
+    this.updateFirstRunOpeningDisclosure();
+  }
+
+  getFirstRunOpeningDisclosureTargets() {
+    const focusAlpha = this.notificationFocus === 'major'
+      ? 0.16
+      : this.notificationFocus === 'transition'
+        ? 0.72
+        : 1;
+    return [
+      { id: 'directiveText', display: this.directiveText, productionAlpha: 0.62 * focusAlpha },
+      { id: 'directiveProgressBg', display: this.directiveProgressBg, productionAlpha: 0.56 * focusAlpha },
+      { id: 'directiveProgressFill', display: this.directiveProgressFill, productionAlpha: 0.72 * focusAlpha },
+      { id: 'shipMasteryText', display: this.shipMasteryText, productionAlpha: 1 },
+      { id: 'shipMasteryMedals', display: this.shipMasteryMedals, productionAlpha: 1 },
+      { id: 'traitGroup', display: this.traitGroup, productionAlpha: 0.84 }
+    ];
+  }
+
+  beginFirstRunOpeningDisclosure() {
+    if (this.firstRunOpeningDisclosure) return false;
+    this.firstRunOpeningDisclosure = {
+      phase: 'hidden',
+      progress: 0,
+      restoreStartedAtMs: null,
+      restoreCompletedAtMs: null,
+      restoreCount: 0,
+      restoreReason: null,
+      durationMs: FIRST_RUN_HUD_RESTORE_DURATION_MS,
+      reducedMotion: false
+    };
+    this.applyFirstRunOpeningDisclosure(0);
+    return true;
+  }
+
+  restoreFirstRunOpeningDisclosure({
+    reason = 'opening_complete',
+    reducedMotion = false,
+    nowMs = null
+  } = {}) {
+    const disclosure = this.firstRunOpeningDisclosure;
+    if (!disclosure || disclosure.phase !== 'hidden') return false;
+    const timestamp = this.getFirstRunOpeningDisclosureClock(nowMs);
+    disclosure.restoreCount += 1;
+    disclosure.restoreReason = reason;
+    disclosure.reducedMotion = Boolean(reducedMotion);
+    disclosure.restoreStartedAtMs = timestamp;
+    if (disclosure.reducedMotion) {
+      disclosure.phase = 'restored';
+      disclosure.progress = 1;
+      disclosure.restoreCompletedAtMs = timestamp;
+      this.applyFirstRunOpeningDisclosure(1);
+      return true;
+    }
+    disclosure.phase = 'restoring';
+    disclosure.progress = 0;
+    this.applyFirstRunOpeningDisclosure(0);
+    return true;
+  }
+
+  getFirstRunOpeningDisclosureClock(nowMs = null) {
+    if (nowMs !== null && nowMs !== undefined && Number.isFinite(Number(nowMs))) {
+      return Math.max(0, Number(nowMs));
+    }
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      return Math.max(0, performance.now());
+    }
+    return Math.max(0, Date.now());
+  }
+
+  updateFirstRunOpeningDisclosure(nowMs = null) {
+    const disclosure = this.firstRunOpeningDisclosure;
+    if (!disclosure || disclosure.phase === 'restored') return;
+    if (disclosure.phase === 'hidden') {
+      this.applyFirstRunOpeningDisclosure(0);
+      return;
+    }
+    const timestamp = this.getFirstRunOpeningDisclosureClock(nowMs);
+    const elapsedMs = Math.max(0, timestamp - disclosure.restoreStartedAtMs);
+    disclosure.progress = Math.max(0, Math.min(1, elapsedMs / disclosure.durationMs));
+    this.applyFirstRunOpeningDisclosure(disclosure.progress);
+    if (disclosure.progress >= 1) {
+      disclosure.phase = 'restored';
+      disclosure.restoreCompletedAtMs = timestamp;
+    }
+  }
+
+  applyFirstRunOpeningDisclosure(progress = 0) {
+    const normalized = Math.max(0, Math.min(1, Number(progress) || 0));
+    for (const target of this.getFirstRunOpeningDisclosureTargets()) {
+      const display = target.display;
+      if (!display || display.destroyed) continue;
+      display.eventMode = 'none';
+      display.renderable = normalized > 0;
+      display.alpha = target.productionAlpha * normalized;
+    }
+    if (this.firstRunOpeningDisclosure) this.firstRunOpeningDisclosure.progress = normalized;
+  }
+
+  getFirstRunOpeningDisclosureDebug() {
+    const disclosure = this.firstRunOpeningDisclosure;
+    if (!disclosure) return { active: false, phase: 'ordinary', progress: 1, restoreCount: 0, targets: {} };
+    return {
+      active: disclosure.phase !== 'restored',
+      phase: disclosure.phase,
+      progress: Number(disclosure.progress.toFixed(3)),
+      restoreCount: disclosure.restoreCount,
+      restoreReason: disclosure.restoreReason,
+      restoreStartedAtMs: disclosure.restoreStartedAtMs,
+      restoreCompletedAtMs: disclosure.restoreCompletedAtMs,
+      durationMs: disclosure.durationMs,
+      reducedMotion: disclosure.reducedMotion,
+      targets: Object.fromEntries(this.getFirstRunOpeningDisclosureTargets().map((target) => [target.id, {
+        visible: Boolean(target.display?.visible),
+        renderable: Boolean(target.display?.renderable),
+        alpha: Number((Number(target.display?.alpha) || 0).toFixed(3)),
+        productionAlpha: Number(target.productionAlpha.toFixed(3)),
+        eventMode: target.display?.eventMode || null
+      }]))
+    };
   }
 
   formatScore(score) {

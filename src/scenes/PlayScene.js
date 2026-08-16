@@ -781,6 +781,9 @@ export class PlayScene {
 
     // --- Hud & UI ---
     this.hud = new HUD(this.uiContainer, this.game);
+    if (this.getFirstRunControlsNudge('opening')) {
+      this.hud.beginFirstRunOpeningDisclosure();
+    }
     if (this.hud?.highscoreChaseGroup && this.shouldSuppressFirstFlightHighscoreChase()) {
       this.hud.highscoreChaseGroup.visible = false;
       this.hud.highscoreChaseGroup.renderable = false;
@@ -4303,6 +4306,10 @@ export class PlayScene {
     this.firstRunOnboardingStage = 'awaiting_phase';
     this.firstRunOnboardingUntil = Date.now() + FIRST_RUN_THREAT_WAIT_FALLBACK_MS;
     this.releaseFirstRunEnemyStart(reason);
+    this.hud?.restoreFirstRunOpeningDisclosure?.({
+      reason,
+      reducedMotion: Boolean(getAccessibilitySettings().prefersReducedMotion)
+    });
     if (this.firstRunOnboardingActions?.phased) {
       this.resolveFirstRunPhase('phase_prelearned');
       return true;
@@ -19026,7 +19033,8 @@ export class PlayScene {
           exitHoldMs: FIRST_RUN_FOCUS_EXIT_HOLD_MS
         },
         completion: this.lastFirstRunOnboardingCompletion,
-        remainingMs: Math.max(0, (Number(this.firstRunOnboardingUntil) || 0) - Date.now())
+        remainingMs: Math.max(0, (Number(this.firstRunOnboardingUntil) || 0) - Date.now()),
+        hudDisclosure: this.hud?.getFirstRunOpeningDisclosureDebug?.() || null
       },
       progressionPresentation: {
         pendingRank: this.pendingRankUpPresentation !== null
