@@ -15591,7 +15591,9 @@ export class PlayScene {
       slot: 'top',
       type: 'player_survival',
       priority: 7,
-      duration: 1250
+      duration: getAccessibilitySettings().prefersReducedMotion ? 350 : 410,
+      extraReadTimeMs: 0,
+      nonterminalQuickRead: true
     });
     if (this.game.lives === 1) {
       this.triggerCabinetLog('low-life-read', {
@@ -19008,6 +19010,9 @@ export class PlayScene {
       placement: meta.placement || null,
       channel: meta.channel || this.getNotificationChannel(meta.type, meta.originalOptions || {}),
       visualLanguage: meta.visualLanguage || null,
+      nonterminalQuickRead: meta.nonterminalQuickRead === true,
+      reducedMotion: meta.reducedMotion === true,
+      alpha: Number(display?.alpha) || 0,
       authoredSignalCount: Number(meta.authoredSignalCount) || 0,
       primitiveOrnamentCount: Number(meta.primitiveOrnamentCount) || 0,
       ageMs: Math.max(0, Date.now() - meta.createdAt),
@@ -20302,6 +20307,8 @@ export class PlayScene {
       }
     }
 
+    const nonterminalQuickRead = options.nonterminalQuickRead === true;
+    const quickReadReducedMotion = nonterminalQuickRead && Boolean(getAccessibilitySettings().prefersReducedMotion);
     const baseDuration = Number.isFinite(Number(options.duration))
       ? Number(options.duration)
       : (slot === 'corner' ? 1800 : 2200);
@@ -20329,6 +20336,12 @@ export class PlayScene {
       createdAt: now,
       protectedUntil: now + minVisibleMs
     };
+    if (nonterminalQuickRead) {
+      display.__toastMeta.nonterminalQuickRead = true;
+      display.__toastMeta.reducedMotion = quickReadReducedMotion;
+      display.alpha = 1;
+      display.scale?.set?.(1);
+    }
     if (display.__authoredSignalFx) {
       display.__toastMeta.visualLanguage = display.__authoredSignalFx.visualLanguage;
       display.__toastMeta.authoredSignalCount = 1;
@@ -20417,7 +20430,7 @@ export class PlayScene {
       }
       const authoredFx = display.__authoredSignalFx;
       if (authoredFx) {
-        const pulse = 0.5 + Math.sin(elapsed * 0.01) * 0.5;
+        const pulse = quickReadReducedMotion ? 0 : 0.5 + Math.sin(elapsed * 0.01) * 0.5;
         authoredFx.ornament.alpha = authoredFx.baseAlpha + pulse * 0.16;
         authoredFx.ornament.scale.set(
           (authoredFx.baseScaleX || 1) * (1 + pulse * 0.035),
@@ -20425,14 +20438,22 @@ export class PlayScene {
         );
       }
       if (display.__notificationEdgePulse) {
-        display.__notificationEdgePulse.alpha = elapsed <= 260
+        display.__notificationEdgePulse.alpha = quickReadReducedMotion
+          ? 0
+          : elapsed <= 260
           ? Math.sin(Math.min(1, elapsed / 260) * Math.PI) * 0.9
           : 0;
       }
 
-      const introDuration = commandFx?.introMs || (options.aceDossier ? 180 : 250);
-      const exitDuration = commandFx?.exitMs || 350;
-      if (elapsed < introDuration) {
+      const introDuration = nonterminalQuickRead ? 0 : commandFx?.introMs || (options.aceDossier ? 180 : 250);
+      const exitDuration = nonterminalQuickRead ? (quickReadReducedMotion ? 0 : 60) : commandFx?.exitMs || 350;
+      if (nonterminalQuickRead && quickReadReducedMotion) {
+        display.alpha = 1;
+        display.scale?.set?.(1);
+      } else if (nonterminalQuickRead && elapsed <= duration - exitDuration) {
+        display.alpha = 1;
+        display.scale?.set?.(1);
+      } else if (elapsed < introDuration) {
         display.alpha = elapsed / introDuration;
         if (commandFx) {
           const t = elapsed / introDuration;

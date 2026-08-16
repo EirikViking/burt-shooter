@@ -165,6 +165,7 @@
     "check:player-engine-thruster-readability": "node scripts/check-player-engine-thruster-readability.mjs",
     "check:player-damage-direction-cue": "node scripts/check-player-damage-direction-cue.mjs",
     "check:player-life-loss-comprehension": "node scripts/check-player-life-loss-comprehension.mjs",
+    "check:respawn-agency-handoff": "node scripts/audit-respawn-agency-handoff.mjs",
     "check:career-intel-layout": "node scripts/check-career-intel-layout.mjs",
     "check:gameover-final-transmissions": "node scripts/check-gameover-final-transmissions.mjs",
     "check:gameover-interlude": "node scripts/check-gameover-interlude.mjs",
