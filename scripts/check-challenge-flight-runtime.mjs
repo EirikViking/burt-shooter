@@ -18,6 +18,21 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function readPngDimensions(buffer) {
+  assert(Buffer.isBuffer(buffer) && buffer.length >= 24, 'PNG evidence buffer is incomplete');
+  assert(buffer.subarray(1, 4).toString('ascii') === 'PNG', 'Evidence capture is not a PNG');
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20)
+  };
+}
+
+function decodePngDataUrl(dataUrl) {
+  const match = /^data:image\/png;base64,(.+)$/s.exec(String(dataUrl || ''));
+  assert(match, 'Renderer extract did not return a PNG data URL');
+  return Buffer.from(match[1], 'base64');
+}
+
 async function findAvailablePort(startPort) {
   for (let candidate = startPort; candidate < startPort + 40; candidate += 1) {
     const available = await new Promise((resolve) => {
@@ -282,6 +297,110 @@ try {
   assert(perfect.scoreDelta >= perfect.presentation.appliedBonus, `perfect score not applied: ${JSON.stringify(perfect)}`);
   assert(perfect.streakBefore === perfect.streakAfter, 'harmless skill flight incorrectly advanced flawless-wave streak');
   assert(perfect.hudCleared, 'challenge HUD survived completion');
+
+  const compactEvidencePage = await browser.newPage({ viewport: { width: 840, height: 640 } });
+  await compactEvidencePage.addInitScript(() => {
+    localStorage.setItem('novaSwarm.languagePreference.v1', 'de');
+  });
+  await compactEvidencePage.goto(`${baseUrl}/?autostart=1&offlineLeaderboard=1`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await waitForPlay(compactEvidencePage);
+  await startChallenge(compactEvidencePage, CHALLENGE_FLIGHT_PATTERNS[4], 8);
+  await compactEvidencePage.waitForTimeout(300);
+  report.scenarios.germanCompactCoordinateProof = await compactEvidencePage.evaluate(async () => {
+    const app = window.__app;
+    const play = window.__game.scenes.play;
+    const renderer = app.renderer;
+    const canvas = app.canvas || app.view;
+    const rect = canvas.getBoundingClientRect();
+    const plaque = play.challengeFlightHud?.container?.getBounds?.();
+    const screen = renderer.screen;
+    const backingScaleX = canvas.width / Math.max(1, screen.width);
+    const backingScaleY = canvas.height / Math.max(1, screen.height);
+    const cssScaleX = rect.width / Math.max(1, screen.width);
+    const cssScaleY = rect.height / Math.max(1, screen.height);
+    const rendererExtract = await renderer.extract.base64({
+      target: app.stage,
+      frame: screen,
+      format: 'png'
+    });
+    return {
+      window: {
+        innerWidth: window.innerWidth,
+        innerHeight: window.innerHeight,
+        outerWidth: window.outerWidth,
+        outerHeight: window.outerHeight,
+        devicePixelRatio: window.devicePixelRatio
+      },
+      document: {
+        clientWidth: document.documentElement.clientWidth,
+        clientHeight: document.documentElement.clientHeight,
+        scrollWidth: document.documentElement.scrollWidth,
+        scrollHeight: document.documentElement.scrollHeight
+      },
+      canvas: {
+        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+        backingWidth: canvas.width,
+        backingHeight: canvas.height,
+        cssWidth: canvas.style.width,
+        cssHeight: canvas.style.height
+      },
+      renderer: {
+        screen: { x: screen.x, y: screen.y, width: screen.width, height: screen.height },
+        width: renderer.width,
+        height: renderer.height,
+        resolution: renderer.resolution,
+        type: renderer.constructor?.name || null
+      },
+      game: {
+        width: window.__game.getWidth(),
+        height: window.__game.getHeight()
+      },
+      plaqueLogicalBounds: plaque ? { x: plaque.x, y: plaque.y, width: plaque.width, height: plaque.height } : null,
+      plaqueBackingPixels: plaque ? {
+        x: plaque.x * backingScaleX,
+        y: plaque.y * backingScaleY,
+        width: plaque.width * backingScaleX,
+        height: plaque.height * backingScaleY
+      } : null,
+      plaqueWindowPixels: plaque ? {
+        x: rect.x + plaque.x * cssScaleX,
+        y: rect.y + plaque.y * cssScaleY,
+        width: plaque.width * cssScaleX,
+        height: plaque.height * cssScaleY
+      } : null,
+      rendererExtract
+    };
+  });
+  const rendererExtractBuffer = decodePngDataUrl(report.scenarios.germanCompactCoordinateProof.rendererExtract);
+  delete report.scenarios.germanCompactCoordinateProof.rendererExtract;
+  const coordinateProof = report.scenarios.germanCompactCoordinateProof;
+  coordinateProof.screenshots = {
+    rendererExtract: path.join(outputDir, 'flugpruefung-840x640-renderer-extract.png'),
+    canvasElement: path.join(outputDir, 'flugpruefung-840x640-canvas-element.png'),
+    window: path.join(outputDir, 'flugpruefung-840x640-window.png')
+  };
+  writeFileSync(coordinateProof.screenshots.rendererExtract, rendererExtractBuffer);
+  await compactEvidencePage.evaluate(() => {
+    window.__app.render();
+  });
+  coordinateProof.explicitPresentationFrameBeforeOuterCapture = true;
+  const canvasElementBuffer = await compactEvidencePage.locator('canvas').screenshot({ path: coordinateProof.screenshots.canvasElement });
+  const windowBuffer = await compactEvidencePage.screenshot({ path: coordinateProof.screenshots.window, fullPage: false });
+  coordinateProof.screenshotDimensions = {
+    rendererExtract: readPngDimensions(rendererExtractBuffer),
+    canvasElement: readPngDimensions(canvasElementBuffer),
+    window: readPngDimensions(windowBuffer)
+  };
+  await compactEvidencePage.close();
+
+  assert(coordinateProof.window.innerWidth === 840 && coordinateProof.window.innerHeight === 640, `compact window mismatch: ${JSON.stringify(coordinateProof.window)}`);
+  assert(coordinateProof.canvas.rect.width === 840 && coordinateProof.canvas.rect.height === 640, `compact canvas CSS mismatch: ${JSON.stringify(coordinateProof.canvas)}`);
+  assert(coordinateProof.canvas.backingWidth === 840 && coordinateProof.canvas.backingHeight === 640, `compact canvas backing mismatch: ${JSON.stringify(coordinateProof.canvas)}`);
+  assert(coordinateProof.renderer.screen.width === 840 && coordinateProof.renderer.screen.height === 640, `compact renderer screen mismatch: ${JSON.stringify(coordinateProof.renderer)}`);
+  assert(coordinateProof.game.width === 840 && coordinateProof.game.height === 640, `compact game viewport mismatch: ${JSON.stringify(coordinateProof.game)}`);
+  assert(coordinateProof.plaqueBackingPixels && coordinateProof.plaqueBackingPixels.y + coordinateProof.plaqueBackingPixels.height <= coordinateProof.canvas.backingHeight, `compact plaque escaped backing pixels: ${JSON.stringify(coordinateProof.plaqueBackingPixels)}`);
+  assert(coordinateProof.plaqueWindowPixels && coordinateProof.plaqueWindowPixels.y + coordinateProof.plaqueWindowPixels.height <= coordinateProof.window.innerHeight, `compact plaque escaped window pixels: ${JSON.stringify(coordinateProof.plaqueWindowPixels)}`);
+  assert(Object.values(coordinateProof.screenshotDimensions).every(({ width, height }) => width === 840 && height === 640), `compact screenshot dimensions mismatch: ${JSON.stringify(coordinateProof.screenshotDimensions)}`);
 
   await page.evaluate(() => localStorage.setItem('novaSwarm.languagePreference.v1', 'de'));
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 90000 });
