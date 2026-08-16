@@ -456,6 +456,7 @@ export class PlayScene {
     this.firstRunOnboardingActions = null;
     this.firstRunEnemyStart = null;
     this.lastFirstRunOnboardingCompletion = null;
+    this.lastFirstRunDiscoveryYield = null;
     this.bossDossierTexture = null;
 
     // Voice throttle
@@ -907,6 +908,7 @@ export class PlayScene {
     };
     this.firstRunEnemyStart = null;
     this.lastFirstRunOnboardingCompletion = null;
+    this.lastFirstRunDiscoveryYield = null;
     this.firstRunOnboardingComplete = !this.getFirstRunControlsNudge();
     this._rankUpAnimating = false;
     this.pendingRankUpPresentation = null;
@@ -4260,6 +4262,49 @@ export class PlayScene {
     ]).has(this.firstRunOnboardingStage);
   }
 
+  isCanonicalFirstRunOnboardingActive() {
+    const progress = this.game?.hangarProgressAtRunStart || readHangarProgressState();
+    if ((Number(progress?.totalRuns) || 0) > 0) return false;
+    if (this.game?.lateGameExperiment?.active === true || this.firstRunOnboardingComplete) return false;
+    return new Set([
+      'opening_pending',
+      'opening',
+      'awaiting_phase',
+      'phase_pending',
+      'phase',
+      'focus_pending',
+      'focus_armed',
+      'focus_queued',
+      'focus'
+    ]).has(this.firstRunOnboardingStage);
+  }
+
+  canYieldActiveDiscoveryForFirstRunCoaching(display = this.activeTopToast) {
+    return Boolean(
+      this.isCanonicalFirstRunOnboardingActive()
+      && display
+      && display === this.activeTopToast
+      && display.__toastMeta?.type === 'discovery'
+    );
+  }
+
+  yieldActiveDiscoveryForFirstRunCoaching(reason = 'first_run_coaching') {
+    const display = this.activeTopToast;
+    if (!this.canYieldActiveDiscoveryForFirstRunCoaching(display)) return false;
+    const meta = display.__toastMeta;
+    const deferred = this.deferActiveToastDisplay(display, 'top', 0, { minRemainingMs: 900 });
+    if (deferred) {
+      this.lastFirstRunDiscoveryYield = {
+        reason,
+        stage: this.firstRunOnboardingStage,
+        yieldedAt: Date.now(),
+        originalCreatedAt: Number(meta?.createdAt) || 0,
+        originalDurationMs: Number(meta?.duration) || 0
+      };
+    }
+    return deferred;
+  }
+
   getFirstRunControlsNudge(stage = 'opening') {
     const progress = this.game?.hangarProgressAtRunStart || readHangarProgressState();
     if ((Number(progress?.totalRuns) || 0) > 0) return null;
@@ -4356,6 +4401,10 @@ export class PlayScene {
     if (this.firstRunOnboardingComplete || this.firstRunOnboardingStage !== 'awaiting_phase') return false;
     const controls = this.getFirstRunControlsNudge('phase');
     if (!controls) return false;
+    if (
+      this.canYieldActiveDiscoveryForFirstRunCoaching()
+      && !this.yieldActiveDiscoveryForFirstRunCoaching('phase_eligible')
+    ) return false;
     this.clearFirstRunOnboardingCompletion();
     this.firstRunOnboardingStage = 'phase_pending';
     const compactHud = this.game.getWidth() < 620;
@@ -4428,7 +4477,7 @@ export class PlayScene {
       || this.overrunMilestoneInterlude?.active
       || this.isCabinetWonderNoAgencyPresentationActive?.()
     ) return false;
-    if (this.activeTopToast || this.activeBossIntroCard) return false;
+    if ((this.activeTopToast && !this.canYieldActiveDiscoveryForFirstRunCoaching()) || this.activeBossIntroCard) return false;
     const higherPriorityActive = [this.activeCenterToast, this.activeCornerToast]
       .some((display) => Number(display?.__toastMeta?.priority) >= 3);
     if (higherPriorityActive) return false;
@@ -4442,6 +4491,11 @@ export class PlayScene {
     if (!this.canShowFirstRunFocusNudge() || !density?.meaningful) return false;
     const controls = this.getFirstRunControlsNudge('focus');
     if (!controls) return false;
+    if (
+      this.canYieldActiveDiscoveryForFirstRunCoaching()
+      && !this.yieldActiveDiscoveryForFirstRunCoaching('focus_eligible')
+    ) return false;
+    if (this.activeTopToast) return false;
     const compactHud = this.game.getWidth() < 620;
     this.firstRunOnboardingStage = 'focus_queued';
     this.firstRunFocusDensityBelowSince = null;
@@ -4569,6 +4623,10 @@ export class PlayScene {
       if (this.gameOverSequenceStarted) return;
       const controls = this.getFirstRunControlsNudge('opening');
       if (!controls) return;
+      if (
+        this.canYieldActiveDiscoveryForFirstRunCoaching()
+        && !this.yieldActiveDiscoveryForFirstRunCoaching('opening_eligible')
+      ) return;
       const compactHud = this.game.getWidth() < 620;
       this.enqueueToast(controls, {
         fontSize: compactHud ? 14 : 18,
@@ -9655,6 +9713,7 @@ export class PlayScene {
     this.firstRunOnboardingStage = 'complete';
     this.firstRunOnboardingActions = null;
     this.firstRunEnemyStart = null;
+    this.lastFirstRunDiscoveryYield = null;
     this._rankUpAnimating = false;
     this.pendingRankUpPresentation = null;
     this.activeRankUpPresentation = null;
@@ -19033,6 +19092,7 @@ export class PlayScene {
           exitHoldMs: FIRST_RUN_FOCUS_EXIT_HOLD_MS
         },
         completion: this.lastFirstRunOnboardingCompletion,
+        discoveryYield: this.lastFirstRunDiscoveryYield ? { ...this.lastFirstRunDiscoveryYield } : null,
         remainingMs: Math.max(0, (Number(this.firstRunOnboardingUntil) || 0) - Date.now()),
         hudDisclosure: this.hud?.getFirstRunOpeningDisclosureDebug?.() || null
       },
