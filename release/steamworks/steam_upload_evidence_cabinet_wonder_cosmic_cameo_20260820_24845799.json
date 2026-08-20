@@ -1,0 +1,59 @@
+{
+  "uploadedAt": "2026-08-20T19:39:24+02:00",
+  "type": "steam_upload_evidence",
+  "title": "Nova Swarm non-blocking Cabinet Wonder authored cameo private Steam upload",
+  "branch": "codex/wonder-cosmic-cameo-20260820",
+  "baselineCommit": "26520929cf35db3cc44c982deb98f43e38ee084e",
+  "sourceCommit": "025a028258159c997815c225363db417ba93d600",
+  "preUploadEvidenceCommit": "32f616ddf4f43c7239aca94b9d9bd874efa5ed60",
+  "build": {
+    "steamBuildId": "24845799",
+    "version": "v2026-08-20_19-26-54",
+    "packagedGitSha": "025a028"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "depotManifestId": "3983886218112905284",
+    "baselineDepotManifestId": "1556187552382931772",
+    "setLive": "",
+    "assignedBranch": null,
+    "steamworksMetadataChanged": false,
+    "postUploadBranchVerification": {
+      "public": "24761191",
+      "sector-continue-test": "24687671",
+      "test-build": "23782673"
+    }
+  },
+  "packageEvidence": {
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "vdfSha256": "ed77422ebc6cb7e33015225169d2e01a37ed0a36bf42717e0991fe9040943401",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestSha256": "c76901379c175102cd4fc2528ca6e0edef81ba491efaf64fc3cdc63d2003ed02",
+    "payloadContentHash": "c29a6865e93add31883f7511ab0181ce62a4b02432553cc7b8eea61dc2bab9fd",
+    "payloadFileCount": 410,
+    "payloadBytes": 1178158035,
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "executableBytes": 226698752,
+    "executableSha256": "6b9e3d45b767dc22f61eacc40423da1b2363bc88b5d376ccc624b2aa56b5e2b1",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-08-20T17-31-34-918Z/report.json",
+    "packagedControlsReport": "test-results/packaged-control-smoke-2026-08-20T17-32-32-739Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-08-20T17-32-55-415Z/report.json",
+    "desktopSmokeReport": "test-results/electron-smoke-2026-08-20T17-32-17-479Z/report.json"
+  },
+  "steamPipeEvidence": {
+    "command": "C:\\steamcmd\\steamcmd.exe +login gaunziman +run_app_build D:\\vibe-coding-e\\nova-swarm-wonder-cosmic-cameo-20260820\\release\\steamworks\\app_build_LOCAL.vdf +quit",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "mappedFiles": 470,
+    "mappedBytesReported": "1123 MB",
+    "changedFiles": 2,
+    "uploadedChunks": 13,
+    "result": "Successfully finished AppID 4765070 build (BuildID 24845799)."
+  },
+  "notes": [
+    "Private unassigned SteamPipe upload only.",
+    "The VDF kept SetLive blank, and the public plus both named test branches were re-read after upload and remained unchanged.",
+    "No Steamworks store metadata, branch assignment, achievements, leaderboard, Steam Cloud, AppID, or depot setting was changed."
+  ]
+}
