@@ -1441,22 +1441,6 @@ export class PowerupManager {
     });
   }
 
-  pauseTimedPickupLifetimes(now = Date.now()) {
-    let paused = 0;
-    this.powerups.forEach((powerup) => {
-      if (powerup?.active !== false && powerup?.pauseLifetime?.(now)) paused += 1;
-    });
-    return paused;
-  }
-
-  resumeTimedPickupLifetimes(now = Date.now()) {
-    let resumed = 0;
-    this.powerups.forEach((powerup) => {
-      if (powerup?.resumeLifetime?.(now) > 0) resumed += 1;
-    });
-    return resumed;
-  }
-
   updateDebugPowerups(delta, scene) {
     if (!scene?.debugPowerups) return;
 

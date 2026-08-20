@@ -6,15 +6,22 @@ import { chromium } from 'playwright';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4548));
-const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
-const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/cabinet-wonders-${timestamp()}`);
+const baseUrl = process.env.CHECK_URL || ('http://' + host + ':' + port);
+const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || ('test-results/cabinet-wonders-' + timestamp()));
+const supportedLocales = ['en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja'];
+const visualVariants = [
+  'ghost_fleet_salute',
+  'astral_leviathan_library',
+  'celestial_crane_migration',
+  'aurora_crown'
+];
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
 }
 
-function approximatelyEqual(actual, expected, toleranceMs = 4) {
-  return Math.abs((Number(actual) || 0) - (Number(expected) || 0)) <= toleranceMs;
+function approximatelyEqual(actual, expected, tolerance = 1.5) {
+  return Math.abs((Number(actual) || 0) - (Number(expected) || 0)) <= tolerance;
 }
 
 async function findAvailablePort(startPort) {
@@ -27,7 +34,7 @@ async function findAvailablePort(startPort) {
     });
     if (available) return candidate;
   }
-  throw new Error(`No available Cabinet Wonder port found starting at ${startPort}`);
+  throw new Error('No available Cabinet Wonder port found starting at ' + startPort);
 }
 
 async function canFetch(url) {
@@ -43,20 +50,20 @@ async function startPreviewServer() {
   const viteEntry = path.resolve('node_modules/vite/bin/vite.js');
   const command = existsSync(viteEntry) ? process.execPath : (process.platform === 'win32' ? 'npx.cmd' : 'npx');
   const args = existsSync(viteEntry) ? [viteEntry] : ['vite'];
-  const server = spawn(command, [...args, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
+  const server = spawn(command, args.concat(['preview', '--host', host, '--port', String(port), '--strictPort']), {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
   });
-  server.stdout.on('data', (chunk) => process.stdout.write(`[vite] ${chunk}`));
-  server.stderr.on('data', (chunk) => process.stderr.write(`[vite] ${chunk}`));
+  server.stdout.on('data', (chunk) => process.stdout.write('[vite] ' + chunk));
+  server.stderr.on('data', (chunk) => process.stderr.write('[vite] ' + chunk));
   const startedAt = Date.now();
   while (Date.now() - startedAt < 20000) {
     if (await canFetch(baseUrl)) return server;
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   server.kill();
-  throw new Error(`Vite preview did not become ready at ${baseUrl}`);
+  throw new Error('Vite preview did not become ready at ' + baseUrl);
 }
 
 function chromePath() {
@@ -67,10 +74,19 @@ function chromePath() {
   ].filter(Boolean).find((candidate) => existsSync(candidate));
 }
 
-async function runVariant(browser, variantId, viewport, reducedMotion = false) {
+async function createReadyPage(browser, options = {}) {
+  const viewport = options.viewport || { width: 1280, height: 720 };
+  const locale = options.locale || 'en';
+  const reducedMotion = options.reducedMotion === true;
   const context = await browser.newContext({
     viewport,
     reducedMotion: reducedMotion ? 'reduce' : 'no-preference'
+  });
+  await context.addInitScript({
+    content: [
+      'localStorage.setItem("novaSwarm.languagePreference.v1", ' + JSON.stringify(locale) + ');',
+      'localStorage.setItem("nova_accessibility_reduced_motion", ' + JSON.stringify(reducedMotion ? '1' : '0') + ');'
+    ].join('\n')
   });
   const page = await context.newPage();
   const pageErrors = [];
@@ -79,373 +95,672 @@ async function runVariant(browser, variantId, viewport, reducedMotion = false) {
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
-  await page.goto(`${baseUrl}?autostart=1&offlineLeaderboard=1`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await page.goto(baseUrl + '?autostart=1&offlineLeaderboard=1', {
+    waitUntil: 'domcontentloaded',
+    timeout: 90000
+  });
   await page.waitForFunction(() => window.__game?.scenes?.play?.player, null, { timeout: 90000 });
   await page.waitForFunction(() => window.__game?.scenes?.play?.introComplete === true, null, { timeout: 90000 });
-  await page.waitForFunction(() => window.__game?.scenes?.play?.firstRunOnboardingComplete === true, null, { timeout: 90000 });
-  const synchronous = await page.evaluate((id) => {
-    const game = window.__game;
-    const play = game.scenes.play;
-    play.enemyManager?.forceClearAllEnemies?.();
-    (play.bulletManager?.enemyBullets || []).forEach((bullet) => { bullet.active = false; bullet.visible = false; });
-    play.enemyManager.state = 'WAVE_BRIEFING';
-    play.enemyManager.phase = 'WAVES';
-    play.enemyManager.waveBriefingTimer = 240;
-    play.clearToastState?.();
-    play.player.applyPowerup('rapid_fire');
-    play.applyScoreMultiplier(2, 12000, 'cabinet_wonder_runtime');
-    const pickup = play.powerupManager.spawnSpecific(
-      game.getWidth() * 0.5,
-      game.getHeight() * 0.42,
-      'damage_up',
-      { source: 'cabinet_wonder_runtime', spawnKey: `wonder-runtime:${id}` }
-    );
-    play.clearToastState?.();
-    play.showWaveBonusEffect?.(500, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 3/5' });
-    const gameplayClockMs = play.getGameplayClockMs();
-    const timedBefore = {
-      gameplayClockMs,
-      scoreBoostTimerMs: play.scoreBoostTimer,
-      activePowerupRemainingMs: play.player.getActivePowerupRemainingMs(gameplayClockMs),
-      pickupRemainingMs: pickup?.getLifetimeRemainingMs?.() || 0
-    };
-    const spawnBaseline = {
-      totalEnemiesSpawned: play.enemyManager.totalEnemiesSpawned,
-      currentWaveIndex: play.enemyManager.currentWaveIndex,
-      state: play.enemyManager.state,
-      activeEnemyCount: play.enemyManager.enemies.filter((enemy) => enemy?.active !== false).length,
-      hijackerActive: Boolean(play.enemyManager.hijacker?.active)
-    };
-    const scoreBefore = game.score;
-    const shown = play.maybeShowCabinetWonder({
-      debugForce: true,
-      forceVariantId: id,
-      sector: 4,
-      waveNumber: 3,
-      hasUpcomingWave: true
-    });
-    const scoreAfter = game.score;
-    const second = play.maybeShowCabinetWonder({
-      debugForce: true,
-      forceVariantId: 'aurora_crown',
-      sector: 4,
-      waveNumber: 3,
-      hasUpcomingWave: true
-    });
-    return {
-      shown,
-      second,
-      scoreDelta: scoreAfter - scoreBefore,
-      runMode: game.runMode,
-      runModeReason: game.runModeReason,
-      isDebugRun: game.isDebugRun,
-      transitionActiveAtPreludeStart: play.hasAuthoritativeTransitionPresentation?.() === true,
-      transitionAtPreludeStart: (() => {
-        const display = play.activeBossIntroCard || play.activeCenterToast || play.activeTopToast;
-        const meta = display?.__toastMeta || null;
-        return meta ? {
-          type: meta.type || null,
-          slot: meta.slot || null,
-          durationMs: Number(meta.duration) || 0,
-          ageMs: Math.max(0, Date.now() - (Number(meta.createdAt) || Date.now()))
-        } : null;
-      })(),
-      timedBefore,
-      spawnBaseline
-    };
-  }, variantId);
-  const readTimedState = () => page.evaluate(() => {
-    const play = window.__game.scenes.play;
-    const now = play.getGameplayClockMs();
-    const pickup = play.powerupManager?.powerups?.find((entry) => entry?.spawnSource === 'cabinet_wonder_runtime');
-    return {
-      gameplayClockMs: now,
-      scoreBoostTimerMs: play.scoreBoostTimer,
-      activePowerupRemainingMs: play.player.getActivePowerupRemainingMs(now),
-      pickupRemainingMs: pickup?.getLifetimeRemainingMs?.() || 0
-    };
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    play?.completeFirstRunOnboarding?.('cabinet_wonder_runtime', { flushAchievements: false });
+    if (play) play.firstRunOnboardingComplete = true;
   });
-  const readSpawnState = () => page.evaluate(() => {
-    const manager = window.__game.scenes.play.enemyManager;
-    return {
-      totalEnemiesSpawned: manager.totalEnemiesSpawned,
-      currentWaveIndex: manager.currentWaveIndex,
-      state: manager.state,
-      activeEnemyCount: manager.enemies.filter((enemy) => enemy?.active !== false).length,
-      hijackerActive: Boolean(manager.hijacker?.active)
-    };
-  });
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.cabinetWonders?.pending?.kind === 'audio_prelude';
-  }, null, { timeout: 5000 });
-  const preludeState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
-  const preludeTimedState = await readTimedState();
-  const preludeSpawnState = await readSpawnState();
-  const preludeProgressionHeld = await page.evaluate(() => (
-    window.__game?.scenes?.play?.shouldHoldProgressionPresentation?.() === true
-  ));
-  await page.waitForFunction((id) => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.cabinetWonders?.active?.id === id;
-  }, variantId, { timeout: 5000 });
-  await page.waitForTimeout(180);
-  const activeState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
-  const activeTimedState = await readTimedState();
-  const activeSpawnState = await readSpawnState();
-  const activeProgressionHeld = await page.evaluate(() => (
-    window.__game?.scenes?.play?.shouldHoldProgressionPresentation?.() === true
-  ));
-  const screenshot = path.join(outputDir, `${variantId}-${viewport.width}x${viewport.height}${reducedMotion ? '-reduced' : ''}.png`);
-  await page.screenshot({ path: screenshot, fullPage: false });
-  await page.waitForTimeout(2200);
-  const completedState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
-  const completedTimedState = await readTimedState();
-  const completedProgressionHeld = await page.evaluate(() => (
-    window.__game?.scenes?.play?.shouldHoldProgressionPresentation?.() === true
-  ));
-  const experimentalIsolation = await page.evaluate(() => {
-    const game = window.__game;
-    const play = game.scenes.play;
-    const previous = game.lateGameExperiment;
-    game.lateGameExperiment = { active: true, scenario: 'standard', metrics: {} };
-    const shown = play.maybeShowCabinetWonder({
-      debugForce: true,
-      forceVariantId: 'ghost_fleet_salute',
-      sector: 6,
-      waveNumber: 3,
-      hasUpcomingWave: true
-    });
-    const state = {
-      shown,
-      noAgencyActive: play.isCabinetWonderNoAgencyPresentationActive(),
-      opportunity: Boolean(play.cabinetWonderOpportunity)
-    };
-    game.lateGameExperiment = previous;
-    return state;
-  });
-  let lifecycle = null;
-  if (variantId === 'ghost_fleet_salute') {
-    const cancellation = await page.evaluate(() => {
+  return { context, page, pageErrors, consoleErrors, viewport, locale, reducedMotion };
+}
+
+async function runVisualScenario(browser, options) {
+  const runtime = await createReadyPage(browser, options);
+  const { context, page, pageErrors, consoleErrors, viewport, locale, reducedMotion } = runtime;
+  const variantId = options.variantId;
+  try {
+    const synchronous = await page.evaluate(async (id) => {
       const game = window.__game;
       const play = game.scenes.play;
       const manager = play.enemyManager;
-      manager.forceClearAllEnemies?.();
+      play.clearCabinetWonder?.('runtime_setup');
       play.clearToastState?.();
-      manager.state = 'WAVE_BRIEFING';
-      manager.phase = 'WAVES';
-      manager.waveBriefingTimer = 240;
-      play.showWaveBonusEffect?.(500, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 4/5' });
-
+      manager?.forceClearAllEnemies?.();
+      if (manager) {
+        manager.state = 'TEST_IDLE';
+        manager.pendingWaveConfig = null;
+        manager.pendingTransitionHijackerSpawn = null;
+        manager.hijacker = null;
+      }
+      for (const bullet of play.bulletManager?.enemyBullets || []) {
+        bullet.active = false;
+        bullet.visible = false;
+      }
+      play.gameOverSequenceStarted = false;
+      game.gameOverTransitionPending = false;
+      play.introActive = false;
+      play.pendingEnemyStartTimeout = null;
+      play.isPaused = false;
+      const artReady = await play.prewarmCabinetWonderVariant(id, 'runtime_visual');
+      play.showWaveBonusEffect?.(500, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 3/5' });
+      play.processToastQueue?.();
       const input = play.inputManager;
-      input.keys.KeyW = true;
+      input.keys.KeyD = true;
       input.keys.Space = true;
-      input.keys.KeyB = true;
-      input.justPressed.Space = true;
-      input.justPressed.KeyB = true;
-      input.justPressedActions.specialFire = true;
-      input.justPressedActions.pause = true;
-      input.specialFirePointerJustPressed = true;
-      input.mouseFireActive = true;
       input.touchFireActive = true;
+      input.mouseFireActive = true;
       input.fireToggleLatched = true;
-
+      input.specialFirePointerJustPressed = true;
+      const inputBefore = input.getTransientDebugState();
+      const scoreBefore = game.score;
+      const transitionActive = play.hasAuthoritativeTransitionPresentation?.() === true;
       const shown = play.maybeShowCabinetWonder({
         debugForce: true,
-        forceVariantId: 'aurora_crown',
-        sector: 6,
+        forceVariantId: id,
+        sector: 4,
         waveNumber: 3,
         hasUpcomingWave: true
       });
-      const token = play.cabinetWonderOpportunity;
-      const inputAfterEnter = {
-        ...input.getTransientDebugState(),
-        justPressed: Object.keys(input.justPressed).filter((key) => input.justPressed[key]),
-        justPressedActions: Object.keys(input.justPressedActions).filter((key) => input.justPressedActions[key])
-      };
-
-      const originalLevel = manager.level;
-      manager.level = 4;
-      manager.hijackerSpawnedThisLevel = false;
-      manager.hijackerSpawnAttemptedThisLevel = false;
-      manager.hijacker = null;
-      manager.pendingTransitionHijackerSpawn = null;
-      const originalRandom = Math.random;
-      const randomSequence = [0.1, 0.25, 0.75];
-      let selectionRandomCalls = 0;
-      Math.random = () => randomSequence[Math.min(selectionRandomCalls++, randomSequence.length - 1)];
-      try {
-        manager.maybeSpawnHijacker({ clearedWaveNumber: 1, hasUpcomingWave: true });
-      } finally {
-        Math.random = originalRandom;
-      }
-      const plan = manager.pendingTransitionHijackerSpawn
-        ? { ...manager.pendingTransitionHijackerSpawn }
-        : null;
-      const deferred = manager.releasePendingTransitionHijackerSpawn();
-      const beforeCancel = {
-        hijackerActive: Boolean(manager.hijacker?.active),
-        deferredReleaseCount: token?.deferredReleases?.length || 0,
-        pendingPlan: Boolean(manager.pendingTransitionHijackerSpawn)
-      };
-      const firstCancel = play.cancelCabinetWonderOpportunity('runtime_cancel', token);
-      const secondCancel = play.cancelCabinetWonderOpportunity('runtime_cancel_again', token);
-      const terminal = play.getCabinetWonderDebugState().lastTerminal;
-      const hijacker = manager.hijacker;
-      const releasedHijacker = hijacker ? {
-        active: Boolean(hijacker.active),
-        x: hijacker.x,
-        y: hijacker.y,
-        initialBeamDelayMs: Math.round(hijacker.nextBeamAt - Date.now())
-      } : null;
-      manager.forceClearAllEnemies?.();
-      manager.level = originalLevel;
+      const inputAfter = input.getTransientDebugState();
+      const second = play.maybeShowCabinetWonder({
+        debugForce: true,
+        forceVariantId: 'aurora_crown',
+        sector: 4,
+        waveNumber: 3,
+        hasUpcomingWave: true
+      });
       return {
         shown,
-        gameWidth: game.getWidth(),
-        gameHeight: game.getHeight(),
-        managerGameWidth: manager.game.getWidth(),
-        inputAfterEnter,
-        selectionRandomCalls,
-        plan,
-        deferred,
-        beforeCancel,
-        firstCancel,
-        secondCancel,
-        tokenAfterCancel: token ? {
-          terminal: token.terminal,
-          state: token.state,
-          releaseCount: token.releaseCount,
-          timersCleared: ['preludeTimer', 'transitionMonitorTimer', 'revealTimer', 'cleanupTimer']
-            .every((key) => token[key] === null)
-        } : null,
-        terminal,
-        releasedHijacker
+        artReady,
+        second,
+        scoreDelta: game.score - scoreBefore,
+        transitionActive,
+        inputBefore,
+        inputAfter,
+        debug: play.getCabinetWonderDebugState(),
+        language: JSON.parse(window.render_game_to_text()).language
       };
-    });
-    await page.waitForTimeout(1750);
-    const afterStaleCallback = await page.evaluate(() => {
+    }, variantId);
+
+    await page.waitForFunction((id) => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.cabinetWonders?.active?.id === id
+        && state.cabinetWonders?.active?.visualStartedAt;
+    }, variantId, { timeout: 5000 });
+    await page.waitForTimeout(reducedMotion ? 140 : 240);
+
+    const active = await page.evaluate(() => {
       const play = window.__game.scenes.play;
-      const state = play.getCabinetWonderDebugState();
+      const current = play.activeCabinetWonder;
+      const root = current?.root;
+      const nodes = [];
+      const visit = (node) => {
+        if (!node) return;
+        nodes.push(node);
+        for (const child of node.children || []) visit(child);
+      };
+      visit(root);
+      const art = nodes.find((node) => String(node?.label || '').startsWith('cabinet_wonder_imagegen_'));
+      const canvasRect = window.__game?.app?.canvas?.getBoundingClientRect?.()
+        || window.__app?.canvas?.getBoundingClientRect?.()
+        || { width: window.innerWidth, height: window.innerHeight };
       return {
-        opportunity: state.opportunity,
-        pending: state.pending,
-        active: state.active,
-        overlayCount: state.overlayCount,
-        noAgencyActive: state.noAgencyActive,
-        progressionResumeCount: state.progressionResumeCount,
-        terminal: state.lastTerminal
+        debug: play.getCabinetWonderDebugState(),
+        logicalViewport: {
+          width: Number(play.gameplayGame?.getWidth?.()) || Number(window.__game?.getWidth?.()) || 1920,
+          height: Number(play.gameplayGame?.getHeight?.()) || Number(window.__game?.getHeight?.()) || 1080
+        },
+        renderedViewport: {
+          width: Number(canvasRect.width) || window.innerWidth,
+          height: Number(canvasRect.height) || window.innerHeight
+        },
+        alpha: Number(root?.alpha) || 0,
+        scaleX: Number(root?.scale?.x) || 0,
+        scaleY: Number(root?.scale?.y) || 0,
+        zIndex: root?.zIndex,
+        eventMode: root?.eventMode,
+        interactive: Boolean(root?.interactive),
+        scanVisible: Boolean(current?.scanSweep?.visible),
+        maskCount: nodes.filter((node) => String(node?.label || '').includes('_mask_')).length,
+        generatedArtBlendMode: art ? String(art.blendMode) : null,
+        visibleTexts: nodes.map((node) => node?.text).filter((value) => typeof value === 'string' && value.trim())
       };
     });
 
-    const assetLateStarted = await page.evaluate(() => {
+    const screenshot = path.join(
+      outputDir,
+      'wonder-' + locale + '-' + viewport.width + 'x' + viewport.height + (reducedMotion ? '-reduced' : '') + '.png'
+    );
+    await page.screenshot({ path: screenshot, fullPage: false });
+
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.cabinetWonders?.active === null && state.cabinetWonders?.lastTerminal;
+    }, null, { timeout: 5000 });
+    const completed = await page.evaluate(() => {
       const game = window.__game;
       const play = game.scenes.play;
-      play.enemyManager?.forceClearAllEnemies?.();
-      play.clearToastState?.();
-      play.enemyManager.state = 'WAVE_BRIEFING';
-      play.enemyManager.phase = 'WAVES';
-      play.scoreBoostTimer = 5000;
-      const before = play.captureCabinetWonderTimedEffectSnapshot();
-      const shown = play.beginCabinetWonderOpportunity({
-        eligible: true,
-        triggered: true,
-        reason: 'debug_force',
+      const completedState = play.getCabinetWonderDebugState();
+      game.lateGameExperiment = { active: true, scenario: 'standard', metrics: {} };
+      const experimentShown = play.maybeShowCabinetWonder({
+        debugForce: true,
+        forceVariantId: 'aurora_crown',
         sector: 7,
         waveNumber: 3,
-        chance: 1,
-        roll: 0,
-        scoreNeutral: true,
-        gameplayNeutral: true,
-        variant: {
-          id: 'runtime_asset_late',
-          title: 'Runtime Asset-Late Sentinel',
-          palette: [0x7df9ff, 0xff70d7, 0xffef9a]
-        }
+        hasUpcomingWave: true
       });
-      if (play.cabinetWonderOpportunity) play.cabinetWonderOpportunity.assetsReady = false;
-      return { shown, before };
-    });
-    await page.waitForFunction(() => (
-      window.__game?.scenes?.play?.getCabinetWonderDebugState?.().lastTerminal?.reason === 'asset_late'
-    ), null, { timeout: 5000 }).catch(() => null);
-    const assetLate = await page.evaluate(() => {
-      const state = window.__game.scenes.play.getCabinetWonderDebugState();
-      return {
-        opportunity: state.opportunity,
-        pending: state.pending,
-        active: state.active,
-        noAgencyActive: state.noAgencyActive,
-        progressionResumeCount: state.progressionResumeCount,
-        terminal: state.lastTerminal
-      };
-    });
-
-    const destruction = await page.evaluate(() => {
-      const play = window.__game.scenes.play;
-      play.enemyManager?.forceClearAllEnemies?.();
-      play.clearToastState?.();
-      play.enemyManager.state = 'WAVE_BRIEFING';
-      play.enemyManager.phase = 'WAVES';
-      const shown = play.maybeShowCabinetWonder({
+      game.lateGameExperiment = null;
+      play.gameOverSequenceStarted = true;
+      const gameOverShown = play.maybeShowCabinetWonder({
         debugForce: true,
         forceVariantId: 'aurora_crown',
         sector: 8,
         waveNumber: 3,
         hasUpcomingWave: true
       });
+      play.gameOverSequenceStarted = false;
+      return { completedState, experimentShown, gameOverShown };
+    });
+
+    return {
+      variantId,
+      viewport,
+      locale,
+      reducedMotion,
+      synchronous,
+      active,
+      completed,
+      screenshot,
+      pageErrors,
+      consoleErrors
+    };
+  } finally {
+    await context.close();
+  }
+}
+
+async function runFixedDeltaScenario(browser, withWonder) {
+  const runtime = await createReadyPage(browser, {
+    viewport: { width: 1280, height: 720 },
+    locale: 'en',
+    reducedMotion: false
+  });
+  const { context, page, pageErrors, consoleErrors } = runtime;
+  try {
+    const result = await page.evaluate(async (showWonder) => {
+      const game = window.__game;
+      const play = game.scenes.play;
+      const manager = play.enemyManager;
+      game.app?.ticker?.stop?.();
+      play.clearCabinetWonder?.('fixed_delta_setup');
+      play.clearToastState?.();
+      manager.forceClearAllEnemies?.();
+      manager.hijacker = null;
+      manager.pendingTransitionHijackerSpawn = null;
+      play.activeRankUpPresentation = null;
+      play.activeTacticalFusionUnlock = null;
+      play.pendingRankUpPresentation = null;
+      play.activeWaveBonusEffect = null;
+      play.activeBossIntroCard = null;
+      play.activeCenterToast = null;
+      play.activeTopToast = null;
+      play.tacticalDraft = null;
+      play.overrunMilestoneInterlude = null;
+      play.gameOverInterlude = null;
+      play.gameOverSequenceStarted = false;
+      game.gameOverTransitionPending = false;
+      play.introActive = false;
+      play.pendingEnemyStartTimeout = null;
+      play.isPaused = false;
+      play.freezeTimerMs = 0;
+      game.lives = Math.max(1, Number(game.lives) || 3);
+      if (showWonder) {
+        await Promise.all([
+          play.prewarmCabinetWonderVariant('ghost_fleet_salute', 'runtime_fixed_delta'),
+          play.prewarmCabinetWonderVariant('astral_leviathan_library', 'runtime_fixed_delta'),
+          play.prewarmCabinetWonderVariant('celestial_crane_migration', 'runtime_fixed_delta')
+        ]);
+      }
+
+      let fakeNow = Date.now();
+      Date.now = () => fakeNow;
+      const counts = { player: 0, bullets: 0, enemies: 0, powerups: 0 };
+      const wrapUpdate = (object, key) => {
+        const original = object?.update?.bind(object);
+        if (!original) return;
+        object.update = (...args) => {
+          counts[key] += 1;
+          return original(...args);
+        };
+      };
+      wrapUpdate(play.player, 'player');
+      wrapUpdate(play.bulletManager, 'bullets');
+      wrapUpdate(manager, 'enemies');
+      wrapUpdate(play.powerupManager, 'powerups');
+
+      const input = play.inputManager;
+      input.keys.KeyD = true;
+      input.keys.Space = true;
+      input.touchFireActive = true;
+      input.mouseFireActive = true;
+      input.fireToggleLatched = true;
+      input.specialFirePointerJustPressed = true;
+      const inputBefore = input.getTransientDebugState();
+      play.player.applyPowerup('rapid_fire');
+      play.applyScoreMultiplier(2, 12000, 'cabinet_wonder_fixed_delta');
+      play.clearToastState?.();
+      const pickup = play.powerupManager.spawnSpecific(
+        48,
+        48,
+        'damage_up',
+        { source: 'cabinet_wonder_fixed_delta', spawnKey: 'cabinet-wonder-fixed-delta' }
+      );
+      const startClock = play.getGameplayClockMs();
+      const before = {
+        gameplayClockMs: startClock,
+        scoreBoostTimerMs: play.scoreBoostTimer,
+        activePowerupRemainingMs: play.player.getActivePowerupRemainingMs(startClock),
+        pickupRemainingMs: pickup?.getLifetimeRemainingMs?.() || 0,
+        playerX: play.player.x,
+        playerY: play.player.y
+      };
+
+      let frame = 0;
+      let waveReleaseTick = null;
+      let wonderAtWaveRelease = null;
+      let waveDismissalReason = null;
+      manager.state = 'WAVE_BRIEFING';
+      manager.pendingWaveConfig = { runtimeProbe: true };
+      manager.waveBriefingTimer = 0;
+      manager.waveBriefingAnnounced = true;
+      manager.spawnWave = () => {
+        waveReleaseTick = frame;
+        wonderAtWaveRelease = Boolean(play.activeCabinetWonder);
+        waveDismissalReason = play.lastCabinetWonderTerminalState?.reason || null;
+        manager.state = 'TEST_IDLE';
+      };
+      const wonderShown = showWonder ? play.maybeShowCabinetWonder({
+        debugForce: true,
+        forceVariantId: 'ghost_fleet_salute',
+        sector: 4,
+        waveNumber: 3,
+        hasUpcomingWave: true
+      }) : false;
+      const inputAfterShow = input.getTransientDebugState();
+
+      for (frame = 1; frame <= 60; frame += 1) {
+        fakeNow += 16.67;
+        game.update(1);
+        play.activeCabinetWonder?.ticker?.({ deltaTime: 1 });
+      }
+      const endClock = play.getGameplayClockMs();
+      const after = {
+        gameplayClockMs: endClock,
+        scoreBoostTimerMs: play.scoreBoostTimer,
+        activePowerupRemainingMs: play.player.getActivePowerupRemainingMs(endClock),
+        pickupRemainingMs: pickup?.getLifetimeRemainingMs?.() || 0,
+        playerX: play.player.x,
+        playerY: play.player.y
+      };
+
+      play.clearCabinetWonder?.('boss_probe_setup');
+      manager.forceClearAllEnemies?.();
+      manager.hijacker = null;
+      manager.state = 'BOSS_GATE';
+      manager.boss = null;
+      manager.bossSpawning = false;
+      manager.bossGateTimer = 100000;
+      manager.bossGateTauntDelayResolved = true;
+      manager.bossGateTauntDelayMs = 0;
+      manager.bossGateTauntShown = true;
+      let bossReleaseTick = null;
+      let wonderAtBossRelease = null;
+      let bossDismissalReason = null;
+      manager.spawnBoss = () => {
+        bossReleaseTick = frame;
+        wonderAtBossRelease = Boolean(play.activeCabinetWonder);
+        bossDismissalReason = play.lastCabinetWonderTerminalState?.reason || null;
+        return Promise.resolve();
+      };
+      const bossWonderShown = showWonder ? play.maybeShowCabinetWonder({
+        debugForce: true,
+        forceVariantId: 'astral_leviathan_library',
+        sector: 5,
+        waveNumber: 5,
+        hasUpcomingWave: false
+      }) : false;
+      frame += 1;
+      fakeNow += 16.67;
+      game.update(1);
+      play.activeCabinetWonder?.ticker?.({ deltaTime: 1 });
+      await Promise.resolve();
+
+      let hijacker = null;
+      let fallback = null;
+      if (showWonder) {
+        play.clearCabinetWonder?.('hijacker_probe_setup');
+        manager.forceClearAllEnemies?.();
+        manager.state = 'TEST_IDLE';
+        manager.boss = null;
+        manager.bossSpawning = false;
+        manager.hijacker = null;
+        const hijackerWonderShown = play.maybeShowCabinetWonder({
+          debugForce: true,
+          forceVariantId: 'celestial_crane_migration',
+          sector: 6,
+          waveNumber: 3,
+          hasUpcomingWave: true
+        });
+        let spawnCalls = 0;
+        manager.pendingTransitionHijackerSpawn = {
+          level: manager.level,
+          spawnX: 321,
+          spawnY: 123,
+          initialBeamDelayMs: 2175
+        };
+        manager.spawnHijacker = (plan) => {
+          spawnCalls += 1;
+          manager.hijacker = { active: true, visible: true, x: plan.spawnX, y: plan.spawnY };
+        };
+        const released = manager.releasePendingTransitionHijackerSpawn();
+        hijacker = {
+          wonderShown: hijackerWonderShown,
+          released,
+          spawnCalls,
+          pendingCleared: manager.pendingTransitionHijackerSpawn === null,
+          active: Boolean(manager.hijacker?.active),
+          wonderCleared: play.activeCabinetWonder === null,
+          dismissalReason: play.lastCabinetWonderTerminalState?.reason || null
+        };
+
+        manager.hijacker = null;
+        const missingVariant = {
+          id: 'runtime_missing_asset',
+          title: 'UNTRANSLATED INTERNAL TEST TITLE',
+          signalClass: 'runtime_probe',
+          art: 'missing-runtime-art',
+          palette: [0x65e8ff, 0xff4fd8, 0xffd166]
+        };
+        const fallbackShown = play.beginCabinetWonderOpportunity({
+          variant: missingVariant,
+          sector: 9,
+          waveNumber: 3,
+          hasUpcomingWave: true,
+          reason: 'runtime_missing_asset'
+        });
+        const fallbackActive = play.getCabinetWonderDebugState();
+        const staleTicker = play.activeCabinetWonder?.ticker;
+        const firstClear = play.clearCabinetWonder('runtime_cancel');
+        const secondClear = play.clearCabinetWonder('runtime_cancel_again');
+        staleTicker?.({ deltaTime: 120 });
+        fallback = {
+          shown: fallbackShown,
+          active: fallbackActive,
+          firstClear,
+          secondClear,
+          afterStaleCallback: play.getCabinetWonderDebugState()
+        };
+      }
+
+      return {
+        withWonder: showWonder,
+        wonderShown,
+        bossWonderShown,
+        inputBefore,
+        inputAfterShow,
+        before,
+        after,
+        counts,
+        waveReleaseTick,
+        wonderAtWaveRelease,
+        waveDismissalReason,
+        bossReleaseTick,
+        wonderAtBossRelease,
+        bossDismissalReason,
+        hijacker,
+        fallback
+      };
+    }, withWonder);
+    return { ...result, pageErrors, consoleErrors };
+  } finally {
+    await context.close();
+  }
+}
+
+async function runSceneDestructionScenario(browser) {
+  const runtime = await createReadyPage(browser, {
+    viewport: { width: 1280, height: 720 },
+    locale: 'en',
+    reducedMotion: false
+  });
+  const { context, page, pageErrors, consoleErrors } = runtime;
+  try {
+    const result = await page.evaluate(async () => {
+      const game = window.__game;
+      const play = game.scenes.play;
+      play.clearCabinetWonder?.('destruction_setup');
+      play.clearToastState?.();
+      play.enemyManager?.forceClearAllEnemies?.();
+      for (const bullet of play.bulletManager?.enemyBullets || []) {
+        bullet.active = false;
+        bullet.visible = false;
+      }
+      play.enemyManager.boss = null;
+      play.enemyManager.hijacker = null;
+      play.enemyManager.state = 'TEST_IDLE';
+      play.introActive = false;
+      play.pendingEnemyStartTimeout = null;
+      const artReady = await play.prewarmCabinetWonderVariant('ghost_fleet_salute', 'runtime_scene_destruction');
+      const shown = play.maybeShowCabinetWonder({
+        debugForce: true,
+        forceVariantId: 'ghost_fleet_salute',
+        sector: 10,
+        waveNumber: 3,
+        hasUpcomingWave: true
+      });
       const token = play.cabinetWonderOpportunity;
-      window.__game.app?.ticker?.stop?.();
+      game.app?.ticker?.stop?.();
       play.destroy();
       return {
         shown,
-        token: token ? {
-          terminal: token.terminal,
-          state: token.state,
-          terminalReason: token.terminalReason,
-          releaseCount: token.releaseCount,
-          timersCleared: ['preludeTimer', 'transitionMonitorTimer', 'revealTimer', 'cleanupTimer']
-            .every((key) => token[key] === null)
-        } : null,
-        opportunityCleared: play.cabinetWonderOpportunity === null,
-        pendingCleared: play.pendingCabinetWonder === null,
+        artReady,
+        tokenState: token?.state,
+        tokenReason: token?.terminalReason,
+        tokenTerminal: token?.terminal,
+        releaseCount: token?.releaseCount,
         activeCleared: play.activeCabinetWonder === null,
-        noAgencyActive: play.isCabinetWonderNoAgencyPresentationActive()
+        opportunityCleared: play.cabinetWonderOpportunity === null
       };
     });
-    lifecycle = { cancellation, afterStaleCallback, assetLateStarted, assetLate, destruction };
+    return { ...result, pageErrors, consoleErrors };
+  } finally {
+    await context.close();
   }
-  await context.close();
-  return {
-    variantId,
-    viewport,
-    reducedMotion,
-    synchronous,
-    progressionHold: {
-      prelude: preludeProgressionHeld,
-      active: activeProgressionHeld,
-      completed: completedProgressionHeld
-    },
-    timedEffects: {
-      before: synchronous.timedBefore,
-      prelude: preludeTimedState,
-      active: activeTimedState,
-      completed: completedTimedState
-    },
-    enemyRelease: {
-      before: synchronous.spawnBaseline,
-      prelude: preludeSpawnState,
-      active: activeSpawnState
-    },
-    prelude: preludeState.cabinetWonders,
-    active: activeState.cabinetWonders,
-    completed: completedState.cabinetWonders,
-    experimentalIsolation,
-    lifecycle,
-    screenshot,
-    pageErrors,
-    consoleErrors
+}
+
+function validateVisualScenario(scenario, failures) {
+  const sync = scenario.synchronous;
+  const active = scenario.active;
+  const debug = active.debug;
+  const completed = scenario.completed.completedState;
+  const bounds = debug?.active?.authoredBounds || {};
+  const scaleX = active.renderedViewport.width / active.logicalViewport.width;
+  const scaleY = active.renderedViewport.height / active.logicalViewport.height;
+  const renderedBounds = {
+    x: bounds.x * scaleX,
+    y: bounds.y * scaleY,
+    width: bounds.width * scaleX,
+    height: bounds.height * scaleY
   };
+  const maxWidth = Math.min(active.renderedViewport.width * 0.384, 672 * scaleX);
+  const maxHeight = Math.min(active.renderedViewport.height * 0.288, 288 * scaleY);
+  const reservedBounds = debug?.active?.reservedTransitionBounds || [];
+  const overlapFindings = reservedBounds.filter((reserved) => (
+    bounds.x < reserved.x + reserved.width + 15.5
+    && bounds.x + bounds.width > reserved.x - 15.5
+    && bounds.y < reserved.y + reserved.height + 15.5
+    && bounds.y + bounds.height > reserved.y - 15.5
+  ));
+  if (!sync.artReady || !sync.shown || sync.second || sync.scoreDelta !== 0 || !sync.transitionActive) {
+    failures.push(scenario.locale + ' synchronous entry mismatch: ' + JSON.stringify(sync));
+  }
+  if (JSON.stringify(sync.inputBefore) !== JSON.stringify(sync.inputAfter)) {
+    failures.push(scenario.locale + ' input was reset on Wonder entry: ' + JSON.stringify(sync));
+  }
+  if (sync.language?.current !== scenario.locale) {
+    failures.push(scenario.locale + ' locale did not initialize: ' + JSON.stringify(sync.language));
+  }
+  if (
+    sync.debug?.blocking !== false
+    || sync.debug?.lifecycleState !== 'revealing'
+    || sync.debug?.active?.blocking !== false
+    || sync.debug?.overlayCount !== 1
+  ) {
+    failures.push(scenario.locale + ' immediate lifecycle mismatch: ' + JSON.stringify(sync.debug));
+  }
+  if (
+    debug?.availableVariants !== 60
+    || debug?.onePerSector !== true
+    || debug?.cadenceSectors !== 3
+    || debug?.scoreNeutral !== true
+    || debug?.gameplayNeutral !== true
+    || debug?.blocking !== false
+    || debug?.active?.id !== scenario.variantId
+    || debug?.active?.blocking !== false
+    || debug?.active?.playerLaneSafe !== true
+    || debug?.active?.layer !== 'gameplay_background'
+    || debug?.active?.assetSource !== 'authored_art'
+    || debug?.active?.generatedArtReady !== true
+    || debug?.active?.visualLanguage !== 'cabinet_wonder_cosmic_cameo_authored_art'
+    || debug?.active?.decorativeAccentAlpha > 0.1
+    || debug?.active?.presentationTarget?.widthRatio !== 0.384
+    || debug?.active?.presentationTarget?.heightRatio !== 0.288
+    || debug?.active?.presentationTarget?.maxWidth !== 672
+    || debug?.active?.presentationTarget?.maxHeight !== 288
+    || debug?.active?.presentationTarget?.centerYRatio !== 0.3
+    || debug?.active?.presentationTarget?.uiGap !== 16
+    || debug?.active?.presentationTarget?.playerLaneTopRatio !== 0.62
+    || debug?.active?.noOverlap !== true
+    || overlapFindings.length > 0
+    || debug?.active?.audioProfile !== 'wonder_revelation'
+    || debug?.active?.audioLayers?.length !== 1
+    || debug?.active?.audioLayers?.[0] !== 'wonder_revelation'
+    || debug?.overlayCount !== 1
+    || debug?.active?.reducedMotion !== scenario.reducedMotion
+    || !debug?.active?.caption
+    || debug.active.caption.includes('UNTRANSLATED INTERNAL TEST TITLE')
+    || renderedBounds.width > maxWidth + 1
+    || renderedBounds.height > maxHeight + 1
+    || renderedBounds.y + renderedBounds.height > active.renderedViewport.height * 0.62 + 1
+    || Math.abs((renderedBounds.x + renderedBounds.width * 0.5) - active.renderedViewport.width * 0.5) > 1
+  ) {
+    failures.push(scenario.locale + ' framed cameo mismatch: ' + JSON.stringify(active));
+  }
+  if (
+    active.alpha < 0.95
+    || active.zIndex !== -500
+    || active.eventMode !== 'none'
+    || active.interactive
+    || active.maskCount < 1
+    || (debug?.active?.generatedArtReady && !['normal', '0'].includes(active.generatedArtBlendMode))
+    || (scenario.reducedMotion && (active.scanVisible || !approximatelyEqual(active.scaleX, 1, 0.001)))
+    || (!scenario.reducedMotion && (!active.scanVisible || active.scaleX < 0.985 || active.scaleX > 1.001))
+  ) {
+    failures.push(scenario.locale + ' render/layer mismatch: ' + JSON.stringify(active));
+  }
+  const expectedDuration = scenario.reducedMotion ? 950 : 1290;
+  if (debug?.active?.durationMs !== expectedDuration) {
+    failures.push(scenario.locale + ' timing mismatch: ' + JSON.stringify(debug?.active));
+  }
+  if (
+    completed?.active !== null
+    || completed?.overlayCount !== 0
+    || completed?.blocking !== false
+    || completed?.lifecycleState !== 'idle'
+    || completed?.lastTerminal?.state !== 'complete'
+    || completed?.lastTerminal?.reason !== 'complete'
+    || completed?.lastTerminal?.releaseCount !== 1
+    || completed?.lastTerminal?.blocking !== false
+    || scenario.completed.experimentShown
+    || scenario.completed.gameOverShown
+  ) {
+    failures.push(scenario.locale + ' completion/unsafe skip mismatch: ' + JSON.stringify(scenario.completed));
+  }
+  if (scenario.pageErrors.length || scenario.consoleErrors.length) {
+    failures.push(scenario.locale + ' browser errors: ' + scenario.pageErrors.concat(scenario.consoleErrors).join('; '));
+  }
+}
+
+function validateFixedDelta(control, wonder, failures) {
+  const comparableFields = [
+    'gameplayClockMs',
+    'scoreBoostTimerMs',
+    'activePowerupRemainingMs',
+    'pickupRemainingMs',
+    'playerX',
+    'playerY'
+  ];
+  for (const field of comparableFields) {
+    const controlDelta = Number(control.after[field]) - Number(control.before[field]);
+    const wonderDelta = Number(wonder.after[field]) - Number(wonder.before[field]);
+    if (!approximatelyEqual(controlDelta, wonderDelta, field.includes('player') ? 0.1 : 2)) {
+      failures.push('fixed-delta ' + field + ' diverged: ' + JSON.stringify({ controlDelta, wonderDelta }));
+    }
+  }
+  if (JSON.stringify(control.counts) !== JSON.stringify(wonder.counts)) {
+    failures.push('simulation update counts diverged: ' + JSON.stringify({ control: control.counts, wonder: wonder.counts }));
+  }
+  if (
+    control.waveReleaseTick === null
+    || Math.abs(control.waveReleaseTick - wonder.waveReleaseTick) > 1
+    || wonder.wonderAtWaveRelease !== false
+    || wonder.waveDismissalReason !== 'wave_release'
+  ) {
+    failures.push('wave release timing/dismissal mismatch: ' + JSON.stringify({ control, wonder }));
+  }
+  if (
+    control.bossReleaseTick === null
+    || Math.abs(control.bossReleaseTick - wonder.bossReleaseTick) > 1
+    || wonder.wonderAtBossRelease !== false
+    || wonder.bossDismissalReason !== 'boss_release'
+  ) {
+    failures.push('boss release timing/dismissal mismatch: ' + JSON.stringify({ control, wonder }));
+  }
+  if (
+    !wonder.wonderShown
+    || !wonder.bossWonderShown
+    || JSON.stringify(wonder.inputBefore) !== JSON.stringify(wonder.inputAfterShow)
+  ) {
+    failures.push('fixed-delta Wonder entry/input mismatch: ' + JSON.stringify(wonder));
+  }
+  const hijacker = wonder.hijacker;
+  if (
+    !hijacker?.wonderShown
+    || hijacker.released !== true
+    || hijacker.spawnCalls !== 1
+    || !hijacker.pendingCleared
+    || !hijacker.active
+    || !hijacker.wonderCleared
+    || hijacker.dismissalReason !== 'hijacker_release'
+  ) {
+    failures.push('Hijacker immediate release mismatch: ' + JSON.stringify(hijacker));
+  }
+  const fallback = wonder.fallback;
+  if (
+    fallback?.shown !== false
+    || fallback.active?.active !== null
+    || fallback.active?.opportunity !== null
+    || fallback.active?.overlayCount !== 0
+    || fallback.active?.lastTerminal?.reason !== 'asset_not_ready'
+    || fallback.active?.lastTerminal?.assetsReady !== false
+    || fallback.firstClear !== false
+    || fallback.secondClear !== false
+    || fallback.afterStaleCallback?.active !== null
+    || fallback.afterStaleCallback?.overlayCount !== 0
+    || fallback.afterStaleCallback?.lastTerminal?.reason !== 'asset_not_ready'
+  ) {
+    failures.push('missing-art skip/idempotent cleanup mismatch: ' + JSON.stringify(fallback));
+  }
+  for (const scenario of [control, wonder]) {
+    if (scenario.pageErrors.length || scenario.consoleErrors.length) {
+      failures.push('fixed-delta browser errors: ' + scenario.pageErrors.concat(scenario.consoleErrors).join('; '));
+    }
+  }
 }
 
 mkdirSync(outputDir, { recursive: true });
@@ -455,243 +770,54 @@ const browser = await chromium.launch({
   executablePath: chromePath(),
   args: ['--disable-gpu', '--no-sandbox', '--autoplay-policy=no-user-gesture-required']
 });
-const report = { ok: false, baseUrl, outputDir, scenarios: [], failures: [] };
-try {
-  const allVariantIds = [
-    'ghost_fleet_salute',
-    'astral_leviathan_library',
-    'celestial_crane_migration'
-  ];
-  const requestedVariantIds = new Set(
-    String(process.env.CHECK_VARIANT_IDS || '')
-      .split(',')
-      .map((value) => value.trim())
-      .filter(Boolean)
-  );
-  const variantIds = requestedVariantIds.size
-    ? allVariantIds.filter((variantId) => requestedVariantIds.has(variantId))
-    : allVariantIds;
-  if (variantIds.length === 0) throw new Error(`No Cabinet Wonder variants matched CHECK_VARIANT_IDS=${[...requestedVariantIds].join(',')}`);
-  for (const [index, variantId] of variantIds.entries()) {
-    report.scenarios.push(await runVariant(
-      browser,
-      variantId,
-      index % 3 === 1 ? { width: 1920, height: 1080 } : { width: 1280, height: 720 },
-      variantId === 'astral_leviathan_library'
-    ));
-  }
+const report = {
+  ok: false,
+  baseUrl,
+  outputDir,
+  visuals: [],
+  fixedDelta: null,
+  sceneDestruction: null,
+  failures: []
+};
 
-  for (const scenario of report.scenarios) {
-    const active = scenario.active;
-    const prelude = scenario.prelude;
-    const completed = scenario.completed;
-    if (
-      !scenario.synchronous.shown
-      || scenario.synchronous.second
-      || scenario.synchronous.scoreDelta !== 0
-      || scenario.synchronous.runMode !== 'unranked'
-      || scenario.synchronous.runModeReason !== 'debug_cabinet_wonder'
-      || scenario.synchronous.isDebugRun !== true
-      || scenario.synchronous.transitionActiveAtPreludeStart !== true
-    ) {
-      report.failures.push(`${scenario.variantId} force/one-per-sector/score-neutral mismatch: ${JSON.stringify(scenario.synchronous)}`);
-    }
-    if (
-      prelude?.pending?.kind !== 'audio_prelude'
-      || prelude?.pending?.preludeLeadMs !== 1500
-      || prelude?.pending?.audioRevelationPlayed !== true
-      || prelude?.active !== null
-      || prelude?.shownCount !== 0
-      || prelude?.noAgencyActive !== true
-      || prelude?.opportunity?.state !== 'audio_prelude'
-    ) {
-      report.failures.push(`${scenario.variantId} sacred prelude mismatch: ${JSON.stringify(prelude)}`);
-    }
-    if (
-      active?.availableVariants !== 60
-      || active?.shownCount !== 1
-      || active?.onePerRun !== false
-      || active?.onePerSector !== true
-      || active?.cadenceSectors !== 3
-      || active?.scoreNeutral !== true
-      || active?.gameplayNeutral !== true
-      || active?.active?.id !== scenario.variantId
-      || active?.active?.upperFieldSafe !== true
-      || active?.active?.elementCount < 5
-      || active?.active?.audioProfile !== 'wonder'
-      || active?.active?.audioRevelationPlayed !== true
-      || active?.active?.preludeLeadMs !== 1500
-      || active?.active?.visualStartedAt - active?.active?.preludeStartedAt < 1400
-      || active?.active?.visualStartedAt - active?.active?.preludeStartedAt > 2100
-      || !Array.isArray(active?.active?.audioLayers)
-      || !active.active.audioLayers.includes('elevenlabs_wonder_choir_prelude')
-      || active?.active?.layer !== 'gameplay_background'
-      || active?.active?.generatedArtReady !== true
-      || active?.active?.visualLanguage !== 'cabinet_wonder_imagegen_v2'
-      || active?.active?.proceduralAccentAlpha > 0.2
-      || active?.active?.presentationTarget?.widthRatio !== 0.6
-      || active?.active?.presentationTarget?.heightRatio !== 0.45
-      || active?.overlayCount !== 1
-      || active?.active?.reducedMotion !== scenario.reducedMotion
-      || active?.noAgencyActive !== true
-    ) {
-      report.failures.push(`${scenario.variantId} active presentation mismatch: ${JSON.stringify(active)}`);
-    }
-    if (
-      scenario.progressionHold?.prelude !== true
-      || scenario.progressionHold?.active !== true
-      || scenario.progressionHold?.completed !== false
-    ) {
-      report.failures.push(`${scenario.variantId} progression hold mismatch: ${JSON.stringify(scenario.progressionHold)}`);
-    }
-    if (
-      completed?.active !== null
-      || completed?.overlayCount !== 0
-      || completed?.shownCount !== 1
-      || completed?.last?.completed !== true
-      || completed?.noAgencyActive !== false
-      || completed?.lastTerminal?.state !== 'released'
-      || completed?.lastTerminal?.releaseCount !== 1
-      || completed?.lastTerminal?.progressionResumeCount !== 1
-      || completed?.lastTerminal?.preludeOverlapMs < 1100
-      || completed?.lastTerminal?.preludeOverlapMs > 1500
-    ) {
-      report.failures.push(`${scenario.variantId} cleanup mismatch: ${JSON.stringify({ completed, synchronous: scenario.synchronous })}`);
-    }
-    const timed = scenario.timedEffects;
-    const atRelease = completed?.lastTerminal?.timedEffectAtRelease || {};
-    const releasePickup = atRelease.pickupRemainingMs?.[0]?.remainingMs;
-    if (
-      !approximatelyEqual(timed.prelude.gameplayClockMs, timed.before.gameplayClockMs)
-      || !approximatelyEqual(timed.active.gameplayClockMs, timed.before.gameplayClockMs)
-      || !approximatelyEqual(atRelease.gameplayClockMs, timed.before.gameplayClockMs)
-      || !approximatelyEqual(timed.prelude.scoreBoostTimerMs, timed.before.scoreBoostTimerMs)
-      || !approximatelyEqual(timed.active.scoreBoostTimerMs, timed.before.scoreBoostTimerMs)
-      || !approximatelyEqual(atRelease.scoreBoostTimerMs, timed.before.scoreBoostTimerMs)
-      || !approximatelyEqual(timed.prelude.activePowerupRemainingMs, timed.before.activePowerupRemainingMs)
-      || !approximatelyEqual(timed.active.activePowerupRemainingMs, timed.before.activePowerupRemainingMs)
-      || !approximatelyEqual(atRelease.activePowerupRemainingMs, timed.before.activePowerupRemainingMs)
-      || !approximatelyEqual(timed.prelude.pickupRemainingMs, timed.before.pickupRemainingMs)
-      || !approximatelyEqual(timed.active.pickupRemainingMs, timed.before.pickupRemainingMs)
-      || !approximatelyEqual(releasePickup, timed.before.pickupRemainingMs)
-    ) {
-      report.failures.push(`${scenario.variantId} timed effects aged during no-agency presentation: ${JSON.stringify({ timed, atRelease })}`);
-    }
-    const releases = scenario.enemyRelease;
-    if (
-      releases.prelude.totalEnemiesSpawned !== releases.before.totalEnemiesSpawned
-      || releases.active.totalEnemiesSpawned !== releases.before.totalEnemiesSpawned
-      || releases.prelude.currentWaveIndex !== releases.before.currentWaveIndex
-      || releases.active.currentWaveIndex !== releases.before.currentWaveIndex
-      || releases.prelude.activeEnemyCount !== 0
-      || releases.active.activeEnemyCount !== 0
-      || releases.prelude.hijackerActive
-      || releases.active.hijackerActive
-    ) {
-      report.failures.push(`${scenario.variantId} enemy release occurred under Wonder: ${JSON.stringify(releases)}`);
-    }
-    if (scenario.pageErrors.length || scenario.consoleErrors.length) {
-      report.failures.push(`${scenario.variantId} browser errors: ${[...scenario.pageErrors, ...scenario.consoleErrors].join('; ')}`);
-    }
-    if (
-      scenario.experimentalIsolation.shown !== false
-      || scenario.experimentalIsolation.noAgencyActive !== false
-      || scenario.experimentalIsolation.opportunity !== false
-    ) {
-      report.failures.push(`${scenario.variantId} experimental mode entered Wonder hold: ${JSON.stringify(scenario.experimentalIsolation)}`);
-    }
-    if (scenario.lifecycle) {
-      const { cancellation, afterStaleCallback, assetLateStarted, assetLate, destruction } = scenario.lifecycle;
-      const input = cancellation.inputAfterEnter || {};
-      if (
-        cancellation.shown !== true
-        || input.pressedKeys?.length !== 1
-        || input.pressedKeys?.[0] !== 'KeyW'
-        || !input.suppressedKeys?.includes('Space')
-        || !input.suppressedKeys?.includes('KeyB')
-        || input.touchFireActive
-        || input.mouseFireActive
-        || input.fireToggleLatched
-        || input.specialFirePointerJustPressed
-        || input.justPressed?.length
-        || input.justPressedActions?.length
-      ) {
-        report.failures.push(`Wonder transient input barrier mismatch: ${JSON.stringify(cancellation)}`);
-      }
-      const expectedHijackerX = cancellation.managerGameWidth * 0.5 - 50;
-      if (
-        cancellation.selectionRandomCalls !== 3
-        || !approximatelyEqual(cancellation.plan?.spawnX, expectedHijackerX)
-        || cancellation.plan?.initialBeamDelayMs !== 2175
-        || cancellation.deferred !== true
-        || cancellation.beforeCancel?.hijackerActive
-        || cancellation.beforeCancel?.deferredReleaseCount !== 1
-        || cancellation.beforeCancel?.pendingPlan
-        || cancellation.firstCancel !== true
-        || cancellation.secondCancel !== false
-        || cancellation.tokenAfterCancel?.terminal !== true
-        || cancellation.tokenAfterCancel?.state !== 'cancelled'
-        || cancellation.tokenAfterCancel?.releaseCount !== 1
-        || cancellation.tokenAfterCancel?.timersCleared !== true
-        || cancellation.terminal?.state !== 'cancelled'
-        || cancellation.terminal?.reason !== 'runtime_cancel'
-        || cancellation.terminal?.releaseCount !== 1
-        || cancellation.terminal?.deferredReleaseCount !== 1
-        || cancellation.releasedHijacker?.active !== true
-        || !approximatelyEqual(cancellation.releasedHijacker?.x, expectedHijackerX)
-        || !approximatelyEqual(cancellation.releasedHijacker?.x, cancellation.plan?.spawnX)
-        || !approximatelyEqual(cancellation.releasedHijacker?.y, cancellation.plan?.spawnY)
-        || Math.abs((cancellation.releasedHijacker?.initialBeamDelayMs || 0) - 2175) > 80
-      ) {
-        report.failures.push(`Wonder cancellation/Hijacker deferral mismatch: ${JSON.stringify(cancellation)}`);
-      }
-      if (
-        afterStaleCallback.opportunity !== null
-        || afterStaleCallback.pending !== null
-        || afterStaleCallback.active !== null
-        || afterStaleCallback.overlayCount !== 0
-        || afterStaleCallback.noAgencyActive !== false
-        || afterStaleCallback.terminal?.reason !== 'runtime_cancel'
-        || afterStaleCallback.terminal?.releaseCount !== 1
-      ) {
-        report.failures.push(`Wonder stale callback revived cancelled presentation: ${JSON.stringify(afterStaleCallback)}`);
-      }
-      const assetSnapshot = assetLate.terminal?.timedEffectAtRelease || {};
-      if (
-        assetLateStarted.shown !== true
-        || assetLate.opportunity !== null
-        || assetLate.pending !== null
-        || assetLate.active !== null
-        || assetLate.noAgencyActive !== false
-        || assetLate.terminal?.state !== 'cancelled'
-        || assetLate.terminal?.reason !== 'asset_late'
-        || assetLate.terminal?.releaseCount !== 1
-        || !approximatelyEqual(assetSnapshot.gameplayClockMs, assetLateStarted.before?.gameplayClockMs)
-        || !approximatelyEqual(assetSnapshot.scoreBoostTimerMs, assetLateStarted.before?.scoreBoostTimerMs)
-      ) {
-        report.failures.push(`Wonder asset-late cancellation mismatch: ${JSON.stringify({ assetLateStarted, assetLate })}`);
-      }
-      if (
-        destruction.shown !== true
-        || destruction.token?.terminal !== true
-        || destruction.token?.state !== 'cancelled'
-        || destruction.token?.terminalReason !== 'scene_destroy'
-        || destruction.token?.releaseCount !== 1
-        || destruction.token?.timersCleared !== true
-        || destruction.opportunityCleared !== true
-        || destruction.pendingCleared !== true
-        || destruction.activeCleared !== true
-        || destruction.noAgencyActive !== false
-      ) {
-        report.failures.push(`Wonder scene-destruction cleanup mismatch: ${JSON.stringify(destruction)}`);
-      }
-    }
+try {
+  for (const [index, locale] of supportedLocales.entries()) {
+    report.visuals.push(await runVisualScenario(browser, {
+      locale,
+      variantId: visualVariants[index % visualVariants.length],
+      viewport: index % 2 === 0 ? { width: 1920, height: 1080 } : { width: 1280, height: 720 },
+      reducedMotion: locale === 'ja'
+    }));
+  }
+  const control = await runFixedDeltaScenario(browser, false);
+  const wonder = await runFixedDeltaScenario(browser, true);
+  report.fixedDelta = { control, wonder };
+  report.sceneDestruction = await runSceneDestructionScenario(browser);
+
+  for (const scenario of report.visuals) validateVisualScenario(scenario, report.failures);
+  validateFixedDelta(control, wonder, report.failures);
+  const destruction = report.sceneDestruction;
+  if (
+    !destruction.artReady
+    || !destruction.shown
+    || destruction.tokenState !== 'cancelled'
+    || destruction.tokenReason !== 'scene_destroy'
+    || destruction.tokenTerminal !== true
+    || destruction.releaseCount !== 1
+    || !destruction.activeCleared
+    || !destruction.opportunityCleared
+    || destruction.pageErrors.length
+    || destruction.consoleErrors.length
+  ) {
+    report.failures.push('scene destruction cleanup mismatch: ' + JSON.stringify(destruction));
   }
 
   report.ok = report.failures.length === 0;
-  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-  if (!report.ok) throw new Error(`[cabinet-wonders-runtime] ${report.failures.join('; ')}`);
-  console.log(`[cabinet-wonders-runtime] PASS output=${outputDir}`);
+  writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2) + '\n');
+  if (!report.ok) {
+    throw new Error('[cabinet-wonders-runtime] ' + report.failures.join('; '));
+  }
+  console.log('[cabinet-wonders-runtime] PASS output=' + outputDir);
 } finally {
   await browser.close();
   if (server) server.kill();

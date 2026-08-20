@@ -216,10 +216,19 @@ function pickBossWarningJoke(profile, level = 1) {
 const OVERRUN_CLEAR_VFX_MS = 5600;
 const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
-const CABINET_WONDER_PRELUDE_MS = 1500;
-const CABINET_WONDER_REVEAL_GRACE_MS = 220;
-const CABINET_WONDER_CLEANUP_MS = 120;
-const CABINET_WONDER_REVEAL_POLL_MS = 60;
+const CABINET_WONDER_START_DELAY_MS = 160;
+const CABINET_WONDER_FADE_IN_MS = 180;
+const CABINET_WONDER_HOLD_MS = 650;
+const CABINET_WONDER_FADE_OUT_MS = 300;
+const CABINET_WONDER_REDUCED_FADE_IN_MS = 100;
+const CABINET_WONDER_REDUCED_FADE_OUT_MS = 200;
+const CABINET_WONDER_WIDTH_RATIO = 0.384;
+const CABINET_WONDER_HEIGHT_RATIO = 0.288;
+const CABINET_WONDER_MAX_WIDTH = 672;
+const CABINET_WONDER_MAX_HEIGHT = 288;
+const CABINET_WONDER_CENTER_Y_RATIO = 0.3;
+const CABINET_WONDER_UI_GAP = 16;
+const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0.62;
 const GAME_OVER_DEATH_HOLD_MS = 620;
 const GAME_OVER_SKIP_DEBOUNCE_MS = 600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
@@ -280,7 +289,6 @@ export class PlayScene {
     GameAssets.ensureTacticalDraftFieldTexture?.().catch(() => {});
     this.gameOverFinalTransmissionVariant = null;
     this.gameOverFinalTransmissionReady = null;
-    GameAssets.ensureCabinetWonderTextures?.().catch(() => {});
     this.gameplayViewportMask.eventMode = 'none';
     this.applyGameplayViewportMask();
 
@@ -355,11 +363,9 @@ export class PlayScene {
     this.cabinetWonderHistory = [];
     this.cabinetWonderEligibleChecks = 0;
     this.cabinetWonderLastDecision = null;
-    this.pendingCabinetWonder = null;
-    this.pendingCabinetWonderReleaseTimer = null;
+    this.cabinetWonderPrewarm = null;
     this.cabinetWonderOpportunity = null;
     this.cabinetWonderOpportunitySequence = 0;
-    this.cabinetWonderProgressionResumeCount = 0;
     this.lastCabinetWonderTerminalState = null;
     this.pendingEnemyStartTimeout = null;
     this.capState = {
@@ -989,10 +995,9 @@ export class PlayScene {
     this.cabinetWonderHistory = [];
     this.cabinetWonderEligibleChecks = 0;
     this.cabinetWonderLastDecision = null;
-    this.pendingCabinetWonder = null;
+    this.cabinetWonderPrewarm = null;
     this.cabinetWonderOpportunity = null;
     this.cabinetWonderOpportunitySequence = 0;
-    this.cabinetWonderProgressionResumeCount = 0;
     this.lastCabinetWonderTerminalState = null;
     this.pendingStormSurvivedRewards = [];
     this.waveTransitionFireSuppressedWaveIndex = null;
@@ -2868,8 +2873,82 @@ export class PlayScene {
     };
   }
 
+  getCabinetWonderSelectionSeed() {
+    return this.game?.contentDirector?.seed
+      || String(BUILD_ID || 'nova-swarm') + ':'
+        + String(this.game?.runStartedAtMs || 0) + ':'
+        + String(this.game?.selectedShipSpriteKey || 'ship');
+  }
+
+  prewarmCabinetWonderVariant(variantId, source = 'transition_prediction') {
+    const id = String(variantId || '');
+    if (!id) return Promise.resolve(false);
+    if (GameAssets.getCabinetWonderTexture?.(id)) {
+      const now = Date.now();
+      this.cabinetWonderPrewarm = {
+        variantId: id,
+        source,
+        state: 'ready',
+        requestedAt: now,
+        readyAt: now
+      };
+      return Promise.resolve(true);
+    }
+    const request = {
+      variantId: id,
+      source,
+      state: 'loading',
+      requestedAt: Date.now(),
+      readyAt: null
+    };
+    this.cabinetWonderPrewarm = request;
+    return Promise.resolve(GameAssets.ensureCabinetWonderTexture?.(id))
+      .then((texture) => {
+        const ready = Boolean(texture && GameAssets.getCabinetWonderTexture?.(id));
+        if (this.cabinetWonderPrewarm === request) {
+          request.state = ready ? 'ready' : 'failed';
+          request.readyAt = ready ? Date.now() : null;
+        }
+        return ready;
+      })
+      .catch(() => {
+        if (this.cabinetWonderPrewarm === request) request.state = 'failed';
+        return false;
+      });
+  }
+
+  prewarmCabinetWonderForTransition(context = {}) {
+    if (this.game?.lateGameExperiment?.active === true) return false;
+    const sector = Math.max(1, Math.floor(Number(context.sector) || 1));
+    const decision = evaluateCabinetWonder(this.getCabinetWonderSelectionSeed(), {
+      ...context,
+      eligibleChecks: this.cabinetWonderEligibleChecks + 1,
+      sectorAlreadyShown: this.cabinetWonderHistory.some((entry) => entry.sector === sector),
+      recentVariantIds: this.cabinetWonderHistory.slice(-12).map((entry) => entry.id)
+    });
+    if (!decision.triggered || !decision.variant) return false;
+    this.prewarmCabinetWonderVariant(decision.variant.id, 'active_wave_prediction');
+    return true;
+  }
+
+  recordCabinetWonderAssetSkip(decision = {}, reason = 'asset_not_ready') {
+    this.lastCabinetWonderTerminalState = {
+      id: null,
+      key: null,
+      variantId: decision.variant?.id || null,
+      state: 'cancelled',
+      reason,
+      releaseCount: 0,
+      blocking: false,
+      assetsReady: false,
+      visualStartedAt: null,
+      terminalAt: Date.now()
+    };
+    return false;
+  }
+
   maybeShowCabinetWonder(context = {}) {
-    if (this.cabinetWonderOpportunity || this.pendingCabinetWonder || this.activeCabinetWonder) return false;
+    if (this.cabinetWonderOpportunity || this.activeCabinetWonder) return false;
     if (this.game?.lateGameExperiment?.active === true) return false;
     const debugForce = context.debugForce === true;
     if (debugForce) {
@@ -2898,46 +2977,31 @@ export class PlayScene {
   beginCabinetWonderOpportunity(decision = {}) {
     if (!decision?.variant || this.game?.currentScene !== this) return false;
     if (this.cabinetWonderOpportunity || this.activeCabinetWonder) return false;
+    if (!this.isCabinetWonderPresentationSafe()) return false;
+    if (!GameAssets.getCabinetWonderTexture?.(decision.variant.id)) {
+      return this.recordCabinetWonderAssetSkip(decision, 'asset_not_ready');
+    }
     const id = ++this.cabinetWonderOpportunitySequence;
     const key = `${decision.variant.id}:${decision.sector}:${decision.waveNumber}:${id}`;
     const token = {
       id,
       key,
       decision,
-      state: 'planned',
+      state: 'revealing',
       terminal: false,
       terminalReason: null,
       createdAt: Date.now(),
-      noAgencyStartedAt: null,
-      preludeStartedAt: null,
-      preludeEndsAt: null,
-      prerequisiteDeadlineAt: null,
       visualStartedAt: null,
-      cleanupStartedAt: null,
-      releasedAt: null,
+      endedAt: null,
       releaseCount: 0,
-      assetsReady: Boolean(GameAssets.getCabinetWonderTexture?.(decision.variant.id)) || !decision.variant.art,
-      audioRevelationPlayed: false,
-      preludeTimer: null,
-      transitionMonitorTimer: null,
-      revealTimer: null,
-      cleanupTimer: null,
-      deferredReleases: []
+      assetsReady: Boolean(GameAssets.getCabinetWonderTexture?.(decision.variant.id)) || !decision.variant.art
     };
-    token.timedEffectSnapshot = this.captureCabinetWonderTimedEffectSnapshot();
-    this.powerupManager?.pauseTimedPickupLifetimes?.(token.createdAt);
     this.cabinetWonderOpportunity = token;
-
-    if (!token.assetsReady && decision.variant.art) {
-      GameAssets.ensureCabinetWonderTexture?.(decision.variant.id)
-        .catch(() => null)
-        .then(() => {
-          if (!this.isCurrentCabinetWonderOpportunity(token)) return;
-          token.assetsReady = Boolean(GameAssets.getCabinetWonderTexture?.(decision.variant.id));
-          if (token.state === 'awaiting_reveal') this.scheduleCabinetWonderAfterPresentation(decision, token);
-        });
+    const shown = this.showCabinetWonder({ ...decision, opportunityId: id });
+    if (!shown && this.isCurrentCabinetWonderOpportunity(token)) {
+      this.finalizeCabinetWonderOpportunity(token, 'cancelled', 'visual_unavailable');
     }
-    return this.scheduleCabinetWonderPrelude(decision, token);
+    return shown;
   }
 
   isCurrentCabinetWonderOpportunity(token = this.cabinetWonderOpportunity) {
@@ -2948,79 +3012,22 @@ export class PlayScene {
     if (!this.isCurrentCabinetWonderOpportunity(token)) return false;
     token.state = state;
     Object.assign(token, details);
-    const pendingStates = new Set(['audio_prelude', 'awaiting_reveal', 'cleanup']);
-    this.pendingCabinetWonder = pendingStates.has(state) ? token : null;
     return true;
   }
 
-  clearCabinetWonderOpportunityTimer(token, key) {
-    const timer = token?.[key];
-    if (timer) clearTimeout(timer);
-    if (token) token[key] = null;
-    if (this.pendingCabinetWonderReleaseTimer === timer) this.pendingCabinetWonderReleaseTimer = null;
-  }
-
-  isCabinetWonderNoAgencyPresentationActive() {
-    if (this.game?.lateGameExperiment?.active === true) return false;
-    const token = this.cabinetWonderOpportunity;
-    return Boolean(
-      this.isCurrentCabinetWonderOpportunity(token)
-      && ['audio_prelude', 'awaiting_reveal', 'active', 'cleanup'].includes(token.state)
-    );
-  }
-
-  isCabinetWonderRevealSafe(token = this.cabinetWonderOpportunity) {
-    if (!this.isCurrentCabinetWonderOpportunity(token) || this.game?.currentScene !== this) return false;
+  isCabinetWonderPresentationSafe() {
+    if (this.game?.currentScene !== this) return false;
     if (this.gameOverSequenceStarted || this.game?.gameOverTransitionPending) return false;
     if (this.game?.lateGameExperiment?.active === true) return false;
-    const state = this.enemyManager?.state;
-    if (!['WAVE_BRIEFING', 'BOSS_GATE', 'LEVEL_COMPLETE'].includes(state)) return false;
+    if (this.tacticalDraft?.active || this.overrunMilestoneInterlude?.active || this.gameOverInterlude?.active) return false;
+    const centerMeta = this.activeBossIntroCard?.__toastMeta || this.activeCenterToast?.__toastMeta || null;
+    const topMeta = this.activeTopToast?.__toastMeta || null;
+    const exclusiveTypes = new Set(['sector_clear', 'boss_defeated', 'run_clear', 'overrun_unlocked']);
+    if (this.activeBossIntroCard?.parent) return false;
+    if (centerMeta && exclusiveTypes.has(centerMeta.type)) return false;
+    if (topMeta && exclusiveTypes.has(topMeta.type)) return false;
     const visibleHijacker = Boolean(this.enemyManager?.hijacker?.active && this.enemyManager.hijacker.visible !== false);
     return !visibleHijacker && !this.hasActiveCombatThreats();
-  }
-
-  captureCabinetWonderTimedEffectSnapshot() {
-    const now = this.getGameplayClockMs();
-    return {
-      gameplayClockMs: now,
-      scoreBoostTimerMs: Math.max(0, Number(this.scoreBoostTimer) || 0),
-      activePowerupRemainingMs: Math.max(0, Number(this.player?.getActivePowerupRemainingMs?.(now)) || 0),
-      secondaryPowerupRemainingMs: Math.max(0, Number(this.player?.getSecondaryPowerupRemainingMs?.(now)) || 0),
-      pickupRemainingMs: (this.powerupManager?.powerups || [])
-        .filter((powerup) => powerup?.active !== false)
-        .map((powerup) => ({
-          spawnId: powerup.spawnId || null,
-          remainingMs: Math.max(0, Number(powerup.getLifetimeRemainingMs?.()) || 0)
-        }))
-    };
-  }
-
-  deferCabinetWonderEnemyRelease(release, details = {}) {
-    const token = this.cabinetWonderOpportunity;
-    if (!this.isCurrentCabinetWonderOpportunity(token) || typeof release !== 'function') {
-      if (typeof release === 'function') release();
-      return false;
-    }
-    token.deferredReleases.push({
-      id: `${token.id}:${token.deferredReleases.length + 1}`,
-      release,
-      released: false,
-      details: { ...details }
-    });
-    return true;
-  }
-
-  flushCabinetWonderDeferredReleases(token, reason = 'released') {
-    if (!token?.deferredReleases?.length) return 0;
-    let released = 0;
-    token.deferredReleases.forEach((entry) => {
-      if (entry.released) return;
-      entry.released = true;
-      entry.releasedReason = reason;
-      entry.release();
-      released += 1;
-    });
-    return released;
   }
 
   hasAuthoritativeTransitionPresentation() {
@@ -3033,96 +3040,6 @@ export class PlayScene {
       || (centerMeta && (centerMeta.channel === 'major' || authoritativeTypes.has(centerMeta.type)))
       || (topMeta && authoritativeTypes.has(topMeta.type))
     );
-  }
-
-  scheduleCabinetWonderAfterPresentation(decision = {}, token = this.cabinetWonderOpportunity) {
-    if (!decision?.variant || !this.isCurrentCabinetWonderOpportunity(token)) return false;
-    this.clearCabinetWonderOpportunityTimer(token, 'revealTimer');
-    this.setCabinetWonderOpportunityState(token, 'awaiting_reveal');
-    const retry = () => {
-      token.revealTimer = null;
-      this.pendingCabinetWonderReleaseTimer = null;
-      if (!this.isCurrentCabinetWonderOpportunity(token)) return;
-      if (this.game?.currentScene !== this) {
-        this.cancelCabinetWonderOpportunity('scene_changed', token, { releaseDeferred: false });
-        return;
-      }
-      if (this.hasAuthoritativeTransitionPresentation()) {
-        token.revealTimer = setTimeout(retry, CABINET_WONDER_REVEAL_POLL_MS);
-        this.pendingCabinetWonderReleaseTimer = token.revealTimer;
-        return;
-      }
-      token.transitionEndedAt ||= Date.now();
-      if (!token.assetsReady) {
-        if (Date.now() >= token.prerequisiteDeadlineAt) {
-          this.cancelCabinetWonderOpportunity('asset_late', token);
-          return;
-        }
-        token.revealTimer = setTimeout(retry, CABINET_WONDER_REVEAL_POLL_MS);
-        this.pendingCabinetWonderReleaseTimer = token.revealTimer;
-        return;
-      }
-      if (!this.isCabinetWonderRevealSafe(token)) {
-        this.cancelCabinetWonderOpportunity('unsafe_reveal', token);
-        return;
-      }
-      this.showCabinetWonder({
-        ...decision,
-        opportunityId: token.id,
-        presentationReleased: true,
-        preludeComplete: true,
-        preludeLeadMs: CABINET_WONDER_PRELUDE_MS,
-        preludeStartedAt: token.preludeStartedAt,
-        audioRevelationPlayed: token.audioRevelationPlayed
-      });
-    };
-    retry();
-    return true;
-  }
-
-  scheduleCabinetWonderPrelude(decision = {}, token = this.cabinetWonderOpportunity) {
-    if (!decision?.variant || !this.isCurrentCabinetWonderOpportunity(token)) return false;
-    this.clearCabinetWonderOpportunityTimer(token, 'preludeTimer');
-    const preludeLeadMs = 1500;
-    AudioManager.init();
-    const audioRevelationPlayed = AudioManager.playSfx('wonder_revelation', {
-      force: true,
-      minIntervalMs: 0,
-      volume: 0.82,
-      priority: 9,
-      priorityHoldMs: 3000,
-      sfxDuckFactor: 0.26,
-      preservePitch: true
-    });
-    const preludeStartedAt = Date.now();
-    this.resetTransientGameplayInput('cabinet_wonder_enter', { preserveFire: false, preserveMovement: true });
-    this.setCabinetWonderOpportunityState(token, 'audio_prelude', {
-      kind: 'audio_prelude',
-      preludeLeadMs,
-      preludeStartedAt,
-      noAgencyStartedAt: preludeStartedAt,
-      preludeEndsAt: preludeStartedAt + preludeLeadMs,
-      prerequisiteDeadlineAt: preludeStartedAt + preludeLeadMs + CABINET_WONDER_REVEAL_GRACE_MS,
-      audioRevelationPlayed
-    });
-    token.preludeTimer = setTimeout(() => {
-      token.preludeTimer = null;
-      this.pendingCabinetWonderReleaseTimer = null;
-      if (!this.isCurrentCabinetWonderOpportunity(token) || token.state !== 'audio_prelude') return;
-      this.scheduleCabinetWonderAfterPresentation(decision, token);
-    }, preludeLeadMs);
-    this.pendingCabinetWonderReleaseTimer = token.preludeTimer;
-    const monitorTransition = () => {
-      token.transitionMonitorTimer = null;
-      if (!this.isCurrentCabinetWonderOpportunity(token) || token.transitionEndedAt) return;
-      if (!this.hasAuthoritativeTransitionPresentation()) {
-        token.transitionEndedAt = Date.now();
-        return;
-      }
-      token.transitionMonitorTimer = setTimeout(monitorTransition, CABINET_WONDER_REVEAL_POLL_MS);
-    };
-    monitorTransition();
-    return true;
   }
 
   detachCabinetWonderVisual(active, reason = 'cleared') {
@@ -3140,28 +3057,14 @@ export class PlayScene {
     return true;
   }
 
-  finalizeCabinetWonderOpportunity(token, terminalState, reason, { releaseDeferred = true } = {}) {
+  finalizeCabinetWonderOpportunity(token, terminalState, reason) {
     if (!this.isCurrentCabinetWonderOpportunity(token)) return false;
-    ['preludeTimer', 'transitionMonitorTimer', 'revealTimer', 'cleanupTimer']
-      .forEach((key) => this.clearCabinetWonderOpportunityTimer(token, key));
-    const hadNoAgency = Boolean(token.noAgencyStartedAt);
     token.terminal = true;
     token.state = terminalState;
     token.terminalReason = reason;
-    token.releasedAt = Date.now();
+    token.endedAt = Date.now();
     token.releaseCount += 1;
-    const timedEffectAtRelease = this.captureCabinetWonderTimedEffectSnapshot();
-    this.pendingCabinetWonder = null;
-    this.pendingCabinetWonderReleaseTimer = null;
     this.cabinetWonderOpportunity = null;
-    this.powerupManager?.resumeTimedPickupLifetimes?.(token.releasedAt);
-    if (hadNoAgency) {
-      this.resetTransientGameplayInput('cabinet_wonder_exit', { preserveFire: false, preserveMovement: true });
-      this.cabinetWonderProgressionResumeCount += 1;
-    }
-    const deferredReleaseCount = releaseDeferred && this.game?.currentScene === this
-      ? this.flushCabinetWonderDeferredReleases(token, reason)
-      : 0;
     this.lastCabinetWonderTerminalState = {
       id: token.id,
       key: token.key,
@@ -3169,40 +3072,24 @@ export class PlayScene {
       state: terminalState,
       reason,
       releaseCount: token.releaseCount,
-      progressionResumeCount: this.cabinetWonderProgressionResumeCount,
-      deferredReleaseCount,
-      noAgencyDurationMs: hadNoAgency ? Math.max(0, token.releasedAt - token.noAgencyStartedAt) : 0,
-      preludeOverlapMs: Math.max(0, Math.min(
-        Number(token.preludeEndsAt) || 0,
-        Number(token.transitionEndedAt) || Number(token.releasedAt) || Number(token.preludeEndsAt) || 0
-      ) - (Number(token.preludeStartedAt) || 0)),
+      blocking: false,
       assetsReady: Boolean(token.assetsReady),
-      timedEffectAtRelease: {
-        ...timedEffectAtRelease,
-        pickupRemainingMs: timedEffectAtRelease.pickupRemainingMs.map((entry) => ({ ...entry }))
-      },
-      terminalAt: token.releasedAt
+      visualStartedAt: token.visualStartedAt || null,
+      terminalAt: token.endedAt
     };
     return true;
   }
 
-  cancelCabinetWonderOpportunity(
-    reason = 'cancelled',
-    token = this.cabinetWonderOpportunity,
-    { releaseDeferred = true, visualAlreadyDetached = false } = {}
-  ) {
+  cancelCabinetWonderOpportunity(reason = 'cancelled', token = this.cabinetWonderOpportunity, { visualAlreadyDetached = false } = {}) {
     if (!this.isCurrentCabinetWonderOpportunity(token)) return false;
     if (!visualAlreadyDetached && this.activeCabinetWonder) {
       this.detachCabinetWonderVisual(this.activeCabinetWonder, reason);
     }
-    return this.finalizeCabinetWonderOpportunity(token, 'cancelled', reason, { releaseDeferred });
+    return this.finalizeCabinetWonderOpportunity(token, 'cancelled', reason);
   }
 
   cancelCabinetWonderBeforeCombatRelease(reason = 'combat_release') {
-    const token = this.cabinetWonderOpportunity;
-    if (!this.isCurrentCabinetWonderOpportunity(token)) return false;
-    if (this.isCabinetWonderNoAgencyPresentationActive()) return false;
-    return this.cancelCabinetWonderOpportunity(reason, token);
+    return this.clearCabinetWonder(reason);
   }
 
   debugForceCabinetWonder(variantId = 'ghost_fleet_salute') {
@@ -3220,13 +3107,15 @@ export class PlayScene {
     const root = new PIXI.Container();
     root.label = `cabinet_wonder_${variant.id}`;
     root.zIndex = -500;
-    root.eventMode = 'none';
     root.interactive = false;
+    root.interactiveChildren = false;
+    root.eventMode = 'none';
     const palette = variant.palette || [0x7df9ff, 0xff70d7, 0xffef9a];
     let elementCount = 0;
     let authoredBounds = { x: width * 0.12, y: height * 0.15, width: width * 0.76, height: height * 0.3 };
     let animate = () => {};
     const generatedTexture = GameAssets.getCabinetWonderTexture?.(variant.id);
+    if (!generatedTexture) return null;
     let generatedArt = null;
     let generatedArtMask = null;
     if (generatedTexture) {
@@ -3234,24 +3123,24 @@ export class PlayScene {
       generatedArt.label = `cabinet_wonder_imagegen_${variant.id}`;
       generatedArt.anchor.set(0.5);
       generatedArt.x = width * 0.5;
-      generatedArt.y = height * 0.275;
+      generatedArt.y = height * 0.5;
       const sourceWidth = Math.max(1, generatedTexture.width || 1);
       const sourceHeight = Math.max(1, generatedTexture.height || 1);
-      const targetWidth = width * 0.6;
-      const targetHeight = height * 0.45;
+      const targetWidth = width;
+      const targetHeight = height;
       const scale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
       generatedArt.scale.set(scale);
-      generatedArt.alpha = reducedMotion ? 0.7 : 0.82;
-      generatedArt.blendMode = 'add';
+      generatedArt.alpha = 0.96;
+      generatedArt.blendMode = 'normal';
       generatedArt.eventMode = 'none';
       generatedArtMask = new PIXI.Graphics();
       generatedArtMask.label = `cabinet_wonder_art_mask_${variant.id}`;
-      generatedArtMask.rect(width * 0.2, height * 0.05, targetWidth, targetHeight);
+      generatedArtMask.rect(0, 0, targetWidth, targetHeight);
       generatedArtMask.fill({ color: 0xffffff, alpha: 1 });
       root.addChild(generatedArt);
       root.addChild(generatedArtMask);
       generatedArt.mask = generatedArtMask;
-      authoredBounds = { x: width * 0.2, y: height * 0.05, width: targetWidth, height: targetHeight };
+      authoredBounds = { x: 0, y: 0, width: targetWidth, height: targetHeight };
       elementCount += 1;
     }
     const sparkField = new PIXI.Container();
@@ -3862,39 +3751,231 @@ export class PlayScene {
       };
     }
 
-    const variantAnimate = animate;
-    animate = (progress, elapsedMs) => {
-      sparkField.x = reducedMotion ? 0 : Math.sin(elapsedMs * 0.0008) * width * 0.008;
-      sparkField.y = reducedMotion ? 0 : Math.cos(elapsedMs * 0.0011) * height * 0.004;
-      sparkField.alpha = reducedMotion ? 0.48 : 0.4 + Math.sin(elapsedMs * 0.0035) * 0.12;
-      if (generatedArt) {
-        const pulse = reducedMotion ? 1 : 0.985 + Math.sin(elapsedMs * 0.0019) * 0.025;
-        generatedArt.scale.set(generatedArt._baseScale * pulse);
-        generatedArt.y = height * 0.29 + (reducedMotion ? 0 : Math.sin(elapsedMs * 0.00135) * height * 0.008);
-        generatedArt.rotation = reducedMotion ? 0 : Math.sin(elapsedMs * 0.00085) * 0.008;
-        generatedArt.alpha = (reducedMotion ? 0.7 : 0.78 + Math.sin(elapsedMs * 0.0024) * 0.08) * (0.92 + Math.min(1, progress / 0.2) * 0.08);
-      }
-      variantAnimate(progress, elapsedMs);
-    };
-    let proceduralAccentAlpha = 1;
+    // The cameo itself owns the only motion: one entrance settle and one scan.
+    // Individual variants remain still so the presentation never becomes a
+    // second action layer competing with live combat.
+    animate = () => {};
+    sparkField.alpha = generatedArt ? 1 : 0.12;
+    let decorativeAccentAlpha = 0.12;
     if (generatedArt) {
-      generatedArt._baseScale = generatedArt.scale.x;
-      const proceduralAccentLayer = new PIXI.Container();
-      proceduralAccentLayer.label = `cabinet_wonder_procedural_accents_${variant.id}`;
-      proceduralAccentAlpha = 0.16;
-      proceduralAccentLayer.alpha = proceduralAccentAlpha;
+      const decorativeAccentLayer = new PIXI.Container();
+      decorativeAccentLayer.label = `cabinet_wonder_decorative_accents_${variant.id}`;
+      decorativeAccentAlpha = 0.1;
+      decorativeAccentLayer.alpha = decorativeAccentAlpha;
       root.children
         .filter((child) => child !== generatedArt && child !== generatedArtMask)
-        .forEach((child) => proceduralAccentLayer.addChild(child));
-      root.addChild(proceduralAccentLayer);
+        .forEach((child) => decorativeAccentLayer.addChild(child));
+      root.addChild(decorativeAccentLayer);
       authoredBounds = {
-        x: width * 0.2,
-        y: height * 0.05,
-        width: width * 0.6,
-        height: height * 0.45
+        x: 0,
+        y: 0,
+        width,
+        height
       };
     }
-    return { root, elementCount, authoredBounds, animate, generatedArtReady: Boolean(generatedArt), proceduralAccentAlpha };
+    return { root, elementCount, authoredBounds, animate, generatedArtReady: true, decorativeAccentAlpha };
+  }
+
+  getCabinetWonderReservedTransitionBounds(display, type) {
+    if (!display?.parent) return null;
+    const globalBounds = this.getToastDisplayBounds?.(display);
+    if (!globalBounds) return null;
+    try {
+      const topLeft = this.gameContainer?.toLocal?.(new PIXI.Point(globalBounds.x, globalBounds.y));
+      const bottomRight = this.gameContainer?.toLocal?.(new PIXI.Point(
+        globalBounds.x + globalBounds.width,
+        globalBounds.y + globalBounds.height
+      ));
+      if (topLeft && bottomRight) {
+        return {
+          type,
+          x: Math.min(topLeft.x, bottomRight.x),
+          y: Math.min(topLeft.y, bottomRight.y),
+          width: Math.abs(bottomRight.x - topLeft.x),
+          height: Math.abs(bottomRight.y - topLeft.y)
+        };
+      }
+    } catch {
+      // Fall through to the shared stage coordinates used by ordinary gameplay layouts.
+    }
+    return { type, ...globalBounds };
+  }
+
+  resolveCabinetWonderFrameLayout(viewportWidth, viewportHeight) {
+    const frameWidth = Math.min(viewportWidth * CABINET_WONDER_WIDTH_RATIO, CABINET_WONDER_MAX_WIDTH);
+    const frameHeight = Math.min(viewportHeight * CABINET_WONDER_HEIGHT_RATIO, CABINET_WONDER_MAX_HEIGHT);
+    const frameCenterX = viewportWidth * 0.5;
+    const frameLeft = frameCenterX - frameWidth * 0.5;
+    const frameRight = frameCenterX + frameWidth * 0.5;
+    const baseTop = viewportHeight * CABINET_WONDER_CENTER_Y_RATIO - frameHeight * 0.5;
+    const persistentHudSafeTop = Math.min(176, viewportHeight * 0.24);
+    let frameTop = Math.max(baseTop, persistentHudSafeTop);
+    const reservedBounds = [
+      this.getCabinetWonderReservedTransitionBounds(this.hud?.leftPanel, 'left_hud'),
+      this.getCabinetWonderReservedTransitionBounds(this.hud?.missionPanel, 'mission_hud'),
+      this.getCabinetWonderReservedTransitionBounds(this.hud?.rightPanel, 'right_hud'),
+      this.getCabinetWonderReservedTransitionBounds(this.activeBossIntroCard, 'boss_intro'),
+      this.getCabinetWonderReservedTransitionBounds(this.activeCenterToast, 'center_toast'),
+      this.getCabinetWonderReservedTransitionBounds(this.activeTopToast, 'top_toast'),
+      this.getCabinetWonderReservedTransitionBounds(this.activeCornerToast, 'corner_toast')
+    ].filter(Boolean);
+    const overlappingReservations = reservedBounds.filter((bounds) => (
+      bounds.x < frameRight + CABINET_WONDER_UI_GAP
+      && bounds.x + bounds.width > frameLeft - CABINET_WONDER_UI_GAP
+    ));
+    for (const bounds of overlappingReservations) {
+      frameTop = Math.max(frameTop, bounds.y + bounds.height + CABINET_WONDER_UI_GAP);
+    }
+    const maximumTop = viewportHeight * CABINET_WONDER_PLAYER_LANE_TOP_RATIO - frameHeight;
+    if (frameTop > maximumTop) {
+      return {
+        available: false,
+        reason: 'no_overlap_lane_unavailable',
+        frameWidth,
+        frameHeight,
+        reservedBounds: overlappingReservations
+      };
+    }
+    const frameCenterY = frameTop + frameHeight * 0.5;
+    const frameBounds = {
+      x: frameLeft,
+      y: frameTop,
+      width: frameWidth,
+      height: frameHeight
+    };
+    return {
+      available: true,
+      frameWidth,
+      frameHeight,
+      frameCenterX,
+      frameCenterY,
+      frameBounds,
+      reservedBounds: overlappingReservations
+    };
+  }
+
+  createCabinetWonderCameoFrame(variant, viewportWidth, viewportHeight, reducedMotion) {
+    const layout = this.resolveCabinetWonderFrameLayout(viewportWidth, viewportHeight);
+    if (!layout.available) return null;
+    const {
+      frameWidth,
+      frameHeight,
+      frameCenterX,
+      frameCenterY,
+      frameBounds,
+      reservedBounds
+    } = layout;
+    const chamfer = Math.max(8, Math.min(16, frameHeight * 0.075));
+    const framePoints = [
+      chamfer, 0,
+      frameWidth - chamfer, 0,
+      frameWidth, chamfer,
+      frameWidth, frameHeight - chamfer,
+      frameWidth - chamfer, frameHeight,
+      chamfer, frameHeight,
+      0, frameHeight - chamfer,
+      0, chamfer
+    ];
+    const root = new PIXI.Container();
+    root.label = `cabinet_wonder_cameo_${variant.id}`;
+    root.zIndex = -500;
+    root.interactive = false;
+    root.interactiveChildren = false;
+    root.eventMode = 'none';
+    root.pivot.set(frameWidth * 0.5, frameHeight * 0.5);
+    root.position.set(frameCenterX, frameCenterY);
+
+    const glow = new PIXI.Graphics();
+    glow.poly(framePoints);
+    glow.stroke({ color: 0x65e8ff, width: Math.max(5, frameHeight * 0.04), alpha: 0.2 });
+    glow.filters = [new PIXI.BlurFilter({ strength: Math.max(6, Math.min(12, frameHeight * 0.05)) })];
+
+    const backplate = new PIXI.Graphics();
+    backplate.poly(framePoints);
+    backplate.fill({ color: 0x020814, alpha: 0.78 });
+
+    const contentMask = new PIXI.Graphics();
+    contentMask.label = `cabinet_wonder_cameo_mask_${variant.id}`;
+    contentMask.poly(framePoints);
+    contentMask.fill({ color: 0xffffff, alpha: 1 });
+
+    const maskedContent = new PIXI.Container();
+    maskedContent.label = `cabinet_wonder_cameo_content_${variant.id}`;
+    const visual = this.createCabinetWonderVisual(variant, frameWidth, frameHeight, reducedMotion);
+    if (!visual) return null;
+    visual.root.zIndex = 0;
+    maskedContent.addChild(visual.root);
+
+    const topVignette = new PIXI.Graphics();
+    topVignette.rect(0, 0, frameWidth, frameHeight * 0.16);
+    topVignette.fill({ color: 0x020814, alpha: 0.28 });
+    const bottomVignette = new PIXI.Graphics();
+    bottomVignette.rect(0, frameHeight * 0.72, frameWidth, frameHeight * 0.28);
+    bottomVignette.fill({ color: 0x020814, alpha: 0.52 });
+    maskedContent.addChild(topVignette, bottomVignette);
+
+    const scanWidth = Math.max(18, frameWidth * 0.065);
+    const scanSweep = new PIXI.Graphics();
+    scanSweep.label = `cabinet_wonder_cameo_scan_${variant.id}`;
+    scanSweep.rect(0, 0, scanWidth, frameHeight);
+    scanSweep.fill({ color: 0xffffff, alpha: 0.08 });
+    scanSweep.filters = [new PIXI.BlurFilter({ strength: Math.max(3, Math.min(7, frameHeight * 0.025)) })];
+    scanSweep.x = -scanWidth;
+    scanSweep.visible = !reducedMotion;
+    maskedContent.addChild(scanSweep);
+    maskedContent.mask = contentMask;
+
+    const captionBandHeight = Math.max(22, Math.min(32, frameHeight * 0.15));
+    const captionBand = new PIXI.Graphics();
+    captionBand.rect(0, frameHeight - captionBandHeight, frameWidth, captionBandHeight);
+    captionBand.fill({ color: 0x020711, alpha: 0.82 });
+    const captionLabel = `${translateText('Cabinet Wonder')}  //  ${translateText('Observed Phenomenon')}`;
+    const caption = createText(captionLabel, {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.max(10, Math.min(14, frameHeight * 0.065)),
+      fontWeight: '700',
+      fill: '#d8fbff',
+      stroke: '#020711',
+      strokeThickness: 2,
+      letterSpacing: 1,
+      align: 'center',
+      uiScaleMode: 'none'
+    });
+    caption.anchor.set(0.5);
+    caption.position.set(frameWidth * 0.5, frameHeight - captionBandHeight * 0.5);
+    const captionMaxWidth = Math.max(1, frameWidth - 32);
+    if (caption.width > captionMaxWidth) caption.scale.set(captionMaxWidth / caption.width);
+
+    const frame = new PIXI.Graphics();
+    frame.poly(framePoints);
+    frame.stroke({ color: 0x65e8ff, width: 1.6, alpha: 0.78 });
+    const cornerAccents = new PIXI.Graphics();
+    const accentLength = Math.max(16, frameWidth * 0.075);
+    cornerAccents.moveTo(chamfer, 1);
+    cornerAccents.lineTo(chamfer + accentLength, 1);
+    cornerAccents.moveTo(frameWidth - chamfer - accentLength, frameHeight - 1);
+    cornerAccents.lineTo(frameWidth - chamfer, frameHeight - 1);
+    cornerAccents.stroke({ color: 0xff4fd8, width: 2.2, alpha: 0.82 });
+    cornerAccents.moveTo(frameWidth - chamfer - accentLength, 1);
+    cornerAccents.lineTo(frameWidth - chamfer, 1);
+    cornerAccents.moveTo(chamfer, frameHeight - 1);
+    cornerAccents.lineTo(chamfer + accentLength, frameHeight - 1);
+    cornerAccents.stroke({ color: 0xffd166, width: 2.2, alpha: 0.82 });
+
+    root.addChild(glow, backplate, maskedContent, contentMask, captionBand, caption, frame, cornerAccents);
+    root.alpha = 0;
+    root.scale.set(reducedMotion ? 1 : 0.985);
+    return {
+      ...visual,
+      root,
+      scanSweep,
+      scanWidth,
+      frameBounds,
+      frameWidth,
+      frameHeight,
+      reservedBounds,
+      captionLabel
+    };
   }
 
   showCabinetWonder(decision = {}) {
@@ -3905,40 +3986,29 @@ export class PlayScene {
       && this.isCurrentCabinetWonderOpportunity(token)
       && Number(decision.opportunityId) === token.id;
     if (!internalRelease) return this.beginCabinetWonderOpportunity(decision);
-    if (decision.presentationReleased !== true || decision.preludeComplete !== true) return false;
-    if (!this.isCabinetWonderRevealSafe(token)) {
+    if (!this.isCabinetWonderPresentationSafe()) {
       this.cancelCabinetWonderOpportunity('unsafe_reveal', token);
+      return false;
+    }
+    if (!GameAssets.getCabinetWonderTexture?.(decision.variant.id)) {
+      this.cancelCabinetWonderOpportunity('asset_not_ready', token);
       return false;
     }
     const width = Math.max(320, Number(this.gameplayGame?.getWidth?.()) || Number(this.game?.getWidth?.()) || 1280);
     const height = Math.max(240, Number(this.gameplayGame?.getHeight?.()) || Number(this.game?.getHeight?.()) || 720);
     const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
-    const durationMs = reducedMotion ? 1150 : 1500;
-    const introMs = reducedMotion ? 160 : 210;
-    const fullIntensityMs = reducedMotion ? 500 : 650;
-    const settleMs = reducedMotion ? 210 : 280;
-    const ambientAlpha = reducedMotion ? 0.25 : 0.3;
-    const outroMs = reducedMotion ? 180 : 240;
-    const visual = this.createCabinetWonderVisual(decision.variant, width, height, reducedMotion);
-    visual.root.alpha = 0;
+    const startDelayMs = reducedMotion ? 0 : CABINET_WONDER_START_DELAY_MS;
+    const fadeInMs = reducedMotion ? CABINET_WONDER_REDUCED_FADE_IN_MS : CABINET_WONDER_FADE_IN_MS;
+    const holdMs = CABINET_WONDER_HOLD_MS;
+    const fadeOutMs = reducedMotion ? CABINET_WONDER_REDUCED_FADE_OUT_MS : CABINET_WONDER_FADE_OUT_MS;
+    const durationMs = startDelayMs + fadeInMs + holdMs + fadeOutMs;
+    const visual = this.createCabinetWonderCameoFrame(decision.variant, width, height, reducedMotion);
+    if (!visual) {
+      this.cancelCabinetWonderOpportunity('no_overlap_lane_unavailable', token);
+      return false;
+    }
     this.gameContainer.addChild(visual.root);
     this.gameContainer.sortChildren?.();
-    AudioManager.init();
-    const audioPlayed = AudioManager.playSpectacleAccent('wonder', {
-      force: true,
-      cooldownKey: 'cabinet_wonder',
-      minIntervalMs: 0,
-      intensity: reducedMotion ? 0.5 : 0.72,
-      volume: 0.76,
-      pitchScale: decision.variant.pitchScale || 1,
-      durationSeconds: reducedMotion ? 0.7 : 1.18
-    });
-    const audioRevelationPlayed = decision.audioRevelationPlayed === true;
-    const codexDiscovery = this.recordThreatDiscovery(decision.variant.id, 'wonders', {
-      name: decision.variant.title,
-      signalClass: decision.variant.signalClass,
-      source: 'cabinet_wonder'
-    }, { silent: true, scoreBonus: false });
     const historyEntry = {
       id: decision.variant.id,
       title: decision.variant.title,
@@ -3949,39 +4019,80 @@ export class PlayScene {
       reason: decision.reason,
       scoreNeutral: true,
       gameplayNeutral: true,
+      blocking: false,
       reducedMotion,
       durationMs,
-      fullIntensityMs,
-      settleMs,
-      ambientAlpha,
-      presentationTarget: { widthRatio: 0.6, heightRatio: 0.45 },
+      startDelayMs,
+      fadeInMs,
+      holdMs,
+      fadeOutMs,
+      presentationTarget: {
+        widthRatio: CABINET_WONDER_WIDTH_RATIO,
+        heightRatio: CABINET_WONDER_HEIGHT_RATIO,
+        maxWidth: CABINET_WONDER_MAX_WIDTH,
+        maxHeight: CABINET_WONDER_MAX_HEIGHT,
+        centerYRatio: CABINET_WONDER_CENTER_Y_RATIO,
+        uiGap: CABINET_WONDER_UI_GAP,
+        playerLaneTopRatio: CABINET_WONDER_PLAYER_LANE_TOP_RATIO
+      },
       elementCount: visual.elementCount,
-      authoredBounds: { ...visual.authoredBounds },
-      audioProfile: 'wonder',
-      audioPlayed,
-      audioRevelationPlayed,
-      preludeLeadMs: Number(decision.preludeLeadMs) || 1500,
-      preludeStartedAt: Number(decision.preludeStartedAt) || null,
-      visualStartedAt: Date.now(),
-      audioLayers: ['elevenlabs_wonder_choir_prelude', 'synthetic_wonder'],
-      codexDiscovered: Boolean(codexDiscovery?.isNew),
+      authoredBounds: { ...visual.frameBounds },
+      reservedTransitionBounds: visual.reservedBounds.map((bounds) => ({ ...bounds })),
+      noOverlap: true,
+      audioProfile: 'wonder_revelation',
+      audioPlayed: false,
+      audioLayers: ['wonder_revelation'],
+      caption: visual.captionLabel,
+      codexDiscovered: false,
       layer: 'gameplay_background',
-      visualLanguage: visual.generatedArtReady ? 'cabinet_wonder_imagegen_v2' : 'cabinet_wonder_procedural_fallback',
+      assetSource: 'authored_art',
+      visualLanguage: 'cabinet_wonder_cosmic_cameo_authored_art',
       generatedArtReady: visual.generatedArtReady,
-      proceduralAccentAlpha: visual.proceduralAccentAlpha,
+      decorativeAccentAlpha: visual.decorativeAccentAlpha,
       active: true,
       completed: false,
+      visualStartedAt: null,
       startedAt: Date.now()
     };
-    this.cabinetWonderHistory.push(historyEntry);
     const active = {
       root: visual.root,
+      scanSweep: visual.scanSweep,
+      scanWidth: visual.scanWidth,
+      frameWidth: visual.frameWidth,
       ticker: null,
       elapsedMs: 0,
       durationMs,
-      animate: visual.animate,
+      startDelayMs,
+      fadeInMs,
+      holdMs,
+      fadeOutMs,
+      revealed: false,
       historyEntry,
       opportunityId: token.id
+    };
+    const reveal = () => {
+      if (active.revealed || !this.isCurrentCabinetWonderOpportunity(token)) return;
+      active.revealed = true;
+      const revealedAt = Date.now();
+      token.visualStartedAt = revealedAt;
+      historyEntry.visualStartedAt = revealedAt;
+      AudioManager.init();
+      historyEntry.audioPlayed = Boolean(AudioManager.playSfx('wonder_revelation', {
+        force: true,
+        minIntervalMs: 0,
+        volume: 0.62,
+        priority: 7,
+        priorityHoldMs: 900,
+        sfxDuckFactor: 0.7,
+        preservePitch: true
+      }));
+      const codexDiscovery = this.recordThreatDiscovery(decision.variant.id, 'wonders', {
+        name: decision.variant.title,
+        signalClass: decision.variant.signalClass,
+        source: 'cabinet_wonder'
+      }, { silent: true, scoreBonus: false });
+      historyEntry.codexDiscovered = Boolean(codexDiscovery?.isNew);
+      this.cabinetWonderHistory.push(historyEntry);
     };
     const ticker = (delta) => {
       if (!active.root?.parent || this.game?.currentScene !== this) {
@@ -3989,22 +4100,35 @@ export class PlayScene {
         return;
       }
       active.elapsedMs += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
-      const progress = Math.min(1, active.elapsedMs / durationMs);
-      const intro = Math.min(1, active.elapsedMs / introMs);
-      const settle = Math.max(0, Math.min(1, (active.elapsedMs - fullIntensityMs) / settleMs));
-      const outro = Math.max(0, Math.min(1, (active.elapsedMs - (durationMs - outroMs)) / outroMs));
-      const resolvedAlpha = 1 - settle * (1 - ambientAlpha);
-      active.root.alpha = (1 - Math.pow(1 - intro, 3)) * resolvedAlpha * (1 - outro);
-      active.animate(progress, active.elapsedMs);
+      const revealElapsedMs = active.elapsedMs - startDelayMs;
+      if (revealElapsedMs >= 0) reveal();
+      let alpha = 0;
+      let introProgress = 0;
+      let scanProgress = 0;
+      if (revealElapsedMs >= 0 && revealElapsedMs < fadeInMs) {
+        introProgress = Math.max(0, Math.min(1, revealElapsedMs / fadeInMs));
+        alpha = 1 - Math.pow(1 - introProgress, 3);
+        this.setCabinetWonderOpportunityState(token, 'revealing');
+      } else if (revealElapsedMs < fadeInMs + holdMs) {
+        introProgress = 1;
+        alpha = revealElapsedMs >= 0 ? 1 : 0;
+        if (revealElapsedMs >= fadeInMs) this.setCabinetWonderOpportunityState(token, 'holding');
+      } else {
+        introProgress = 1;
+        const fadeElapsedMs = revealElapsedMs - fadeInMs - holdMs;
+        alpha = 1 - Math.max(0, Math.min(1, fadeElapsedMs / fadeOutMs));
+        this.setCabinetWonderOpportunityState(token, 'fading');
+      }
+      active.root.alpha = Math.max(0, Math.min(1, alpha));
+      if (!reducedMotion) active.root.scale.set(0.985 + 0.015 * introProgress);
+      if (active.scanSweep?.visible) {
+        scanProgress = Math.max(0, Math.min(1, revealElapsedMs / Math.max(1, fadeInMs + holdMs)));
+        active.scanSweep.x = -active.scanWidth + (active.frameWidth + active.scanWidth * 2) * scanProgress;
+      }
       if (active.elapsedMs >= durationMs) this.clearCabinetWonder('complete');
     };
     active.ticker = ticker;
     this.activeCabinetWonder = active;
-    this.setCabinetWonderOpportunityState(token, 'active', {
-      kind: 'active',
-      visualStartedAt: historyEntry.visualStartedAt
-    });
-    this.pendingCabinetWonder = null;
     this.game?.app?.ticker?.add?.(ticker);
     this._activeTickers ||= [];
     this._activeTickers.push(ticker);
@@ -4013,28 +4137,9 @@ export class PlayScene {
 
   clearCabinetWonder(reason = 'cleared') {
     const token = this.cabinetWonderOpportunity;
-    const active = this.activeCabinetWonder;
-    const detached = this.detachCabinetWonderVisual(active, reason);
+    const detached = this.detachCabinetWonderVisual(this.activeCabinetWonder, reason);
     if (!this.isCurrentCabinetWonderOpportunity(token)) return detached;
-    if (reason !== 'complete') {
-      return this.cancelCabinetWonderOpportunity(reason, token, {
-        releaseDeferred: reason !== 'scene_changed' && reason !== 'scene_destroy' && reason !== 'scene_init',
-        visualAlreadyDetached: true
-      });
-    }
-    const cleanupStartedAt = Date.now();
-    this.setCabinetWonderOpportunityState(token, 'cleanup', {
-      kind: 'cleanup',
-      cleanupStartedAt,
-      cleanupEndsAt: cleanupStartedAt + CABINET_WONDER_CLEANUP_MS
-    });
-    token.cleanupTimer = setTimeout(() => {
-      token.cleanupTimer = null;
-      if (!this.isCurrentCabinetWonderOpportunity(token) || token.state !== 'cleanup') return;
-      this.finalizeCabinetWonderOpportunity(token, 'released', 'complete');
-    }, CABINET_WONDER_CLEANUP_MS);
-    this.pendingCabinetWonderReleaseTimer = token.cleanupTimer;
-    return true;
+    return this.finalizeCabinetWonderOpportunity(token, reason === 'complete' ? 'complete' : 'cancelled', reason);
   }
 
   getCabinetWonderDebugState() {
@@ -4049,56 +4154,43 @@ export class PlayScene {
       onePerRun: false,
       onePerSector: true,
       cadenceSectors: 3,
-      pending: this.pendingCabinetWonder ? {
-        id: this.pendingCabinetWonder.decision?.variant?.id || null,
-        sector: this.pendingCabinetWonder.decision?.sector || null,
-        kind: this.pendingCabinetWonder.kind || this.pendingCabinetWonder.state || null,
-        opportunityId: this.pendingCabinetWonder.id || null,
-        state: this.pendingCabinetWonder.state || null,
-        preludeLeadMs: Number(this.pendingCabinetWonder.preludeLeadMs) || null,
-        audioRevelationPlayed: Boolean(this.pendingCabinetWonder.audioRevelationPlayed),
-        assetsReady: Boolean(this.pendingCabinetWonder.assetsReady)
-      } : null,
-      noAgencyActive: this.isCabinetWonderNoAgencyPresentationActive(),
-      progressionResumeCount: this.cabinetWonderProgressionResumeCount,
+      blocking: false,
+      lifecycleState: opportunity?.state || 'idle',
+      prewarm: this.cabinetWonderPrewarm ? { ...this.cabinetWonderPrewarm } : null,
       opportunity: opportunity ? {
         id: opportunity.id,
         state: opportunity.state,
         terminal: opportunity.terminal,
-        preludeStartedAt: opportunity.preludeStartedAt,
-        preludeEndsAt: opportunity.preludeEndsAt,
-        transitionEndedAt: opportunity.transitionEndedAt || null,
+        createdAt: opportunity.createdAt,
         visualStartedAt: opportunity.visualStartedAt,
-        cleanupStartedAt: opportunity.cleanupStartedAt,
-        cleanupEndsAt: opportunity.cleanupEndsAt || null,
         assetsReady: Boolean(opportunity.assetsReady),
-        deferredReleaseCount: opportunity.deferredReleases?.length || 0,
-        timedEffectSnapshot: opportunity.timedEffectSnapshot ? {
-          ...opportunity.timedEffectSnapshot,
-          pickupRemainingMs: opportunity.timedEffectSnapshot.pickupRemainingMs.map((entry) => ({ ...entry }))
-        } : null
+        blocking: false
       } : null,
       scoreNeutral: true,
       gameplayNeutral: true,
       active: active ? {
         id: active.historyEntry.id,
+        state: opportunity?.state || 'revealing',
+        blocking: false,
         elapsedMs: Math.round(active.elapsedMs),
         durationMs: active.durationMs,
         reducedMotion: active.historyEntry.reducedMotion,
         elementCount: active.historyEntry.elementCount,
         audioProfile: active.historyEntry.audioProfile,
+        audioPlayed: Boolean(active.historyEntry.audioPlayed),
         layer: active.historyEntry.layer,
+        assetSource: active.historyEntry.assetSource,
+        caption: active.historyEntry.caption,
         visualLanguage: active.historyEntry.visualLanguage,
         generatedArtReady: active.historyEntry.generatedArtReady,
-        proceduralAccentAlpha: active.historyEntry.proceduralAccentAlpha,
+        decorativeAccentAlpha: active.historyEntry.decorativeAccentAlpha,
         authoredBounds: { ...active.historyEntry.authoredBounds },
-        audioRevelationPlayed: Boolean(active.historyEntry.audioRevelationPlayed),
-        preludeLeadMs: active.historyEntry.preludeLeadMs,
-        preludeStartedAt: active.historyEntry.preludeStartedAt,
+        reservedTransitionBounds: active.historyEntry.reservedTransitionBounds.map((bounds) => ({ ...bounds })),
+        noOverlap: active.historyEntry.noOverlap,
         visualStartedAt: active.historyEntry.visualStartedAt,
         presentationTarget: { ...active.historyEntry.presentationTarget },
         audioLayers: [...(active.historyEntry.audioLayers || [])],
-        upperFieldSafe: active.historyEntry.authoredBounds.y + active.historyEntry.authoredBounds.height <= screenHeight * 0.5
+        playerLaneSafe: active.historyEntry.authoredBounds.y + active.historyEntry.authoredBounds.height <= screenHeight * CABINET_WONDER_PLAYER_LANE_TOP_RATIO
       } : null,
       overlayCount: this.gameContainer?.children?.filter?.((child) => String(child?.label || '').startsWith('cabinet_wonder_')).length || 0,
       lastDecision: this.cabinetWonderLastDecision ? { ...this.cabinetWonderLastDecision } : null,
@@ -4475,7 +4567,6 @@ export class PlayScene {
       || this.gameOverSequenceStarted
       || this.tacticalDraft?.active
       || this.overrunMilestoneInterlude?.active
-      || this.isCabinetWonderNoAgencyPresentationActive?.()
     ) return false;
     if ((this.activeTopToast && !this.canYieldActiveDiscoveryForFirstRunCoaching()) || this.activeBossIntroCard) return false;
     const higherPriorityActive = [this.activeCenterToast, this.activeCornerToast]
@@ -5190,7 +5281,6 @@ export class PlayScene {
       && !this.pendingEnemyStartTimeout
       && !this.isPaused
       && !this.tacticalDraft?.active
-      && !this.isCabinetWonderNoAgencyPresentationActive()
       && !(this.freezeTimerMs > 0)
       && (this.game?.lives || 0) > 0
     );
@@ -5205,7 +5295,6 @@ export class PlayScene {
       this.introActive
       || this.isPaused
       || this.tacticalDraft?.active
-      || this.isCabinetWonderNoAgencyPresentationActive()
       || this.overrunMilestoneInterlude?.active
       || this.gameOverInterlude?.active
       || this.gameOverSequenceStarted
@@ -5637,14 +5726,6 @@ export class PlayScene {
         }
       } else if (this.game.scoreMultiplier !== this.scoreMultiplier) {
         this.game.scoreMultiplier = this.scoreMultiplier;
-      }
-
-      if (this.isCabinetWonderNoAgencyPresentationActive()) {
-        this.cleanupSkippedFrameVisuals('cabinet_wonder_no_agency');
-        this.updateCriticalHullOverlay(delta);
-        this.updateSlowTimeVisualField(delta);
-        this.updateDevOverlay();
-        return;
       }
 
       this.handlePauseToggle();
@@ -6201,7 +6282,6 @@ export class PlayScene {
     return Boolean(
       this.activeRankUpPresentation?.parent
       || this.activeTacticalFusionUnlock?.container?.parent
-      || this.isCabinetWonderNoAgencyPresentationActive()
       || this.hasAuthoritativeTransitionPresentation()
       || (
         this.pendingRankUpPresentation !== null
@@ -6429,8 +6509,9 @@ export class PlayScene {
 
     const root = new PIXI.Container();
     root.label = 'ui_wave_cleared_command_hud';
-    root.eventMode = 'none';
     root.interactive = false;
+    root.interactiveChildren = false;
+    root.eventMode = 'none';
     root.pivot.set(0, 0);
     root.zIndex = 9950;
 

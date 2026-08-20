@@ -89,6 +89,7 @@ assert.match(
 );
 
 const playSceneSource = readFileSync(new URL('../src/scenes/PlayScene.js', import.meta.url), 'utf8');
+const powerupManagerSource = readFileSync(new URL('../src/managers/PowerupManager.js', import.meta.url), 'utf8');
 const soundCatalogSource = readFileSync(new URL('../src/audio/SoundCatalog.js', import.meta.url), 'utf8');
 assert.match(
   playSceneSource,
@@ -97,12 +98,35 @@ assert.match(
 );
 assert.match(
   playSceneSource,
-  /const durationMs = reducedMotion \? 1150 : 1500;/,
-  'Cabinet Wonders need a readable full-motion hold with a shorter Reduced Motion path'
+  /const CABINET_WONDER_WIDTH_RATIO = 0\.384;[\s\S]{0,180}const CABINET_WONDER_HEIGHT_RATIO = 0\.288;[\s\S]{0,180}const CABINET_WONDER_MAX_WIDTH = 672;[\s\S]{0,180}const CABINET_WONDER_MAX_HEIGHT = 288;/,
+  'Cabinet Wonders must use the user-approved 20%-larger 38.4% by 28.8%, 672 by 288 presentation envelope'
 );
-assert.match(playSceneSource, /const preludeLeadMs = 1500;/, 'every Wonder needs a 1.5 second sacred audio prelude');
-assert.match(playSceneSource, /scheduleCabinetWonderPrelude\(decision/, 'Wonder visuals must wait for their revelation prelude');
+assert.match(playSceneSource, /const CABINET_WONDER_CENTER_Y_RATIO = 0\.3;[\s\S]{0,180}const CABINET_WONDER_UI_GAP = 16;[\s\S]{0,180}const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0\.62;/, 'the enlarged Wonder must move down while reserving a measured no-overlap UI gap and player lane');
+assert.match(
+  playSceneSource,
+  /const startDelayMs = reducedMotion \? 0 : CABINET_WONDER_START_DELAY_MS;[\s\S]{0,360}const durationMs = startDelayMs \+ fadeInMs \+ holdMs \+ fadeOutMs;/,
+  'Cabinet Wonders must fit their complete reveal/hold/fade timeline inside ordinary transition downtime'
+);
+assert.match(playSceneSource, /generatedArt\.blendMode = 'normal';/, 'generated Wonder art must preserve its authored color instead of additive washing');
+assert.match(playSceneSource, /captionLabel = `\$\{translateText\('Cabinet Wonder'\)\}[\s\S]{0,80}\$\{translateText\('Observed Phenomenon'\)\}`;/, 'the compact cameo needs its localized generic caption');
+assert.match(playSceneSource, /decorativeAccentAlpha = 0\.1;/, 'authored-art decorative accents must stay restrained');
+assert.match(playSceneSource, /prewarmCabinetWonderForTransition\(context = \{\}\)[\s\S]{0,1400}prewarmCabinetWonderVariant\(decision\.variant\.id, 'active_wave_prediction'\)/, 'the deterministic authored Wonder image must warm during the active wave');
+assert.match(enemyManagerSource, /spawnWave\(config\) \{[\s\S]{0,500}prewarmCabinetWonderForTransition\?\.\(\{/, 'wave combat must start the next authored Wonder image prewarm without blocking');
+assert.match(playSceneSource, /beginCabinetWonderOpportunity\(decision = \{\}\)[\s\S]{0,420}getCabinetWonderTexture\?\.\(decision\.variant\.id\)[\s\S]{0,180}recordCabinetWonderAssetSkip\(decision, 'asset_not_ready'\)/, 'a Wonder with unavailable authored art must be skipped before any overlay is created');
+assert.match(playSceneSource, /if \(!generatedTexture\) return null;/, 'the visual builder must fail closed instead of drawing a fallback Wonder');
+assert.match(playSceneSource, /no_overlap_lane_unavailable/, 'the cameo must skip when no collision-free transition lane is available');
+assert.match(playSceneSource, /assetSource: 'authored_art'/, 'live Wonder debug output must identify the authored-art source');
+assert.match(playSceneSource, /blocking: false,/, 'Wonder debug state must declare the presentation non-blocking');
+assert.match(playSceneSource, /cancelCabinetWonderBeforeCombatRelease\(reason = 'combat_release'\)/, 'combat release needs an idempotent Wonder dismissal hook');
+assert.doesNotMatch(playSceneSource, /isCabinetWonderNoAgencyPresentationActive|deferCabinetWonderEnemyRelease|captureCabinetWonderTimedEffectSnapshot/, 'Wonder must not retain a no-agency or deferred-release path');
+assert.doesNotMatch(playSceneSource, /cabinet_wonder_enter|cabinet_wonder_exit/, 'Wonder must not reset or suppress transient gameplay input');
+assert.doesNotMatch(powerupManagerSource, /pauseTimedPickupLifetimes|resumeTimedPickupLifetimes/, 'Wonder-only pickup lifetime pausing must be removed');
+assert.doesNotMatch(enemyManagerSource, /deferCabinetWonderEnemyRelease|isCabinetWonderNoAgencyPresentationActive/, 'enemy and hijacker release must never wait for a Wonder');
+assert.match(enemyManagerSource, /cancelCabinetWonderBeforeCombatRelease\?\.\('wave_release'\)[\s\S]{0,180}spawnWave\(config\)/, 'wave combat must synchronously dismiss the cameo before release');
+assert.match(enemyManagerSource, /cancelCabinetWonderBeforeCombatRelease\?\.\('boss_release'\)[\s\S]{0,800}spawnBoss\(this\.level\)/, 'boss combat must synchronously dismiss the cameo before release');
 assert.match(soundCatalogSource, /'wonder_revelation': \[getSfx\('nova_wonder_revelation'\)\]/, 'Wonder revelation must use its dedicated authored SFX');
 assert.doesNotMatch(soundCatalogSource, /'wonder_revelation': \[[\s\S]{0,180}nova_row_core_/, 'Wonder revelation must not reuse Viking Row cues');
+assert.match(playSceneSource, /playSfx\('wonder_revelation',[\s\S]{0,240}priorityHoldMs: 900,[\s\S]{0,120}sfxDuckFactor: 0\.7,/, 'Wonder must use one restrained cue that releases audio priority before combat');
+assert.doesNotMatch(playSceneSource, /playSpectacleAccent\('wonder'/, 'Wonder must not stack a second synthetic spectacle cue');
 
 console.log(`[cabinet-wonders] PASS variants=${CABINET_WONDER_VARIANT_COUNT} cadence=${CABINET_WONDER_SECTOR_CADENCE}`);

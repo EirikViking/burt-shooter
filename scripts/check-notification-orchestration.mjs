@@ -255,21 +255,17 @@ try {
 
     play.clearToastState();
     play.showWaveBonusEffect(500, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 3/5' });
-    const wonderDecision = {
-      reason: 'sequence_probe',
+    const wonderArtReady = await play.prewarmCabinetWonderVariant(
+      'ghost_fleet_salute',
+      'notification_orchestration'
+    );
+    const wonderShown = play.maybeShowCabinetWonder({
+      debugForce: true,
+      forceVariantId: 'ghost_fleet_salute',
       sector: 3,
       waveNumber: 3,
-      chance: 1,
-      roll: 0,
-      variant: {
-        id: 'sequence_probe_constellation',
-        title: 'SEQUENCE PROBE',
-        signalClass: 'CONSTELLATION',
-        palette: [0x7df9ff, 0xff70d7, 0xffef9a],
-        pitchScale: 1
-      }
-    };
-    const wonderDeferred = play.showCabinetWonder(wonderDecision);
+      hasUpcomingWave: true
+    });
     const manager = play.enemyManager;
     const previousProgression = {
       state: manager.state,
@@ -281,36 +277,30 @@ try {
     manager.state = 'WAVE_BRIEFING';
     manager.waveBriefingTimer = 417;
     manager.update(1);
-    const pendingWaveTimerHeld = manager.waveBriefingTimer === 417;
+    const waveTimerHeldBySharedTransition = manager.waveBriefingTimer === 417;
     manager.phase = 'BOSS';
     manager.state = 'BOSS_GATE';
     manager.bossGateTimer = 533;
     manager.update(1);
-    const pendingBossTimerHeld = manager.bossGateTimer === 533;
+    const bossTimerHeldBySharedTransition = manager.bossGateTimer === 533;
     const wonderDuringWaveClear = {
-      deferred: wonderDeferred,
+      shown: wonderShown,
+      artReady: wonderArtReady,
       active: Boolean(play.activeCabinetWonder),
-      pendingKind: play.pendingCabinetWonder?.kind || null,
-      pendingWaveTimerHeld,
-      pendingBossTimerHeld
+      waveTimerHeldBySharedTransition,
+      bossTimerHeldBySharedTransition
     };
     play.dismissToastDisplay(play.activeTopToast, 'top', { reason: 'sequence_probe_exit' });
-    const wonderPreludeLeadMs = Number(play.pendingCabinetWonder?.preludeLeadMs) || 1500;
-    await wait(wonderPreludeLeadMs + 180);
+    await wait(240);
     const wonderAfterWaveClear = play.getCabinetWonderDebugState();
-    manager.phase = 'WAVES';
-    manager.state = 'WAVE_BRIEFING';
-    manager.waveBriefingTimer = 619;
-    manager.update(1);
-    const activeWaveTimerHeld = manager.waveBriefingTimer === 619;
-    manager.phase = 'BOSS';
-    manager.state = 'BOSS_GATE';
-    manager.bossGateTimer = 727;
-    manager.update(1);
-    const activeBossTimerHeld = manager.bossGateTimer === 727;
-    wonderAfterWaveClear.progressionHold = { activeWaveTimerHeld, activeBossTimerHeld };
+    const progressionHoldWithWonder = play.shouldHoldProgressionPresentation();
     play.clearCabinetWonder('sequence_probe_complete');
-    play.pendingCabinetWonder = null;
+    const progressionHoldWithoutWonder = play.shouldHoldProgressionPresentation();
+    wonderAfterWaveClear.progressionParity = {
+      withWonder: progressionHoldWithWonder,
+      withoutWonder: progressionHoldWithoutWonder,
+      equal: progressionHoldWithWonder === progressionHoldWithoutWonder
+    };
     Object.assign(manager, previousProgression);
 
     play.clearToastState();
@@ -365,19 +355,20 @@ try {
     `Sector Clear did not defer Boss Signal/dossier timing: ${JSON.stringify(presentationSequences.sectorToBossSignal)}`
   );
   assert(
-    presentationSequences.wonderDuringWaveClear.deferred === true &&
-    presentationSequences.wonderDuringWaveClear.active === false &&
-    presentationSequences.wonderDuringWaveClear.pendingKind === 'audio_prelude' &&
-    presentationSequences.wonderDuringWaveClear.pendingWaveTimerHeld === true &&
-    presentationSequences.wonderDuringWaveClear.pendingBossTimerHeld === true &&
+    presentationSequences.wonderDuringWaveClear.shown === true &&
+    presentationSequences.wonderDuringWaveClear.artReady === true &&
+    presentationSequences.wonderDuringWaveClear.active === true &&
+    presentationSequences.wonderDuringWaveClear.waveTimerHeldBySharedTransition === true &&
+    presentationSequences.wonderDuringWaveClear.bossTimerHeldBySharedTransition === true &&
     Boolean(presentationSequences.wonderAfterWaveClear.active) &&
-    presentationSequences.wonderAfterWaveClear.progressionHold?.activeWaveTimerHeld === true &&
-    presentationSequences.wonderAfterWaveClear.progressionHold?.activeBossTimerHeld === true &&
-    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.widthRatio === 0.6 &&
-    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.heightRatio === 0.45 &&
-    presentationSequences.wonderAfterWaveClear.last?.ambientAlpha >= 0.25 &&
-    presentationSequences.wonderAfterWaveClear.last?.ambientAlpha <= 0.35,
-    `Constellation presentation did not defer, shrink, and settle: ${JSON.stringify(presentationSequences)}`
+    presentationSequences.wonderAfterWaveClear.blocking === false &&
+    presentationSequences.wonderAfterWaveClear.progressionParity?.equal === true &&
+    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.widthRatio === 0.384 &&
+    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.heightRatio === 0.288 &&
+    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.centerYRatio === 0.3 &&
+    presentationSequences.wonderAfterWaveClear.last?.noOverlap === true &&
+    presentationSequences.wonderAfterWaveClear.last?.assetSource === 'authored_art',
+    `Cabinet Wonder did not remain an authored, compact, non-blocking transition cameo: ${JSON.stringify(presentationSequences)}`
   );
   assert(
     presentationSequences.damageFlash?.edgeWeighted === true &&

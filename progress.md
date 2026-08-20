@@ -1,5 +1,17 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-08-20 Non-blocking Cabinet Wonder cosmic cameo
+
+- Current request: replace the Cabinet Wonder no-agency freeze with a compact, polished, non-blocking cameo during the ordinary wave-clear gap; preserve cadence, score neutrality, and Codex discovery; validate the gameplay/UI change and upload the completed package to Steam.
+- Isolated worktree: `D:\vibe-coding-e\nova-swarm-wonder-cosmic-cameo-20260820`; branch `codex/wonder-cosmic-cameo-20260820`; clean baseline `26520929cf35db3cc44c982deb98f43e38ee084e`.
+- Preflight passed: fetch, path/branch/HEAD/status/worktree checks, German/top3/marketing-hotkey ancestry, and `check:release-line`. The source checkout and protected dirty checkout remain untouched.
+- Upload boundary: verified package only, private/unassigned SteamPipe candidate with `SetLive ""`; no Steamworks settings or public/default branch assignment.
+- Replaced the Wonder-only no-agency lifecycle with a ticker-owned `revealing -> holding -> fading -> complete/cancelled` cameo. It never resets input, pauses gameplay/power-up/pickup clocks, holds wave/boss progression, or defers an enemy/Hijacker; combat release synchronously dismisses it.
+- All sixty deterministic Wonder selections now prewarm their exact authored image during the active wave. If that image is not ready, or if a collision-free transition lane is unavailable, the Wonder is skipped with no overlay, fallback graphic, queue, polling, or gameplay delay.
+- User-approved visual revision is 20% larger than the first compact pass: `38.4% x 28.8%`, capped at `672 x 288`, based at 30% playfield height and dynamically moved below intersecting HUD/transition bounds with a measured 16 px gap. Its lower edge cannot enter the lower 38% player lane.
+- Passing focused evidence: `check:cabinet-wonders`, fixed-delta/all-locale `check:cabinet-wonders-runtime`, and `check:notification-orchestration`. The runtime proves control-identical player/projectile clocks and release ticks, immediate Hijacker release, held-input continuity, authored-art-only missing-asset skip, scene cleanup, Reduced Motion, one cue, and zero cameo/notification-HUD intersections. Final visual matrix: `test-results/cabinet-wonders-2026-08-20T16-52-57-419Z`.
+- Broad gates pass: `check:i18n`, `build:current`, all-eight-language `check:i18n-ui`, browser `smoke`, `check:controller-flow`, `desktop:smoke:current`, and `check:steam-electron-bridge`. The skill-generic web-game client was also attempted, but its separate shared cache lacks `chromium_headless_shell-1208`; no shared browser install was performed, and the repository-native installed-Chrome suites remain the authoritative playtest evidence.
+
 ## 2026-08-16 First-run HUD progressive-disclosure review
 
 - Current goal: continue evidence-led retention improvements, always review visual changes with ChatGPT Pro, and keep the private three-hour Steam candidate cadence gated by a clean release package.

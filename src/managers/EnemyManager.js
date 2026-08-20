@@ -2556,6 +2556,7 @@ export class EnemyManager {
           this.waveBriefingTimer = 0;
           this.waveBriefingAnnounced = false;
           this.state = 'WAVE_ACTIVE';
+          waveBriefingPlayScene?.cancelCabinetWonderBeforeCombatRelease?.('wave_release');
           this.measurePerformance('incoming_wave.spawn_wave', () => this.spawnWave(config));
         }
         break;
@@ -2588,6 +2589,7 @@ export class EnemyManager {
         if (this.bossGateTimer > resolvedBossGateMs && !this.bossSpawning) {
           this.logBossStatus('boss_gate_spawn');
           console.log(`[BossFlow] spawn boss level=${this.level}`);
+          bossGatePlayScene?.cancelCabinetWonderBeforeCombatRelease?.('boss_release');
           AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800, bypassGlobalCooldown: true });
           this.bossSpawning = true;
           this.markPerformance('boss_event_telegraph_start', { level: this.level, phase: 'boss_gate_spawn' });
@@ -3199,6 +3201,13 @@ export class EnemyManager {
   }
 
   spawnWave(config) {
+    this.game?.scenes?.play?.prewarmCabinetWonderForTransition?.({
+      sector: this.level,
+      waveNumber: this.currentWaveIndex + 1,
+      hasUpcomingWave: this.currentWaveIndex < this.normalWavesTotal - 1,
+      isChallenge: Boolean(config?.isChallenge || this.waves[this.currentWaveIndex + 1]?.isChallenge),
+      busyTransition: Boolean(config?.isMayhemReinforcement || config?.isBossMayhemReinforcement)
+    });
     this.beginHighSectorProtocolRuntime(config);
     if (
       this.game?.lateGameExperiment?.active === true
@@ -5899,6 +5908,7 @@ export class EnemyManager {
       }
     }
 
+    this.releasePendingTransitionHijackerSpawn();
     if (!clearedWave?.highSectorAuthoredEncounter) {
       this.game?.scenes?.play?.maybeShowCabinetWonder?.({
         sector: this.level,
@@ -5908,7 +5918,6 @@ export class EnemyManager {
         busyTransition: survivedMayhemSuperStorm || consumedReinforcementWaveIndices.length > 0
       });
     }
-    this.releasePendingTransitionHijackerSpawn();
 
     if (transitionWaveIndex < this.normalWavesTotal - 1) {
       this.currentWaveIndex = transitionWaveIndex + 1;
@@ -6050,15 +6059,7 @@ export class EnemyManager {
       this.spawnHijacker(plan);
     };
     const playScene = this.game?.scenes?.play;
-    if (playScene?.isCabinetWonderNoAgencyPresentationActive?.()) {
-      return playScene.deferCabinetWonderEnemyRelease?.(release, {
-        kind: 'hijacker',
-        level: plan.level,
-        waveNumber: plan.clearedWaveNumber,
-        spawnX: plan.spawnX,
-        spawnY: plan.spawnY
-      }) === true;
-    }
+    playScene?.cancelCabinetWonderBeforeCombatRelease?.('hijacker_release');
     release();
     return true;
   }
