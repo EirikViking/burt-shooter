@@ -1,0 +1,60 @@
+{
+  "uploadedAt": "2026-08-20T20:54:02+02:00",
+  "type": "steam_upload_evidence",
+  "title": "Nova Swarm larger and longer Cabinet Wonder public Steam deployment",
+  "branch": "codex/wonder-cosmic-cameo-20260820",
+  "baselineCommit": "26520929cf35db3cc44c982deb98f43e38ee084e",
+  "sourceCommit": "18d3ebf2ac72dfbf384524b16e52dd9901e961f7",
+  "preUploadEvidenceCommit": "272bbe663170f735b6459d8631656fa2afec7e01",
+  "build": {
+    "steamBuildId": "24846950",
+    "version": "v2026-08-20_20-39-42",
+    "packagedGitSha": "18d3ebf"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "depotManifestId": "6640582085166250486",
+    "baselineDepotManifestId": "3983886218112905284",
+    "assignedBranch": "public",
+    "rollbackBuildId": "24845799",
+    "postUploadBranchVerification": {
+      "public": "24846950",
+      "sector-continue-test": "24845799",
+      "test-build": "23782673"
+    }
+  },
+  "packageEvidence": {
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "finalSuccessfulVdfSetLive": "",
+    "finalSuccessfulVdfSha256": "387823326f50c31a2edd5065ceaeaa1b85cfe9f9e72d8895db63e79eae6fadf7",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestSha256": "80db5388cc0474214684657a947732634c87fd55035f22c7cf8df8fea8bca3a9",
+    "payloadContentHash": "f99cddb2378c7c05bd94089d24c951bca30aa1ec2fc96cd3b9f5526dc778624a",
+    "payloadFileCount": 410,
+    "payloadBytes": 1178158142,
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "executableBytes": 226698752,
+    "executableSha256": "781761a311e390f257f43567d855f0c6664346f9ee0b023b38343ac7dda8c99c",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-08-20T18-44-26-499Z/report.json",
+    "packagedControlsReport": "test-results/packaged-control-smoke-2026-08-20T18-44-45-733Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-08-20T18-45-04-852Z/report.json",
+    "desktopSmokeReport": "test-results/electron-smoke-2026-08-20T18-47-18-433Z/report.json"
+  },
+  "steamPipeEvidence": {
+    "command": "C:\\steamcmd\\steamcmd.exe +login gaunziman +run_app_build D:\\vibe-coding-e\\nova-swarm-wonder-cosmic-cameo-20260820\\release\\steamworks\\app_build_LOCAL.vdf +quit",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "mappedFiles": 470,
+    "mappedBytesReported": "1123 MB",
+    "changedFiles": 2,
+    "changedBytesReported": "8.08 MB",
+    "result": "Successfully finished AppID 4765070 build (BuildID 24846950)."
+  },
+  "deploymentNotes": [
+    "The initial automatic SetLive public attempt uploaded changed content but returned Access Denied before creating a BuildID.",
+    "The follow-up upload with SetLive blank successfully created BuildID 24846950 and reused depot manifest 6640582085166250486.",
+    "Steamworks Builds and a fresh anonymous app-info read both verified public moved to BuildID 24846950 while sector-continue-test and test-build remained unchanged.",
+    "The previous public BuildID 24845799 is the exact branch rollback target."
+  ]
+}
