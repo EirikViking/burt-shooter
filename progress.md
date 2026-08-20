@@ -2,6 +2,9 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 
 ## 2026-08-20 Non-blocking Cabinet Wonder cosmic cameo
 
+- 2026-08-21 follow-up: owner footage showed `nebula_jellyfish` still cropped because the renderer retained cover scaling for every composition except one hand-authored Seahorse exception. Replace the exception model with universal full-image contain fitting inside the caption-safe art well, forbid cover scaling in the static gate, and exercise all sixty authored assets in runtime geometry QA before packaging or Steam upload.
+- 2026-08-21 verification: universal full-image contain is now the only authored-art fit mode. The static Wonder gate passes all 60 variants, the production runtime geometry audit loads and displays all 60 with every rendered rectangle inside its caption-safe bounds, and exact 1920x1080/1280x720 captures confirm complete Jellyfish and Seahorse compositions without HUD/transition overlap. Fixed-delta non-blocking parity, missing-art skip behavior, notification orchestration, all eight locales, controller flow, browser smoke, and current Electron smoke pass.
+
 - Current request: replace the Cabinet Wonder no-agency freeze with a compact, polished, non-blocking cameo during the ordinary wave-clear gap; preserve cadence, score neutrality, and Codex discovery; validate the gameplay/UI change and upload the completed package to Steam.
 - Isolated worktree: `D:\vibe-coding-e\nova-swarm-wonder-cosmic-cameo-20260820`; branch `codex/wonder-cosmic-cameo-20260820`; clean baseline `26520929cf35db3cc44c982deb98f43e38ee084e`.
 - Preflight passed: fetch, path/branch/HEAD/status/worktree checks, German/top3/marketing-hotkey ancestry, and `check:release-line`. The source checkout and protected dirty checkout remain untouched.

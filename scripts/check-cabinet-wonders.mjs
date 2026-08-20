@@ -16,15 +16,7 @@ assert.ok(CABINET_WONDER_CATALOG.every((entry) => entry.palette.length === 3 && 
 assert.ok(CABINET_WONDER_CATALOG.every((entry) => entry.history.length >= 500), 'each wonder needs a substantial authored Codex history');
 assert.ok(CABINET_WONDER_CATALOG.every((entry) => entry.fieldNote.length >= 40), 'each wonder needs a useful field note');
 assert.ok(CABINET_WONDER_CATALOG.every((entry) => entry.art?.includes('/cabinet-wonders/')), 'each wonder needs dedicated generated art');
-const seahorseCaravan = CABINET_WONDER_CATALOG.find((entry) => entry.id === 'nebula_seahorse_caravan');
-assert.equal(seahorseCaravan?.artFit?.mode, 'subject_contain', 'the tall Seahorse Caravan composition needs subject-safe fitting');
-assert.ok(
-  seahorseCaravan.artFit.x >= 0
-    && seahorseCaravan.artFit.y >= 0
-    && seahorseCaravan.artFit.x + seahorseCaravan.artFit.width <= 1
-    && seahorseCaravan.artFit.y + seahorseCaravan.artFit.height <= 1,
-  'the Seahorse Caravan authored subject bounds must stay normalized inside its source art'
-);
+assert.ok(CABINET_WONDER_CATALOG.every((entry) => entry.artFit === undefined), 'Cabinet Wonder fitting must be universal rather than maintained as fragile per-art exceptions');
 assert.ok(
   CABINET_WONDER_CATALOG.every((entry) => existsSync(path.resolve('public', entry.art.replace(/^\/+/, '')))),
   'every Cabinet Wonder art path must resolve to a packaged file'
@@ -118,7 +110,10 @@ assert.match(
   'Cabinet Wonders must fit their complete reveal/hold/fade timeline inside ordinary transition downtime'
 );
 assert.match(playSceneSource, /generatedArt\.blendMode = 'normal';/, 'generated Wonder art must preserve its authored color instead of additive washing');
-assert.match(playSceneSource, /variant\.artFit\?\.mode === 'subject_contain'[\s\S]{0,1400}scale = Math\.min\([\s\S]{0,260}artSafeBounds\.height/, 'tall authored compositions must fit their measured subject inside the caption-safe art well');
+assert.match(playSceneSource, /const artSafeBounds = \{[\s\S]{0,420}height: Math\.max\(1, height - captionBandHeight - insetTop - insetBottom\)/, 'every authored Wonder needs a caption-safe art well');
+assert.match(playSceneSource, /const scale = Math\.min\(\s*artSafeBounds\.width \/ sourceWidth,\s*artSafeBounds\.height \/ sourceHeight\s*\);/, 'every authored Wonder must use full-image contain scaling');
+assert.match(playSceneSource, /generatedArt\.__novaArtFitMode = 'contain';/, 'Wonder debug geometry must report universal contain fitting');
+assert.doesNotMatch(playSceneSource, /Math\.max\(targetWidth \/ sourceWidth, targetHeight \/ sourceHeight\)/, 'Cabinet Wonder art must never return to crop-prone cover scaling');
 assert.match(playSceneSource, /cabinet_wonder_art_stage_[\s\S]{0,220}fill\(\{ color: 0x000000, alpha: 0\.96 \}\)[\s\S]{0,180}maskedContent\.addChild\(artStage, visual\.root\)/, 'safe-contained artwork needs one continuous black inner stage without pasted-image edges');
 assert.match(playSceneSource, /captionLabel = `\$\{translateText\('Cabinet Wonder'\)\}[\s\S]{0,80}\$\{translateText\('Observed Phenomenon'\)\}`;/, 'the compact cameo needs its localized generic caption');
 assert.match(playSceneSource, /decorativeAccentAlpha = 0\.1;/, 'authored-art decorative accents must stay restrained');

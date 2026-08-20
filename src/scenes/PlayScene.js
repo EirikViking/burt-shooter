@@ -3129,44 +3129,28 @@ export class PlayScene {
       const sourceHeight = Math.max(1, generatedTexture.height || 1);
       const targetWidth = width;
       const targetHeight = height;
-      const artFit = variant.artFit?.mode === 'subject_contain' ? variant.artFit : null;
-      let scale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
-      let artSafeBounds = null;
-      let artRenderedBounds = null;
-      if (artFit) {
-        const captionBandHeight = Math.max(22, Math.min(32, height * CABINET_WONDER_CAPTION_BAND_RATIO));
-        const insetX = Math.max(12, Math.min(24, width * 0.025));
-        const insetTop = Math.max(8, Math.min(16, height * 0.03));
-        const insetBottom = Math.max(8, Math.min(12, height * 0.03));
-        artSafeBounds = {
-          x: insetX,
-          y: insetTop,
-          width: Math.max(1, width - insetX * 2),
-          height: Math.max(1, height - captionBandHeight - insetTop - insetBottom)
-        };
-        const subjectBounds = {
-          x: sourceWidth * artFit.x,
-          y: sourceHeight * artFit.y,
-          width: sourceWidth * artFit.width,
-          height: sourceHeight * artFit.height
-        };
-        scale = Math.min(
-          artSafeBounds.width / Math.max(1, subjectBounds.width),
-          artSafeBounds.height / Math.max(1, subjectBounds.height)
-        );
-        const safeCenterX = artSafeBounds.x + artSafeBounds.width * 0.5;
-        const safeCenterY = artSafeBounds.y + artSafeBounds.height * 0.5;
-        const subjectCenterX = subjectBounds.x + subjectBounds.width * 0.5;
-        const subjectCenterY = subjectBounds.y + subjectBounds.height * 0.5;
-        generatedArt.x = safeCenterX - (subjectCenterX - sourceWidth * 0.5) * scale;
-        generatedArt.y = safeCenterY - (subjectCenterY - sourceHeight * 0.5) * scale;
-        artRenderedBounds = {
-          x: generatedArt.x + (subjectBounds.x - sourceWidth * 0.5) * scale,
-          y: generatedArt.y + (subjectBounds.y - sourceHeight * 0.5) * scale,
-          width: subjectBounds.width * scale,
-          height: subjectBounds.height * scale
-        };
-      }
+      const captionBandHeight = Math.max(22, Math.min(32, height * CABINET_WONDER_CAPTION_BAND_RATIO));
+      const insetX = Math.max(12, Math.min(24, width * 0.025));
+      const insetTop = Math.max(8, Math.min(16, height * 0.03));
+      const insetBottom = Math.max(8, Math.min(12, height * 0.03));
+      const artSafeBounds = {
+        x: insetX,
+        y: insetTop,
+        width: Math.max(1, width - insetX * 2),
+        height: Math.max(1, height - captionBandHeight - insetTop - insetBottom)
+      };
+      const scale = Math.min(
+        artSafeBounds.width / sourceWidth,
+        artSafeBounds.height / sourceHeight
+      );
+      generatedArt.x = artSafeBounds.x + artSafeBounds.width * 0.5;
+      generatedArt.y = artSafeBounds.y + artSafeBounds.height * 0.5;
+      const artRenderedBounds = {
+        x: generatedArt.x - sourceWidth * scale * 0.5,
+        y: generatedArt.y - sourceHeight * scale * 0.5,
+        width: sourceWidth * scale,
+        height: sourceHeight * scale
+      };
       generatedArt.scale.set(scale);
       generatedArt.alpha = 0.96;
       generatedArt.blendMode = 'normal';
@@ -3179,7 +3163,7 @@ export class PlayScene {
       root.addChild(generatedArtMask);
       generatedArt.mask = generatedArtMask;
       authoredBounds = { x: 0, y: 0, width: targetWidth, height: targetHeight };
-      generatedArt.__novaArtFitMode = artFit?.mode || 'cover';
+      generatedArt.__novaArtFitMode = 'contain';
       generatedArt.__novaArtSafeBounds = artSafeBounds;
       generatedArt.__novaArtRenderedBounds = artRenderedBounds;
       elementCount += 1;

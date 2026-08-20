@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { CABINET_WONDER_CATALOG } from '../src/game/CabinetWonders.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4548));
@@ -10,6 +11,7 @@ const baseUrl = process.env.CHECK_URL || ('http://' + host + ':' + port);
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || ('test-results/cabinet-wonders-' + timestamp()));
 const supportedLocales = ['en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja'];
 const visualVariants = [
+  'nebula_jellyfish',
   'ghost_fleet_salute',
   'astral_leviathan_library',
   'celestial_crane_migration',
@@ -233,7 +235,7 @@ async function runVisualScenario(browser, options) {
 
     const screenshot = path.join(
       outputDir,
-      'wonder-' + locale + '-' + viewport.width + 'x' + viewport.height + (reducedMotion ? '-reduced' : '') + '.png'
+      'wonder-' + locale + '-' + variantId + '-' + viewport.width + 'x' + viewport.height + (reducedMotion ? '-reduced' : '') + '.png'
     );
     await page.screenshot({ path: screenshot, fullPage: false });
 
@@ -278,6 +280,66 @@ async function runVisualScenario(browser, options) {
       pageErrors,
       consoleErrors
     };
+  } finally {
+    await context.close();
+  }
+}
+
+async function runCatalogFitScenario(browser) {
+  const runtime = await createReadyPage(browser, {
+    viewport: { width: 1920, height: 1080 },
+    locale: 'en',
+    reducedMotion: false
+  });
+  const { context, page, pageErrors, consoleErrors } = runtime;
+  try {
+    const variants = await page.evaluate(async (variantIds) => {
+      const game = window.__game;
+      const play = game.scenes.play;
+      const manager = play.enemyManager;
+      const results = [];
+      game.app?.ticker?.stop?.();
+      for (const [index, id] of variantIds.entries()) {
+        play.clearCabinetWonder?.('catalog_fit_setup');
+        play.clearToastState?.();
+        manager?.forceClearAllEnemies?.();
+        if (manager) {
+          manager.state = 'TEST_IDLE';
+          manager.pendingWaveConfig = null;
+          manager.pendingTransitionHijackerSpawn = null;
+          manager.hijacker = null;
+        }
+        play.gameOverSequenceStarted = false;
+        game.gameOverTransitionPending = false;
+        play.introActive = false;
+        play.clearPendingEnemyStart?.();
+        play.pendingEnemyStartTimeout = null;
+        play.isPaused = false;
+        const artReady = await play.prewarmCabinetWonderVariant(id, 'runtime_catalog_fit');
+        play.showWaveBonusEffect?.(500, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 3/5' });
+        play.processToastQueue?.();
+        const shown = play.maybeShowCabinetWonder({
+          debugForce: true,
+          forceVariantId: id,
+          sector: 100 + index,
+          waveNumber: 3,
+          hasUpcomingWave: true
+        });
+        const debug = play.getCabinetWonderDebugState();
+        results.push({
+          id,
+          artReady,
+          shown,
+          mode: debug?.active?.artFitMode || null,
+          safe: debug?.active?.artSafeBounds || null,
+          rendered: debug?.active?.artRenderedBounds || null,
+          frame: debug?.active?.authoredBounds || null
+        });
+      }
+      play.clearCabinetWonder?.('catalog_fit_complete');
+      return results;
+    }, CABINET_WONDER_CATALOG.map((entry) => entry.id));
+    return { variants, pageErrors, consoleErrors };
   } finally {
     await context.close();
   }
@@ -607,17 +669,15 @@ function validateVisualScenario(scenario, failures) {
     && bounds.y < reserved.y + reserved.height + 15.5
     && bounds.y + bounds.height > reserved.y - 15.5
   ));
-  if (scenario.variantId === 'nebula_seahorse_caravan') {
-    const safe = debug?.active?.artSafeBounds;
-    const rendered = debug?.active?.artRenderedBounds;
-    const subjectFits = safe && rendered
-      && rendered.x >= safe.x - 0.5
-      && rendered.y >= safe.y - 0.5
-      && rendered.x + rendered.width <= safe.x + safe.width + 0.5
-      && rendered.y + rendered.height <= safe.y + safe.height + 0.5;
-    if (debug?.active?.artFitMode !== 'subject_contain' || !subjectFits) {
-      failures.push('Seahorse Caravan subject-fit mismatch: ' + JSON.stringify({ safe, rendered, mode: debug?.active?.artFitMode }));
-    }
+  const safe = debug?.active?.artSafeBounds;
+  const rendered = debug?.active?.artRenderedBounds;
+  const artFits = safe && rendered
+    && rendered.x >= safe.x - 0.5
+    && rendered.y >= safe.y - 0.5
+    && rendered.x + rendered.width <= safe.x + safe.width + 0.5
+    && rendered.y + rendered.height <= safe.y + safe.height + 0.5;
+  if (debug?.active?.artFitMode !== 'contain' || !artFits) {
+    failures.push(scenario.variantId + ' full-art contain mismatch: ' + JSON.stringify({ safe, rendered, mode: debug?.active?.artFitMode }));
   }
   if (!sync.artReady || !sync.shown || sync.second || sync.scoreDelta !== 0 || !sync.transitionActive) {
     failures.push(scenario.locale + ' synchronous entry mismatch: ' + JSON.stringify(sync));
@@ -788,6 +848,26 @@ function validateFixedDelta(control, wonder, failures) {
   }
 }
 
+function validateCatalogFit(catalogFit, failures) {
+  if (catalogFit.variants.length !== CABINET_WONDER_CATALOG.length) {
+    failures.push('catalog fit did not exercise every Wonder: ' + JSON.stringify({ expected: CABINET_WONDER_CATALOG.length, actual: catalogFit.variants.length }));
+  }
+  for (const variant of catalogFit.variants) {
+    const { safe, rendered } = variant;
+    const fits = safe && rendered
+      && rendered.x >= safe.x - 0.5
+      && rendered.y >= safe.y - 0.5
+      && rendered.x + rendered.width <= safe.x + safe.width + 0.5
+      && rendered.y + rendered.height <= safe.y + safe.height + 0.5;
+    if (!variant.artReady || !variant.shown || variant.mode !== 'contain' || !fits) {
+      failures.push('catalog full-art contain mismatch: ' + JSON.stringify(variant));
+    }
+  }
+  if (catalogFit.pageErrors.length || catalogFit.consoleErrors.length) {
+    failures.push('catalog fit browser errors: ' + catalogFit.pageErrors.concat(catalogFit.consoleErrors).join('; '));
+  }
+}
+
 mkdirSync(outputDir, { recursive: true });
 const server = await startPreviewServer();
 const browser = await chromium.launch({
@@ -800,6 +880,7 @@ const report = {
   baseUrl,
   outputDir,
   visuals: [],
+  catalogFit: null,
   fixedDelta: null,
   sceneDestruction: null,
   failures: []
@@ -820,12 +901,14 @@ try {
     viewport: { width: 1920, height: 1080 },
     reducedMotion: false
   }));
+  report.catalogFit = await runCatalogFitScenario(browser);
   const control = await runFixedDeltaScenario(browser, false);
   const wonder = await runFixedDeltaScenario(browser, true);
   report.fixedDelta = { control, wonder };
   report.sceneDestruction = await runSceneDestructionScenario(browser);
 
   for (const scenario of report.visuals) validateVisualScenario(scenario, report.failures);
+  validateCatalogFit(report.catalogFit, report.failures);
   validateFixedDelta(control, wonder, report.failures);
   const destruction = report.sceneDestruction;
   if (
