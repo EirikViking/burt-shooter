@@ -229,6 +229,7 @@ const CABINET_WONDER_MAX_HEIGHT = 331;
 const CABINET_WONDER_CENTER_Y_RATIO = 0.3;
 const CABINET_WONDER_UI_GAP = 16;
 const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0.65;
+const CABINET_WONDER_CAPTION_BAND_RATIO = 0.15;
 const GAME_OVER_DEATH_HOLD_MS = 620;
 const GAME_OVER_SKIP_DEBOUNCE_MS = 600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
@@ -3128,7 +3129,44 @@ export class PlayScene {
       const sourceHeight = Math.max(1, generatedTexture.height || 1);
       const targetWidth = width;
       const targetHeight = height;
-      const scale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
+      const artFit = variant.artFit?.mode === 'subject_contain' ? variant.artFit : null;
+      let scale = Math.max(targetWidth / sourceWidth, targetHeight / sourceHeight);
+      let artSafeBounds = null;
+      let artRenderedBounds = null;
+      if (artFit) {
+        const captionBandHeight = Math.max(22, Math.min(32, height * CABINET_WONDER_CAPTION_BAND_RATIO));
+        const insetX = Math.max(12, Math.min(24, width * 0.025));
+        const insetTop = Math.max(8, Math.min(16, height * 0.03));
+        const insetBottom = Math.max(8, Math.min(12, height * 0.03));
+        artSafeBounds = {
+          x: insetX,
+          y: insetTop,
+          width: Math.max(1, width - insetX * 2),
+          height: Math.max(1, height - captionBandHeight - insetTop - insetBottom)
+        };
+        const subjectBounds = {
+          x: sourceWidth * artFit.x,
+          y: sourceHeight * artFit.y,
+          width: sourceWidth * artFit.width,
+          height: sourceHeight * artFit.height
+        };
+        scale = Math.min(
+          artSafeBounds.width / Math.max(1, subjectBounds.width),
+          artSafeBounds.height / Math.max(1, subjectBounds.height)
+        );
+        const safeCenterX = artSafeBounds.x + artSafeBounds.width * 0.5;
+        const safeCenterY = artSafeBounds.y + artSafeBounds.height * 0.5;
+        const subjectCenterX = subjectBounds.x + subjectBounds.width * 0.5;
+        const subjectCenterY = subjectBounds.y + subjectBounds.height * 0.5;
+        generatedArt.x = safeCenterX - (subjectCenterX - sourceWidth * 0.5) * scale;
+        generatedArt.y = safeCenterY - (subjectCenterY - sourceHeight * 0.5) * scale;
+        artRenderedBounds = {
+          x: generatedArt.x + (subjectBounds.x - sourceWidth * 0.5) * scale,
+          y: generatedArt.y + (subjectBounds.y - sourceHeight * 0.5) * scale,
+          width: subjectBounds.width * scale,
+          height: subjectBounds.height * scale
+        };
+      }
       generatedArt.scale.set(scale);
       generatedArt.alpha = 0.96;
       generatedArt.blendMode = 'normal';
@@ -3141,6 +3179,9 @@ export class PlayScene {
       root.addChild(generatedArtMask);
       generatedArt.mask = generatedArtMask;
       authoredBounds = { x: 0, y: 0, width: targetWidth, height: targetHeight };
+      generatedArt.__novaArtFitMode = artFit?.mode || 'cover';
+      generatedArt.__novaArtSafeBounds = artSafeBounds;
+      generatedArt.__novaArtRenderedBounds = artRenderedBounds;
       elementCount += 1;
     }
     const sparkField = new PIXI.Container();
@@ -3773,7 +3814,17 @@ export class PlayScene {
         height
       };
     }
-    return { root, elementCount, authoredBounds, animate, generatedArtReady: true, decorativeAccentAlpha };
+    return {
+      root,
+      elementCount,
+      authoredBounds,
+      animate,
+      generatedArtReady: true,
+      decorativeAccentAlpha,
+      artFitMode: generatedArt?.__novaArtFitMode || 'cover',
+      artSafeBounds: generatedArt?.__novaArtSafeBounds || null,
+      artRenderedBounds: generatedArt?.__novaArtRenderedBounds || null
+    };
   }
 
   getCabinetWonderReservedTransitionBounds(display, type) {
@@ -3903,8 +3954,12 @@ export class PlayScene {
     maskedContent.label = `cabinet_wonder_cameo_content_${variant.id}`;
     const visual = this.createCabinetWonderVisual(variant, frameWidth, frameHeight, reducedMotion);
     if (!visual) return null;
+    const artStage = new PIXI.Graphics();
+    artStage.label = `cabinet_wonder_art_stage_${variant.id}`;
+    artStage.rect(0, 0, frameWidth, frameHeight);
+    artStage.fill({ color: 0x000000, alpha: 0.96 });
     visual.root.zIndex = 0;
-    maskedContent.addChild(visual.root);
+    maskedContent.addChild(artStage, visual.root);
 
     const topVignette = new PIXI.Graphics();
     topVignette.rect(0, 0, frameWidth, frameHeight * 0.16);
@@ -3925,7 +3980,7 @@ export class PlayScene {
     maskedContent.addChild(scanSweep);
     maskedContent.mask = contentMask;
 
-    const captionBandHeight = Math.max(22, Math.min(32, frameHeight * 0.15));
+    const captionBandHeight = Math.max(22, Math.min(32, frameHeight * CABINET_WONDER_CAPTION_BAND_RATIO));
     const captionBand = new PIXI.Graphics();
     captionBand.rect(0, frameHeight - captionBandHeight, frameWidth, captionBandHeight);
     captionBand.fill({ color: 0x020711, alpha: 0.82 });
@@ -4049,6 +4104,19 @@ export class PlayScene {
       assetSource: 'authored_art',
       visualLanguage: 'cabinet_wonder_cosmic_cameo_authored_art',
       generatedArtReady: visual.generatedArtReady,
+      artFitMode: visual.artFitMode,
+      artSafeBounds: visual.artSafeBounds ? {
+        x: visual.frameBounds.x + visual.artSafeBounds.x,
+        y: visual.frameBounds.y + visual.artSafeBounds.y,
+        width: visual.artSafeBounds.width,
+        height: visual.artSafeBounds.height
+      } : null,
+      artRenderedBounds: visual.artRenderedBounds ? {
+        x: visual.frameBounds.x + visual.artRenderedBounds.x,
+        y: visual.frameBounds.y + visual.artRenderedBounds.y,
+        width: visual.artRenderedBounds.width,
+        height: visual.artRenderedBounds.height
+      } : null,
       decorativeAccentAlpha: visual.decorativeAccentAlpha,
       active: true,
       completed: false,
@@ -4185,6 +4253,9 @@ export class PlayScene {
         caption: active.historyEntry.caption,
         visualLanguage: active.historyEntry.visualLanguage,
         generatedArtReady: active.historyEntry.generatedArtReady,
+        artFitMode: active.historyEntry.artFitMode,
+        artSafeBounds: active.historyEntry.artSafeBounds ? { ...active.historyEntry.artSafeBounds } : null,
+        artRenderedBounds: active.historyEntry.artRenderedBounds ? { ...active.historyEntry.artRenderedBounds } : null,
         decorativeAccentAlpha: active.historyEntry.decorativeAccentAlpha,
         authoredBounds: { ...active.historyEntry.authoredBounds },
         reservedTransitionBounds: active.historyEntry.reservedTransitionBounds.map((bounds) => ({ ...bounds })),

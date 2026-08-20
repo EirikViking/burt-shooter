@@ -3,7 +3,8 @@ const NEW_ART_ROOT = '/art/generated/nova-swarm/vfx/cabinet-wonders';
 function wonder(id, title, signalClass, history, fieldNote, {
   palette = [0x7df9ff, 0xb6a1ff, 0xff70d7],
   pitchScale = 1,
-  art = `${NEW_ART_ROOT}/nova-wonder-${id.replaceAll('_', '-')}-20260725.png`
+  art = `${NEW_ART_ROOT}/nova-wonder-${id.replaceAll('_', '-')}-20260725.png`,
+  artFit = null
 } = {}) {
   return Object.freeze({
     id,
@@ -13,7 +14,8 @@ function wonder(id, title, signalClass, history, fieldNote, {
     fieldNote,
     palette: Object.freeze(palette),
     pitchScale,
-    art
+    art,
+    artFit: artFit ? Object.freeze({ ...artFit }) : null
   });
 }
 
@@ -566,7 +568,17 @@ The Swarm once cut a branch. Every inhabited world in the local cluster suffered
 
 When a Seahorse reaches a dead planet, the gardener wakes, opens the glass, and begins again. None has ever returned to the Caravan. The largest creature bears a garden whose sleeper is still awake. She has watched ten thousand companions depart and refuses her own world because it is not dead enough to need her. Her transmissions are lullabies naming every restored planet. The newest verse names Earth, then corrects itself: NOT YET. NOT YET. NOT YET.`,
     'Garden globes are fragile. Keep combat below the Caravan.',
-    { palette: [0x65e8ff, 0xa175ff, 0xffce6a], pitchScale: 0.99 }
+    {
+      palette: [0x65e8ff, 0xa175ff, 0xffce6a],
+      pitchScale: 0.99,
+      artFit: {
+        mode: 'subject_contain',
+        x: 75 / 1536,
+        y: 43 / 1024,
+        width: 1382 / 1536,
+        height: 912 / 1024
+      }
+    }
   ),
   wonder(
     'prism_eclipse_mandala',

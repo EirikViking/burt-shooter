@@ -607,6 +607,18 @@ function validateVisualScenario(scenario, failures) {
     && bounds.y < reserved.y + reserved.height + 15.5
     && bounds.y + bounds.height > reserved.y - 15.5
   ));
+  if (scenario.variantId === 'nebula_seahorse_caravan') {
+    const safe = debug?.active?.artSafeBounds;
+    const rendered = debug?.active?.artRenderedBounds;
+    const subjectFits = safe && rendered
+      && rendered.x >= safe.x - 0.5
+      && rendered.y >= safe.y - 0.5
+      && rendered.x + rendered.width <= safe.x + safe.width + 0.5
+      && rendered.y + rendered.height <= safe.y + safe.height + 0.5;
+    if (debug?.active?.artFitMode !== 'subject_contain' || !subjectFits) {
+      failures.push('Seahorse Caravan subject-fit mismatch: ' + JSON.stringify({ safe, rendered, mode: debug?.active?.artFitMode }));
+    }
+  }
   if (!sync.artReady || !sync.shown || sync.second || sync.scoreDelta !== 0 || !sync.transitionActive) {
     failures.push(scenario.locale + ' synchronous entry mismatch: ' + JSON.stringify(sync));
   }
@@ -802,6 +814,12 @@ try {
       reducedMotion: locale === 'ja'
     }));
   }
+  report.visuals.push(await runVisualScenario(browser, {
+    locale: 'en',
+    variantId: 'nebula_seahorse_caravan',
+    viewport: { width: 1920, height: 1080 },
+    reducedMotion: false
+  }));
   const control = await runFixedDeltaScenario(browser, false);
   const wonder = await runFixedDeltaScenario(browser, true);
   report.fixedDelta = { control, wonder };
