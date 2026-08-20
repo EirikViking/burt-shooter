@@ -363,8 +363,8 @@ try {
     Boolean(presentationSequences.wonderAfterWaveClear.active) &&
     presentationSequences.wonderAfterWaveClear.blocking === false &&
     presentationSequences.wonderAfterWaveClear.progressionParity?.equal === true &&
-    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.widthRatio === 0.384 &&
-    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.heightRatio === 0.288 &&
+    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.widthRatio === 0.4416 &&
+    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.heightRatio === 0.3312 &&
     presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.centerYRatio === 0.3 &&
     presentationSequences.wonderAfterWaveClear.last?.noOverlap === true &&
     presentationSequences.wonderAfterWaveClear.last?.assetSource === 'authored_art',

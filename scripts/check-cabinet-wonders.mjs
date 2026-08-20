@@ -98,10 +98,11 @@ assert.match(
 );
 assert.match(
   playSceneSource,
-  /const CABINET_WONDER_WIDTH_RATIO = 0\.384;[\s\S]{0,180}const CABINET_WONDER_HEIGHT_RATIO = 0\.288;[\s\S]{0,180}const CABINET_WONDER_MAX_WIDTH = 672;[\s\S]{0,180}const CABINET_WONDER_MAX_HEIGHT = 288;/,
-  'Cabinet Wonders must use the user-approved 20%-larger 38.4% by 28.8%, 672 by 288 presentation envelope'
+  /const CABINET_WONDER_WIDTH_RATIO = 0\.4416;[\s\S]{0,180}const CABINET_WONDER_HEIGHT_RATIO = 0\.3312;[\s\S]{0,180}const CABINET_WONDER_MAX_WIDTH = 773;[\s\S]{0,180}const CABINET_WONDER_MAX_HEIGHT = 331;/,
+  'Cabinet Wonders must use the user-approved additional 15% enlargement: 44.16% by 33.12%, capped at 773 by 331'
 );
-assert.match(playSceneSource, /const CABINET_WONDER_CENTER_Y_RATIO = 0\.3;[\s\S]{0,180}const CABINET_WONDER_UI_GAP = 16;[\s\S]{0,180}const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0\.62;/, 'the enlarged Wonder must move down while reserving a measured no-overlap UI gap and player lane');
+assert.match(playSceneSource, /const CABINET_WONDER_CENTER_Y_RATIO = 0\.3;[\s\S]{0,180}const CABINET_WONDER_UI_GAP = 16;[\s\S]{0,180}const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0\.65;/, 'the enlarged Wonder must move down while reserving a measured no-overlap UI gap and the lower 35% player lane');
+assert.match(playSceneSource, /const CABINET_WONDER_HOLD_MS = 1500;/, 'Cabinet Wonders must remain fully readable for the user-approved 1.5-second hold');
 assert.match(
   playSceneSource,
   /const startDelayMs = reducedMotion \? 0 : CABINET_WONDER_START_DELAY_MS;[\s\S]{0,360}const durationMs = startDelayMs \+ fadeInMs \+ holdMs \+ fadeOutMs;/,
@@ -116,6 +117,7 @@ assert.match(playSceneSource, /beginCabinetWonderOpportunity\(decision = \{\}\)[
 assert.match(playSceneSource, /if \(!generatedTexture\) return null;/, 'the visual builder must fail closed instead of drawing a fallback Wonder');
 assert.match(playSceneSource, /no_overlap_lane_unavailable/, 'the cameo must skip when no collision-free transition lane is available');
 assert.match(playSceneSource, /assetSource: 'authored_art'/, 'live Wonder debug output must identify the authored-art source');
+assert.match(playSceneSource, /layer: 'gameplay_cameo_overlay',[\s\S]{0,100}occludesGameplayWithinFrame: true/, 'the cameo must render above continuing gameplay sprites so shots cannot cross its art or caption');
 assert.match(playSceneSource, /blocking: false,/, 'Wonder debug state must declare the presentation non-blocking');
 assert.match(playSceneSource, /cancelCabinetWonderBeforeCombatRelease\(reason = 'combat_release'\)/, 'combat release needs an idempotent Wonder dismissal hook');
 assert.doesNotMatch(playSceneSource, /isCabinetWonderNoAgencyPresentationActive|deferCabinetWonderEnemyRelease|captureCabinetWonderTimedEffectSnapshot/, 'Wonder must not retain a no-agency or deferred-release path');

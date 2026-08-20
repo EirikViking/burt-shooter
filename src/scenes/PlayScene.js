@@ -218,17 +218,17 @@ const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
 const CABINET_WONDER_START_DELAY_MS = 160;
 const CABINET_WONDER_FADE_IN_MS = 180;
-const CABINET_WONDER_HOLD_MS = 650;
+const CABINET_WONDER_HOLD_MS = 1500;
 const CABINET_WONDER_FADE_OUT_MS = 300;
 const CABINET_WONDER_REDUCED_FADE_IN_MS = 100;
 const CABINET_WONDER_REDUCED_FADE_OUT_MS = 200;
-const CABINET_WONDER_WIDTH_RATIO = 0.384;
-const CABINET_WONDER_HEIGHT_RATIO = 0.288;
-const CABINET_WONDER_MAX_WIDTH = 672;
-const CABINET_WONDER_MAX_HEIGHT = 288;
+const CABINET_WONDER_WIDTH_RATIO = 0.4416;
+const CABINET_WONDER_HEIGHT_RATIO = 0.3312;
+const CABINET_WONDER_MAX_WIDTH = 773;
+const CABINET_WONDER_MAX_HEIGHT = 331;
 const CABINET_WONDER_CENTER_Y_RATIO = 0.3;
 const CABINET_WONDER_UI_GAP = 16;
-const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0.62;
+const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0.65;
 const GAME_OVER_DEATH_HOLD_MS = 620;
 const GAME_OVER_SKIP_DEBOUNCE_MS = 600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
@@ -3878,7 +3878,7 @@ export class PlayScene {
     ];
     const root = new PIXI.Container();
     root.label = `cabinet_wonder_cameo_${variant.id}`;
-    root.zIndex = -500;
+    root.zIndex = 200;
     root.interactive = false;
     root.interactiveChildren = false;
     root.eventMode = 'none';
@@ -4044,7 +4044,8 @@ export class PlayScene {
       audioLayers: ['wonder_revelation'],
       caption: visual.captionLabel,
       codexDiscovered: false,
-      layer: 'gameplay_background',
+      layer: 'gameplay_cameo_overlay',
+      occludesGameplayWithinFrame: true,
       assetSource: 'authored_art',
       visualLanguage: 'cabinet_wonder_cosmic_cameo_authored_art',
       generatedArtReady: visual.generatedArtReady,
@@ -4179,6 +4180,7 @@ export class PlayScene {
         audioProfile: active.historyEntry.audioProfile,
         audioPlayed: Boolean(active.historyEntry.audioPlayed),
         layer: active.historyEntry.layer,
+        occludesGameplayWithinFrame: active.historyEntry.occludesGameplayWithinFrame,
         assetSource: active.historyEntry.assetSource,
         caption: active.historyEntry.caption,
         visualLanguage: active.historyEntry.visualLanguage,

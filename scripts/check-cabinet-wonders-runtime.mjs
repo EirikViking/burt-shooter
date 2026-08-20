@@ -134,6 +134,7 @@ async function runVisualScenario(browser, options) {
       play.gameOverSequenceStarted = false;
       game.gameOverTransitionPending = false;
       play.introActive = false;
+      play.clearPendingEnemyStart?.();
       play.pendingEnemyStartTimeout = null;
       play.isPaused = false;
       const artReady = await play.prewarmCabinetWonderVariant(id, 'runtime_visual');
@@ -177,6 +178,10 @@ async function runVisualScenario(browser, options) {
       };
     }, variantId);
 
+    if (!synchronous.shown) {
+      throw new Error(locale + ' Wonder did not enter the collision-free presentation lane: ' + JSON.stringify(synchronous.debug));
+    }
+
     await page.waitForFunction((id) => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return state.cabinetWonders?.active?.id === id
@@ -196,6 +201,8 @@ async function runVisualScenario(browser, options) {
       };
       visit(root);
       const art = nodes.find((node) => String(node?.label || '').startsWith('cabinet_wonder_imagegen_'));
+      const projectileVisuals = (play.gameContainer?.children || []).filter((node) => node?.__novaManagedProjectile === true);
+      const maxProjectileZIndex = projectileVisuals.reduce((max, node) => Math.max(max, Number(node.zIndex) || 0), 0);
       const canvasRect = window.__game?.app?.canvas?.getBoundingClientRect?.()
         || window.__app?.canvas?.getBoundingClientRect?.()
         || { width: window.innerWidth, height: window.innerHeight };
@@ -213,6 +220,8 @@ async function runVisualScenario(browser, options) {
         scaleX: Number(root?.scale?.x) || 0,
         scaleY: Number(root?.scale?.y) || 0,
         zIndex: root?.zIndex,
+        maxProjectileZIndex,
+        visualOccludesProjectiles: Number(root?.zIndex) > maxProjectileZIndex,
         eventMode: root?.eventMode,
         interactive: Boolean(root?.interactive),
         scanVisible: Boolean(current?.scanSweep?.visible),
@@ -305,6 +314,7 @@ async function runFixedDeltaScenario(browser, withWonder) {
       play.gameOverSequenceStarted = false;
       game.gameOverTransitionPending = false;
       play.introActive = false;
+      play.clearPendingEnemyStart?.();
       play.pendingEnemyStartTimeout = null;
       play.isPaused = false;
       play.freezeTimerMs = 0;
@@ -544,6 +554,7 @@ async function runSceneDestructionScenario(browser) {
       play.enemyManager.hijacker = null;
       play.enemyManager.state = 'TEST_IDLE';
       play.introActive = false;
+      play.clearPendingEnemyStart?.();
       play.pendingEnemyStartTimeout = null;
       const artReady = await play.prewarmCabinetWonderVariant('ghost_fleet_salute', 'runtime_scene_destruction');
       const shown = play.maybeShowCabinetWonder({
@@ -587,8 +598,8 @@ function validateVisualScenario(scenario, failures) {
     width: bounds.width * scaleX,
     height: bounds.height * scaleY
   };
-  const maxWidth = Math.min(active.renderedViewport.width * 0.384, 672 * scaleX);
-  const maxHeight = Math.min(active.renderedViewport.height * 0.288, 288 * scaleY);
+  const maxWidth = Math.min(active.renderedViewport.width * 0.4416, 773 * scaleX);
+  const maxHeight = Math.min(active.renderedViewport.height * 0.3312, 331 * scaleY);
   const reservedBounds = debug?.active?.reservedTransitionBounds || [];
   const overlapFindings = reservedBounds.filter((reserved) => (
     bounds.x < reserved.x + reserved.width + 15.5
@@ -623,18 +634,19 @@ function validateVisualScenario(scenario, failures) {
     || debug?.active?.id !== scenario.variantId
     || debug?.active?.blocking !== false
     || debug?.active?.playerLaneSafe !== true
-    || debug?.active?.layer !== 'gameplay_background'
+    || debug?.active?.layer !== 'gameplay_cameo_overlay'
+    || debug?.active?.occludesGameplayWithinFrame !== true
     || debug?.active?.assetSource !== 'authored_art'
     || debug?.active?.generatedArtReady !== true
     || debug?.active?.visualLanguage !== 'cabinet_wonder_cosmic_cameo_authored_art'
     || debug?.active?.decorativeAccentAlpha > 0.1
-    || debug?.active?.presentationTarget?.widthRatio !== 0.384
-    || debug?.active?.presentationTarget?.heightRatio !== 0.288
-    || debug?.active?.presentationTarget?.maxWidth !== 672
-    || debug?.active?.presentationTarget?.maxHeight !== 288
+    || debug?.active?.presentationTarget?.widthRatio !== 0.4416
+    || debug?.active?.presentationTarget?.heightRatio !== 0.3312
+    || debug?.active?.presentationTarget?.maxWidth !== 773
+    || debug?.active?.presentationTarget?.maxHeight !== 331
     || debug?.active?.presentationTarget?.centerYRatio !== 0.3
     || debug?.active?.presentationTarget?.uiGap !== 16
-    || debug?.active?.presentationTarget?.playerLaneTopRatio !== 0.62
+    || debug?.active?.presentationTarget?.playerLaneTopRatio !== 0.65
     || debug?.active?.noOverlap !== true
     || overlapFindings.length > 0
     || debug?.active?.audioProfile !== 'wonder_revelation'
@@ -646,14 +658,15 @@ function validateVisualScenario(scenario, failures) {
     || debug.active.caption.includes('UNTRANSLATED INTERNAL TEST TITLE')
     || renderedBounds.width > maxWidth + 1
     || renderedBounds.height > maxHeight + 1
-    || renderedBounds.y + renderedBounds.height > active.renderedViewport.height * 0.62 + 1
+    || renderedBounds.y + renderedBounds.height > active.renderedViewport.height * 0.65 + 1
     || Math.abs((renderedBounds.x + renderedBounds.width * 0.5) - active.renderedViewport.width * 0.5) > 1
   ) {
     failures.push(scenario.locale + ' framed cameo mismatch: ' + JSON.stringify(active));
   }
   if (
     active.alpha < 0.95
-    || active.zIndex !== -500
+    || active.zIndex !== 200
+    || active.visualOccludesProjectiles !== true
     || active.eventMode !== 'none'
     || active.interactive
     || active.maskCount < 1
@@ -663,7 +676,7 @@ function validateVisualScenario(scenario, failures) {
   ) {
     failures.push(scenario.locale + ' render/layer mismatch: ' + JSON.stringify(active));
   }
-  const expectedDuration = scenario.reducedMotion ? 950 : 1290;
+  const expectedDuration = scenario.reducedMotion ? 1800 : 2140;
   if (debug?.active?.durationMs !== expectedDuration) {
     failures.push(scenario.locale + ' timing mismatch: ' + JSON.stringify(debug?.active));
   }
