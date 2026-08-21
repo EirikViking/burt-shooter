@@ -1755,7 +1755,8 @@ async function runBrowserSmoke() {
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return state.scene === 'play'
-        && (state.toast?.active || []).some((toast) => toast.type === 'runContract');
+        && state.shipIntro?.complete === true
+        && state.shipIntro?.returningPilot === true;
     }, null, { timeout: 30000 });
     await page.waitForTimeout(1800);
     const fulfilledRunStartProof = await readState(page);
@@ -1769,18 +1770,34 @@ async function runBrowserSmoke() {
     assert.equal(
       fulfilledRunStartNotificationState.hasRunContractStart,
       false,
-      'a legitimate launch-count completion must suppress the redundant current-orders launch nudge'
+      'a launch-count completion must suppress the redundant current-orders launch nudge'
     );
-    assert.ok(
+    assert.equal(
       fulfilledRunStartNotificationState.activeTypes.includes('runContract'),
-      'the legitimate launch-count completion should remain visible while the redundant nudge is suppressed'
+      false,
+      'a launch-count completion must not cover opening combat with a Pilot Orders card'
+    );
+    assert.equal(
+      fulfilledRunStartProof.runContracts?.launchCompletionToastSuppressed,
+      true,
+      'runtime diagnostics should record that the launch completion presentation was suppressed'
+    );
+    assert.deepEqual(
+      fulfilledRunStartProof.runContracts?.launchCompletionIds,
+      ['ranked_regular_10'],
+      'the matching launch completion must still be recorded for rewards and the run report'
+    );
+    assert.equal(
+      (fulfilledRunStartProof.toast?.active || []).some((toast) => /PILOT ORDERS|ORDER COMPLETE/i.test(String(toast.message || ''))),
+      false,
+      'no Pilot Orders presentation may appear over opening combat when a launch event completes an order'
     );
     assert.equal(
       fulfilledRunStartProof.toast?.achievement?.id || null,
       null,
       'achievement and Pilot Order completion cards must be serialized instead of overlapping'
     );
-    const fulfilledRunStartScreenshot = path.join(outputDir, 'pilot-orders-legitimate-launch-completion-no-stack-1920x1080.png');
+    const fulfilledRunStartScreenshot = path.join(outputDir, 'pilot-orders-launch-completion-silent-opening-1920x1080.png');
     await page.screenshot({ path: fulfilledRunStartScreenshot, fullPage: true });
 
     await page.setViewportSize({ width: 1280, height: 720 });

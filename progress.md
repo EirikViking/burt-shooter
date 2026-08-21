@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-08-21 Pilot Orders launch-completion presentation fix
+
+- Owner screenshot proved the previous launch replay correction left a second case: a genuinely matching `run_started` milestone such as `10 Mayhem Runs` still opened the large Pilot Orders completion card over active Tactical combat.
+- Launch-time rank/run completions remain recorded, rewarded, persisted, and available in the run report, but now suppress both the large completion card and the redundant current-orders nudge during opening combat. Gameplay-earned completions after launch are unchanged.
+- Isolated worktree `D:\\vibe-coding-e\\nova-swarm-pilot-order-start-toast-fix-20260821`, branch `codex/pilot-order-start-toast-fix-20260821`, exact baseline `4495c36c1365139fe1846ce515a3bc82b1b7e9e3` (the uploaded Tactical-first leaderboard source and evidence).
+- Focused `check:run-contracts` and `check:notification-orchestration` pass. The exact 1920x1080 launch-completion capture shows active Tactical combat with no Pilot Orders card or nudge: `test-results/run-contracts-2026-08-21T11-30-53-641Z/pilot-orders-launch-completion-silent-opening-1920x1080.png`.
+- The skill-generic client was attempted after the change; its separate shared cache still lacks `chromium_headless_shell-1208`. The repository-native installed-Chrome runtime suite remains the authoritative evidence.
+
 ## 2026-08-21 Tactical-first leaderboard
 
 - Surgical request: make Tactical the leftmost Steam leaderboard tab and the default when the leaderboard opens without an explicit run-result destination; keep Pure available immediately to its right.

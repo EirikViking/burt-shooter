@@ -643,6 +643,7 @@ export class PlayScene {
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
     this.runContractStartNudgeTimeout = null;
+    this.runContractLaunchCompletionIds = [];
     this.runContractPersistenceDirty = false;
     this.deferredRunContractCompletions = [];
     this.deferredRunContractEnemyDefeats = [];
@@ -926,6 +927,7 @@ export class PlayScene {
     this.clearPersonalBestCelebration('scene_destroy');
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
+    this.runContractLaunchCompletionIds = [];
     this.runContractPersistenceDirty = false;
     this.deferredRunContractCompletions = [];
     this.deferredRunContractEnemyDefeats = [];
@@ -951,16 +953,22 @@ export class PlayScene {
         Math.floor(Number(runContractProgress?.highestPilotRank) || 0),
         Math.floor(Number(runContractProgress?.bestRank) || 0)
       );
-      this.emitRunContractEvent('pilot_rank_reached', {
+      const pilotRankCompletions = this.emitRunContractEvent('pilot_rank_reached', {
         rankIndex: currentPilotRankIndex,
         displayRank: currentPilotRankIndex + 1,
         sector: this.game?.level || 1,
-        suppressProgressToast: true
+        suppressProgressToast: true,
+        suppressCompletionToast: true
       });
-      this.emitRunContractEvent('run_started', {
+      const runStartCompletions = this.emitRunContractEvent('run_started', {
         sector: this.game?.level || 1,
-        suppressProgressToast: true
+        suppressProgressToast: true,
+        suppressCompletionToast: true
       });
+      this.runContractLaunchCompletionIds = [...new Set([
+        ...pilotRankCompletions.map((completion) => completion.id),
+        ...runStartCompletions.map((completion) => completion.id)
+      ].filter(Boolean))];
     } else {
       this.runContractSession = null;
     }
@@ -1762,7 +1770,12 @@ export class PlayScene {
   emitRunContractEvent(type, payload = {}) {
     if (this.areRunRewardsSuppressed()) return [];
     if (!this.runContractSession) return [];
-    const { suppressProgressToast = false, deferPersistence = false, ...eventPayload } = payload || {};
+    const {
+      suppressProgressToast = false,
+      suppressCompletionToast = false,
+      deferPersistence = false,
+      ...eventPayload
+    } = payload || {};
     const previousActive = Array.isArray(this.runContractSession.active)
       ? this.runContractSession.active.map((item) => ({ ...item }))
       : [];
@@ -1790,7 +1803,7 @@ export class PlayScene {
       } else {
         this.persistRunContractCompletion(completion);
       }
-      this.showRunContractCompletion(completion.id);
+      if (!suppressCompletionToast) this.showRunContractCompletion(completion.id);
     }
     return result.completed || [];
   }
@@ -4810,7 +4823,11 @@ export class PlayScene {
   }
 
   schedulePilotOrdersRunStartToast({ delayMs = 1150 } = {}) {
-    if (!this.runContractSession || this.getFirstRunControlsNudge()) return;
+    if (
+      !this.runContractSession
+      || this.getFirstRunControlsNudge()
+      || this.runContractLaunchCompletionIds.length > 0
+    ) return;
     const state = getRunContractSessionState(this.runContractSession);
     const sessionOrders = (state?.active || [])
       .filter((entry) => entry?.eligible && !entry?.completed);
@@ -4828,6 +4845,7 @@ export class PlayScene {
       .join(' · ');
     setTimeout(() => {
       if (this.gameOverSequenceStarted || this.game?.currentScene !== this) return;
+      if (this.runContractLaunchCompletionIds.length > 0) return;
       if (this.hasNotificationType?.('runContract')) return;
       this.enqueueToast(translateText('PILOT ORDERS: {orders}', { orders }), {
         fontSize: this.game.getWidth() < 620 ? 14 : 18,
@@ -5026,6 +5044,8 @@ export class PlayScene {
         target: Math.max(1, Math.floor(Number(entry.target) || 1)),
         lastSector: Math.max(1, Math.floor(Number(entry.lastSector) || 1))
       }));
+    state.launchCompletionIds = [...this.runContractLaunchCompletionIds];
+    state.launchCompletionToastSuppressed = this.runContractLaunchCompletionIds.length > 0;
     state.next = Array.isArray(menuState.next) ? menuState.next : [];
     return state;
   }
