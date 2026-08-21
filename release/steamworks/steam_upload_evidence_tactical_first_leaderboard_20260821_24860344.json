@@ -1,0 +1,69 @@
+{
+  "generatedAt": "2026-08-21T13:14:20.3185998+02:00",
+  "type": "steam_upload_evidence",
+  "title": "Nova Swarm Tactical-first leaderboard private Steam upload",
+  "source": {
+    "worktree": "D:\\vibe-coding-e\\nova-swarm-leaderboard-tactical-default-20260821",
+    "branch": "codex/leaderboard-tactical-default-20260821",
+    "baselineCommit": "b418b764b80a829be93891e005a795318117505e",
+    "sourceCommit": "797de33640cf338a7bb916180e77eea22df9c563",
+    "payloadEvidenceCommit": "28f2e3342b10c164792a5a9b1ae58f9147281398",
+    "buildVersion": "v2026-08-21_12-44-22"
+  },
+  "change": {
+    "summary": "Tactical is the leftmost Steam leaderboard tab and the default when no explicit destination is supplied; Pure remains immediately to its right.",
+    "leaderboardIdentityChanged": false,
+    "playerFacingTextChanged": false
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24860344",
+    "depotManifestId": "666779679386681118",
+    "setLive": "",
+    "assignedBranch": null,
+    "steamworksMetadataChanged": false,
+    "branchStateAfterUpload": {
+      "public": "24857744",
+      "sector-continue-test": "24845799",
+      "test-build": "23782673"
+    }
+  },
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 410,
+    "totalBytes": 1178160590,
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestSha256": "2E6087FB6E1462A64DA4E2A53E98EAAA7DD2E78ACBABA7016639B4B6FE83C948",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "vdfSha256": "5763127C54BD6885887F65A3E39F4086A8B1FB9E169963C0B2B19236205D5235",
+    "executableSha256": "E6F07FF4016E6C18DF6BD7D27F943AC6F2ABEEF39256AD7C8DDC683071D047AF"
+  },
+  "validation": {
+    "passed": [
+      "node scripts/check-leaderboard-adapter.mjs",
+      "node scripts/check-steam-leaderboard-mock.mjs",
+      "npm run check:i18n",
+      "npm run check:i18n-ui",
+      "npm run check:release-line",
+      "npm run build:current",
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:perf:packaged"
+    ],
+    "focusedScreenshot": "test-results/steam-leaderboard-mock-2026-08-21T10-48-25-573Z/steam-tactical-default.png",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-08-21T11-05-06-521Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-08-21T11-07-25-173Z/report.json",
+    "packagedPerfSummary": "Clean rerun passed with 57.1 minimum FPS and 59.9 average FPS; an earlier run recorded two transient 30 FPS desktop scheduling samples and was superseded by the clean rerun."
+  },
+  "upload": {
+    "result": "Successfully finished AppID 4765070 build (BuildID 24860344).",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "notes": [
+    "Private unassigned SteamPipe upload only.",
+    "SetLive was blank, so the upload did not move public or any private test branch.",
+    "No Steamworks store metadata, leaderboard identity, achievement metadata, Steam Cloud settings, AppID, or depot IDs were changed."
+  ]
+}
