@@ -1,5 +1,15 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-08-21 Tactical launch Pilot Orders replay fix
+
+- Owner footage (`Desktop 2026.08.21 - 09.02.59.07.mp4`, 1920x1080, 6.12 seconds) showed `ORDER COMPLETE: 50 Bosses` covering active Tactical combat and colliding with another launch notification.
+- Reproduced as a mature-profile regression: cumulative Pilot Order backfill can seed a newly active order at its target (for example, 50/50 bosses). The generic completion check then let unrelated launch-time `pilot_rank_reached` or `run_started` events claim it. Fresh and below-threshold profiles are unaffected; any qualifying returning Mayhem Pure or Tactical profile can hit it.
+- Isolated worktree: `D:\vibe-coding-e\nova-swarm-pilot-order-launch-fix-20260821`; branch `codex/pilot-order-launch-fix-20260821`; clean baseline `339fcbbdab8b1af1044f996facb9c58bae62c7ee`, retaining the universal authored Wonder-art containment fix.
+- Cumulative progress and rewards remain intact. A prefilled order now completes only on a matching gameplay event; a 50/50 boss order waits for a boss defeat instead of firing during scene initialization. Genuine run-start and rank milestones still complete on their matching startup event.
+- The redundant current-orders nudge is skipped when a real Pilot Order completion already owns the launch notification lane. Achievement banners and center/top gameplay cards are serialized bidirectionally so neither can render behind the other; side-lane combat cues continue normally.
+- Focused QA passes: `check:run-contracts` (pure state plus installed-Chrome runtime) and `check:notification-orchestration`. Exact screenshots at 1280x720 show the mature Tactical launch without a completion card and a legitimate run-start completion with no stacked achievement or order nudge: `test-results/run-contracts-2026-08-21T07-46-26-800Z/`.
+- The skill-generic web-game client was attempted after the meaningful change but its separate shared cache still lacks `chromium_headless_shell-1208`; repository-native installed-Chrome checks remain authoritative.
+
 ## 2026-08-20 Non-blocking Cabinet Wonder cosmic cameo
 
 - 2026-08-21 follow-up: owner footage showed `nebula_jellyfish` still cropped because the renderer retained cover scaling for every composition except one hand-authored Seahorse exception. Replace the exception model with universal full-image contain fitting inside the caption-safe art well, forbid cover scaling in the static gate, and exercise all sixty authored assets in runtime geometry QA before packaging or Steam upload.

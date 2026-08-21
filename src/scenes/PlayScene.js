@@ -4392,10 +4392,7 @@ export class PlayScene {
 
   flushFirstRunAchievementHold() {
     this.game?.flushAchievementToasts?.(this);
-    if (!this.activeAchievementToast && this.achievementToastQueue.length > 0) {
-      const next = this.achievementToastQueue.shift();
-      this.showAchievementToastNow(next);
-    }
+    this.tryShowNextAchievementToast();
   }
 
   isFirstRunOnboardingBlockingAchievements() {
@@ -4831,6 +4828,7 @@ export class PlayScene {
       .join(' · ');
     setTimeout(() => {
       if (this.gameOverSequenceStarted || this.game?.currentScene !== this) return;
+      if (this.hasNotificationType?.('runContract')) return;
       this.enqueueToast(translateText('PILOT ORDERS: {orders}', { orders }), {
         fontSize: this.game.getWidth() < 620 ? 14 : 18,
         fill: '#eafcff',
@@ -16352,16 +16350,34 @@ export class PlayScene {
     if (this.isFirstRunOnboardingBlockingAchievements() && this.getFirstRunControlsNudge()) {
       return false;
     }
-    if (this.activeAchievementToast) {
+    if (this.activeAchievementToast || this.areAchievementToastLanesBusy()) {
       this.achievementToastQueue.push(entry);
       return true;
     }
     return this.showAchievementToastNow(entry);
   }
 
+  areAchievementToastLanesBusy() {
+    return Boolean(this.activeBossIntroCard || this.activeCenterToast || this.activeTopToast);
+  }
+
+  tryShowNextAchievementToast() {
+    if (this.activeAchievementToast || this.areAchievementToastLanesBusy() || this.achievementToastQueue.length === 0) {
+      return false;
+    }
+    const next = this.achievementToastQueue.shift();
+    return this.showAchievementToastNow(next);
+  }
+
   showAchievementToastNow(entry) {
     const achievement = entry?.achievement;
     if (!achievement?.name || !this.uiOverlay || !this.game?.app?.ticker) return false;
+    if (this.activeAchievementToast || this.areAchievementToastLanesBusy()) {
+      if (!this.achievementToastQueue.some((queued) => queued.id === entry.id)) {
+        this.achievementToastQueue.unshift(entry);
+      }
+      return true;
+    }
 
     const { width, height } = this.game.app.screen;
     const compact = width < 1100 || height < 700;
@@ -16460,9 +16476,11 @@ export class PlayScene {
     }
     this.activeAchievementToast = null;
     if (showNext && this.achievementToastQueue.length > 0) {
-      const next = this.achievementToastQueue.shift();
-      setTimeout(() => this.showAchievementToastNow(next), 160);
+      setTimeout(() => this.tryShowNextAchievementToast(), 160);
     }
+    setTimeout(() => {
+      if (this.game?.app && this.game?.currentScene === this) this.processToastQueue();
+    }, 0);
   }
 
   applyLifeRepair(targetLives = 3, invulnerabilityMs = 3000) {
@@ -18777,6 +18795,9 @@ export class PlayScene {
       reason,
       dismissedAt: Date.now()
     });
+    if (!this.areAchievementToastLanesBusy() && !this.activeAchievementToast && this.achievementToastQueue.length > 0) {
+      setTimeout(() => this.tryShowNextAchievementToast(), 160);
+    }
   }
 
   deferActiveToastDisplay(display, slot, delayMs = 0, { minRemainingMs = 900 } = {}) {
@@ -18927,6 +18948,14 @@ export class PlayScene {
     if (this.overrunMilestoneInterlude?.active) return;
     const now = Date.now();
     this.deferQueuedRoutineFocusLane(now);
+    if (this.activeAchievementToast) {
+      const delayedCenter = !this.activeBossIntroCard && !this.activeCenterToast
+        ? this.peekReadyToast(this.toastQueue, now)
+        : null;
+      const delayedTop = !this.activeTopToast ? this.peekReadyToast(this.toastTopQueue, now) : null;
+      if (delayedCenter) this.delayReadyToast(this.toastQueue, delayedCenter, 400, now);
+      if (delayedTop) this.delayReadyToast(this.toastTopQueue, delayedTop, 400, now);
+    }
     if (this.activeBossDossier?.parent) {
       const delayedTop = !this.activeTopToast ? this.peekReadyToast(this.toastTopQueue, now) : null;
       const delayedCorner = !this.activeCornerToast ? this.peekReadyToast(this.toastCornerQueue, now) : null;

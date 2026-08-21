@@ -767,6 +767,73 @@ function runCatalogAndSaveTests() {
     88,
     'saved career boss totals should backfill the late 100-boss order'
   );
+  const fulfilledBossSession = startRunContractSession({
+    runMode: RUN_MODES.MAYHEM_TACTICAL,
+    progress: {
+      totalBossesDefeated: 50,
+      pilotRank: 27,
+      runContracts: normalizeRunContractsState({
+        activeIds: ['boss_hunter_50'],
+        careerProgress: {
+          boss_kills: { progress: 50, updatedAt: '2026-08-21T00:00:00.000Z' }
+        }
+      })
+    }
+  });
+  assert.equal(
+    findSessionItem(fulfilledBossSession, 'boss_hunter_50').progress,
+    50,
+    'historical boss totals should keep a newly active boss order visibly fulfilled'
+  );
+  const fulfilledBossAfterRank = applyRunContractEvent(fulfilledBossSession, {
+    type: 'pilot_rank_reached',
+    rankIndex: 27,
+    displayRank: 28,
+    sector: 1
+  });
+  assert.deepEqual(
+    fulfilledBossAfterRank.completed,
+    [],
+    'an unrelated launch-time rank event must not claim a historically fulfilled boss order'
+  );
+  const fulfilledBossAfterLaunch = applyRunContractEvent(fulfilledBossAfterRank.session, {
+    type: 'run_started',
+    sector: 1
+  });
+  assert.deepEqual(
+    fulfilledBossAfterLaunch.completed,
+    [],
+    'an unrelated run-start event must not claim a historically fulfilled boss order'
+  );
+  const fulfilledBossAfterDefeat = applyRunContractEvent(fulfilledBossAfterLaunch.session, {
+    type: 'boss_defeated',
+    sector: 5
+  });
+  assert.ok(
+    fulfilledBossAfterDefeat.completed.some((entry) => entry.id === 'boss_hunter_50'),
+    'the next matching boss defeat should claim the fulfilled historical order'
+  );
+  assert.equal(
+    fulfilledBossAfterDefeat.completed.filter((entry) => entry.id === 'boss_hunter_50').length,
+    1,
+    'the matching boss defeat should claim the fulfilled historical order exactly once'
+  );
+  const fulfilledLaunchSession = startRunContractSession({
+    runMode: RUN_MODES.MAYHEM_TACTICAL,
+    progress: {
+      totalRuns: 10,
+      runContracts: normalizeRunContractsState({ activeIds: ['ranked_regular_10'] })
+    }
+  });
+  const fulfilledLaunchResult = applyRunContractEvent(fulfilledLaunchSession, {
+    type: 'run_started',
+    sector: 1
+  });
+  assert.deepEqual(
+    fulfilledLaunchResult.completed.map((entry) => entry.id),
+    ['ranked_regular_10'],
+    'a genuinely matching run-start event should still claim a historically fulfilled launch order'
+  );
   const migratedVarietySession = startRunContractSession({
     runMode: RUN_MODES.RANKED,
     progress: {
@@ -1188,6 +1255,19 @@ async function runBrowserSmoke() {
       activeIds: ['support_hunter_100'],
       completedIds: RUN_CONTRACT_ORDER_IDS.filter((id) => id !== 'support_hunter_100'),
       completionNoticeSeen: false
+    });
+    const fulfilledBossLaunchState = normalizeRunContractsState({
+      activeIds: ['boss_hunter_50', 'support_hunter_50', 'graze_10'],
+      careerProgress: {
+        boss_kills: { progress: 50, updatedAt: '2026-08-21T00:00:00.000Z' },
+        support_kills: { progress: 50, updatedAt: '2026-08-21T00:00:00.000Z' }
+      }
+    });
+    const fulfilledRunStartState = normalizeRunContractsState({
+      activeIds: ['ranked_regular_10'],
+      careerProgress: {
+        run_starts: { progress: 10, updatedAt: '2026-08-21T00:00:00.000Z' }
+      }
     });
 
     const activeProof = await captureMenuProof(page, {
@@ -1623,6 +1703,87 @@ async function runBrowserSmoke() {
     await page.screenshot({ path: controllerFirstRunScreenshot, fullPage: true });
     await page.evaluate(() => { delete window.__burtGamepadOverride; });
 
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await seedMenuProfile(page, fulfilledBossLaunchState, 1, {
+      hangarPatch: {
+        totalRuns: 12,
+        totalBossesDefeated: 50,
+        pilotRank: 27,
+        highestPilotRank: 27,
+        bestRank: 27
+      }
+    });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForMenu(page);
+    await page.evaluate(async () => {
+      window.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__ = true;
+      await window.__game?.startGame?.(undefined, { runMode: 'ranked_tactical' });
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'play'
+        && state.shipIntro?.complete === true
+        && state.shipIntro?.returningPilot === true;
+    }, null, { timeout: 30000 });
+    await page.waitForTimeout(1800);
+    const fulfilledBossLaunchProof = await readState(page);
+    const fulfilledBossOrder = fulfilledBossLaunchProof.runContracts?.active?.find((item) => item.id === 'boss_hunter_50');
+    assert.equal(fulfilledBossOrder?.progress, 50, 'mature Tactical profile should retain its historical 50/50 boss progress');
+    assert.equal(fulfilledBossOrder?.completed, false, 'mature Tactical profile must not claim 50 Bosses during launch initialization');
+    assert.equal(
+      (fulfilledBossLaunchProof.toast?.active || []).some((toast) => toast.type === 'runContract'),
+      false,
+      'Tactical launch must not show an unrelated Pilot Order completion card'
+    );
+    assert.equal(
+      (fulfilledBossLaunchProof.toast?.active || []).some((toast) => String(toast.message || '').includes('ORDER COMPLETE: 50 Bosses')),
+      false,
+      'Tactical launch must not replay the mature-profile 50 Bosses completion'
+    );
+    const fulfilledBossLaunchScreenshot = path.join(outputDir, 'pilot-orders-mature-tactical-launch-no-completion-1920x1080.png');
+    await page.screenshot({ path: fulfilledBossLaunchScreenshot, fullPage: true });
+
+    await seedMenuProfile(page, fulfilledRunStartState, 1, {
+      hangarPatch: { totalRuns: 10, totalBossesDefeated: 0 }
+    });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForMenu(page);
+    await page.evaluate(async () => {
+      window.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__ = true;
+      await window.__game?.startGame?.(undefined, { runMode: 'ranked_tactical' });
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'play'
+        && (state.toast?.active || []).some((toast) => toast.type === 'runContract');
+    }, null, { timeout: 30000 });
+    await page.waitForTimeout(1800);
+    const fulfilledRunStartProof = await readState(page);
+    const fulfilledRunStartNotificationState = await page.evaluate(() => {
+      const play = window.__game?.scenes?.play;
+      return {
+        hasRunContractStart: play?.hasNotificationType?.('runContractStart') === true,
+        activeTypes: (play?.getToastDebugState?.().active || []).map((toast) => toast.type)
+      };
+    });
+    assert.equal(
+      fulfilledRunStartNotificationState.hasRunContractStart,
+      false,
+      'a legitimate launch-count completion must suppress the redundant current-orders launch nudge'
+    );
+    assert.ok(
+      fulfilledRunStartNotificationState.activeTypes.includes('runContract'),
+      'the legitimate launch-count completion should remain visible while the redundant nudge is suppressed'
+    );
+    assert.equal(
+      fulfilledRunStartProof.toast?.achievement?.id || null,
+      null,
+      'achievement and Pilot Order completion cards must be serialized instead of overlapping'
+    );
+    const fulfilledRunStartScreenshot = path.join(outputDir, 'pilot-orders-legitimate-launch-completion-no-stack-1920x1080.png');
+    await page.screenshot({ path: fulfilledRunStartScreenshot, fullPage: true });
+
+    await page.setViewportSize({ width: 1280, height: 720 });
     await seedMenuProfile(page, finalRunState, 1, { hangarPatch: { totalRuns: 1 } });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitForMenu(page);
@@ -1818,6 +1979,8 @@ async function runBrowserSmoke() {
         hangarCompletedReview: hangarReviewScreenshot,
         hiddenAfterCompletionNotice: autoHiddenProof.screenshot,
         runStartNudge: startNudgeScreenshot,
+        matureTacticalLaunch: fulfilledBossLaunchScreenshot,
+        legitimateLaunchCompletion: fulfilledRunStartScreenshot,
         progressToast: progressToastScreenshot,
         pauseOrdersLine: pauseScreenshot,
         playToast: playScreenshot,

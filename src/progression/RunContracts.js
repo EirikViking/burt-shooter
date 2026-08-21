@@ -1461,6 +1461,7 @@ export function applyRunContractEvent(session, event = {}) {
     const nextItem = { ...item };
     nextItem.lastSector = Math.max(1, floor(event.sector, 1));
     if (nextItem.eligible && !nextItem.completed) {
+      let completionTriggeredByEvent = false;
       if (contract.objective === 'unique_enemy_defeats' && String(event?.type || '') === 'enemy_defeated') {
         const enemyType = clampText(event.enemyType || event.threatId || event.enemyId || event.kind, 120);
         const uniqueIds = uniqueTextIds(nextItem.uniqueIds, {
@@ -1468,6 +1469,7 @@ export function applyRunContractEvent(session, event = {}) {
           maxLength: 120
         });
         const isNewEnemyType = Boolean(enemyType && !uniqueIds.includes(enemyType));
+        completionTriggeredByEvent = isNewEnemyType;
         if (isNewEnemyType) uniqueIds.push(enemyType);
         nextItem.uniqueIds = uniqueIds.slice(0, contract.target || 100);
         nextItem.progress = Math.min(
@@ -1475,9 +1477,15 @@ export function applyRunContractEvent(session, event = {}) {
           Math.max(floor(nextItem.progress) + (isNewEnemyType ? 1 : 0), nextItem.uniqueIds.length)
         );
       } else {
+        const target = Math.max(1, floor(contract.target, 1));
+        const progressProbe = {
+          ...nextItem,
+          progress: Math.min(floor(nextItem.progress), target - 1)
+        };
+        completionTriggeredByEvent = progressForEvent(contract, progressProbe, event, nextSession) > progressProbe.progress;
         nextItem.progress = Math.min(contract.target, progressForEvent(contract, nextItem, event, nextSession));
       }
-      if (nextItem.progress >= contract.target) {
+      if (completionTriggeredByEvent && nextItem.progress >= contract.target) {
         nextItem.completed = true;
         nextItem.completedAt = nowIso();
         const completion = {
