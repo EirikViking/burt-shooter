@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-08-21T13:57:50.3628299+02:00",
+  "type": "steam_upload_evidence",
+  "title": "Nova Swarm Pilot Orders silent Tactical launch private Steam upload",
+  "source": {
+    "worktree": "D:\\vibe-coding-e\\nova-swarm-pilot-order-start-toast-fix-20260821",
+    "branch": "codex/pilot-order-start-toast-fix-20260821",
+    "baselineCommit": "4495c36c1365139fe1846ce515a3bc82b1b7e9e3",
+    "sourceCommit": "7d5dc045c3261a02ab5b687e033690c5161a578a",
+    "payloadEvidenceCommit": "d3b9a064b47e191fbced1128343147fe78d61d56",
+    "buildVersion": "v2026-08-21_13-35-11"
+  },
+  "change": {
+    "summary": "Launch-time Pilot Order completions remain recorded and rewarded but no longer show a completion card or Pilot Orders nudge over opening Tactical combat.",
+    "ordinaryGameplayCompletionPresentationChanged": false,
+    "leaderboardBehaviorChanged": false,
+    "playerFacingTextChanged": false
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24861184",
+    "depotManifestId": "7459106934235311630",
+    "setLive": "",
+    "assignedBranch": null,
+    "steamworksMetadataChanged": false,
+    "branchStateAfterUpload": {
+      "public": "24860344",
+      "sector-continue-test": "24845799",
+      "test-build": "23782673"
+    }
+  },
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 410,
+    "totalBytes": 1178161104,
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestSha256": "D17542E973AB6B5060CD00BFB8E7FC09EB72BE51A9214E4657AEC82E52BF7644",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "vdfSha256": "F3263EC28F0773446A3F0468631F4A4575834A4179E3D289C5E5079DCE6EE1AA",
+    "executableSha256": "9B010C2C2837FC48FCA239C1655395C0970DE1D5D80B73799B7BE6FAF2126591"
+  },
+  "validation": {
+    "passed": [
+      "npm run check:run-contracts",
+      "npm run check:notification-orchestration",
+      "npm run check:i18n",
+      "npm run check:i18n-ui",
+      "npm run check:release-line",
+      "npm run build:current",
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:perf:packaged"
+    ],
+    "focusedScreenshot": "test-results/run-contracts-2026-08-21T11-30-53-641Z/pilot-orders-launch-completion-silent-opening-1920x1080.png",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-08-21T11-51-16-669Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-08-21T11-51-44-412Z/report.json",
+    "packagedPerfSummary": "Passed with 59.2 minimum FPS and 59.9 average FPS.",
+    "genericSkillClient": "Attempted; shared Playwright cache lacks chromium_headless_shell-1208. Repository-native installed-Chrome runtime checks passed."
+  },
+  "upload": {
+    "result": "Successfully finished AppID 4765070 build (BuildID 24861184).",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "notes": [
+    "Private unassigned SteamPipe upload only.",
+    "SetLive was blank, so the upload did not move public or any private test branch.",
+    "No Steamworks store metadata, leaderboard identity, achievement metadata, Steam Cloud settings, AppID, or depot IDs were changed."
+  ]
+}
