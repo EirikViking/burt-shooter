@@ -169,7 +169,7 @@ async function checkMockSteamRuntime() {
   const adapter = createLeaderboardAdapter();
   await adapter.refreshAvailability();
   assert.equal(adapter.isSteamAvailable(), true, 'mock Steam runtime should be available');
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'tactical', 'sector', 'friends', 'local'], 'Steam tabs should expose Pure, Tactical, Sector, Friends, and Local views');
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['tactical', 'global', 'sector', 'friends', 'local'], 'Steam tabs should lead with Tactical, followed by Pure, Sector, Friends, and Local');
 
   win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
     {
@@ -183,7 +183,7 @@ async function checkMockSteamRuntime() {
     }
   ]));
   await adapter.refreshAvailability();
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'tactical', 'sector', 'friends', 'local']);
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['tactical', 'global', 'sector', 'friends', 'local']);
 
   const result = await adapter.submitScore({
     score: 12345,

@@ -1,5 +1,11 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-08-21 Tactical-first leaderboard
+
+- Surgical request: make Tactical the leftmost Steam leaderboard tab and the default when the leaderboard opens without an explicit run-result destination; keep Pure available immediately to its right.
+- Isolated worktree D:\vibe-coding-e\nova-swarm-leaderboard-tactical-default-20260821, branch codex/leaderboard-tactical-default-20260821, clean baseline b418b764b80a829be93891e005a795318117505e.
+- Scope is limited to tab ordering/default selection, matching controller focus order, and focused leaderboard regression evidence before private Steam upload.
+
 ## 2026-08-21 Tactical launch Pilot Orders replay fix
 
 - Owner footage (`Desktop 2026.08.21 - 09.02.59.07.mp4`, 1920x1080, 6.12 seconds) showed `ORDER COMPLETE: 50 Bosses` covering active Tactical combat and colliding with another launch notification.

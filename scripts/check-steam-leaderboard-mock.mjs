@@ -139,7 +139,7 @@ try {
         source: 'steam'
       }
     ]));
-    window.__game.leaderboardView = 'global';
+    delete window.__game.leaderboardView;
     window.__game.switchScene('highscore');
   }, {
     sectorLeaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
@@ -149,10 +149,21 @@ try {
     const state = JSON.parse(window.render_game_to_text());
     return state.scene === 'highscore' && state.highscore?.status === 'LOADED';
   }, null, { timeout: 12000 });
-  const globalState = await state(page);
-  if (globalState.highscore?.tabs?.join(',') !== 'global,tactical,sector,friends,local') {
-    throw new Error(`Steam tabs missing: ${globalState.highscore?.tabs}`);
+  const defaultState = await state(page);
+  if (defaultState.highscore?.tabs?.join(',') !== 'tactical,global,sector,friends,local') {
+    throw new Error('Steam tabs are not Tactical-first: ' + defaultState.highscore?.tabs);
   }
+  if (defaultState.highscore?.activeLeaderboard !== 'tactical' || defaultState.highscore?.sourceLabel !== 'Steam Tactical') {
+    throw new Error('Tactical should be the default Steam leaderboard: ' + JSON.stringify(defaultState.highscore));
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-tactical-default.png'), fullPage: true });
+
+  await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('global'));
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.highscore?.activeLeaderboard === 'global' && state.highscore?.status === 'LOADED';
+  }, null, { timeout: 12000 });
+  const globalState = await state(page);
   if (globalState.highscore?.sourceLabel !== 'Steam Pure') {
     throw new Error(`Expected Steam Pure source, got ${globalState.highscore?.sourceLabel}`);
   }

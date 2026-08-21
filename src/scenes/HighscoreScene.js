@@ -208,7 +208,7 @@ export class HighscoreScene {
       : createLeaderboardAdapter();
     await this.leaderboardAdapter.refreshAvailability();
     this.leaderboardTabs = this.leaderboardAdapter.getTabs();
-    this.activeLeaderboard = this.leaderboardAdapter.normalizeView(this.game.leaderboardView || LeaderboardView.GLOBAL);
+    this.activeLeaderboard = this.leaderboardAdapter.normalizeView(this.game.leaderboardView || LeaderboardView.TACTICAL);
     this.game.leaderboardView = this.activeLeaderboard;
 
     // Load bonus-core texture and rank textures
@@ -386,8 +386,8 @@ export class HighscoreScene {
       [LeaderboardView.LOCAL]: this.localBtn
     };
     this.focusableControls = [
-      { id: LeaderboardView.GLOBAL, button: this.globalBtn, activate: () => this.setLeaderboardView(LeaderboardView.GLOBAL) },
       { id: LeaderboardView.TACTICAL, button: this.tacticalBtn, activate: () => this.setLeaderboardView(LeaderboardView.TACTICAL) },
+      { id: LeaderboardView.GLOBAL, button: this.globalBtn, activate: () => this.setLeaderboardView(LeaderboardView.GLOBAL) },
       { id: LeaderboardView.SECTOR, button: this.sectorBtn, activate: () => this.setLeaderboardView(LeaderboardView.SECTOR) },
       { id: LeaderboardView.FRIENDS, button: this.friendsBtn, activate: () => this.setLeaderboardView(LeaderboardView.FRIENDS) },
       { id: LeaderboardView.LOCAL, button: this.localBtn, activate: () => this.setLeaderboardView(LeaderboardView.LOCAL) },

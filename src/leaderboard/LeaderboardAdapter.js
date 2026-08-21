@@ -252,8 +252,8 @@ export class LeaderboardAdapter {
   getTabs() {
     if (this.availability.steam) {
       return [
-        { id: LeaderboardView.GLOBAL, label: 'PURE', title: 'MAYHEM PURE DECK', sourceLabel: 'Steam Pure' },
         { id: LeaderboardView.TACTICAL, label: 'TACTICAL', title: 'MAYHEM TACTICAL DECK', sourceLabel: 'Steam Tactical' },
+        { id: LeaderboardView.GLOBAL, label: 'PURE', title: 'MAYHEM PURE DECK', sourceLabel: 'Steam Pure' },
         { id: LeaderboardView.SECTOR, label: 'SECTOR', title: 'SECTOR RUN DECK', sourceLabel: 'Steam Sector' },
         { id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' },
         { id: LeaderboardView.LOCAL, label: 'LOCAL', title: 'LOCAL SCORE DECK', sourceLabel: 'Local Memory' }
