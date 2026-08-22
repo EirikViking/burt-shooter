@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2026-08-22T14:42:04+02:00",
+  "type": "steam_upload_evidence",
+  "title": "Nova Swarm forum 129 improvements private Steam test deployment",
+  "source": {
+    "worktree": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822",
+    "branch": "codex/forum-129-improvements-20260822",
+    "baselineCommit": "103f397a751a49863370a775d98a6416d5fd4326",
+    "sourceCommit": "c3b2e2737e14865971f90372aadfe4c6e8cf39ec",
+    "releasedBuildIdPreserved": "24861184",
+    "buildVersion": "v2026-08-22_14-35-02"
+  },
+  "change": {
+    "summary": "High-quality distinct artwork for the 20 newer powerups, shared 18-character public pilot-name handling, regression and visual coverage, and rewritten localized Sonia Threat Codex lore.",
+    "powerupBehaviorChanged": false,
+    "leaderboardIdentityChanged": false,
+    "steamCloudContractChanged": false
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24879347",
+    "depotManifestId": "2928925158173008772",
+    "setLive": "sector-continue-test",
+    "assignedBranch": "sector-continue-test",
+    "steamworksMetadataChanged": false,
+    "branchStateBeforeUpload": {
+      "public": "24861184",
+      "sector-continue-test": "24845799",
+      "test-build": "23782673"
+    },
+    "branchStateAfterUpload": {
+      "public": "24861184",
+      "sector-continue-test": "24879347",
+      "test-build": "23782673"
+    }
+  },
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 410,
+    "totalBytes": 1178852262,
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestSha256": "9E9ADB5012694D2B5C953B29CD5049E86172B5957638C0CB96EECE98F9F5C2C0",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "vdfSha256": "4F7BA43649677816819A26998312D570721B29B3C2B0CC96057129FB880266D9",
+    "executableSha256": "CDAE2D41082801BA96735AC910206FA7B157775B7E9DCF97D8BBE91EA1382521"
+  },
+  "validation": {
+    "passed": [
+      "npm run check:release-line",
+      "npm run build:current",
+      "npm run build",
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:perf:packaged",
+      "npm run desktop:controls:packaged",
+      "npm run steamworks:payload-manifest",
+      "npm run steamworks:write-vdf"
+    ],
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-08-22T12-38-34-991Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-08-22T12-38-41-828Z/report.json",
+    "packagedControlsReport": "test-results/packaged-control-smoke-2026-08-22T12-39-56-777Z/report.json",
+    "packagedPerfSummary": "Passed with 58.5 minimum FPS and 59.5 average FPS.",
+    "packagedGitSha": "c3b2e27",
+    "steamBridgeAndLeaderboardsAvailable": true
+  },
+  "upload": {
+    "result": "Successfully finished AppID 4765070 build (BuildID 24879347).",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "notes": [
+    "Only sector-continue-test was moved by the inspected SetLive field.",
+    "Public/default remained on released BuildID 24861184.",
+    "Legacy test-build remained on BuildID 23782673.",
+    "No store metadata, leaderboard identity, achievement metadata, Steam Cloud settings, AppID, depot ID, or public branch setting was changed.",
+    "Rollback sector-continue-test by assigning BuildID 24845799."
+  ]
+}
