@@ -57,7 +57,7 @@ const BLOCKED_PUBLIC_NAME_TERMS = [
   ['FAT', 'MAN'].join(''),
   ['MOR', 'DER'].join('')
 ];
-const PUBLIC_PILOT_NAME_MAX_LENGTH = 14;
+export const PUBLIC_PILOT_NAME_MAX_LENGTH = 18;
 
 export function sanitizePilotName(rawName) {
   return String(rawName || '')

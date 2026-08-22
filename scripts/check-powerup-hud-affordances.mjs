@@ -194,6 +194,31 @@ try {
   const screenshot = path.join(outputDir, 'powerup-hud-affordances.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
+  const refreshedArtState = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const hud = play?.hud;
+    const player = play?.player;
+    if (!game || !play || !hud || !player) return { ok: false, reason: 'missing refreshed-art game/play/hud/player' };
+    player.getActivePowerupStates = () => ([
+      { type: 'nano_patch', iconType: 'nano_patch', label: 'NANO PATCH', detail: 'HULL RESTORE', remainingMs: 8200, durationMs: 12000, color: 0x62ff9d },
+      { type: 'plasma_lance', iconType: 'plasma_lance', label: 'PLASMA LANCE', detail: 'LANCE ONLINE', remainingMs: 6900, durationMs: 9000, color: 0xff594c },
+      { type: 'chrono_anchor', iconType: 'chrono_anchor', label: 'CHRONO ANCHOR', detail: 'TIME LOCK', remainingMs: 5100, durationMs: 10000, color: 0x66ffff },
+      { type: 'mercy_protocol', iconType: 'mercy_protocol', label: 'MERCY PROTOCOL', detail: 'RESCUE ARMED', remainingMs: 3600, durationMs: 8000, color: 0x65ffad }
+    ]);
+    hud.update();
+    hud.updateActivePowerup();
+    return {
+      ok: true,
+      rows: (hud.activePowerupRows || [])
+        .filter((row) => row?.container?.visible)
+        .map((row) => row.container._debugPowerupState || {})
+    };
+  });
+  await page.waitForTimeout(150);
+  const refreshedArtScreenshot = path.join(outputDir, 'powerup-hud-refreshed-art.png');
+  await page.screenshot({ path: refreshedArtScreenshot, fullPage: true });
+
   await page.setViewportSize({ width: 640, height: 480 });
   await page.waitForTimeout(250);
   const compactState = await page.evaluate(() => {
@@ -313,6 +338,10 @@ try {
   if (!state.ok) failures.push(state.reason || 'setup failed');
   if (!state.group?.visible) failures.push('active powerup HUD is not visible');
   if (state.rows?.length !== 4) failures.push(`expected 4 powerup rows, got ${state.rows?.length || 0}`);
+  if (!refreshedArtState.ok) failures.push(refreshedArtState.reason || 'refreshed-art HUD setup failed');
+  if (refreshedArtState.rows?.map((row) => row.type).join(',') !== 'nano_patch,plasma_lance,chrono_anchor,mercy_protocol') {
+    failures.push(`refreshed-art HUD rows are wrong: ${JSON.stringify(refreshedArtState.rows)}`);
+  }
   state.rows?.forEach((row) => validateRowGeometry(row, `desktop ${row.type || 'powerup'}`));
   const shield = state.rows?.find((row) => row.type === 'shield');
   const bomb = state.rows?.find((row) => row.type === 'bomb');
@@ -372,9 +401,11 @@ try {
     ok: failures.length === 0,
     baseUrl,
     screenshot,
+    refreshedArtScreenshot,
     compactScreenshot,
     localeMatrix,
     state,
+    refreshedArtState,
     compactState,
     failures,
     pageErrors,

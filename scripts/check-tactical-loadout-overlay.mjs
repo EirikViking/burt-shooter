@@ -29,6 +29,7 @@ const selectedIds = [
 ];
 
 const consumedIds = ['nano_patch'];
+const refreshedArtIds = ['target_paint', 'plasma_lance', 'blink_drive', 'nano_patch'];
 const grouped = groupTacticalAugments(selectedIds, consumedIds);
 assert.equal(grouped.length, 36, 'duplicates should collapse into 32 augments plus four active Fusion Protocols');
 assert.equal(grouped.filter((item) => item.category === 'fusion').length, 4);
@@ -96,10 +97,12 @@ try {
       body: '<!doctype html><html><body style="margin:0;overflow:hidden;background:#020713"></body></html>'
     }));
     await page.goto(`http://127.0.0.1:${port}/overlay-test.html`, { waitUntil: 'domcontentloaded' });
-    const state = await page.evaluate(async ({ selectedIds, consumedIds, viewport }) => {
+    const state = await page.evaluate(async ({ selectedIds, consumedIds, refreshedArtIds, viewport }) => {
       const { TacticalLoadoutOverlay, TacticalLoadoutPixiRuntime } = await import('/src/ui/TacticalLoadoutOverlay.js');
+      const { GameAssets } = await import('/src/utils/GameAssets.js');
       const app = new TacticalLoadoutPixiRuntime.Application();
       await app.init({ width: viewport.width, height: viewport.height, backgroundColor: 0x020713 });
+      await GameAssets.loadPowerupAssets();
       document.body.replaceChildren(app.canvas);
       const game = { getWidth: () => viewport.width, getHeight: () => viewport.height, app };
       let closeCount = 0;
@@ -135,9 +138,10 @@ try {
         controllerPaged,
         detailOpen,
         closeCount,
+        loadedRefreshedArt: refreshedArtIds.filter((id) => GameAssets.isValidTexture(GameAssets.getPowerupTexture(id))),
         canvasPixels: Array.from(pixels || []).some((value) => value !== 0)
       };
-    }, { selectedIds, consumedIds, viewport });
+    }, { selectedIds, consumedIds, refreshedArtIds, viewport });
     await page.evaluate(() => {
       const { overlay, app } = window.__tacticalOverlayTest;
       overlay.closeDetail?.();
@@ -153,6 +157,7 @@ try {
     assert.deepEqual(state.initial.layout.layoutWarnings, [], `${viewport.width}x${viewport.height} layout warnings`);
     assert.ok(state.initial.visibleIds.length <= state.initial.pageSize);
     assert.ok(state.canvasPixels, `${viewport.width}x${viewport.height} should render nonblank pixels`);
+    assert.deepEqual(state.loadedRefreshedArt, refreshedArtIds, `${viewport.width}x${viewport.height} should render refreshed powerup artwork`);
     assert.equal(state.keyboardPaged.pageIndex, state.initial.pageCount > 1 ? 1 : 0);
     assert.equal(state.pointerPaged.pageIndex, 0);
     assert.equal(state.controllerPaged.pageIndex, state.initial.pageCount > 1 ? 1 : 0);

@@ -26,7 +26,12 @@ import {
   gameOverCtaVoiceLines
 } from '../config/GameOverCtaVoiceLines.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
-import { LEADERBOARD_DISPLAY_LIMIT, LeaderboardView, getPilotNameValidation } from '../leaderboard/LeaderboardTypes.js';
+import {
+  LEADERBOARD_DISPLAY_LIMIT,
+  PUBLIC_PILOT_NAME_MAX_LENGTH,
+  LeaderboardView,
+  getPilotNameValidation
+} from '../leaderboard/LeaderboardTypes.js';
 import { GamepadNavigator, hasConnectedGamepad } from '../input/GamepadNavigator.js';
 import { GLOBAL_LEADERBOARD_ACHIEVEMENT_ID } from '../achievements/AchievementCatalog.js';
 import {
@@ -71,7 +76,6 @@ const SUBMITTED_REPORT_MIN_MS = 4800;
 const SUBMITTED_POST_RESULT_MIN_MS = 1200;
 const RESULT_REPORT_MIN_MS = 2600;
 const CONTINUE_INPUT_ARM_MS = 500;
-const PILOT_NAME_MAX_LENGTH = 14;
 const CONTROLLER_NAME_STORAGE_KEY = 'nova.controllerPilotName.v1';
 const GAME_OVER_EFFECT_COUNT = 100;
 const GAME_OVER_EFFECT_PALETTES = [
@@ -3976,7 +3980,7 @@ export class GameOverScene {
           return;
         }
         const char = e.key.toUpperCase();
-        if (/^[A-Z0-9 ]$/.test(char) && this.nameInput.length < PILOT_NAME_MAX_LENGTH) {
+        if (/^[A-Z0-9 ]$/.test(char) && this.nameInput.length < PUBLIC_PILOT_NAME_MAX_LENGTH) {
           e.preventDefault();
           this.nameInput += char;
           this.syncHiddenInput();
@@ -4600,6 +4604,7 @@ export class GameOverScene {
     if (this.instructions) {
       this.instructions.text = this.getInstructionsText();
     }
+    this.layoutScreen();
     this.refreshPrimaryCta();
   }
 
@@ -7170,7 +7175,7 @@ export class GameOverScene {
     // Input field
     this.inputField = document.createElement('input');
     this.inputField.type = 'text';
-    this.inputField.maxLength = PILOT_NAME_MAX_LENGTH;
+    this.inputField.maxLength = PUBLIC_PILOT_NAME_MAX_LENGTH;
     this.inputField.autocapitalize = 'characters';
     this.inputField.autocomplete = 'off';
     this.inputField.spellcheck = false;
@@ -7194,7 +7199,7 @@ export class GameOverScene {
     this.boundVisibleInput = (e) => {
       this.setInputDevice('keyboard');
       const value = e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
-      e.target.value = value.slice(0, PILOT_NAME_MAX_LENGTH);
+      e.target.value = value.slice(0, PUBLIC_PILOT_NAME_MAX_LENGTH);
       this.nameInput = e.target.value;
       this.refreshPrimaryCta();
     };
@@ -7514,7 +7519,7 @@ export class GameOverScene {
     if (this.hiddenInput) return this.hiddenInput;
     const input = document.createElement('input');
     input.type = 'text';
-    input.maxLength = PILOT_NAME_MAX_LENGTH;
+    input.maxLength = PUBLIC_PILOT_NAME_MAX_LENGTH;
     input.autocapitalize = 'characters';
     input.autocomplete = 'off';
     input.spellcheck = false;
@@ -7558,7 +7563,7 @@ export class GameOverScene {
     if (!event.target) return;
     this.setInputDevice('keyboard');
     const value = event.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '');
-    this.nameInput = value.slice(0, PILOT_NAME_MAX_LENGTH);
+    this.nameInput = value.slice(0, PUBLIC_PILOT_NAME_MAX_LENGTH);
     event.target.value = this.nameInput;
     this.caretVisible = true;
     this.updateNameDisplay();

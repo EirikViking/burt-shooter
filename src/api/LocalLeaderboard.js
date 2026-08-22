@@ -1,10 +1,13 @@
 import { MAX_RANK_INDEX, getRankFromLevel, normalizePilotXpExact } from '../shared/RankPolicy.js';
-import { estimateLeaderboardLevelFromScore, readLeaderboardLevel } from '../leaderboard/LeaderboardTypes.js';
+import {
+  estimateLeaderboardLevelFromScore,
+  readLeaderboardLevel,
+  sanitizePilotName
+} from '../leaderboard/LeaderboardTypes.js';
 
 export const LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
 export const LOCAL_LEADERBOARD_LIMIT = 40;
 const LOCAL_LEADERBOARD_STORAGE_LIMIT = 100;
-const LOCAL_PILOT_NAME_MAX_LENGTH = 14;
 
 export const PRE_RELEASE_SEED_SCORES = [
   { name: 'NOVAROOK', score: 500, level: 2 },
@@ -28,11 +31,7 @@ function storageAvailable() {
 }
 
 export function sanitizeLocalPilotName(rawName, fallbackSeed = 0) {
-  const cleaned = String(rawName || '')
-    .toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, '')
-    .trim()
-    .slice(0, LOCAL_PILOT_NAME_MAX_LENGTH);
+  const cleaned = sanitizePilotName(rawName);
   if (cleaned) return cleaned;
   const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
   return `PILOT${seed}`;

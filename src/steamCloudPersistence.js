@@ -1,4 +1,4 @@
-import { readLeaderboardLevel } from './leaderboard/LeaderboardTypes.js';
+import { readLeaderboardLevel, sanitizePilotName } from './leaderboard/LeaderboardTypes.js';
 import {
   markMayhemPerformanceEvent,
   measureMayhemPerformanceScope
@@ -160,11 +160,9 @@ function normalizeScoreEntry(entry = {}, fallbackIndex = 0) {
   const level = readLeaderboardLevel(entry, 1);
   const rawRankIndex = Number(entry.rankIndex ?? entry.rank_index);
   const rankIndex = Math.max(0, Math.min(39, Number.isFinite(rawRankIndex) ? Math.floor(rawRankIndex) : 0));
-  const name = String(entry.name || `PILOT${String(fallbackIndex).slice(-2).padStart(2, '0')}`)
-    .toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, '')
-    .trim()
-    .slice(0, 14) || 'PILOT';
+  const name = sanitizePilotName(
+    entry.name || `PILOT${String(fallbackIndex).slice(-2).padStart(2, '0')}`
+  ) || 'PILOT';
   return {
     name,
     score,

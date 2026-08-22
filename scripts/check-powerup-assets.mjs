@@ -114,3 +114,7 @@ if (errors.length) {
 }
 
 console.log(`[powerup-assets] ok: ${requiredPowerups.length} generated powerup icons`);
+
+// Keep the perceptual and small-size safeguards on every build path that already
+// treats this manifest check as the authoritative powerup-art gate.
+await import('./check-powerup-icon-distinctness.mjs');

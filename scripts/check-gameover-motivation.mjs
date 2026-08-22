@@ -230,12 +230,16 @@ try {
   const gameOverState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   await clickPrimaryCta(page);
   await page.waitForFunction(() => window.__game?.scenes?.gameOver?.state === 'input', null, { timeout: 5000 });
-  await page.keyboard.type('ABCDEFGHIJKLMNO');
+  await page.keyboard.type('VIOLET CHIMAERA');
   const nameInputState = await page.evaluate(() => ({
     state: window.__game?.scenes?.gameOver?.state || null,
     nameInput: window.__game?.scenes?.gameOver?.nameInput || '',
-    hiddenMaxLength: window.__game?.scenes?.gameOver?.hiddenInput?.maxLength || null
+    hiddenMaxLength: window.__game?.scenes?.gameOver?.hiddenInput?.maxLength || null,
+    hiddenValue: window.__game?.scenes?.gameOver?.hiddenInput?.value || '',
+    displayedName: window.__game?.scenes?.gameOver?.nameDisplay?.text || ''
   }));
+  const nameInputScreenshot = path.join(outputDir, 'gameover-name-entry-violet-chimaera.png');
+  await page.screenshot({ path: nameInputScreenshot, fullPage: true });
   await page.evaluate(() => {
     const scene = window.__game?.scenes?.gameOver;
     if (!scene) return;
@@ -507,8 +511,10 @@ try {
       /SUBMIT SCORE/i.test(gameOverState.gameOver?.primaryCta?.label || '') &&
       /PILOT NAME FIRST|TYPE NAME FIRST|ENTER \/ CLICK/i.test(gameOverState.gameOver?.primaryCta?.hint || '') &&
       ['leaderboard', 'submit'].includes(gameOverState.gameOver?.primaryCta?.mode) &&
-      nameInputState.nameInput === 'ABCDEFGHIJKLMN' &&
-      nameInputState.hiddenMaxLength === 14 &&
+      nameInputState.nameInput === 'VIOLET CHIMAERA' &&
+      nameInputState.hiddenValue === 'VIOLET CHIMAERA' &&
+      /VIOLET CHIMAERA/.test(nameInputState.displayedName) &&
+      nameInputState.hiddenMaxLength === 18 &&
       submittedRunbackElapsedMs < 3000 &&
       submittedRunbackState.scene === 'gameOver' &&
       submittedRunbackState.gameOver?.state === 'runback' &&
@@ -576,6 +582,10 @@ try {
       }
     },
     nameInput: nameInputState,
+    nameInputScreenshot,
+    submittedRunbackElapsedMs,
+    submittedRunback: submittedRunbackState.gameOver,
+    noSlotRunback: noSlotRunbackState.gameOver,
     alreadyUnlocked: alreadyUnlockedState.gameOver,
     careerGoal: careerGoalState.gameOver,
     distantBestRecoveryGoal,

@@ -56,6 +56,23 @@ function fitTextToWidth(textObject, maxWidth, minFontSize = 9) {
   }
 }
 
+function fitPilotNameToWidth(textObject, maxWidth, minFontSize = 9) {
+  if (!textObject) return;
+  const fullName = String(textObject.text || '');
+  fitTextToWidth(textObject, maxWidth, minFontSize);
+  textObject._fullPilotName = fullName;
+  textObject._pilotNameDisplayFallback = false;
+  if (textObject.width <= maxWidth) return;
+
+  const suffix = '...';
+  let visibleName = fullName;
+  while (visibleName.length > 1 && textObject.width > maxWidth) {
+    visibleName = visibleName.slice(0, -1).trimEnd();
+    textObject.text = visibleName.concat(suffix);
+  }
+  textObject._pilotNameDisplayFallback = textObject.text !== fullName;
+}
+
 function getLeaderboardPageRange(totalEntries = 0, page = 0, pageSize = 1) {
   const total = Math.max(0, Math.floor(Number(totalEntries) || 0));
   const size = Math.max(1, Math.floor(Number(pageSize) || 1));
@@ -1372,7 +1389,7 @@ export class HighscoreScene {
         const rankStatusText = isCpuRival
           ? rankTitle
           : `${translateText('Career Rank').toUpperCase()} ${careerRankLabel} // ${rankTitle}`;
-        const displayName = (score.name || '??').slice(0, isMobile ? 13 : (compactDesktopGrid ? 11 : 18)).toUpperCase();
+        const displayName = String(score.name || '??').toUpperCase();
 
         if (isFeaturedPlayer) {
           this.createFeaturedEntryHighlight({
@@ -1429,7 +1446,7 @@ export class HighscoreScene {
         rankText.y = rowMidY - 2;
         nameText.x = columns.name;
         nameText.y = primaryY;
-        fitTextToWidth(nameText, nameBlockWidth, layout.isMobile ? 11 : 13);
+        fitPilotNameToWidth(nameText, nameBlockWidth, 9);
 
         rankNameText.x = columns.name;
         rankNameText.y = Math.max(
@@ -1547,6 +1564,10 @@ export class HighscoreScene {
           },
           rank: debugBounds(rankText),
           name: debugBounds(nameText),
+          fullName: nameText._fullPilotName || displayName,
+          displayedName: nameText.text,
+          nameFontSize: Number(nameText.style?.fontSize) || null,
+          nameDisplayFallback: Boolean(nameText._pilotNameDisplayFallback),
           rankTitle: debugBounds(rankNameText),
           careerRankLabel,
           careerRankStatusSource: score.careerRankStatusSource || null,

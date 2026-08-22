@@ -9,7 +9,7 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/leaderboard-visuals-${timestamp()}`);
 const localKey = 'novaSwarm.localLeaderboard.v2';
-const currentPlayerIndex = 7;
+const currentPlayerIndex = 3;
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -77,7 +77,7 @@ function findChrome() {
 
 function seededScores(count = 40) {
   const names = [
-    'NOVA ACE', 'ORBIT QUEEN', 'LASER PILOT', 'STAR RUNNER', 'SWARM BREAKER',
+    'NOVA ACE', 'ORBIT QUEEN', 'LASER PILOT', 'VIOLET CHIMAERA', 'SWARM BREAKER',
     'PILOT41', 'COMBO ROYAL', 'SKY VECTOR', 'PILOT35', 'PILOT37',
     'CABINET ACE', 'VOID SPARK', 'NEON RUNNER', 'ORBITAL KID', 'LASER SAGE',
     'BOSS BAITER', 'NOVA PRIME', 'STAR CLERK', 'SWARM PILOT', 'PIXEL KNIGHT',
@@ -217,6 +217,11 @@ try {
   await page.screenshot({ path: desktopShot, fullPage: true });
   results.push({ viewport: 'desktop', screenshot: desktopShot, state: desktop });
 
+  const compactDesktop = await openLeaderboard(page, { width: 960, height: 640 });
+  const compactDesktopShot = path.join(outputDir, 'leaderboard-compact-desktop.png');
+  await page.screenshot({ path: compactDesktopShot, fullPage: true });
+  results.push({ viewport: 'compact-desktop', screenshot: compactDesktopShot, state: compactDesktop });
+
   const wide = await openLeaderboard(page, { width: 1920, height: 955 });
   const wideShot = path.join(outputDir, 'leaderboard-wide.png');
   await page.screenshot({ path: wideShot, fullPage: true });
@@ -285,6 +290,9 @@ try {
       result.state.rows?.[0]?.careerRankLabel !== '157' ? `${result.viewport}: exact post-cap rank 157 is not visible` : null,
       result.state.rows?.[1]?.careerRankLabel !== '88' ? `${result.viewport}: exact post-cap rank 88 is not visible` : null,
       result.state.rows?.[2]?.careerRankLabel !== '1.23e99' ? `${result.viewport}: 100-digit career rank did not compact to 1.23e99` : null,
+      result.state.rows?.[currentPlayerIndex]?.fullName !== 'VIOLET CHIMAERA' ? `${result.viewport}: stored full pilot name was not preserved` : null,
+      result.state.rows?.[currentPlayerIndex]?.displayedName !== 'VIOLET CHIMAERA' ? `${result.viewport}: VIOLET CHIMAERA was unnecessarily truncated` : null,
+      result.state.rows?.[currentPlayerIndex]?.nameDisplayFallback ? `${result.viewport}: VIOLET CHIMAERA unexpectedly used the exceptional-name fallback` : null,
       result.viewport !== 'mobile' && (result.state.rows?.length || 0) > 50 ? `${result.viewport}: desktop leaderboard exceeded top-50 cap` : null,
       result.viewport === 'mobile' && (result.state.rows?.length || 0) > 10 ? `${result.viewport}: mobile leaderboard exceeded 10 visible rows` : null,
       result.state.unrendered > 0 ? `${result.viewport}: ${result.state.unrendered} leaderboard entries were not rendered on the active page` : null,
@@ -334,6 +342,9 @@ try {
     cpuPageState.pageRange?.start !== 41 || cpuPageState.pageRange?.end !== 50 || cpuPageState.pageRange?.total !== 50 ? 'wide CPU page must disclose ranks 41-50 of Top 50' : null,
     globalWide.title !== 'STEAM SCORE DECK' || !/VERIFIED PILOTS/i.test(globalWide.subtitle) ? 'global leaderboard identity is not explicit' : null,
     mobile.rows.length !== 10 ? `mobile leaderboard must render ten actual rows, got ${mobile.rows.length}` : null,
+    mobile.rows?.[currentPlayerIndex]?.fullName !== 'VIOLET CHIMAERA' ? 'mobile: stored full pilot name was not preserved' : null,
+    mobile.rows?.[currentPlayerIndex]?.displayedName !== 'VIOLET CHIMAERA' ? 'mobile: VIOLET CHIMAERA was unnecessarily truncated' : null,
+    mobile.rows?.[currentPlayerIndex]?.nameDisplayFallback ? 'mobile: VIOLET CHIMAERA unexpectedly used the exceptional-name fallback' : null,
     !/STEAM SCORE DECK/i.test(mobile.title) || !/PAGE 1\/5/i.test(mobile.statsText) || !/TOP 50/i.test(mobile.statsText) ? 'mobile global identity or Top-50 page indicator is missing' : null
   ].filter(Boolean);
 
