@@ -74,8 +74,12 @@ if (!catalog.bosses?.every(entry => /movement|moves|moving|flies|traces/i.test(e
   fail('boss Codex descriptions should explain movement, pressure, and signature reads');
 }
 const bossById = Object.fromEntries((catalog.bosses || []).map((entry) => [entry.id, entry]));
-if (!/Czechia|loved to chat|adored her|already carried a vow|balcony beam/i.test(bossById.nova_boss_01?.description || '') || (bossById.nova_boss_01?.description || '').length < 900) {
-  fail('Sonia boss Codex entry should include a long Czechia signal-boundary love story');
+const soniaDescription = bossById.nova_boss_01?.description || '';
+if (!/cartographer|navigation beacons|false lanes|violet crossfire|signature tell/i.test(soniaDescription) || soniaDescription.length < 180 || soniaDescription.length > 400) {
+  fail('Sonia boss Codex entry should be a concise in-universe command-intelligence threat file');
+}
+if (/Czechia|loved to chat|adored her|carried a vow|love letter|balcony/i.test(`${soniaDescription} ${bossById.nova_boss_01?.tip || ''} ${bossById.nova_boss_01?.signalClass || ''}`)) {
+  fail('Sonia boss Codex entry should not retain the personal-message framing');
 }
 if (bossById.nova_boss_03?.name !== 'Tyrian the Great') {
   fail('Boss 3 should be named Tyrian the Great');
@@ -83,8 +87,15 @@ if (bossById.nova_boss_03?.name !== 'Tyrian the Great') {
 if (!/civilian test pilot|black boxes|stolen debriefs|real Tyrian/i.test(bossById.nova_boss_03?.description || '') || (bossById.nova_boss_03?.description || '').length < 900) {
   fail('Tyrian the Great boss Codex entry should include the authored feedback tribute');
 }
-if (bossById.nova_boss_01?.codexBodyMode !== 'epic' || bossById.nova_boss_03?.codexBodyMode !== 'epic') {
-  fail('long boss Codex stories should use epic body layout mode');
+if (bossById.nova_boss_01?.codexBodyMode !== 'story' || bossById.nova_boss_03?.codexBodyMode !== 'epic') {
+  fail('Sonia should use the concise story layout while the long Tyrian tribute keeps the epic layout');
+}
+for (const locale of ['en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
+  const localizedSonia = getThreatCodexCatalog({ locale }).bosses?.find((entry) => entry.id === 'nova_boss_01');
+  if (!localizedSonia?.description || !localizedSonia?.tip || !localizedSonia?.signalClass) {
+    fail(`Sonia boss lore is incomplete for ${locale}`);
+  }
+  if (localizedSonia?.codexBodyMode !== 'story') fail(`Sonia should use story layout for ${locale}`);
 }
 if (!catalog.powerups?.every(entry => /powerup|pickup|capsule|shots|life|shield|bomb|drone|weapon|score/i.test(entry.description) && /lane|safe|screen|window|problem|move|shoot|firing|surviv|timing/i.test(entry.tip))) {
   fail('powerup Codex entries should explain effect, read, timing, and use');

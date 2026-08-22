@@ -14,6 +14,7 @@ import { TACTICAL_DRAFT_AUGMENTS, getTacticalDraftMeta } from './TacticalDraft.j
 import { AssetManifest } from '../assets/assetManifest.js';
 import { getCurrentLanguage, translateTextForLocale } from '../i18n/index.js';
 import { applyCodexLore, getCodexRuntimeDescription, getCodexRuntimeTip } from '../i18n/codexLore.js';
+import { SONIA_BOSS_LORE } from '../i18n/soniaBossLore.js';
 import { getCabinetLogEntries } from '../text/phrasePool.js';
 import { CABINET_WONDER_DEFINITIONS } from './CabinetWonderLore.js';
 import {
@@ -25,15 +26,8 @@ import {
 
 const BOSS_EPIC_CODEX_LORE = Object.freeze({
   nova_boss_01: {
-    signalClass: 'Czechia class forbidden signal',
-    description: `Sonia came from Czechia, or from the bright old Earth memory of it: winter roofs, tram wires, cheap coffee, and a language that could make a warning sound like a dare. The archive says she was raised in Dock Verona, a binary city split between House Nova and House Swarm by a customs dispute, three bad funerals, and one spectacularly stupid antenna. Both records are true enough. People are allowed more than one origin when the stars start lying.
-
-She was supposed to inherit the left star and aim it like a court weapon. Then the pilot found her voice in a side channel during a meteor blackout. No music, no moon, just two ships pretending the comms were broken and two people refusing to stop talking. They loved to chat. Not strategically. Not usefully. They sent each other jokes, tiny confessions, bad translations, and midnight pings that should have been deleted before the black box woke up. She made the war feel briefly negotiable, which is the most dangerous thing a person can do.
-
-The pilot adored her. Wanted her, in the way a signal wants an answer before the static eats it. But his home orbit already carried a vow, and some doors stay closed because opening them would burn everyone standing near the light. So Sonia became the impossible thing kept at a respectful distance: not conquest, not trophy, not secret shame, but a star you do not steer toward because you remember who is waiting at your dock.
-
-Now Sonia fights like a love letter locked behind a safety glass. Her movement traces careful Czech glasswork arcs, all elegance until the angle cuts. Her pressure arrives as conversational bursts, questions turning into cannon fire before you can answer honestly. Her signature tell is the balcony beam: three violet lines, a pause, then the path you wish existed but cannot take. Defeat her and the archive records no villain, only a woman from Czechia who made the pilot want the impossible and then taught the fleet that restraint can hurt louder than impact.`,
-    tip: 'Sonia is all signal and boundary. Read the balcony beam, cross once, and fire before the conversation gets expensive.'
+    localized: SONIA_BOSS_LORE,
+    bodyMode: 'story'
   },
   nova_boss_03: {
     signalClass: 'Tyrian class adversarial mirror',
@@ -1429,12 +1423,12 @@ function bossEntry(profile) {
     rarity: 'Boss',
     role: profile.title,
     description: '',
-    tip: epicLore?.tip || 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.',
+    tip: epicLore?.localized?.en?.tip || epicLore?.tip || 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.',
     art: profile.art,
     accent: profile.accent,
     tint: profile.palette,
-    signalClass: epicLore?.signalClass || profile.archetype,
-    codexBodyMode: epicLore ? 'epic' : 'story',
+    signalClass: epicLore?.localized?.en?.signalClass || epicLore?.signalClass || profile.archetype,
+    codexBodyMode: epicLore?.bodyMode || (epicLore ? 'epic' : 'story'),
     loreFacts: {
       title: profile.title,
       movement: profile.movement,
@@ -1442,7 +1436,8 @@ function bossEntry(profile) {
       signature: profile.signature,
       epicDescription: epicLore?.description || '',
       epicTip: epicLore?.tip || '',
-      originalTip: epicLore?.tip || 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.'
+      epicLocalized: epicLore?.localized || null,
+      originalTip: epicLore?.localized?.en?.tip || epicLore?.tip || 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.'
     }
   };
 }

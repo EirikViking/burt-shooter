@@ -213,8 +213,15 @@ function makeViewportClip(panel, viewport, padding = 8) {
   };
 }
 
-function isBossEpicReadable(snapshot, viewport) {
+function isBossDetailReadable(snapshot, viewport, expectedMode = 'epic') {
   if (!snapshot?.detailScroll) return false;
+  if (expectedMode === 'story') {
+    return snapshot.detailPanel?.mode === 'story' &&
+      snapshot.detailScroll.mode === 'story' &&
+      Number(snapshot.detailScroll.fontSize || 0) >= 13 &&
+      Number(snapshot.detailScroll.lineHeight || 0) >= 16 &&
+      Number(snapshot.detailScroll.height || 0) > 80;
+  }
   const minFontSize = viewport.width >= 1500 ? 16 : 14;
   const minLineHeight = viewport.width >= 1500 ? 21 : 18;
   return snapshot.detailPanel?.mode === 'epic' &&
@@ -311,7 +318,8 @@ try {
         Boolean(snapshot.detailScroll) &&
         snapshot.detailScroll.height > 80 &&
         (!snapshot.detailScroll.scrollable || Number(scrolledSnapshot?.detailScroll?.offset || 0) > Number(snapshot.detailScroll.offset || 0));
-      const bossReadabilityOk = !shot.label.startsWith('bosses-') || isBossEpicReadable(snapshot, viewport);
+      const expectedBossMode = shot.entryId === 'nova_boss_01' ? 'story' : 'epic';
+      const bossReadabilityOk = !shot.label.startsWith('bosses-') || isBossDetailReadable(snapshot, viewport, expectedBossMode);
       reports.push({
         viewport,
         categoryId: shot.categoryId,

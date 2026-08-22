@@ -764,6 +764,8 @@ function translatedFact(entry, vars, locale) {
 
 function descriptionFor(entry, displayName, locale, translate) {
   const facts = entry.loreFacts || {};
+  const localizedEpic = facts.epicLocalized?.[locale];
+  if (localizedEpic?.description) return cleanText(localizedEpic.description);
   if (locale === 'en' && facts.epicDescription) return cleanText(facts.epicDescription);
   const seed = hashText(`${CODEX_LORE_VERSION}:${entry.category}:${entry.id}:${displayName}`);
   const voice = localeVoice(locale);
@@ -800,6 +802,8 @@ function descriptionFor(entry, displayName, locale, translate) {
 
 function tipFor(entry, displayName, locale, translate) {
   const facts = entry.loreFacts || {};
+  const localizedEpic = facts.epicLocalized?.[locale];
+  if (localizedEpic?.tip) return cleanText(localizedEpic.tip);
   if (locale === 'en' && facts.epicTip) return cleanText(facts.epicTip);
   const seed = hashText(`tip:${CODEX_LORE_VERSION}:${entry.category}:${entry.id}:${displayName}`);
   const voice = localeVoice(locale);
@@ -833,7 +837,7 @@ export function applyCodexLore(rawCatalog, { locale = 'en', translate = (value) 
         name: displayName,
         rarity: localizedValue(entry.rarity, translate),
         role: localizedValue(entry.role, translate),
-        signalClass: localizedValue(entry.signalClass, translate),
+        signalClass: loreFacts?.epicLocalized?.[locale]?.signalClass || localizedValue(entry.signalClass, translate),
         description: descriptionFor(entry, displayName, locale, translate),
         tip: tipFor(entry, displayName, locale, translate),
         loreVersion: CODEX_LORE_VERSION
