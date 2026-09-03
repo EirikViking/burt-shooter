@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { requireOptionalPackagedModule } = require('./unpackedModuleResolver.cjs');
+const { PUBLIC_PILOT_NAME_MAX_LENGTH } = require('./pilotNamePolicy.cjs');
 
 const DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 const DEFAULT_STEAM_APP_ID = 4765070;
@@ -203,7 +204,7 @@ function resolveLeaderboardName(leaderboardName) {
 
 function publicFallbackName(steamId, index = 0) {
   const suffix = String(steamId || '').replace(/\D/g, '').slice(-4) || String(index + 1).padStart(2, '0');
-  return `STEAM ${suffix}`.slice(0, 14);
+  return `STEAM ${suffix}`.slice(0, PUBLIC_PILOT_NAME_MAX_LENGTH);
 }
 
 function toSafePublicSteamName(rawName, fallbackSeed = 0) {

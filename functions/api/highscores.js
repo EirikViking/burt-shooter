@@ -1,39 +1,9 @@
 // Cloudflare Pages Function for highscores API
 import { getRankFromLevel } from '../shared/RankPolicy.js';
-
-const BLOCKED_PUBLIC_NAME_TERMS = [
-  ['K', 'LAUS'].join(''),
-  ['F', 'ITTE'].join(''),
-  ['K', 'UKEN'].join(''),
-  ['FAT', 'MAN'].join(''),
-  ['MOR', 'DER'].join('')
-];
-const PUBLIC_PILOT_NAME_MAX_LENGTH = 14;
-
-function validatePublicPilotName(rawName, { allowBlank = false } = {}) {
-  const cleaned = String(rawName || '')
-    .toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, '')
-    .trim()
-    .slice(0, PUBLIC_PILOT_NAME_MAX_LENGTH);
-  if (!cleaned) {
-    return allowBlank
-      ? { valid: true, publicName: '', reason: null }
-      : { valid: false, publicName: '', reason: 'blank' };
-  }
-  const compact = cleaned.replace(/\s+/g, '');
-  if (BLOCKED_PUBLIC_NAME_TERMS.some(term => compact.includes(term))) {
-    return { valid: false, publicName: cleaned, reason: 'blocked' };
-  }
-  return { valid: true, publicName: cleaned, reason: null };
-}
-
-function toPublicPilotName(rawName, fallbackSeed = 0) {
-  const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
-  const validation = validatePublicPilotName(rawName, { allowBlank: false });
-  if (!validation.valid) return `PILOT${seed}`;
-  return validation.publicName;
-}
+import {
+  getPilotNameValidation,
+  toPublicPilotName
+} from '../../electron/pilotNamePolicy.cjs';
 
 function readScoreLevel(entry = {}, fallback = 1) {
   const details = Array.isArray(entry.details)
@@ -166,7 +136,7 @@ export async function onRequestPost(context) {
       });
     }
 
-    const nameValidation = validatePublicPilotName(name);
+    const nameValidation = getPilotNameValidation(name);
     if (!nameValidation.valid) {
       return new Response(JSON.stringify({ error: nameValidation.reason === 'blocked' ? 'Name not available' : 'Invalid name' }), {
         status: 400,

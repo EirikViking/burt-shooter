@@ -8,6 +8,7 @@ const { runSteamLeaderboardRuntimeProbe } = require('./steamLeaderboardRuntimePr
 const { createNativeGamepadBridge } = require('./nativeGamepadBridge.cjs');
 const { createSteamCloudSave } = require('./steamCloudSave.cjs');
 const { getMaintainerDevtoolsState } = require('./maintainerDevtoolsGate.cjs');
+const { sanitizePilotName } = require('./pilotNamePolicy.cjs');
 const {
   DISPLAY_MODE_BORDERLESS,
   DISPLAY_MODE_FULLSCREEN,
@@ -497,7 +498,7 @@ function normalizeCareerRankExact(value, fallback = '1') {
 }
 
 function sanitizeScoreEntry(entry = {}) {
-  const name = String(entry.name || 'PILOT').trim().toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 14) || 'PILOT';
+  const name = sanitizePilotName(entry.name || 'PILOT') || 'PILOT';
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
   const level = readScoreLevel(entry, estimateScoreLevel(score));
   const rankIndex = Math.max(0, Math.min(39, Math.floor(Number(entry.rankIndex ?? entry.rank_index) || getRankFromLevel(level))));

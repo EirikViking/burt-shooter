@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { sanitizePilotName } = require('./pilotNamePolicy.cjs');
 
 const SAVE_VERSION = 2;
 const CLOUD_SUBDIR = 'steam-cloud';
@@ -413,11 +414,9 @@ function sanitizeScoreEntry(entry = {}, fallbackIndex = 0) {
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
   const level = readScoreLevel(entry, 1);
   const rankIndex = Math.max(0, Math.min(39, Math.floor(Number(entry.rankIndex ?? entry.rank_index) || 0)));
-  const name = String(entry.name || `PILOT${String(fallbackIndex).slice(-2).padStart(2, '0')}`)
-    .toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, '')
-    .trim()
-    .slice(0, 14) || 'PILOT';
+  const name = sanitizePilotName(
+    entry.name || `PILOT${String(fallbackIndex).slice(-2).padStart(2, '0')}`
+  ) || 'PILOT';
   const rawCareerRank = entry.careerRankExact;
   const careerRankText = rawCareerRank === null || rawCareerRank === undefined || rawCareerRank === ''
     ? null
