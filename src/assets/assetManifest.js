@@ -11,7 +11,7 @@ import { CABINET_WONDER_DEFINITIONS } from '../config/CabinetWonderLore.js';
 
 export const AssetManifest = {
     generated: {
-        menuBackdrop: '/art/generated/nova-swarm/menu/nova-swarm-cinematic-hangar-20260617.webp',
+        menuBackdrop: '/art/astra/menu.webp',
         menuCredits: '/art/generated/nova-swarm/menu/nova-swarm-credits-20260519.png',
         newPilotArrow: '/art/generated/nova-swarm/menu/nova-swarm-new-pilot-arrow-up-right.png',
         menuIcons: {
@@ -26,15 +26,15 @@ export const AssetManifest = {
             howToPlay: '/art/generated/nova-swarm/menu/icons/approved-menu-icon-how-to-play.png',
             exit: '/art/generated/nova-swarm/menu/icons/approved-menu-icon-exit.png'
         },
-        leaderboardHall: '/art/generated/nova-swarm/leaderboard/nova-swarm-leaderboard-hall-20260519.png',
-        gameOverCeremony: '/art/generated/nova-swarm/gameover/nova-swarm-gameover-ceremony-20260519.png',
+        leaderboardHall: '/art/astra/base.webp',
+        gameOverCeremony: '/art/astra/boss.webp',
         gameOverFinalTransmission: '/art/generated/nova-swarm/gameover/nova-swarm-final-transmission-interlude-20260722.png',
         gameOverFinalTransmissions: GAME_OVER_FINAL_TRANSMISSION_VARIANTS,
-        gameplayArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
-        stormGameplayBackdrop: '/art/generated/nova-swarm/nova-swarm-storm-gameplay-backdrop.webp',
-        bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
+        gameplayArenaBackdrop: '/art/astra/base.webp',
+        stormGameplayBackdrop: '/art/astra/storm.webp',
+        bossArenaBackdrop: '/art/astra/boss.webp',
         bossDossier: '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
-        tacticalDraftField: '/art/generated/nova-swarm/ui/tactical-draft/nova-tactical-draft-command-field-20260722.png',
+        tacticalDraftField: '/art/astra/storm.webp',
         cabinetWonders: Object.freeze(Object.fromEntries(
             CABINET_WONDER_DEFINITIONS.map((entry) => [entry.id, entry.art])
         )),
@@ -47,9 +47,9 @@ export const AssetManifest = {
             microAceCommandCrest: '/art/generated/nova-swarm/vfx/micro-ace-command-crest.png',
             waveClearVictoryFlourish: '/art/generated/nova-swarm/vfx/wave-clear-victory-flourish.png',
             missionCommandSpine: '/art/generated/nova-swarm/vfx/mission-command-spine.png',
-            combatSignalFlourish: '/art/generated/nova-swarm/vfx/hud-polish-20260726/combat-signal-flourish.png',
-            hudCommandCapsule: '/art/generated/nova-swarm/vfx/hud-polish-20260726/hud-command-capsule.png',
-            cabinetSkillFlightPlaque: '/art/generated/nova-swarm/vfx/hud-polish-20260726/cabinet-skill-flight-plaque.png',
+            combatSignalFlourish: '/art/astra/combat-plaque.png',
+            hudCommandCapsule: '/art/astra/hud-capsule.png',
+            cabinetSkillFlightPlaque: '/art/astra/mission-plaque.png',
             overrunCoronationDais: '/art/generated/nova-swarm/vfx/hud-polish-20260726/overrun-coronation-dais.png',
             droneConstellationCrest: '/art/generated/nova-swarm/vfx/hud-polish-20260726/drone-constellation-crest.png',
             plasmaBloom: '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',
@@ -65,7 +65,7 @@ export const AssetManifest = {
         sectors: Array.from({ length: 240 }, (_, i) => `/art/generated/nova-swarm/replacements/sector-scenes/nova-sector-scene-${String(i + 1).padStart(3, '0')}-20260616.png`),
         bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
         playerShips: [
-            ...Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
+            ...Array.from({ length: 25 }, (_, i) => `/art/astra/player/${String(i + 1).padStart(2, '0')}.png`),
             '/art/generated/nova-swarm/ships/nova-player-ship-phase-seraph-20260801.png',
             '/art/generated/nova-swarm/ships/nova-player-ship-eirik-viking-20260801-v2.png',
             '/art/generated/nova-swarm/ships/nova-player-ship-aegis-comet-20260801.png',
@@ -73,7 +73,7 @@ export const AssetManifest = {
             '/art/generated/nova-swarm/ships/nova-player-ship-drone-sovereign-20260801.png'
         ],
         enemies: [
-            ...Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/enemies/enhanced/nova-enemy-enhanced-${String(i + 1).padStart(2, '0')}.png`),
+            ...Array.from({ length: 50 }, (_, i) => `/art/astra/enemy/${String(i + 1).padStart(2, '0')}.png`),
             ...Array.from({ length: 177 }, (_, i) => `/art/generated/nova-swarm/enemies/late-mayhem/nova-late-mayhem-enemy-${String(i + 1).padStart(3, '0')}.png`)
         ],
         eliteMiddleShips: [
@@ -249,7 +249,7 @@ export const AssetManifest = {
         ships: Array.from({ length: 9 }, (_, i) => `/sprites/Ships/spaceShips_00${(i + 1).toString()}.png`),
         player: '/sprites/player/player_01.png',
         playerRankShips: [
-            ...Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
+            ...Array.from({ length: 25 }, (_, i) => `/art/astra/player/${String(i + 1).padStart(2, '0')}.png`),
             '/art/generated/nova-swarm/ships/nova-player-ship-phase-seraph-20260801.png',
             '/art/generated/nova-swarm/ships/nova-player-ship-eirik-viking-20260801-v2.png',
             '/art/generated/nova-swarm/ships/nova-player-ship-aegis-comet-20260801.png',

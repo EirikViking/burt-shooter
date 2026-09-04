@@ -1194,6 +1194,18 @@ export class Boss {
       presentationState
     });
 
+    // Decorative rig stays subordinate to the actual boss hull. Attack paths,
+    // weapon nodes, charge and hit flashes retain their full warning contrast.
+    rig.auraLayer.alpha = 0.18;
+    rig.silhouetteLayer.alpha = 0.3;
+    rig.backLayer.alpha = 0.28;
+    rig.frontLayer.alpha = 0.24;
+    rig.articulationLayer.alpha = 0.58;
+    rig.threatLayer.alpha = 0.5;
+    rig.chargeLayer.alpha = 0.5;
+    rig.leftFin.alpha = rig.rightFin.alpha = 0.25;
+    rig.leftMandible.alpha = rig.rightMandible.alpha = 0.36;
+
     rig.scanLayer.clear();
     const scanY = -radius * 0.62 + ((t * 15) % (radius * 1.24));
     rig.scanLayer.moveTo(-radius * 0.68, scanY);

@@ -9112,6 +9112,7 @@ export class PlayScene {
     nebula.circle(width * 0.7, height * 0.6, 200);
     nebula.fill({ color: 0xff4488, alpha: 0.02 });
     this.cosmicNebulaHaze = nebula;
+    nebula.alpha = 0; // Atmosphere is baked into the orbital scenery, without hard disks.
     this.starfieldContainer.addChildAt(nebula, 0); // Behind stars
 
     const auroraPalette = [0x26e6ff, 0xa85cff, 0xff4fc8];
@@ -9119,7 +9120,7 @@ export class PlayScene {
       const band = new PIXI.Graphics();
       band.moveTo(-width * 0.12, 0);
       band.bezierCurveTo(width * 0.22, -70 - i * 18, width * 0.58, 78 + i * 24, width * 1.12, -12);
-      band.stroke({ color: auroraPalette[i], width: 28 + i * 17, alpha: 0.018 + i * 0.007 });
+      band.stroke({ color: auroraPalette[i], width: 28 + i * 17, alpha: 0.003 + i * 0.001 });
       band.x = 0;
       band.y = height * (0.2 + i * 0.26);
       band._phase = i * 2.1;
@@ -9505,7 +9506,7 @@ export class PlayScene {
       band.alpha = baseAlpha * (this.combatBackdropClarity?.treatment?.decorativeAlphaScale ?? 1);
     });
     if (this.cosmicNebulaHaze) {
-      this.cosmicNebulaHaze.alpha = this.combatBackdropClarity?.treatment?.decorativeAlphaScale ?? 1;
+      this.cosmicNebulaHaze.alpha = 0;
     }
   }
 
@@ -22240,6 +22241,7 @@ export class PlayScene {
 
   onEnemyKilled(enemy, options = {}) {
     const now = Date.now();
+    this.particleManager?.hullBreakup?.emit(enemy);
     this.enemyManager?.recordCombatReadabilityDeath?.(enemy);
     this.maybeSuppressRoutineFireAfterFinalWaveHostile(enemy);
     this.enemyManager?.recordChallengeFlightKill?.(enemy);

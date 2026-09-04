@@ -924,6 +924,13 @@ export class MenuScene {
       this.backdrop.zIndex = -20;
       this.container.addChild(this.backdrop);
 
+      const shipTexture = await PIXI.Assets.load('/art/astra/menu-ship.webp');
+      this.astraMenuShip = new PIXI.Sprite(shipTexture);
+      this.astraMenuShip.anchor.set(0.5);
+      this.astraMenuShip.zIndex = -16;
+      this.astraMenuShip.eventMode = 'none';
+      this.container.addChild(this.astraMenuShip);
+
       this.backdropShade = new PIXI.Graphics();
       this.backdropShade.zIndex = -15;
       this.container.addChild(this.backdropShade);
@@ -963,6 +970,7 @@ export class MenuScene {
     const driftX = Math.sin(t * 0.22) * width * 0.006;
 
     g.clear();
+    g.alpha = 0.15;
     g.rect(0, scanY, width, 2);
     g.fill({ color: 0x7fffd8, alpha: 0.055 * modalFade });
     g.rect(0, scanY + 5, width * 0.46, 1);
@@ -5384,6 +5392,11 @@ export class MenuScene {
       this.backdrop.y = height / 2;
     }
 
+    if (this.astraMenuShip) {
+      this.astraMenuShip.position.set(width * 0.485, height * 0.49);
+      this.astraMenuShip.scale.set(Math.min(width * 0.49, height * 0.86) / this.astraMenuShip.texture.width);
+    }
+
     if (this.backdropShade) {
       this.backdropShade.clear();
       this.backdropShade.rect(0, 0, width, height);
@@ -6520,25 +6533,12 @@ export class MenuScene {
     }
 
     bg.clear();
-    drawCutPanel(bg, x + 8, y + 9, w, h, 14, { color: 0x000000, alpha: active ? 0.58 : 0.42 });
-    drawCutPanel(bg, x - 2, y - 2, w + 4, h + 4, 14, { color: accent, alpha: active ? 0.18 : 0.055 }, { color: accent, width: active ? 2.2 : 1.15, alpha: active ? 0.86 : (isPrimaryMode ? 0.3 : 0.32) });
-    const mayhemBase = (isPureMayhem || isSelectedPureMayhem) ? 0x241704 : (isTacticalMayhem ? 0x240822 : 0x031321);
-    const mayhemInner = (isPureMayhem || isSelectedPureMayhem) ? 0x3b2506 : (isTacticalMayhem ? 0x3c1039 : 0x06243a);
-    drawCutPanel(bg, x, y, w, h, 12, { color: mayhemBase, alpha: active ? 0.94 : 0.78 }, { color: active ? hotAccent : accent, width: active ? 2.35 : 1.25, alpha: active ? 0.94 : (isPrimaryMode ? 0.4 : 0.46) });
-    drawCutPanel(bg, x + 6, y + 6, w - 12, h - 12, 10, { color: mayhemInner, alpha: active ? 0.6 : 0.34 }, { color: 0xffffff, width: 1, alpha: active ? 0.16 : 0.045 });
-    bg.rect(x + 8, y + 8, w - 16, Math.max(34, h * 0.34));
-    bg.fill({ color: (isPureMayhem || isSelectedPureMayhem) ? 0xffd15c : accent, alpha: active ? 0.18 : 0.1 });
-    bg.rect(x + 12, y + h - 13, w - 24, 4);
-    bg.fill({ color: (isPureMayhem || isSelectedPureMayhem) ? 0xffd15c : accent, alpha: active ? 0.56 : 0.34 });
-    bg.rect(x + 12, y + 12, 4, h - 24);
-    bg.fill({ color: hotAccent, alpha: active ? 0.82 : 0.32 });
-    bg.rect(x + w - 16, y + 12, 4, h - 24);
-    bg.fill({ color: accent, alpha: active ? 0.52 : 0.28 });
-    const sweepX = x + 24 + (w - 118) * sweep;
-    bg.rect(sweepX, y + 12, 82, 3);
-    bg.fill({ color: 0xffffff, alpha: active ? 0.26 : 0.08 });
-    bg.rect(x + 24, y + Math.round(h * 0.55), w - 48, 1);
-    bg.fill({ color: secondary, alpha: active ? 0.34 : 0.18 });
+    drawCutPanel(bg, x + 3, y + 5, w, h, 9, { color: 0x000000, alpha: 0.4 });
+    drawCutPanel(bg, x, y, w, h, 8,
+      { color: active ? 0x1a303e : 0x0b1925, alpha: 0.96 },
+      { color: active ? hotAccent : 0x506977, width: active ? 1.8 : 1, alpha: active ? 0.92 : 0.64 });
+    bg.rect(x + 2, y + 9, 3, h - 18);
+    bg.fill({ color: accent, alpha: active ? 1 : 0.5 });
 
     const label = container._label;
     const sublabel = container._sublabel;
@@ -6704,97 +6704,16 @@ export class MenuScene {
     }
 
     bg.clear();
-    drawCutPanel(bg, x + 8, y + 10, w, h, cut, { color: 0x000000, alpha: isPrimary ? 0.58 : 0.48 });
-    drawCutPanel(bg, x + 3, y + 4, w, h, cut, { color: 0x000000, alpha: 0.22 });
-    drawCutPanel(bg, x + 1, y + h - 4, w - 2, 8, Math.max(2, cut - 5), { color: 0x000000, alpha: isPrimary ? 0.42 : 0.32 });
-    drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, cut + 3, { color: drawAccent, alpha: active ? 0.16 : (isUtilityDanger ? 0.012 : 0.025) }, { color: drawAccent, width: 1, alpha: active ? 0.56 : (isUtilityDanger ? 0.1 : 0.12) });
-    drawCutPanel(bg, x, y, w, h, cut, { color: baseColor, alpha: active ? 0.95 : (isDockButton ? 0.68 : 0.82) }, { color: active ? hotAccent : drawAccent, width: active ? 2.15 : 1.1, alpha: active ? 0.9 : (isUtility ? 0.34 : (isDockButton ? 0.24 : 0.38)) });
-    drawCutPanel(bg, x + 4, y + 4, w - 8, h - 8, Math.max(2, cut - 3), { color: glassColor, alpha: active ? 0.62 : (isDockButton ? 0.24 : 0.36) }, { color: 0xffffff, width: 1, alpha: active ? 0.18 : 0.035 });
-    drawCutPanel(bg, x + 8, y + h * 0.17, w - 16, h * 0.48, Math.max(2, cut - 4), { color: isPrimary ? 0x5a3a0b : (isDanger ? 0x3b101b : 0x0a3750), alpha: active ? 0.18 : 0.11 });
-    if (isPrimary) {
-      bg.rect(x + 16, y + h - 13, w - 32, 5);
-      bg.fill({ color: 0xffa83d, alpha: active ? 0.42 : 0.2 + ignition * 0.14 });
-      drawCutPanel(bg, x + 12, y + 12, w - 24, h - 24, Math.max(3, cut - 4), { color: 0xffef7e, alpha: active ? 0.08 : 0.034 + ignition * 0.055 });
-      bg.circle(x + 42, y + h * 0.5, Math.max(18, h * 0.26));
-      bg.stroke({ color: 0xffef7e, width: 1.4, alpha: active ? 0.62 : 0.3 + ignition * 0.22 });
-      bg.circle(x + 42, y + h * 0.5, Math.max(9, h * 0.13));
-      bg.fill({ color: 0xffd15c, alpha: active ? 0.2 : 0.08 + ignition * 0.09 });
-    }
-
-    bg.rect(x + 7, y + 6, w - 14, Math.max(12, h * 0.34));
-    bg.fill({ color: isPrimary ? 0xffd15c : (isUtilityDanger ? 0x6e8492 : (isDanger ? 0xff5f6a : 0x37f5ff)), alpha: active ? 0.2 : (isUtilityDanger ? 0.055 : 0.1) });
-    bg.rect(x + 9, y + h - 8, w - 18, 3);
-    bg.fill({ color: drawAccent, alpha: isPrimary ? (active ? 0.72 : 0.5) : (active ? 0.5 : 0.28) });
-
-    const railW = isPrimary ? 5 : 3;
-    bg.rect(x + 9, y + 9, railW, h - 18);
-    bg.fill({ color: hotAccent, alpha: active ? 0.86 : 0.46 });
-    bg.rect(x + w - 12, y + 9, railW, h - 18);
-    bg.fill({ color: drawAccent, alpha: active ? 0.5 : 0.25 });
-
-    const cornerLen = clampNumber(w * 0.11, 18, isPrimary ? 42 : 30);
-    const cornerAlpha = active ? 0.72 : 0.22;
-    bg.moveTo(x + cut + 4, y + 6);
-    bg.lineTo(x + cut + cornerLen, y + 6);
-    bg.stroke({ color: hotAccent, width: 1.4, alpha: cornerAlpha });
-    bg.moveTo(x + w - cut - 4, y + h - 6);
-    bg.lineTo(x + w - cut - cornerLen, y + h - 6);
-    bg.stroke({ color: drawAccent, width: 1.4, alpha: cornerAlpha });
-    bg.moveTo(x + 6, y + h * 0.56);
-    bg.lineTo(x + 6 + Math.min(26, w * 0.12), y + h * 0.56);
-    bg.stroke({ color: 0xffffff, width: 1, alpha: active ? 0.22 : 0.1 });
-
-    if (!isCompact && !isCompactUtility && icon) {
-      const iconCenterX = x + (isPrimary ? 76 : (isNarrowDockButton ? 34 : 50));
-      const iconCenterY = hasSubLabel ? -h * 0.08 : 0;
-      const plateX = iconCenterX - iconPlateSize / 2;
-      const plateY = iconCenterY - iconPlateSize / 2;
-      if (useAssetIcon) {
-        bg.circle(iconCenterX + 2, iconCenterY + 4, iconPlateSize * (isPrimary ? 0.44 : 0.41));
-        bg.fill({ color: 0x000000, alpha: active ? 0.42 : 0.34 });
-        bg.circle(iconCenterX, iconCenterY, iconPlateSize * (isPrimary ? 0.54 : 0.48));
-        bg.fill({ color: hotAccent, alpha: active ? 0.1 : (isPrimary ? 0.05 + ignition * 0.06 : 0.052) });
-        if (isPrimary) {
-          bg.circle(iconCenterX, iconCenterY, iconPlateSize * (0.26 + ignition * 0.07));
-          bg.fill({ color: 0xffd15c, alpha: 0.045 + ignition * 0.07 });
-          bg.moveTo(iconCenterX, iconCenterY - iconPlateSize * 0.44);
-          bg.lineTo(iconCenterX, iconCenterY + iconPlateSize * 0.56);
-          bg.stroke({ color: 0xffef7e, width: 2.6 + ignition * 1.2, alpha: 0.1 + ignition * 0.22 });
-        }
-      } else {
-        drawCutPanel(bg, plateX + 3, plateY + 4, iconPlateSize, iconPlateSize, Math.max(4, iconPlateSize * 0.18), { color: 0x000000, alpha: 0.32 });
-        drawCutPanel(bg, plateX, plateY, iconPlateSize, iconPlateSize, Math.max(4, iconPlateSize * 0.18), { color: 0x020711, alpha: active ? 0.78 : 0.58 }, { color: hotAccent, width: 1.55, alpha: active ? 0.82 : (isPrimary ? 0.5 + ignition * 0.18 : 0.44) });
-        drawCutPanel(bg, plateX + 4, plateY + 4, iconPlateSize - 8, iconPlateSize - 8, Math.max(2, iconPlateSize * 0.12), { color: drawAccent, alpha: active ? 0.16 : (isPrimary ? 0.09 + ignition * 0.04 : 0.08) });
-        bg.circle(plateX + iconPlateSize / 2, plateY + iconPlateSize / 2, iconPlateSize * 0.35);
-        bg.stroke({ color: drawAccent, width: 1, alpha: active ? 0.38 : 0.18 });
-        bg.moveTo(plateX + iconPlateSize * 0.22, plateY + iconPlateSize * 0.24);
-        bg.lineTo(plateX + iconPlateSize * 0.78, plateY + iconPlateSize * 0.24);
-        bg.stroke({ color: 0xffffff, width: 1, alpha: active ? 0.22 : 0.1 });
-      }
-    }
-
+    drawCutPanel(bg, x + 3, y + 5, w, h, cut, { color: 0x000000, alpha: 0.4 });
+    drawCutPanel(bg, x, y, w, h, cut,
+      { color: active ? 0x193441 : 0x0b1925, alpha: 0.96 },
+      { color: active ? hotAccent : 0x506977, width: active ? 1.8 : 1, alpha: active ? 0.95 : 0.62 });
+    bg.rect(x + 2, y + cut, 3, h - cut * 2);
+    bg.fill({ color: drawAccent, alpha: active ? 1 : 0.5 });
     shine.clear();
-    shine.moveTo(x + 18, y + 8);
-    shine.lineTo(x + w - 18, y + 8);
-    shine.stroke({ color: 0xffffff, width: 1.1, alpha: active ? 0.24 : 0.12 });
-    shine.moveTo(x + 22, y + 13);
-    shine.lineTo(x + w * 0.7, y + 13);
-    shine.stroke({ color: 0x7fffd8, width: 1, alpha: isPrimary ? 0.12 : 0.18 });
-    if (active) {
-      const sweepX = x + 18 + (w - 86) * sweep;
-      shine.moveTo(sweepX, y + 12);
-      shine.lineTo(sweepX + 54, y + 12);
-      shine.stroke({ color: 0xffffff, width: 1.2, alpha: isUtilityDanger ? 0.18 : 0.28 });
-      shine.moveTo(sweepX + 12, y + h - 10);
-      shine.lineTo(sweepX + 66, y + h - 10);
-      shine.stroke({ color: hotAccent, width: 1.4, alpha: isPrimary ? 0.36 : 0.26 });
-    }
-    shine.moveTo(x + 20, y + h - 13);
-    shine.lineTo(x + w - 20, y + h - 13);
-    shine.stroke({ color: hotAccent, width: 1.1, alpha: active ? 0.42 : 0.17 });
-    shine.moveTo(x + w * 0.18, y + h - 5);
-    shine.lineTo(x + w * 0.82, y + h - 5);
-    shine.stroke({ color: drawAccent, width: active ? 2 : 1, alpha: isPrimary ? 0.5 : 0.28 });
+    shine.moveTo(x + cut + 3, y + 1);
+    shine.lineTo(x + w - cut - 3, y + 1);
+    shine.stroke({ color: 0xdaf5ff, width: 1, alpha: active ? 0.5 : 0.18 });
 
     if (label) {
       label.anchor.set(isCompactUtility ? 0.5 : 0, 0.5);

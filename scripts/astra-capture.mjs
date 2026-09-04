@@ -11,7 +11,7 @@ await context.route('**/*', route => {
   const url=route.request().url();
   // Transport-only adapter for the starting checkout's broken Vite CJS import.
   // The policy implementation is byte-for-byte unchanged; only export syntax differs.
-  if(url.includes('/electron/pilotNamePolicy.cjs')) return route.fulfill({contentType:'text/javascript',body:readFileSync('electron/pilotNamePolicy.cjs','utf8').replace(/exports\.(\w+) = \1;/g,'export { $1 };')});
+  if(process.env.ASTRA_BASELINE_CJS_ADAPTER === '1' && url.includes('/electron/pilotNamePolicy.cjs')) return route.fulfill({contentType:'text/javascript',body:readFileSync('electron/pilotNamePolicy.cjs','utf8').replace(/exports\.(\w+) = \1;/g,'export { $1 };')});
   return /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(url) || /^(data|blob):/.test(url) ? route.continue() : route.abort();
 });
 const page = await context.newPage();

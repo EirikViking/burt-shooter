@@ -59,7 +59,7 @@ export class MenuFxLayer {
     this.container = new PIXI.Container();
     this.container.label = label;
     this.container.zIndex = zIndex;
-    this.container.alpha = alpha;
+    this.container.alpha = alpha * 0.38;
     this.container.eventMode = 'none';
     this.container.interactiveChildren = false;
     this.container.sortableChildren = true;

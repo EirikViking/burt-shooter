@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
+import { HullBreakup } from './HullBreakup.js';
 import {
   isMayhemPerformanceDiagnosticsActive,
   markMayhemPerformanceEvent,
@@ -122,6 +123,7 @@ class Particle {
 export class ParticleManager {
   constructor(container, onCap) {
     this.container = container;
+    this.hullBreakup = new HullBreakup(container);
     this.particles = [];
     this.pool = [];
     this.maxParticles = 640;
@@ -568,6 +570,7 @@ export class ParticleManager {
   }
 
   update(delta) {
+    this.hullBreakup.update(delta);
     for (let index = this.energyBlooms.length - 1; index >= 0; index -= 1) {
       const bloom = this.energyBlooms[index];
       bloom.age += delta;

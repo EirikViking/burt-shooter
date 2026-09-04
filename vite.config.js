@@ -27,6 +27,16 @@ try {
 }
 
 export default defineConfig({
+  plugins: [{
+    name: 'nova-local-pilot-policy-esm',
+    apply: 'serve',
+    transform(code, id) {
+      // The shared Electron policy is CommonJS. Rollup already handles it in
+      // production; Vite's source server needs equivalent named ESM exports.
+      if (!id.replace(/\\/g, '/').split('?')[0].endsWith('/electron/pilotNamePolicy.cjs')) return null;
+      return { code: code.replace(/exports\.(\w+) = \1;/g, 'export { $1 };'), map: null };
+    }
+  }],
   define: {
     __BUILD_ID__: JSON.stringify(buildId),
     __GIT_SHA__: JSON.stringify(gitSha)

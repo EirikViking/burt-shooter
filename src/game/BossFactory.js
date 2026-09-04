@@ -8,6 +8,7 @@ import { GameAssets } from '../utils/GameAssets.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { createText } from '../utils/pixiText.js';
 import { getBossProfile } from '../config/BossRoster.js';
+import { getAstraHullTexture } from '../effects/AstraHullMaterial.js';
 
 const BOSS_TYPES = {
   BONUS_CORE: 0,
@@ -89,7 +90,7 @@ async function createGeneratedBossVisual(profile, maxWidth) {
 
   try {
     await PIXI.Assets.load(profile.art);
-    const texture = PIXI.Texture.from(profile.art);
+    const texture = getAstraHullTexture(PIXI.Texture.from(profile.art));
     const textureValid = texture && texture.width > 0 && texture.height > 0;
     if (!textureValid) {
       console.warn(`[BossFactory] Generated boss texture invalid: id=${profile.id} url=${profile.art}`);
@@ -99,11 +100,11 @@ async function createGeneratedBossVisual(profile, maxWidth) {
     const container = new PIXI.Container();
     const aura = new PIXI.Graphics();
     aura.circle(0, 0, 232);
-    aura.fill({ color: profile.palette || 0xff55d9, alpha: 0.18 });
+    aura.fill({ color: profile.palette || 0xff55d9, alpha: 0.025 });
     aura.circle(0, 0, 206);
-    aura.stroke({ color: profile.accent || 0x37f5ff, width: 9, alpha: 0.66 });
+    aura.stroke({ color: profile.accent || 0x37f5ff, width: 3, alpha: 0.09 });
     aura.circle(0, 0, 132);
-    aura.stroke({ color: profile.palette || 0xff55d9, width: 4, alpha: 0.46 });
+    aura.stroke({ color: profile.palette || 0xff55d9, width: 2, alpha: 0.07 });
     aura.moveTo(-210, 0);
     aura.lineTo(-128, 0);
     aura.moveTo(128, 0);
@@ -112,7 +113,7 @@ async function createGeneratedBossVisual(profile, maxWidth) {
     aura.lineTo(0, -128);
     aura.moveTo(0, 128);
     aura.lineTo(0, 210);
-    aura.stroke({ color: profile.accent || 0x37f5ff, width: 3, alpha: 0.62 });
+    aura.stroke({ color: profile.accent || 0x37f5ff, width: 3, alpha: 0.16 });
 
     const sprite = new PIXI.Sprite(texture);
     sprite.anchor.set(0.5);

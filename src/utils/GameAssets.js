@@ -2,6 +2,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { GENERATED_ENEMY_LEGACY_ASSET_COUNT } from '../config/GeneratedEnemyProfiles.js';
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import * as PIXI from 'pixi.js';
+import { getAstraHullTexture } from '../effects/AstraHullMaterial.js';
 
 class GameAssetsManager {
     constructor() {
@@ -521,15 +522,15 @@ class GameAssetsManager {
     }
 
     getRankShipTexture(index) {
-        return this.rankShipTextures ? this.rankShipTextures[index] : null;
+        return getAstraHullTexture(this.rankShipTextures ? this.rankShipTextures[index] : null);
     }
 
     getGeneratedEnemyTexture(index) {
-        return this.generatedEnemyTextures ? this.generatedEnemyTextures[index] : null;
+        return getAstraHullTexture(this.generatedEnemyTextures ? this.generatedEnemyTextures[index] : null);
     }
 
     getEliteMiddleShipTexture(index) {
-        return this.eliteMiddleShipTextures ? this.eliteMiddleShipTextures[index] : null;
+        return getAstraHullTexture(this.eliteMiddleShipTextures ? this.eliteMiddleShipTextures[index] : null);
     }
 
     getEnemyWeaponTexture(index) {

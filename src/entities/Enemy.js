@@ -901,6 +901,8 @@ export class Enemy {
       glow.stroke({ color: this.visualVariant.tint || 0xffffff, width: 2, alpha: 0.22 });
     }
     glow.label = `enemyVariantGlow:${this.visualVariant.slug}`;
+    // Identity light remains; generic disks no longer obscure the hull silhouette.
+    glow.alpha = 0.22;
     this.variantGlow = glow;
     this.sprite.addChild(glow);
 
