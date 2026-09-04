@@ -34,7 +34,7 @@ export const AssetManifest = {
         stormGameplayBackdrop: '/art/astra/storm.webp',
         bossArenaBackdrop: '/art/astra/boss.webp',
         bossDossier: '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
-        tacticalDraftField: '/art/astra/storm.webp',
+        tacticalDraftField: '/art/astra/draft-field.webp',
         cabinetWonders: Object.freeze(Object.fromEntries(
             CABINET_WONDER_DEFINITIONS.map((entry) => [entry.id, entry.art])
         )),
