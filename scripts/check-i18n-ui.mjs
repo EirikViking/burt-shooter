@@ -44,7 +44,17 @@ const forbiddenPlaceholderMarkers = [
   'UNTRANSLATED:'
 ];
 const englishLeakLanguageCodes = new Set(['pt-BR', 'ko', 'ja']);
+const resultScreenLeakFragments = [
+  'NEXT CAREER GOAL:',
+  'Local board rank #',
+  'DEFEAT 1 BOSS:',
+  'Steam ranking wa riyou',
+  'Steam paihangbang buke',
+  'Steam sunwipyo sayong',
+  'Tablitsa Steam nedostupna',
+];
 const forbiddenEnglishFragments = [
+  ...resultScreenLeakFragments,
   'Sector 1:',
   'Sector 2:',
   'Sector 3:',
@@ -377,12 +387,14 @@ function stripAllowedEnglish(text) {
 }
 
 function collectEnglishLeakHits(value, pathLabel = 'snapshot', localeCode = null, hits = []) {
-  if (!englishLeakLanguageCodes.has(localeCode) || value == null) return hits;
+  if (!localeCode || localeCode === 'en' || value == null) return hits;
   if (typeof value === 'string') {
     const lowered = value.toLowerCase();
-    for (const fragment of forbiddenEnglishFragments) {
+    const fragments = englishLeakLanguageCodes.has(localeCode) ? forbiddenEnglishFragments : resultScreenLeakFragments;
+    for (const fragment of fragments) {
       if (lowered.includes(fragment.toLowerCase())) hits.push(`${pathLabel}: forbidden English phrase "${fragment}" in "${value}"`);
     }
+    if (!englishLeakLanguageCodes.has(localeCode)) return hits;
     const stripped = stripAllowedEnglish(value);
     const tokens = stripped.match(/\b[A-Za-z][A-Za-z'’.-]*\b/g) || [];
     let sequence = [];
