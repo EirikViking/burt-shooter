@@ -5542,7 +5542,11 @@ export class PlayScene {
     };
 
     for (let sectorLevel = safeLevel; sectorLevel <= safeLevel + aheadCount; sectorLevel += 1) {
-      const profiles = getGeneratedEnemyProfilesForLevel(sectorLevel);
+      // The normal-wave roster uses the run's effective difficulty level.
+      // Warming only the displayed sector left its actual hulls to upload on
+      // the first combat frame (for example Sector 1 uses difficulty 8).
+      const rosterLevel = this.enemyManager?.getNormalWaveDifficultyLevel?.(sectorLevel) ?? sectorLevel;
+      const profiles = getGeneratedEnemyProfilesForLevel(rosterLevel);
       profiles.forEach((profile) => {
         if (!Number.isFinite(profile?.spriteIndex)) return;
         const index = Math.max(0, Math.floor(profile.spriteIndex));
@@ -5559,7 +5563,8 @@ export class PlayScene {
       }
     }
 
-    const eligibleEliteProfiles = getEliteMiddleShipsForLevel(safeLevel + aheadCount);
+    const eliteRosterLevel = this.enemyManager?.getNormalWaveDifficultyLevel?.(safeLevel + aheadCount) ?? safeLevel + aheadCount;
+    const eligibleEliteProfiles = getEliteMiddleShipsForLevel(eliteRosterLevel);
     eligibleEliteProfiles.forEach((profile) => {
       if (!Number.isFinite(profile?.spriteIndex)) return;
       const index = Math.max(0, Math.floor(profile.spriteIndex));

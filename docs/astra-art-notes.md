@@ -1,5 +1,20 @@
 # Astra presentation
 
+## Fourth pass
+
+The Quasar starter has an original three-cannon crescent model with recessed
+panels, bright leading edges and violet alloy. Editable source:
+`docs/astra-v3-models/quasar-master.blend`. Regenerate its 72 views with
+`ASTRA_NO_PAINT=1 blender --background --python scripts/render-astra-turntable.py -- turntable 1 6 72`,
+then `node scripts/pack-astra-turntables.mjs 6 1`. The packer also updates the
+registered static showroom fallback. No imported artwork or fonts in this pass.
+
+Boss destruction now separates eight registered triangular sections of the
+actual hull texture, with original cached procedural reactor, pressure-wave
+and plasma-jet materials. No runtime 3D, filters, external textures or gameplay
+random draws are required. Ordinary combustion retains the preceding pass's
+atlas. All previous tool and asset rights notes remain applicable.
+
 ## Second pass
 
 The second pass replaces the first pass's flat hulls with sculpted industrial

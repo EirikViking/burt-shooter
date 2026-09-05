@@ -10,7 +10,7 @@ const out=path.resolve('test-results',`astra-desktop-${label}`);mkdirSync(out,{r
 const report={label,executable,viewport:[1280,720],errors:[],warnings:[],checks:[],performance:[]};
 const log=createWriteStream(path.join(out,'process.log'));
 const startupAt=Date.now();
-const app=await electron.launch({executablePath:executable,args:[...(baseline?[path.resolve('electron/main.cjs')]:[]),'--nova-fresh-profile','--windowed'],cwd:process.cwd(),env:{...process.env,NOVA_SWARM_USER_DATA_DIR:path.join(out,'profile'),NOVA_SWARM_FRESH_PROFILE:'1',NOVA_SWARM_WINDOWED:'1'},timeout:120000});
+const app=await electron.launch({executablePath:executable,args:[...(baseline?[path.resolve('electron/main.cjs')]:[]),'--nova-fresh-profile','--windowed','--disable-backgrounding-occluded-windows','--disable-renderer-backgrounding','--disable-features=CalculateNativeWinOcclusion'],cwd:process.cwd(),env:{...process.env,NOVA_SWARM_USER_DATA_DIR:path.join(out,'profile'),NOVA_SWARM_FRESH_PROFILE:'1',NOVA_SWARM_WINDOWED:'1'},timeout:120000});
 app.process().stdout?.pipe(log,{end:false});app.process().stderr?.pipe(log,{end:false});
 const page=await app.firstWindow();
 await page.addInitScript(()=>{localStorage.setItem('nova_display_mode_v1','windowed');localStorage.setItem('nova_display_window_size_v1',JSON.stringify({width:1280,height:720}));localStorage.setItem('nova_ui_scale_v1','1');});
