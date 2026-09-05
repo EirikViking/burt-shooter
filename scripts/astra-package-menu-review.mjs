@@ -12,7 +12,7 @@ try{
  const page=await app.firstWindow();page.on('pageerror',e=>report.errors.push(e.message));
  await app.context().route('**/*',r=>/^(nova-swarm:|data:|blob:|https?:\/\/(127\.0\.0\.1|localhost)(:|\/))/.test(r.request().url())?r.continue():r.abort());
  await page.waitForFunction(()=>window.__game?.scenes?.menu?.astraMenuShip?.ready,null,{timeout:120000});
- await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setFullScreen(false);w.setContentSize(1280,720);w.webContents.setBackgroundThrottling(false);w.showInactive();});
+ await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setFullScreen(false);w.setMinimumSize(320,240);w.setContentSize(1280,720);w.webContents.setBackgroundThrottling(false);w.showInactive();});
  await page.waitForFunction(()=>innerWidth===1280&&innerHeight===720);
  async function shot(name){await page.waitForTimeout(1400);await page.screenshot({path:path.join(out,`${name}.png`)});report.captures.push(name);console.log(name);}
  await shot('01-menu');
@@ -49,8 +49,9 @@ try{
   await app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setContentSize(...size),[width,height]);
   await page.waitForFunction(size=>innerWidth===size[0]&&innerHeight===size[1],[width,height]);
   await page.waitForTimeout(900);
-  const bounds=await page.evaluate(()=>{const s=window.__game.scenes.shipSelect,c=s.shipCards[s.selectedIndex];return {preview:c.weaponPreview.getBounds(),dots:s.dotContainer.getBounds()};});
+  const bounds=await page.evaluate(()=>{const s=window.__game.scenes.shipSelect,c=s.shipCards[s.selectedIndex];const rect=b=>({x:b.minX,y:b.minY,width:b.maxX-b.minX,height:b.maxY-b.minY});return {ship:c.shipData.baseId||c.shipData.id,preview:rect(c.weaponPreview.getBounds()),dots:rect(s.rosterStrip.getBounds()),button:rect(s.startButton.getBounds()),footer:rect(s.footerInstructions.getBounds())};});
   assert.ok(bounds.preview.y+bounds.preview.height<bounds.dots.y,'Firing preview clears carousel controls after resize');
+  for(const b of [bounds.preview,bounds.dots,bounds.button,bounds.footer])assert.ok(b.x>=0&&b.y>=0&&b.x+b.width<=width+1&&b.y+b.height<=height+1,'All hangar controls must be inside the physical viewport');
   report.starterLayouts.push({width,height,...bounds});await shot(`starter-3-${width}`);
  }
  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1280,720));await page.waitForTimeout(700);

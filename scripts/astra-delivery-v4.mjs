@@ -6,7 +6,7 @@ const root=process.cwd(),out=path.resolve('test-results/astra-v4-delivery');mkdi
 const load=p=>JSON.parse(readFileSync(p,'utf8')),num=n=>Number(n).toFixed(2),link=p=>path.resolve(p).replaceAll('\\','/');
 const build=load('test-results/astra-build-location.json');
 const reports={
- before:load('test-results/astra-hitches-controlled-before/report.json'),after:load('test-results/astra-hitches-controlled-after/report.json'),
+ before:load('test-results/astra-hitches-controlled-before/report.json'),after:load('test-results/astra-hitches-final-after/report.json'),
  desktop:load('test-results/astra-desktop-candidate-v6/report.json'),previousDesktop:load('test-results/astra-desktop-candidate-v5/report.json'),
  opening:load('test-results/astra-desktop-candidate-v6-opening/report.json'),menus:load('test-results/astra-packaged-menus-v6-final/report.json'),
  pacing:load('test-results/astra-opening-playthrough/report.json'),perf:load('test-results/astra-native-v6-perf-smoke/report.json'),
@@ -38,9 +38,9 @@ writeFileSync(path.join(root,'play-process.json'),JSON.stringify({pid:child.pid,
 `);
 const rows=reports.before.scenarios.map(b=>({name:b.name,b,a:reports.after.scenarios.find(a=>a.name===b.name)}));
 const table=['| 1080p scenario | p99 before → after | Frames >33.4ms before → after | Maximum before → after |','|---|---:|---:|---:|',...rows.map(({name,b,a})=>`| ${name} | ${num(b.p99)} → ${num(a.p99)} ms | ${b.over33} → ${a.over33} | ${num(b.max)} → ${num(a.max)} ms |`)].join('\n');
-const memoryRows=reports.desktop.performance.map(a=>({a,b:reports.previousDesktop.performance.find(b=>b.name===a.name)}));
+const memoryRows=reports.desktop.performance.filter(a=>Number.isFinite(a.retainedHeapMiB)).map(a=>({a,b:reports.previousDesktop.performance.find(b=>b.name===a.name)}));
 const memTable=['| 720p scenario | Retained JS heap before → after |','|---|---:|',...memoryRows.map(({a,b})=>`| ${a.name} | ${num(b.retainedHeapMiB)} → ${num(a.retainedHeapMiB)} MiB |`)].join('\n');
-const maxMem=(r,type,peak=false)=>Math.max(...r.performance.flatMap(p=>p.processMemory.filter(m=>m.type===type).map(m=>m.memory[peak?'peakWorkingSetSize':'workingSetSize']/1024)));
+const maxMem=(r,type,peak=false)=>Math.max(...r.performance.flatMap(p=>(p.processMemory||[]).filter(m=>m.type===type).map(m=>m.memory[peak?'peakWorkingSetSize':'workingSetSize']/1024)));
 const md=`# Nova Swarm — fourth visual and engagement pass
 
 Use the desktop shortcut **Nova Swarm - Visual Upgrade**, or double-click [Play Nova Swarm.vbs](<${link(vbs)}>). This launcher uses a build-local test profile, disables Steam services and forces offline leaderboard access. It retains real log handles to prevent the earlier EPIPE dialogs. WASD/arrows move, Space fires, Shift phases and P pauses. Drag showroom ships to rotate them.
@@ -59,7 +59,8 @@ Executable: [Nova Swarm.exe](<${link(build.executable)}>). Use the launcher for 
 - Sparrow, Pixel Needle and Quasar Fan are available immediately, with two-lane, precision and broad three-lane firing previews. Existing saves retain unlocked ships, exact XP and history. Quasar has a new original Blender crescent hull, recessed machinery, three cannons and 72 registered rotation views.
 - The first Tactical draft offers piercing fire, an extra shot or a permanent support drone. The native keyboard pilot reached the boss in ${num(reports.pacing.firstBossMs/1000)} seconds and its first choice in ${num(reports.pacing.firstDraftMs/1000)} seconds. It selected ${reports.pacing.selected.join(', ')} successfully. This was automated aiming with QA invulnerability, not beginner timing or a human engagement verdict.
 - Boss deaths split the actual full-size hull into eight irregular textured pieces. A short reactor ignition, directional plasma jets, thin pressure waves and cooling debris replace the repeated large fireball. The victory banner sits below the wreck. Effects are bounded and consume no gameplay RNG; original particle allocation and random draws remain exact.
-- Measured hot paths now reuse number formatters and text styles, avoid invisible particle geometry, skip redundant visual-tree traversal and select threat actions without sorting entire catalogs. Combat textures upload before level entry rather than at the first kill or reward.
+- Measured hot paths now reuse number formatters and text styles, avoid invisible particle geometry, skip redundant visual-tree traversal and select threat actions without sorting entire catalogs. Combat textures upload before level entry using the actual difficulty roster; the earlier preload used displayed sector numbers and missed some opening ships.
+- Resizing an open hangar now fits its entire live layout, including the launch chooser, without losing the selected hull or rotation. Actual 800×600 and 1920×1080 captures and pointer launches were checked.
 
 ## Performance
 

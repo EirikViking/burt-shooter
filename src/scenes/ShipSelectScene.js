@@ -271,8 +271,9 @@ export class ShipSelectScene {
   }
 
   async create() {
+    this.contentViewport = { width: this.game.getWidth(), height: this.game.getHeight() };
     this.gamepadNavigator.suppressUntilReleased();
-    const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
+    const { width, height } = { width: this.getContentWidth(), height: this.getContentHeight() };
 
     // Background
     const bg = new PIXI.Graphics();
@@ -691,7 +692,7 @@ export class ShipSelectScene {
 
     this.setMainMenuButtonFocus(true);
     if (!this.hangarMenuOverlay) {
-      this.createHangarMenuOverlay(this.game.getWidth(), this.game.getHeight());
+      this.createHangarMenuOverlay(this.getContentWidth(), this.getContentHeight());
     }
 
     this.hangarMenuOverlay.visible = true;
@@ -884,7 +885,7 @@ export class ShipSelectScene {
 
   openCareerInfoOverlay(source = 'unknown') {
     if (!this.careerInfoOverlay) {
-      this.createCareerInfoOverlay(this.game.getWidth(), this.game.getHeight());
+      this.createCareerInfoOverlay(this.getContentWidth(), this.getContentHeight());
     }
     this.careerInfoOverlay.visible = true;
     AudioManager.playSfx('powerup', { force: true, volume: source === 'pointer' ? 0.18 : 0.22 });
@@ -904,7 +905,7 @@ export class ShipSelectScene {
     this.careerInfoOverlay?.destroy?.({ children: true });
     this.careerInfoOverlay = null;
     this.careerInfoRefs = null;
-    this.createCareerInfoOverlay(this.game.getWidth(), this.game.getHeight());
+    this.createCareerInfoOverlay(this.getContentWidth(), this.getContentHeight());
     if (this.careerInfoOverlay) {
       this.careerInfoOverlay.visible = wasVisible;
     }
@@ -2113,7 +2114,7 @@ export class ShipSelectScene {
 
     AudioManager.playSfx('forceField', { force: true, volume: 0.52 });
     AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.62 });
-    this.menuFx?.burst?.(this.game.getWidth() / 2, this.game.getHeight() * 0.5, {
+    this.menuFx?.burst?.(this.getContentWidth() / 2, this.getContentHeight() * 0.5, {
       color: this.pendingHangarUnlockShips[0]?.visuals?.variant?.accent || 0xffef7e,
       radius: 260,
       durationMs: 980
@@ -3058,7 +3059,7 @@ export class ShipSelectScene {
     // Create buttons for center ship
     const ship = this.ships[this.selectedIndex];
     const locked = ship ? !isShipUnlocked(ship.spriteKey, this.unlockProgress) : true;
-    const { width, height } = { width: this.game.getWidth(), height: this.game.getHeight() };
+    const { width, height } = { width: this.getContentWidth(), height: this.getContentHeight() };
     const isMobile = width < 640;
     // Reserve a real footer lane: buttons sit above the prompt rather than
     // sharing the same pixels with it.
@@ -3174,7 +3175,7 @@ export class ShipSelectScene {
     // More dramatic navigation sound
     AudioManager.playSfx('thrusterFire', { volume: 0.25 });
     playMenuFocusSfx(0.12);
-    this.menuFx?.burst?.(this.game.getWidth() / 2, this.game.getHeight() * 0.52, {
+    this.menuFx?.burst?.(this.getContentWidth() / 2, this.getContentHeight() * 0.52, {
       color: ship?.visuals?.variant?.accent || ship?.visuals?.variant?.glow || 0x66ffdd,
       radius: 160,
       durationMs: 520
@@ -3986,8 +3987,8 @@ export class ShipSelectScene {
     if (!ship?.spriteKey || this.launchModeOverlay) return;
     this.launchModeOverlay = new HangarLaunchModeOverlay({
       parent: this.container,
-      width: this.game.getWidth(),
-      height: this.game.getHeight(),
+      width: this.getContentWidth(),
+      height: this.getContentHeight(),
       shipName: ship.name,
       onLaunch: (option) => this.startSelectedShipInMode(option),
       onCancel: () => this.closeLaunchModeOverlay()
@@ -4118,7 +4119,25 @@ export class ShipSelectScene {
     // Called when scene is shown
   }
 
+  getContentWidth() { return this.contentViewport?.width ?? this.game.getWidth(); }
+
+  getContentHeight() { return this.contentViewport?.height ?? this.game.getHeight(); }
+
+  fitViewport() {
+    if (!this.contentViewport) return;
+    const width = this.game.getWidth(), height = this.game.getHeight();
+    if (width === this.fittedWidth && height === this.fittedHeight) return;
+    this.fittedWidth = width; this.fittedHeight = height;
+    // Keep the live showroom and overlays in one coordinate system while the
+    // native window changes size. Recreating its atlases during a drag would
+    // lose the selected hull, rotation and keyboard focus.
+    const scale = Math.min(width / this.contentViewport.width, height / this.contentViewport.height);
+    this.container.scale.set(scale);
+    this.container.position.set((width - this.contentViewport.width * scale) / 2, (height - this.contentViewport.height * scale) / 2);
+  }
+
   update(delta = 1) {
+    this.fitViewport();
     updateMenuFx(this, delta);
     this.showroomTime = (this.showroomTime || 0) + delta * 0.016;
     const card = this.shipCards[this.selectedIndex];
