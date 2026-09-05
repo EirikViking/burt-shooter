@@ -1,16 +1,18 @@
 import assert from 'node:assert/strict';
-import {readFileSync,writeFileSync,mkdirSync,copyFileSync} from 'node:fs';
+import {readFileSync,writeFileSync,mkdirSync,copyFileSync,existsSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 const root=process.cwd(),out=path.resolve('test-results/astra-v4-delivery');mkdirSync(out,{recursive:true});
 const load=p=>JSON.parse(readFileSync(p,'utf8')),num=n=>Number(n).toFixed(2),link=p=>path.resolve(p).replaceAll('\\','/');
 const build=load('test-results/astra-build-location.json');
+const transferPath=path.join(build.output,'profile-transfer.json');
+const transfer=existsSync(transferPath)?load(transferPath):null;
 const reports={
  before:load('test-results/astra-hitches-controlled-before/report.json'),after:load('test-results/astra-hitches-final-after/report.json'),
- desktop:load('test-results/astra-desktop-candidate-v6/report.json'),previousDesktop:load('test-results/astra-desktop-candidate-v5/report.json'),
- opening:load('test-results/astra-desktop-candidate-v6-opening/report.json'),menus:load('test-results/astra-packaged-menus-v6-final/report.json'),
- pacing:load('test-results/astra-opening-playthrough/report.json'),perf:load('test-results/astra-native-v6-perf-smoke/report.json'),
- controls:load('test-results/astra-native-v6-control-smoke/report.json'),smoke:load('test-results/astra-native-v6-smoke/report.json')
+ desktop:load('test-results/astra-desktop-candidate-v8/report.json'),previousDesktop:load('test-results/astra-desktop-candidate-v5/report.json'),
+ opening:load('test-results/astra-desktop-candidate-v8-opening/report.json'),menus:load('test-results/astra-packaged-menus-v8-final/report.json'),
+ pacing:load('test-results/astra-opening-playthrough-v8-final/report.json'),perf:load('test-results/astra-native-v8-perf-smoke/report.json'),
+ controls:load('test-results/astra-native-v8-control-smoke/report.json'),smoke:load('test-results/astra-native-v8-smoke/report.json')
 };
 for(const r of Object.values(reports))assert.equal(r.status,'passed');
 for(const r of [reports.desktop,reports.opening,reports.menus,reports.pacing])assert.equal(r.executable,build.executable);
@@ -22,10 +24,10 @@ for(const [name,data] of Object.entries(reports))writeFileSync(path.join(out,`${
 writeFileSync(path.join(out,'files-changed-this-pass.txt'),execFileSync('git',['diff','--name-only','88007cb',head],{encoding:'utf8'}));
 writeFileSync(path.join(out,'files-changed-total.txt'),execFileSync('git',['diff','--name-only','a0b88d0',head],{encoding:'utf8'}));
 const scenes=[['01-menu','Main menu'],['04-combat','Combat'],['06-dense','Dense combat'],['07-boss','Boss'],['08-destruction','Boss destruction'],['09-rewards','Rewards'],['10-death','Game over']];
-for(const [id] of scenes)for(const [label,version] of [['before','v5'],['after','v6']])copyFileSync(`test-results/astra-desktop-candidate-${version}/${id}.png`,path.join(out,`${label}-${id}.png`));
-for(const id of reports.menus.captures)copyFileSync(`test-results/astra-packaged-menus-v6-final/${id}.png`,path.join(out,`menu-${id}.png`));
+for(const [id] of scenes)for(const [label,version] of [['before','v5'],['after','v8']])copyFileSync(`test-results/astra-desktop-candidate-${version}/${id}.png`,path.join(out,`${label}-${id}.png`));
+for(const id of reports.menus.captures)copyFileSync(`test-results/astra-packaged-menus-v8-final/${id}.png`,path.join(out,`menu-${id}.png`));
 for(const [source,name] of [[reports.opening.recording.video,'gameplay-normal-speed.mp4'],[reports.desktop.recording.video,'dense-normal-speed.mp4'],[reports.desktop.bossRecording.video,'boss-destruction-normal-speed.mp4'],[reports.menus.animation.video,'menu-normal-speed.mp4']])copyFileSync(source,path.join(out,name));
-copyFileSync('test-results/astra-opening-playthrough/first-choice.png',path.join(out,'first-choice.png'));
+copyFileSync('test-results/astra-opening-playthrough-v8-final/first-choice.png',path.join(out,'first-choice.png'));
 const launch=path.join(build.output,'launch.mjs'),vbs=path.join(build.output,'Play Nova Swarm.vbs');
 writeFileSync(vbs,`Set shell = CreateObject("WScript.Shell")\nSet files = CreateObject("Scripting.FileSystemObject")\nfolder = files.GetParentFolderName(WScript.ScriptFullName)\nshell.Run "node " & Chr(34) & folder & "\\launch.mjs" & Chr(34), 0, False\n`);
 writeFileSync(launch,`import {spawn} from 'node:child_process';
@@ -44,6 +46,8 @@ const maxMem=(r,type,peak=false)=>Math.max(...r.performance.flatMap(p=>(p.proces
 const md=`# Nova Swarm — fourth visual and engagement pass
 
 Use the desktop shortcut **Nova Swarm - Visual Upgrade**, or double-click [Play Nova Swarm.vbs](<${link(vbs)}>). This launcher uses a build-local test profile, disables Steam services and forces offline leaderboard access. It retains real log handles to prevent the earlier EPIPE dialogs. WASD/arrows move, Space fires, Shift phases and P pauses. Drag showroom ships to rotate them.
+
+${transfer?.status==='passed'?`Your previous experimental progress was copied into this build; ${transfer.verifiedFiles} files were hash-verified. The previous profile remains intact. A backup of the old desktop shortcut and the transfer receipt are stored beside the new launcher.`:''}
 
 Manual launch from PowerShell:
 
@@ -70,6 +74,8 @@ Both Windows packages used 1920×1080, the same Daily seed (${reports.after.cont
 
 The separate native 60-second check passed at ${num(reports.perf.avgFps)} average / ${num(reports.perf.minFps)} minimum sampled FPS.
 
+The final comparison's 116.5ms opening frame occurred during the level-entry hold, before any enemies or hostile bullets were present. The other opening threshold crossing was 33.4ms at floating-point precision. This still leaves an entry pause to investigate; it is not evidence of hitch-free loading on every machine.
+
 ${memTable}
 
 Highest sampled renderer working set: ${num(maxMem(reports.previousDesktop,'Tab'))} → ${num(maxMem(reports.desktop,'Tab'))} MiB. GPU-process working set: ${num(maxMem(reports.previousDesktop,'GPU'))} → ${num(maxMem(reports.desktop,'GPU'))} MiB. These are process working sets, not dedicated VRAM. Exact process samples and load observations are in the linked JSON reports. Menu artwork load in the 1080p comparison: ${num(reports.before.menuArtMs/1000)} → ${num(reports.after.menuArtMs/1000)} seconds; one run each, affected by cache state.
@@ -89,7 +95,7 @@ Real package recordings: [normal opening](gameplay-normal-speed.mp4), [dense com
 - Fourth-pass baseline: 88007cba20a86ce8529f7cc56f7b7d8c7813c1dc; preceding packaged gameplay 9c0ac057f388618045810fd1976da85e0a21e6f1
 - Experimental branch: codex/astra-visual-overhaul
 - Packaged gameplay commit: ${sha}
-- Report-generation HEAD: ${head}; final documentation checkpoint is recorded in the progress file and task handoff.
+- Final checkpoint / report-generation HEAD: ${head}
 - Changed files: [this pass](files-changed-this-pass.txt), [whole experiment](files-changed-total.txt)
 - Steamworks, Cloud, real saves, achievements and live leaderboards were untouched. No deploy, upload, push or publishing occurred.
 - Rollback command, not executed: \`git switch codex/forum-129-improvements-20260822\`. Preserve any future uncommitted work first. Old builds are still independently playable.
