@@ -1119,7 +1119,7 @@ export class ThreatCodexScene {
     const dossier = panelW >= 700 && panelH >= 330;
     const sideBySide = dossier || (!epicBody && shortPanel && panelW >= 520);
     const artY = 22;
-    const artW = dossier ? panelW * 0.42 : epicBody
+    const artW = dossier ? (epicBody ? panelW - Math.ceil(width * 0.4) - 60 : panelW * 0.42) : epicBody
       ? Math.min(panelW - 36, shortPanel ? 330 : compact ? 380 : 440)
       : sideBySide
         ? panelW * 0.42
@@ -1196,10 +1196,10 @@ export class ThreatCodexScene {
       : codexUi('lockedDescription');
     const tipY = dossier ? panelH - 92 : panelH - (epicBody ? (veryShortEpic ? 90 : shortPanel ? 96 : compact ? 104 : 116) : compact ? 116 : 138);
     const bodyMaxHeight = Math.max(54, tipY - bodyY - (epicBody ? 14 : 24));
-    const bodyFontSize = dossier ? 15 : epicBody
+    const bodyFontSize = dossier ? (epicBody && width >= 1500 ? 16 : 15) : epicBody
       ? (shortPanel ? 14 : compact ? 15 : 16)
       : (shortPanel ? 13 : compact ? 13 : 17);
-    const bodyLineHeight = dossier ? 19 : epicBody
+    const bodyLineHeight = dossier ? (epicBody && width >= 1500 ? 21 : 19) : epicBody
       ? (shortPanel ? 18 : compact ? 19 : 21)
       : (shortPanel ? 16 : compact ? 17 : 22);
     if (storyBody || dossier) {
