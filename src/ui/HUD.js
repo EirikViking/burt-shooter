@@ -2750,9 +2750,9 @@ export class HUD {
     this.directiveText.style.fontSize = Math.round((layout.isMobile ? 9 : 12) * uiScale);
     this.experimentLabelText.style.fontSize = Math.round((layout.isMobile ? 9 : 11) * Math.min(uiScale, 1.35));
 
-    this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, leftPanelHeight, 0x5fa8bd, 0.035, {
-      fillAlpha: 0.44,
-      strokeAlpha: 0.36,
+    this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, Math.min(leftPanelHeight, Math.round(68 * uiScale)), 0x5fa8bd, 0.035, {
+      fillAlpha: 0.72,
+      strokeAlpha: 0.44,
       strokeWidth: 1
     });
     this.rightPanel.clear();
@@ -2944,6 +2944,18 @@ export class HUD {
     graphics.stroke({ color: accent, width: strokeWidth, alpha: strokeAlpha });
     graphics.rect(x + 1, y + 1, Math.max(0, width - 2), Math.max(0, height * 0.38));
     graphics.fill({ color: accent, alpha });
+    graphics.moveTo(x + 10, y + 2);
+    graphics.lineTo(x + width - 10, y + 2);
+    graphics.stroke({ color: 0xc5e7ef, width: 1, alpha: 0.18 });
+    graphics.moveTo(x + 9, y + height - 2);
+    graphics.lineTo(x + width - 9, y + height - 2);
+    graphics.stroke({ color: 0x00050a, width: 2, alpha: 0.65 });
+    for (const px of [x + 6, x + width - 6]) {
+      for (const py of [y + 7, y + height - 7]) {
+        graphics.circle(px, py, 1.35);
+        graphics.fill({ color: 0x99bac6, alpha: 0.48 });
+      }
+    }
   }
 
   updateLivesVisuals() {

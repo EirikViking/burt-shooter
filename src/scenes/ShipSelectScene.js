@@ -1,3 +1,5 @@
+import { drawAstraPanel } from '../ui/AstraConsole.js';
+import { AstraShowroomLights } from '../ui/AstraShowroomLights.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { BonusAsset } from '../utils/BonusAsset.js';
@@ -280,7 +282,7 @@ export class ShipSelectScene {
       label: 'ui_menuFxHangar',
       zIndex: 0,
       accent: 0x66ffdd,
-      secondary: 0xff55d9,
+      secondary: 0xd8a66b,
       gold: 0xffd15c,
       intensity: 0.78,
       density: 0.82,
@@ -413,12 +415,12 @@ export class ShipSelectScene {
       sprite.scale.set(scale);
       sprite.x = width / 2;
       sprite.y = height / 2;
-      sprite.alpha = 0.72;
+      sprite.alpha = 0.94;
       this.container.addChild(sprite);
 
       const shade = new PIXI.Graphics();
       shade.rect(0, 0, width, height);
-      shade.fill({ color: 0x020711, alpha: 0.54 });
+      shade.fill({ color: 0x020711, alpha: 0.18 });
       shade.rect(0, 0, width, 110);
       shade.fill({ color: 0x000000, alpha: 0.36 });
       shade.rect(0, height - 84, width, 84);
@@ -440,7 +442,7 @@ export class ShipSelectScene {
 
     for (let i = 0; i < 9; i += 1) {
       const y = top + i * ((bottom - top) / 8);
-      const alpha = i % 2 === 0 ? 0.18 : 0.08;
+      const alpha = i % 2 === 0 ? 0.035 : 0.015;
       frame.moveTo(0, y);
       frame.lineTo(width, y);
       frame.stroke({ color: 0x2deeff, width: 1, alpha });
@@ -450,7 +452,7 @@ export class ShipSelectScene {
       const x = centerX + i * Math.min(94, width / 10);
       frame.moveTo(x, top);
       frame.lineTo(x + i * 18, bottom);
-      frame.stroke({ color: 0x66ffdd, width: 1, alpha: i === 0 ? 0.22 : 0.08 });
+      frame.stroke({ color: 0x66ffdd, width: 1, alpha: i === 0 ? 0.04 : 0.015 });
     }
 
     frame.ellipse(centerX, bottom + 30, Math.min(width * 0.34, 360), 82);
@@ -475,7 +477,7 @@ export class ShipSelectScene {
       strokeThickness: 5,
       dropShadow: true,
       dropShadowColor: '#00ffcc',
-      dropShadowBlur: 8,
+      dropShadowBlur: 2,
       dropShadowDistance: 0,
       fontWeight: '900',
       letterSpacing: 0
@@ -518,9 +520,7 @@ export class ShipSelectScene {
       Math.ceil(bottomOf(this.selectionInfoText) + 9 - 12)
     );
     cap.clear();
-    cap.roundRect(-capWidth / 2, 12, capWidth, capHeight, 8);
-    cap.fill({ color: 0x020916, alpha: 0.74 });
-    cap.stroke({ color: 0x00ffcc, width: 1.5, alpha: 0.52 });
+    drawAstraPanel(cap, -capWidth / 2, 12, capWidth, capHeight, 8, { color: 0x020916, alpha: 0.74 }, { color: 0x00ffcc, width: 1.5, alpha: 0.52 });
     cap.rect(-capWidth / 2 + 2, 14, capWidth - 4, 18);
     cap.fill({ color: 0x00ffcc, alpha: 0.08 });
     this.hangarHeaderBounds = {
@@ -555,11 +555,9 @@ export class ShipSelectScene {
       const focused = Boolean(this.mainMenuButtonFocused);
       const active = Boolean(this.backButton.active);
       bg.clear();
-      bg.roundRect(0, 0, buttonWidth, buttonHeight, 7);
-      bg.fill({ color: active ? 0x1d6a77 : (hovered || focused ? 0x103a54 : 0x06172d), alpha: hovered || focused ? 0.94 : 0.84 });
-      bg.stroke({ color: hovered || focused ? 0xffffff : 0x2deeff, width: hovered || focused ? 2.5 : 1.5, alpha: hovered || focused ? 0.95 : 0.76 });
+      drawAstraPanel(bg, 0, 0, buttonWidth, buttonHeight, 7, { color: active ? 0x1d6a77 : (hovered || focused ? 0x103a54 : 0x06172d), alpha: hovered || focused ? 0.94 : 0.84 }, { color: hovered || focused ? 0xffffff : 0x2deeff, width: hovered || focused ? 2.5 : 1.5, alpha: hovered || focused ? 0.95 : 0.76 });
       bg.rect(7, 6, 4, buttonHeight - 12);
-      bg.fill({ color: 0xff55d9, alpha: hovered || focused ? 0.9 : 0.58 });
+      bg.fill({ color: 0xd8a66b, alpha: hovered || focused ? 0.9 : 0.58 });
       bg.rect(buttonWidth - 11, 6, 4, buttonHeight - 12);
       bg.fill({ color: 0xffd15c, alpha: hovered || focused ? 0.82 : 0.5 });
       bg.moveTo(20, buttonHeight - 6);
@@ -723,11 +721,9 @@ export class ShipSelectScene {
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x06111f, alpha: 0.95 });
-    panel.stroke({ color: 0x00ffff, width: 2, alpha: 0.88 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x06111f, alpha: 0.95 }, { color: 0x00ffff, width: 2, alpha: 0.88 });
     panel.rect(panelX + 12, panelY + 12, 5, panelHeight - 24);
-    panel.fill({ color: 0xff55d9, alpha: 0.58 });
+    panel.fill({ color: 0xd8a66b, alpha: 0.58 });
     panel.rect(panelX + panelWidth - 17, panelY + 12, 5, panelHeight - 24);
     panel.fill({ color: 0xffd15c, alpha: 0.48 });
     overlay.addChild(panel);
@@ -801,11 +797,9 @@ export class ShipSelectScene {
       const focused = this.overlayFocusedIndex === index;
       const active = Boolean(button.active);
       bg.clear();
-      bg.roundRect(-width / 2, -height / 2, width, height, 6);
-      bg.fill({ color: active ? 0x1d6a77 : (hovered || focused ? 0x0b6f8f : 0x07334e), alpha: hovered || focused ? 0.92 : 0.84 });
-      bg.stroke({ color: hovered || focused ? 0xffffff : 0x00ffff, width: hovered || focused ? 2 : 1, alpha: 0.95 });
+      drawAstraPanel(bg, -width / 2, -height / 2, width, height, 6, { color: active ? 0x1d6a77 : (hovered || focused ? 0x0b6f8f : 0x07334e), alpha: hovered || focused ? 0.92 : 0.84 }, { color: hovered || focused ? 0xffffff : 0x00ffff, width: hovered || focused ? 2 : 1, alpha: 0.95 });
       bg.rect(-width / 2 + 9, -height / 2 + 7, 4, height - 14);
-      bg.fill({ color: id === 'exitGame' ? 0xffd15c : 0xff55d9, alpha: hovered || focused ? 0.86 : 0.52 });
+      bg.fill({ color: id === 'exitGame' ? 0xffd15c : 0xd8a66b, alpha: hovered || focused ? 0.86 : 0.52 });
 
       focus.clear();
       if (focused) {
@@ -937,9 +931,7 @@ export class ShipSelectScene {
     tile.position.set(x, y);
 
     const bg = new PIXI.Graphics();
-    bg.roundRect(0, 0, width, height, 7);
-    bg.fill({ color: 0x061827, alpha: 0.9 });
-    bg.stroke({ color: accent, width: 1.4, alpha: 0.72 });
+    drawAstraPanel(bg, 0, 0, width, height, 7, { color: 0x061827, alpha: 0.9 }, { color: accent, width: 1.4, alpha: 0.72 });
     bg.rect(0, 0, width, 4);
     bg.fill({ color: accent, alpha: 0.82 });
     tile.addChild(bg);
@@ -987,9 +979,7 @@ export class ShipSelectScene {
     const card = new PIXI.Container();
     card.position.set(x, y);
     const bg = new PIXI.Graphics();
-    bg.roundRect(0, 0, width, height, 8);
-    bg.fill({ color: 0x071b2a, alpha: 0.88 });
-    bg.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+    drawAstraPanel(bg, 0, 0, width, height, 8, { color: 0x071b2a, alpha: 0.88 }, { color: accent, width: 1.5, alpha: 0.72 });
     bg.rect(0, 0, 7, height);
     bg.fill({ color: accent, alpha: 0.84 });
     bg.rect(width - 18, 10, 8, 8);
@@ -1081,9 +1071,7 @@ export class ShipSelectScene {
     const accent = completedOrders.length || activeOrders.length ? 0x9cfbff : 0x49677a;
 
     const bg = new PIXI.Graphics();
-    bg.roundRect(0, 0, width, height, 8);
-    bg.fill({ color: 0x071b2a, alpha: 0.9 });
-    bg.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+    drawAstraPanel(bg, 0, 0, width, height, 8, { color: 0x071b2a, alpha: 0.9 }, { color: accent, width: 1.5, alpha: 0.72 });
     bg.rect(0, 0, 7, height);
     bg.fill({ color: accent, alpha: 0.86 });
     bg.moveTo(18, height - 10);
@@ -1185,9 +1173,7 @@ export class ShipSelectScene {
         button.position.set(buttonX, compact ? 40 : 44);
         button.hitArea = new PIXI.Rectangle(-16, -12, 32, 24);
         const bg = new PIXI.Graphics();
-        bg.roundRect(-14, -10, 28, 20, 5);
-        bg.fill({ color: 0x071b2a, alpha: 0.96 });
-        bg.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.68 });
+        drawAstraPanel(bg, -14, -10, 28, 20, 5, { color: 0x071b2a, alpha: 0.96 }, { color: 0x37f5ff, width: 1.2, alpha: 0.68 });
         const copy = createText(label, {
           fontFamily: FONT_DISPLAY,
           fontSize: compact ? 12 : 14,
@@ -1408,11 +1394,9 @@ export class ShipSelectScene {
     const pilotOrdersReview = getRunContractCompletionReviewState(this.unlockProgress);
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 9);
-    panel.fill({ color: 0x03101f, alpha: 0.985 });
-    panel.stroke({ color: 0x66ffdd, width: 2, alpha: 0.95 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 9, { color: 0x03101f, alpha: 0.985 }, { color: 0x66ffdd, width: 2, alpha: 0.95 });
     panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 7);
-    panel.stroke({ color: 0xff55d9, width: 1.4, alpha: 0.55 });
+    panel.stroke({ color: 0xd8a66b, width: 1.4, alpha: 0.55 });
     panel.rect(panelX + 18, panelY + 16, 5, panelHeight - 32);
     panel.fill({ color: 0xffd15c, alpha: 0.92 });
     panel.rect(panelX + panelWidth - 23, panelY + 16, 5, panelHeight - 32);
@@ -1465,9 +1449,7 @@ export class ShipSelectScene {
     const valueChip = new PIXI.Container();
     valueChip.position.set(width / 2, title.y + (compact ? 43 : 54));
     const valueBg = new PIXI.Graphics();
-    valueBg.roundRect(-Math.min(310, panelWidth - 92) / 2, -12, Math.min(310, panelWidth - 92), 24, 6);
-    valueBg.fill({ color: 0x2a1744, alpha: 0.86 });
-    valueBg.stroke({ color: 0xff55d9, width: 1.2, alpha: 0.75 });
+    drawAstraPanel(valueBg, -Math.min(310, panelWidth - 92) / 2, -12, Math.min(310, panelWidth - 92), 24, 6, { color: 0x2a1744, alpha: 0.86 }, { color: 0xd8a66b, width: 1.2, alpha: 0.75 });
     valueChip.addChild(valueBg);
     const valueText = createText(translateText(CAREER_INTEL_VALUE), {
       fontFamily: FONT_BODY,
@@ -1490,7 +1472,7 @@ export class ShipSelectScene {
     gauge.position.set(narrow ? width / 2 : leftX + leftW / 2, contentTop + (compact ? 64 : 82));
     const gaugeRadius = compact ? 58 : 78;
     if (progress.postCap && AssetManifest.sprites.rankPresentation?.endlessHalo) {
-      const endlessHalo = PIXI.Sprite.from(AssetManifest.sprites.rankPresentation.endlessHalo);
+      const endlessHalo = GameAssets.createDeferredSprite(AssetManifest.sprites.rankPresentation.endlessHalo);
       endlessHalo.anchor.set(0.5);
       endlessHalo.width = gaugeRadius * 2.75;
       endlessHalo.height = gaugeRadius * 2.75;
@@ -1503,7 +1485,7 @@ export class ShipSelectScene {
     }
     const ring = new PIXI.Graphics();
     ring.circle(0, 0, gaugeRadius + 18);
-    ring.stroke({ color: 0xff55d9, width: 1.4, alpha: 0.38 });
+    ring.stroke({ color: 0xd8a66b, width: 1.4, alpha: 0.38 });
     ring.circle(0, 0, gaugeRadius + 6);
     ring.stroke({ color: 0x37f5ff, width: 2, alpha: 0.44 });
     ring.arc(0, 0, gaugeRadius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * rankProgress);
@@ -1562,9 +1544,7 @@ export class ShipSelectScene {
     flowBar.label = 'ui_careerIntelFlowBar';
     flowBar.position.set(rightX, flowY);
     const flowBg = new PIXI.Graphics();
-    flowBg.roundRect(0, 0, rightW, compact ? 40 : 48, 7);
-    flowBg.fill({ color: 0x020916, alpha: 0.86 });
-    flowBg.stroke({ color: 0xffef7e, width: 1.2, alpha: 0.7 });
+    drawAstraPanel(flowBg, 0, 0, rightW, compact ? 40 : 48, 7, { color: 0x020916, alpha: 0.86 }, { color: 0xffef7e, width: 1.2, alpha: 0.7 });
     const fillW = Math.max(12, (rightW - 18) * rankProgress);
     flowBg.roundRect(9, compact ? 23 : 29, rightW - 18, 8, 4);
     flowBg.fill({ color: 0x123044, alpha: 0.95 });
@@ -1600,7 +1580,7 @@ export class ShipSelectScene {
       [nextUnlock.label, nextUnlock.value, 0xffd15c, nextUnlock.detail],
       ['HULLS READY', `${unlockedCount}/${this.ships.length}`, 0x66ffdd],
       ['XP TO NEXT', Number(progress.xpToNextRank || 0).toLocaleString('en-US'), 0xffef7e],
-      ['CODEX SCANS', this.unlockProgress.totalCodexDiscoveries || 0, 0xff55d9],
+      ['CODEX SCANS', this.unlockProgress.totalCodexDiscoveries || 0, 0xd8a66b],
       ['BOSS RECEIPTS', this.unlockProgress.totalBossesDefeated || 0, 0xff8f5c],
       ['BEST SCORE', Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US'), 0xffffff]
     ].slice(0, short && !narrow ? 3 : 6);
@@ -1719,9 +1699,7 @@ export class ShipSelectScene {
   createPanel(width, height, accent = 0x00ffcc) {
     const panel = new PIXI.Container();
     const bg = new PIXI.Graphics();
-    bg.roundRect(0, 0, width, height, 8);
-    bg.fill({ color: 0x020916, alpha: 0.78 });
-    bg.stroke({ color: accent, width: 1.5, alpha: 0.58 });
+    drawAstraPanel(bg, 0, 0, width, height, 8, { color: 0x020916, alpha: 0.78 }, { color: accent, width: 1.5, alpha: 0.58 });
     bg.rect(1, 1, width - 2, 28);
     bg.fill({ color: accent, alpha: 0.1 });
     panel.addChild(bg);
@@ -1758,10 +1736,16 @@ export class ShipSelectScene {
     if (!recommended || this.recommendationDismissed) return;
     const compact = width < 760;
     const uiScale = Math.max(1, Math.min(2, Number(this.layout?.uiScale) || 1));
-    const bannerWidth = Math.max(280, Math.min(760, width - (compact ? 32 : 360)));
+    let bannerWidth = Math.max(280, Math.min(760, width - (compact ? 32 : 360)));
+    if (this.layout?.showSideIntel) {
+      const panelMargin = Math.round(22 * Math.min(uiScale, 1.45));
+      const rightPanelLeft = width - panelMargin - 300 * uiScale;
+      const leftPanelRight = this.layout.showLeftIntel ? panelMargin + 260 * uiScale : panelMargin;
+      bannerWidth = Math.min(bannerWidth, Math.max(280, 2 * (Math.min(width / 2 - leftPanelRight, rightPanelLeft - width / 2) - 12)));
+    }
     const bannerHeight = compact ? 56 : 42;
-    const dismissWidth = compact ? 94 : 160;
-    const jumpWidth = compact ? 0 : 166;
+    const dismissWidth = compact ? 94 : Math.min(160, Math.round(bannerWidth * 0.225));
+    const jumpWidth = compact ? 0 : Math.min(166, Math.round(bannerWidth * 0.225));
     const banner = new PIXI.Container();
     banner.label = 'ui_shipRecommendationBanner';
     banner.position.set(
@@ -1778,13 +1762,11 @@ export class ShipSelectScene {
     banner.cursor = compact ? 'default' : 'pointer';
 
     const bg = new PIXI.Graphics();
-    bg.roundRect(0, 0, bannerWidth, bannerHeight, 8);
-    bg.fill({ color: 0x041322, alpha: 0.9 });
-    bg.stroke({ color: 0xffd15c, width: 1.8, alpha: 0.86 });
+    drawAstraPanel(bg, 0, 0, bannerWidth, bannerHeight, 8, { color: 0x041322, alpha: 0.9 }, { color: 0xffd15c, width: 1.8, alpha: 0.86 });
     bg.rect(10, 7, 4, bannerHeight - 14);
     bg.fill({ color: 0x66ffdd, alpha: 0.85 });
     bg.rect(bannerWidth - 14, 7, 4, bannerHeight - 14);
-    bg.fill({ color: 0xff55d9, alpha: 0.76 });
+    bg.fill({ color: 0xd8a66b, alpha: 0.76 });
 
     const label = createText('', {
       fontFamily: FONT_BODY,
@@ -1813,9 +1795,7 @@ export class ShipSelectScene {
     dismissButton.cursor = 'pointer';
     dismissButton.hitArea = new PIXI.Rectangle(0, 0, dismissWidth, compact ? 34 : 28);
     const dismissBg = new PIXI.Graphics();
-    dismissBg.roundRect(0, 0, dismissWidth, compact ? 34 : 28, 6);
-    dismissBg.fill({ color: 0x13243a, alpha: 0.96 });
-    dismissBg.stroke({ color: 0xffd15c, width: 1.2, alpha: 0.8 });
+    drawAstraPanel(dismissBg, 0, 0, dismissWidth, compact ? 34 : 28, 6, { color: 0x13243a, alpha: 0.96 }, { color: 0xffd15c, width: 1.2, alpha: 0.8 });
     const dismissText = createText(translateText('DISMISS RECOMMENDATION [X]'), {
       fontFamily: FONT_BODY,
       fontSize: compact ? 10 : 11,
@@ -1843,9 +1823,7 @@ export class ShipSelectScene {
       jumpButton.cursor = 'pointer';
       jumpButton.hitArea = new PIXI.Rectangle(0, 0, jumpWidth, 28);
       const jumpBg = new PIXI.Graphics();
-      jumpBg.roundRect(0, 0, jumpWidth, 28, 6);
-      jumpBg.fill({ color: 0x083b45, alpha: 0.96 });
-      jumpBg.stroke({ color: 0x66ffdd, width: 1.2, alpha: 0.84 });
+      drawAstraPanel(jumpBg, 0, 0, jumpWidth, 28, 6, { color: 0x083b45, alpha: 0.96 }, { color: 0x66ffdd, width: 1.2, alpha: 0.84 });
       jumpText = createText(translateText('VIEW RECOMMENDED [J]'), {
         fontFamily: FONT_BODY,
         fontSize: 11,
@@ -2041,7 +2019,7 @@ export class ShipSelectScene {
       fontFamily: FONT_BODY,
       fontSize: narrow ? 12 : 15,
       fontWeight: '900',
-      fill: '#ff55d9',
+      fill: '#dfb984',
       align: 'right',
       letterSpacing: 0
     });
@@ -2218,7 +2196,7 @@ export class ShipSelectScene {
     for (let i = 0; i < 5; i += 1) {
       const radius = ((age * 0.12 + i * 86) % Math.max(160, panelWidth * 0.58)) + 42;
       frameFx.circle(centerX, centerY, radius);
-      frameFx.stroke({ color: i % 2 === 0 ? 0x66ffdd : 0xff55d9, width: 1.4, alpha: (1 - radius / Math.max(180, panelWidth * 0.72)) * 0.18 * intro });
+      frameFx.stroke({ color: i % 2 === 0 ? 0x66ffdd : 0xd8a66b, width: 1.4, alpha: (1 - radius / Math.max(180, panelWidth * 0.72)) * 0.18 * intro });
     }
     for (let i = 0; i < 12; i += 1) {
       const x = panelX + 32 + i * ((panelWidth - 64) / 11);
@@ -2230,11 +2208,9 @@ export class ShipSelectScene {
     panel.clear();
     panel.roundRect(panelX - 12, panelY - 10, panelWidth + 24, panelHeight + 20, 16);
     panel.fill({ color: 0x66ffdd, alpha: 0.05 + pulse * 0.04 });
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 12);
-    panel.fill({ color: 0x06101c, alpha: 0.86 + intro * 0.1 });
-    panel.stroke({ color: 0x66ffdd, width: 2.6, alpha: 0.62 + pulse * 0.28 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 12, { color: 0x06101c, alpha: 0.86 + intro * 0.1 }, { color: 0x66ffdd, width: 2.6, alpha: 0.62 + pulse * 0.28 });
     panel.roundRect(panelX + 14, panelY + 14, panelWidth - 28, panelHeight - 28, 10);
-    panel.stroke({ color: 0xff55d9, width: 1.5, alpha: 0.38 + pulse * 0.18 });
+    panel.stroke({ color: 0xd8a66b, width: 1.5, alpha: 0.38 + pulse * 0.18 });
     panel.rect(panelX + 28, panelY + 28, panelWidth - 56, 3);
     panel.fill({ color: 0xffef7e, alpha: 0.76 });
     panel.rect(panelX + 28, panelY + panelHeight - 30, panelWidth - 56, 2);
@@ -2280,7 +2256,7 @@ export class ShipSelectScene {
 
       const ringPulse = 0.5 + Math.sin(Date.now() * 0.007 + index * 0.9) * 0.5;
       stageFx.circle(x, y, spriteSize * (0.52 + ringPulse * 0.08));
-      stageFx.stroke({ color: index % 2 ? 0xff55d9 : 0x66ffdd, width: narrow ? 1.6 : 2.2, alpha: 0.24 + ringPulse * 0.24 });
+      stageFx.stroke({ color: index % 2 ? 0xd8a66b : 0x66ffdd, width: narrow ? 1.6 : 2.2, alpha: 0.24 + ringPulse * 0.24 });
       stageFx.circle(x, y, spriteSize * (0.68 + pulse * 0.05));
       stageFx.stroke({ color: 0xffef7e, width: 1, alpha: 0.16 + pulse * 0.12 });
       const exhaustY = y + spriteSize * 0.34;
@@ -2507,6 +2483,9 @@ export class ShipSelectScene {
     this.sideAlpha = this.layout.isMobile ? 0.38 : 0.54;
     this.animating = false;
 
+    // Decode the dedicated angled previews concurrently; simulation textures
+    // and metadata retain their original sizing and canonical identities.
+    await Promise.all(this.ships.map((ship) => GameAssets.ensureShowroomShip(ship.textureIndex)));
     // Create ship display containers
     for (let i = 0; i < this.ships.length; i++) {
       const ship = this.ships[i];
@@ -2528,7 +2507,7 @@ export class ShipSelectScene {
     const firstFlight = !locked && usageCount === 0;
     const accent = variant?.accent || 0x00ffff;
     const textAccent = this.getReadableAccent(variant);
-    const glowColor = variant?.glow || variant?.tint || 0x00ff00;
+    const glowColor = variant?.glow || variant?.tint || 0x79dddf;
     const tierLabel = getShipTierLabel(ship);
     const defaultNarrativeWidth = this.layout.isMobile ? 310 : (this.compactHangar ? 540 : 560);
     let narrativeWidth = defaultNarrativeWidth;
@@ -2613,8 +2592,10 @@ export class ShipSelectScene {
     }
 
     // Ship sprite (large for better visibility)
-    const shipTexture = GameAssets.getRankShipTexture(ship.textureIndex)
-      || await GameAssets.ensureRankShipTexture(ship.textureIndex);
+    const display = await GameAssets.ensureShowroomShip(ship.textureIndex);
+    const shipTexture = display.texture;
+    container.showroomEmitters = display.emitters;
+    container.showroomLocked = locked;
     if (shipTexture && shipTexture.width > 0) {
       const sprite = new PIXI.Sprite(shipTexture);
       sprite.anchor.set(0.5);
@@ -2623,7 +2604,8 @@ export class ShipSelectScene {
         sprite.tint = variant.tint;
       }
 
-      const scale = Math.min(heroSize / sprite.width, heroSize / sprite.height);
+      const previewSize = this.compactHangar ? Math.min(heroSize, baseHeroSize) : heroSize;
+      const scale = Math.min(previewSize / sprite.width, previewSize / sprite.height) * (locked ? 1.05 : 1.65);
       sprite.scale.set(scale);
 
       container.addChild(sprite);
@@ -2632,9 +2614,7 @@ export class ShipSelectScene {
 
     if (locked) {
       const lockPlate = new PIXI.Graphics();
-      lockPlate.roundRect(-heroSize * 0.72, heroY - heroSize * 0.52, heroSize * 1.44, heroSize * 1.08, 10);
-      lockPlate.fill({ color: 0x020711, alpha: 0.62 });
-      lockPlate.stroke({ color: 0xffcc00, width: 2, alpha: 0.7 });
+      drawAstraPanel(lockPlate, -heroSize * 0.72, heroY - heroSize * 0.52, heroSize * 1.44, heroSize * 1.08, 10, { color: 0x020711, alpha: 0.62 }, { color: 0xffcc00, width: 2, alpha: 0.7 });
       container.addChild(lockPlate);
       container.lockPlate = lockPlate;
 
@@ -2675,9 +2655,7 @@ export class ShipSelectScene {
       const badge = new PIXI.Container();
       badge.position.set(-badgeWidth / 2, this.layout.isMobile ? 50 : (this.compactHangar ? 48 : 60));
       const badgeBg = new PIXI.Graphics();
-      badgeBg.roundRect(0, 0, badgeWidth, 24, 6);
-      badgeBg.fill({ color: 0x13061f, alpha: 0.9 });
-      badgeBg.stroke({ color: 0xffef7e, width: 1.4, alpha: 0.88 });
+      drawAstraPanel(badgeBg, 0, 0, badgeWidth, 24, 6, { color: 0x13061f, alpha: 0.9 }, { color: 0xffef7e, width: 1.4, alpha: 0.88 });
       const badgeText = createText(tierLabel, {
         fontFamily: FONT_DISPLAY,
         fontSize: this.layout.isMobile ? 12 : 14,
@@ -2699,16 +2677,17 @@ export class ShipSelectScene {
       const badgeWidth = this.layout.isMobile ? 116 : 138;
       const badgeHeight = this.layout.isMobile ? 24 : 28;
       const badge = new PIXI.Container();
-      const preferredBadgeY = heroY - heroSize * (this.layout.isMobile ? 0.7 : 0.66);
-      const viewportSafeBadgeY = (10 - this.carouselContainer.y) / this.centerScale;
+      const preferredBadgeY = heroY - heroSize * (this.layout.isMobile ? 0.7 : 0.82);
+      const headerBottom = this.recommendationBanner
+        ? this.recommendationBanner.y + (this.layout.isMobile ? 56 : 42)
+        : (this.hangarHeaderBounds?.bottom || 0);
+      const viewportSafeBadgeY = (headerBottom + 12 - this.carouselContainer.y) / this.centerScale;
       badge.position.set(-badgeWidth / 2, Math.max(preferredBadgeY, viewportSafeBadgeY));
       const badgeGlow = new PIXI.Graphics();
       badgeGlow.roundRect(-4, -4, badgeWidth + 8, badgeHeight + 8, 9);
       badgeGlow.fill({ color: 0xffef7e, alpha: 0.11 });
       const badgeBg = new PIXI.Graphics();
-      badgeBg.roundRect(0, 0, badgeWidth, badgeHeight, 7);
-      badgeBg.fill({ color: 0x13061f, alpha: 0.96 });
-      badgeBg.stroke({ color: 0xffef7e, width: 1.8, alpha: 0.96 });
+      drawAstraPanel(badgeBg, 0, 0, badgeWidth, badgeHeight, 7, { color: 0x13061f, alpha: 0.96 }, { color: 0xffef7e, width: 1.8, alpha: 0.96 });
       const badgeText = createText(translateText('FIRST FLIGHT'), {
         fontFamily: FONT_DISPLAY,
         fontSize: this.layout.isMobile ? 13 : 15,
@@ -2737,9 +2716,7 @@ export class ShipSelectScene {
       heroY + heroSize * (this.layout.isMobile ? 0.36 : 0.38)
     );
     const masteryBg = new PIXI.Graphics();
-    masteryBg.roundRect(0, 0, masteryWidth, masteryHeight, 7);
-    masteryBg.fill({ color: 0x020711, alpha: 0.92 });
-    masteryBg.stroke({ color: mastery.tier.color, width: 1.4, alpha: mastery.tier.rank > 0 ? 0.88 : 0.44 });
+    drawAstraPanel(masteryBg, 0, 0, masteryWidth, masteryHeight, 7, { color: 0x020711, alpha: 0.92 }, { color: mastery.tier.color, width: 1.4, alpha: mastery.tier.rank > 0 ? 0.88 : 0.44 });
     masteryBadge.addChild(masteryBg);
     const rankedLabel = createText(translateText('RANKED MEDALS'), {
       fontFamily: FONT_DISPLAY,
@@ -2857,7 +2834,7 @@ export class ShipSelectScene {
       strokeThickness: 4,
       dropShadow: true,
       dropShadowColor: this.toHexText(textAccent),
-      dropShadowBlur: 6,
+      dropShadowBlur: 2,
       dropShadowDistance: 0
     });
     name.anchor.set(0.5, 0);
@@ -2921,7 +2898,7 @@ export class ShipSelectScene {
   }
 
   toHexText(value) {
-    if (!Number.isFinite(value)) return '#00ff00';
+    if (!Number.isFinite(value)) return '#a6e9ec';
     return `#${(value >>> 0).toString(16).padStart(6, '0').slice(-6)}`;
   }
 
@@ -3090,7 +3067,7 @@ export class ShipSelectScene {
       buttonWidth,
       buttonHeight,
       0x333333,
-      0x00ff00,
+      0x79dddf,
       () => {
         this.openSelectedShipDetails();
       }
@@ -3104,7 +3081,7 @@ export class ShipSelectScene {
       buttonY,
       buttonWidth,
       buttonHeight,
-      locked ? 0x2a2134 : 0x00ff00,
+      locked ? 0x2a2134 : 0x79dddf,
       locked ? 0xffcc00 : 0x000000,
       () => {
         if (locked) {
@@ -3145,7 +3122,7 @@ export class ShipSelectScene {
 
       const particle = new PIXI.Graphics();
       particle.circle(0, 0, size);
-      particle.fill({ color: i % 3 === 0 ? 0x00ffff : 0x00ff00, alpha: 0.8 });
+      particle.fill({ color: i % 3 === 0 ? 0x00ffff : 0x79dddf, alpha: 0.8 });
 
       particle.x = 0;
       particle.y = shipContainer.heroY ?? -50;
@@ -3398,9 +3375,7 @@ export class ShipSelectScene {
     const dotRadius = this.layout.isMobile ? 4 : 5;
     const totalWidth = (this.ships.length - 1) * dotGap;
     const rail = new PIXI.Graphics();
-    rail.roundRect(-totalWidth / 2 - 12, -16, totalWidth + 24, 32, 8);
-    rail.fill({ color: 0x020916, alpha: 0.76 });
-    rail.stroke({ color: 0x2deeff, width: 1, alpha: 0.4 });
+    drawAstraPanel(rail, -totalWidth / 2 - 12, -16, totalWidth + 24, 32, 8, { color: 0x020916, alpha: 0.76 }, { color: 0x2deeff, width: 1, alpha: 0.4 });
     this.rosterStrip.addChild(rail);
 
     this.ships.forEach((ship, index) => {
@@ -3448,7 +3423,7 @@ export class ShipSelectScene {
     // Background with glow
     const bgGlow = new PIXI.Graphics();
     bgGlow.rect(-2, -2, width + 4, height + 4);
-    bgGlow.fill({ color: 0x00ff00, alpha: 0 });
+    bgGlow.fill({ color: 0x79dddf, alpha: 0 });
     button.addChild(bgGlow);
     button.bgGlow = bgGlow;
 
@@ -3475,13 +3450,9 @@ export class ShipSelectScene {
       const hovered = Boolean(button.hovered);
       const focused = Boolean(button._focused);
       bg.clear();
-      bg.rect(0, 0, width, height);
-      bg.fill({ color: label === 'START' && (hovered || focused) ? 0x00ffff : bgColor, alpha: hovered || focused ? 0.92 : 1 });
-      bg.stroke({
-        color: hovered ? 0xffffff : focused ? 0xffef7e : 0x00ff00,
-        width: hovered || focused ? 3 : 2,
-        alpha: hovered || focused ? 0.95 : 1
-      });
+      drawAstraPanel(bg, 0, 0, width, height, 8,
+        { color: bgColor === 0x79dddf ? 0x80dfe2 : hovered || focused ? 0x284959 : 0x122330, alpha: 1 },
+        { color: hovered ? 0xffffff : focused ? 0xffda9c : 0x6a9da9, width: hovered || focused ? 2 : 1, alpha: 0.9 });
 
       focusRing.clear();
       if (focused) {
@@ -4127,6 +4098,15 @@ export class ShipSelectScene {
 
   update(delta = 1) {
     updateMenuFx(this, delta);
+    this.showroomTime = (this.showroomTime || 0) + delta * 0.016;
+    const card = this.shipCards[this.selectedIndex];
+    if (card?.sprite && card.showroomEmitters) {
+      if (!this.showroomLights) {
+        this.showroomLights = new AstraShowroomLights();
+        this.carouselContainer.addChild(this.showroomLights);
+      }
+      this.showroomLights.update(card.sprite, card.showroomEmitters, this.showroomTime, !card.showroomLocked && !this.animating);
+    }
   }
 
   getContainer() {

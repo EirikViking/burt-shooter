@@ -1,3 +1,4 @@
+import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { getGameOverComment } from '../text/phrasePool.js';
@@ -80,7 +81,7 @@ const CONTROLLER_NAME_STORAGE_KEY = 'nova.controllerPilotName.v1';
 const GAME_OVER_EFFECT_COUNT = 100;
 const GAME_OVER_EFFECT_PALETTES = [
   [0xff315f, 0xffd35c, 0x55f7ff],
-  [0x8f5cff, 0xff4fd8, 0xfff06a],
+  [0x8f5cff, 0xd8a66b, 0xfff06a],
   [0x39ffb6, 0x66b6ff, 0xff566d],
   [0xff7a36, 0xffee88, 0x47f4ff],
   [0xc77dff, 0xffdf5a, 0x60ffea]
@@ -628,7 +629,7 @@ export class GameOverScene {
       label: 'ui_menuFxGameOver',
       zIndex: -9,
       accent: this.game?.runSummary?.runCleared ? 0xffd15c : 0x37f5ff,
-      secondary: 0xff55d9,
+      secondary: 0xd8a66b,
       gold: 0xffef7e,
       intensity: this.game?.runSummary?.runCleared ? 0.82 : 0.68,
       density: 0.76,
@@ -2200,9 +2201,7 @@ export class GameOverScene {
     this.personalBestCarryBg.clear();
     this.personalBestCarryBg.roundRect(-bannerWidth / 2 - 5, -bannerHeight / 2 - 5, bannerWidth + 10, bannerHeight + 10, 14);
     this.personalBestCarryBg.stroke({ color: 0x4ef8ff, width: 5, alpha: 0.16 });
-    this.personalBestCarryBg.roundRect(-bannerWidth / 2, -bannerHeight / 2, bannerWidth, bannerHeight, 11);
-    this.personalBestCarryBg.fill({ color: 0x031421, alpha: 0.96 });
-    this.personalBestCarryBg.stroke({ color: 0xffe66d, width: 3, alpha: 0.94 });
+    drawAstraPanel(this.personalBestCarryBg, -bannerWidth / 2, -bannerHeight / 2, bannerWidth, bannerHeight, 11, { color: 0x031421, alpha: 0.96 }, { color: 0xffe66d, width: 3, alpha: 0.94 });
     this.personalBestCarryBg.rect(-bannerWidth / 2 + 15, -bannerHeight / 2 + 8, bannerWidth - 30, 2);
     this.personalBestCarryBg.fill({ color: 0x4ef8ff, alpha: 0.62 });
 
@@ -2651,7 +2650,7 @@ export class GameOverScene {
     this.drawResultSectionCard(this.runSectionBg, this.levelText, layout, 0x37f5ff);
     this.drawResultSectionCard(this.rankProgressBg, this.rankProgressText, layout, 0xffd45c, { minHeight: layout.isMobile ? 44 : 50, widthRatio: layout.isMobile ? 0.88 : 0.56 });
     this.drawResultSectionCard(this.shipUnlockProgressBg, this.shipUnlockProgressText, layout, 0x37f5ff, { minHeight: layout.isMobile ? 48 : 56, widthRatio: layout.isMobile ? 0.9 : 0.58 });
-    this.drawResultSectionCard(this.leaderboardStatusBg, this.leaderboardStatusText, layout, 0xff55d9);
+    this.drawResultSectionCard(this.leaderboardStatusBg, this.leaderboardStatusText, layout, 0xd8a66b);
     this.layoutRunReportOverlay(layout);
   }
 
@@ -2760,9 +2759,7 @@ export class GameOverScene {
     fitDisplayToBox(this.scoreText, summaryWidth - 34, summaryHeight - 16, { minScale: 0.68 });
     this.runSectionBg?.clear?.();
     if (this.runSectionBg) {
-      this.runSectionBg.roundRect(centerX - summaryWidth / 2, cursorY, summaryWidth, summaryHeight, 10);
-      this.runSectionBg.fill({ color: 0x041323, alpha: 0.9 });
-      this.runSectionBg.stroke({ color: 0x37f5ff, width: 2, alpha: 0.82 });
+      drawAstraPanel(this.runSectionBg, centerX - summaryWidth / 2, cursorY, summaryWidth, summaryHeight, 10, { color: 0x041323, alpha: 0.9 }, { color: 0x37f5ff, width: 2, alpha: 0.82 });
     }
     cursorY += summaryHeight + gaps.summary;
 
@@ -2781,9 +2778,7 @@ export class GameOverScene {
     fitDisplayToBox(this.unlockText, unlockWidth - 36, unlockHeight - 14, { minScale: 0.72 });
     this.shipUnlockProgressBg?.clear?.();
     if (this.shipUnlockProgressBg && this.unlockText.visible) {
-      this.shipUnlockProgressBg.roundRect(centerX - unlockWidth / 2, cursorY, unlockWidth, unlockHeight, 10);
-      this.shipUnlockProgressBg.fill({ color: 0x06101c, alpha: 0.92 });
-      this.shipUnlockProgressBg.stroke({ color: 0xffd75f, width: 2.2, alpha: 0.9 });
+      drawAstraPanel(this.shipUnlockProgressBg, centerX - unlockWidth / 2, cursorY, unlockWidth, unlockHeight, 10, { color: 0x06101c, alpha: 0.92 }, { color: 0xffd75f, width: 2.2, alpha: 0.9 });
       this.shipUnlockProgressBg.rect(centerX - unlockWidth / 2, cursorY, 7, unlockHeight);
       this.shipUnlockProgressBg.fill({ color: 0xffd75f, alpha: 0.9 });
     }
@@ -2882,7 +2877,7 @@ export class GameOverScene {
       align: 'center',
       dropShadow: true,
       dropShadowColor: '#ffc94a',
-      dropShadowBlur: 6
+      dropShadowBlur: 2
     });
     this.retryButtonLabel.anchor.set(0.5);
 
@@ -2985,7 +2980,7 @@ export class GameOverScene {
       drawArc(this.retryButtonEnergy, halfWidth + 12, halfHeight + 9, orbit, Math.PI * 0.48, 0xfff3a2, 0.82, 5.5);
       drawArc(this.retryButtonEnergy, halfWidth + 12, halfHeight + 9, orbit + Math.PI, Math.PI * 0.48, 0x37f5ff, 0.74, 5);
       drawArc(this.retryButtonEnergy, halfWidth + 22, halfHeight + 17, -orbit * 0.84, Math.PI * 0.28, 0xffffff, 0.36, 3);
-      drawArc(this.retryButtonEnergy, halfWidth + 22, halfHeight + 17, Math.PI - orbit * 0.84, Math.PI * 0.28, 0xff55d9, 0.32, 3);
+      drawArc(this.retryButtonEnergy, halfWidth + 22, halfHeight + 17, Math.PI - orbit * 0.84, Math.PI * 0.28, 0xd8a66b, 0.32, 3);
 
       const sweepWidth = Math.max(76, buttonWidth * 0.18);
       const sweepX = -halfWidth - sweepWidth + ((now * 0.28) % (buttonWidth + sweepWidth * 2));
@@ -3112,7 +3107,7 @@ export class GameOverScene {
     this.leaderboardButtonGlow.roundRect(-halfWidth - 7, -halfHeight - 5, buttonWidth + 14, buttonHeight + 10, radius + 4);
     this.leaderboardButtonGlow.fill({ color: 0x00ffff, alpha: visible ? 0.11 : 0 });
     this.leaderboardButtonGlow.roundRect(-halfWidth - 2, -halfHeight - 2, buttonWidth + 4, buttonHeight + 4, radius + 2);
-    this.leaderboardButtonGlow.stroke({ color: 0xff55d9, width: 1.5, alpha: visible ? 0.34 : 0 });
+    this.leaderboardButtonGlow.stroke({ color: 0xd8a66b, width: 1.5, alpha: visible ? 0.34 : 0 });
 
     this.leaderboardButtonBg.clear();
     this.leaderboardButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
@@ -3152,7 +3147,7 @@ export class GameOverScene {
       level: 0x37f5ff,
       unlock: 0x9cfbff,
       rank: 0xffd15c,
-      leaderboard: 0xff55d9,
+      leaderboard: 0xd8a66b,
       practice: 0xffb35c
     }[tone] || 0x37f5ff;
     const stripWidth = Math.min(layout.width * (layout.isMobile ? 0.82 : 0.52), layout.isMobile ? 340 : 500);
@@ -3261,9 +3256,7 @@ export class GameOverScene {
     this.shipUnlockRevealGlow.stroke({ color: 0x37f5ff, width: layout.isMobile ? 2 : 2.6, alpha: 0.52 + pulse * 0.22 });
 
     this.shipUnlockRevealBg.clear();
-    this.shipUnlockRevealBg.roundRect(-halfWidth, -halfHeight, width, height, layout.isMobile ? 10 : 14);
-    this.shipUnlockRevealBg.fill({ color: 0x06101c, alpha: 0.9 });
-    this.shipUnlockRevealBg.stroke({ color: 0xffd75f, width: layout.isMobile ? 2 : 2.8, alpha: 0.92 });
+    drawAstraPanel(this.shipUnlockRevealBg, -halfWidth, -halfHeight, width, height, layout.isMobile ? 10 : 14, { color: 0x06101c, alpha: 0.9 }, { color: 0xffd75f, width: layout.isMobile ? 2 : 2.8, alpha: 0.92 });
     this.shipUnlockRevealBg.rect(-halfWidth + 20, -halfHeight + 8, width - 40, 2);
     this.shipUnlockRevealBg.fill({ color: 0x37f5ff, alpha: 0.42 });
     this.shipUnlockRevealBg.rect(-halfWidth + 20, halfHeight - 9, width - 40, 1.4);
@@ -3503,7 +3496,7 @@ export class GameOverScene {
     background.rect(0, horizonY - 1, width, 2);
     background.fill({ color: 0x37f5ff, alpha: 0.18 });
     background.rect(0, horizonY + Math.max(22, height * 0.045), width, 1);
-    background.fill({ color: 0xff55d9, alpha: 0.12 });
+    background.fill({ color: 0xd8a66b, alpha: 0.12 });
     layer.addChild(background);
 
     const frame = new PIXI.Graphics();
@@ -3511,13 +3504,11 @@ export class GameOverScene {
     const frameHeight = Math.min(164, Math.max(116, height * 0.2));
     const frameX = (width - frameWidth) / 2;
     const frameY = (height - frameHeight) / 2;
-    frame.roundRect(frameX, frameY, frameWidth, frameHeight, 10);
-    frame.fill({ color: 0x061827, alpha: 0.92 });
-    frame.stroke({ color: 0x37f5ff, width: 2, alpha: 0.76 });
+    drawAstraPanel(frame, frameX, frameY, frameWidth, frameHeight, 10, { color: 0x061827, alpha: 0.92 }, { color: 0x37f5ff, width: 2, alpha: 0.76 });
     frame.rect(frameX + 18, frameY + 16, Math.max(72, frameWidth * 0.22), 2);
     frame.fill({ color: 0xffef7e, alpha: 0.62 });
     frame.rect(frameX + frameWidth - Math.max(90, frameWidth * 0.25) - 18, frameY + frameHeight - 18, Math.max(90, frameWidth * 0.25), 2);
-    frame.fill({ color: 0xff55d9, alpha: 0.46 });
+    frame.fill({ color: 0xd8a66b, alpha: 0.46 });
     layer.addChild(frame);
 
     const title = createText('NOVA SWARM', {
@@ -3607,7 +3598,7 @@ export class GameOverScene {
       align: 'center',
       dropShadow: true,
       dropShadowColor: '#ffc94a',
-      dropShadowBlur: 12
+      dropShadowBlur: 3
     });
     this.ceremonyMedalText.anchor.set(0.5);
     this.ceremonyMedalSubtext = createText('', {

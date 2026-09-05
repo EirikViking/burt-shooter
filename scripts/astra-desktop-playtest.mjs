@@ -4,7 +4,7 @@ import {mkdirSync,writeFileSync,readFileSync,createWriteStream,openSync,closeSyn
 import {spawn} from 'node:child_process';
 import path from 'node:path';
 const label=process.argv[2]||'candidate';
-const baseline=label==='baseline';
+const baseline=label==='baseline'||label.startsWith('baseline-');
 const executable=baseline?path.resolve('node_modules/electron/dist/electron.exe'):JSON.parse(readFileSync('test-results/astra-build-location.json')).executable;
 const out=path.resolve('test-results',`astra-desktop-${label}`);mkdirSync(out,{recursive:true});
 const report={label,executable,viewport:[1280,720],errors:[],warnings:[],checks:[],performance:[]};

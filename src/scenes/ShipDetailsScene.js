@@ -1,3 +1,4 @@
+import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import {
@@ -60,7 +61,7 @@ export class ShipDetailsScene {
             label: 'ui_menuFxShipDetails',
             zIndex: 0,
             accent: this.ship?.visuals?.variant?.accent || 0x66ffcc,
-            secondary: 0xff55d9,
+            secondary: 0xd8a66b,
             gold: 0xffef7e,
             intensity: 0.68,
             density: 0.7,
@@ -78,11 +79,9 @@ export class ShipDetailsScene {
 
         // Main panel
         const panel = new PIXI.Graphics();
-        panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-        panel.fill({ color: 0x06111f, alpha: 0.92 });
-        panel.stroke({ color: accent, width: 2, alpha: 0.88 });
+        drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x06111f, alpha: 0.92 }, { color: accent, width: 2, alpha: 0.88 });
         panel.roundRect(panelX + 12, panelY + 12, panelWidth - 24, panelHeight - 24, 6);
-        panel.stroke({ color: 0xff55d9, width: 1, alpha: 0.2 });
+        panel.stroke({ color: 0xd8a66b, width: 1, alpha: 0.2 });
         panel.rect(panelX + 26, panelY + 22, Math.max(120, panelWidth * 0.22), 2);
         panel.fill({ color: 0xffef7e, alpha: 0.34 });
         panel.rect(panelX + panelWidth - Math.max(170, panelWidth * 0.26) - 26, panelY + panelHeight - 28, Math.max(150, panelWidth * 0.22), 2);
@@ -127,6 +126,12 @@ export class ShipDetailsScene {
             sprite.scale.set(scale);
 
             contentContainer.addChild(sprite);
+            GameAssets.ensureShowroomShip(this.ship.textureIndex).then((display) => {
+                if (sprite.destroyed) return;
+                sprite.texture = display.texture;
+                sprite.tint = 0xffffff;
+                sprite.scale.set(maxSize / display.texture.width);
+            }).catch((error) => console.warn('[ShipDetails] Showroom art failed to load:', error));
         }
         yOffset += isMobile ? 130 : 130;
 
@@ -442,11 +447,9 @@ export class ShipDetailsScene {
                 backFocus.stroke({ color: 0xffef7e, width: 2, alpha: 0.88 });
             }
             backBg.clear();
-            backBg.roundRect(0, 0, buttonWidth, buttonHeight, 5);
-            backBg.fill({ color: hovered ? 0x0b6f8f : 0x07334e, alpha: 0.92 });
-            backBg.stroke({ color: hovered || backButton._focused ? 0xffffff : accent, width: 2, alpha: 0.94 });
+            drawAstraPanel(backBg, 0, 0, buttonWidth, buttonHeight, 5, { color: hovered ? 0x0b6f8f : 0x07334e, alpha: 0.92 }, { color: hovered || backButton._focused ? 0xffffff : accent, width: 2, alpha: 0.94 });
             backBg.rect(10, 7, buttonWidth - 20, 2);
-            backBg.fill({ color: 0xff55d9, alpha: 0.38 });
+            backBg.fill({ color: 0xd8a66b, alpha: 0.38 });
         };
         backButton.redraw(false);
         backButton.on('pointerover', () => {
@@ -490,11 +493,9 @@ export class ShipDetailsScene {
                 startFocus.stroke({ color: 0xffef7e, width: 2, alpha: 0.88 });
             }
             startBg.clear();
-            startBg.roundRect(0, 0, buttonWidth, buttonHeight, 5);
-            startBg.fill({ color: locked ? 0x2a2134 : (hovered ? 0xffef7e : 0xffd15c), alpha: 0.96 });
-            startBg.stroke({ color: hovered || startButton._focused ? 0xffffff : accent, width: 2, alpha: 0.95 });
+            drawAstraPanel(startBg, 0, 0, buttonWidth, buttonHeight, 5, { color: locked ? 0x2a2134 : (hovered ? 0xffef7e : 0xffd15c), alpha: 0.96 }, { color: hovered || startButton._focused ? 0xffffff : accent, width: 2, alpha: 0.95 });
             startBg.rect(10, 7, buttonWidth - 20, 2);
-            startBg.fill({ color: locked ? 0xff55d9 : 0x00eaff, alpha: 0.42 });
+            startBg.fill({ color: locked ? 0xd8a66b : 0x00eaff, alpha: 0.42 });
         };
         startButton.redraw(false);
         startButton.on('pointerover', () => {

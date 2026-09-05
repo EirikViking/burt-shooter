@@ -1,3 +1,4 @@
+import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { ACHIEVEMENTS } from '../achievements/AchievementCatalog.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -329,11 +330,9 @@ export class AchievementsScene {
     const x = -width / 2;
     const y = -height / 2;
     bg.clear();
-    bg.roundRect(x, y, width, height, 7);
-    bg.fill({ color: hover ? 0x06314f : 0x04182d, alpha: hover ? 0.84 : 0.68 });
-    bg.stroke({ color: hover ? 0xffffff : 0x37f5ff, width: hover ? 2.5 : 2, alpha: 0.86 });
+    drawAstraPanel(bg, x, y, width, height, 7, { color: hover ? 0x06314f : 0x04182d, alpha: hover ? 0.84 : 0.68 }, { color: hover ? 0xffffff : 0x37f5ff, width: hover ? 2.5 : 2, alpha: 0.86 });
     bg.rect(x + 12, y + 7, 4, height - 14);
-    bg.fill({ color: 0xff55d9, alpha: 0.62 });
+    bg.fill({ color: 0xd8a66b, alpha: 0.62 });
     bg.rect(x + width - 16, y + 7, 4, height - 14);
     bg.fill({ color: 0xffd15c, alpha: 0.5 });
   }
@@ -424,11 +423,9 @@ export class AchievementsScene {
     const width = totalListWidth + pad * 2;
     const height = Math.max(120, listBottom - this.listTop + pad * 2);
     this.panel.clear();
-    this.panel.roundRect(x, y, width, height, 8);
-    this.panel.fill({ color: 0x020711, alpha: 0.58 });
-    this.panel.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.52 });
+    drawAstraPanel(this.panel, x, y, width, height, 8, { color: 0x020711, alpha: 0.58 }, { color: 0x37f5ff, width: 1.2, alpha: 0.52 });
     this.panel.rect(x + 18, y + 10, width - 36, 2);
-    this.panel.fill({ color: 0xff55d9, alpha: 0.28 });
+    this.panel.fill({ color: 0xd8a66b, alpha: 0.28 });
     this.panel.rect(x + 18, y + height - 12, width - 36, 2);
     this.panel.fill({ color: 0xffd15c, alpha: 0.28 });
   }
@@ -607,12 +604,8 @@ export class AchievementsScene {
     };
     this.scrollRail.clear();
     this.scrollThumb.clear();
-    this.scrollRail.roundRect(railX, railY, 7, railHeight, 4);
-    this.scrollRail.fill({ color: 0x06111e, alpha: 0.72 });
-    this.scrollRail.stroke({ color: 0x37f5ff, width: 1, alpha: 0.45 });
-    this.scrollThumb.roundRect(railX - 2, thumbY, 11, thumbHeight, 5);
-    this.scrollThumb.fill({ color: 0xffef7e, alpha: 0.92 });
-    this.scrollThumb.stroke({ color: 0x37f5ff, width: 1.5, alpha: 0.76 });
+    drawAstraPanel(this.scrollRail, railX, railY, 7, railHeight, 4, { color: 0x06111e, alpha: 0.72 }, { color: 0x37f5ff, width: 1, alpha: 0.45 });
+    drawAstraPanel(this.scrollThumb, railX - 2, thumbY, 11, thumbHeight, 5, { color: 0xffef7e, alpha: 0.92 }, { color: 0x37f5ff, width: 1.5, alpha: 0.76 });
 
     const start = total === 0 ? 0 : this.scrollOffset + 1;
     const end = Math.min(total, this.scrollOffset + visible);

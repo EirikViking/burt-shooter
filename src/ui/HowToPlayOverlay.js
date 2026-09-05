@@ -1,3 +1,4 @@
+import { drawAstraPanel } from './AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -41,7 +42,7 @@ const CORE_HELP_ROWS = Object.freeze([
     label: 'DODGE / PHASE',
     control: 'LEFT/RIGHT SHIFT / GAMEPAD B',
     tip: 'Tap Phase Burst to pass safely through bullets or contact for a heartbeat. It protects you; it is not a movement dash.',
-    accent: 0xff55d9
+    accent: 0xd8a66b
   },
   {
     code: '05',
@@ -167,7 +168,7 @@ const TACTICS_HELP_ROWS = Object.freeze([
     label: 'FUSION PROTOCOLS',
     control: 'OWN BOTH LISTED AUGMENTS // NO SCORE MULTIPLIER',
     tip: 'Pair complementary augments to unlock a Fusion Protocol. It changes how both systems work together, appears first in the HUD, and never adds a score multiplier.',
-    accent: 0xff55d9
+    accent: 0xd8a66b
   },
   {
     code: '17',
@@ -234,7 +235,7 @@ const INTEL_HELP_ROWS = Object.freeze([
     label: 'ELITE SIGNALS',
     control: '50 ELITES // READ SHAPE, COLOR, SOUND',
     tip: 'Elite entry, charge, and active sounds are warnings. Read the telegraph, clear cover, then punish the cooldown; not every elite should be rushed.',
-    accent: 0xff55d9
+    accent: 0xd8a66b
   },
   {
     code: '26',
@@ -474,7 +475,7 @@ export class HowToPlayOverlay {
       label: 'ui_menuFxHowToPlay',
       zIndex: 0,
       accent: 0x37f5ff,
-      secondary: 0xff55d9,
+      secondary: 0xd8a66b,
       gold: 0xffef7e,
       intensity: 0.72,
       density: 0.8,
@@ -483,22 +484,18 @@ export class HowToPlayOverlay {
     });
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x050d1a, alpha: 0.98 });
-    panel.stroke({ color: 0x37f5ff, width: 2, alpha: 0.95 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x050d1a, alpha: 0.98 }, { color: 0x37f5ff, width: 2, alpha: 0.95 });
     panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 6);
-    panel.stroke({ color: 0xff55d9, width: 1, alpha: 0.28 });
+    panel.stroke({ color: 0xd8a66b, width: 1, alpha: 0.28 });
     panel.roundRect(panelX + pad * 0.62, panelY + pad * 0.62, panelWidth - pad * 1.24, panelHeight - pad * 1.24, 6);
     panel.stroke({ color: 0x2affd8, width: 1, alpha: 0.12 });
     this.container.addChild(panel);
     drawCornerBrackets(this.container, panelX + 6, panelY + 6, panelWidth - 12, panelHeight - 12, 0x37f5ff);
 
     const trainingBand = new PIXI.Graphics();
-    trainingBand.roundRect(panelX + pad, panelY + pad + (veryShort ? 18 : 24), panelWidth - pad * 2, headerHeight - pad * 0.78, 8);
-    trainingBand.fill({ color: 0x02111f, alpha: 0.82 });
-    trainingBand.stroke({ color: 0x37f5ff, width: 1, alpha: 0.28 });
+    drawAstraPanel(trainingBand, panelX + pad, panelY + pad + (veryShort ? 18 : 24), panelWidth - pad * 2, headerHeight - pad * 0.78, 8, { color: 0x02111f, alpha: 0.82 }, { color: 0x37f5ff, width: 1, alpha: 0.28 });
     trainingBand.rect(panelX + pad + 10, panelY + headerHeight - (veryShort ? 12 : 20), panelWidth - pad * 2 - 20, 2);
-    trainingBand.fill({ color: 0xff55d9, alpha: 0.35 });
+    trainingBand.fill({ color: 0xd8a66b, alpha: 0.35 });
     this.container.addChild(trainingBand);
 
     for (let i = 1; i <= 5; i += 1) {
@@ -510,7 +507,7 @@ export class HowToPlayOverlay {
     sideRail.roundRect(panelX + pad, panelY + pad, compact ? 6 : 8, headerHeight - pad * 0.8, 4);
     sideRail.fill({ color: 0x37f5ff, alpha: 0.68 });
     sideRail.roundRect(panelX + panelWidth - pad - (compact ? 6 : 8), panelY + pad, compact ? 6 : 8, headerHeight - pad * 0.8, 4);
-    sideRail.fill({ color: 0xff55d9, alpha: 0.54 });
+    sideRail.fill({ color: 0xd8a66b, alpha: 0.54 });
     this.container.addChild(sideRail);
 
     if (!veryShort) {
@@ -521,7 +518,7 @@ export class HowToPlayOverlay {
         radius: scopeRadius,
         compact,
         side: -1,
-        palette: { primary: 0x37f5ff, secondary: 0xff55d9, danger: 0xff8f5a }
+        palette: { primary: 0x37f5ff, secondary: 0xd8a66b, danger: 0xff8f5a }
       });
       this.addTrainingHeroPod({
         x: panelX + panelWidth - pad - scopeRadius - (compact ? 18 : 32),
@@ -529,7 +526,7 @@ export class HowToPlayOverlay {
         radius: scopeRadius,
         compact,
         side: 1,
-        palette: { primary: 0xff55d9, secondary: 0xffef7e, danger: 0x66ff9d }
+        palette: { primary: 0xd8a66b, secondary: 0xffef7e, danger: 0x66ff9d }
       });
     }
 
@@ -609,9 +606,7 @@ export class HowToPlayOverlay {
 
     const footerY = panelY + panelHeight - footerHeight;
     const footerRail = new PIXI.Graphics();
-    footerRail.roundRect(panelX + pad, footerY + 8, panelWidth - pad * 2, footerHeight - 16, 7);
-    footerRail.fill({ color: 0x03121d, alpha: 0.72 });
-    footerRail.stroke({ color: 0x37f5ff, width: 1, alpha: 0.28 });
+    drawAstraPanel(footerRail, panelX + pad, footerY + 8, panelWidth - pad * 2, footerHeight - 16, 7, { color: 0x03121d, alpha: 0.72 }, { color: 0x37f5ff, width: 1, alpha: 0.28 });
     this.container.addChild(footerRail);
 
     const footer = createText(translateText('ESC / B: BACK'), {
@@ -889,9 +884,7 @@ export class HowToPlayOverlay {
     const { x, y, width, height, compact, veryShort, shortDesktop, labelSize, controlSize, tipSize } = layout;
     const accent = row.accent;
     const card = new PIXI.Graphics();
-    card.roundRect(x, y, width, height, 8);
-    card.fill({ color: 0x061a2b, alpha: 0.92 });
-    card.stroke({ color: accent, width: 1.2, alpha: 0.66 });
+    drawAstraPanel(card, x, y, width, height, 8, { color: 0x061a2b, alpha: 0.92 }, { color: accent, width: 1.2, alpha: 0.66 });
     card.rect(x, y, Math.max(4, Math.min(7, width * 0.018)), height);
     card.fill({ color: accent, alpha: 0.78 });
     card.moveTo(x + width * 0.48, y);
@@ -902,9 +895,7 @@ export class HowToPlayOverlay {
     card.fill({ color: accent, alpha: 0.055 });
     card.rect(x + 14, y + height - 7, width - 28, 1.5);
     card.fill({ color: accent, alpha: 0.2 });
-    card.roundRect(x + 12, y + 12, veryShort ? 34 : shortDesktop ? 38 : 44, veryShort ? 24 : shortDesktop ? 28 : 34, 6);
-    card.fill({ color: 0x010814, alpha: 0.88 });
-    card.stroke({ color: accent, width: 1, alpha: 0.74 });
+    drawAstraPanel(card, x + 12, y + 12, veryShort ? 34 : shortDesktop ? 38 : 44, veryShort ? 24 : shortDesktop ? 28 : 34, 6, { color: 0x010814, alpha: 0.88 }, { color: accent, width: 1, alpha: 0.74 });
     card.eventMode = 'static';
     card.cursor = 'pointer';
     card.hitArea = new PIXI.Rectangle(x, y, width, height);
@@ -1041,11 +1032,9 @@ export class HowToPlayOverlay {
     dim.fill({ color: 0x01050d, alpha: 0.9 });
     detail.addChild(dim);
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x04111f, alpha: 0.99 });
-    panel.stroke({ color: accent, width: 2.2, alpha: 0.94 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x04111f, alpha: 0.99 }, { color: accent, width: 2.2, alpha: 0.94 });
     panel.roundRect(panelX + 9, panelY + 9, panelWidth - 18, panelHeight - 18, 6);
-    panel.stroke({ color: 0xff55d9, width: 1, alpha: 0.26 });
+    panel.stroke({ color: 0xd8a66b, width: 1, alpha: 0.26 });
     panel.rect(panelX + 24, panelY + 116, panelWidth - 48, 2);
     panel.fill({ color: accent, alpha: 0.32 });
     detail.addChild(panel);
@@ -1123,9 +1112,7 @@ export class HowToPlayOverlay {
       focus.roundRect(-width / 2 + 3, -height / 2 + 3, width - 6, height - 6, 5);
       focus.stroke({ color: hovered ? 0xffffff : 0xffef7e, width: 2, alpha: hovered ? 0.92 : 0.74 });
       bg.clear();
-      bg.roundRect(-width / 2, -height / 2, width, height, 6);
-      bg.fill({ color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.94 : 0.9 });
-      bg.stroke({ color: hovered ? 0xffffff : 0x00ffff, width: hovered ? 2 : 1, alpha: 0.95 });
+      drawAstraPanel(bg, -width / 2, -height / 2, width, height, 6, { color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.94 : 0.9 }, { color: hovered ? 0xffffff : 0x8cc5d0, width: hovered ? 2 : 1, alpha: 0.95 });
       sweep.clear();
       sweep.rect(-width / 2 + 8, -height / 2 + 5, width - 16, 3);
       sweep.fill({ color: hovered ? 0xffffff : 0x37f5ff, alpha: hovered ? 0.5 : 0.32 });
@@ -1163,9 +1150,7 @@ export class HowToPlayOverlay {
     tab.eventMode = 'static';
     tab.cursor = 'pointer';
     const bg = new PIXI.Graphics();
-    bg.roundRect(-width / 2, -height / 2, width, height, 5);
-    bg.fill({ color: active ? 0x0b6f8f : 0x03121d, alpha: active ? 0.96 : 0.88 });
-    bg.stroke({ color: active ? 0xffef7e : 0x37f5ff, width: active ? 2 : 1, alpha: active ? 0.96 : 0.58 });
+    drawAstraPanel(bg, -width / 2, -height / 2, width, height, 5, { color: active ? 0x0b6f8f : 0x03121d, alpha: active ? 0.96 : 0.88 }, { color: active ? 0xffef7e : 0x37f5ff, width: active ? 2 : 1, alpha: active ? 0.96 : 0.58 });
     tab.addChild(bg);
     const text = createText(translateText(label), {
       fontFamily: FONT_DISPLAY,

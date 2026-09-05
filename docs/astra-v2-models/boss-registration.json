@@ -1,0 +1,1202 @@
+[
+  {
+    "family": "boss",
+    "file": "01.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 100,
+        "top": 52,
+        "width": 312,
+        "height": 408
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 100,
+        "top": 52,
+        "width": 312,
+        "height": 408
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "02.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 103,
+        "top": 46,
+        "width": 305,
+        "height": 420
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 103,
+        "top": 46,
+        "width": 305,
+        "height": 420
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "03.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 95,
+        "top": 45,
+        "width": 322,
+        "height": 421
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 95,
+        "top": 45,
+        "width": 322,
+        "height": 421
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "04.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 108,
+        "top": 46,
+        "width": 296,
+        "height": 420
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 108,
+        "top": 46,
+        "width": 296,
+        "height": 420
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "05.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 107,
+        "top": 56,
+        "width": 297,
+        "height": 400
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 107,
+        "top": 56,
+        "width": 297,
+        "height": 400
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "06.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 107,
+        "top": 56,
+        "width": 297,
+        "height": 399
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 107,
+        "top": 56,
+        "width": 297,
+        "height": 399
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "07.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 92,
+        "top": 51,
+        "width": 328,
+        "height": 410
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 92,
+        "top": 51,
+        "width": 328,
+        "height": 410
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "08.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 114,
+        "top": 49,
+        "width": 283,
+        "height": 413
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 114,
+        "top": 49,
+        "width": 283,
+        "height": 413
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "09.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 103,
+        "top": 50,
+        "width": 306,
+        "height": 412
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 103,
+        "top": 50,
+        "width": 306,
+        "height": 412
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "10.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 130,
+        "top": 49,
+        "width": 251,
+        "height": 413
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 130,
+        "top": 49,
+        "width": 251,
+        "height": 413
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "11.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 102,
+        "top": 60,
+        "width": 308,
+        "height": 391
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 102,
+        "top": 60,
+        "width": 308,
+        "height": 391
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "12.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 84,
+        "top": 72,
+        "width": 344,
+        "height": 367
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 84,
+        "top": 72,
+        "width": 344,
+        "height": 367
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "13.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 110,
+        "top": 75,
+        "width": 292,
+        "height": 361
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 110,
+        "top": 75,
+        "width": 292,
+        "height": 361
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "14.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 83,
+        "top": 65,
+        "width": 346,
+        "height": 382
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 83,
+        "top": 65,
+        "width": 346,
+        "height": 382
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "15.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 112,
+        "top": 49,
+        "width": 288,
+        "height": 414
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 112,
+        "top": 49,
+        "width": 288,
+        "height": 414
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "16.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 90,
+        "top": 60,
+        "width": 332,
+        "height": 391
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 90,
+        "top": 60,
+        "width": 332,
+        "height": 391
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "17.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 82,
+        "top": 74,
+        "width": 347,
+        "height": 364
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 82,
+        "top": 74,
+        "width": 347,
+        "height": 364
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "18.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 95,
+        "top": 70,
+        "width": 322,
+        "height": 372
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 95,
+        "top": 70,
+        "width": 322,
+        "height": 372
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "19.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 84,
+        "top": 48,
+        "width": 343,
+        "height": 415
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 84,
+        "top": 48,
+        "width": 343,
+        "height": 415
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "20.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 83,
+        "top": 51,
+        "width": 346,
+        "height": 409
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 83,
+        "top": 51,
+        "width": 346,
+        "height": 409
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "21.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 101,
+        "top": 58,
+        "width": 310,
+        "height": 395
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 101,
+        "top": 58,
+        "width": 310,
+        "height": 395
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "22.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 133,
+        "top": 61,
+        "width": 245,
+        "height": 389
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 133,
+        "top": 61,
+        "width": 245,
+        "height": 389
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "23.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 94,
+        "top": 60,
+        "width": 324,
+        "height": 391
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 94,
+        "top": 60,
+        "width": 324,
+        "height": 391
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "24.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 117,
+        "top": 62,
+        "width": 278,
+        "height": 388
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 117,
+        "top": 62,
+        "width": 278,
+        "height": 388
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "25.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 106,
+        "top": 61,
+        "width": 300,
+        "height": 389
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 106,
+        "top": 61,
+        "width": 300,
+        "height": 389
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "26.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 106,
+        "top": 51,
+        "width": 300,
+        "height": 410
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 106,
+        "top": 51,
+        "width": 300,
+        "height": 410
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "27.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 109,
+        "top": 57,
+        "width": 293,
+        "height": 398
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 109,
+        "top": 57,
+        "width": 293,
+        "height": 398
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "28.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 88,
+        "top": 71,
+        "width": 335,
+        "height": 370
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 88,
+        "top": 71,
+        "width": 335,
+        "height": 370
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "29.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 103,
+        "top": 59,
+        "width": 306,
+        "height": 394
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 103,
+        "top": 59,
+        "width": 306,
+        "height": 394
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "30.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 95,
+        "top": 48,
+        "width": 322,
+        "height": 416
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 95,
+        "top": 48,
+        "width": 322,
+        "height": 416
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "31.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 100,
+        "top": 72,
+        "width": 312,
+        "height": 367
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 100,
+        "top": 72,
+        "width": 312,
+        "height": 367
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "32.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 93,
+        "top": 50,
+        "width": 326,
+        "height": 412
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 93,
+        "top": 50,
+        "width": 326,
+        "height": 412
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "33.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 90,
+        "top": 41,
+        "width": 332,
+        "height": 429
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 90,
+        "top": 41,
+        "width": 332,
+        "height": 429
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "34.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 95,
+        "top": 41,
+        "width": 322,
+        "height": 430
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 95,
+        "top": 41,
+        "width": 322,
+        "height": 430
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "35.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 90,
+        "top": 51,
+        "width": 331,
+        "height": 410
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 90,
+        "top": 51,
+        "width": 331,
+        "height": 410
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "36.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 88,
+        "top": 61,
+        "width": 335,
+        "height": 390
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 88,
+        "top": 61,
+        "width": 335,
+        "height": 390
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "37.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 94,
+        "top": 46,
+        "width": 324,
+        "height": 419
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 94,
+        "top": 46,
+        "width": 324,
+        "height": 419
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "38.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 101,
+        "top": 40,
+        "width": 309,
+        "height": 431
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 101,
+        "top": 40,
+        "width": 309,
+        "height": 431
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "39.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 97,
+        "top": 46,
+        "width": 317,
+        "height": 420
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 97,
+        "top": 46,
+        "width": 317,
+        "height": 420
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "40.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 98,
+        "top": 48,
+        "width": 316,
+        "height": 416
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 98,
+        "top": 48,
+        "width": 316,
+        "height": 416
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "41.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 114,
+        "top": 70,
+        "width": 283,
+        "height": 371
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 114,
+        "top": 70,
+        "width": 283,
+        "height": 371
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "42.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 94,
+        "top": 42,
+        "width": 323,
+        "height": 427
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 94,
+        "top": 42,
+        "width": 323,
+        "height": 427
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "43.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 96,
+        "top": 39,
+        "width": 319,
+        "height": 434
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 96,
+        "top": 39,
+        "width": 319,
+        "height": 434
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "44.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 92,
+        "top": 60,
+        "width": 327,
+        "height": 391
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 92,
+        "top": 60,
+        "width": 327,
+        "height": 391
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "45.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 107,
+        "top": 39,
+        "width": 297,
+        "height": 434
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 107,
+        "top": 39,
+        "width": 297,
+        "height": 434
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "46.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 116,
+        "top": 58,
+        "width": 279,
+        "height": 395
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 116,
+        "top": 58,
+        "width": 279,
+        "height": 395
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "47.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 90,
+        "top": 46,
+        "width": 332,
+        "height": 419
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 90,
+        "top": 46,
+        "width": 332,
+        "height": 419
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "48.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 109,
+        "top": 46,
+        "width": 293,
+        "height": 419
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 109,
+        "top": 46,
+        "width": 293,
+        "height": 419
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "49.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 101,
+        "top": 47,
+        "width": 310,
+        "height": 418
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 101,
+        "top": 47,
+        "width": 310,
+        "height": 418
+      }
+    }
+  },
+  {
+    "family": "boss",
+    "file": "50.png",
+    "baseline": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 107,
+        "top": 47,
+        "width": 297,
+        "height": 418
+      }
+    },
+    "candidate": {
+      "width": 512,
+      "height": 512,
+      "box": {
+        "left": 107,
+        "top": 47,
+        "width": 297,
+        "height": 418
+      }
+    }
+  }
+]

@@ -1,3 +1,5 @@
+import { drawAstraPanel } from '../ui/AstraConsole.js';
+import { AstraShowroomLights } from '../ui/AstraShowroomLights.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -181,18 +183,7 @@ function clampNumber(value, min, max) {
 }
 
 function drawCutPanel(graphics, x, y, w, h, cut, fillStyle = null, strokeStyle = null) {
-  const c = clampNumber(cut, 0, Math.min(w, h) * 0.45);
-  graphics.moveTo(x + c, y);
-  graphics.lineTo(x + w - c, y);
-  graphics.lineTo(x + w, y + c);
-  graphics.lineTo(x + w, y + h - c);
-  graphics.lineTo(x + w - c, y + h);
-  graphics.lineTo(x + c, y + h);
-  graphics.lineTo(x, y + h - c);
-  graphics.lineTo(x, y + c);
-  graphics.lineTo(x + c, y);
-  if (fillStyle) graphics.fill(fillStyle);
-  if (strokeStyle) graphics.stroke(strokeStyle);
+  drawAstraPanel(graphics, x, y, w, h, cut, fillStyle, strokeStyle);
 }
 
 function boundsForDisplayObject(displayObject) {
@@ -930,6 +921,10 @@ export class MenuScene {
       this.astraMenuShip.zIndex = -16;
       this.astraMenuShip.eventMode = 'none';
       this.container.addChild(this.astraMenuShip);
+      this.astraMenuEmitters = (await PIXI.Assets.load('/art/astra/menu-ship.json')).emitters;
+      this.astraMenuLights = new AstraShowroomLights();
+      this.astraMenuLights.zIndex = -15.5;
+      this.container.addChild(this.astraMenuLights);
 
       this.backdropShade = new PIXI.Graphics();
       this.backdropShade.zIndex = -15;
@@ -974,7 +969,7 @@ export class MenuScene {
     g.rect(0, scanY, width, 2);
     g.fill({ color: 0x7fffd8, alpha: 0.055 * modalFade });
     g.rect(0, scanY + 5, width * 0.46, 1);
-    g.fill({ color: 0xff55d9, alpha: 0.045 * modalFade });
+    g.fill({ color: 0xd8a66b, alpha: 0.045 * modalFade });
     g.moveTo(width * 0.08 + driftX, height * 0.19);
     g.lineTo(width * 0.28 + driftX, height * 0.19);
     g.moveTo(width * 0.76 - driftX, height * 0.36);
@@ -1053,7 +1048,7 @@ export class MenuScene {
     for (let i = 0; i < 4; i++) {
       const ring = new PIXI.Graphics();
       ring.circle(0, 0, radius * (0.35 + i * 0.2));
-      ring.stroke({ color: i % 2 ? 0xff55d9 : 0x37f5ff, width: 1, alpha: 0.12 - i * 0.014 });
+      ring.stroke({ color: i % 2 ? 0xd8a66b : 0x37f5ff, width: 1, alpha: 0.12 - i * 0.014 });
       ring.label = 'ui_menuRadarRing';
       radar.addChild(ring);
     }
@@ -1122,7 +1117,7 @@ export class MenuScene {
         role: 'PILOT',
         action: 'SHIP HANGAR',
         hint: 'SELECT SHIP',
-        color: 0xff55d9,
+        color: 0xd8a66b,
         accent: 0xffd15c,
         onActivate: () => this.openShipSelect()
       }
@@ -1140,9 +1135,7 @@ export class MenuScene {
       card.baseY = 0;
 
       const bg = new PIXI.Graphics();
-      bg.roundRect(-78, -68, 156, 142, 8);
-      bg.fill({ color: 0x051120, alpha: 0.66 });
-      bg.stroke({ color: spec.color, width: 2, alpha: 0.84 });
+      drawAstraPanel(bg, -78, -68, 156, 142, 8, { color: 0x051120, alpha: 0.66 }, { color: spec.color, width: 2, alpha: 0.84 });
       card.bg = bg;
       card.addChild(bg);
 
@@ -1163,9 +1156,7 @@ export class MenuScene {
       card.addChild(avatarSlot);
 
       const placeholder = new PIXI.Graphics();
-      placeholder.roundRect(-41, -47, 82, 82, 5);
-      placeholder.fill({ color: 0x0b2234, alpha: 0.74 });
-      placeholder.stroke({ color: spec.color, width: 1, alpha: 0.36 });
+      drawAstraPanel(placeholder, -41, -47, 82, 82, 5, { color: 0x0b2234, alpha: 0.74 }, { color: spec.color, width: 1, alpha: 0.36 });
       avatarSlot.addChild(placeholder);
 
       const scan = new PIXI.Graphics();
@@ -1200,9 +1191,7 @@ export class MenuScene {
       card.addChild(action);
 
       const hintBg = new PIXI.Graphics();
-      hintBg.roundRect(-54, 62, 108, 18, 5);
-      hintBg.fill({ color: spec.color, alpha: 0.14 });
-      hintBg.stroke({ color: spec.color, width: 1, alpha: 0.42 });
+      drawAstraPanel(hintBg, -54, 62, 108, 18, 5, { color: spec.color, alpha: 0.14 }, { color: spec.color, width: 1, alpha: 0.42 });
       card.addChild(hintBg);
 
       const hint = createText(spec.hint, {
@@ -1658,7 +1647,7 @@ export class MenuScene {
         strokeThickness: 4,
         dropShadow: true,
         dropShadowColor: '#000000',
-        dropShadowBlur: 6,
+        dropShadowBlur: 2,
         align: 'center',
         wordWrap: true,
         wordWrapWidth: clampTextWidth(width * 0.75, layout)
@@ -1681,7 +1670,7 @@ export class MenuScene {
       dynamicSubLabel: () => this.getDailySignalMenuSubLabel(),
       labelMinScale: 0.66
     });
-    this.configureRunModeCard(this.dailySignalBtn, { id: 'dailySignal', secondary: 0xff55d9, role: 'activity' });
+    this.configureRunModeCard(this.dailySignalBtn, { id: 'dailySignal', secondary: 0xd8a66b, role: 'activity' });
     this.dailySignalBtn._isDailySignalFeature = true;
     this.dailySignalBtn.alpha = 0;
     this.dailySignalBtn.on('pointerdown', () => {
@@ -1707,7 +1696,7 @@ export class MenuScene {
 
     this.tacticalStartBtn = this.createButton('MAYHEM TACTICAL', layout, {
       variant: 'primary',
-      accent: 0xff55d9,
+      accent: 0xd8a66b,
       icon: 'launch',
       subLabel: 'MAIN MODE · RECOMMENDED · RANKED',
       dynamicLabel: () => translateText(
@@ -2118,7 +2107,7 @@ export class MenuScene {
         const y = height * (0.72 + i * 0.035);
         glint.moveTo(width * 0.04, y);
         glint.lineTo(width * (0.3 + i * 0.08), y - height * (0.05 + i * 0.01));
-        glint.stroke({ color: i % 2 ? 0xff55d9 : 0x37f5ff, width: 1, alpha: 0.16 });
+        glint.stroke({ color: i % 2 ? 0xd8a66b : 0x37f5ff, width: 1, alpha: 0.16 });
         glint.zIndex = 1;
         glint.phase = i * 0.7;
         this.container.addChild(glint);
@@ -3209,7 +3198,7 @@ export class MenuScene {
     drawCutPanel(g, panelX - 12, panelY - 12, panelWidth + 24, panelHeight + 24, 20,
       { color: 0xff6b45, alpha: 0.12 }, { color: 0xffd15c, width: 2, alpha: 0.7 });
     drawCutPanel(g, panelX, panelY, panelWidth, panelHeight, 16,
-      { color: 0x10071a, alpha: 0.96 }, { color: 0xff55d9, width: 3, alpha: 0.9 });
+      { color: 0x10071a, alpha: 0.96 }, { color: 0xd8a66b, width: 3, alpha: 0.9 });
     g.rect(panelX + 24, panelY + 22, panelWidth - 48, 4);
     g.fill({ color: 0xffd15c, alpha: 0.82 });
     g.rect(panelX + 74, panelY + panelHeight - 30, panelWidth - 148, 3);
@@ -3528,7 +3517,7 @@ export class MenuScene {
         variantTitle: translateText('DAILY CHALLENGE'),
         status: 'UNRANKED',
         accent: 0x7dffcc,
-        secondary: 0xff55d9,
+        secondary: 0xd8a66b,
         summary: [
           'Clear today’s challenge with a loaner ship.',
           'Replay it to improve your local daily record.'
@@ -3871,7 +3860,7 @@ export class MenuScene {
         title: translateText('MAYHEM'),
         variantTitle: translateText(tactical ? 'MAYHEM TACTICAL' : 'MAYHEM PURE'),
         status: 'RANKED',
-        accent: tactical ? 0xff55d9 : 0xffd15c,
+        accent: tactical ? 0xd8a66b : 0xffd15c,
         secondary: 0x7fffd8,
         summary: tactical
           ? [
@@ -4788,7 +4777,7 @@ export class MenuScene {
     g.rect(0, 0, this.game.getWidth(), this.game.getHeight());
     g.fill({ color: 0x00040a, alpha: 0.62 * openProgress });
     drawCutPanel(g, x - 14, panelY - 14, width + 28, height + 28, 20, { color: 0x37f5ff, alpha: 0.055 * openProgress }, { color: 0x37f5ff, width: 1, alpha: 0.24 * openProgress });
-    drawCutPanel(g, x - 7, panelY - 7, width + 14, height + 14, 18, { color: 0x000000, alpha: 0.42 * openProgress }, { color: 0xff55d9, width: 1, alpha: 0.22 * openProgress });
+    drawCutPanel(g, x - 7, panelY - 7, width + 14, height + 14, 18, { color: 0x000000, alpha: 0.42 * openProgress }, { color: 0xd8a66b, width: 1, alpha: 0.22 * openProgress });
     drawCutPanel(g, x, panelY, width, height, 16, { color: 0x020a14, alpha: 0.9 * openProgress }, { color: 0x37f5ff, width: 2, alpha: 0.72 * openProgress });
     drawCutPanel(g, x + 8, panelY + 8, width - 16, height - 16, 12, { color: 0x031827, alpha: 0.46 * openProgress }, { color: 0x7fffd8, width: 1, alpha: 0.22 * openProgress });
     g.rect(x + 14, panelY + 12, width - 28, 2);
@@ -4798,7 +4787,7 @@ export class MenuScene {
     g.rect(x + 1, panelY + 1, width - 2, Math.max(72, height * 0.18));
     g.fill({ color: 0x0a2b43, alpha: 0.28 * openProgress });
     g.rect(x + width * 0.58, panelY + 1, width * 0.38, Math.max(72, height * 0.18));
-    g.fill({ color: 0xff55d9, alpha: 0.035 * openProgress });
+    g.fill({ color: 0xd8a66b, alpha: 0.035 * openProgress });
     g.moveTo(x + 28, panelY + 72);
     g.lineTo(x + width - 28, panelY + 72);
     g.stroke({ color: 0x37f5ff, width: 1, alpha: 0.18 * openProgress });
@@ -4813,7 +4802,7 @@ export class MenuScene {
         const yy = zones.gridY + (zones.gridH * i) / 3;
         g.moveTo(zones.gridX - 4, yy);
         g.lineTo(zones.gridX + zones.gridW + 4, yy);
-        g.stroke({ color: i % 2 ? 0xff55d9 : 0x37f5ff, width: 1, alpha: 0.08 });
+        g.stroke({ color: i % 2 ? 0xd8a66b : 0x37f5ff, width: 1, alpha: 0.08 });
       }
       for (let i = 1; i < 4; i += 1) {
         const xx = zones.gridX + (zones.gridW * i) / 4;
@@ -4827,7 +4816,7 @@ export class MenuScene {
       g.rect(zones.detailX, zones.detailY + 92, zones.detailWidth, 1);
       g.fill({ color: 0x37f5ff, alpha: 0.14 });
       g.rect(zones.detailX, zones.detailY + 100, zones.detailWidth * 0.44, 2);
-      g.fill({ color: 0xff55d9, alpha: 0.3 });
+      g.fill({ color: 0xd8a66b, alpha: 0.3 });
     }
     this.drawSectorSelectorOverlay();
   }
@@ -4929,14 +4918,14 @@ export class MenuScene {
     const unlocked = Boolean(entry.unlocked);
     const isOverrun = Boolean(entry.overrunCheckpoint);
     const accent = unlocked
-      ? (selected ? 0xffef7e : (isOverrun ? 0xff55d9 : 0x37f5ff))
+      ? (selected ? 0xffef7e : (isOverrun ? 0xd8a66b : 0x37f5ff))
       : 0x52606f;
     const fill = unlocked ? (selected ? 0x1d311f : (isOverrun ? 0x180d24 : 0x041927)) : 0x07101a;
     const pulse = 0.5 + Math.sin(this.animationTime * 6) * 0.5;
     g.clear();
     drawCutPanel(g, 2, 3, w, h, 8, { color: 0x000000, alpha: selected ? 0.34 : 0.24 });
     drawCutPanel(g, 0, 0, w, h, 8, { color: fill, alpha: unlocked ? 0.82 : 0.48 }, { color: accent, width: selected ? 2.3 : 1.1, alpha: selected ? 0.95 : (unlocked ? 0.46 : 0.18) });
-    drawCutPanel(g, 5, 5, w - 10, Math.max(12, h * 0.34), 5, { color: unlocked ? (isOverrun ? 0xff55d9 : 0x37f5ff) : 0x334150, alpha: selected ? 0.18 : 0.07 });
+    drawCutPanel(g, 5, 5, w - 10, Math.max(12, h * 0.34), 5, { color: unlocked ? (isOverrun ? 0xd8a66b : 0x37f5ff) : 0x334150, alpha: selected ? 0.18 : 0.07 });
     g.rect(8, h - 7, w - 16, 2);
     g.fill({ color: accent, alpha: selected ? 0.72 : 0.28 });
     if (selected) {
@@ -5394,7 +5383,7 @@ export class MenuScene {
 
     if (this.astraMenuShip) {
       this.astraMenuShip.position.set(width * 0.485, height * 0.49);
-      this.astraMenuShip.scale.set(Math.min(width * 0.49, height * 0.86) / this.astraMenuShip.texture.width);
+      this.astraMenuShip.scale.set(Math.min(width * 0.62, height) / this.astraMenuShip.texture.width);
     }
 
     if (this.backdropShade) {
@@ -5527,7 +5516,7 @@ export class MenuScene {
     }
     const isActivate = intent === 'activate';
     this.menuFx.burst(x, y, {
-      color: color || target?._accent || (isActivate ? 0xffd15c : 0xff55d9),
+      color: color || target?._accent || (isActivate ? 0xffd15c : 0xd8a66b),
       radius: Math.max(isActivate ? 112 : 74, Math.min(172, Math.max(width, height) * (isActivate ? 0.56 : 0.38))),
       durationMs: isActivate ? 560 : 360
     });
@@ -6529,7 +6518,7 @@ export class MenuScene {
       focus.lineTo(x + inset, y + h - bracket);
       focus.stroke({ color: hotAccent, width: 3, alpha: 0.92 + pulse * 0.06 });
     } else if (isPrimaryMode) {
-      drawCutPanel(focus, x + 3, y + 3, w - 6, h - 6, 9, { color: 0xff55d9, alpha: 0.012 }, { color: 0xff55d9, width: 1, alpha: 0.14 });
+      drawCutPanel(focus, x + 3, y + 3, w - 6, h - 6, 9, { color: 0xd8a66b, alpha: 0.012 }, { color: 0xd8a66b, width: 1, alpha: 0.14 });
     }
 
     bg.clear();
@@ -7091,7 +7080,7 @@ export class MenuScene {
       ? RUN_MODES.RANKED
       : RUN_MODES.MAYHEM_TACTICAL;
     if (this.isNewPilot) this.newPilotCueDismissed = true;
-    this.tacticalStartBtn._accent = this.mayhemRunMode === RUN_MODES.RANKED ? 0xffd15c : 0xff55d9;
+    this.tacticalStartBtn._accent = this.mayhemRunMode === RUN_MODES.RANKED ? 0xffd15c : 0xd8a66b;
     this.refreshButtonCopy(this.tacticalStartBtn, { forceGpuRefresh: true });
     this.drawMenuButton(this.tacticalStartBtn, false);
     this.updateRunModeBriefing();
@@ -7795,6 +7784,12 @@ export class MenuScene {
 
   update(delta) {
     this.animationTime += delta * 0.016;
+    if (this.astraMenuShip && this.astraMenuLights) {
+      const motion = !getReducedMotionEnabled();
+      this.astraMenuShip.y = this.game.getHeight() * (0.49 + (motion ? Math.sin(this.animationTime * 0.65) * 0.007 : 0));
+      this.astraMenuShip.rotation = motion ? Math.sin(this.animationTime * 0.35) * 0.014 : 0;
+      this.astraMenuLights.update(this.astraMenuShip, this.astraMenuEmitters, this.animationTime);
+    }
     const layoutGuardNow = Date.now();
     if (
       layoutGuardNow >= (this.nextRunModeLayoutGuardAt || 0)

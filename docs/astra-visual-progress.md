@@ -1,5 +1,24 @@
 # Astra visual overhaul
 
+## Second pass — user-directed visual reset
+
+- Final integration inspected in actual running game: `astra-menu-final`, `astra-hangar-final`, `astra-v3-final-fleet`. All 30 showroom ships, flagship hover/reflections/arcs, 50 boss presentations, 48 worlds and 14 menu/overlay material treatments are integrated. Compact hangar banner overlap and oversized Ascendant previews corrected. Editable station files pack their source planet image.
+- Final browser checks PASS: all 10 boss animations, 52 codex layout captures, 11 codex lore scenarios across eight locales, controller-only flow, unlock reveal, ranked parity/debug-unranked, locale-cache/halo regressions, all 130 decoded hull registrations and unchanged original 75-hull visual/RNG check. Runtime animation/reduced motion/RNG and bounded planet unloading PASS with zero errors/warnings.
+- Next: production build in a new output folder, Windows package, same-day native baseline/candidate frame-time and memory comparisons, native control/smoke and normal-speed gameplay evidence. Prior first-pass performance is historical, not the new candidate result.
+
+- Current UI pass: shared machined console material across 14 menu/overlay modules, larger two-column codex dossier, full new ship/boss/world presentation mappings. Eleven codex lore/layout scenarios pass across all 8 locales. New baseline menu captures: `test-results/astra-menu-before-v3`; current captures are intermediate until full asset pack and shader review.
+- User additionally requests exceptional hangar/main-menu ships, lighting/electrical details and menu animation. Added 30 angled showroom renders plus a more detailed flagship, projected light anchors, slow hover/banking, a bounded menu-only reflection filter, restrained engine arcs and reduced-motion handling. Inspect real running integration next. Third interior render iteration complete; rejected floor-heavy first view and bland second vista.
+- Checkpoint `205194b` contains logging, debug policy, locale-cache, halo, SFX and boss-fixture fixes. Remaining second-pass changes are task-owned WIP. Native second-pass performance/build/video validation is still pending; do not reuse first-pass numbers as new results.
+- Asset registration test caught a 2-pixel antialias shrink at the Railbreaker nose. Packer now refits the surviving alpha silhouette without adding fake pixels; rerun full 130-hull verification. Original 75-hull test remains unchanged.
+
+- Continuation starts from clean `a24b372a3eb754867b9288333ca00a86eaf59999` on the same experimental branch. Original pre-overhaul baseline remains `a0b88d0`; all previous packages and evidence remain intact.
+- User rejected the clean but flat presentation and requests much richer, detailed Blender ships and improvements throughout, plus all known issues fixed. New environments should change roughly every five sectors.
+- Direction: intricate industrial spacecraft, sculpted armored fuselages, exposed machinery, deep engine ducts, metallic edge lighting, layered planetary worlds and richer cinematic effects. Validate a fully integrated encounter before fleet-wide expansion.
+- Issue inventory: stale policy after marking a run unranked; obsolete boss-animation fixture timing; language-switch briefing cache; missing point-defense SFX alias; absent endless-halo cache lookup; EPIPE logging robustness. Existing assertions must remain at least as strong.
+- Integrated second-pass encounter inspected in `test-results/astra-v2-encounter`: new player, first modeled boss and detailed cloud/continent world. Iterated ship twice and boss armor again after review; reducing decorative outlines and adding modeled animated weapon/armor parts. These development captures ran alongside Blender and are excluded from performance comparisons.
+- Full GPU render batch in progress: 50 bosses (10 structural archetypes, 5 tiers), 30 players, 50 enemies, 48 planetary scenes. Every five sectors changes the world through 240 sectors, then cycles. Offline procedural sources; no paid services or imported assets.
+- Fix evidence: debug-unranked passes with zero score GET/POST. Logging-pipe regression passes an actual disconnected child-process pipe and confirms unrelated errors still propagate. Boss-animation now exercises a real warning token; all 10 animation assertions pass, but this run saw a mid-pack image-decode warning and must be rerun with stable assets. Packer now replaces files atomically. Pure persistence, determinism and Steam bridge checks pass. Language switch, halo sizing, full ranked/Daily/UI and native tests remain under verification.
+
 Original prompt: Transform Nova Swarm's actual PixiJS/Electron/Vite presentation; preserve all gameplay and deterministic/ranked rules; capture baseline, iterate in-game, validate and deliver an isolated Windows test build. No publication or Steam activity.
 
 - Original branch: `codex/forum-129-improvements-20260822`

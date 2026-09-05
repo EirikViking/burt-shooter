@@ -1,3 +1,4 @@
+import { drawAstraPanel } from './AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { MUSIC_PACK_OPTIONS } from '../audio/SoundCatalog.js';
@@ -262,7 +263,7 @@ export class SettingsOverlay {
       label: 'ui_menuFxSettings',
       zIndex: 0,
       accent: 0x7fffd8,
-      secondary: 0xff55d9,
+      secondary: 0xd8a66b,
       gold: 0xffef7e,
       intensity: 0.6,
       density: 0.68,
@@ -289,11 +290,9 @@ export class SettingsOverlay {
     };
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x03101f, alpha: 0.975 });
-    panel.stroke({ color: 0x00ffff, width: 2, alpha: 0.95 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x03101f, alpha: 0.975 }, { color: 0x8cc5d0, width: 2, alpha: 0.95 });
     panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 7);
-    panel.stroke({ color: 0xff55d9, width: 1.1, alpha: 0.36 });
+    panel.stroke({ color: 0xd8a66b, width: 1.1, alpha: 0.36 });
     panel.rect(panelX + 26, panelY + 68, panelWidth - 52, 2);
     panel.fill({ color: 0x37f5ff, alpha: 0.24 });
     panel.rect(panelX + 26, panelY + panelHeight - 72, panelWidth - 52, 1);
@@ -438,7 +437,7 @@ export class SettingsOverlay {
       this.activePage = pageId;
       this.sectionBounds = [];
       addFrame(leftX, columnWidth, 0x37f5ff, 'primary');
-      if (twoColumn) addFrame(rightX, columnWidth, 0xff55d9, 'secondary');
+      if (twoColumn) addFrame(rightX, columnWidth, 0xd8a66b, 'secondary');
 
     if (this.activePage === 'audio') {
       setFormColumn(leftX);
@@ -789,9 +788,7 @@ export class SettingsOverlay {
     layer.addChild(dim);
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 10);
-    panel.fill({ color: 0x061424, alpha: 0.99 });
-    panel.stroke({ color: 0xff55d9, width: 2, alpha: 0.92 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 10, { color: 0x061424, alpha: 0.99 }, { color: 0xd8a66b, width: 2, alpha: 0.92 });
     panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 8);
     panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.42 });
     layer.addChild(panel);
@@ -917,9 +914,7 @@ export class SettingsOverlay {
     const cardX = x + 18;
     const cardWidth = width - 36;
     const card = new PIXI.Graphics();
-    card.roundRect(cardX, y, cardWidth, height, 8);
-    card.fill({ color: 0x07192a, alpha: 0.86 });
-    card.stroke({ color: 0xff55d9, width: 1, alpha: 0.46 });
+    drawAstraPanel(card, cardX, y, cardWidth, height, 8, { color: 0x07192a, alpha: 0.86 }, { color: 0xd8a66b, width: 1, alpha: 0.46 });
     this.container.addChild(card);
 
     const content = new PIXI.Container();
@@ -1018,10 +1013,7 @@ export class SettingsOverlay {
 
   drawSettingsSectionFrame(x, y, width, height, accent = 0x37f5ff) {
     const frame = new PIXI.Graphics();
-    frame.roundRect(x, y, width, height, 8);
-    frame.fill({ color: 0x041323, alpha: 0.76 });
-    frame.roundRect(x, y, width, height, 8);
-    frame.stroke({ color: accent, width: 1.2, alpha: 0.42 });
+    drawAstraPanel(frame, x, y, width, height, 8, { color: 0x041323, alpha: 0.9 }, { color: accent, width: 1.2, alpha: 0.42 });
     frame.rect(x, y, 6, height);
     frame.fill({ color: accent, alpha: 0.58 });
     frame.rect(x + 18, y + 16, width - 36, 1);
@@ -1358,7 +1350,7 @@ export class SettingsOverlay {
       knob.clear();
       knob.circle(-trackWidth / 2 + trackWidth * clamped, 0, 10);
       knob.fill({ color: 0xf6fbff, alpha: 1 });
-      knob.stroke({ color: 0x00ffff, width: 2 });
+      knob.stroke({ color: 0x8cc5d0, width: 2 });
       valueText.text = percent(clamped);
     };
 
@@ -1453,9 +1445,7 @@ export class SettingsOverlay {
         focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
       }
       bg.clear();
-      bg.roundRect(-width / 2, -height / 2, width, height, 6);
-      bg.fill({ color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.95 : 0.84 });
-      bg.stroke({ color: hovered ? 0xffffff : 0x00ffff, width: hovered ? 2 : 1, alpha: 0.95 });
+      drawAstraPanel(bg, -width / 2, -height / 2, width, height, 6, { color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.95 : 0.84 }, { color: hovered ? 0xffffff : 0x8cc5d0, width: hovered ? 2 : 1, alpha: 0.95 });
     };
     draw(false);
     button._drawButton = draw;
@@ -1877,11 +1867,9 @@ export class SettingsOverlay {
     overlay.addChild(dim);
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x06111f, alpha: 0.99 });
-    panel.stroke({ color: 0x37f5ff, width: 2, alpha: 0.98 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x06111f, alpha: 0.99 }, { color: 0x37f5ff, width: 2, alpha: 0.98 });
     panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 6);
-    panel.stroke({ color: 0xff55d9, width: 1, alpha: 0.34 });
+    panel.stroke({ color: 0xd8a66b, width: 1, alpha: 0.34 });
     overlay.addChild(panel);
 
     const title = createText(translateText('KEYBOARD CONTROLS'), {
@@ -2289,9 +2277,7 @@ export class SettingsOverlay {
     this.creditsAnimatedNodes.push({ node: starfield, kind: 'drift', baseX: 0, baseY: 0, speed: 0.16 });
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x06111f, alpha: 0.985 });
-    panel.stroke({ color: 0xff55d9, width: 2, alpha: 0.98 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x06111f, alpha: 0.985 }, { color: 0xd8a66b, width: 2, alpha: 0.98 });
     panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 6);
     panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.34 });
     panel.rect(panelX + 28, panelY + 24, panelWidth - 56, 2);
@@ -2490,10 +2476,10 @@ export class SettingsOverlay {
       glow.clear();
       face.clear();
       glow.circle(0, 0, radius + (highlighted ? 10 : 7));
-      glow.fill({ color: highlighted ? 0xff55d9 : 0x37f5ff, alpha: highlighted ? 0.18 : 0.1 });
+      glow.fill({ color: highlighted ? 0xd8a66b : 0x37f5ff, alpha: highlighted ? 0.18 : 0.1 });
       face.circle(0, 0, radius);
       face.fill({ color: highlighted ? 0x2a1744 : 0x201703, alpha: 0.94 });
-      face.stroke({ color: focused ? 0xffffff : highlighted ? 0xff55d9 : 0xffd15c, width: highlighted ? 3 : 2, alpha: 0.95 });
+      face.stroke({ color: focused ? 0xffffff : highlighted ? 0xd8a66b : 0xffd15c, width: highlighted ? 3 : 2, alpha: 0.95 });
       face.circle(0, 0, radius * 0.58);
       face.stroke({ color: 0x7fffd8, width: 1, alpha: 0.82 });
       face.moveTo(-radius * 0.45, 0);
@@ -2626,11 +2612,9 @@ export class SettingsOverlay {
     const maxW = Math.min(compact ? width * 0.9 : 760, width - 44);
     const maxH = Math.min(compact ? height * 0.62 : 420, height - 128);
     const bg = new PIXI.Graphics();
-    bg.roundRect(-maxW / 2, -maxH / 2, maxW, maxH, 10);
-    bg.fill({ color: 0x020711, alpha: 0.96 });
-    bg.stroke({ color: 0xffef7e, width: 3, alpha: 0.98 });
+    drawAstraPanel(bg, -maxW / 2, -maxH / 2, maxW, maxH, 10, { color: 0x020711, alpha: 0.96 }, { color: 0xffef7e, width: 3, alpha: 0.98 });
     bg.roundRect(-maxW / 2 + 10, -maxH / 2 + 10, maxW - 20, maxH - 20, 8);
-    bg.stroke({ color: 0xff55d9, width: 2, alpha: 0.7 });
+    bg.stroke({ color: 0xd8a66b, width: 2, alpha: 0.7 });
     reveal.addChild(bg);
 
     const rays = new PIXI.Graphics();
@@ -2698,7 +2682,7 @@ export class SettingsOverlay {
     shipRing.circle(0, maxH * 0.14, compact ? 54 : 72);
     shipRing.stroke({ color: 0x37f5ff, width: 3, alpha: 0.7 });
     shipRing.circle(0, maxH * 0.14, compact ? 72 : 96);
-    shipRing.stroke({ color: 0xff55d9, width: 2, alpha: 0.42 });
+    shipRing.stroke({ color: 0xd8a66b, width: 2, alpha: 0.42 });
     reveal.addChild(shipRing);
     this.creditsAnimatedNodes.push({ node: shipRing, kind: 'breathe', baseScale: 1, speed: 3.1 });
 
@@ -2730,9 +2714,7 @@ export class SettingsOverlay {
     cta.position.set(0, maxH / 2 - (compact ? 34 : 42));
     const ctaBg = new PIXI.Graphics();
     const ctaW = Math.min(maxW - 72, Math.max(compact ? 190 : 260, cta.width + 72));
-    ctaBg.roundRect(-ctaW / 2, cta.y - (compact ? 18 : 22), ctaW, compact ? 36 : 44, 8);
-    ctaBg.fill({ color: 0xffef7e, alpha: 0.96 });
-    ctaBg.stroke({ color: 0xffffff, width: 2, alpha: 0.75 });
+    drawAstraPanel(ctaBg, -ctaW / 2, cta.y - (compact ? 18 : 22), ctaW, compact ? 36 : 44, 8, { color: 0xffef7e, alpha: 0.96 }, { color: 0xffffff, width: 2, alpha: 0.75 });
     reveal.addChild(ctaBg, cta);
 
     this.creditsPanel.addChild(reveal);
@@ -2829,14 +2811,12 @@ export class SettingsOverlay {
     art.addChild(this.createCreditsImageLayer({ x: 0, y: 0, width, height, alpha: 0.95, focusX: 0.18 }));
 
     const frame = new PIXI.Graphics();
-    frame.roundRect(0, 0, width, height, 8);
-    frame.fill({ color: 0x020713, alpha: 0.08 });
-    frame.stroke({ color: 0x37f5ff, width: 2, alpha: 0.88 });
+    drawAstraPanel(frame, 0, 0, width, height, 8, { color: 0x020713, alpha: 0.08 }, { color: 0x37f5ff, width: 2, alpha: 0.88 });
     for (let i = 0; i < 10; i += 1) {
       const px = (i * 47) % Math.max(1, width);
       const py = (i * 29) % Math.max(1, height);
       frame.circle(px, py, isCompact ? 18 + (i % 3) * 8 : 26 + (i % 4) * 11);
-      frame.fill({ color: i % 2 ? 0xff55d9 : 0x37f5ff, alpha: 0.035 + (i % 3) * 0.018 });
+      frame.fill({ color: i % 2 ? 0xd8a66b : 0x37f5ff, alpha: 0.035 + (i % 3) * 0.018 });
     }
     frame.rect(0, height * 0.72, width, height * 0.28);
     frame.fill({ color: 0x000000, alpha: 0.22 });
@@ -2846,7 +2826,7 @@ export class SettingsOverlay {
     sweep.rect(8, 0, width - 16, Math.max(6, height * 0.035));
     sweep.fill({ color: 0x7fffd8, alpha: 0.16 });
     sweep.rect(8, Math.max(8, height * 0.035), width - 16, 2);
-    sweep.fill({ color: 0xff55d9, alpha: 0.34 });
+    sweep.fill({ color: 0xd8a66b, alpha: 0.34 });
     art.addChild(sweep);
     this.creditsAnimatedNodes.push({ node: sweep, kind: 'scanY', baseY: 0, maxY: Math.max(12, height - 18), speed: isCompact ? 0.38 : 0.3 });
 
@@ -2861,7 +2841,7 @@ export class SettingsOverlay {
       holoRing.moveTo(Math.cos(angle) * 10, Math.sin(angle) * 10);
       holoRing.lineTo(Math.cos(angle) * Math.min(width, height) * 0.2, Math.sin(angle) * Math.min(width, height) * 0.2);
     }
-    holoRing.stroke({ color: 0xff55d9, width: 1, alpha: 0.16 });
+    holoRing.stroke({ color: 0xd8a66b, width: 1, alpha: 0.16 });
     art.addChild(holoRing);
     this.creditsAnimatedNodes.push({ node: holoRing, kind: 'spin', speed: 0.18 });
     return art;
@@ -2871,14 +2851,12 @@ export class SettingsOverlay {
     const cabinetY = height * (isCompact ? 0.28 : 0.54);
     const cabinetW = width * (isCompact ? 0.18 : 0.28);
     const cabinetH = height * (isCompact ? 0.46 : 0.48);
-    cabinet.roundRect(cabinetX, cabinetY, cabinetW, cabinetH, 7);
-    cabinet.fill({ color: 0x10243b, alpha: 0.96 });
-    cabinet.stroke({ color: 0xffd15c, width: 2, alpha: 0.92 });
+    drawAstraPanel(cabinet, cabinetX, cabinetY, cabinetW, cabinetH, 7, { color: 0x10243b, alpha: 0.96 }, { color: 0xffd15c, width: 2, alpha: 0.92 });
     cabinet.rect(cabinetX + cabinetW * 0.17, cabinetY + cabinetH * 0.13, cabinetW * 0.66, cabinetH * 0.32);
     cabinet.fill({ color: 0x05111f, alpha: 1 });
     cabinet.stroke({ color: 0x7fffd8, width: 1, alpha: 0.82 });
     cabinet.circle(cabinetX + cabinetW * 0.31, cabinetY + cabinetH * 0.67, Math.max(4, cabinetW * 0.06));
-    cabinet.fill({ color: 0xff55d9, alpha: 0.95 });
+    cabinet.fill({ color: 0xd8a66b, alpha: 0.95 });
     cabinet.circle(cabinetX + cabinetW * 0.5, cabinetY + cabinetH * 0.67, Math.max(4, cabinetW * 0.06));
     cabinet.fill({ color: 0x37f5ff, alpha: 0.95 });
     cabinet.circle(cabinetX + cabinetW * 0.69, cabinetY + cabinetH * 0.67, Math.max(4, cabinetW * 0.06));
@@ -2892,11 +2870,11 @@ export class SettingsOverlay {
     const bossR = Math.min(width, height) * (isCompact ? 0.13 : 0.18);
     boss.circle(bossX, bossY, bossR);
     boss.fill({ color: 0x270b3d, alpha: 0.96 });
-    boss.stroke({ color: 0xff55d9, width: 3, alpha: 0.95 });
+    boss.stroke({ color: 0xd8a66b, width: 3, alpha: 0.95 });
     boss.circle(bossX, bossY, bossR * 0.38);
     boss.fill({ color: 0xf6fbff, alpha: 0.95 });
     boss.circle(bossX, bossY, bossR * 0.18);
-    boss.fill({ color: 0xff55d9, alpha: 1 });
+    boss.fill({ color: 0xd8a66b, alpha: 1 });
     for (let i = 0; i < 12; i += 1) {
       const angle = (Math.PI * 2 * i) / 12;
       boss.moveTo(bossX + Math.cos(angle) * bossR * 1.06, bossY + Math.sin(angle) * bossR * 1.06);

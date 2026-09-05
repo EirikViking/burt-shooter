@@ -1,3 +1,4 @@
+import { drawAstraPanel } from './AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
@@ -33,9 +34,7 @@ function createPanelFrame(graphics, x, y, width, height, {
   strokeAlpha = 0.5,
   warning = false
 } = {}) {
-  graphics.roundRect(x, y, width, height, 7);
-  graphics.fill({ color: fill, alpha: fillAlpha });
-  graphics.stroke({ color: warning ? 0xff8a58 : stroke, width: 1.2, alpha: strokeAlpha });
+  drawAstraPanel(graphics, x, y, width, height, 7, { color: fill, alpha: fillAlpha }, { color: warning ? 0xff8a58 : stroke, width: 1.2, alpha: strokeAlpha });
 }
 
 export class ModeBriefingOverlay {
@@ -129,9 +128,7 @@ export class ModeBriefingOverlay {
     this.container.addChild(dim);
 
     const chrome = new PIXI.Graphics();
-    chrome.roundRect(panelX, panelY, panelWidth, panelHeight, 10);
-    chrome.fill({ color: 0x030b15, alpha: 0.985 });
-    chrome.stroke({ color: this.data?.accent || 0x37f5ff, width: 2, alpha: 0.92 });
+    drawAstraPanel(chrome, panelX, panelY, panelWidth, panelHeight, 10, { color: 0x030b15, alpha: 0.985 }, { color: this.data?.accent || 0x37f5ff, width: 2, alpha: 0.92 });
     chrome.rect(panelX + 10, panelY + 14, 4, panelHeight - 28);
     chrome.fill({ color: this.data?.secondary || 0xffd15c, alpha: 0.78 });
     chrome.rect(panelX + pad, panelY + headerHeight - 10, contentWidth, 1);
@@ -355,9 +352,7 @@ export class ModeBriefingOverlay {
       section.tiles.forEach((tile, index) => {
         const tileX = 14 + index * (tileWidth + gap);
         const tileBg = new PIXI.Graphics();
-        tileBg.roundRect(tileX, bodyTop, tileWidth, compact ? 54 : 62, 5);
-        tileBg.fill({ color: 0x03101b, alpha: 0.86 });
-        tileBg.stroke({ color: this.data?.secondary || 0xffd15c, width: 1, alpha: 0.28 });
+        drawAstraPanel(tileBg, tileX, bodyTop, tileWidth, compact ? 54 : 62, 5, { color: 0x03101b, alpha: 0.86 }, { color: this.data?.secondary || 0xffd15c, width: 1, alpha: 0.28 });
         container.addChild(tileBg);
         const label = createText(translateText(tile.label || ''), {
           fontFamily: FONT_DISPLAY,
@@ -566,9 +561,7 @@ export class ModeBriefingOverlay {
       bg.fill({ color: selected ? accent : focused ? 0x0c3042 : 0x03101b, alpha: selected ? 0.68 : 0.96 });
       bg.stroke({ color: focused ? 0xffffff : accent, width: focused || selected ? 2 : 1, alpha: focused ? 0.96 : selected ? 0.82 : 0.5 });
     } else {
-      bg.roundRect(-size.width / 2, -size.height / 2, size.width, size.height, 6);
-      bg.fill({ color: focused ? 0x0c3850 : 0x061827, alpha: 0.98 });
-      bg.stroke({ color: focused ? 0xffffff : this.data?.secondary || 0xffd15c, width: focused ? 2.2 : 1.2, alpha: focused ? 0.96 : 0.7 });
+      drawAstraPanel(bg, -size.width / 2, -size.height / 2, size.width, size.height, 6, { color: focused ? 0x0c3850 : 0x061827, alpha: 0.98 }, { color: focused ? 0xffffff : this.data?.secondary || 0xffd15c, width: focused ? 2.2 : 1.2, alpha: focused ? 0.96 : 0.7 });
     }
   }
 

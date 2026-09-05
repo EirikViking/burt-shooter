@@ -1,4 +1,6 @@
+import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
+import { GameAssets } from '../utils/GameAssets.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
@@ -440,7 +442,7 @@ export class HighscoreScene {
       label: 'ui_menuFxLeaderboard',
       zIndex: -3,
       accent: 0x00f6ff,
-      secondary: 0xff55d9,
+      secondary: 0xd8a66b,
       gold: 0xffd15c,
       intensity: 0.72,
       density: 0.82,
@@ -475,13 +477,11 @@ export class HighscoreScene {
     const panelHeight = Math.min(168, Math.max(118, height * 0.21));
     const panelX = (width - panelWidth) / 2;
     const panelY = (height - panelHeight) / 2;
-    background.roundRect(panelX, panelY, panelWidth, panelHeight, 10);
-    background.fill({ color: 0x061827, alpha: 0.94 });
-    background.stroke({ color: 0x00f6ff, width: 2, alpha: 0.78 });
+    drawAstraPanel(background, panelX, panelY, panelWidth, panelHeight, 10, { color: 0x061827, alpha: 0.94 }, { color: 0x00f6ff, width: 2, alpha: 0.78 });
     background.rect(panelX + 18, panelY + 16, Math.max(84, panelWidth * 0.24), 2);
     background.fill({ color: 0xffd15c, alpha: 0.64 });
     background.rect(panelX + panelWidth - Math.max(96, panelWidth * 0.26) - 18, panelY + panelHeight - 18, Math.max(96, panelWidth * 0.26), 2);
-    background.fill({ color: 0xff55d9, alpha: 0.48 });
+    background.fill({ color: 0xd8a66b, alpha: 0.48 });
     layer.addChild(background);
 
     const title = createText(translateText('NOVA LEADERBOARD'), {
@@ -567,7 +567,7 @@ export class HighscoreScene {
       color: nextView === LeaderboardView.SECTOR
         ? 0xffd15c
         : nextView === LeaderboardView.TACTICAL
-          ? 0xff55d9
+          ? 0xd8a66b
           : 0x37f5ff,
       radius: 140,
       durationMs: 520
@@ -1041,9 +1041,7 @@ export class HighscoreScene {
     effect.eventMode = 'none';
 
     const glow = new PIXI.Graphics();
-    glow.roundRect(rowX + 3, rowY + 3, rowW - 6, rowHeight - 8, 6);
-    glow.fill({ color: 0x37f5ff, alpha: 0.2 });
-    glow.stroke({ color: 0xffd15c, width: 4, alpha: 0.5 });
+    drawAstraPanel(glow, rowX + 3, rowY + 3, rowW - 6, rowHeight - 8, 6, { color: 0x37f5ff, alpha: 0.2 }, { color: 0xffd15c, width: 4, alpha: 0.5 });
     glow.filters = [new PIXI.BlurFilter({ strength: isMobile ? 8 : 12 })];
 
     const pulseFrame = new PIXI.Graphics();
@@ -1370,7 +1368,7 @@ export class HighscoreScene {
               strokeThickness: 3,
               dropShadow: true,
               dropShadowColor: '#37f5ff',
-              dropShadowBlur: 8,
+              dropShadowBlur: 2,
               dropShadowDistance: 0,
               padding: 5
             }
@@ -1474,9 +1472,7 @@ export class HighscoreScene {
           const levelPill = new PIXI.Graphics();
           const pillWidth = isMobile ? 38 : (compactDesktopGrid ? 30 : 46);
           const pillHeight = isMobile ? 24 : (compactDesktopGrid ? 20 : 28);
-          levelPill.roundRect(columns.level - pillWidth / 2, rowMidY - pillHeight / 2, pillWidth, pillHeight, 5);
-          levelPill.fill({ color: 0x031725, alpha: 0.8 });
-          levelPill.stroke({ color: accent, width: isFeaturedPlayer ? 1.5 : 1, alpha: isFeaturedPlayer ? 0.9 : (isTop3 ? 0.72 : 0.34) });
+          drawAstraPanel(levelPill, columns.level - pillWidth / 2, rowMidY - pillHeight / 2, pillWidth, pillHeight, 5, { color: 0x031725, alpha: 0.8 }, { color: accent, width: isFeaturedPlayer ? 1.5 : 1, alpha: isFeaturedPlayer ? 0.9 : (isTop3 ? 0.72 : 0.34) });
           this.rowsContainer.addChild(levelPill);
         }
 
@@ -1484,7 +1480,7 @@ export class HighscoreScene {
         const displayRank = computeDisplayRank(score);
         if (rankTexture) {
           if (isPostCapCareerRank(score) && AssetManifest.sprites.rankPresentation?.endlessHalo) {
-            const endlessHalo = PIXI.Sprite.from(AssetManifest.sprites.rankPresentation.endlessHalo);
+            const endlessHalo = GameAssets.createDeferredSprite(AssetManifest.sprites.rankPresentation.endlessHalo);
             endlessHalo.anchor.set(0.5);
             const haloSize = Math.min(rowHeight * 1.08, layout.isMobile ? 42 : 62);
             endlessHalo.width = haloSize;
@@ -1522,9 +1518,7 @@ export class HighscoreScene {
         } else if (isCpuRival) {
           const cpuGlyph = new PIXI.Graphics();
           const glyphSize = Math.min(rowHeight * 0.6, isMobile ? 27 : 38);
-          cpuGlyph.roundRect(columns.badge - glyphSize / 2, rowMidY - glyphSize / 2, glyphSize, glyphSize, 5);
-          cpuGlyph.fill({ color: 0x07131d, alpha: 0.92 });
-          cpuGlyph.stroke({ color: 0x8b9aa6, width: 1.2, alpha: 0.72 });
+          drawAstraPanel(cpuGlyph, columns.badge - glyphSize / 2, rowMidY - glyphSize / 2, glyphSize, glyphSize, 5, { color: 0x07131d, alpha: 0.92 }, { color: 0x8b9aa6, width: 1.2, alpha: 0.72 });
           cpuGlyph.moveTo(columns.badge - glyphSize * 0.24, rowMidY);
           cpuGlyph.lineTo(columns.badge + glyphSize * 0.24, rowMidY);
           cpuGlyph.moveTo(columns.badge, rowMidY - glyphSize * 0.24);
@@ -1835,7 +1829,7 @@ export class HighscoreScene {
     const accent = this.activeLeaderboard === LeaderboardView.LOCAL
       ? 0xffd166
       : this.activeLeaderboard === LeaderboardView.FRIENDS
-        ? 0xff55d9
+        ? 0xd8a66b
         : this.activeLeaderboard === LeaderboardView.SECTOR
           ? 0xffd15c
           : 0x00f6ff;
@@ -1847,14 +1841,14 @@ export class HighscoreScene {
     this.titlePlate.roundRect(plateX, plateY, plateW, plateH, 8);
     this.titlePlate.stroke({ color: 0x37f5ff, width: 1.5, alpha: 0.5 });
     this.titlePlate.roundRect(plateX + 8, plateY + 8, plateW - 16, plateH - 16, 6);
-    this.titlePlate.stroke({ color: 0xff55d9, width: 1, alpha: 0.22 });
+    this.titlePlate.stroke({ color: 0xd8a66b, width: 1, alpha: 0.22 });
 
     this.titlePlate.rect(plateX + 24, plateY + 14, plateW - 48, 2);
     this.titlePlate.fill({ color: 0x7fffd8, alpha: 0.42 });
     this.titlePlate.rect(plateX + 52, plateY + plateH - 18, plateW - 104, 2);
     this.titlePlate.fill({ color: accent, alpha: 0.42 });
     this.titlePlate.rect(plateX + 24, plateY + 38, plateW - 48, 1);
-    this.titlePlate.fill({ color: 0xff55d9, alpha: 0.2 });
+    this.titlePlate.fill({ color: 0xd8a66b, alpha: 0.2 });
 
     const bracketW = layout.isMobile ? 34 : 48;
     const bracketH = layout.isMobile ? 24 : 32;
@@ -1876,7 +1870,7 @@ export class HighscoreScene {
       plateX + plateW - 16 - bracketW - 10, cornerY + bracketH - 8,
       plateX + plateW - 16 - bracketW, cornerY + bracketH
     ]);
-    this.titlePlate.stroke({ color: 0xff55d9, width: 2, alpha: 0.38 });
+    this.titlePlate.stroke({ color: 0xd8a66b, width: 2, alpha: 0.38 });
 
     this.titlePlate.circle(centerX, plateY + 16, layout.isMobile ? 4 : 5);
     this.titlePlate.fill({ color: accent, alpha: 0.64 });
@@ -1898,18 +1892,14 @@ export class HighscoreScene {
     const panelHeight = metrics.height;
     const innerPad = layout.isMobile ? 9 : 10;
 
-    this.leaderboardPanel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    this.leaderboardPanel.fill({ color: 0x020711, alpha: layout.isMobile ? 0.62 : 0.46 });
-    this.leaderboardPanel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.48 });
+    drawAstraPanel(this.leaderboardPanel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x020711, alpha: layout.isMobile ? 0.62 : 0.46 }, { color: 0x37f5ff, width: 1, alpha: 0.48 });
 
-    this.leaderboardPanel.roundRect(panelX + innerPad, panelY + innerPad, panelWidth - innerPad * 2, panelHeight - innerPad * 2, 6);
-    this.leaderboardPanel.fill({ color: 0x02101e, alpha: 0.16 });
-    this.leaderboardPanel.stroke({ color: 0xff55d9, width: 1, alpha: 0.2 });
+    drawAstraPanel(this.leaderboardPanel, panelX + innerPad, panelY + innerPad, panelWidth - innerPad * 2, panelHeight - innerPad * 2, 6, { color: 0x02101e, alpha: 0.16 }, { color: 0xd8a66b, width: 1, alpha: 0.2 });
 
     this.leaderboardPanel.rect(panelX, panelY + 28, 4, panelHeight - 56);
     this.leaderboardPanel.fill({ color: 0x37f5ff, alpha: 0.56 });
     this.leaderboardPanel.rect(panelX + panelWidth - 4, panelY + 54, 4, panelHeight - 108);
-    this.leaderboardPanel.fill({ color: 0xff55d9, alpha: 0.42 });
+    this.leaderboardPanel.fill({ color: 0xd8a66b, alpha: 0.42 });
     this.leaderboardPanel.rect(panelX + 24, panelY + panelHeight - 22, panelWidth - 48, 2);
     this.leaderboardPanel.fill({ color: 0xffd15c, alpha: 0.32 });
 
@@ -1920,7 +1910,7 @@ export class HighscoreScene {
       this.holoRails.roundRect(panelX - 7, railTop, 5, railHeight, 3);
       this.holoRails.fill({ color: 0x37f5ff, alpha: 0.2 });
       this.holoRails.roundRect(panelX + panelWidth + 2, railTop + 26, 5, railHeight - 52, 3);
-      this.holoRails.fill({ color: 0xff55d9, alpha: 0.18 });
+      this.holoRails.fill({ color: 0xd8a66b, alpha: 0.18 });
     }
 
     this.panelBottomY = panelY + panelHeight;
@@ -1942,7 +1932,7 @@ export class HighscoreScene {
     const viewColor = this.activeLeaderboard === LeaderboardView.LOCAL
       ? 0xffd166
       : this.activeLeaderboard === LeaderboardView.FRIENDS
-        ? 0xff55d9
+        ? 0xd8a66b
         : this.activeLeaderboard === LeaderboardView.SECTOR
           ? 0xffd15c
           : 0x00f6ff;
@@ -2189,7 +2179,7 @@ export class HighscoreScene {
     button._bg.fill({ color: fillColor, alpha: fillAlpha });
     button._bg.stroke({ color: focused ? 0xffffff : frameColor, width: active || hover || focused ? 2 : 1.5, alpha: active || hover || focused ? 0.82 : 0.5 });
     button._bg.rect(x + 10, y + 7, 4, height - 14);
-    button._bg.fill({ color: active ? 0xffd15c : 0xff55d9, alpha: hover ? 0.9 : 0.62 });
+    button._bg.fill({ color: active ? 0xffd15c : 0xd8a66b, alpha: hover ? 0.9 : 0.62 });
     button._bg.rect(x + width - 14, y + 7, 4, height - 14);
     button._bg.fill({ color: active ? 0x37f5ff : 0xffd15c, alpha: hover ? 0.82 : 0.48 });
     button._bg.moveTo(x + 22, y);

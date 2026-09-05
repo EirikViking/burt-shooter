@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { createAstraEnginePlume } from '../effects/AstraEnginePlume.js';
 import { Bullet } from './Bullet.js';
 import { computeSupportDroneTextureScale } from './SupportDroneVisual.js';
 import { GameAssets } from '../utils/GameAssets.js';
@@ -617,7 +618,9 @@ export class Player {
     }
 
     if (!this.engineVfxLayer) {
-      this.engineVfxLayer = new PIXI.Graphics();
+      this.engineVfxLayer = new PIXI.Container();
+      this.engineVfxLayer.graphics = new PIXI.Graphics();
+      this.engineVfxLayer.addChild(this.engineVfxLayer.graphics);
       this.engineVfxLayer.label = 'playerEngineThrusterReadability';
       this.engineVfxLayer.visible = false;
     }
@@ -833,8 +836,16 @@ export class Player {
   }
 
   updateEngineVfx(dx = 0, dy = 0, deltaSeconds = 1 / 60) {
-    const layer = this.engineVfxLayer;
-    if (!layer) return;
+    const container = this.engineVfxLayer;
+    if (!container) return;
+    const layer = container.graphics;
+    if (!container.astraPlumes) {
+      container.astraPlumes = Array.from({ length: 3 }, () => {
+        const plume = createAstraEnginePlume();
+        container.addChild(plume);
+        return plume;
+      });
+    }
     const moveIntent = Math.max(0, Math.min(1, Math.hypot(Number(dx) || 0, Number(dy) || 0)));
     const firingBoost = this.inputManager?.isFiring?.() ? 0.28 : 0;
     const dodgeBoost = this.isDodging ? 0.42 : 0;
@@ -844,8 +855,8 @@ export class Player {
     const intensity = Math.max(0, Math.min(1, this.engineVfxIntensity));
     layer.clear();
     if (!this.active || intensity <= 0.03) {
-      layer.visible = false;
-      layer.__debugEngineVfx = {
+      container.visible = false;
+      container.__debugEngineVfx = {
         visible: false,
         intensity: Number(intensity.toFixed(3)),
         plumeCount: 0,
@@ -885,6 +896,12 @@ export class Player {
       const offset = (i - 1) * spread;
       const length = plumeLength * (i === 1 ? 1.12 : 0.86) * (0.86 + pulse * 0.22);
       const x = offset - lean * (i === 1 ? 3 : 5);
+      const plume = container.astraPlumes[i];
+      plume.position.set(x, exhaustY - 1);
+      plume.width = i === 1 ? 10 : 12;
+      plume.height = length * 1.8;
+      plume.rotation = -lean * 0.12;
+      plume.alpha = 0.34 + intensity * 0.55;
       layer.moveTo(x - 4.5, exhaustY - 1);
       layer.lineTo(x + lean * 10, exhaustY + length);
       layer.lineTo(x + 4.5, exhaustY - 1);
@@ -1010,8 +1027,8 @@ export class Player {
       dodgeCrescentCount = 2;
     }
 
-    layer.visible = true;
-    layer.__debugEngineVfx = {
+    container.visible = true;
+    container.__debugEngineVfx = {
       visible: true,
       intensity: Number(intensity.toFixed(3)),
       moveIntent: Number(moveIntent.toFixed(3)),

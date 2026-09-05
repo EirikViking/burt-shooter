@@ -37,3 +37,8 @@ public/sw.js
 public/version.json
 public/audio/sfx/nova-swarm-candidates/
 .pw-browsers/
+
+# Reproducible Astra Blender intermediates; editable scenes and final art are kept.
+scripts/__pycache__/
+docs/astra-v2-models/renders/
+docs/astra-v2-models/*.blend1

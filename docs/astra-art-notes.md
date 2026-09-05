@@ -1,5 +1,58 @@
 # Astra presentation
 
+## Second pass
+
+The second pass replaces the first pass's flat hulls with sculpted industrial
+spacecraft: layered cast armor, recessed machinery, crystalline canopies, metallic
+edges, hydraulic lines, separate turret hardware and animated exhaust. All 50 boss
+presentations are rebuilt, with ten structural archetypes and five escalating tiers.
+The original profile IDs, attacks and collision references remain authoritative.
+
+Thirty player hulls (including five special unlocks), fifty enemy hulls and three
+animated boss components are original Blender models. Forty-eight 2048x1152
+planetary scenes change every five sectors through Sector 240, then cycle. These
+use procedural continents, cloud decks, atmospheres, gas bands, rings and moons;
+no satellite imagery or external textures are used. Boss and special-ship source
+identities remain intact behind presentation mappings.
+
+All thirty hangar ships also have dedicated 1024-pixel angled showroom renders,
+packed into efficient 768-pixel previews with projected engine-light anchors.
+The main-menu flagship uses a 1536-pixel render with additional pressure armor,
+hydraulic pistons, avionics contacts, reactor containment and vectoring engine
+irises. A menu-only material pass moves a restrained reflection across the metal;
+small ignition arcs and glow use a shared texture and trigonometric animation.
+Reduced motion stops the hover, banking, reflection sweep and electrical arcs.
+Three modeled station interiors and shared machined console materials carry
+the direction across menus, hangar, codex, settings, help, pause and rewards.
+
+Regenerate the second pass with the same local Blender installation:
+
+```
+blender --background --python scripts/render-astra-v2.py -- player 30
+blender --background --python scripts/render-astra-v2.py -- enemy 50
+blender --background --python scripts/render-astra-showroom.py -- hero 1
+blender --background --python scripts/render-astra-showroom.py -- showroom 30
+blender --background --python scripts/render-astra-bosses.py -- boss 50
+blender --background --python scripts/render-astra-components.py
+blender --background --python scripts/render-astra-worlds.py -- world 48
+blender --background --python scripts/render-astra-interfaces.py -- interface 3
+node scripts/pack-astra-v2.mjs
+```
+
+Editable representative scenes are in `docs/astra-v2-models/`; regenerable raw
+renders are ignored, and packed game assets remain under `public/art/astra/`.
+The generator scripts carry GPL-3.0-or-later headers; their original rendered
+outputs remain project artwork, with no external attribution requirement. The
+free tools and unchanged font licenses listed below also apply to this pass.
+
+The bug fixes in this pass synchronize debug-run policy, invalidate translated
+menu tiles on language changes, load rank halos without missing-cache warnings,
+restore the point-defense sound event and handle disconnected logging pipes.
+The obsolete boss-animation test fixture now uses the existing warning-token API;
+its motion/charge assertions have not been weakened.
+
+## First-pass provenance
+
 Orbital foundry: cool machined hulls, ceramic armor, restrained fleet markings,
 planetary depth and quiet central space. Colored enemy attacks and pickups remain
 the strongest small signals. Existing bosses and special ships retain their identities.

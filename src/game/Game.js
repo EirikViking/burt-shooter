@@ -489,7 +489,7 @@ export class Game {
     this.dailySignalAttemptId = requestedRunMode === RUN_MODES.DAILY_SIGNAL ? generateUUID() : null;
     this.lastDailySignalRecord = null;
     this.highscoreChase = this.createHighscoreChaseState({
-      runMode: prototypeEnabled ? RUN_MODES.UNRANKED : requestedRunMode,
+      runMode: prototypeEnabled ? RUN_MODES.UNRANKED : this.runMode,
       progress: startingProgress,
       sectorStartCheckpoint,
       dailySignalContract
@@ -591,6 +591,7 @@ export class Game {
 
   markUnrankedRun(reason = 'debug_route') {
     this.isDebugRun = true;
+    if (this.highscoreChase) this.highscoreChase.syncingTarget = false;
     const prototype = this.runPolicy?.prototype === true;
     this.runPolicy = createRunPolicy({
       runMode: this.runMode === RUN_MODES.DAILY_SIGNAL ? RUN_MODES.DAILY_SIGNAL : RUN_MODES.UNRANKED,

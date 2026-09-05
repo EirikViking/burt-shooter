@@ -1,0 +1,24 @@
+{
+  "family": "player",
+  "file": "28.png",
+  "baseline": {
+    "width": 1254,
+    "height": 1254,
+    "box": {
+      "left": 152,
+      "top": 69,
+      "width": 948,
+      "height": 1115
+    }
+  },
+  "candidate": {
+    "width": 1254,
+    "height": 1254,
+    "box": {
+      "left": 152,
+      "top": 69,
+      "width": 948,
+      "height": 1115
+    }
+  }
+}

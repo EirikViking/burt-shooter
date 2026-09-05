@@ -89,8 +89,12 @@ async function createGeneratedBossVisual(profile, maxWidth) {
   }
 
   try {
-    await PIXI.Assets.load(profile.art);
-    const texture = getAstraHullTexture(PIXI.Texture.from(profile.art));
+    const presentationSource = GameAssets.getBossPresentationSource(profile.art);
+    await PIXI.Assets.load(presentationSource);
+    if (!GameAssets.bossComponentTextures) {
+      GameAssets.bossComponentTextures = await Promise.all(AssetManifest.generated.bossComponents.map((src) => PIXI.Assets.load(src)));
+    }
+    const texture = getAstraHullTexture(PIXI.Texture.from(presentationSource));
     const textureValid = texture && texture.width > 0 && texture.height > 0;
     if (!textureValid) {
       console.warn(`[BossFactory] Generated boss texture invalid: id=${profile.id} url=${profile.art}`);

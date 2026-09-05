@@ -1,3 +1,4 @@
+import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { RankAssets } from '../utils/RankAssets.js';
@@ -9132,7 +9133,12 @@ export class PlayScene {
 
   async initGameplayBackdrop(width, height) {
     if (getNovaPerformanceFlags().disableDecorativeBackgrounds) return;
-    const baseBackdrop = AssetManifest.generated?.gameplayArenaBackdrop || AssetManifest.generated?.menuBackdrop;
+    await this.sectorWorldLoadQueue;
+    const worlds = AssetManifest.generated?.sectorWorlds || [];
+    const worldIndex = Math.floor((Math.max(1, this.game?.level || 1) - 1) / 5) % Math.max(1, worlds.length);
+    const baseBackdrop = worlds[worldIndex] || AssetManifest.generated?.gameplayArenaBackdrop || AssetManifest.generated?.menuBackdrop;
+    this.sectorWorldSource = baseBackdrop;
+    this.sectorWorldActiveSource = baseBackdrop;
     if (!baseBackdrop) return;
 
     const generation = ++this.gameplayBackdropLoadGeneration;
@@ -9143,9 +9149,9 @@ export class PlayScene {
 
     try {
       const [texture, stormTexture, bossTexture] = await Promise.all([
-        loadTexture('generated_gameplay_backdrop', baseBackdrop),
-        loadTexture('generated_storm_gameplay_backdrop', AssetManifest.generated.stormGameplayBackdrop),
-        loadTexture('generated_boss_gameplay_backdrop', AssetManifest.generated.bossArenaBackdrop)
+        PIXI.Assets.load(baseBackdrop),
+        loadTexture('generated_storm_gameplay_backdrop', worlds.length ? null : AssetManifest.generated.stormGameplayBackdrop),
+        loadTexture('generated_boss_gameplay_backdrop', worlds.length ? null : AssetManifest.generated.bossArenaBackdrop)
       ]);
       await Promise.all([
         texture ? this.prepareTextureForRender(texture, 'generated_gameplay_backdrop') : null,
@@ -9218,7 +9224,7 @@ export class PlayScene {
 
   async loadBossWarningTextures() {
     const emblemSources = AssetManifest.generated?.vfx?.bossWarningEmblems || [];
-    const bossSources = AssetManifest.generated?.bosses || [];
+    const bossSources = (AssetManifest.generated?.bosses || []).map((src) => GameAssets.getBossPresentationSource(src));
     const warmupSources = emblemSources.slice(0, Math.min(12, emblemSources.length));
     const bossWarmupSources = bossSources.slice(0, Math.min(12, bossSources.length));
     const loadList = async (sources, aliasPrefix) => Promise.all(sources.map(async (src, index) => {
@@ -9262,6 +9268,12 @@ export class PlayScene {
 
   resetGameplayBackdropState() {
     this.gameplayBackdropLoadGeneration += 1;
+    const retiredWorld = this.sectorWorldActiveSource;
+    this.sectorWorldActiveSource = null;
+    this.sectorWorldSource = null;
+    this.sectorWorldLoadQueue = Promise.resolve(this.sectorWorldLoadQueue).then(async () => {
+      if (retiredWorld && retiredWorld !== AssetManifest.generated.sectorWorlds?.[0]) await PIXI.Assets.unload(retiredWorld);
+    }).catch((error) => console.warn('[PlayScene] World cleanup failed:', error));
     this.gameplayBackdrop = null;
     this.gameplayStormBackdrop = null;
     this.gameplayBossBackdrop = null;
@@ -9289,7 +9301,10 @@ export class PlayScene {
     const treatment = this.combatBackdropClarity?.treatment || getCombatClarityBackdropTreatment(0);
     const decorativeAlphaScale = treatment.decorativeAlphaScale;
     if (this.gameplayBackdrop) {
-      this.gameplayBackdrop.alpha = alphas.base * decorativeAlphaScale;
+      const worldAlpha = AssetManifest.generated.sectorWorlds?.length
+        ? Math.min(0.82, alphas.base + alphas.storm + alphas.boss + 0.25)
+        : alphas.base;
+      this.gameplayBackdrop.alpha = worldAlpha * decorativeAlphaScale;
       this.gameplayBackdrop.renderable = this.gameplayBackdrop.alpha > 0.005;
     }
     if (this.gameplayStormBackdrop) {
@@ -9301,7 +9316,8 @@ export class PlayScene {
       this.gameplayBossBackdrop.renderable = this.gameplayBossBackdrop.alpha > 0.005;
     }
     if (this.gameplayBackdropShade) {
-      this.gameplayBackdropShade.alpha = Math.min(1, alphas.shade + (1 - alphas.shade) * treatment.shadeLift);
+      const shade = AssetManifest.generated.sectorWorlds?.length ? alphas.shade * 0.42 : alphas.shade;
+      this.gameplayBackdropShade.alpha = Math.min(1, shade + (1 - shade) * treatment.shadeLift);
     }
   }
 
@@ -9331,12 +9347,49 @@ export class PlayScene {
   }
 
   applyGameplayBackdropLevel(level = 1) {
+    this.updateSectorWorld(level);
     const mode = resolveGameplayBackdropMode(level, {
       enemyState: this.enemyManager?.state,
       bossActive: this.enemyManager?.boss?.active
     });
     if (mode !== this.gameplayBackdropMode) this.setGameplayBackdropMode(mode);
     return mode;
+  }
+
+  updateSectorWorld(level) {
+    const worlds = AssetManifest.generated.sectorWorlds || [];
+    if (!worlds.length || !this.gameplayBackdrop) return;
+    const index = Math.floor((Math.max(1, Number(level) || 1) - 1) / 5) % worlds.length;
+    const source = worlds[index];
+    if (source === this.sectorWorldSource) return;
+    this.sectorWorldSource = source;
+    const generation = this.gameplayBackdropLoadGeneration;
+    this.sectorWorldLoadQueue = Promise.resolve(this.sectorWorldLoadQueue).then(() => this.loadSectorWorld(source, generation, worlds));
+  }
+
+  async loadSectorWorld(source, generation, worlds) {
+    try {
+      if (generation !== this.gameplayBackdropLoadGeneration || source !== this.sectorWorldSource) return;
+      const texture = await PIXI.Assets.load(source);
+      await this.prepareTextureForRender(texture, source);
+      if (generation !== this.gameplayBackdropLoadGeneration || source !== this.sectorWorldSource || !this.gameplayBackdrop) {
+        if (source !== worlds[0]) await PIXI.Assets.unload(source);
+        return;
+      }
+      const previous = this.gameplayBackdrop.texture;
+      const previousSource = this.sectorWorldActiveSource;
+      this.gameplayBackdrop.texture = texture;
+      this.sectorWorldActiveSource = source;
+      this.layoutGameplayBackdrops();
+      // The first world is shared with menus. Other worlds belong to this scene:
+      // release both decoded and GPU storage instead of accumulating an atlas.
+      // This visual-only request never blocks a sector or advances simulation.
+      if (previous !== texture && previousSource && previousSource !== worlds[0]) {
+        await PIXI.Assets.unload(previousSource);
+      }
+    } catch (error) {
+      console.warn('[PlayScene] Sector world failed to load:', source, error);
+    }
   }
 
   fitBackdropToScreen(sprite, width, height, mode = this.gameplayBackdropMode) {
@@ -13665,7 +13718,7 @@ export class PlayScene {
     deckShadow.roundRect(panelX - 18, panelY - 16, panelWidth + 36, panelHeight + 34, 18);
     deckShadow.fill({ color: 0x000000, alpha: 0.46 });
     deckShadow.roundRect(panelX - 10, panelY - 8, panelWidth + 20, panelHeight + 18, 14);
-    deckShadow.stroke({ color: 0xff55d9, width: 8, alpha: 0.08 });
+    deckShadow.stroke({ color: 0xd8a66b, width: 8, alpha: 0.08 });
     decorLayer.addChild(deckShadow);
 
     const leftWing = new PIXI.Graphics();
@@ -13689,20 +13742,19 @@ export class PlayScene {
     rightWing.lineTo(panelX + panelWidth + 74, panelY + panelHeight - 86);
     rightWing.closePath();
     rightWing.fill({ color: 0x2a1037, alpha: 0.42 });
-    rightWing.stroke({ color: 0xff55d9, width: 1.5, alpha: 0.52 });
+    rightWing.stroke({ color: 0xd8a66b, width: 1.5, alpha: 0.52 });
     decorLayer.addChild(rightWing);
 
     const panel = new PIXI.Graphics();
     panel.label = 'ui_pauseCommandDeck';
     panel.zIndex = 4;
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 10);
-    panel.fill({ color: 0x06111f, alpha: 0.92 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 10, { color: 0x06111f, alpha: 0.96 }, { color: 0x91c5cd, width: 1, alpha: 0.7 });
     panel.roundRect(panelX + 8, panelY + 8, panelWidth - 16, panelHeight - 16, 8);
     panel.stroke({ color: 0x0b5a72, width: 1, alpha: 0.68 });
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 10);
     panel.stroke({ color: 0x00eaff, width: 2.4, alpha: 0.94 });
     panel.roundRect(panelX + 3, panelY + 3, panelWidth - 6, panelHeight - 6, 9);
-    panel.stroke({ color: 0xff55d9, width: 1, alpha: 0.24 });
+    panel.stroke({ color: 0xd8a66b, width: 1, alpha: 0.24 });
     decorLayer.addChild(panel);
 
     const headerPlate = new PIXI.Graphics();
@@ -13755,7 +13807,7 @@ export class PlayScene {
     };
 
     const leftRadar = buildRadar(panelX - 88, centerY, 72, 0x00eaff, 'ui_pauseLeftRadar');
-    const rightRadar = buildRadar(panelX + panelWidth + 88, centerY, 72, 0xff55d9, 'ui_pauseRightRadar');
+    const rightRadar = buildRadar(panelX + panelWidth + 88, centerY, 72, 0xd8a66b, 'ui_pauseRightRadar');
     decorLayer.addChild(leftRadar, rightRadar);
 
     const title = createText(translateText('PAUSED'), {
@@ -13809,9 +13861,7 @@ export class PlayScene {
       chip.zIndex = 6;
       chip.position.set(x, y);
       const bg = new PIXI.Graphics();
-      bg.roundRect(-chipWidth / 2, -chipHeight / 2, chipWidth, chipHeight, 7);
-      bg.fill({ color: 0x031321, alpha: 0.82 });
-      bg.stroke({ color, width: 1, alpha: 0.58 });
+      drawAstraPanel(bg, -chipWidth / 2, -chipHeight / 2, chipWidth, chipHeight, 7, { color: 0x031321, alpha: 0.82 }, { color, width: 1, alpha: 0.58 });
       const top = createText(label, {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: Math.max(8, Math.round((options.labelSize || 10) * Math.min(uiScale, 1.15))),
@@ -14239,8 +14289,7 @@ export class PlayScene {
         focus.stroke({ color: accent, width: 1.4, alpha: 0.22 + pulse * 0.24 });
       }
       bg.clear();
-      bg.roundRect(-width / 2, -height / 2, width, height, 7);
-      bg.fill({ color: active ? 0x0b5571 : 0x061d32, alpha: active ? 0.95 : 0.86 });
+      drawAstraPanel(bg, -width / 2, -height / 2, width, height, 7, { color: active ? 0x0b5571 : 0x061d32, alpha: active ? 0.95 : 0.86 }, { color: accent, width: 1, alpha: 0.6 });
       bg.rect(-width / 2 + 8, -height / 2 + 6, width - 16, 2);
       bg.fill({ color: 0xffffff, alpha: active ? 0.18 : 0.09 });
       bg.rect(-width / 2 + 14, height / 2 - 9, width - 28, 1);

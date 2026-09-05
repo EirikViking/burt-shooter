@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { GameAssets } from '../utils/GameAssets.js';
 import { Bullet } from './Bullet.js';
 import { extendBossNames } from '../text/phrasePool.js';
 import { createBossVisual } from '../game/BossFactory.js';
@@ -827,6 +828,16 @@ export class Boss {
     plate.moveTo(side * length * 0.26, -width * 0.2);
     plate.lineTo(side * length * 0.9, width * 0.16);
     plate.stroke({ color: 0xffffff, width: 1, alpha: 0.13 });
+    const panelTexture = GameAssets.bossComponentTextures?.[0];
+    if (panelTexture) {
+      plate.clear();
+      const armor = new PIXI.Sprite(panelTexture);
+      armor.anchor.set(0, 0.5);
+      armor.width = length * 1.08;
+      armor.height = width;
+      armor.scale.x *= side;
+      part.addChild(armor);
+    }
     part.addChild(plate);
     part.x = hingeX;
     part.y = hingeY;
@@ -846,13 +857,23 @@ export class Boss {
     const angle = index * Math.PI / 2;
     const length = radius * 0.28;
     const width = radius * 0.078;
-    const plate = new PIXI.Graphics();
+    let plate = new PIXI.Graphics();
     plate.roundRect(-width / 2, -length * 0.12, width, length, Math.max(3, width * 0.36));
     plate.fill({ color: palette, alpha: 0.2 });
     plate.roundRect(-width / 2, -length * 0.12, width, length, Math.max(3, width * 0.36));
     plate.stroke({ color: accent, width: 1.6, alpha: 0.5 });
     plate.circle(0, length * 0.12, Math.max(2.5, width * 0.22));
     plate.fill({ color: 0xffffff, alpha: 0.12 });
+    const shutterTexture = GameAssets.bossComponentTextures?.[1];
+    if (shutterTexture) {
+      plate.destroy();
+      plate = new PIXI.Container();
+      const armor = new PIXI.Sprite(shutterTexture);
+      armor.anchor.set(0.5, 0.12);
+      armor.width = width;
+      armor.height = length;
+      plate.addChild(armor);
+    }
     part.addChild(plate);
     part.rotation = angle;
     part.baseRotation = angle;
@@ -869,7 +890,7 @@ export class Boss {
   createBossWeaponPod(index, total, radius, palette, accent) {
     const pod = new PIXI.Container();
     const shell = new PIXI.Graphics();
-    const barrel = new PIXI.Graphics();
+    let barrel = new PIXI.Graphics();
     const core = new PIXI.Graphics();
     const size = Math.max(8, radius * 0.08);
     shell.circle(0, 0, size);
@@ -882,6 +903,17 @@ export class Boss {
     barrel.stroke({ color: 0xffffff, width: 1.2, alpha: 0.28 });
     core.circle(0, 0, size * 0.42);
     core.fill({ color: 0xffffff, alpha: 0.18 });
+    const weaponTexture = GameAssets.bossComponentTextures?.[2];
+    if (weaponTexture) {
+      barrel.destroy();
+      barrel = new PIXI.Container();
+      shell.clear();
+      const hardware = new PIXI.Sprite(weaponTexture);
+      hardware.anchor.set(0.5, 0.65);
+      hardware.width = size * 1.65;
+      hardware.height = size * 3.1;
+      barrel.addChild(hardware);
+    }
     pod.addChild(barrel);
     pod.addChild(shell);
     pod.addChild(core);
@@ -1196,15 +1228,15 @@ export class Boss {
 
     // Decorative rig stays subordinate to the actual boss hull. Attack paths,
     // weapon nodes, charge and hit flashes retain their full warning contrast.
-    rig.auraLayer.alpha = 0.18;
-    rig.silhouetteLayer.alpha = 0.3;
-    rig.backLayer.alpha = 0.28;
-    rig.frontLayer.alpha = 0.24;
-    rig.articulationLayer.alpha = 0.58;
+    rig.auraLayer.alpha = 0.08;
+    rig.silhouetteLayer.alpha = 0.13;
+    rig.backLayer.alpha = 0.14;
+    rig.frontLayer.alpha = 0.16;
+    rig.articulationLayer.alpha = 0.90;
     rig.threatLayer.alpha = 0.5;
     rig.chargeLayer.alpha = 0.5;
-    rig.leftFin.alpha = rig.rightFin.alpha = 0.25;
-    rig.leftMandible.alpha = rig.rightMandible.alpha = 0.36;
+    rig.leftFin.alpha = rig.rightFin.alpha = 0.13;
+    rig.leftMandible.alpha = rig.rightMandible.alpha = 0.16;
 
     rig.scanLayer.clear();
     const scanY = -radius * 0.62 + ((t * 15) % (radius * 1.24));

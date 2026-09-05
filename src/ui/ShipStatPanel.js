@@ -1,3 +1,4 @@
+import { drawAstraPanel } from './AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { ShipData } from '../config/ShipData.js';
 import { createText } from '../utils/pixiText.js';
@@ -67,9 +68,7 @@ function makeText(label, style = {}) {
 }
 
 function drawSegmentedBar(graphics, x, y, width, height, progress, color) {
-  graphics.roundRect(x, y, width, height, height / 2);
-  graphics.fill({ color: 0x061426, alpha: 0.92 });
-  graphics.stroke({ color: 0x2a5d78, width: 1, alpha: 0.7 });
+  drawAstraPanel(graphics, x, y, width, height, height / 2, { color: 0x061426, alpha: 0.92 }, { color: 0x2a5d78, width: 1, alpha: 0.7 });
 
   const gap = 3;
   const segments = 8;
@@ -131,9 +130,7 @@ export function createShipStatPanel(ship = {}, options = {}) {
   panel.shipStatPanel = true;
 
   const bg = new PIXI.Graphics();
-  bg.roundRect(-width / 2, 0, width, height, compact ? 10 : 12);
-  bg.fill({ color: 0x020916, alpha: compact ? 0.72 : 0.84 });
-  bg.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+  drawAstraPanel(bg, -width / 2, 0, width, height, compact ? 10 : 12, { color: 0x020916, alpha: compact ? 0.72 : 0.84 }, { color: accent, width: 1.5, alpha: 0.72 });
   bg.rect(-width / 2 + 1, 1, width - 2, compact ? 28 : 34);
   bg.fill({ color: accent, alpha: 0.11 });
   panel.addChild(bg);

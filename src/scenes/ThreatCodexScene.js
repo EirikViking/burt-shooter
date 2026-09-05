@@ -1,4 +1,6 @@
+import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
+import { GameAssets } from '../utils/GameAssets.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { THREAT_CODEX_CATEGORIES, getSectorCodexArt, getThreatCodexCatalog, getThreatCodexRuntimeDescription, getThreatCodexRuntimeTip } from '../config/ThreatCodexCatalog.js';
 import {
@@ -120,9 +122,7 @@ function drawPanel(graphics, x, y, width, height, {
   strokeWidth = 1,
   radius = 8
 } = {}) {
-  graphics.roundRect(x, y, width, height, radius);
-  graphics.fill({ color: fill, alpha });
-  graphics.stroke({ color: stroke, alpha: strokeAlpha, width: strokeWidth });
+  drawAstraPanel(graphics, x, y, width, height, radius, { color: fill, alpha }, { color: stroke, alpha: strokeAlpha, width: strokeWidth });
 }
 
 function shortSignal(value = '', maxLength = 26) {
@@ -137,9 +137,7 @@ function drawSignalChip(parent, text, x, y, width, accent, {
   textFill = '#dffcff'
 } = {}) {
   const chip = new PIXI.Graphics();
-  chip.roundRect(x, y, width, 24, 7);
-  chip.fill({ color: fill, alpha });
-  chip.stroke({ color: accent, width: 1, alpha: 0.36 });
+  drawAstraPanel(chip, x, y, width, 24, 7, { color: fill, alpha }, { color: accent, width: 1, alpha: 0.36 });
   chip.rect(x + 5, y + 5, 3, 14);
   chip.fill({ color: accent, alpha: 0.72 });
   parent.addChild(chip);
@@ -306,9 +304,7 @@ function drawMiniGlyph(parent, x, y, size, accent, seed, discovered = false) {
   const g = new PIXI.Graphics();
   const cx = x + size / 2;
   const cy = y + size / 2;
-  g.roundRect(x, y, size, size, 7);
-  g.fill({ color: discovered ? 0x082231 : 0x050d15, alpha: 0.94 });
-  g.stroke({ color: accent, width: discovered ? 2 : 1, alpha: discovered ? 0.72 : 0.38 });
+  drawAstraPanel(g, x, y, size, size, 7, { color: discovered ? 0x082231 : 0x050d15, alpha: 0.94 }, { color: accent, width: discovered ? 2 : 1, alpha: discovered ? 0.72 : 0.38 });
   parent.addChild(g);
 
   const mark = new PIXI.Graphics();
@@ -541,7 +537,11 @@ export class ThreatCodexScene {
   }
 
   getEntryArt(entry = null, categoryId = this.getCategory().id) {
-    if (entry?.art) return entry.art;
+    if (categoryId === 'sectors' && AssetManifest.generated.sectorWorlds?.length) {
+      const worlds = AssetManifest.generated.sectorWorlds;
+      return worlds[Math.floor((Math.max(1, entry?.sectorNumber || 1) - 1) / 5) % worlds.length];
+    }
+    if (entry?.art) return GameAssets.getBossPresentationSource(entry.art);
     const fallback = {
       enemies: AssetManifest.generated.gameplayArenaBackdrop,
       attackPatterns: AssetManifest.generated.enemyWeapons?.[2],
@@ -639,7 +639,7 @@ export class ThreatCodexScene {
   }
 
   loadCodexBackdrop(width, height, token) {
-    const src = AssetManifest.generated.leaderboardHall || AssetManifest.generated.menuBackdrop;
+    const src = AssetManifest.generated.codexBackdrop || AssetManifest.generated.leaderboardHall || AssetManifest.generated.menuBackdrop;
     PIXI.Assets.load(src)
       .then((texture) => {
         if (token !== this.renderToken || !texture) return;
@@ -666,9 +666,7 @@ export class ThreatCodexScene {
     plate.zIndex = 1;
     plate.roundRect(x - 10, y - 8, w + 20, h + 16, 10);
     plate.fill({ color: CYAN, alpha: 0.055 });
-    plate.roundRect(x, y, w, h, 8);
-    plate.fill({ color: 0x02101e, alpha: 0.38 });
-    plate.stroke({ color: CYAN, width: 1.5, alpha: 0.42 });
+    drawAstraPanel(plate, x, y, w, h, 8, { color: 0x02101e, alpha: 0.38 }, { color: CYAN, width: 1.5, alpha: 0.42 });
     plate.roundRect(x + 8, y + 8, w - 16, h - 16, 6);
     plate.stroke({ color: 0xff55d9, width: 1, alpha: 0.2 });
     plate.rect(x + 24, y + 14, w - 48, 2);
@@ -871,7 +869,7 @@ export class ThreatCodexScene {
     const entries = this.getEntriesForCategory(category.id);
     const listX = width * 0.05;
     const listY = categoryLayout.listY;
-    const listW = compact ? width * 0.39 : Math.min(520, width * 0.38);
+    const listW = width >= 1150 ? width * 0.275 : compact ? width * 0.39 : Math.min(520, width * 0.38);
     const rowH = compact ? 68 : 78;
     const maxRows = Math.max(6, Math.floor((height - listY - 82) / rowH));
     const visibleRows = Math.min(maxRows, entries.length);
@@ -980,9 +978,7 @@ export class ThreatCodexScene {
     const thumbY = railY + ((railH - thumbH) * clamp(start / maxStart, 0, 1));
     const scroll = new PIXI.Graphics();
     scroll.zIndex = 7;
-    scroll.roundRect(railX, railY, compact ? 5 : 6, railH, 3);
-    scroll.fill({ color: 0x071a27, alpha: 0.86 });
-    scroll.stroke({ color: 0x24435b, width: 1, alpha: 0.56 });
+    drawAstraPanel(scroll, railX, railY, compact ? 5 : 6, railH, 3, { color: 0x071a27, alpha: 0.86 }, { color: 0x24435b, width: 1, alpha: 0.56 });
     scroll.roundRect(railX, thumbY, compact ? 5 : 6, thumbH, 3);
     scroll.fill({ color: AQUA, alpha: 0.88 });
     scroll.eventMode = 'static';
@@ -1026,9 +1022,7 @@ export class ThreatCodexScene {
     parent.addChild(thumb);
 
     const bg = new PIXI.Graphics();
-    bg.roundRect(0, 0, size, size, 7);
-    bg.fill({ color: discovered ? 0x082231 : 0x050d15, alpha: 0.96 });
-    bg.stroke({ color: accent, width: discovered ? 2 : 1, alpha: discovered ? 0.72 : 0.42 });
+    drawAstraPanel(bg, 0, 0, size, size, 7, { color: discovered ? 0x082231 : 0x050d15, alpha: 0.96 }, { color: accent, width: discovered ? 2 : 1, alpha: discovered ? 0.72 : 0.42 });
     bg.rect(4, size - 6, size - 8, 2);
     bg.fill({ color: discovered ? accent : MUTED, alpha: discovered ? 0.64 : 0.28 });
     thumb.addChild(bg);
@@ -1079,7 +1073,7 @@ export class ThreatCodexScene {
     const discovered = entry ? this.isDiscovered(entry, category.id) : false;
     const stateItem = entry ? getStateItem(this.discoveryState, category.id, entry.id) : null;
     const accent = this.getAccent(entry, category.id);
-    const panelX = compact ? width * 0.47 : width * 0.47;
+    const panelX = width >= 1150 ? width * 0.35 : width * 0.47;
     const panelY = categoryLayout.listY;
     const panelW = width - panelX - width * 0.05;
     const panelH = height - panelY - 82;
@@ -1115,20 +1109,22 @@ export class ThreatCodexScene {
       atmosphere.lineTo(panelW - 22, lineY - 18 + (i % 3) * 9);
     }
     atmosphere.stroke({ color: accent, width: 1, alpha: discovered ? 0.08 : 0.04 });
+    atmosphere.alpha = 0.2;
     panel.addChild(atmosphere);
 
     const shortPanel = panelH < 560;
     const epicBody = Boolean(discovered && entry?.codexBodyMode === 'epic');
     const veryShortEpic = Boolean(epicBody && shortPanel && panelH < 500);
     const storyBody = Boolean(discovered && (epicBody || entry?.codexBodyMode === 'story'));
-    const sideBySide = !epicBody && shortPanel && panelW >= 520;
+    const dossier = panelW >= 700 && panelH >= 330;
+    const sideBySide = dossier || (!epicBody && shortPanel && panelW >= 520);
     const artY = 22;
-    const artW = epicBody
+    const artW = dossier ? panelW * 0.42 : epicBody
       ? Math.min(panelW - 36, shortPanel ? 330 : compact ? 380 : 440)
       : sideBySide
         ? panelW * 0.42
         : panelW - 36;
-    const artH = epicBody
+    const artH = dossier ? panelH - 126 : epicBody
       ? (veryShortEpic ? clamp(panelH * 0.16, 68, 92) : shortPanel ? clamp(panelH * 0.19, 92, 124) : compact ? clamp(panelH * 0.2, 112, 144) : clamp(panelH * 0.22, 136, 168))
       : sideBySide
         ? clamp(panelH * 0.42, 150, 205)
@@ -1143,7 +1139,7 @@ export class ThreatCodexScene {
     const nameY = sideBySide ? 28 : artH + (epicBody ? (veryShortEpic ? 28 : shortPanel ? 34 : 38) : 42);
     const name = entry && discovered ? entry.name.toUpperCase() : localize('UNKNOWN SIGNAL');
     const nameNode = addText(panel, name, {
-      fontSize: sideBySide ? 22 : epicBody ? (veryShortEpic ? 18 : shortPanel ? 20 : compact ? 23 : 31) : compact ? 19 : 31,
+      fontSize: dossier ? 27 : sideBySide ? 22 : epicBody ? (veryShortEpic ? 18 : shortPanel ? 20 : compact ? 23 : 31) : compact ? 19 : 31,
       fontWeight: '900',
       fill: discovered ? '#ffffff' : '#a7bac8',
       stroke: '#001016',
@@ -1151,14 +1147,14 @@ export class ThreatCodexScene {
       wordWrap: true,
       breakWords: true,
       wordWrapWidth: textW,
-      lineHeight: sideBySide ? 23 : epicBody ? (veryShortEpic ? 20 : shortPanel ? 22 : compact ? 25 : 33) : compact ? 21 : 33
+      lineHeight: dossier ? 28 : sideBySide ? 23 : epicBody ? (veryShortEpic ? 20 : shortPanel ? 22 : compact ? 25 : 33) : compact ? 21 : 33
     }, textX, nameY);
     fitTextHeight(nameNode, veryShortEpic ? 44 : shortPanel ? 52 : 74, 0.74);
 
     const meta = discovered
       ? `${entry.rarity || 'Signal'}  |  ${entry.role || category.label}`
       : `${localize('SIGNAL DATA LOCKED')}  |  ${localize(category.label.toUpperCase())}`;
-    const metaY = nameY + (epicBody ? (veryShortEpic ? 36 : shortPanel ? 44 : compact ? 50 : 66) : shortPanel ? 56 : compact ? 54 : 70);
+    const metaY = dossier ? nameY + Math.max(40, nameNode.height + 12) : nameY + (epicBody ? (veryShortEpic ? 36 : shortPanel ? 44 : compact ? 50 : 66) : shortPanel ? 56 : compact ? 54 : 70);
     addText(panel, meta, {
       fontSize: shortPanel ? 12 : compact ? 13 : 16,
       fontWeight: '900',
@@ -1198,15 +1194,15 @@ export class ThreatCodexScene {
     const bodyText = discovered
       ? (storyBody ? formatCodexStoryParagraphs(localize(entry.description)) : localize(entry.description))
       : codexUi('lockedDescription');
-    const tipY = panelH - (epicBody ? (veryShortEpic ? 90 : shortPanel ? 96 : compact ? 104 : 116) : compact ? 116 : 138);
+    const tipY = dossier ? panelH - 92 : panelH - (epicBody ? (veryShortEpic ? 90 : shortPanel ? 96 : compact ? 104 : 116) : compact ? 116 : 138);
     const bodyMaxHeight = Math.max(54, tipY - bodyY - (epicBody ? 14 : 24));
-    const bodyFontSize = epicBody
+    const bodyFontSize = dossier ? 15 : epicBody
       ? (shortPanel ? 14 : compact ? 15 : 16)
       : (shortPanel ? 13 : compact ? 13 : 17);
-    const bodyLineHeight = epicBody
+    const bodyLineHeight = dossier ? 19 : epicBody
       ? (shortPanel ? 18 : compact ? 19 : 21)
       : (shortPanel ? 16 : compact ? 17 : 22);
-    if (storyBody) {
+    if (storyBody || dossier) {
       const storyDeck = new PIXI.Graphics();
       drawPanel(storyDeck, textX - 10, bodyY - 10, textW + 20, bodyMaxHeight + 20, {
         fill: 0x020a12,
@@ -1230,7 +1226,7 @@ export class ThreatCodexScene {
       lineHeight: bodyLineHeight,
       leading: storyBody ? Math.max(4, Math.round(bodyLineHeight * 0.34)) : 0
     }, textX, bodyY);
-    if (storyBody) {
+    if (storyBody || dossier) {
       const bodyContentHeight = bodyNode.height;
       const maxOffset = Math.max(0, bodyContentHeight - bodyMaxHeight);
       this.detailScrollOffset = clamp(this.detailScrollOffset || 0, 0, maxOffset);
@@ -1364,7 +1360,7 @@ export class ThreatCodexScene {
     parent.addChild(backdrop);
 
     const art = this.getEntryArt(entry, entry?.category || this.getCategory().id);
-    drawUnknownSignal(parent, x + width * 0.15, y + height * 0.08, width * 0.7, height * 0.75, accent, seed, discovered ? 0.42 : 0.58);
+    if (!discovered) drawUnknownSignal(parent, x + width * 0.15, y + height * 0.08, width * 0.7, height * 0.75, accent, seed, 0.58);
     if (!art) {
       drawUnknownSignal(parent, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, discovered ? 0.86 : 1);
       return;
@@ -1375,7 +1371,7 @@ export class ThreatCodexScene {
         if (token !== this.renderToken || !texture || !parent || parent.destroyed) return;
         const sprite = new PIXI.Sprite(texture);
         sprite.anchor.set(0.5);
-        fitSprite(sprite, width * (discovered ? 0.66 : 0.72), height * (discovered ? 0.72 : 0.78), 2.8);
+        fitSprite(sprite, width * (discovered ? 0.94 : 0.72), height * (discovered ? 0.94 : 0.78), 3.6);
         sprite.position.set(x + width * 0.5, y + height * 0.5);
         sprite.alpha = discovered ? 0.96 : 0.42;
         sprite.tint = discovered ? 0xffffff : accent;
@@ -1390,7 +1386,7 @@ export class ThreatCodexScene {
 
         const rim = new PIXI.Graphics();
         rim.circle(x + width * 0.5, y + height * 0.5, Math.min(width, height) * 0.34);
-        rim.stroke({ color: accent, width: 2, alpha: discovered ? 0.16 : 0.34 });
+        rim.stroke({ color: accent, width: 1, alpha: discovered ? 0.06 : 0.34 });
         parent.addChild(rim);
         this.registerCodexAnimatedNode(rim, {
           kind: 'detail',
@@ -1401,9 +1397,7 @@ export class ThreatCodexScene {
 
         if (!discovered) {
           const lock = new PIXI.Graphics();
-          lock.roundRect(x + width * 0.5 - 74, y + height * 0.5 - 22, 148, 44, 8);
-          lock.fill({ color: 0x020711, alpha: 0.72 });
-          lock.stroke({ color: GOLD, width: 2, alpha: 0.68 });
+          drawAstraPanel(lock, x + width * 0.5 - 74, y + height * 0.5 - 22, 148, 44, 8, { color: 0x020711, alpha: 0.72 }, { color: GOLD, width: 2, alpha: 0.68 });
           lock.circle(x + width * 0.5 - 46, y + height * 0.5, 10);
           lock.stroke({ color: GOLD, width: 2, alpha: 0.72 });
           parent.addChild(lock);

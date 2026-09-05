@@ -5,6 +5,33 @@ import * as PIXI from 'pixi.js';
 import { getAstraHullTexture } from '../effects/AstraHullMaterial.js';
 
 class GameAssetsManager {
+    async ensureShowroomShip(index) {
+        const safeIndex = Math.max(0, Math.min(29, Math.floor(Number(index) || 0)));
+        this.showroomShips ||= new Map();
+        if (!this.showroomShips.has(safeIndex)) {
+            const path = `/art/astra/showroom/${String(safeIndex + 1).padStart(2, '0')}`;
+            this.showroomShips.set(safeIndex, Promise.all([PIXI.Assets.load(`${path}.webp`), PIXI.Assets.load(`${path}.json`)]).then(([texture, anchors]) => ({ texture, emitters: anchors.emitters })));
+        }
+        return this.showroomShips.get(safeIndex);
+    }
+
+    getBossPresentationSource(source) {
+        const index = AssetManifest.generated.bosses.indexOf(source);
+        return AssetManifest.generated.bossPresentation?.[index] || source;
+    }
+
+    createDeferredSprite(source) {
+        const sprite = new PIXI.Sprite(PIXI.Texture.EMPTY);
+        PIXI.Assets.load(source).then((texture) => {
+            if (sprite.destroyed) return;
+            const { width, height } = sprite;
+            sprite.texture = texture;
+            sprite.width = width;
+            sprite.height = height;
+        }).catch((error) => console.warn('[GameAssets] Sprite failed to load:', source, error));
+        return sprite;
+    }
+
     constructor() {
         this.bonusCoreTexture = null;
         this.plasmaBloomTexture = null;
@@ -475,13 +502,16 @@ class GameAssetsManager {
 
         const filename = this.rankShipList[safeIndex];
         if (!filename) return null;
+        // Keep canonical identities and unlock metadata; only the loaded art
+        // changes, including the five named Ascendant hulls.
+        const presentation = AssetManifest.generated.playerPresentation?.[safeIndex] || filename;
 
         const parts = filename.split('/');
         const alias = `rank_ship_${safeIndex}_${parts[parts.length - 1].split('.')[0]}`;
         try {
             const texture = await PIXI.Assets.load({
                 alias,
-                src: filename
+                src: presentation
             });
             if (this.isValidTexture(texture)) {
                 this.rankShipTextures[safeIndex] = texture;

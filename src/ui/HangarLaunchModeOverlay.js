@@ -1,3 +1,4 @@
+import { drawAstraPanel } from './AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { deriveDailySignalContract } from '../config/DailyCabinetSignal.js';
 import {
@@ -35,7 +36,7 @@ export function getHangarLaunchModeOptions() {
   return [
     {
       id: RUN_MODES.MAYHEM_TACTICAL,
-      accent: 0xff55d9,
+      accent: 0xd8a66b,
       eyebrow: 'RECOMMENDED',
       summary: 'TACTICAL DRAFT AFTER EVERY BOSS',
       enabled: true
@@ -98,17 +99,7 @@ export function getHangarLaunchModeOptions() {
 }
 
 function drawCutPanel(graphics, x, y, width, height, color, alpha = 0.96) {
-  const cut = Math.min(18, Math.max(9, height * 0.18));
-  graphics.moveTo(x + cut, y);
-  graphics.lineTo(x + width - cut, y);
-  graphics.lineTo(x + width, y + cut);
-  graphics.lineTo(x + width, y + height - cut);
-  graphics.lineTo(x + width - cut, y + height);
-  graphics.lineTo(x + cut, y + height);
-  graphics.lineTo(x, y + height - cut);
-  graphics.lineTo(x, y + cut);
-  graphics.closePath();
-  graphics.fill({ color, alpha });
+  drawAstraPanel(graphics, x, y, width, height, 9, { color, alpha }, null);
 }
 
 function fitTextToWidth(node, maxWidth, minScale = 0.62) {
@@ -156,7 +147,7 @@ export class HangarLaunchModeOverlay {
     drawCutPanel(panel, panelX, panelY, panelWidth, panelHeight, 0x04111e, 0.98);
     panel.stroke({ color: 0x37f5ff, width: 2, alpha: 0.9 });
     drawCutPanel(panel, panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 0x020914, 0.72);
-    panel.stroke({ color: 0xff55d9, width: 1, alpha: 0.34 });
+    panel.stroke({ color: 0xd8a66b, width: 1, alpha: 0.34 });
     this.container.addChild(panel);
 
     const title = createText(translateText('CHOOSE LAUNCH MODE'), {

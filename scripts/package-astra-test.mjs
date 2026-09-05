@@ -2,12 +2,14 @@ import {readFileSync,writeFileSync,mkdirSync,existsSync,openSync,closeSync} from
 import {spawn} from 'node:child_process';
 import path from 'node:path';
 const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+const candidateDist=process.env.ASTRA_DIST || 'test-results/astra-candidate-dist';
+if(!existsSync(path.join(candidateDist,'index.html')))throw new Error(`Missing built candidate: ${candidateDist}`);
 const output=path.resolve('test-results',`astra-build-${stamp}`);
 if(existsSync(output))throw new Error('Refusing to replace an existing build');
 mkdirSync(output,{recursive:true});
 const config=JSON.parse(readFileSync('electron-builder.json','utf8'));
 config.directories.output=output;
-config.files=config.files.map(entry=>entry==='dist/**/*'?{from:'test-results/astra-candidate-dist',to:'dist',filter:['**/*']}:entry);
+config.files=config.files.map(entry=>entry==='dist/**/*'?{from:candidateDist,to:'dist',filter:['**/*']}:entry);
 const configPath=path.join(output,'builder-config.json');writeFileSync(configPath,JSON.stringify(config,null,2));
 writeFileSync('test-results/astra-build-location.json',JSON.stringify({output,configPath,executable:path.join(output,'win-unpacked','Nova Swarm.exe')},null,2));
 const log=openSync(path.join(output,'packaging.log'),'w');

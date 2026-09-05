@@ -1,3 +1,4 @@
+import { drawAstraPanel } from './AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import {
   getActiveTacticalFusionProtocols,
@@ -238,7 +239,7 @@ export class TacticalLoadoutOverlay {
       label: 'ui_menuFxTacticalLoadout',
       zIndex: 0,
       accent: 0x37f5ff,
-      secondary: 0xff55d9,
+      secondary: 0xd8a66b,
       gold: 0xffef7e,
       intensity: 0.68,
       density: 0.72,
@@ -248,11 +249,9 @@ export class TacticalLoadoutOverlay {
 
     const { panel, pad, headerHeight, footerHeight } = layout;
     const chrome = new PIXI.Graphics();
-    chrome.roundRect(panel.x, panel.y, panel.width, panel.height, 8);
-    chrome.fill({ color: 0x040d1a, alpha: 0.985 });
-    chrome.stroke({ color: 0x37f5ff, width: 2, alpha: 0.94 });
+    drawAstraPanel(chrome, panel.x, panel.y, panel.width, panel.height, 8, { color: 0x040d1a, alpha: 0.985 }, { color: 0x37f5ff, width: 2, alpha: 0.94 });
     chrome.roundRect(panel.x + 9, panel.y + 9, panel.width - 18, panel.height - 18, 6);
-    chrome.stroke({ color: 0xff55d9, width: 1, alpha: 0.3 });
+    chrome.stroke({ color: 0xd8a66b, width: 1, alpha: 0.3 });
     chrome.rect(panel.x + pad, panel.y + headerHeight - 14, panel.width - pad * 2, 2);
     chrome.fill({ color: 0x37f5ff, alpha: 0.28 });
     chrome.rect(panel.x + pad, panel.y + panel.height - footerHeight + 8, panel.width - pad * 2, 1);
@@ -260,7 +259,7 @@ export class TacticalLoadoutOverlay {
     chrome.rect(panel.x + 4, panel.y + 28, 5, Math.max(44, panel.height - 56));
     chrome.fill({ color: 0x37f5ff, alpha: 0.52 });
     chrome.rect(panel.x + panel.width - 9, panel.y + 28, 5, Math.max(44, panel.height - 56));
-    chrome.fill({ color: 0xff55d9, alpha: 0.42 });
+    chrome.fill({ color: 0xd8a66b, alpha: 0.42 });
     this.container.addChild(chrome);
 
     const title = createText(translateText(this.title), {
@@ -385,9 +384,7 @@ export class TacticalLoadoutOverlay {
     const accent = Number(item.color) || CATEGORY_COLORS[item.category] || CATEGORY_COLORS.utility;
 
     const bg = new PIXI.Graphics();
-    bg.roundRect(0, 0, layout.cardWidth, layout.cardHeight, 7);
-    bg.fill({ color: 0x061422, alpha: 0.97 });
-    bg.stroke({ color: accent, width: 1.35, alpha: 0.7 });
+    drawAstraPanel(bg, 0, 0, layout.cardWidth, layout.cardHeight, 7, { color: 0x061422, alpha: 0.97 }, { color: accent, width: 1.35, alpha: 0.7 });
     bg.rect(0, 12, 5, layout.cardHeight - 24);
     bg.fill({ color: accent, alpha: 0.78 });
     bg.rect(14, layout.veryCompact ? 28 : 36, layout.cardWidth - 28, 1);
@@ -444,9 +441,7 @@ export class TacticalLoadoutOverlay {
     const stackBg = new PIXI.Graphics();
     const stackWidth = layout.veryCompact ? 38 : 44;
     const stackHeight = layout.veryCompact ? 20 : 24;
-    stackBg.roundRect(-stackWidth / 2, -stackHeight / 2, stackWidth, stackHeight, 5);
-    stackBg.fill({ color: accent, alpha: 0.96 });
-    stackBg.stroke({ color: 0xffffff, width: 1, alpha: 0.52 });
+    drawAstraPanel(stackBg, -stackWidth / 2, -stackHeight / 2, stackWidth, stackHeight, 5, { color: accent, alpha: 0.96 }, { color: 0xffffff, width: 1, alpha: 0.52 });
 
     if (layout.veryCompact) {
       const left = 18;
@@ -534,9 +529,7 @@ export class TacticalLoadoutOverlay {
     dim.fill({ color: 0x01050d, alpha: 0.88 });
     detail.addChild(dim);
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x04111f, alpha: 0.99 });
-    panel.stroke({ color: accent, width: 2.2, alpha: 0.94 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x04111f, alpha: 0.99 }, { color: accent, width: 2.2, alpha: 0.94 });
     panel.roundRect(panelX + 9, panelY + 9, panelWidth - 18, panelHeight - 18, 6);
     panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.26 });
     detail.addChild(panel);
@@ -594,9 +587,7 @@ export class TacticalLoadoutOverlay {
     close.hitArea = new PIXI.Rectangle(-100, -19, 200, 38);
     close.position.set(width / 2, panelY + panelHeight - 40);
     const closeBg = new PIXI.Graphics();
-    closeBg.roundRect(-100, -19, 200, 38, 6);
-    closeBg.fill({ color: 0x0a3850, alpha: 0.96 });
-    closeBg.stroke({ color: 0xffe891, width: 1.5, alpha: 0.86 });
+    drawAstraPanel(closeBg, -100, -19, 200, 38, 6, { color: 0x0a3850, alpha: 0.96 }, { color: 0xffe891, width: 1.5, alpha: 0.86 });
     const closeText = createText(translateText('CLOSE'), { fontFamily: FONT_DISPLAY, fontSize: 16, fontWeight: '900', fill: '#ffffff' });
     closeText.anchor.set(0.5);
     close.addChild(closeBg, closeText);
@@ -702,9 +693,7 @@ export class TacticalLoadoutOverlay {
       const { width, height } = button._size;
       const bg = button._nodes.bg;
       bg.clear();
-      bg.roundRect(-width / 2, -height / 2, width, height, 6);
-      bg.fill({ color: focused ? 0x0c3850 : 0x061827, alpha: 0.98 });
-      bg.stroke({ color: focused ? 0xffffff : id === 'close' ? 0xffd56a : 0x37f5ff, width: focused ? 2.2 : 1.2, alpha: focused ? 0.96 : 0.68 });
+      drawAstraPanel(bg, -width / 2, -height / 2, width, height, 6, { color: focused ? 0x0c3850 : 0x061827, alpha: 0.98 }, { color: focused ? 0xffffff : id === 'close' ? 0xffd56a : 0x37f5ff, width: focused ? 2.2 : 1.2, alpha: focused ? 0.96 : 0.68 });
       bg.rect(-width / 2 + 8, -height / 2 + 6, focused ? 4 : 2, height - 12);
       bg.fill({ color: id === 'close' ? 0xffd56a : 0x37f5ff, alpha: focused ? 0.9 : 0.5 });
     }
