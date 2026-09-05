@@ -202,27 +202,26 @@ const UNLOCK_SLOT_BY_INDEX = UNLOCK_LEVELS.map((unlockLevel, index) =>
   UNLOCK_LEVELS.slice(0, index).filter((candidate) => candidate === unlockLevel).length
 );
 
+// Stable callsigns are presentation only. Keep profile IDs and every simulation
+// field intact; do not turn a display-name change into a new saved discovery.
+const FLEET_NAMES = (() => {
+  const prefixes = [...new Set([...NAME_PREFIXES, ...MAYHEM_PREFIXES, ...EARLY_SURGE_PREFIXES,
+    'Vesper', 'Obsidian', 'Hollow', 'Ashen', 'Sable', 'Ivory', 'Aster', 'Umbral'])];
+  const nouns = [...new Set([...NAME_NOUNS, ...MAYHEM_NOUNS, ...EARLY_SURGE_NOUNS,
+    'Harrier', 'Kestrel', 'Scythe', 'Anvil', 'Corsair', 'Bastion', 'Osprey', 'Lancer'])];
+  const used = new Set(LEGACY_NAMES);
+  const result = [...LEGACY_NAMES];
+  for (let i = 0; result.length < GENERATED_ENEMY_TOTAL; i++) {
+    const p = i % prefixes.length;
+    const n = (Math.floor(i / prefixes.length) + p * 11) % nouns.length;
+    const name = `${prefixes[p]} ${nouns[n]}`;
+    if (!used.has(name)) { used.add(name); result.push(name); }
+  }
+  return result;
+})();
+
 function nameFor(index) {
-  if (LEGACY_NAMES[index]) return LEGACY_NAMES[index];
-  if (index >= GENERATED_ENEMY_EARLY_SURGE_START_INDEX) {
-    const surgeIndex = index - GENERATED_ENEMY_EARLY_SURGE_START_INDEX;
-    const prefix = EARLY_SURGE_PREFIXES[(surgeIndex * 17 + Math.floor(surgeIndex / 19)) % EARLY_SURGE_PREFIXES.length];
-    const noun = EARLY_SURGE_NOUNS[(surgeIndex * 23 + Math.floor(surgeIndex / 11)) % EARLY_SURGE_NOUNS.length];
-    const call = EARLY_SURGE_CALLSIGNS[(surgeIndex * 5 + Math.floor(surgeIndex / 7)) % EARLY_SURGE_CALLSIGNS.length];
-    const mark = Math.floor(surgeIndex / EARLY_SURGE_NOUNS.length) + 1;
-    return `${prefix} ${noun} ${call}-${mark}`;
-  }
-  if (index >= GENERATED_ENEMY_LEGACY_TOTAL) {
-    const extraIndex = index - GENERATED_ENEMY_LEGACY_TOTAL;
-    const prefix = MAYHEM_PREFIXES[(extraIndex * 11 + Math.floor(extraIndex / 7)) % MAYHEM_PREFIXES.length];
-    const noun = MAYHEM_NOUNS[(extraIndex * 13 + Math.floor(extraIndex / 5)) % MAYHEM_NOUNS.length];
-    const mark = Math.floor(extraIndex / MAYHEM_NOUNS.length) + 1;
-    return `${prefix} ${noun} ${mark}`;
-  }
-  const prefix = NAME_PREFIXES[(index * 7) % NAME_PREFIXES.length];
-  const noun = NAME_NOUNS[(index * 11 + Math.floor(index / 3)) % NAME_NOUNS.length];
-  const mark = Math.floor(index / NAME_NOUNS.length) + 1;
-  return `${prefix} ${noun} ${mark}`;
+  return FLEET_NAMES[index];
 }
 
 function pickStyleForUnlock(defs, unlockLevel, slot, index, offset = 0) {

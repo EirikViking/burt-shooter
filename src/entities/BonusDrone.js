@@ -31,6 +31,8 @@ export class BonusDrone {
         this.intentTimer = Math.random() * Math.PI * 2;
         this.clarityPulse = 0;
         this.edgeMarker = null;
+        // Cosmetic selection uses spawn coordinates, never another gameplay roll.
+        this.visualVariant = Math.abs(Math.round(x * 13 + y * 7)) % 4;
 
         this.createSprite();
 
@@ -53,7 +55,7 @@ export class BonusDrone {
         this.intentHalo.label = 'bonusDroneIntentHalo';
         this.sprite.addChild(this.intentHalo);
 
-        const texture = GameAssets.getBonusCoreTexture();
+        const texture = GameAssets.getBonusDroneTexture(this.visualVariant + (this.type === 'POWERUP' ? 4 : 0));
         if (GameAssets.isValidTexture(texture)) {
             const s = new PIXI.Sprite(texture);
             s.anchor.set(0.5);
@@ -63,11 +65,8 @@ export class BonusDrone {
 
             if (this.type === 'POWERUP') {
                 s.tint = 0xffffff;
-                const glow = new PIXI.Graphics();
-                glow.circle(0, 0, 30).fill({ color: 0xffffaa, alpha: 0.3 });
-                this.sprite.addChild(glow);
             } else {
-                s.tint = 0xffaaaa; // Red/Hostile
+                s.tint = 0xffffff; // Hostile armor and optics are authored into the sprite.
             }
 
             this.sprite.addChild(s);
@@ -77,6 +76,18 @@ export class BonusDrone {
             g.circle(0, 0, 20);
             g.fill({ color: this.type === 'POWERUP' ? 0xffffff : 0xff0000 });
             this.sprite.addChild(g);
+            GameAssets.ensureBonusCoreTexture().then(() => {
+                if (!this.active || !this.sprite || this.sprite.destroyed) return;
+                const loaded = GameAssets.getBonusDroneTexture(this.visualVariant + (this.type === 'POWERUP' ? 4 : 0));
+                if (!GameAssets.isValidTexture(loaded)) return;
+                const hull = new PIXI.Sprite(loaded);
+                hull.anchor.set(0.5);
+                hull.width = hull.height = this.type === 'POWERUP' ? 52 : 46;
+                const index = this.sprite.getChildIndex(g);
+                this.sprite.removeChild(g); g.destroy();
+                this.sprite.addChildAt(hull, index);
+                this.mainSprite = hull;
+            });
         }
 
         this.intentGlyph = new PIXI.Graphics();
@@ -129,7 +140,12 @@ export class BonusDrone {
             const zigzagAmplitude = speedMultiplier < 1.0 ? 1 : 2;
             this.x += Math.sin(this.y * 0.02) * zigzagAmplitude * delta;
             this.sprite.y = this.y;
-            this.sprite.rotation += 0.05 * delta;
+            if (this.mainSprite) {
+                const target = this.visualVariant === 0
+                    ? this.intentTimer * 0.8
+                    : Math.atan2(this.vy, this.vx) + Math.PI / 2;
+                this.mainSprite.rotation += Math.atan2(Math.sin(target - this.mainSprite.rotation), Math.cos(target - this.mainSprite.rotation)) * Math.min(1, delta * 0.075);
+            }
         }
 
         this.sprite.x = this.x;
@@ -160,13 +176,12 @@ export class BonusDrone {
         const alpha = isPowerup ? 0.38 + pulse * 0.24 : 0.34 + pulse * 0.22;
 
         this.intentHalo.clear();
-        this.intentHalo.circle(0, 0, radius);
-        this.intentHalo.stroke({ color: primary, width: isPowerup ? 2 : 1.6, alpha });
-        this.intentHalo.circle(0, 0, Math.max(8, radius * 0.58));
-        this.intentHalo.stroke({ color: secondary, width: 1, alpha: alpha * 0.62 });
-        if (isPowerup) {
-            this.intentHalo.circle(0, 0, radius + 6);
-            this.intentHalo.stroke({ color: 0xffffff, width: 1, alpha: 0.08 + pulse * 0.08 });
+        // Open acquisition arcs leave the machinery visible and separate the
+        // gold collectible from the compact red shoot-target cue.
+        for (let side = 0; side < 2; side++) {
+            const a = side * Math.PI + (isPowerup ? 0.3 : 1.05);
+            this.intentHalo.arc(0, 0, radius, a, a + (isPowerup ? 0.8 : 0.35));
+            this.intentHalo.stroke({ color: primary, width: isPowerup ? 2 : 1.4, alpha: alpha * 0.75 });
         }
 
         this.intentGlyph.clear();
@@ -188,8 +203,8 @@ export class BonusDrone {
             drawChevron(r - chevron, 0, r, chevron, r - chevron * 0.9, chevron * 1.8);
             this.intentGlyph.stroke({ color: primary, width: 2, alpha: 0.46 + pulse * 0.28 });
         } else {
-            const r = radius + 5;
-            const bracket = 12;
+            const r = radius - 2;
+            const bracket = 5;
             const drawBracket = (sx, sy) => {
                 const x = sx * r;
                 const y = sy * r;
@@ -201,10 +216,6 @@ export class BonusDrone {
             drawBracket(-1, 1);
             drawBracket(1, -1);
             drawBracket(-1, -1);
-            this.intentGlyph.moveTo(-8, 0);
-            this.intentGlyph.lineTo(8, 0);
-            this.intentGlyph.moveTo(0, -8);
-            this.intentGlyph.lineTo(0, 8);
             this.intentGlyph.stroke({ color: primary, width: 1.8, alpha: 0.48 + pulse * 0.3 });
         }
 
@@ -447,10 +458,20 @@ export class BonusDrone {
     }
 
     destroy() {
+        if (this.destroyed) return;
+        this.destroyed = true;
+        this.active = false;
         this.hideEdgeMarker('destroy');
         destroyMicroSignals(this.edgeMarker);
-        if (this.edgeMarker?.parent) this.edgeMarker.parent.removeChild(this.edgeMarker);
-        if (this.sprite?.parent) this.sprite.parent.removeChild(this.sprite);
+        // Dispose per-instance Graphics contexts as well as detaching them.
+        // Shared hull textures belong to GameAssets and must stay alive.
+        this.edgeMarker?.destroy({ children: true });
+        this.sprite?.destroy({ children: true, texture: false, textureSource: false });
         this.edgeMarker = null;
+        this.sprite = null;
+        this.mainSprite = null;
+        this.motionTrail = null;
+        this.intentHalo = null;
+        this.intentGlyph = null;
     }
 }

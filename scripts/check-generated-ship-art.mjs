@@ -216,10 +216,11 @@ if (hashes.size !== lateMayhem.length) {
   fail(`late-mayhem ship art should be unique, found ${hashes.size}/${lateMayhem.length} unique PNG hashes`);
 }
 
-const haloButton = BOSS_SUPPORT_SHIPS.find((ship) => ship.displayName === 'Halo Button 2');
+// Stable identity survives the requested replacement of numbered callsigns.
+const haloButton = BOSS_SUPPORT_SHIPS.find((ship) => ship.id === 'boss_support_ship_040');
 const haloButtonArt = enemies[haloButton?.spriteIndex ?? -1] || '';
 if (!haloButton) {
-  fail('missing Halo Button 2 boss support profile used by the screenshot regression check');
+  fail('missing boss_support_ship_040 profile used by the screenshot regression check');
 } else if (!haloButtonArt.endsWith('.png')) {
   fail(`Halo Button 2 should resolve to a generated PNG, found ${haloButtonArt || 'none'}`);
 }
@@ -227,8 +228,8 @@ if (!haloButton) {
 const grudgeSaintSpriteIndex = 59;
 const grudgeSaintArt = enemies[grudgeSaintSpriteIndex] || '';
 const grudgeSaintFile = grudgeSaintArt ? publicFile(grudgeSaintArt) : '';
-if (!grudgeSaintArt.endsWith('/late-mayhem/nova-late-mayhem-enemy-010.png')) {
-  fail(`Grudge Saint should keep its reviewed late-mayhem art, found ${grudgeSaintArt || 'none'}`);
+if (grudgeSaintArt !== '/art/astra/fleet-v5/060.png') {
+  fail(`Grudge Saint slot must resolve to the reviewed V5 replacement, found ${grudgeSaintArt || 'none'}`);
 } else if (!fs.existsSync(grudgeSaintFile)) {
   fail(`missing Grudge Saint art ${grudgeSaintArt}`);
 } else {

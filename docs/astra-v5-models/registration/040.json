@@ -1,0 +1,23 @@
+{
+  "baseline": {
+    "width": 192,
+    "height": 192,
+    "box": {
+      "left": 36,
+      "top": 19,
+      "width": 119,
+      "height": 169
+    }
+  },
+  "candidate": {
+    "width": 192,
+    "height": 192,
+    "box": {
+      "left": 36,
+      "top": 19,
+      "width": 119,
+      "height": 169
+    }
+  },
+  "source": "cells/040.png"
+}

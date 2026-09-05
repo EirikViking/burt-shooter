@@ -1481,7 +1481,7 @@ function pilotRankEntry(title, index) {
     tip: index >= 20
       ? 'Hard ranks are long-haul bragging rights. Chase them after the clear, not instead of surviving it.'
       : 'Career XP comes from ranked runs. Keep flying, keep submitting, keep the receipt.',
-    art: AssetManifest.generated.ranks?.[index] || AssetManifest.generated.leaderboardHall,
+    art: AssetManifest.sprites.ranks[index] || AssetManifest.generated.leaderboardHall,
     accent: index >= 20 ? 0xffe76a : 0x37f5ff,
     tint: index >= 20 ? 0xfff08a : 0x9cfbff,
     unlockLevel: level,

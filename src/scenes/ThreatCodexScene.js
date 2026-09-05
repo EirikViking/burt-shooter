@@ -553,7 +553,7 @@ export class ThreatCodexScene {
       bosses: AssetManifest.generated.bossDossier || AssetManifest.generated.bossArenaBackdrop,
       runThemes: AssetManifest.generated.menuBackdrop,
       cabinetLogs: AssetManifest.generated.menuCredits,
-      pilotRanks: AssetManifest.generated.ranks?.[0] || AssetManifest.generated.leaderboardHall
+      pilotRanks: AssetManifest.sprites.ranks[entry?.loreFacts?.rank - 1 || 0] || AssetManifest.generated.leaderboardHall
     };
     return fallback[categoryId] || AssetManifest.generated.leaderboardHall;
   }

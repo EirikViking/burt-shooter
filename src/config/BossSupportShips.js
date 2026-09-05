@@ -46,14 +46,14 @@ function round(value, digits = 2) {
 function buildSupportShip(index) {
   const role = SUPPORT_ROLES[(index * 5 + Math.floor(index / 7)) % SUPPORT_ROLES.length];
   const [tint, accent] = SUPPORT_PALETTES[(index * 3 + Math.floor(index / 11)) % SUPPORT_PALETTES.length];
-  const prefix = SUPPORT_PREFIXES[(index * 13 + Math.floor(index / 5)) % SUPPORT_PREFIXES.length];
-  const noun = SUPPORT_NOUNS[(index * 17 + Math.floor(index / 3)) % SUPPORT_NOUNS.length];
-  const mark = Math.floor(index / SUPPORT_NOUNS.length) + 1;
+  const prefixIndex = index % SUPPORT_PREFIXES.length;
+  const prefix = SUPPORT_PREFIXES[prefixIndex];
+  const noun = SUPPORT_NOUNS[(Math.floor(index / SUPPORT_PREFIXES.length) + prefixIndex * 7) % SUPPORT_NOUNS.length];
   const drift = (index % 2 ? -1 : 1) * (0.18 + (index % 7) * 0.025);
   return {
     id: `boss_support_ship_${String(index + 1).padStart(3, '0')}`,
     type: `boss_support_ship_${String(index + 1).padStart(3, '0')}`,
-    displayName: `${prefix} ${noun} ${mark}`,
+    displayName: `${prefix} ${noun}`,
     role: role.id,
     signalClass: 'boss support',
     unarmed: true,

@@ -16,12 +16,14 @@ class GameAssetsManager {
     }
 
     getThreatPresentationSource(source, family, index) {
+        if (source?.includes('/fleet-v5/')) return source;
         const count = AssetManifest.generated.astraThreatCounts?.[family] || 0;
         return index >= 0 && index < count ? `/art/astra/${family}/${String(index + 1).padStart(3, '0')}.png` : source;
     }
 
     getCodexPresentationSource(entry) {
         const source = entry?.art;
+        if (source?.includes('/fleet-v5/')) return source.replace('/astra/fleet-v5/', '/astra/dossier/fleet-v5/').replace('.png', '.webp');
         const support = /^boss_support_ship_(\d+)$/.exec(entry?.id || '');
         if (support && Number(support[1]) <= AssetManifest.generated.astraThreatCounts.supports) return `/art/astra/dossier/supports/${support[1]}.webp`;
         const elite = AssetManifest.generated.eliteMiddleShips.indexOf(source);
@@ -89,6 +91,13 @@ class GameAssetsManager {
     }
 
     async ensureBonusCoreTexture() {
+        if (!this.bonusDroneTextures) {
+            this.bonusDroneTextures = [];
+            this.bonusDroneLoad = Promise.all(AssetManifest.generated.bonusDrones.map(async (src, index) => {
+                this.bonusDroneTextures[index] = await PIXI.Assets.load(src);
+            })).catch(error => console.warn('[GameAssets] Drone art fallback:', error.message));
+        }
+        await this.bonusDroneLoad;
         if (this.isValidTexture(this.bonusCoreTexture)) return this.bonusCoreTexture;
 
         try {
@@ -115,6 +124,10 @@ class GameAssetsManager {
 
     async ensureBonusCoreTextureLoaded() {
         return this.ensureBonusCoreTexture();
+    }
+
+    getBonusDroneTexture(index = 0) {
+        return this.bonusDroneTextures?.[index] || this.bonusCoreTexture;
     }
 
     async ensurePlasmaBloomTexture() {

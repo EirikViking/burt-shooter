@@ -1,4 +1,5 @@
 import { AstraTurntable } from '../ui/AstraTurntable.js';
+import { AstraDockAtmosphere } from '../ui/AstraDockAtmosphere.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import { AstraShowroomLights } from '../ui/AstraShowroomLights.js';
 import * as PIXI from 'pixi.js';
@@ -426,8 +427,7 @@ export class MenuScene {
   }
 
   init() {
-    this.astraMenuShip?.destroy?.();
-    this.astraMenuShip = null;
+    this.disposeAstraBackdrop();
     this.container.removeChildren();
     this.scoutAnomaly = readScoutAnomalySelection();
     this.stars = [];
@@ -905,6 +905,16 @@ export class MenuScene {
     }
   }
 
+  disposeAstraBackdrop() {
+    // Re-entering the menu must release owned filters/geometry, while the asset
+    // cache retains shared images. removeChildren alone leaves GPU resources.
+    this.astraBackdropRequest = (this.astraBackdropRequest || 0) + 1;
+    for (const key of ['astraMenuLights', 'astraDock', 'astraMenuShip', 'backdropShade', 'backdrop']) {
+      this[key]?.destroy?.({children:true,texture:false,textureSource:false});
+      this[key] = null;
+    }
+  }
+
   async initBackdrop() {
     const request = this.astraBackdropRequest = (this.astraBackdropRequest || 0) + 1;
     try {
@@ -922,7 +932,10 @@ export class MenuScene {
 
       const shipTexture = await PIXI.Assets.load('/art/astra/menu-ship.webp');
       if (request !== this.astraBackdropRequest) return;
-      this.astraMenuShip = new AstraTurntable(0, shipTexture);
+      this.astraDock = new AstraDockAtmosphere();
+      this.astraDock.zIndex = -17;
+      this.container.addChild(this.astraDock);
+      this.astraMenuShip = new AstraTurntable(0, shipTexture, {idle:true});
       this.astraMenuShip.zIndex = -16;
       this.astraMenuShip.eventMode = 'static';
       this.container.addChild(this.astraMenuShip);
@@ -7791,6 +7804,7 @@ export class MenuScene {
 
   update(delta) {
     this.animationTime += delta * 0.016;
+    this.astraDock?.update(delta, this.game.getWidth(), this.game.getHeight(), getReducedMotionEnabled());
     if (this.astraMenuShip && this.astraMenuLights) {
       const motion = !getReducedMotionEnabled();
       this.astraMenuShip.y = this.game.getHeight() * (0.49 + (motion ? Math.sin(this.animationTime * 0.65) * 0.007 : 0));
@@ -7945,9 +7959,7 @@ export class MenuScene {
   }
 
   destroy() {
-    this.astraBackdropRequest = (this.astraBackdropRequest || 0) + 1;
-    this.astraMenuShip?.destroy?.();
-    this.astraMenuShip = null;
+    this.disposeAstraBackdrop();
     this.closeQuitConfirmation();
     this.closeSectorSelector();
     this.closeModeBriefing();
