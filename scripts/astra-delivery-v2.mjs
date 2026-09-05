@@ -5,24 +5,29 @@ import path from 'node:path';
 const root=process.cwd(),out=path.resolve('test-results/astra-v2-delivery');mkdirSync(out,{recursive:true});
 const load=p=>JSON.parse(readFileSync(p,'utf8'));
 const before=load('test-results/astra-desktop-baseline-v2/report.json');
-const after=load('test-results/astra-desktop-candidate-v2/report.json');
-const opening=load('test-results/astra-desktop-candidate-v2-opening/report.json');
-const nativePerf=load('test-results/astra-native-v2-perf-smoke/report.json');
+const after=load('test-results/astra-desktop-candidate-v3/report.json');
+const opening=load('test-results/astra-desktop-candidate-v3-opening/report.json');
+const nativePerf=load('test-results/astra-native-v3-perf-smoke/report.json');
+const nativeControls=load('test-results/astra-native-v3-control-smoke/report.json');
+const nativeSmoke=load('test-results/astra-native-v3-smoke/report.json');
 const menus=load('test-results/astra-packaged-menus/report.json');
-for(const r of [before,after,opening,nativePerf,menus])assert.equal(r.status,'passed');
+for(const r of [before,after,opening,nativePerf,nativeControls,nativeSmoke,menus])assert.equal(r.status,'passed');
 assert.equal(before.dailyContract.seed,after.dailyContract.seed);assert.equal(before.dailyContract.rulesHash,after.dailyContract.rulesHash);
 const build=load('test-results/astra-build-location.json');
 const head=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const branch=execFileSync('git',['branch','--show-current'],{encoding:'utf8'}).trim();
 const scenes=[['01-menu','Main menu'],['04-combat','Combat'],['05-daily','Daily challenge'],['06-dense','Dense combat'],['07-boss','Boss'],['09-rewards','Rewards'],['10-death','Game over']];
-for(const [id]of scenes)for(const label of ['baseline','candidate'])copyFileSync(`test-results/astra-desktop-${label}-v2/${id}.png`,path.join(out,`${label}-${id}.png`));
+for(const [id]of scenes)for(const label of ['baseline','candidate'])copyFileSync(`test-results/astra-desktop-${label}-${label==='baseline'?'v2':'v3'}/${id}.png`,path.join(out,`${label}-${id}.png`));
 for(const id of menus.captures)copyFileSync(`test-results/astra-packaged-menus/${id}.png`,path.join(out,`menu-${id}.png`));
 copyFileSync(opening.recording.video,path.join(out,'gameplay-normal-speed.mp4'));
 copyFileSync(after.recording.video,path.join(out,'dense-gameplay-normal-speed.mp4'));
-for(const [name,data]of Object.entries({baseline:before,candidate:after,opening,menus,'native-perf':nativePerf}))writeFileSync(path.join(out,`${name}-report.json`),JSON.stringify(data,null,2));
+copyFileSync(menus.animation.video,path.join(out,'menu-normal-speed.mp4'));
+copyFileSync(after.bossRecording.video,path.join(out,'boss-destruction-normal-speed.mp4'));
+for(const [name,data]of Object.entries({baseline:before,candidate:after,opening,menus,'native-perf':nativePerf,'native-controls':nativeControls,'native-smoke':nativeSmoke}))writeFileSync(path.join(out,`${name}-report.json`),JSON.stringify(data,null,2));
 writeFileSync(path.join(out,'files-changed.txt'),execFileSync('git',['diff','--name-only','a0b88d064c31dbc879948babd7751bf52fe7be77',head],{encoding:'utf8'}));
 const num=n=>Number(n).toFixed(2);
 const rows=['daily-seeded','sector-90-dense','boss'].map(name=>({name,before:before.performance.find(r=>r.name===name),after:after.performance.find(r=>r.name===name)}));
+const maxWorkingSet=(report,type)=>Math.max(...report.performance.flatMap(p=>(p.processMemory||[]).filter(m=>m.type===type).map(m=>m.memory.workingSetSize/1024)));
 const launch=path.join(build.output,'launch.mjs');
 const clickLauncher=path.join(build.output,'Play Nova Swarm.vbs');
 writeFileSync(clickLauncher,`Set shell = CreateObject("WScript.Shell")
@@ -49,6 +54,7 @@ Playable Windows x64 experiment with a rebuilt presentation in the actual PixiJS
 - 50 boss presentations, ten structural archetypes with five tiers, and modeled moving machinery. Original attacks, profile identities and collision references remain intact.
 - 50 rebuilt enemy hulls and 48 detailed planetary scenes, changing every five sectors through Sector 240, then cycling. Existing later Mayhem enemy art remains.
 - Three modeled station interiors; shared metal console materials across menus, codex, hangar, settings, help, pause and overlays. Larger codex dossiers, clearer HUD framing, exhaust and bounded destruction fragments.
+- Original Blender combustion animation replaces the old boss/ordinary death blooms and streaks. Boss armor tears away around a reactor fireball, brief pressure front and cooling smoke. Victory particles are quiet sparks; positive energy rewards keep their distinct colors. The renderer has an 18-effect bound and consumes no gameplay RNG.
 
 ## Play
 
@@ -77,7 +83,7 @@ Use the launcher to retain the isolated test profile and disabled Steam services
 
 ## Captured evidence
 
-[Interactive before/after comparison and menu gallery](comparison.html) · [Normal-speed gameplay](gameplay-normal-speed.mp4) · [Dense combat](dense-gameplay-normal-speed.mp4)
+[Interactive before/after comparison and menu gallery](comparison.html) · [Normal-speed gameplay](gameplay-normal-speed.mp4) · [Dense combat](dense-gameplay-normal-speed.mp4) · [Boss destruction](boss-destruction-normal-speed.mp4) · [Animated main menu](menu-normal-speed.mp4)
 
 All images and videos in this delivery are from the running game; candidate evidence comes from the packaged executable. No Blender render is presented as gameplay. The opening recording uses scripted keyboard input and normal vulnerability/lives in isolated practice. Dense recording uses QA invulnerability. Both are silent and preserve wall-clock speed. Boss death/rewards are staged for coverage. Video frames were sampled for readability and continuity; this is not a human playtest or a claim of full real-time video review.
 
@@ -91,7 +97,11 @@ Menu-to-controllable: ${before.performance.find(p=>p.name==='menu-to-controllabl
 
 Separate packaged 60-second native check: ${num(nativePerf.avgFps)} FPS average, ${num(nativePerf.minFps)} minimum; passed. Native smoke and control-smoke also passed. Planet transition checks confirm previous textures are released; the first world remains shared. Showroom textures are cached across the 30-ship roster.
 
+Highest sampled renderer process working set: ${num(maxWorkingSet(before,'Tab'))} MiB before / ${num(maxWorkingSet(after,'Tab'))} MiB after. GPU-process working set: ${num(maxWorkingSet(before,'GPU'))} / ${num(maxWorkingSet(after,'GPU'))} MiB. These are Windows process working sets, not dedicated VRAM measurements or a total physical-memory sum. Artwork increases texture storage; the recorded process samples include more than JavaScript heap alone.
+
 ## Fixes and validation
+
+The final destruction regression matches the committed pre-explosion particle allocator, particle motion/lifetime properties and the exact random-number stream. Bounds, boss deduplication, reduced motion and retirement pass. Existing death-feedback readability and boss-death voice runtime checks pass unchanged. A pre-explosion native candidate attempt failed when a staged navigation lost focus before its first wave; the harness now applies the existing QA focus suppression before waiting, without changing game pause behavior. A custom-protocol service-worker warning was also corrected. The failed intermediate report is retained, and final results below use the subsequent package.
 
 Fixed: disconnected stdout/stderr EPIPE dialogs; early debug/practice ranking policy and syncing-state defects; translated menu tile cache; lazy rank-halo sizing/cache warnings; missing point-defense sound alias; boss component container warnings; obsolete boss animation fixture timing; result-screen uppercase-before-translation, end-state/sector/status pattern gaps and romanized offline messages across seven translated locales. Existing assertions were preserved, and the language check now catches the visible leaks missed previously.
 
