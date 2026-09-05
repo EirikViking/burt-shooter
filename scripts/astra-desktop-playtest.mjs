@@ -9,6 +9,7 @@ const executable=baseline?path.resolve('node_modules/electron/dist/electron.exe'
 const out=path.resolve('test-results',`astra-desktop-${label}`);mkdirSync(out,{recursive:true});
 const report={label,executable,viewport:[1280,720],errors:[],warnings:[],checks:[],performance:[]};
 const log=createWriteStream(path.join(out,'process.log'));
+const startupAt=Date.now();
 const app=await electron.launch({executablePath:executable,args:[...(baseline?[path.resolve('electron/main.cjs')]:[]),'--nova-fresh-profile','--windowed'],cwd:process.cwd(),env:{...process.env,NOVA_SWARM_USER_DATA_DIR:path.join(out,'profile'),NOVA_SWARM_FRESH_PROFILE:'1',NOVA_SWARM_WINDOWED:'1'},timeout:120000});
 app.process().stdout?.pipe(log,{end:false});app.process().stderr?.pipe(log,{end:false});
 const page=await app.firstWindow();
@@ -46,7 +47,7 @@ async function record({qaInvulnerability=true,bossDeath=false}={}){
   cdp.on('Page.screencastFrame',listener);
   await cdp.send('Page.startScreencast',{format:'jpeg',quality:86,maxWidth:1280,maxHeight:720,everyNthFrame:1});
   if(bossDeath){
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(6000);
     const killed=await page.evaluate(()=>{const b=window.__game.scenes.play.enemyManager.boss;b.invulnerableUntilMs=0;b.firstDamageAtMs=Date.now()-120000;b.finishGateUntilMs=0;return b.takeDamage(b.maxHealth+9999);});assert.equal(killed,true);
     await page.waitForTimeout(180);await shot('08-destruction');await page.waitForTimeout(3200);
   }else{
@@ -65,13 +66,17 @@ async function record({qaInvulnerability=true,bossDeath=false}={}){
 try {
   await cdp.send('Performance.enable');
   await page.waitForFunction(()=>window.__game?.scenes?.menu?.backdrop?.texture,null,{timeout:120000});
+  if(!baseline)await page.waitForFunction(()=>window.__game.scenes.menu.astraMenuShip?.ready,null,{timeout:120000});
+  report.menuArtReadyMs=Date.now()-startupAt;
   await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setFullScreen(false);w.webContents.setBackgroundThrottling(false);});await page.waitForTimeout(400);
   await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setContentSize(1280,720);w.center();w.showInactive();});await page.waitForTimeout(600);
   report.runtime=await app.evaluate(({app})=>({packaged:app.isPackaged,userData:app.getPath('userData'),electron:process.versions.electron}));
   assert.equal(report.runtime.packaged,!baseline);assert.equal(report.runtime.userData,path.join(out,'profile'));
   const initial=new URL(page.url());const base=`${initial.protocol}//${initial.host}/`;
   async function open(params={}){const u=new URL(base);for(const[k,v]of Object.entries({offlineLeaderboard:'1',...params}))u.searchParams.set(k,v);const at=Date.now();await page.goto(u.href,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.__game&&window.render_game_to_text&&document.body.dataset.menuReady==='1',null,{timeout:120000});await page.waitForTimeout(250);await page.evaluate(()=>window.__novaDisplay.applySettings({mode:'windowed',windowSize:{width:1280,height:720},uiScale:1}));await page.waitForTimeout(400);await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1280,720));await page.waitForFunction(()=>innerWidth===1280&&innerHeight===720);return at;}
-  await open();await page.waitForFunction(()=>window.__game.scenes.menu?.backdrop?.texture,null,{timeout:120000});await page.waitForTimeout(1200);await shot('01-menu');
+  await open();await page.waitForFunction(()=>window.__game.scenes.menu?.backdrop?.texture,null,{timeout:120000});
+  if(!baseline)await page.waitForFunction(()=>window.__game.scenes.menu.astraMenuShip?.ready,null,{timeout:120000});
+  await page.waitForTimeout(1200);await shot('01-menu');
   const bounds=await page.evaluate(()=>{const b=window.__game.scenes.menu.runModeLaunchButton.getBounds();return{x:b.x,y:b.y,width:b.width,height:b.height};});
   const launchAt=Date.now();await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await ready();report.performance.push({name:'menu-to-controllable',loadMs:Date.now()-launchAt});
   await shot('02-opening');
