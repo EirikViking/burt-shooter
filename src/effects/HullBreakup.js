@@ -24,7 +24,8 @@ export class HullBreakup {
       frames = [0, 1, 2, 3].map(i => new PIXI.Texture({ source: texture.source, frame: new PIXI.Rectangle((i % 2) * w, Math.floor(i / 2) * h, w, h) }));
       this.frames.set(texture, frames);
     }
-    const size = Math.max(18, Math.min(160, enemy.kind === 'boss' ? enemy.radius * 2 : enemy.radius * 2.5));
+    const boss = enemy.kind === 'boss';
+    const size = Math.max(18, Math.min(boss ? 260 : 160, boss ? enemy.radius * 2 : enemy.radius * 2.5));
     const angle = (body.rotation || 0) + (enemy.sprite?.rotation || 0);
     for (let i = 0; i < 4; i++) {
       const dx = i % 2 ? 1 : -1, dy = i < 2 ? -1 : 1;
@@ -37,19 +38,19 @@ export class HullBreakup {
       sprite.rotation = angle; sprite.alpha = 0.9; sprite.tint = 0xd9d9d9; sprite.visible = true;
       sprite.eventMode = 'none';
       if (!sprite.parent) this.container.addChild(sprite);
-      this.active.push({ sprite, age: 0, sx, sy, speed: enemy.kind === 'boss' ? 2.6 : 1.25 });
+      this.active.push({ sprite, age: 0, sx, sy, speed: boss ? 4.6 : 1.25, lifetime: boss ? 68 : 38 });
     }
   }
   update(delta) {
     let write = 0;
     for (const f of this.active) {
       f.age += delta;
-      if (f.age >= 38) { f.sprite.visible = false; this.pool.push(f.sprite); continue; }
+      if (f.age >= f.lifetime) { f.sprite.visible = false; this.pool.push(f.sprite); continue; }
       const drag = Math.exp(-f.age * 0.04);
       f.sprite.x += f.sx * f.speed * drag * delta;
       f.sprite.y += (f.sy * f.speed * drag + 0.25) * delta;
       f.sprite.rotation += f.sx * f.sy * 0.024 * delta;
-      f.sprite.alpha = 0.85 * Math.pow(1 - f.age / 38, 1.4);
+      f.sprite.alpha = 0.85 * Math.pow(1 - f.age / f.lifetime, 1.4);
       this.active[write++] = f;
     }
     this.active.length = write;

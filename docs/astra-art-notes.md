@@ -25,6 +25,15 @@ Reduced motion stops the hover, banking, reflection sweep and electrical arcs.
 Three modeled station interiors and shared machined console materials carry
 the direction across menus, hangar, codex, settings, help, pause and rewards.
 
+Destruction uses an original 24-frame Cycles volumetric combustion animation,
+packed into one 2688x1792 WebP atlas. No stock explosion footage or external
+textures are used. The runtime interpolates registered frames, caps concurrent
+effects at 18, retains a brief reactor pressure front and throws fragments of the
+actual boss hull. Reduced motion removes the pressure front and hull fragments.
+The previous particle allocator and exact RNG stream remain intact underneath
+the replaced visual layer; the regression compares them with commit 682264e.
+Victory sparks and positive energy rewards remain distinct from destruction.
+
 Regenerate the second pass with the same local Blender installation:
 
 ```
@@ -37,6 +46,8 @@ blender --background --python scripts/render-astra-components.py
 blender --background --python scripts/render-astra-worlds.py -- world 48
 blender --background --python scripts/render-astra-interfaces.py -- interface 3
 node scripts/pack-astra-v2.mjs
+blender --background --python scripts/render-astra-detonation.py
+node scripts/pack-astra-detonation.mjs
 ```
 
 Editable representative scenes are in `docs/astra-v2-models/`; regenerable raw

@@ -1010,6 +1010,7 @@ export class Boss {
     this.setPresentationState('death', 640);
     const playScene = this.game?.scenes?.play;
     const color = this.profile?.accent || this.color || 0xffff33;
+    playScene?.particleManager?.hullBreakup?.emit(this);
     playScene?.particleManager?.createLayeredBossExplosion?.(this.x, this.y, color, this.profile?.palette || 0xffffff, 1.05);
     playScene?.triggerShockwave?.(this.x, this.y, color);
     playScene?.screenShake?.shake(10, 24);

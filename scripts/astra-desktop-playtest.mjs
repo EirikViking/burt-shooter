@@ -20,7 +20,13 @@ const cdp=await app.context().newCDPSession(page);
 const flush=()=>writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));
 async function state(){return page.evaluate(()=>JSON.parse(window.render_game_to_text()));}
 async function shot(name){assert.deepEqual(await page.evaluate(()=>[innerWidth,innerHeight]),[1280,720],'Actual capture viewport');await page.screenshot({path:path.join(out,`${name}.png`)});report.checks.push({name,state:await state()});flush();console.log(label,name);}
-async function ready(){await page.waitForFunction(()=>{const p=window.__game?.scenes?.play;return p?.player?.shipSprite?.texture?.source?.resource&&['WAVE_ACTIVE','BOSS_ACTIVE'].includes(p.enemyManager?.state);},null,{timeout:120000});await page.evaluate(()=>{const p=window.__game.scenes.play;p.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;p.player.invulnerable=true;p.player.invulnerableTime=1e9;});}
+async function ready(){
+  await page.waitForFunction(()=>window.__game?.scenes?.play?.player?.shipSprite?.texture?.source?.resource,null,{timeout:120000});
+  // A staged native navigation may lose window focus before the first wave.
+  // Apply the existing QA focus suppression before waiting for that wave.
+  await page.evaluate(()=>{const p=window.__game.scenes.play;p.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;if(p.isPaused)p.setPaused(false);p.player.invulnerable=true;p.player.invulnerableTime=1e9;});
+  await page.waitForFunction(()=>['WAVE_ACTIVE','BOSS_ACTIVE'].includes(window.__game.scenes.play.enemyManager?.state),null,{timeout:120000});
+}
 async function measure(name,duration=20000){
   await cdp.send('HeapProfiler.collectGarbage');
   const data=await page.evaluate(async duration=>{
@@ -34,21 +40,27 @@ async function measure(name,duration=20000){
   data.processMemory=await app.evaluate(({app})=>app.getAppMetrics().map(p=>({type:p.type,memory:p.memory})));
   report.performance.push({name,...data});flush();
 }
-async function record({qaInvulnerability=true}={}){
-  const dir=path.join(out,'recording-frames');mkdirSync(dir,{recursive:true});const frames=[];
+async function record({qaInvulnerability=true,bossDeath=false}={}){
+  const dir=path.join(out,bossDeath?'boss-recording-frames':'recording-frames');mkdirSync(dir,{recursive:true});const frames=[];
   const listener=event=>{const file=path.join(dir,`${String(frames.length).padStart(5,'0')}.jpg`);writeFileSync(file,Buffer.from(event.data,'base64'));frames.push({file,time:event.metadata.timestamp});cdp.send('Page.screencastFrameAck',{sessionId:event.sessionId}).catch(()=>{});};
   cdp.on('Page.screencastFrame',listener);
   await cdp.send('Page.startScreencast',{format:'jpeg',quality:86,maxWidth:1280,maxHeight:720,everyNthFrame:1});
+  if(bossDeath){
+    await page.waitForTimeout(500);
+    const killed=await page.evaluate(()=>{const b=window.__game.scenes.play.enemyManager.boss;b.invulnerableUntilMs=0;b.firstDamageAtMs=Date.now()-120000;b.finishGateUntilMs=0;return b.takeDamage(b.maxHealth+9999);});assert.equal(killed,true);
+    await page.waitForTimeout(180);await shot('08-destruction');await page.waitForTimeout(3200);
+  }else{
   await page.keyboard.down('Space');
   for(let i=0;i<10;i++){const key=i%2?'ArrowLeft':'ArrowRight';await page.keyboard.down(key);await page.waitForTimeout(650);await page.keyboard.up(key);await page.waitForTimeout(1850);}
-  await page.keyboard.up('Space');await cdp.send('Page.stopScreencast');cdp.off('Page.screencastFrame',listener);
+  await page.keyboard.up('Space');}
+  await cdp.send('Page.stopScreencast');cdp.off('Page.screencastFrame',listener);
   assert.ok(frames.length>100,'Recording must contain running gameplay');
   const lines=[];for(let i=0;i<frames.length-1;i++){lines.push(`file '${frames[i].file.replaceAll('\\','/')}'`,`duration ${Math.max(.001,frames[i+1].time-frames[i].time).toFixed(6)}`);}lines.push(`file '${frames.at(-1).file.replaceAll('\\','/')}'`);
-  const list=path.join(out,'recording-frames.txt');writeFileSync(list,lines.join('\n'));
-  const fd=openSync(path.join(out,'ffmpeg.log'),'w');const video=path.join(out,'gameplay-normal-speed.mp4');
+  const list=path.join(out,bossDeath?'boss-recording-frames.txt':'recording-frames.txt');writeFileSync(list,lines.join('\n'));
+  const fd=openSync(path.join(out,bossDeath?'boss-ffmpeg.log':'ffmpeg.log'),'w');const video=path.join(out,bossDeath?'boss-destruction-normal-speed.mp4':'gameplay-normal-speed.mp4');
   const child=spawn('ffmpeg',['-y','-f','concat','-safe','0','-i',list,'-vf','fps=30,format=yuv420p','-c:v','libx264','-preset','fast','-crf','20','-movflags','+faststart',video],{windowsHide:true,stdio:['ignore',fd,fd]});
   const code=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',resolve);});closeSync(fd);assert.equal(code,0);
-  report.recording={video,frames:frames.length,elapsedSeconds:frames.at(-1).time-frames[0].time,audio:false,qaInvulnerability,description:`Actual packaged game; normal wall-clock speed, scripted keyboard input, isolated practice run${qaInvulnerability?' with QA invulnerability':'; normal vulnerability and lives'}.`};flush();
+  report[bossDeath?'bossRecording':'recording']={video,frames:frames.length,elapsedSeconds:frames.at(-1).time-frames[0].time,audio:false,qaInvulnerability,description:`Actual packaged game; normal wall-clock speed, ${bossDeath?'staged boss kill through damage API':'scripted keyboard input'}, isolated practice run${qaInvulnerability?' with QA invulnerability':'; normal vulnerability and lives'}.`};flush();
 }
 try {
   await cdp.send('Performance.enable');
@@ -85,7 +97,8 @@ try {
   await open({autostart:'1'});await ready();await page.evaluate(()=>{const g=window.__game,p=g.scenes.play;g.markUnrankedRun('astra_capture');p.clearPendingEnemyStart();p.enemyManager.forceBossStart(1);});
   await page.waitForFunction(()=>{const m=window.__game.scenes.play.enemyManager;return m.state==='BOSS_ACTIVE'&&m.boss?.active;},null,{timeout:45000});
   await page.waitForTimeout(1800);await measure('boss',12000);await shot('07-boss');
-  await page.evaluate(()=>{const b=window.__game.scenes.play.enemyManager.boss;b.invulnerableUntilMs=0;b.minimumFightMs=0;b.finishGateUntilMs=0;b.takeDamage(b.maxHealth+9999);});await page.waitForTimeout(180);await shot('08-destruction');
+  if(!baseline)await record({bossDeath:true});
+  else {await page.evaluate(()=>{const b=window.__game.scenes.play.enemyManager.boss;b.invulnerableUntilMs=0;b.minimumFightMs=0;b.finishGateUntilMs=0;b.takeDamage(b.maxHealth+9999);});await page.waitForTimeout(180);await shot('08-destruction');}
   await page.waitForFunction(()=>JSON.parse(window.render_game_to_text()).tacticalDraft?.active,null,{timeout:30000});await page.waitForTimeout(600);await shot('09-rewards');await page.keyboard.press('Enter');await page.waitForTimeout(500);
   await open({autostart:'1'});await ready();await page.evaluate(()=>window.__game.gameOver());await page.waitForFunction(()=>window.__game.currentSceneName==='gameOver');await page.waitForTimeout(1800);await shot('10-death');
   const restart=await page.evaluate(()=>{const s=window.__game.scenes.gameOver;return Object.keys(s).filter(k=>/retry|runback|restart/i.test(k));});report.restartFields=restart;

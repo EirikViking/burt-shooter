@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { HullBreakup } from './HullBreakup.js';
+import { AstraDetonation } from './AstraDetonation.js';
 import {
   isMayhemPerformanceDiagnosticsActive,
   markMayhemPerformanceEvent,
@@ -38,6 +39,7 @@ class Particle {
     this.lifetime = lifetime;
     this.age = 0;
     this.active = true;
+    this.astraSuppressed = false;
     this.rotationSpeed = (Math.random() - 0.5) * 0.2;
 
     if (texture) {
@@ -124,6 +126,7 @@ export class ParticleManager {
   constructor(container, onCap) {
     this.container = container;
     this.hullBreakup = new HullBreakup(container);
+    this.detonations = new AstraDetonation(container);
     this.particles = [];
     this.pool = [];
     this.maxParticles = 640;
@@ -222,7 +225,7 @@ export class ParticleManager {
     sprite.alpha = 0;
     sprite.tint = 0xffffff;
     sprite.blendMode = 'add';
-    sprite.visible = true;
+    sprite.visible = !this.suppressBloomVisuals;
     if (sprite.parent !== this.container) this.container.addChild(sprite);
 
     const safeIntensity = Math.max(0.2, Math.min(3.2, Number(intensity) || 1));
@@ -232,6 +235,7 @@ export class ParticleManager {
     sprite.scale.set(baseScale * 0.22 * aspect, baseScale * 0.22 / aspect);
     this.energyBlooms.push({
       sprite,
+      astraSuppressed: Boolean(this.suppressBloomVisuals),
       variant,
       age: 0,
       lifetime: Math.max(22, Number(options.lifetime) || (34 + Math.sqrt(safeIntensity) * 18)),
@@ -273,17 +277,21 @@ export class ParticleManager {
     return choice;
   }
 
-  createExplosion(x, y, color, intensity = 1) {
+  createExplosion(x, y, color, intensity = 1, presentation = 'combustion') {
     const startedAt = isMayhemPerformanceDiagnosticsActive()
       ? (globalThis.performance?.now?.() || 0)
       : 0;
     const visualIntensity = Math.max(0.2, Number(intensity) || 1);
+    const rendered = presentation === 'celebration' || (presentation === 'combustion' && this.detonations.emit(x, y, visualIntensity));
+    const previousBloomSuppression = this.suppressBloomVisuals;
+    this.suppressBloomVisuals = rendered;
     const bloomIntensity = Math.min(2.2, visualIntensity);
     this.createEnergyBloom(x, y, bloomIntensity, {
       size: 78 + Math.sqrt(bloomIntensity) * 58,
       alpha: Math.min(0.62, 0.34 + Math.sqrt(bloomIntensity) * 0.16),
       color
     });
+    this.suppressBloomVisuals = previousBloomSuppression;
     const particleCount = Math.min(64, Math.max(5, Math.floor(18 * visualIntensity)));
     const speedMult = Math.min(2.35, 0.72 + Math.sqrt(visualIntensity) * 0.52);
     const sizeMult = Math.min(1.7, 0.72 + Math.sqrt(visualIntensity) * 0.38);
@@ -296,9 +304,12 @@ export class ParticleManager {
       const size = (2 + Math.random() * 3) * sizeMult;
       const lifetime = 22 + Math.random() * 34;
 
-      if (!this.spawnParticle(x, y, vx, vy, color, size, lifetime)) {
+      const particle = this.spawnParticle(x, y, vx, vy, color, size, lifetime);
+      if (!particle) {
         break;
       }
+      // Preserve the old allocator/RNG sequence while replacing its visual spray.
+      if (rendered && i >= 4) { particle.astraSuppressed = true;particle.sprite.visible = false; }
     }
     markMayhemPerformanceEvent('gameplay.particle_burst', {
       type: 'explosion',
@@ -348,7 +359,7 @@ export class ParticleManager {
       const size = baseSize * (0.75 + Math.random() * 0.7) * intensity;
       const life = lifetime * (0.75 + Math.random() * 0.65);
       const particleColor = alternateColor !== null && i % 3 === 1 ? alternateColor : color;
-      if (!this.spawnParticle(
+      const particle = this.spawnParticle(
         x,
         y,
         Math.cos(angle) * speed,
@@ -356,9 +367,11 @@ export class ParticleManager {
         particleColor,
         size,
         life
-      )) {
+      );
+      if (!particle) {
         break;
       }
+      if (this.suppressExplosionParticles && i >= 4) { particle.astraSuppressed = true;particle.sprite.visible = false; }
     }
   }
 
@@ -408,6 +421,11 @@ export class ParticleManager {
 
   // Massive explosion for boss deaths
   createBossExplosion(x, y, color) {
+    const rendered = this.detonations.emit(x, y, 1, true);
+    const previousBloomSuppression = this.suppressBloomVisuals;
+    const previousParticleSuppression = this.suppressExplosionParticles;
+    this.suppressBloomVisuals = rendered;
+    this.suppressExplosionParticles = rendered;
     const primaryVariant = this.resolveEnergyBloomVariant(color, null, GameAssets.getPlasmaBloomTextures?.().length);
     const secondaryVariant = (primaryVariant + 1 + Math.floor(Math.random() * 2)) % Math.max(1, GameAssets.getPlasmaBloomTextures?.().length || 1);
     this.createEnergyBloom(x, y, 2.8, {
@@ -448,9 +466,13 @@ export class ParticleManager {
       jitter: 0.42,
       alternateColor: 0xfff4b0
     });
+    this.suppressBloomVisuals = previousBloomSuppression;
+    this.suppressExplosionParticles = previousParticleSuppression;
   }
 
   createLayeredBossExplosion(x, y, color, accent = 0xffffff, intensity = 1) {
+    const previousParticleSuppression = this.suppressExplosionParticles;
+    this.suppressExplosionParticles = this.detonations.emit(x, y, intensity, true);
     const scale = Math.max(0.75, Number(intensity) || 1);
     this.createBossExplosion(x, y, color);
     this.createRadialBurst(x, y, accent, {
@@ -471,6 +493,7 @@ export class ParticleManager {
       lifetime: 76,
       alternateColor: accent
     });
+    this.suppressExplosionParticles = previousParticleSuppression;
   }
 
   // Muzzle flash burst
@@ -571,6 +594,7 @@ export class ParticleManager {
 
   update(delta) {
     this.hullBreakup.update(delta);
+    this.detonations.update(delta);
     for (let index = this.energyBlooms.length - 1; index >= 0; index -= 1) {
       const bloom = this.energyBlooms[index];
       bloom.age += delta;

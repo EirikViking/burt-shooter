@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { _electron as electron } from 'playwright';
-import {mkdirSync,readFileSync,writeFileSync,createWriteStream} from 'node:fs';
+import {mkdirSync,readFileSync,writeFileSync,createWriteStream,openSync,closeSync} from 'node:fs';
+import {spawn} from 'node:child_process';
 import path from 'node:path';
 const out=path.resolve('test-results/astra-packaged-menus');mkdirSync(out,{recursive:true});
 const executable=JSON.parse(readFileSync('test-results/astra-build-location.json')).executable;
@@ -15,6 +16,15 @@ try{
  await page.waitForFunction(()=>innerWidth===1280&&innerHeight===720);
  async function shot(name){await page.waitForTimeout(1400);await page.screenshot({path:path.join(out,`${name}.png`)});report.captures.push(name);console.log(name);}
  await shot('01-menu');
+ const cdp=await app.context().newCDPSession(page),frames=[],frameDir=path.join(out,'menu-frames');mkdirSync(frameDir,{recursive:true});
+ const onFrame=e=>{const file=path.join(frameDir,`${String(frames.length).padStart(5,'0')}.jpg`);writeFileSync(file,Buffer.from(e.data,'base64'));frames.push({file,time:e.metadata.timestamp});cdp.send('Page.screencastFrameAck',{sessionId:e.sessionId}).catch(()=>{});};
+ cdp.on('Page.screencastFrame',onFrame);await cdp.send('Page.startScreencast',{format:'jpeg',quality:88,maxWidth:1280,maxHeight:720,everyNthFrame:1});
+ await page.waitForTimeout(10000);await cdp.send('Page.stopScreencast');cdp.off('Page.screencastFrame',onFrame);assert.ok(frames.length>100);
+ const lines=[];for(let i=0;i<frames.length-1;i++)lines.push(`file '${frames[i].file.replaceAll('\\','/')}'`,`duration ${Math.max(.001,frames[i+1].time-frames[i].time).toFixed(6)}`);lines.push(`file '${frames.at(-1).file.replaceAll('\\','/')}'`);
+ const list=path.join(out,'menu-frames.txt');writeFileSync(list,lines.join('\n'));const fd=openSync(path.join(out,'ffmpeg.log'),'w');
+ const video=path.join(out,'menu-normal-speed.mp4');const encoder=spawn('ffmpeg',['-y','-f','concat','-safe','0','-i',list,'-vf','fps=30,format=yuv420p','-c:v','libx264','-preset','fast','-crf','20','-movflags','+faststart',video],{windowsHide:true,stdio:['ignore',fd,fd]});
+ const code=await new Promise((resolve,reject)=>{encoder.once('error',reject);encoder.once('exit',resolve);});closeSync(fd);assert.equal(code,0);
+ report.animation={video,seconds:frames.at(-1).time-frames[0].time,frames:frames.length,description:'Actual packaged main menu at original wall-clock speed, silent.'};
  await page.evaluate(()=>window.__game.scenes.menu.openSettingsOverlay());await shot('02-settings');
  await page.evaluate(()=>window.__game.scenes.menu.closeSettingsOverlay());
  await page.evaluate(()=>window.__game.scenes.menu.openHowToPlayOverlay());await shot('03-help');

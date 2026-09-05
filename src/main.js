@@ -1716,7 +1716,7 @@ async function init() {
   }
 
   // Register service worker in production with version param
-  if ('serviceWorker' in navigator && import.meta.env.PROD && !isDesktopRuntime()) {
+  if ('serviceWorker' in navigator && import.meta.env.PROD && !isDesktopRuntime() && ['http:', 'https:'].includes(window.location.protocol)) {
     try {
       // TASK 4: Mobile Safety - Cache busting param
       const swUrl = `/sw.js?v=${BUILD_ID}`;

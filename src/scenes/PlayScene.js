@@ -6119,7 +6119,7 @@ export class PlayScene {
               this.particleManager.createExplosion(
                 gameplayWidth * 0.2 + Math.random() * gameplayWidth * 0.6,
                 gameplayHeight * 0.2 + Math.random() * gameplayHeight * 0.6,
-                0xffff00
+                0xffff00, 1, 'celebration'
               );
             }
           }, i * 100);
@@ -6407,7 +6407,7 @@ export class PlayScene {
 
     // Particles
     if (this.player && this.player.active) {
-      this.particleManager.createExplosion(this.player.x, this.player.y, 0xffff00);
+      this.particleManager.createExplosion(this.player.x, this.player.y, 0xffff00, 1, 'energy');
       // Screen flash
       const flash = new PIXI.Graphics();
       flash.rect(0, 0, this.game.getWidth(), this.game.getHeight()).fill({ color: 0xffff00, alpha: 0.2 });
@@ -7536,11 +7536,11 @@ export class PlayScene {
     // Particle burst at center screen
     if (this.particleManager) {
       if (compact) {
-        this.particleManager.createExplosion(width / 2, effectY, 0x00ff00, 0.35);
+        this.particleManager.createExplosion(width / 2, effectY, 0x00ff00, 0.35, 'energy');
       } else {
-        this.particleManager.createExplosion(width / 2, effectY, 0x00ff00);
-        this.particleManager.createExplosion(width / 2 - 50, effectY, 0xffff00);
-        this.particleManager.createExplosion(width / 2 + 50, effectY, 0xffff00);
+        this.particleManager.createExplosion(width / 2, effectY, 0x00ff00, 1, 'energy');
+        this.particleManager.createExplosion(width / 2 - 50, effectY, 0xffff00, 1, 'energy');
+        this.particleManager.createExplosion(width / 2 + 50, effectY, 0xffff00, 1, 'energy');
       }
     }
 
@@ -21413,6 +21413,9 @@ export class PlayScene {
 
     const layer = new PIXI.Graphics();
     layer.label = 'enemyDeathClarityBurst';
+    // The compact tier markers stay legible beneath the combustion sprite;
+    // their former full-strength diagrams competed with the destroyed hull.
+    layer.alpha = this.particleManager?.detonations?.active?.length ? 0.18 : 1;
     layer.blendMode = 'add';
     layer.zIndex = 46;
     layer.x = Number(profile.x) || 0;
@@ -26155,6 +26158,10 @@ export class PlayScene {
   }
 
   triggerShockwave(x, y, color = 0xffff00) {
+    // The rendered reactor detonation owns its pressure front. Avoid stacking
+    // enlarged decorative arcs over the same death; attack cues are unaffected.
+    const detonation = this.particleManager?.detonations?.lastBoss;
+    if (detonation && detonation.age < 60 && Math.hypot(x - detonation.x, y - detonation.y) < 240) return;
     const wave = new PIXI.Graphics();
     const paths = [
       [-12, 2, -5, -12, 7, -10, 14, -2],
@@ -26209,13 +26216,13 @@ export class PlayScene {
     const height = this.game.getHeight();
     const flash = new PIXI.Graphics();
     flash.label = 'boss_death_flash';
-    flash.rect(0, 0, width, height).fill({ color: 0xffffff, alpha: 0.24 });
-    flash.rect(0, 0, width, height).fill({ color, alpha: 0.14 });
+    const strength = Number(getAccessibilitySettings().flashIntensity ?? 1);
+    flash.rect(0, 0, width, height).fill({ color: 0xe2f7ff, alpha: 0.12 * strength });
     flash.blendMode = 'add';
     this.uiOverlay.addChild(flash);
 
     let elapsed = 0;
-    const duration = 520;
+    const duration = 180;
     const ticker = (delta) => {
       elapsed += delta.deltaTime * 16.67;
       const t = Math.min(1, elapsed / duration);
@@ -26230,78 +26237,8 @@ export class PlayScene {
   }
 
   createBossDeathSigil(bossX, bossY, style = {}, palette = []) {
-    if (!this.uiOverlay || !this.game?.app?.ticker) return;
-    const sigil = new PIXI.Graphics();
-    sigil.label = `boss_death_sigil:${style.id || 'default'}`;
-    sigil.blendMode = 'add';
-    this.uiOverlay.addChild(sigil);
-
-    const baseColor = style.baseColor || palette[0] || 0xffff33;
-    const accent = style.accent || palette[1] || 0xffffff;
-    const radius = style.radius || Math.min(this.game.getWidth(), this.game.getHeight()) * 0.16;
-    const tendrilCount = Math.max(7, Math.min(15, style.spokes || 10));
-    const patternSeed = [...String(style.pattern || style.id || 'boss')]
-      .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const draw = (t = 0) => {
-      sigil.clear();
-      const drift = t * (style.spin || 0.8) * 0.22;
-      const reachScale = 0.5 + t * 0.86;
-      for (let i = 0; i < tendrilCount; i += 1) {
-        const variation = Math.sin(patternSeed * 0.17 + i * 13.71);
-        const angle = i * 2.399963 + patternSeed * 0.013 + drift + variation * 0.28;
-        const reach = radius * reachScale * (0.62 + ((i * 7 + patternSeed) % 11) * 0.055)
-          * (style.longSpokes ? 1.16 : 1);
-        const nx = Math.cos(angle);
-        const ny = Math.sin(angle);
-        const tx = -ny;
-        const ty = nx;
-        const bend = reach * (0.1 + Math.abs(variation) * 0.19) * (i % 2 ? 1 : -1);
-        const sx = bossX + nx * radius * 0.08;
-        const sy = bossY + ny * radius * 0.08;
-        const ex = bossX + nx * reach + tx * bend * 0.24;
-        const ey = bossY + ny * reach + ty * bend * 0.24;
-        sigil.moveTo(sx, sy);
-        sigil.bezierCurveTo(
-          bossX + nx * reach * 0.34 + tx * bend,
-          bossY + ny * reach * 0.34 + ty * bend,
-          bossX + nx * reach * 0.72 - tx * bend * 0.48,
-          bossY + ny * reach * 0.72 - ty * bend * 0.48,
-          ex,
-          ey
-        );
-        sigil.stroke({
-          color: i % 3 ? baseColor : accent,
-          width: i % 3 ? 2.8 : 5.2,
-          alpha: (i % 3 ? 0.38 : 0.15) * (1 - t)
-        });
-        if (i % 2 === 0) {
-          const fragmentLength = radius * (0.06 + (i % 4) * 0.012);
-          const fragmentWidth = Math.max(1.2, fragmentLength * 0.14);
-          sigil.poly([
-            ex + nx * fragmentLength, ey + ny * fragmentLength,
-            ex - nx * fragmentLength * 0.5 + tx * fragmentWidth, ey - ny * fragmentLength * 0.5 + ty * fragmentWidth,
-            ex - nx * fragmentLength * 0.24 - tx * fragmentWidth * 0.3, ey - ny * fragmentLength * 0.24 - ty * fragmentWidth * 0.3
-          ]);
-          sigil.fill({ color: i % 4 ? accent : 0xffffff, alpha: 0.3 * (1 - t) });
-        }
-      }
-    };
-    draw(0);
-
-    let elapsed = 0;
-    const duration = style.duration || 980;
-    const ticker = (delta) => {
-      elapsed += delta.deltaTime * 16.67;
-      const t = Math.min(1, elapsed / duration);
-      sigil.alpha = Math.pow(1 - t, 1.25);
-      draw(t);
-      if (t >= 1 || this.game?.currentScene !== this) {
-        this.game.app.ticker.remove(ticker);
-        if (sigil.parent) sigil.parent.removeChild(sigil);
-        sigil.destroy?.();
-      }
-    };
-    this.game.app.ticker.add(ticker);
+    // The reactor pressure front belongs to the combustion effect now.
+    this.particleManager?.detonations?.emit(bossX, bossY, 1, true);
   }
 
   triggerBossDeathImpact({ boss = null, color = 0xffff33, type = 'UNKNOWN' } = {}) {

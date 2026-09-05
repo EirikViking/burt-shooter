@@ -281,6 +281,8 @@ export class SpectacleDirector {
   }
 
   drawPulse(pulse, width, height) {
+    // Combustion flipbooks now carry death impacts; retain event/audio timing.
+    if (pulse.kind === 'boss_death' || pulse.kind === 'kill' || pulse.kind === 'elite') return;
     const profile = pulse.profile;
     const t = clamp(pulse.elapsedMs / pulse.durationMs, 0, 1);
     const intro = Math.min(1, t / 0.1);
