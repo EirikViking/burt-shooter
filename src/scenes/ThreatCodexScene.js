@@ -541,7 +541,7 @@ export class ThreatCodexScene {
       const worlds = AssetManifest.generated.sectorWorlds;
       return worlds[Math.floor((Math.max(1, entry?.sectorNumber || 1) - 1) / 5) % worlds.length];
     }
-    if (entry?.art) return GameAssets.getBossPresentationSource(entry.art);
+    if (entry?.art) return GameAssets.getCodexPresentationSource(entry);
     const fallback = {
       enemies: AssetManifest.generated.gameplayArenaBackdrop,
       attackPatterns: AssetManifest.generated.enemyWeapons?.[2],
@@ -1366,13 +1366,31 @@ export class ThreatCodexScene {
       return;
     }
 
-    PIXI.Assets.load(art)
-      .then((texture) => {
+    const shipDossier = ['enemies', 'elites', 'bosses'].includes(entry?.category || this.getCategory().id);
+    Promise.all([PIXI.Assets.load(art), shipDossier ? PIXI.Assets.load(AssetManifest.generated.codexBackdrop) : null])
+      .then(([texture, roomTexture]) => {
         if (token !== this.renderToken || !texture || !parent || parent.destroyed) return;
+        if (roomTexture) {
+          const room = new PIXI.Sprite(roomTexture);
+          room.anchor.set(.5);
+          room.position.set(x + width / 2, y + height / 2);
+          room.scale.set(Math.max(width / roomTexture.width, height / roomTexture.height));
+          room.alpha = .58;
+          room.eventMode = 'none';
+          room.mask = artMask;
+          parent.addChild(room);
+          const deck = new PIXI.Graphics();
+          const px = x + width / 2, py = y + height * .81, rx = width * .32;
+          deck.ellipse(px, py + 4, rx + 10, height * .035).fill({color:0x000208,alpha:.68});
+          deck.ellipse(px, py, rx, height * .033).stroke({color:0x8196a3,width:2,alpha:.35});
+          deck.ellipse(px, py - 1, rx * .91, height * .026).stroke({color:accent,width:1,alpha:.25});
+          for (let j=0;j<7;j++) deck.rect(px-rx+j*rx/3,py+10,Math.max(2,rx*.012),2).fill({color:accent,alpha:.25});
+          deck.mask = artMask;deck.eventMode='none';parent.addChild(deck);
+        }
         const sprite = new PIXI.Sprite(texture);
         sprite.anchor.set(0.5);
-        fitSprite(sprite, width * (discovered ? 0.94 : 0.72), height * (discovered ? 0.94 : 0.78), 3.6);
-        sprite.position.set(x + width * 0.5, y + height * 0.5);
+        fitSprite(sprite, discovered ? width - 42 : width * 0.72, discovered ? height - 58 : height * 0.72, 3.6);
+        sprite.position.set(x + width * 0.5, y + height * 0.5 - 6);
         sprite.alpha = discovered ? 0.96 : 0.42;
         sprite.tint = discovered ? 0xffffff : accent;
         sprite.mask = artMask;

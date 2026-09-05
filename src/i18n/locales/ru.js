@@ -1,3 +1,4 @@
+import { getAstraPresentationSourceText } from '../astraPresentationSourceText.js';
 import { buildArcadePatterns } from './patterns.js';
 
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
@@ -1869,6 +1870,6 @@ export const ru = {
   diagnostics: {
     interfaceLanguage: 'Язык интерфейса'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('ru'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getTyrianFeedbackSourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru'), ...getWonderCodexSourceText('ru'), ...getHangarLaunchModeSourceText('ru'), ...getNewestTyrianFeedbackSourceText('ru'), ...getSecondPolishSourceText('ru'), ...getTyrian112SourceText('ru'), ...getHighSectorSourceText('ru'), ...getLateGameExperimentSourceText('ru') }),
+  sourceText: Object.freeze({ ...getAstraPresentationSourceText('ru'), ...getModeBriefingReviewSourceText('ru'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getTyrianFeedbackSourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru'), ...getWonderCodexSourceText('ru'), ...getHangarLaunchModeSourceText('ru'), ...getNewestTyrianFeedbackSourceText('ru'), ...getSecondPolishSourceText('ru'), ...getTyrian112SourceText('ru'), ...getHighSectorSourceText('ru'), ...getLateGameExperimentSourceText('ru') }),
   patterns
 };

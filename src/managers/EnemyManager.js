@@ -4896,6 +4896,9 @@ export class EnemyManager {
       alpha: 0.34
     };
     if (enemy.body) {
+      const artIndex = Number(supportProfile.id.split('_').pop()) - 1;
+      const presentationTexture = GameAssets.supportShipTextures?.[artIndex];
+      if (presentationTexture) enemy.body.texture = presentationTexture;
       enemy.body.tint = 0xffffff;
       enemy.body.scale.set(enemy.body.scale.x * supportProfile.spriteScale, enemy.body.scale.y * supportProfile.spriteScale);
     }

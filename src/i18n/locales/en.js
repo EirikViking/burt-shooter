@@ -1,3 +1,4 @@
+import { getAstraPresentationSourceText } from '../astraPresentationSourceText.js';
 export const en = {
   code: 'en',
   name: 'English',
@@ -21,6 +22,6 @@ export const en = {
   diagnostics: {
     interfaceLanguage: 'Interface language'
   },
-  sourceText: Object.freeze({}),
+  sourceText: Object.freeze({ ...getAstraPresentationSourceText('en'),}),
   patterns: Object.freeze([])
 };

@@ -1,3 +1,4 @@
+import { AstraTurntable } from '../ui/AstraTurntable.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import { AstraShowroomLights } from '../ui/AstraShowroomLights.js';
 import * as PIXI from 'pixi.js';
@@ -425,6 +426,8 @@ export class MenuScene {
   }
 
   init() {
+    this.astraMenuShip?.destroy?.();
+    this.astraMenuShip = null;
     this.container.removeChildren();
     this.scoutAnomaly = readScoutAnomalySelection();
     this.stars = [];
@@ -903,12 +906,14 @@ export class MenuScene {
   }
 
   async initBackdrop() {
+    const request = this.astraBackdropRequest = (this.astraBackdropRequest || 0) + 1;
     try {
       const texture = await PIXI.Assets.load({
         alias: 'generated_menu_backdrop',
         src: AssetManifest.generated.menuBackdrop
       });
 
+      if (request !== this.astraBackdropRequest) return;
       this.backdrop = new PIXI.Sprite(texture);
       this.backdrop.anchor.set(0.5);
       this.backdrop.alpha = 0.98;
@@ -916,18 +921,20 @@ export class MenuScene {
       this.container.addChild(this.backdrop);
 
       const shipTexture = await PIXI.Assets.load('/art/astra/menu-ship.webp');
-      this.astraMenuShip = new PIXI.Sprite(shipTexture);
-      this.astraMenuShip.anchor.set(0.5);
+      if (request !== this.astraBackdropRequest) return;
+      this.astraMenuShip = new AstraTurntable(0, shipTexture);
       this.astraMenuShip.zIndex = -16;
-      this.astraMenuShip.eventMode = 'none';
+      this.astraMenuShip.eventMode = 'static';
       this.container.addChild(this.astraMenuShip);
       this.astraMenuEmitters = (await PIXI.Assets.load('/art/astra/menu-ship.json')).emitters;
+      if (request !== this.astraBackdropRequest) return;
       this.astraMenuLights = new AstraShowroomLights();
       this.astraMenuLights.zIndex = -15.5;
       this.container.addChild(this.astraMenuLights);
 
       this.backdropShade = new PIXI.Graphics();
       this.backdropShade.zIndex = -15;
+      this.backdropShade.eventMode = 'none';
       this.container.addChild(this.backdropShade);
 
       this.layoutBackdrop();
@@ -7788,7 +7795,9 @@ export class MenuScene {
       const motion = !getReducedMotionEnabled();
       this.astraMenuShip.y = this.game.getHeight() * (0.49 + (motion ? Math.sin(this.animationTime * 0.65) * 0.007 : 0));
       this.astraMenuShip.rotation = motion ? Math.sin(this.animationTime * 0.35) * 0.014 : 0;
-      this.astraMenuLights.update(this.astraMenuShip, this.astraMenuEmitters, this.animationTime);
+      this.astraMenuShip.update(delta);
+      const lamps = this.astraMenuShip.emitters || this.astraMenuEmitters;
+      this.astraMenuLights.update(this.astraMenuShip, lamps, this.animationTime, lamps.every(e => e.visible !== false));
     }
     const layoutGuardNow = Date.now();
     if (
@@ -7936,6 +7945,9 @@ export class MenuScene {
   }
 
   destroy() {
+    this.astraBackdropRequest = (this.astraBackdropRequest || 0) + 1;
+    this.astraMenuShip?.destroy?.();
+    this.astraMenuShip = null;
     this.closeQuitConfirmation();
     this.closeSectorSelector();
     this.closeModeBriefing();

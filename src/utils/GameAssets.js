@@ -15,6 +15,25 @@ class GameAssetsManager {
         return this.showroomShips.get(safeIndex);
     }
 
+    getThreatPresentationSource(source, family, index) {
+        const count = AssetManifest.generated.astraThreatCounts?.[family] || 0;
+        return index >= 0 && index < count ? `/art/astra/${family}/${String(index + 1).padStart(3, '0')}.png` : source;
+    }
+
+    getCodexPresentationSource(entry) {
+        const source = entry?.art;
+        const support = /^boss_support_ship_(\d+)$/.exec(entry?.id || '');
+        if (support && Number(support[1]) <= AssetManifest.generated.astraThreatCounts.supports) return `/art/astra/dossier/supports/${support[1]}.webp`;
+        const elite = AssetManifest.generated.eliteMiddleShips.indexOf(source);
+        if (elite >= 0 && elite < AssetManifest.generated.astraThreatCounts.elites) return `/art/astra/dossier/elites/${String(elite + 1).padStart(3, '0')}.webp`;
+        const enemy = AssetManifest.generated.enemies.indexOf(source);
+        if (enemy >= 0 && enemy < 50) return `/art/astra/dossier/enemy/${String(enemy + 1).padStart(2, '0')}.webp`;
+        if (enemy >= 50 && enemy - 50 < AssetManifest.generated.astraThreatCounts.late) return `/art/astra/dossier/late/${String(enemy - 49).padStart(3, '0')}.webp`;
+        const boss = AssetManifest.generated.bosses.indexOf(source);
+        if (boss >= 0) return `/art/astra/dossier/boss/${String(boss + 1).padStart(2, '0')}.webp`;
+        return this.getBossPresentationSource(source);
+    }
+
     getBossPresentationSource(source) {
         const index = AssetManifest.generated.bosses.indexOf(source);
         return AssetManifest.generated.bossPresentation?.[index] || source;
@@ -441,7 +460,7 @@ class GameAssetsManager {
             try {
                 const texture = await PIXI.Assets.load({
                     alias: `nova_generated_enemy_${index + 1}`,
-                    src: filepath
+                    src: this.getThreatPresentationSource(filepath, 'late', index - 50)
                 });
                 if (this.isValidTexture(texture)) this.generatedEnemyTextures[index] = texture;
             } catch (e) {
@@ -480,12 +499,18 @@ class GameAssetsManager {
             try {
                 const texture = await PIXI.Assets.load({
                     alias: `nova_elite_middle_ship_${index + 1}`,
-                    src: filepath
+                    src: this.getThreatPresentationSource(filepath, 'elites', index)
                 });
                 if (this.isValidTexture(texture)) this.eliteMiddleShipTextures[index] = texture;
             } catch (e) {
                 console.warn(`[GameAssets] Failed to load elite middle ship ${filepath}:`, e);
             }
+        }));
+
+        this.supportShipTextures ||= [];
+        await Promise.all(Array.from({length: AssetManifest.generated.astraThreatCounts.supports}, async (_, index) => {
+            const path = `/art/astra/supports/${String(index + 1).padStart(3, '0')}.png`;
+            this.supportShipTextures[index] = await PIXI.Assets.load(path);
         }));
 
         console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length, 'GeneratedEnemy:', this.generatedEnemyTextures.filter(Boolean).length, 'EliteMiddle:', this.eliteMiddleShipTextures.filter(Boolean).length, 'EnemyWeapons:', this.enemyWeaponTextures.filter(Boolean).length, 'Projectiles:', Object.keys(this.projectileTextures).length);

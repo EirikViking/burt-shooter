@@ -1,3 +1,4 @@
+import { getAstraPresentationSourceText } from '../astraPresentationSourceText.js';
 import { buildArcadePatterns } from './patterns.js';
 
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
@@ -1869,6 +1870,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('zh-CN'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getOverrunModeSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getTyrianFeedbackSourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN'), ...getTacticalDraftClaritySourceText('zh-CN'), ...getWonderCodexSourceText('zh-CN'), ...getHangarLaunchModeSourceText('zh-CN'), ...getNewestTyrianFeedbackSourceText('zh-CN'), ...getSecondPolishSourceText('zh-CN'), ...getTyrian112SourceText('zh-CN'), ...getHighSectorSourceText('zh-CN'), ...getLateGameExperimentSourceText('zh-CN') }),
+  sourceText: Object.freeze({ ...getAstraPresentationSourceText('zh-CN'), ...getModeBriefingReviewSourceText('zh-CN'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getOverrunModeSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getTyrianFeedbackSourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN'), ...getTacticalDraftClaritySourceText('zh-CN'), ...getWonderCodexSourceText('zh-CN'), ...getHangarLaunchModeSourceText('zh-CN'), ...getNewestTyrianFeedbackSourceText('zh-CN'), ...getSecondPolishSourceText('zh-CN'), ...getTyrian112SourceText('zh-CN'), ...getHighSectorSourceText('zh-CN'), ...getLateGameExperimentSourceText('zh-CN') }),
   patterns
 };

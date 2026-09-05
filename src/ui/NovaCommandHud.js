@@ -1,5 +1,14 @@
 import * as PIXI from 'pixi.js';
 
+const commandMaterials = new Map();
+function commandMaterial(accent) {
+  if (!commandMaterials.has(accent)) commandMaterials.set(accent, new PIXI.FillGradient({
+    type: 'linear', start: {x: 0, y: 0}, end: {x: 0, y: 1}, textureSpace: 'local',
+    colorStops: [{offset:0,color:0x78949e},{offset:.035,color:0x293d48},{offset:.14,color:0x1b303d},{offset:.52,color:0x0b1b29},{offset:.95,color:0x050d15},{offset:1,color:0x40565e}]
+  }));
+  return commandMaterials.get(accent);
+}
+
 export const NOVA_COMMAND_HUD_TOKENS = Object.freeze({
   safeMargin: 48,
   surface: 0x03111e,
@@ -167,7 +176,7 @@ function buildStructuralHalf({
     plateHalfWidth - 9, halfHeight,
     0, halfHeight
   ]);
-  surface.fill({ color: NOVA_COMMAND_HUD_TOKENS.surface, alpha: surfaceAlpha });
+  surface.fill({ fill: commandMaterial(accent), alpha: surfaceAlpha });
   half.addChild(surface);
 
   const lift = new PIXI.Graphics();
@@ -180,6 +189,23 @@ function buildStructuralHalf({
   ]);
   lift.fill({ color: NOVA_COMMAND_HUD_TOKENS.surfaceLift, alpha: liftAlpha });
   half.addChild(lift);
+
+  const machining = new PIXI.Graphics();
+  machining.moveTo(0, -halfHeight + 3).lineTo(plateHalfWidth-11, -halfHeight+3).lineTo(plateHalfWidth-3,-halfHeight+11);
+  machining.stroke({color:0xd0e7ea,width:1,alpha:.31});
+  machining.moveTo(0,halfHeight-3).lineTo(plateHalfWidth-11,halfHeight-3).lineTo(plateHalfWidth-3,halfHeight-11);
+  machining.stroke({color:0x000309,width:2,alpha:.66});
+  if(decorativeAccents){
+    const railMid=(plateHalfWidth+halfWidth)/2;
+    for(let i=0;i<3;i++){
+      machining.moveTo(railMid-5+i*3.5,-halfHeight+14).lineTo(railMid+1+i*3.5,-halfHeight+8).stroke({color:accent,width:1.3,alpha:.20+i*.12});
+      machining.moveTo(railMid-5+i*3.5,halfHeight-14).lineTo(railMid+1+i*3.5,halfHeight-8).stroke({color:accent,width:1.3,alpha:.20+i*.12});
+    }
+    machining.circle(plateHalfWidth-11,-halfHeight+12,2.2).fill({color:0x020710,alpha:.9});
+    machining.moveTo(plateHalfWidth-12,-halfHeight+11).lineTo(plateHalfWidth-10,-halfHeight+11).stroke({color:0xc0d3d8,width:1,alpha:.55});
+    machining.circle(plateHalfWidth-11,halfHeight-12,2.2).fill({color:0x020710,alpha:.9});
+  }
+  half.addChild(machining);
 
   const primaryEdge = new PIXI.Graphics();
   primaryEdge.moveTo(0, -halfHeight);

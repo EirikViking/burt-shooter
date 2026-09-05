@@ -42,3 +42,6 @@ public/audio/sfx/nova-swarm-candidates/
 scripts/__pycache__/
 docs/astra-v2-models/renders/
 docs/astra-v2-models/*.blend1
+
+docs/astra-v3-models/renders/
+docs/astra-v3-models/*.blend1

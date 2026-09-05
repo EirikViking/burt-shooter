@@ -1,3 +1,4 @@
+import { AstraTurntable } from '../ui/AstraTurntable.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import { AstraShowroomLights } from '../ui/AstraShowroomLights.js';
 import * as PIXI from 'pixi.js';
@@ -2596,6 +2597,7 @@ export class ShipSelectScene {
     const display = await GameAssets.ensureShowroomShip(ship.textureIndex);
     const shipTexture = display.texture;
     container.showroomEmitters = display.emitters;
+    container.showroomIndex = ship.textureIndex;
     container.showroomLocked = locked;
     if (shipTexture && shipTexture.width > 0) {
       const sprite = new PIXI.Sprite(shipTexture);
@@ -4037,6 +4039,12 @@ export class ShipSelectScene {
   }
 
   cleanup() {
+    for (const card of this.shipCards || []) {
+      card.turntable?.destroy();
+      card.turntable = null;
+      if (card.sprite) card.sprite.visible = true;
+    }
+    this.rotatingCard = null;
     console.log('[ShipSelectInput] detached');
     this.closeLaunchModeOverlay();
     if (this.keyHandler) {
@@ -4101,12 +4109,39 @@ export class ShipSelectScene {
     updateMenuFx(this, delta);
     this.showroomTime = (this.showroomTime || 0) + delta * 0.016;
     const card = this.shipCards[this.selectedIndex];
+    if (this.rotatingCard !== card) {
+      if (this.rotatingCard?.turntable) {
+        this.rotatingCard.turntable.destroy();
+        this.rotatingCard.turntable = null;
+        if (this.rotatingCard.sprite) this.rotatingCard.sprite.visible = true;
+      }
+      this.rotatingCard = card;
+    }
     if (card?.sprite && card.showroomEmitters) {
+      if (!card.turntable && !this.animating) {
+        card.turntable = new AstraTurntable(card.showroomIndex, card.sprite.texture, {captionRatio:.04,captionY:.35});
+        // Transparent selection glows are hittable through the carousel. Keep
+        // the viewer above them so a hull drag cannot turn into navigation.
+        card.addChild(card.turntable);
+        for (const overlay of [card.lockPlate, card.lockText]) {
+          if (!overlay) continue;
+          overlay.eventMode = 'none';
+          card.setChildIndex(overlay, card.children.length - 1);
+        }
+      }
+      if (card.turntable) {
+        card.turntable.position.copyFrom(card.sprite.position);
+        card.turntable.scale.set(card.sprite.scale.x * 1.05, card.sprite.scale.y * 1.05);
+        card.turntable.rotation = card.sprite.rotation;
+        card.sprite.visible = false;
+        card.turntable.update(delta);
+      }
       if (!this.showroomLights) {
         this.showroomLights = new AstraShowroomLights();
         this.carouselContainer.addChild(this.showroomLights);
       }
-      this.showroomLights.update(card.sprite, card.showroomEmitters, this.showroomTime, !card.showroomLocked && !this.animating);
+      const lamps = card.turntable?.emitters || card.showroomEmitters;
+      this.showroomLights.update(card.turntable || card.sprite, lamps, this.showroomTime, !card.showroomLocked && !this.animating && lamps.every(e => e.visible !== false));
     }
   }
 

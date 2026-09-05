@@ -1,3 +1,5 @@
+import { drawAstraWarningLane } from '../effects/AstraWarningField.js';
+import { AstraAttackRig } from '../effects/AstraAttackRig.js';
 import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 import { GameAssets } from '../utils/GameAssets.js';
@@ -2325,6 +2327,14 @@ export class Enemy {
     const activeMs = tractorContract?.activeMs || profile.specialActiveMs || 800;
     const cooldownMs = tractorContract?.recoveryMs || profile.specialCooldownMs || 9000;
 
+    if (!this.astraAttackRig) {
+      this.astraAttackRig = new AstraAttackRig(this.radius, profile.accent || this.color);
+      this.sprite.addChild(this.astraAttackRig);
+    }
+    const visualCharge = this.eliteAbility.state === 'telegraph' ? Math.min(1, (now - this.eliteAbility.startedAt) / telegraphMs) : 0;
+    const visualRecoil = this.eliteAbility.state === 'active' ? Math.max(0, 1 - (now - this.eliteAbility.startedAt) / 230) : Math.max(0, 1 - (now - (this.astraLastShotAt || 0)) / 180);
+    this.astraAttackRig.update({charge: visualCharge, recoil: visualRecoil, time: now * .001, active: this.eliteAbility.state === 'active', aim: Math.atan2(playerY - this.y, playerX - this.x)});
+
     if (this.eliteAbility.state === 'cooldown' && now >= this.eliteAbility.nextAt && this.state !== 'ENTRY') {
       this.eliteAbility.state = 'telegraph';
       this.eliteAbility.startedAt = now;
@@ -2542,13 +2552,12 @@ export class Enemy {
     layer.stroke({ color: 0xffffff, width: 1.3, alpha: active ? 0.24 : 0.12 + progress * 0.24 });
 
     const drawAimLine = (width = 3, alpha = 0.62) => {
-      const relX = playerX - this.x;
-      const relY = playerY - this.y;
-      layer.moveTo(0, this.radius * 0.2);
-      layer.lineTo(relX, relY);
-      layer.stroke({ color, width, alpha });
-      layer.circle(relX, relY, 12 + pulse * 4);
-      layer.stroke({ color: 0xffffff, width: 1.5, alpha: alpha * 0.7 });
+      const relX = playerX - this.x, relY = playerY - this.y;
+      const startY = this.radius * 0.2;
+      drawAstraWarningLane(layer, { x: 0, y: startY,
+        angle: Math.atan2(relY - startY, relX), length: Math.hypot(relX, relY - startY),
+        halfWidth: 7, color, progress, active, alpha });
+      this.drawEliteCaptureBrackets(layer, relX, relY, 18, color, alpha * 0.75, now);
     };
 
     if (ability === 'sniper_rail' || ability === 'elite_hunter') {
@@ -2731,22 +2740,9 @@ export class Enemy {
     const angle = Math.atan2(relY, relX);
     const length = Math.max(180, Math.hypot(relX, relY));
     const alpha = active ? 0.72 : 0.22 + progress * 0.42;
-    const normal = angle + Math.PI / 2;
-    const lanes = hunter ? [-10, 10] : [-8, 0, 8];
-    lanes.forEach((offset, index) => {
-      layer.moveTo(Math.cos(normal) * offset, this.radius * 0.25 + Math.sin(normal) * offset);
-      layer.lineTo(Math.cos(angle) * length + Math.cos(normal) * offset, Math.sin(angle) * length + Math.sin(normal) * offset);
-      layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.5 : 1.4, alpha: alpha * (index === 1 ? 1 : 0.7) });
-    });
-    for (let i = 1; i <= 5; i += 1) {
-      const t = i / 6;
-      const x = Math.cos(angle) * length * t;
-      const y = Math.sin(angle) * length * t;
-      const notch = 9 + pulse * 6;
-      layer.moveTo(x + Math.cos(normal) * -notch, y + Math.sin(normal) * -notch);
-      layer.lineTo(x + Math.cos(normal) * notch, y + Math.sin(normal) * notch);
-    }
-    layer.stroke({ color: 0xffffff, width: active ? 1.8 : 1, alpha: active ? 0.34 : 0.12 + progress * 0.2 });
+    // A compact emitter collar replaces overlapping parallel rails and ladder bars.
+    layer.arc(0, this.radius * 0.25, this.radius * 0.44, angle - 0.8, angle + 0.8);
+    layer.stroke({ color, width: active ? 2.4 : 1.5, alpha });
     this.drawEliteCaptureBrackets(layer, relX, relY, hunter ? 19 : 24, hunter ? 0x7cff44 : color, active ? 0.6 : 0.2 + progress * 0.32, now);
   }
 
@@ -3859,6 +3855,7 @@ export class Enemy {
     const distance = Math.sqrt(dx * dx + dy * dy);
 
     if (distance === 0) return null;
+    if (this.middleShipProfile) this.astraLastShotAt = Date.now();
 
     const accuracy = 0.8 + Math.random() * 0.2;
     const openingProjectileScalar = this.level <= 1 ? 0.82 : this.level === 2 ? 0.92 : 1;

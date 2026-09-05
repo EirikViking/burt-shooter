@@ -11,12 +11,13 @@ import { CABINET_WONDER_DEFINITIONS } from '../config/CabinetWonderLore.js';
 
 export const AssetManifest = {
     generated: {
+        astraThreatCounts: { elites: 50, supports: 111, late: 177 },
         bossPresentation: Array.from({ length: 50 }, (_, i) => `/art/astra/boss/${String(i + 1).padStart(2, '0')}.png`),
         playerPresentation: Array.from({ length: 30 }, (_, i) => `/art/astra/player/${String(i + 1).padStart(2, '0')}.png`),
         bossComponents: [1, 2, 3].map((i) => `/art/astra/component/${String(i).padStart(2, '0')}.png`),
         sectorWorlds: Array.from({ length: 48 }, (_, i) => `/art/astra/world/${String(i + 1).padStart(2, '0')}.webp`),
-        codexBackdrop: '/art/astra/archive.webp',
-        menuBackdrop: '/art/astra/menu.webp',
+        codexBackdrop: '/art/astra/archive-v3.webp',
+        menuBackdrop: '/art/astra/orbital-dock-v3.webp',
         menuCredits: '/art/generated/nova-swarm/menu/nova-swarm-credits-20260519.png',
         newPilotArrow: '/art/generated/nova-swarm/menu/nova-swarm-new-pilot-arrow-up-right.png',
         menuIcons: {
@@ -31,7 +32,7 @@ export const AssetManifest = {
             howToPlay: '/art/generated/nova-swarm/menu/icons/approved-menu-icon-how-to-play.png',
             exit: '/art/generated/nova-swarm/menu/icons/approved-menu-icon-exit.png'
         },
-        leaderboardHall: '/art/astra/base.webp',
+        leaderboardHall: '/art/astra/command-gallery-v3.webp',
         gameOverCeremony: '/art/astra/boss.webp',
         gameOverFinalTransmission: '/art/generated/nova-swarm/gameover/nova-swarm-final-transmission-interlude-20260722.png',
         gameOverFinalTransmissions: GAME_OVER_FINAL_TRANSMISSION_VARIANTS,
@@ -236,7 +237,7 @@ export const AssetManifest = {
             '/art/generated/nova-swarm/nova-swarm-intro-small-ship.webp',
             '/art/generated/nova-swarm/nova-swarm-intro-boss-chorus.webp'
         ],
-        shipHangar: '/art/astra/hangar.webp',
+        shipHangar: '/art/astra/orbital-dock-v3.webp',
         crewPortraits: [
             '/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-01-20260519.webp',
             '/art/generated/nova-swarm/story-comms/nova-swarm-story-comms-02-20260519.webp',

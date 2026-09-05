@@ -1,3 +1,4 @@
+import { getAstraProjectileTexture } from '../effects/AstraProjectileMaterial.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
@@ -155,6 +156,18 @@ export class Bullet {
       }
     }
 
+    if (!isPlayer && typeof document !== 'undefined') {
+      if (this.core) this.core.destroy();
+      this.core = new PIXI.Sprite(getAstraProjectileTexture(`${this.coreAnimationStyle}:${this.weaponProfileId || ''}`, this.visualConfig.warningColor || this.color || 0xff6655));
+      this.core.anchor.set(0.5);
+      this.core.rotation = this.angle;
+      this.core.scale.set(this.radius / 16);
+      this.baseScale = this.radius / 16;
+      this.core.__novaProjectileSprite = true;
+      this.core.__astraProjectile = true;
+      this.core.label = `projectile_core:${this.weaponProfileId || 'hostile'}`;
+    }
+
     this.createReadableProjectileShell();
     if (constructionStartedAt > 0) {
       recordMayhemPerformanceDuration('vfx.bullet_construction', performance.now() - constructionStartedAt);
@@ -176,7 +189,7 @@ export class Bullet {
     this.trail = new PIXI.Graphics();
     this.trail.moveTo(backX, backY);
     this.trail.lineTo(0, 0);
-    this.trail.stroke({ color: trailColor, width: trailWidth, alpha: this.isPlayer ? 0.32 : 0.46 });
+    this.trail.stroke({ color: trailColor, width: trailWidth, alpha: this.isPlayer ? 0.32 : 0.24 });
     if (!this.isPlayer && this.visualConfig.haloColor) {
       this.trail.moveTo(backX * 0.72, backY * 0.72);
       this.trail.lineTo(Math.cos(this.angle) * 4, Math.sin(this.angle) * 4);
@@ -224,7 +237,7 @@ export class Bullet {
         if (hazardMark !== this.warningRing) this.sprite.addChild(hazardMark);
       }
 
-      const leadDistance = this.radius + (generatedProjectileCore ? 7 : 6);
+      const leadDistance = this.core.__astraProjectile ? this.radius * 0.5 : this.radius + (generatedProjectileCore ? 7 : 6);
       const leadX = Math.cos(this.angle) * leadDistance;
       const leadY = Math.sin(this.angle) * leadDistance;
       const normalX = -Math.sin(this.angle);
@@ -478,10 +491,10 @@ export class Bullet {
     back.label = `enemyProjectileSpectacleBack:${profileId}`;
     back.__novaEnemyProjectileSpectacle = true;
     for (let i = 0; i < wakeEchoCount; i += 1) {
-      const distance = radius + 10 + (i + 1) * wakeSpacing;
-      const lateral = Math.sin((i + 1) * 1.72 + variant * 0.43) * wakeLateral;
+      const distance = radius + 3 + (i + 1) * wakeSpacing * 0.45;
+      const lateral = Math.sin((i + 1) * 1.72 + variant * 0.43) * wakeLateral * 0.18;
       const fade = Math.max(0.055, 0.2 - i * 0.038);
-      const scale = baseScale * Math.max(0.48, 1.02 - i * 0.13);
+      const scale = baseScale * Math.max(0.12, 0.38 - i * 0.075);
       back.addChild(configureEcho(new PIXI.Sprite(this.core.texture), {
         x: -forwardX * distance + normalX * lateral,
         y: -forwardY * distance + normalY * lateral,
@@ -495,13 +508,13 @@ export class Bullet {
     front.label = `enemyProjectileSpectacleFront:${profileId}`;
     front.__novaEnemyProjectileSpectacle = true;
     front.addChild(configureEcho(new PIXI.Sprite(this.core.texture), {
-      scale: baseScale * auraScale,
-      alpha: colorAssist ? 0.2 : 0.16,
+      scale: baseScale * 1.12,
+      alpha: colorAssist ? 0.14 : 0.07,
       tint: secondary
     }));
     front.addChild(configureEcho(new PIXI.Sprite(this.core.texture), {
-      scale: baseScale * (auraScale + 0.32),
-      alpha: colorAssist ? 0.12 : 0.075,
+      scale: baseScale * 1.36,
+      alpha: colorAssist ? 0.08 : 0.025,
       tint: hot,
       rotation: this.core.rotation + flareRotation
     }));

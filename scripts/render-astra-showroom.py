@@ -8,7 +8,7 @@ bpy=m.bpy;s=m.s
 args=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else ['showroom','1']
 kind=args[0];count=int(args[1]);start=int(args[2]) if len(args)>2 else 0
 out=os.path.abspath('docs/astra-v2-models/renders/'+kind);os.makedirs(out,exist_ok=True)
-for i in range(start,start+count):
+def build_showroom(i):
  m.ship(i)
  v=i%6;span=[1.7,1.4,1.75,1.2,1.8,1.55][v]
  ceramic=m.mat('Layered charcoal ceramic',(.042,.067,.087),.68,.31,micro=True)
@@ -49,15 +49,20 @@ for i in range(start,start+count):
   a=j*math.tau/12
   m.box('Reactor cage tooth',(math.cos(a)*.108,-1.18+math.sin(a)*.108,.721),(.018,.028,.021),m.silver,.003)
  m.cyl('Visible reactor plasma',(0,-1.18,.723),.067,.01,plasma,vertices=32)
- m.cam.location=(5,-7,9);m.cam.rotation_euler=(Vector((0,0,.25))-m.cam.location).to_track_quat('-Z','Y').to_euler();m.cam.data.ortho_scale=5.5 if i<25 else 6.3
- s.render.resolution_x=s.render.resolution_y=1536 if kind=='hero' else 1024;s.cycles.samples=112 if kind=='hero' else 72
- s.view_settings.exposure=-.15
- bpy.context.view_layer.update()
- emitters=[]
- for side in [-1,1]:
-  uv=world_to_camera_view(s,m.cam,Vector((side*(.64 if v!=3 else .49),-1.60,.29)))
-  emitters.append({'x':uv.x,'y':1-uv.y})
- with open(os.path.join(out,'%02d.json'%(i+1)),'w')as f:json.dump({'emitters':emitters},f)
- s.render.filepath=os.path.join(out,'%02d.png'%(i+1))
- if i==start:bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath('docs/astra-v2-models/'+kind+'-master.blend'))
- bpy.ops.render.render(write_still=True);print('ASTRA_SHOWROOM_RENDERED',kind,i+1,flush=True)
+
+if __name__ == "__main__":
+ for i in range(start,start+count):
+  build_showroom(i)
+  v=i%6
+  m.cam.location=(5,-7,9);m.cam.rotation_euler=(Vector((0,0,.25))-m.cam.location).to_track_quat('-Z','Y').to_euler();m.cam.data.ortho_scale=5.5 if i<25 else 6.3
+  s.render.resolution_x=s.render.resolution_y=1536 if kind=='hero' else 1024;s.cycles.samples=112 if kind=='hero' else 72
+  s.view_settings.exposure=-.15
+  bpy.context.view_layer.update()
+  emitters=[]
+  for side in [-1,1]:
+   uv=world_to_camera_view(s,m.cam,Vector((side*(.64 if v!=3 else .49),-1.60,.29)))
+   emitters.append({'x':uv.x,'y':1-uv.y})
+  with open(os.path.join(out,'%02d.json'%(i+1)),'w')as f:json.dump({'emitters':emitters},f)
+  s.render.filepath=os.path.join(out,'%02d.png'%(i+1))
+  if i==start:bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath('docs/astra-v2-models/'+kind+'-master.blend'))
+  bpy.ops.render.render(write_still=True);print('ASTRA_SHOWROOM_RENDERED',kind,i+1,flush=True)

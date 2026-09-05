@@ -1,3 +1,4 @@
+import { drawAstraWarningLane, drawAstraWarningSector, drawAstraWarningRing } from '../effects/AstraWarningField.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
@@ -17002,345 +17003,74 @@ export class PlayScene {
 
   drawBossHazardMuzzleBurst(layer, hazard, palette, alpha, progress) {
     if (!layer || !hazard) return;
-    const shimmer = 0.5 + Math.sin(Date.now() * 0.08) * 0.5;
-    const radius = hazard.kind === 'beam'
-      ? Math.max(22, (hazard.radius || 13) * 2.4)
-      : Math.max(18, (hazard.radius || 24) * 1.25);
-    const pulse = 0.78 + shimmer * 0.22 + progress * 0.18;
-
-    for (let i = 0; i < 3; i += 1) {
-      layer.circle(hazard.sourceX, hazard.sourceY, radius * (0.58 + i * 0.34 + progress * 0.18) * pulse);
-      layer.stroke({
-        color: i === 1 ? palette.edge : palette.base,
-        width: 2.2 + progress * 2.8,
-        alpha: (0.18 + progress * 0.22) * alpha / (1 + i * 0.18)
-      });
-    }
-
-    const spokes = hazard.kind === 'beam' ? 14 : 10;
-    const rotation = Date.now() * 0.004;
-    for (let i = 0; i < spokes; i += 1) {
-      const a = (Math.PI * 2 * i) / spokes + rotation;
-      const inner = radius * 0.5;
-      const outer = radius * (1.08 + progress * 0.45 + (i % 2) * 0.18);
-      layer.moveTo(hazard.sourceX + Math.cos(a) * inner, hazard.sourceY + Math.sin(a) * inner);
-      layer.lineTo(hazard.sourceX + Math.cos(a) * outer, hazard.sourceY + Math.sin(a) * outer);
-    }
-    layer.stroke({ color: palette.hot, width: 1.5 + progress * 2, alpha: 0.18 * alpha + progress * 0.18 * alpha });
+    const radius = Math.min(14, (hazard.radius || 24) * 0.5);
+    layer.circle(hazard.sourceX, hazard.sourceY, radius);
+    layer.fill({ color: palette.base, alpha: alpha * 0.18 });
+    layer.circle(hazard.sourceX, hazard.sourceY, radius * 0.32);
+    layer.fill({ color: palette.hot, alpha: alpha * 0.52 });
   }
 
   drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress) {
     if (!layer || !hazard) return;
-    const shimmer = 0.5 + Math.sin(Date.now() * 0.065) * 0.5;
-
-    if (hazard.kind === 'wall') {
-      const h = Math.max(1, hazard.endY - hazard.startY);
-      const y = hazard.startY + h * Math.min(0.96, 0.08 + progress * 0.84);
-      for (const x of hazard.columns || []) {
-        layer.roundRect(x - hazard.width * 1.65, y - 10, hazard.width * 3.3, 20, 10);
-        layer.fill({ color: palette.edge, alpha: (0.1 + progress * 0.16) * alpha });
-        layer.roundRect(x - hazard.width, y - 4, hazard.width * 2, 8, 5);
-        layer.fill({ color: palette.hot, alpha: (0.18 + shimmer * 0.16) * alpha });
-        for (const side of [-1, 1]) {
-          layer.moveTo(x + side * hazard.width * 1.1, y - 22);
-          layer.lineTo(x + side * hazard.width * 2.2, y - 6);
-        }
-      }
-      layer.stroke({ color: palette.hot, width: 1.6 + progress * 1.2, alpha: 0.2 * alpha });
-      return;
-    }
-
+    const t = Math.min(0.98, 0.08 + progress * 0.9);
     if (hazard.kind === 'ring') {
-      const range = Math.max(1, hazard.outerRadius - hazard.innerRadius);
-      const wave = hazard.innerRadius + range * Math.min(1, 0.12 + progress * 1.05);
-      layer.circle(hazard.sourceX, hazard.sourceY, wave);
-      layer.stroke({ color: palette.hot, width: 5 + shimmer * 4, alpha: 0.18 * alpha });
-      for (let i = 0; i < 5; i += 1) {
-        const start = progress * 2.6 + i * 1.22;
-        const radius = hazard.innerRadius + range * (0.18 + i * 0.16);
-        layer.arc(hazard.sourceX, hazard.sourceY, radius, start, start + 0.45 + shimmer * 0.18);
+      const r = hazard.innerRadius + (hazard.outerRadius - hazard.innerRadius) * t;
+      layer.arc(hazard.sourceX, hazard.sourceY, r,
+        hazard.safeAngle + hazard.safeWedge, hazard.safeAngle + Math.PI * 2 - hazard.safeWedge);
+      layer.stroke({ color: palette.hot, width: 1.4, alpha: alpha * 0.28 });
+    } else if (hazard.kind === 'wall') {
+      const y = hazard.startY + (hazard.endY - hazard.startY) * t;
+      for (const x of hazard.columns || []) {
+        layer.moveTo(x - hazard.width * 0.36, y).lineTo(x + hazard.width * 0.36, y);
       }
-      layer.stroke({ color: palette.edge, width: 2.4, alpha: 0.22 * alpha });
-      return;
+      layer.stroke({ color: palette.hot, width: 2, alpha: alpha * 0.4 });
+    } else {
+      const angle = hazard.angle || 0, d = hazard.length * t;
+      const x = hazard.sourceX + Math.cos(angle) * d, y = hazard.sourceY + Math.sin(angle) * d;
+      const half = Math.max(hazard.radius || 24, d * Math.sin((hazard.spread || 0.12) * 0.41)) * 0.78;
+      layer.moveTo(x + Math.sin(angle) * half, y - Math.cos(angle) * half);
+      layer.lineTo(x - Math.sin(angle) * half, y + Math.cos(angle) * half);
+      layer.stroke({ color: palette.hot, width: 1.8, alpha: alpha * 0.32 });
     }
-
-    const angle = hazard.angle || 0;
-    const half = Math.max(0.01, (hazard.spread || 0.12) / 2);
-    const t = Math.min(1, 0.1 + progress * 1.05);
-    const cx = hazard.sourceX + Math.cos(angle) * hazard.length * t;
-    const cy = hazard.sourceY + Math.sin(angle) * hazard.length * t;
-    const px = -Math.sin(angle);
-    const py = Math.cos(angle);
-    const frontWidth = hazard.kind === 'beam'
-      ? Math.max(24, (hazard.radius || 13) * 3.2)
-      : Math.max(22, hazard.length * t * Math.sin(half) * 0.42);
-    layer.moveTo(cx - px * frontWidth, cy - py * frontWidth);
-    layer.lineTo(cx + px * frontWidth, cy + py * frontWidth);
-    layer.stroke({ color: palette.hot, width: hazard.kind === 'beam' ? 7 : 4.5, alpha: 0.28 * alpha });
-    layer.moveTo(cx - px * frontWidth * 0.7, cy - py * frontWidth * 0.7);
-    layer.lineTo(cx + px * frontWidth * 0.7, cy + py * frontWidth * 0.7);
-    layer.stroke({ color: palette.edge, width: hazard.kind === 'beam' ? 3.4 : 2.4, alpha: 0.42 * alpha });
-
-    const chevrons = hazard.kind === 'beam' ? 5 : 4;
-    for (let i = 0; i < chevrons; i += 1) {
-      const ct = Math.min(0.98, t - 0.035 * i);
-      const x = hazard.sourceX + Math.cos(angle) * hazard.length * ct;
-      const y = hazard.sourceY + Math.sin(angle) * hazard.length * ct;
-      const size = 12 + shimmer * 5 + i * 2;
-      layer.moveTo(x - Math.cos(angle) * size + px * size * 0.62, y - Math.sin(angle) * size + py * size * 0.62);
-      layer.lineTo(x + Math.cos(angle) * size, y + Math.sin(angle) * size);
-      layer.lineTo(x - Math.cos(angle) * size - px * size * 0.62, y - Math.sin(angle) * size - py * size * 0.62);
-    }
-    layer.stroke({ color: palette.base, width: 2.2, alpha: 0.28 * alpha });
   }
 
   drawBossHazard(hazard, progress) {
     const layer = this.bossHazardLayer;
     if (!layer) return;
     this.bossHazardLayerHasGeometry = true;
-    const now = Date.now();
-    const alpha = Math.max(0, Math.sin((1 - progress) * Math.PI)) * 0.82;
-    const pulse = 1 + Math.sin(now * 0.05) * 0.08;
-    const shimmer = 0.5 + Math.sin(now * 0.07) * 0.5;
-    const color = hazard.color || 0xfff45c;
-    const palette = this.getBossHazardVfxPalette(hazard, color);
-    const hotColor = palette.hot;
+    const alpha = Math.max(0, Math.min(1, (1 - progress) * 4)) * 0.85;
+    const palette = this.getBossHazardVfxPalette(hazard, hazard.color || 0xfff45c);
     const armingMs = Math.max(0, Number(hazard.armingMs) || 0);
     const armingProgress = armingMs > 0 ? Math.max(0, Math.min(1, Number(hazard.elapsedMs || 0) / armingMs)) : 1;
+    const armed = armingProgress >= 1;
     hazard._debugHazardArming = {
-      visible: false,
-      kind: hazard.kind,
-      armed: armingProgress >= 1,
-      progress: Number(armingProgress.toFixed(3)),
-      gateCount: 0
+      visible: false, kind: hazard.kind, armed,
+      progress: Number(armingProgress.toFixed(3)), gateCount: 0
     };
-
+    const color = armed ? palette.base : 0xffae66;
     if (hazard.kind === 'wall') {
       for (const x of hazard.columns || []) {
-        const h = hazard.endY - hazard.startY;
-        layer.roundRect(x - hazard.width * 1.35, hazard.startY - 8, hazard.width * 2.7, h + 16, 12);
-        layer.fill({ color, alpha: 0.08 * alpha });
-        layer.roundRect(x - hazard.width * 0.72, hazard.startY, hazard.width * 1.44, h, 8);
-        layer.fill({ color, alpha: 0.24 * alpha });
-        layer.roundRect(x - hazard.width * 0.24, hazard.startY, hazard.width * 0.48, h, 5);
-        layer.fill({ color: 0xffffff, alpha: 0.18 * alpha });
-        layer.moveTo(x, hazard.startY);
-        layer.lineTo(x, hazard.endY);
-        for (let y = hazard.startY + 24; y < hazard.endY; y += 48) {
-          const tick = hazard.width * (0.75 + shimmer * 0.25);
-          layer.moveTo(x - tick, y);
-          layer.lineTo(x + tick, y + 12);
-        }
+        drawAstraWarningLane(layer, { x, y: hazard.startY,
+          length: hazard.endY - hazard.startY, halfWidth: hazard.width * 0.5,
+          color, progress: armingProgress, active: armed, alpha });
       }
-      layer.stroke({ color: 0xffffff, width: 2.4 * pulse, alpha: 0.52 * alpha });
-      for (const x of hazard.columns || []) {
-        layer.moveTo(x - hazard.width * 0.62, hazard.startY);
-        layer.lineTo(x - hazard.width * 0.62, hazard.endY);
-        layer.moveTo(x + hazard.width * 0.62, hazard.startY);
-        layer.lineTo(x + hazard.width * 0.62, hazard.endY);
-      }
-      layer.stroke({ color: hotColor, width: 1.8, alpha: 0.44 * alpha });
-      this.drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress);
-      this.drawBossHazardArmingGate(layer, hazard, palette, alpha, armingProgress);
-      return;
-    }
-
-    if (hazard.kind === 'ring') {
-      const outer = hazard.outerRadius * pulse;
-      const inner = hazard.innerRadius * (0.96 + shimmer * 0.04);
-      const mid = (outer + inner) * 0.5;
-      layer.circle(hazard.sourceX, hazard.sourceY, outer * 1.06);
-      layer.stroke({ color, width: 16, alpha: 0.08 * alpha });
-      layer.circle(hazard.sourceX, hazard.sourceY, outer);
-      layer.stroke({ color, width: 9, alpha: 0.46 * alpha });
-      layer.circle(hazard.sourceX, hazard.sourceY, mid);
-      layer.stroke({ color: hotColor, width: 3, alpha: 0.28 * alpha });
-      layer.circle(hazard.sourceX, hazard.sourceY, inner);
-      layer.stroke({ color: 0xffffff, width: 3, alpha: 0.46 * alpha });
-      for (let i = 0; i < 22; i++) {
-        const a = (Math.PI * 2 * i) / 22 + progress * 1.1;
-        if (Math.abs(this.normalizeBossHazardAngle(a - hazard.safeAngle)) < hazard.safeWedge) continue;
-        layer.moveTo(
-          hazard.sourceX + Math.cos(a) * (inner + 8),
-          hazard.sourceY + Math.sin(a) * (inner + 8)
-        );
-        layer.lineTo(
-          hazard.sourceX + Math.cos(a) * (outer - 8),
-          hazard.sourceY + Math.sin(a) * (outer - 8)
-        );
-      }
-      layer.stroke({ color, width: 2.4, alpha: 0.48 * alpha });
-      for (let i = 0; i < 10; i++) {
-        const a = (Math.PI * 2 * i) / 10 - progress * 1.4;
-        if (Math.abs(this.normalizeBossHazardAngle(a - hazard.safeAngle)) < hazard.safeWedge) continue;
-        layer.circle(
-          hazard.sourceX + Math.cos(a) * mid,
-          hazard.sourceY + Math.sin(a) * mid,
-          3.5 + shimmer * 2
-        );
-      }
-      layer.fill({ color: 0xffffff, alpha: 0.2 * alpha });
-      for (const offset of [-hazard.safeWedge, hazard.safeWedge]) {
-        const a = hazard.safeAngle + offset;
-        layer.moveTo(hazard.sourceX + Math.cos(a) * (inner - 4), hazard.sourceY + Math.sin(a) * (inner - 4));
-        layer.lineTo(hazard.sourceX + Math.cos(a) * (outer + 6), hazard.sourceY + Math.sin(a) * (outer + 6));
-      }
-      layer.stroke({ color: 0x8cffb5, width: 2, alpha: 0.42 * alpha });
-      const snap = Math.min(1, progress * 1.24);
-      const snapRadius = hazard.innerRadius + (hazard.outerRadius - hazard.innerRadius) * snap;
-      layer.circle(hazard.sourceX, hazard.sourceY, snapRadius);
-      layer.stroke({ color: hotColor, width: 4 + shimmer * 3, alpha: 0.26 * alpha });
-      for (let i = 0; i < 4; i += 1) {
-        const start = progress * 2.2 + i * Math.PI * 0.5;
-        const end = start + 0.34 + progress * 0.22;
-        const r = inner + (outer - inner) * (0.35 + i * 0.13);
-        layer.arc(hazard.sourceX, hazard.sourceY, r, start, end);
-      }
-      layer.stroke({ color: 0xffffff, width: 2, alpha: 0.18 * alpha });
-      this.drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress);
-      this.drawBossHazardArmingGate(layer, hazard, palette, alpha, armingProgress);
-      return;
-    }
-
-    const half = Math.max(0.01, hazard.spread / 2);
-    const points = [hazard.sourceX, hazard.sourceY];
-    const steps = hazard.kind === 'beam' ? 2 : 10;
-    for (let i = 0; i <= steps; i++) {
-      const t = steps === 1 ? i - 0.5 : i / steps - 0.5;
-      const a = hazard.angle + t * hazard.spread;
-      points.push(
-        hazard.sourceX + Math.cos(a) * hazard.length,
-        hazard.sourceY + Math.sin(a) * hazard.length
-      );
-    }
-    layer.poly(points);
-    layer.fill({ color, alpha: hazard.kind === 'beam' ? 0.16 * alpha : 0.1 * alpha });
-    layer.poly(points);
-    layer.fill({ color: 0xffffff, alpha: hazard.kind === 'beam' ? 0.05 * alpha : 0.035 * alpha });
-    const laneAngles = hazard.kind === 'beam' ? [-0.035, 0, 0.035] : [-half, -half * 0.42, 0, half * 0.42, half];
-    for (const offset of laneAngles) {
-      const a = hazard.angle + offset;
-      layer.moveTo(hazard.sourceX, hazard.sourceY);
-      layer.lineTo(
-        hazard.sourceX + Math.cos(a) * hazard.length,
-        hazard.sourceY + Math.sin(a) * hazard.length
-      );
-    }
-    layer.stroke({ color: 0xffffff, width: hazard.kind === 'beam' ? 12 * pulse : 5 * pulse, alpha: 0.18 * alpha });
-    for (const offset of laneAngles) {
-      const a = hazard.angle + offset;
-      layer.moveTo(hazard.sourceX, hazard.sourceY);
-      layer.lineTo(
-        hazard.sourceX + Math.cos(a) * hazard.length,
-        hazard.sourceY + Math.sin(a) * hazard.length
-      );
-    }
-    layer.stroke({ color, width: hazard.kind === 'beam' ? 4.4 * pulse : 2.2 * pulse, alpha: 0.72 * alpha });
-
-    if (hazard.kind === 'beam') {
-      const coreA = hazard.angle;
-      const px = -Math.sin(coreA);
-      const py = Math.cos(coreA);
-      const railOffset = Math.max(10, (hazard.radius || 13) * 1.28);
-      for (const side of [-1, 1]) {
-        const offset = railOffset * side;
-        layer.moveTo(hazard.sourceX + px * offset, hazard.sourceY + py * offset);
-        layer.lineTo(
-          hazard.sourceX + Math.cos(coreA) * hazard.length + px * offset,
-          hazard.sourceY + Math.sin(coreA) * hazard.length + py * offset
-        );
-      }
-      layer.stroke({ color: 0xff55d9, width: 2.8 * pulse, alpha: 0.32 * alpha });
-      for (const side of [-1, 1]) {
-        const offset = railOffset * 0.48 * side;
-        layer.moveTo(hazard.sourceX + px * offset, hazard.sourceY + py * offset);
-        layer.lineTo(
-          hazard.sourceX + Math.cos(coreA) * hazard.length + px * offset,
-          hazard.sourceY + Math.sin(coreA) * hazard.length + py * offset
-        );
-      }
-      layer.stroke({ color, width: 1.4 * pulse, alpha: 0.44 * alpha });
-      layer.moveTo(hazard.sourceX, hazard.sourceY);
-      layer.lineTo(
-        hazard.sourceX + Math.cos(coreA) * hazard.length,
-        hazard.sourceY + Math.sin(coreA) * hazard.length
-      );
-      layer.stroke({ color: hotColor, width: 2.2 + shimmer * 2, alpha: 0.78 * alpha });
-      for (let i = 1; i <= 6; i += 1) {
-        const t = i / 7;
-        const cx = hazard.sourceX + Math.cos(coreA) * hazard.length * t;
-        const cy = hazard.sourceY + Math.sin(coreA) * hazard.length * t;
-        const band = 10 + t * 26 + shimmer * 8;
-        layer.moveTo(cx - px * band, cy - py * band);
-        layer.lineTo(cx + px * band, cy + py * band);
-      }
-      layer.stroke({ color: 0xffffff, width: 1.8, alpha: 0.26 * alpha });
-      for (let i = 0; i < 5; i += 1) {
-        const t = ((progress * 1.8 + i / 5) % 1);
-        const cx = hazard.sourceX + Math.cos(coreA) * hazard.length * t;
-        const cy = hazard.sourceY + Math.sin(coreA) * hazard.length * t;
-        const arrow = 9 + shimmer * 4;
-        layer.moveTo(cx - Math.cos(coreA) * arrow + px * arrow * 0.55, cy - Math.sin(coreA) * arrow + py * arrow * 0.55);
-        layer.lineTo(cx + Math.cos(coreA) * arrow, cy + Math.sin(coreA) * arrow);
-        layer.lineTo(cx - Math.cos(coreA) * arrow - px * arrow * 0.55, cy - Math.sin(coreA) * arrow - py * arrow * 0.55);
-      }
-      layer.stroke({ color, width: 2, alpha: 0.34 * alpha });
+    } else if (hazard.kind === 'ring') {
+      drawAstraWarningRing(layer, { x: hazard.sourceX, y: hazard.sourceY,
+        inner: hazard.innerRadius, outer: hazard.outerRadius, color,
+        safeAngle: hazard.safeAngle, safeWedge: hazard.safeWedge,
+        progress: armingProgress, active: armed, alpha });
     } else {
-      for (let i = 1; i <= 5; i++) {
-        const t = i / 6;
-        const bandWidth = hazard.length * t * Math.sin(half) * 0.58;
-        const cx = hazard.sourceX + Math.cos(hazard.angle) * hazard.length * t;
-        const cy = hazard.sourceY + Math.sin(hazard.angle) * hazard.length * t;
-        const px = -Math.sin(hazard.angle);
-        const py = Math.cos(hazard.angle);
-        layer.moveTo(cx - px * bandWidth, cy - py * bandWidth);
-        layer.lineTo(cx + px * bandWidth, cy + py * bandWidth);
-      }
-      layer.stroke({ color: hotColor, width: 1.5, alpha: 0.28 * alpha });
-      for (let i = 1; i <= 4; i += 1) {
-        const t = i / 5;
-        const cx = hazard.sourceX + Math.cos(hazard.angle) * hazard.length * t;
-        const cy = hazard.sourceY + Math.sin(hazard.angle) * hazard.length * t;
-        const webWidth = hazard.length * t * Math.sin(half) * 0.34;
-        for (const side of [-1, 1]) {
-          const x = cx + -Math.sin(hazard.angle) * webWidth * side;
-          const y = cy + Math.cos(hazard.angle) * webWidth * side;
-          layer.circle(x, y, 3 + shimmer * 2);
-        }
-      }
-      layer.fill({ color: hotColor, alpha: 0.18 * alpha });
+      // Collision is the union of a constant-width beam and an angular field.
+      // Both visible boundaries use those same authored values, without pulsing.
+      drawAstraWarningSector(layer, { x: hazard.sourceX, y: hazard.sourceY,
+        angle: hazard.angle, length: hazard.length, spread: hazard.spread * 0.82,
+        color, progress: armingProgress, active: armed, alpha });
+      drawAstraWarningLane(layer, { x: hazard.sourceX, y: hazard.sourceY,
+        angle: hazard.angle, length: hazard.length, halfWidth: hazard.radius || 24,
+        color, progress: armingProgress, active: armed, alpha });
+      this.drawBossHazardMuzzleBurst(layer, hazard, palette, alpha, progress);
     }
-
-    const front = Math.min(1, 0.08 + progress * 1.08);
-    const frontX = hazard.sourceX + Math.cos(hazard.angle) * hazard.length * front;
-    const frontY = hazard.sourceY + Math.sin(hazard.angle) * hazard.length * front;
-    const frontPx = -Math.sin(hazard.angle);
-    const frontPy = Math.cos(hazard.angle);
-    const frontWidth = hazard.kind === 'beam'
-      ? Math.max(20, (hazard.radius || 13) * 2.4)
-      : Math.max(18, hazard.length * front * Math.sin(half) * 0.34);
-    layer.moveTo(frontX - frontPx * frontWidth, frontY - frontPy * frontWidth);
-    layer.lineTo(frontX + frontPx * frontWidth, frontY + frontPy * frontWidth);
-    layer.stroke({ color: 0xffffff, width: hazard.kind === 'beam' ? 4.2 : 2.8, alpha: 0.3 * alpha });
     this.drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress);
-    const nodeCount = hazard.kind === 'beam' ? 5 : 7;
-    for (let i = 0; i < nodeCount; i += 1) {
-      const t = ((progress * 1.35 + i / nodeCount) % 1);
-      const x = hazard.sourceX + Math.cos(hazard.angle) * hazard.length * (0.12 + t * 0.78);
-      const y = hazard.sourceY + Math.sin(hazard.angle) * hazard.length * (0.12 + t * 0.78);
-      const widthAtT = hazard.kind === 'beam'
-        ? Math.max(8, (hazard.radius || 13) * 0.78)
-        : Math.max(6, hazard.length * (0.12 + t * 0.78) * Math.sin(half) * 0.16);
-      const side = i % 2 === 0 ? -1 : 1;
-      layer.circle(x + frontPx * widthAtT * side, y + frontPy * widthAtT * side, 2.4 + shimmer * 2.2);
-    }
-    layer.fill({ color: hotColor, alpha: 0.16 * alpha });
-
-    this.drawBossHazardMuzzleBurst(layer, hazard, palette, alpha, progress);
-    layer.circle(hazard.sourceX, hazard.sourceY, hazard.kind === 'beam' ? 14 + shimmer * 5 : 11 + shimmer * 4);
-    layer.fill({ color, alpha: 0.24 * alpha });
-    layer.circle(hazard.sourceX, hazard.sourceY, hazard.kind === 'beam' ? 6 + shimmer * 3 : 5 + shimmer * 2);
-    layer.fill({ color: 0xffffff, alpha: 0.32 * alpha });
     this.drawBossHazardArmingGate(layer, hazard, palette, alpha, armingProgress);
   }
 
@@ -17363,7 +17093,7 @@ export class PlayScene {
     if (hazard.kind === 'wall') {
       for (const x of hazard.columns || []) {
         const capY = hazard.startY + Math.max(12, (hazard.endY - hazard.startY) * 0.06);
-        const width = Math.max(20, hazard.width * 1.9);
+        const width = hazard.width * 0.46;
         layer.roundRect(x - width, capY - 7, width * 2, 14, 7);
         layer.stroke({ color: edge, width: 1.6, alpha: gateAlpha });
         layer.roundRect(x - width + 3, capY - 3, Math.max(4, (width * 2 - 6) * armingProgress), 6, 4);
@@ -17388,7 +17118,8 @@ export class PlayScene {
       }
       layer.stroke({ color: edge, width: 2, alpha: gateAlpha });
       const clockRadius = hazard.innerRadius + (hazard.outerRadius - hazard.innerRadius) * (0.18 + armingProgress * 0.58);
-      layer.arc(hazard.sourceX, hazard.sourceY, clockRadius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * armingProgress);
+      layer.arc(hazard.sourceX, hazard.sourceY, clockRadius, hazard.safeAngle + hazard.safeWedge,
+        hazard.safeAngle + hazard.safeWedge + (Math.PI * 2 - hazard.safeWedge * 2) * armingProgress);
       layer.stroke({ color: hot, width: 3, alpha: gateAlpha * 0.88 });
     } else {
       const angle = hazard.angle || 0;
@@ -20220,6 +19951,9 @@ export class PlayScene {
         width: options.restrained ? 1.4 : options.type === 'lore' ? 1 : (runContractBanner ? 1.4 : specialEnemySignal ? 1.1 : 1.2),
         alpha: authoredFrame ? 0.24 : (options.type === 'lore' ? 0.78 : 1)
       });
+      panel.clear();
+      drawAstraPanel(panel, -panelWidth/2, -panelHeight/2, panelWidth, panelHeight, 9,
+        {color:0x071725,alpha:.91}, {color:options.accent||0x75d9e8,width:1.3,alpha:.72});
 
       const accent = new PIXI.Graphics();
       if (!options.restrained) {
@@ -20425,8 +20159,14 @@ export class PlayScene {
           : useCombatFlourish
             ? Math.max(slot === 'top' ? 72 : 92, Math.min(slot === 'top' ? 130 : 190, text.height + 58))
           : Math.max(34, Math.min(56, text.height + 20));
-        ornament.rotation = isPlasmaCallout ? 0 : -0.12;
+        ornament.rotation = 0;
         badge.addChild(ornament);
+        if (useCombatFlourish && !isPlasmaCallout) {
+          const inset = new PIXI.Graphics();
+          drawAstraPanel(inset, -ornament.width/2+8, -ornament.height/2+6, ornament.width-16, ornament.height-12, 10,
+            {color:0x071725,alpha:.89}, {color:accentColor,width:1.4,alpha:.74});
+          inset.eventMode='none';badge.addChild(inset);
+        }
         text.anchor.set(0.5);
         text.position.set(isPlasmaCallout || useCombatFlourish ? 0 : 12, 0);
         badge.addChild(text);
@@ -20494,9 +20234,9 @@ export class PlayScene {
         };
 
         const panel = new PIXI.Graphics();
-        panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, radius);
-        panel.fill({ color: type === 'boss' ? 0x10070b : 0x04101a, alpha: slot === 'top' ? 0.84 : 0.9 });
-        panel.stroke({ color: accentColor, width: isMajorSignal ? 2.4 : 1.8, alpha: isMajorSignal ? 0.9 : 0.72 });
+        drawAstraPanel(panel, -panelWidth/2, -panelHeight/2, panelWidth, panelHeight, radius,
+          {color:type==='boss'?0x180c16:0x071725,alpha:slot==='top'?.88:.93},
+          {color:accentColor,width:isMajorSignal?2.4:1.8,alpha:isMajorSignal?.9:.72});
         if (!options.restrained) {
           panel.roundRect(-panelWidth / 2 + 7, -panelHeight / 2 + 7, panelWidth - 14, panelHeight - 14, Math.max(3, radius - 3));
           panel.stroke({ color: 0xffffff, width: 0.8, alpha: 0.13 });
