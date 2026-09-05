@@ -704,7 +704,16 @@ export class GameOverScene {
     this.rankProgressBg.zIndex = 1;
     this.container.addChild(this.rankProgressBg);
 
-    this.endlessRankHalo = PIXI.Sprite.from(AssetManifest.sprites.rankPresentation.endlessHalo);
+    this.endlessRankHalo = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    const rankHalo = this.endlessRankHalo;
+    PIXI.Assets.load(AssetManifest.sprites.rankPresentation.endlessHalo).then((texture) => {
+      if (!rankHalo.destroyed) {
+        const { width, height } = rankHalo;
+        rankHalo.texture = texture;
+        rankHalo.width = width;
+        rankHalo.height = height;
+      }
+    }).catch((error) => console.warn('[GameOverScene] Rank halo failed to load:', error));
     this.endlessRankHalo.anchor.set(0.5);
     this.endlessRankHalo.alpha = 0.48;
     this.endlessRankHalo.blendMode = 'add';

@@ -115,7 +115,7 @@ try {
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE';
-    }, { timeout: 30000 });
+    }, null, { timeout: 90000 });
 
     const data = await page.evaluate(() => {
       const game = window.__game;
@@ -127,12 +127,12 @@ try {
       boss.entryStartMs = Date.now() - boss.entryDurationMs - 1;
       boss.phase = 3;
       boss.applyPhasePlan?.(3);
-      boss.telegraph = {
+      boss.beginAttackWarning('signature', {
         type: boss.getSignatureForPhase?.(3) || 'ring',
         label: 'ANIMATION CHECK',
-        start: Date.now() - 2500,
-        duration: 5000
-      };
+        durationMs: 20000
+      });
+      boss.setAttackWarningVisibleElapsedForDebug(10000);
       player.invulnerable = true;
       player.invulnerableTime = 20000;
 

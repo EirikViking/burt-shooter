@@ -370,6 +370,7 @@ export const SFX_MIX = {
     tactical_salvage_clock: { volume: 0.72, minIntervalMs: 140 },
     tactical_power_saver: { volume: 0.72, minIntervalMs: 140 },
     tactical_drone_link: { volume: 0.72, minIntervalMs: 140 },
+    tactical_point_defense: { volume: 0.44, minIntervalMs: 180 },
     drone_launch_blip: { volume: 0.46, minIntervalMs: 220 },
     orbital_strike_charge: { volume: 0.56, minIntervalMs: 600 },
     tractor_lock_charge: { volume: 0.5, minIntervalMs: 700 },
@@ -662,6 +663,7 @@ export const SFX_CATALOG = {
     'tactical_salvage_clock': [getSfx('nova_tactical_salvage_clock')],
     'tactical_power_saver': [getSfx('nova_tactical_power_saver')],
     'tactical_drone_link': [getSfx('nova_tactical_drone_link')],
+    'tactical_point_defense': [getSfx('nova_shield_snap')],
     'chain_lightning_arc': [
         getSfx('nova_chain_lightning_arc')
     ],

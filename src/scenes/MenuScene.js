@@ -7682,6 +7682,7 @@ export class MenuScene {
   }
 
   handleLanguageChanged() {
+    this.runModeInfoTileSignature = '';
     if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
     if (this.disclaimer) this.disclaimer.text = this.getDisclaimerText(getCurrentLayout());
     if (this.controls) this.controls.text = getCurrentLayout().isMobile ? this.getControlsText(getCurrentLayout()) : '';

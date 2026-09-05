@@ -1,4 +1,5 @@
 const { app, BrowserWindow, clipboard, dialog, ipcMain, net, protocol, screen, shell } = require('electron');
+require('./stdioSafety.cjs').installBrokenPipeGuards();
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');

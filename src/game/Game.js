@@ -33,6 +33,7 @@ import {
 } from '../achievements/MilestoneAchievements.js';
 import { onLanguageChange, translateText } from '../i18n/index.js';
 import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
+import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { RunPacingConfig, getRunPacingDebugState } from '../config/RunPacingConfig.js';
 import { RunPressureDirector } from './RunPressureDirector.js';
 import { RunContentDirector } from './RunContentDirector.js';
@@ -363,6 +364,10 @@ export class Game {
     const lateGameExperiment = createLateGamePressureExperimentRun(options.lateGameExperiment);
     const requestedRunMode = normalizeRunMode(lateGameExperiment?.underlyingRunMode || options.runMode);
     const prototypeEnabled = Boolean(lateGameExperiment);
+    // Classify an authorized debug route before any leaderboard/persistence work.
+    // PlayScene initialization is asynchronous and cannot revoke an earlier read.
+    const debugRoute = isMaintainerDevtoolsEnabled()
+      && new URLSearchParams(globalThis.location?.search || '').get('debugBossToken') === 'NOVA_DEBUG_2026';
     const scoutAnomaly = requestedRunMode === RUN_MODES.SCOUT
       ? getScoutAnomaly(options.scoutAnomalyId || readScoutAnomalySelection().id)
       : null;
@@ -429,9 +434,9 @@ export class Game {
     this.score = 0;
     this.level = runStartSector;
     this.lives = lateGameExperiment?.lives || 3;
-    this.isDebugRun = prototypeEnabled;
-    this.runMode = requestedRunMode;
-    this.runModeReason = prototypeEnabled
+    this.isDebugRun = prototypeEnabled || debugRoute;
+    this.runMode = debugRoute && requestedRunMode !== RUN_MODES.DAILY_SIGNAL ? RUN_MODES.UNRANKED : requestedRunMode;
+    this.runModeReason = debugRoute ? 'debug_route' : prototypeEnabled
       ? 'late_game_pressure_experiment'
       : isOverrunRunMode(requestedRunMode)
         ? 'overrun_sector_51_career'
@@ -458,7 +463,7 @@ export class Game {
         }
       : null;
     this.runPolicy = createRunPolicy({
-      runMode: requestedRunMode,
+      runMode: this.runMode,
       isDebugRun: this.isDebugRun,
       prototype: prototypeEnabled
     });
@@ -480,7 +485,7 @@ export class Game {
     this.lastOverrunRunRecord = null;
     this.dailySignalContract = dailySignalContract;
     this.dailySignalContractValidation = dailySignalContractValidation;
-    this.dailySignalInvalidReason = null;
+    this.dailySignalInvalidReason = debugRoute ? 'debug_route' : null;
     this.dailySignalAttemptId = requestedRunMode === RUN_MODES.DAILY_SIGNAL ? generateUUID() : null;
     this.lastDailySignalRecord = null;
     this.highscoreChase = this.createHighscoreChaseState({
@@ -586,6 +591,12 @@ export class Game {
 
   markUnrankedRun(reason = 'debug_route') {
     this.isDebugRun = true;
+    const prototype = this.runPolicy?.prototype === true;
+    this.runPolicy = createRunPolicy({
+      runMode: this.runMode === RUN_MODES.DAILY_SIGNAL ? RUN_MODES.DAILY_SIGNAL : RUN_MODES.UNRANKED,
+      isDebugRun: true,
+      prototype
+    });
     if (this.runMode === RUN_MODES.DAILY_SIGNAL) {
       this.dailySignalInvalidReason = reason;
       this.runModeReason = reason;
