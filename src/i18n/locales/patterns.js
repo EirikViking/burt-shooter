@@ -191,7 +191,7 @@ export function buildArcadePatterns(labels) {
     },
     {
       id: 'nextCareerGoal',
-      regex: /^NEXT CAREER GOAL: REACH LEVEL (.+)$/,
+      regex: /^NEXT CAREER GOAL: REACH (?:LEVEL|SECTOR) (.+)$/,
       replace: (match) => labels.nextCareerGoal(match[1])
     },
     {
@@ -356,7 +356,7 @@ export function buildArcadePatterns(labels) {
     },
     {
       id: 'localGlobalStatusComment',
-      regex: /^Local board rank #(.+)\. Global board status: (.+)\.$/,
+      regex: /^Local board rank #(.+)\. Global (?:board )?status: (.+)\.$/,
       replace: (match, helpers) => `${labels.localBoard}: ${labels.rank} #${match[1]}. ${labels.globalBoard}: ${helpers.translate(match[2])}.`
     },
     {

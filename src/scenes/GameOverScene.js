@@ -4324,7 +4324,7 @@ export class GameOverScene {
     const requirementLine = details.requirements?.length
       ? formatUnlockRequirementsProgress(details.requirements)
       : details.label;
-    const requirementLabel = String(details.label || 'SHIP PROGRESS').toUpperCase();
+    const requirementLabel = translateText(String(details.label || 'SHIP PROGRESS')).toUpperCase();
     return [
       translateText(`NEXT SHIP UNLOCK: ${nextShip.name}`),
       `${translateText(requirementLabel)}: ${requirementLine}`
@@ -4489,7 +4489,7 @@ export class GameOverScene {
     const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestSector || currentProgress.bestLevel) || this.finalLevel || 1));
     const newBest = bestLevel > previousBestLevel && this.finalLevel >= bestLevel;
     const suffix = newBest ? ' - NEW BEST' : '';
-    const clearLabel = summary.runCleared ? 'RUN CLEAR' : 'GAME OVER';
+    const clearLabel = translateText(summary.runCleared ? 'RUN CLEAR' : 'GAME OVER');
     const elapsedSeconds = Math.max(0, Math.floor(Number(summary.runElapsedSeconds) || 0));
     const gained = Math.max(0, Number(summary.pilotXpGained) || 0);
     const rankProgress = getCareerRankProgress(currentProgress.pilotXpExact ?? currentProgress.pilotXp ?? 0);

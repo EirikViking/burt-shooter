@@ -647,7 +647,7 @@ const sourceText = Object.freeze({
   "PERFECT ROW. ANNOYINGLY HEROIC.": "PERFEKT GERUDERT. NERVIG HELDENHAFT.",
   "REINFORCEMENT STORM": "VERSTAERKUNGSSTURM",
   "STORM SURVIVED +{score}": "STURM UEBERLEBT +{score}",
-  "Steam leaderboard unavailable. Local score is saved.": "Steam-Bestenliste nicht verfuegbar. Lokale Punktzahl ist gespeichert.",
+  "Steam leaderboard unavailable. Local score is saved.": "Steam-Bestenliste nicht verfügbar. Lokale Punktzahl ist gespeichert.",
   "Steam friends who play Nova Swarm and submit scores will appear here.": "Steam-Freunde, die Nova Swarm spielen und Punktzahlen einreichen, erscheinen hier.",
   "Steam sector run records loaded.": "Steam-Sektor-Run-Eintraege geladen.",
   "Steam sector run board has no entries yet.": "Noch keine Steam-Sektor-Run-Eintraege.",
@@ -1951,8 +1951,8 @@ const patterns = Object.freeze([
 
   {
     id: 'nextCareerGoal',
-    regex: /^NEXT CAREER GOAL: REACH LEVEL (.+)$/,
-    replace: (match) => `NÄCHSTES KARRIEREZIEL: LEVEL ${match[1]} ERREICHEN`
+    regex: /^NEXT CAREER GOAL: REACH (?:LEVEL|SECTOR) (.+)$/,
+    replace: (match) => `NÄCHSTES KARRIEREZIEL: SEKTOR ${match[1]} ERREICHEN`
   },
   {
     id: 'nextGoalGlobal',
@@ -2116,7 +2116,7 @@ const patterns = Object.freeze([
   },
   {
     id: 'localGlobalStatusComment',
-    regex: /^Local board rank #(.+)\. Global board status: (.+)\.$/,
+    regex: /^Local board rank #(.+)\. Global (?:board )?status: (.+)\.$/,
     replace: (match, helpers) => `LOKALE LISTE: RANG #${match[1]}. GLOBALE LISTE: ${helpers.translate(match[2])}.`
   },
   {

@@ -2522,11 +2522,12 @@ export class ShipSelectScene {
     }
 
     const art = ship.art || {};
-    const heroY = this.layout.isMobile
+    const authoredHeroY = this.layout.isMobile
       ? (Number.isFinite(art.hangarHeroYMobile) ? art.hangarHeroYMobile : -38)
       : (!this.compactHangar
         ? (Number.isFinite(art.hangarHeroY) ? art.hangarHeroY : -58)
         : (Number.isFinite(art.hangarHeroYCompact) ? art.hangarHeroYCompact : -58));
+    const heroY = this.compactHangar ? Math.max(-58, authoredHeroY) : authoredHeroY;
     const baseHeroSize = this.layout.isMobile ? 128 : 172;
     const authoredHeroScale = this.layout.isMobile
       ? art.hangarHeroScaleMobile
