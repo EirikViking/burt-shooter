@@ -101,6 +101,8 @@ Highest sampled renderer process working set: ${num(maxWorkingSet(before,'Tab'))
 
 ## Fixes and validation
 
+Build logs retain the existing large-bundle advisory and Node/Electron dependency deprecation notices. These are separate from the gameplay console checks and did not fail validation or produce error dialogs.
+
 The final destruction regression matches the committed pre-explosion particle allocator, particle motion/lifetime properties and the exact random-number stream. Bounds, boss deduplication, reduced motion and retirement pass. Existing death-feedback readability and boss-death voice runtime checks pass unchanged. A pre-explosion native candidate attempt failed when a staged navigation lost focus before its first wave; the harness now applies the existing QA focus suppression before waiting, without changing game pause behavior. A custom-protocol service-worker warning was also corrected. The failed intermediate report is retained, and final results below use the subsequent package.
 
 Fixed: disconnected stdout/stderr EPIPE dialogs; early debug/practice ranking policy and syncing-state defects; translated menu tile cache; lazy rank-halo sizing/cache warnings; missing point-defense sound alias; boss component container warnings; obsolete boss animation fixture timing; result-screen uppercase-before-translation, end-state/sector/status pattern gaps and romanized offline messages across seven translated locales. Existing assertions were preserved, and the language check now catches the visible leaks missed previously.
