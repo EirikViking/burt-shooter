@@ -29,7 +29,7 @@ class Particle {
     this.bitmap.visible = false;
   }
 
-  reset(x, y, vx, vy, color, size, lifetime, texture = null) {
+  reset(x, y, vx, vy, color, size, lifetime, texture = null, suppressed = false) {
     this.x = x;
     this.y = y;
     this.vx = vx;
@@ -39,7 +39,7 @@ class Particle {
     this.lifetime = lifetime;
     this.age = 0;
     this.active = true;
-    this.astraSuppressed = false;
+    this.astraSuppressed = suppressed;
     this.rotationSpeed = (Math.random() - 0.5) * 0.2;
 
     if (texture) {
@@ -57,11 +57,15 @@ class Particle {
       this.sprite.visible = false;
     } else {
       this.isDebris = false;
-      this.sprite.clear();
       const speed = Math.max(0.1, Math.hypot(vx, vy));
       const shardLength = Math.max(3.2, Math.min(18, size * (1.5 + Math.min(1.65, speed * 0.17))));
       const shardWidth = Math.max(0.9, Math.min(6.5, size * 0.7));
       const curl = (Math.random() - 0.5) * shardWidth * 1.2;
+      // Keep both random draws and the allocator unchanged, but never build
+      // invisible geometry. Boss cascades previously tessellated hundreds of
+      // suppressed shards at the exact moment of the death.
+      if (!suppressed) {
+      this.sprite.clear();
       this.sprite.moveTo(-shardLength * 0.5, curl * 0.18);
       this.sprite.bezierCurveTo(
         -shardLength * 0.1, -shardWidth * 0.72,
@@ -81,13 +85,14 @@ class Particle {
         shardLength * 0.82, -shardWidth * 0.06
       );
       this.sprite.stroke({ color: 0xffffff, width: Math.max(0.55, shardWidth * 0.22), alpha: 0.72 });
+      }
       this.sprite.x = x;
       this.sprite.y = y;
       this.sprite.rotation = Math.atan2(vy, vx);
       this.sprite.alpha = 1;
       this.sprite.scale.set(1);
       this.sprite.blendMode = 'add';
-      this.sprite.visible = true;
+      this.sprite.visible = !suppressed;
       this.bitmap.visible = false;
     }
   }
@@ -158,7 +163,7 @@ export class ParticleManager {
     }
   }
 
-  spawnParticle(x, y, vx, vy, color, size, lifetime, texture = null) {
+  spawnParticle(x, y, vx, vy, color, size, lifetime, texture = null, suppressed = false) {
     if (this.particles.length >= this.maxParticles) {
       if (this.onCap) this.onCap('particles');
       return null;
@@ -168,7 +173,7 @@ export class ParticleManager {
     }
 
     const particle = this.pool.pop() || new Particle();
-    particle.reset(x, y, vx, vy, color, size, lifetime, texture);
+    particle.reset(x, y, vx, vy, color, size, lifetime, texture, suppressed);
     this.particles.push(particle);
 
     this.attachParticleDisplay(particle);
@@ -304,7 +309,7 @@ export class ParticleManager {
       const size = (2 + Math.random() * 3) * sizeMult;
       const lifetime = 22 + Math.random() * 34;
 
-      const particle = this.spawnParticle(x, y, vx, vy, color, size, lifetime);
+      const particle = this.spawnParticle(x, y, vx, vy, color, size, lifetime, null, rendered && i >= 4);
       if (!particle) {
         break;
       }
@@ -366,7 +371,9 @@ export class ParticleManager {
         Math.sin(angle) * speed - upwardBias,
         particleColor,
         size,
-        life
+        life,
+        null,
+        this.suppressExplosionParticles && i >= 4
       );
       if (!particle) {
         break;

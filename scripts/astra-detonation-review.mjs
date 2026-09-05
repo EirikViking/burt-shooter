@@ -15,7 +15,7 @@ try{
  await page.screenshot({path:`${out}/00-boss.png`});
  const killed=await page.evaluate(()=>{const b=window.__game.scenes.play.enemyManager.boss;b.invulnerableUntilMs=0;b.firstDamageAtMs=Date.now()-120000;b.finishGateUntilMs=0;return b.takeDamage(b.maxHealth+9999);});assert.equal(killed,true,'Staged boss must actually die');
  let last=0;
- for(const ms of [100,250,450,700,1050,1500,2100]){await page.waitForTimeout(ms-last);last=ms;await page.screenshot({path:`${out}/boss-${ms}.png`});shots.push(await page.evaluate(()=>({active:window.__game.scenes.play.particleManager.detonations.active.length,fragments:window.__game.scenes.play.particleManager.hullBreakup.active.length})));}
+ for(const ms of [100,250,450,700,1050,1500,2100]){await page.waitForTimeout(ms-last);last=ms;await page.screenshot({path:`${out}/boss-${ms}.png`});shots.push(await page.evaluate(()=>({active:window.__game.scenes.play.particleManager.detonations.active.length,fragments:window.__game.scenes.play.particleManager.hullBreakup.active.length,bossFragments:window.__game.scenes.play.particleManager.hullBreakup.bossPieces.filter(p=>p.active).length})));}
  await page.waitForTimeout(2000);
  await page.goto('http://127.0.0.1:4399/?offlineLeaderboard=1&autostart=1');
  await page.waitForFunction(()=>window.__game?.scenes?.play?.enemyManager?.enemies?.some(e=>e.active&&e.y>80),null,{timeout:120000});
@@ -23,6 +23,6 @@ try{
  await page.waitForTimeout(180);await page.screenshot({path:`${out}/ordinary-180.png`});await page.waitForTimeout(1200);
  await page.evaluate(()=>{const g=window.__game,s=g.scenes.play,p=s.player;p.invulnerable=false;p.invulnerableTime=0;p.shieldActive=false;if(p.takeDamage()){g.loseLife({source:'astra_staged_hit'});s.triggerPlayerDeathFeedback();}});
  await page.waitForTimeout(160);await page.screenshot({path:`${out}/player-160.png`});await page.waitForTimeout(1600);
- assert.ok(shots.some(s=>s.active>0),'Actual death must spawn combustion');assert.deepEqual(errors,[]);assert.deepEqual(warnings,[]);
+ assert.ok(shots.some(s=>s.active>0),'Actual death must spawn combustion');assert.ok(shots.some(s=>s.bossFragments===8),'Actual boss death must split the complete hull');assert.deepEqual(errors,[]);assert.deepEqual(warnings,[]);
  writeFileSync(`${out}/report.json`,JSON.stringify({ok:true,shots,errors,warnings,description:'Actual browser game, normal wall-clock playback; boss killed through damage API in an isolated staged practice encounter.'},null,2));
 }finally{await context.close();await browser.close();}

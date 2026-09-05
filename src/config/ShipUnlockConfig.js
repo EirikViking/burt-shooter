@@ -17,6 +17,8 @@ export const SUPPORTED_SHIP_UNLOCK_REQUIREMENT_KEYS = Object.freeze([
   'highestScoreMultiplier'
 ]);
 
+export const STARTER_SHIP_IDS = Object.freeze(['nova_ship_01', 'nova_ship_03', 'nova_ship_07']);
+
 export const ShipUnlockConfig = Object.freeze([
   {
     shipId: 'nova_ship_01',
@@ -32,8 +34,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_03',
-    label: 'Defeat 1 boss',
-    requirements: { totalBossesDefeated: 1 },
+    label: 'Available now',
+    requirements: {},
     legacyLevel: 3
   },
   {
@@ -56,8 +58,8 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_07',
-    label: 'Discover 45 Codex entries and reach pilot rank 4',
-    requirements: { codexDiscoveries: 45, pilotRank: 4 },
+    label: 'Available now',
+    requirements: {},
     legacyLevel: 9
   },
   {

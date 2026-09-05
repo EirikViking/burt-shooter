@@ -2396,10 +2396,16 @@ export class HUD {
     const paddingY = Math.round(6 * uiScale);
     const barHeight = Math.max(4, Math.round(4 * uiScale));
     const barGap = Math.round(4 * uiScale);
-    this.traitLabel.style.fontSize = Math.round((isLargeDesktop ? 12 : 11) * uiScale);
-    this.traitLabel.style.stroke = { color: '#000000', width: Math.round(3 * uiScale) };
-    this.traitText.style.fontSize = Math.round((isLargeDesktop ? 13 : 12) * uiScale);
-    this.traitText.style.stroke = { color: '#000000', width: Math.round(3 * uiScale) };
+    // A new stroke object invalidates Pixi's canvas text texture even when its
+    // values are identical. Rebuild typography only when the layout changes.
+    const typographyKey = `${isLargeDesktop}:${uiScale}`;
+    if (this.traitTypographyKey !== typographyKey) {
+      this.traitTypographyKey = typographyKey;
+      this.traitLabel.style.fontSize = Math.round((isLargeDesktop ? 12 : 11) * uiScale);
+      this.traitLabel.style.stroke = { color: '#000000', width: Math.round(3 * uiScale) };
+      this.traitText.style.fontSize = Math.round((isLargeDesktop ? 13 : 12) * uiScale);
+      this.traitText.style.stroke = { color: '#000000', width: Math.round(3 * uiScale) };
+    }
     const label = `TRAIT: ${this.truncateLabel(state.label, 17)}`;
     this.traitLabel.text = label;
     this.traitText.text = event.text;

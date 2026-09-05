@@ -681,7 +681,9 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  const gameUrl = baseUrl ? `${baseUrl}/?desktop=1` : pathToFileURL(path.join(distDir, 'index.html')).toString();
+  const gameUrl = baseUrl
+    ? `${baseUrl}/?desktop=1${isFreshProfile ? '&offlineLeaderboard=1' : ''}`
+    : `${pathToFileURL(path.join(distDir, 'index.html')).toString()}${isFreshProfile ? '?offlineLeaderboard=1' : ''}`;
   const framePacingProbeUrl = baseUrl
     ? `${baseUrl}/frame-pacing-probe.html`
     : pathToFileURL(path.join(distDir, 'frame-pacing-probe.html')).toString();
@@ -1146,7 +1148,7 @@ async function runControlSmoke(window) {
   });
 
   await waitForWindowLoad(window, smokeLoadTimeoutMs(), 'Electron control smoke');
-  await window.loadURL(`${baseUrl}/?desktop=1&controlSmoke=1`);
+  await window.loadURL(`${baseUrl}/?desktop=1&controlSmoke=1${isFreshProfile ? '&offlineLeaderboard=1' : ''}`);
   const startState = await waitForPlay(window);
   await captureControlScreenshot(window, outputDir, '00-control-start.png', capturedScreenshots, screenshotWarnings);
 
@@ -1256,7 +1258,7 @@ async function runPerfSmoke(window) {
   });
 
   await waitForWindowLoad(window, smokeLoadTimeoutMs(), 'Electron perf smoke');
-  await window.loadURL(`${baseUrl}/?desktop=1&perf=1&controlSmoke=1`);
+  await window.loadURL(`${baseUrl}/?desktop=1&perf=1&controlSmoke=1${isFreshProfile ? '&offlineLeaderboard=1' : ''}`);
   const startState = await waitForPlay(window);
   await window.webContents.executeJavaScript(`
     (() => {

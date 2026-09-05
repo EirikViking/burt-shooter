@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { getReducedMotionEnabled, getFlashIntensityScale } from '../config/AccessibilitySettings.js';
+import { AstraReactorRupture, getReactorMaterials } from './AstraReactorRupture.js';
 
 let frameTextures = null;
 let readyPromise = null;
@@ -25,11 +26,13 @@ export class AstraDetonation {
     this.sequence = 0;
     this.maxActive = 18;
     this.lastBoss = null;
+    getReactorMaterials();
+    this.pool.push(this.createDisplay(true));
     loadDetonationFrames().catch(() => {});
   }
   emit(x, y, intensity = 1, boss = false) {
     if (!frameTextures) return false;
-    if (this.lastBoss && this.lastBoss.age < 24 && Math.hypot(x - this.lastBoss.x, y - this.lastBoss.y) < 320) return true;
+    if (this.lastBoss && this.lastBoss.age < 84 && Math.hypot(x - this.lastBoss.x, y - this.lastBoss.y) < 360) return true;
     if (boss) {
       // A boss callback also emits local ordinary bursts for its armor pieces.
       // Keep their legacy particles, but let one coherent reactor event own
@@ -46,38 +49,49 @@ export class AstraDetonation {
     }
     const reduced = getReducedMotionEnabled();
     const display = this.pool.pop() || this.createDisplay();
+    if (boss && !display.reactor) { display.reactor = new AstraReactorRupture(); display.addChild(display.reactor); }
     const id = ++this.sequence;
     const pixels = boss ? 560 : 106 + Math.sqrt(Math.max(.2, intensity)) * 39;
     display.position.set(x, y);display.visible = true;display.alpha = 1;
     display.flames.rotation = (id * 2.399963) % (Math.PI * 2);
     display.flames.scale.set(pixels / frameSize);
-    const entry = { display, x, y, boss, age: 0, lifetime: boss ? 84 : 32 + Math.min(12, intensity * 5), pixels, reduced, flash: getFlashIntensityScale() };
+    const entry = { display, x, y, boss, age: 0, lifetime: boss ? 96 : 32 + Math.min(12, intensity * 5), pixels, reduced, flash: getFlashIntensityScale() };
     this.active.push(entry);if(boss)this.lastBoss = entry;
     this.draw(entry);return true;
   }
-  createDisplay() {
+  createDisplay(boss = false) {
     const c = new PIXI.Container();c.eventMode = 'none';
     c.front = new PIXI.Graphics();c.front.blendMode = 'add';
+    if(boss)c.reactor = new AstraReactorRupture();
     c.flames = new PIXI.Container();
     c.a = new PIXI.Sprite();c.b = new PIXI.Sprite();c.a.anchor.set(.5);c.b.anchor.set(.5);
-    c.flames.addChild(c.a, c.b);c.addChild(c.front, c.flames);this.container.addChild(c);return c;
+    c.flames.addChild(c.a, c.b);c.addChild(c.flames, c.front);if(c.reactor)c.addChild(c.reactor);this.container.addChild(c);return c;
+  }
+  async prepare(renderer) {
+    const frames = await loadDetonationFrames();
+    if (!renderer?.prepare?.upload) return;
+    // Upload the shared atlas and small optics while the launch is preparing,
+    // rather than making the first kill pay for their GPU allocation.
+    for (const texture of [frames[0], ...Object.values(getReactorMaterials())]) {
+      await renderer.prepare.upload(texture);
+    }
   }
   draw(e) {
     const t = Math.min(1, e.age / e.lifetime), c = e.display;
     const last = frameTextures.length - 1;
-    const frame = e.reduced || e.flash < .2 ? last * (.58 + t * .42) : t * last;
+    const frame = e.boss ? last * (.38 + t * .62) : e.reduced || e.flash < .2 ? last * (.58 + t * .42) : t * last;
     const i = Math.min(last - 1, Math.floor(frame)), mix = frame - i;
     c.a.texture = frameTextures[i];c.b.texture = frameTextures[i + 1];
-    const fade = Math.pow(1 - t, .5) * (e.boss ? .96 : .9);
+    const fade = Math.pow(1 - t, .5) * (e.boss ? .55 * Math.min(1,t*8) : .9);
+    c.flames.scale.set(e.pixels / frameSize * (e.boss ? .32 + t * .3 : 1));
     c.a.alpha = (1 - mix) * fade;c.b.alpha = mix * fade;
     c.front.clear();
-    if (e.boss && !e.reduced) {
-      const radius = 15 + (1 - Math.exp(-t * 7)) * 235;
-      const alpha = Math.pow(Math.max(0, 1 - t * 2.1), 2) * .38 * e.flash;
-      c.front.ellipse(0, 0, radius, radius * .42).stroke({ color: 0xe6f7ff, width: Math.max(.8, 4 * (1 - t)), alpha });
-      if(t < .12)c.front.ellipse(0,0,110*(1-t/.12)+8,10*(1-t/.12)+2).fill({color:0xdaf6ff,alpha:.6*(1-t/.12)*e.flash});
+    if(c.reactor) {
+      c.reactor.visible = e.boss;
+      if(e.boss)c.reactor.draw(e.age,e.pixels,e.reduced,e.flash);
     }
   }
+
   retire(e) { e.display.visible = false;this.pool.push(e.display); }
   update(delta) {
     let write = 0;

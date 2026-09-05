@@ -4,7 +4,7 @@
  * The public roster uses 25 original generated Nova Swarm ship sprites plus
  * five late-game Ascendant hulls. Phase Seraph and Eirik the Viking have dedicated
  * final art while the first three Ascendant hulls retain explicit safe fallbacks. Only the
- * first craft is available on a fresh profile; the rest unlock through
+ * Sparrow, Needle and Fan are available on a fresh profile; the rest unlock through
  * level progress so ship choice becomes part of long-term mastery.
  */
 

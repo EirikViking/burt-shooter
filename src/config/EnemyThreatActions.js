@@ -278,13 +278,19 @@ export function pickThreatActionsForWave({ level, formation, tactic, enemyProfil
   for (let i = 0; i < planned; i += 1) {
     const slot = (i * 2 + waveIndex) % Math.max(1, enemyProfiles.length || count || 1);
     const enemyProfile = enemyProfiles[slot] || null;
-    const ranked = available
-      .map((action) => ({
-        action,
-        score: scoreThreatActionForWave(action, { level, formation, tactic, enemyProfile, slot: slot + waveIndex * 3 })
-      }))
-      .sort((a, b) => b.score - a.score || a.action.id.localeCompare(b.action.id));
-    const picked = ranked.find((entry) => !usedIds.has(entry.action.id)) || ranked[0];
+    // Only the best unused action is needed. Sorting the entire expanded
+    // catalog for every slot caused a measured first-wave CPU hitch. Keep
+    // the original score, locale tie-break and stable equal-key ordering.
+    let best = null, bestUnused = null;
+    const context = { level, formation, tactic, enemyProfile, slot: slot + waveIndex * 3 };
+    const precedes = (entry, current) => !current || entry.score > current.score
+      || (entry.score === current.score && entry.action.id.localeCompare(current.action.id) < 0);
+    for (const action of available) {
+      const entry = { action, score: scoreThreatActionForWave(action, context) };
+      if (precedes(entry, best)) best = entry;
+      if (!usedIds.has(action.id) && precedes(entry, bestUnused)) bestUnused = entry;
+    }
+    const picked = bestUnused || best;
     if (!picked) continue;
     usedIds.add(picked.action.id);
     assignments.push({ slot, actionId: picked.action.id });

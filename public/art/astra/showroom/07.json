@@ -1,1 +1,1 @@
-{"emitters":[{"x":0.12708659514093198,"y":0.6338577171384114},{"x":0.4083568194747474,"y":0.7771066512442436}]}
+{"size":768,"emitters":[{"x":0.19706223855030938,"y":0.6388693521189135,"visible":true},{"x":0.4426790281783703,"y":0.7579605092681964,"visible":true}],"source":"Original Blender Quasar model; render-astra-turntable.py and pack-astra-turntables.mjs"}

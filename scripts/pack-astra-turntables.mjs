@@ -19,5 +19,10 @@ for(let i=start;i<start+count;i++){
  await sharp({create:{width:columns*size,height:rows*size,channels:4,background:'#00000000'}}).composite(pieces).webp({quality:91,alphaQuality:100,effort:5}).toFile(`public/art/astra/turntable/${id}.webp`);
  const views=data.views.map(v=>({...v,emitters:v.emitters.map(e=>({...e,x:(e.x*data.size-crop.left)/side,y:(e.y*data.size-crop.top)/side}))}));
  await writeFile(`public/art/astra/turntable/${id}.json`,JSON.stringify({...data,size,columns,views,sourceCrop:crop}));
+ // The redesigned Quasar uses the same registered view for its static fallback.
+ if(i===6){
+  await sharp(files[0]).extract(crop).resize(768,768).webp({quality:94,alphaQuality:100}).toFile(`public/art/astra/showroom/${id}.webp`);
+  await writeFile(`public/art/astra/showroom/${id}.json`,JSON.stringify({size:768,emitters:views[0].emitters,source:'Original Blender Quasar model; render-astra-turntable.py and pack-astra-turntables.mjs'}));
+ }
  console.log('packed turntable',id);
 }

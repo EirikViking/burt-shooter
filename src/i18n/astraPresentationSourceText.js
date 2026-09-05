@@ -8,4 +8,5 @@ const labels = {
   "ko": "드래그하여 회전",
   "ja": "ドラッグして回転"
 };
-export const getAstraPresentationSourceText = locale => ({ 'DRAG TO ROTATE': labels[locale] || labels.en });
+const firing = { en: 'FIRING PATTERN', de: 'FEUERMUSTER', es: 'PATRÓN DE DISPARO', ru: 'СХЕМА СТРЕЛЬБЫ', 'zh-CN': '射击模式', 'pt-BR': 'PADRÃO DE DISPARO', ko: '사격 패턴', ja: '射撃パターン' };
+export const getAstraPresentationSourceText = locale => ({ 'DRAG TO ROTATE': labels[locale] || labels.en, 'FIRING PATTERN': firing[locale] || firing.en });

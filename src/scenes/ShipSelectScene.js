@@ -1,4 +1,6 @@
 import { AstraTurntable } from '../ui/AstraTurntable.js';
+import { AstraWeaponPreview } from '../ui/AstraWeaponPreview.js';
+import { STARTER_SHIP_IDS } from '../config/ShipUnlockConfig.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import { AstraShowroomLights } from '../ui/AstraShowroomLights.js';
 import * as PIXI from 'pixi.js';
@@ -2880,6 +2882,11 @@ export class ShipSelectScene {
     container.addChild(trait);
     container.traitText = trait;
 
+    const weaponPreview = new AstraWeaponPreview(ship, textAccent);
+    weaponPreview.position.set(0, bottomOf(trait) + 10);
+    container.addChild(weaponPreview);
+    container.weaponPreview = weaponPreview;
+
     const statPanel = createShipStatPanel(ship, {
       compact: true,
       width: 352,
@@ -2888,7 +2895,7 @@ export class ShipSelectScene {
       title: 'SHIP TUNE'
     });
     statPanel.scale.set(1 / this.centerScale);
-    statPanel.position.set(0, Math.max(this.layout.isMobile ? 176 : 194, bottomOf(trait) + 10));
+    statPanel.position.set(0, Math.max(this.layout.isMobile ? 176 : 194, weaponPreview.y + 68));
     statPanel.visible = !this.compactHangar;
     container.addChild(statPanel);
     container.statPanel = statPanel;
@@ -3606,6 +3613,12 @@ export class ShipSelectScene {
   orderShips(ships) {
     const list = Array.isArray(ships) ? [...ships] : [];
     return list.sort((a, b) => {
+      const starterOrder = ship => {
+        const index = STARTER_SHIP_IDS.indexOf(ship.baseId || ship.id);
+        return index >= 0 ? index : STARTER_SHIP_IDS.length;
+      };
+      const starterDelta = starterOrder(a) - starterOrder(b);
+      if (starterDelta) return starterDelta;
       const textureDelta = (a.textureIndex ?? 0) - (b.textureIndex ?? 0);
       if (textureDelta !== 0) return textureDelta;
       const variantDelta = (a.variantIndex ?? 0) - (b.variantIndex ?? 0);
@@ -4109,6 +4122,10 @@ export class ShipSelectScene {
     updateMenuFx(this, delta);
     this.showroomTime = (this.showroomTime || 0) + delta * 0.016;
     const card = this.shipCards[this.selectedIndex];
+    for (const item of this.shipCards) {
+      if (item.weaponPreview) item.weaponPreview.visible = item === card && !this.animating;
+    }
+    if (card?.weaponPreview?.visible) card.weaponPreview.update(delta);
     if (this.rotatingCard !== card) {
       if (this.rotatingCard?.turntable) {
         this.rotatingCard.turntable.destroy();

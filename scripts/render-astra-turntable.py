@@ -91,6 +91,33 @@ for i in range(start,start+count):
  for ob in bpy.data.objects:
   for modifier in ob.modifiers:
    if modifier.type=='BEVEL':modifier.width*=.55
+ if i==6:
+  # Quasar Fan: a broad tri-cannon starter with a distinct swept crescent plan.
+  # This showroom variant is presentation only; gameplay registration is fixed.
+  plum=m.mat('Quasar violet titanium',(.19,.025,.26),.68,.28,micro=True)
+  skin_material(plum,(1.2,.42,1.7))
+  violet=m.mat('Quasar contained plasma',(.62,.045,1),.18,.2,3.5)
+  for side in [-1,1]:
+   m.poly('Quasar crescent armor',[(side*.5,-.62),(side*1.96,-.42),(side*1.68,.58),(side*1.30,1.22),(side*1.18,.55),(side*.66,.04)],.43,.095,plum,.026)
+   m.poly('Quasar ceramic leading edge',[(side*1.96,-.42),(side*1.68,.58),(side*1.30,1.22),(side*1.36,.83),(side*1.81,-.35)],.536,.014,m.white,.008)
+   m.poly('Quasar inset wing shield',[(side*.76,-.33),(side*1.28,-.22),(side*1.12,.29),(side*.82,.10)],.542,.019,m.steel,.009)
+   m.tube('Quasar engraved service seam',[(side*.87,-.30,.565),(side*1.14,-.16,.565),(side*1.04,.14,.565)],.007,m.copper)
+   for j in range(6):
+    m.box('Quasar inset radiator slot',(side*(1.49+j*.045),-.29,.544),(.022,.14,.009),m.black,.003)
+    m.box('Quasar radiator lip',(side*(1.49+j*.045),-.21,.553),(.024,.012,.006),m.silver,.002)
+   for j in range(3):m.cyl('Quasar wing captive fastener',(side*(.91+j*.18),-.46,.545),.019,.012,m.silver,vertices=12)
+   m.box('Quasar wing cannon breech',(side*1.40,.38,.56),(.25,.66,.22),m.steel,.042)
+   m.cyl('Quasar forward barrel',(side*1.40,.91,.56),.079,.48,m.black,'Y',24)
+   m.cyl('Quasar focusing collar',(side*1.40,1.13,.56),.105,.085,m.silver,'Y',24)
+   m.cyl('Quasar muzzle',(side*1.40,1.18,.56),.055,.012,violet,'Y',24)
+   for j in range(5):m.box('Quasar heat extractor',(side*1.4,.15+j*.085,.69),(.23,.028,.045),m.silver,.006)
+   m.tube('Quasar energised rail',[(side*.62,-.55,.55),(side*1.10,-.38,.55),(side*1.52,-.28,.55)],.012,violet)
+  m.cyl('Quasar axial cannon',(0,1.24,.35),.105,.56,m.steel,'Y',32)
+  m.cyl('Quasar axial muzzle',(0,1.53,.35),.062,.018,violet,'Y',24)
+  bodies=[ob for ob in bpy.data.objects if ob.type in {'MESH','CURVE','FONT'}]
+  root_ob=bpy.data.objects.new('Quasar wide tri-cannon airframe',None);bpy.context.collection.objects.link(root_ob)
+  for ob in bodies:ob.parent=root_ob
+  root_ob.scale=(1.10,.91,1)
  size=720 if frames<12 else (1024 if i==0 else 448)
  s.render.resolution_x=s.render.resolution_y=size
  m.cam.data.ortho_scale=5.4 if i<25 else 6.4
@@ -103,11 +130,11 @@ for i in range(start,start+count):
   bpy.context.view_layer.update()
   emitters=[]
   for side in [-1,1]:
-   uv=world_to_camera_view(s,m.cam,Vector((side*(.64 if v!=3 else .49),-1.60,.29)))
+   uv=world_to_camera_view(s,m.cam,Vector((side*(.64 if v!=3 else .49)*(1.10 if i==6 else 1),-1.60*(.91 if i==6 else 1),.29)))
    emitters.append({'x':uv.x,'y':1-uv.y,'visible':math.sin(a)<-.22})
   metadata['views'].append({'emitters':emitters})
   s.render.filepath=os.path.join(out,'%02d.png'%f)
-  if i==start and f==0:bpy.ops.wm.save_as_mainfile(filepath=os.path.join(root,'paint-prototype.blend' if frames<12 else 'turntable-master.blend'))
+  if i==start and f==0:bpy.ops.wm.save_as_mainfile(filepath=os.path.join(root,'quasar-master.blend' if i==6 else 'paint-prototype.blend' if frames<12 else 'turntable-master.blend'))
   bpy.ops.render.render(write_still=True)
   print('ASTRA_TURNTABLE',i+1,f+1,flush=True)
  with open(os.path.join(out,'views.json'),'w')as fp:json.dump(metadata,fp)

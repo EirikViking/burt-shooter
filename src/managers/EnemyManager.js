@@ -760,7 +760,7 @@ export class EnemyManager {
     const preserveNativePressure = Boolean(
       authoredEncounter && this.highSectorEscalationState?.preserveNativePressure
     );
-    const curatedWaves = this.getCuratedWaves(normalWaveLevel);
+    const curatedWaves = this.getCuratedWaves(normalWaveLevel, sourceLevel);
     if (curatedWaves) {
       const shapedCurated = curatedWaves.map((wave, waveIndex) =>
         this.game?.contentDirector?.shapeWaveConfig?.(wave, { level: normalWaveLevel, sourceLevel, waveIndex }) || wave
@@ -779,7 +779,7 @@ export class EnemyManager {
       return shapeHighSectorWaves(planned, this.highSectorEscalationState);
     }
 
-    const numWaves = this.getNormalWaveCount(normalWaveLevel);
+    const numWaves = this.getNormalWaveCount(normalWaveLevel, sourceLevel);
     const waves = [];
     const patterns = [
       'GRID',
@@ -1032,7 +1032,10 @@ export class EnemyManager {
     console.log(`[MultiEliteWave] level=${safeLevel} wave=${waveIndex + 1} elites=${ids.length} compensation=count:${originalCount}->${compensatedCount},normalFire:${compensation.normalFireScalar},eliteHp:${compensation.eliteHealthScalar}`);
   }
 
-  getNormalWaveCount(level) {
+  getNormalWaveCount(level, sourceLevel = level) {
+    // The first normal sector is a three-encounter introduction. Daily keeps
+    // its existing deterministic schedule; later sectors keep their pressure.
+    if (sourceLevel === 1 && this.game?.runMode !== 'daily_signal') return 3;
     const diff = BalanceConfig.difficulty;
     const base = diff.wavesPerBossBase ?? diff.waveCountBase ?? 4;
     const perLevel = diff.wavesPerBossPerLevel ?? 0;
@@ -1072,7 +1075,7 @@ export class EnemyManager {
     return Math.max(4, Math.min(max, count));
   }
 
-  getCuratedWaves(level) {
+  getCuratedWaves(level, sourceLevel = level) {
     const scripts = {
       1: [
         { type: 'nova_enemy_001', count: 6, formation: 'TUTORIAL_ARC', tactic: 'strafe_sweep', entry: 'split', cadence: 0.78 },
@@ -1109,7 +1112,7 @@ export class EnemyManager {
     };
     const script = scripts[level];
     if (!script) return null;
-    const waveCount = Math.max(1, Math.min(script.length, this.getNormalWaveCount(level)));
+    const waveCount = Math.max(1, Math.min(script.length, this.getNormalWaveCount(level, sourceLevel)));
     return script.slice(0, waveCount).map((wave) => ({ ...wave }));
   }
 
@@ -1132,6 +1135,7 @@ export class EnemyManager {
 
   shouldAddBossSpacingWave() {
     if (!this.isBossLevel || this.bossSpawnedThisLevel || this.bossDefeatedThisLevel) return false;
+    if (this.level === 1 && this.game?.runMode !== 'daily_signal') return false;
     const diff = BalanceConfig.difficulty;
     const minWaves = diff.MIN_WAVES_BETWEEN_BOSSES ?? diff.minWavesBetweenBosses ?? 6;
     const completedWaves = this.currentWaveIndex + 1;

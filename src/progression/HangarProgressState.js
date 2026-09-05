@@ -1,6 +1,7 @@
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import {
   ShipUnlockConfig,
+  STARTER_SHIP_IDS,
   SUPPORTED_SHIP_UNLOCK_REQUIREMENT_KEYS,
   getShipUnlockDefinition
 } from '../config/ShipUnlockConfig.js';
@@ -125,7 +126,7 @@ export function createDefaultHangarProgress() {
     creditsEasterEggFound: false,
     creditsAscendantEasterEggAttempts: 0,
     creditsAscendantEasterEggFound: false,
-    unlockedShipIds: ['nova_ship_01'],
+    unlockedShipIds: [...STARTER_SHIP_IDS],
     shipUnlockHistory: {},
     lastNewlyUnlockedShipIds: [],
     newRanksThisRun: [],
@@ -293,7 +294,7 @@ function fillMissingShipUnlockHistory(progress, source = 'migration') {
   const unlockedIds = Array.isArray(progress.unlockedShipIds) ? progress.unlockedShipIds.map(String) : [];
   for (const shipId of unlockedIds) {
     if (history[shipId]) continue;
-    history[shipId] = shipId === 'nova_ship_01'
+    history[shipId] = STARTER_SHIP_IDS.includes(shipId)
       ? createAvailableShipUnlockHistoryEntry()
       : createLegacyShipUnlockHistoryEntry(source);
   }

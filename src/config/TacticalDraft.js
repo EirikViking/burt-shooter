@@ -253,7 +253,8 @@ export function buildTacticalDraftOffers({
   ineffectiveIds = [],
   bannedIds = [],
   heldId = null,
-  recentOfferIds = []
+  recentOfferIds = [],
+  openingLoadoutChoice = false
 } = {}) {
   const counts = getStackCounts(selectedIds);
   const consumed = new Set(Array.isArray(consumedIds) ? consumedIds : []);
@@ -388,6 +389,13 @@ export function buildTacticalDraftOffers({
     const replacementIndex = offers.findIndex((augment) => !protectedIds.has(augment.id));
     if (offers.length >= TACTICAL_DRAFT_OFFER_COUNT) offers.splice(replacementIndex >= 0 ? replacementIndex : offers.length - 1, 1);
     offers.splice(Math.min(1, offers.length), 0, scoreRouteCandidate);
+  }
+  // Opt-in at the normal-game call site. The default remains the established
+  // Daily/replay offer function, including all rescan/hold/ban behavior.
+  if (openingLoadoutChoice && sectorCleared === 1 && !selectedIds.length && !excludedIds.length) {
+    const opening = ['pierce', 'double_shot', 'drones']
+      .map(id => eligibleById.get(id)).filter(Boolean);
+    if (opening.length === TACTICAL_DRAFT_OFFER_COUNT) offers.splice(0, offers.length, ...opening);
   }
   return offers.slice(0, TACTICAL_DRAFT_OFFER_COUNT).map((augment) => {
     const currentStacks = counts.get(augment.id) || 0;

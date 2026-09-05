@@ -1041,6 +1041,10 @@ export class PlayScene {
     this.bulletManager.setScreenBounds(width, height);
     this.particleManager = new ParticleManager(this.gameContainer, capHandler);
     this.particleManager.prewarm?.(520);
+    this.combatMaterialWarmup = this.particleManager.detonations.prepare(this.game?.app?.renderer)
+      .then(() => GameAssets.ensureTacticalDraftFieldTexture())
+      .then(texture => this.prepareTextureForRender(texture, 'tactical_draft_field'))
+      .catch(() => {});
     this.particleManager.prewarmEnergyBlooms?.(18).catch?.(() => {});
     this.powerupManager = new PowerupManager(this.gameContainer, this.gameplayGame);
     this.screenShake = new ScreenShake(this.gameContainer);
@@ -5576,6 +5580,7 @@ export class PlayScene {
       const key = `${safeLevel}:${aheadCount}:${this.shipCatalogLoaded ? 'ships' : 'art'}`;
       if (!this.entryAssetWarmupCache.has(key)) {
         const warmup = Promise.allSettled([
+          this.combatMaterialWarmup,
           this.prewarmGeneratedEnemyTexturesForLevel(safeLevel, { aheadLevels: aheadCount })
         ]).then(() => true);
         this.entryAssetWarmupCache.set(key, warmup);
@@ -10803,6 +10808,7 @@ export class PlayScene {
     const ineffectiveIds = this.getIneffectiveTacticalDraftOfferIds();
     if (ineffectiveIds.includes(this.tacticalDraftHeldId)) this.tacticalDraftHeldId = null;
     const offers = this.decorateTacticalDraftOffers(buildTacticalDraftOffers({
+      openingLoadoutChoice: this.game?.runMode !== 'daily_signal',
       seed: this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`,
       sectorCleared,
       selectedIds: this.player.runAugmentIds || [],
@@ -23242,9 +23248,16 @@ export class PlayScene {
     const removals = [];
     const walk = (node) => {
       if (!node) return;
-      for (const child of node.children || []) walk(child);
       const label = String(node.label || '');
-      if (!label.startsWith('enemy_visual:')) return;
+      // Enemy ownership is on the root container. Its weapon rig, armor,
+      // sprites and particles cannot contain another independent enemy.
+      // Likewise, leaf renderables need no recursive function call.
+      if (!label.startsWith('enemy_visual:')) {
+        for (const child of node.children || []) {
+          if (child.children?.length || String(child.label || '').startsWith('enemy_visual:')) walk(child);
+        }
+        return;
+      }
       if (trackedSprites.has(node)) return;
       removals.push(node);
     };
@@ -26220,7 +26233,7 @@ export class PlayScene {
             !this.hasNotificationType('reinforcement_warning')
         };
       },
-      y: this.game.getHeight() * (compactHud ? 0.34 : 0.32),
+      y: this.game.getHeight() * .48,
       maxWidth: this.game.getWidth() * (compactHud ? 0.78 : 0.46)
     });
     return true;
@@ -26323,7 +26336,7 @@ export class PlayScene {
     const isNarrowIntro = introWidth < 620;
     const returningPilot = isReturningPilot(this.game?.hangarProgressAtRunStart);
     const runbackRestart = this.game?.runStartSource === 'game_over_runback';
-    const introTiming = getShipIntroTiming({ compact: isNarrowIntro, returningPilot, runbackRestart });
+    const introTiming = getShipIntroTiming({ compact: isNarrowIntro, returningPilot: returningPilot || this.game?.runMode !== 'daily_signal', runbackRestart });
     this.shipIntroReturningPilot = returningPilot;
     this.shipIntroTiming = introTiming;
     const maxTextWidth = Math.max(260, introWidth * 0.9);
