@@ -51,6 +51,9 @@ try{
  await page.evaluate(()=>{const c=window.__game.scenes.threatCodex;c.categoryIndex=0;c.entryIndex=0;c.init();});await shot('08-codex-enemy');
  await page.evaluate(()=>{const c=window.__game.scenes.threatCodex;c.categoryIndex=0;c.entryIndex=c.getEntriesForCategory().findIndex(e=>e.id==='boss_support_ship_058');c.init();});await shot('08b-codex-patch-rig');
  await page.evaluate(()=>window.__game.showShipSelect());await page.waitForFunction(()=>window.__game.scenes.shipSelect?.shipCards?.length===30,null,{timeout:120000});
- await page.evaluate(()=>window.__game.scenes.shipSelect.navigateTo(28));await shot('09-hangar-railbreaker');
+ await page.evaluate(()=>window.__game.scenes.shipSelect.navigateTo(28));
+ await page.waitForFunction(()=>window.__game.scenes.shipSelect.shipCards[28]?.turntable?.ready,null,{timeout:120000});
+ assert.ok(await page.evaluate(()=>{const c=window.__game.scenes.shipSelect.shipCards[28],hint=c.turntable.caption.getBounds(),badge=c.tierBadge.getBounds();return hint.y+hint.height<badge.y;}),'Rotation hint clears the Ascendant badge');
+ await shot('09-hangar-railbreaker');
  report.runtime=await app.evaluate(({app})=>({packaged:app.isPackaged,userData:app.getPath('userData')}));assert.ok(report.runtime.packaged);assert.equal(report.runtime.userData,path.join(out,'profile'));assert.deepEqual(report.errors,[]);report.status='passed';
 }finally{writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));await app.close().catch(()=>{});log.end();}

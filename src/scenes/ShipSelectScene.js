@@ -4133,6 +4133,11 @@ export class ShipSelectScene {
         card.turntable.position.copyFrom(card.sprite.position);
         card.turntable.scale.set(card.sprite.scale.x * 1.05, card.sprite.scale.y * 1.05);
         card.turntable.rotation = card.sprite.rotation;
+        if (card.tierBadge) {
+          // Prestige badges occupy the normal hint position. Put the hint
+          // directly above that badge, using its bounds in the card space.
+          card.turntable.caption.y = (card.tierBadge.y - card.sprite.y - 7) / card.turntable.scale.y - card.turntable.caption.height;
+        }
         card.sprite.visible = false;
         card.turntable.update(delta);
       }
