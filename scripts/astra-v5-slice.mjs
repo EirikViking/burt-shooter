@@ -34,5 +34,6 @@ try {
  });await shot('08-drone-encounter');
  await page.evaluate(()=>{const p=window.__game.scenes.play;p.isPaused=false;p.player.invulnerable=true;p.player.invulnerableTime=1e9;});
  await page.keyboard.down('Space');await page.keyboard.down('ArrowRight');await page.waitForTimeout(1000);await page.keyboard.up('ArrowRight');await page.waitForTimeout(2000);await shot('09-combat');
+ await page.evaluate(()=>{const p=window.__game.scenes.play;p.clearToastState();p.showRunContractCompletion('graze_10');});await shot('12-order-complete');
  assert.deepEqual(errors,[]);writeFileSync(`${out}/report.json`,JSON.stringify({errors,ok:true},null,2));
 }finally{await browser.close();}

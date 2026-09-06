@@ -5006,11 +5006,14 @@ export class PlayScene {
       duration: nextSummary ? 7600 : 6400,
       banner: true,
       title: translateText('PILOT ORDERS'),
-      fontSize: compactHud ? 18 : 20,
+      fontSize: compactHud ? 16 : 17,
       fill: '#f4fdff',
-      align: 'center',
-      y: Math.min(height - 132, Math.max(compactHud ? 132 : 158, height * 0.22)),
-      maxWidth: compactHud ? width * 0.92 : Math.min(680, width * 0.54),
+      align: compactHud ? 'center' : 'left',
+      showAvatar: false,
+      authoredFrame: false,
+      restrained: true,
+      y: Math.min(height - 132, Math.max(180, height * 0.28)),
+      maxWidth: compactHud ? width * 0.92 : Math.min(330, width * 0.27),
       accent: contract.accent || 0x7fffd8
     });
   }
