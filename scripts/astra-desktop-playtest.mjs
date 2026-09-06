@@ -42,10 +42,13 @@ async function measure(name,duration=20000){
   report.performance.push({name,...data});flush();
 }
 async function record({qaInvulnerability=true,bossDeath=false}={}){
+  // A second capture after renderer navigation needs a fresh CDP session.
+  // Keep the performance session independent and retain the frame-count gate.
+  const recorder=await app.context().newCDPSession(page);
   const dir=path.join(out,bossDeath?'boss-recording-frames':'recording-frames');mkdirSync(dir,{recursive:true});const frames=[];
-  const listener=event=>{const file=path.join(dir,`${String(frames.length).padStart(5,'0')}.jpg`);writeFileSync(file,Buffer.from(event.data,'base64'));frames.push({file,time:event.metadata.timestamp});cdp.send('Page.screencastFrameAck',{sessionId:event.sessionId}).catch(()=>{});};
-  cdp.on('Page.screencastFrame',listener);
-  await cdp.send('Page.startScreencast',{format:'jpeg',quality:86,maxWidth:1280,maxHeight:720,everyNthFrame:1});
+  const listener=event=>{const file=path.join(dir,`${String(frames.length).padStart(5,'0')}.jpg`);writeFileSync(file,Buffer.from(event.data,'base64'));frames.push({file,time:event.metadata.timestamp});recorder.send('Page.screencastFrameAck',{sessionId:event.sessionId}).catch(()=>{});};
+  recorder.on('Page.screencastFrame',listener);
+  await recorder.send('Page.startScreencast',{format:'jpeg',quality:86,maxWidth:1280,maxHeight:720,everyNthFrame:1});
   if(bossDeath){
     await page.waitForTimeout(6000);
     const killed=await page.evaluate(()=>{const b=window.__game.scenes.play.enemyManager.boss;b.invulnerableUntilMs=0;b.firstDamageAtMs=Date.now()-120000;b.finishGateUntilMs=0;return b.takeDamage(b.maxHealth+9999);});assert.equal(killed,true);
@@ -54,7 +57,7 @@ async function record({qaInvulnerability=true,bossDeath=false}={}){
   await page.keyboard.down('Space');
   for(let i=0;i<10;i++){const key=i%2?'ArrowLeft':'ArrowRight';await page.keyboard.down(key);await page.waitForTimeout(650);await page.keyboard.up(key);await page.waitForTimeout(1850);}
   await page.keyboard.up('Space');}
-  await cdp.send('Page.stopScreencast');cdp.off('Page.screencastFrame',listener);
+  await recorder.send('Page.stopScreencast');recorder.off('Page.screencastFrame',listener);await recorder.detach();
   assert.ok(frames.length>100,'Recording must contain running gameplay');
   const lines=[];for(let i=0;i<frames.length-1;i++){lines.push(`file '${frames[i].file.replaceAll('\\','/')}'`,`duration ${Math.max(.001,frames[i+1].time-frames[i].time).toFixed(6)}`);}lines.push(`file '${frames.at(-1).file.replaceAll('\\','/')}'`);
   const list=path.join(out,bossDeath?'boss-recording-frames.txt':'recording-frames.txt');writeFileSync(list,lines.join('\n'));

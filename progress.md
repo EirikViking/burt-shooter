@@ -3194,3 +3194,9 @@ Original request: continue improving the current non-Unity game and choose three
 - 2026-09-06 narrow menu blur fix: baseline 46437f6, existing experimental branch. Full-size menu views with bounded ownership; see docs/astra-visual-progress.md. No unrelated redesign.
 
 - Menu clarity hotfix complete: 7caef35 runtime, Steam 25150873 verified, all-ship/native checks pass. Full receipt and public-branch observation in docs/astra-menu-clarity.md.
+
+## 2026-09-06 opening combat readability delivery
+- Clean baseline e8f635e10996b92e976b03d92308f497be711d6f; same codex/astra-visual-overhaul branch. Runtime checkpoints a96ff49 and 3d95d86. No Steam/upload/settings changes.
+- Warm hostile projectile ink/keylines; charging/active warning separation; quieter early-sector player/enemy locators and deferred secondary HUD notices; immediate tracked damage category/advice. Gameplay/RNG parity checked. Existing first-flight translations now wired for five more locales.
+- Final package astra-build-2026-09-06T11-48-26-955Z. Twelve native encounter checks, controls, performance, deterministic/ranked, first-run and production i18n/UI suites pass. Candidate p99 ~17 ms; no measured regression in short samples. QA recorder lifecycle fixed without weakening its frame-count gate.
+- Details, inherited failures, untranslated existing footer and human-playtest limitations: docs/astra-readability-delivery.md. Comparisons/video: test-results/readability-delivery/index.html. Five fresh human playtests remain; no retention/sales proof claimed.

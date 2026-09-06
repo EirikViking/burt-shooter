@@ -118,3 +118,9 @@ Original prompt: Transform Nova Swarm's actual PixiJS/Electron/Vite presentation
 
 - Menu clarity complete: runtime 7caef35; all 30 ships/2160 assets checked; packaged selection/rotation/lifecycle, controls, i18n and release checks pass. Native 1080p menu p95 16.9 ms before/after, one 4 MiB detail view. Build test-results/astra-build-2026-09-06T09-55-46-913Z.
 - Steam BuildID 25150873 / manifest 6050223532267578627 uploaded with SetLive sector-continue-test. Fresh server info also shows public advanced 38 seconds later; no public promotion was issued by this task. See docs/astra-menu-clarity.md for receipts, limits and rollback. Updated desktop shortcut; isolated game left open.
+
+## 2026-09-06 opening combat readability delivery
+- Clean baseline e8f635e10996b92e976b03d92308f497be711d6f; same codex/astra-visual-overhaul branch. Runtime checkpoints a96ff49 and 3d95d86. No Steam/upload/settings changes.
+- Warm hostile projectile ink/keylines; charging/active warning separation; quieter early-sector player/enemy locators and deferred secondary HUD notices; immediate tracked damage category/advice. Gameplay/RNG parity checked. Existing first-flight translations now wired for five more locales.
+- Final package astra-build-2026-09-06T11-48-26-955Z. Twelve native encounter checks, controls, performance, deterministic/ranked, first-run and production i18n/UI suites pass. Candidate p99 ~17 ms; no measured regression in short samples. QA recorder lifecycle fixed without weakening its frame-count gate.
+- Details, inherited failures, untranslated existing footer and human-playtest limitations: docs/astra-readability-delivery.md. Comparisons/video: test-results/readability-delivery/index.html. Five fresh human playtests remain; no retention/sales proof claimed.
