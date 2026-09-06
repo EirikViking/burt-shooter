@@ -3184,3 +3184,5 @@ Original request: continue improving the current non-Unity game and choose three
 - All four negative Steam reviews read; detailed feedback pages 8 and 9 read, more forum review ongoing. Several complaints already fixed in baseline (pickup icons, mouse/toggle input, draft pass/lock). No external posts or Steam changes this V5 pass yet. Remaining: expand fleet, finish feedback/research decisions, endurance/performance and required suites, separate package, genuine gameplay media, authorized test-branch upload.
 
 - 2026-09-06 Astra V6 continuation: menu idle rotation/service craft removal, Overrun coronation art/audio, and subtle first-flight starter cues; see docs/astra-visual-progress.md and docs/astra-v6-models/README.md for active provenance and QA.
+
+- 2026-09-06 narrow menu blur fix: baseline 46437f6, existing experimental branch. Full-size menu views with bounded ownership; see docs/astra-visual-progress.md. No unrelated redesign.

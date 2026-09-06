@@ -941,7 +941,7 @@ export class MenuScene {
       this.astraDock = new AstraDockAtmosphere();
       this.astraDock.zIndex = -17;
       this.container.addChild(this.astraDock);
-      this.astraMenuShip = new AstraTurntable(shipIndex, shipTexture, {idle:false});
+      this.astraMenuShip = new AstraTurntable(shipIndex, shipTexture, {idle:false,highResolution:true});
       this.astraMenuShip.zIndex = -16;
       this.astraMenuShip.eventMode = 'static';
       this.container.addChild(this.astraMenuShip);

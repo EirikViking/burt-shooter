@@ -118,10 +118,16 @@ for i in range(start,start+count):
   root_ob=bpy.data.objects.new('Quasar wide tri-cannon airframe',None);bpy.context.collection.objects.link(root_ob)
   for ob in bodies:ob.parent=root_ob
   root_ob.scale=(1.10,.91,1)
- size=720 if frames<12 else (1024 if i==0 else 448)
+ # Optional separate full-size menu renders; never overwrite the compact atlases.
+ menu_hd=os.environ.get('ASTRA_MENU_HD')=='1'
+ if menu_hd:
+  s.cycles.samples=8;s.cycles.denoiser='OPTIX';s.render.image_settings.compression=15
+ size=1280 if menu_hd else (720 if frames<12 else (1024 if i==0 else 448))
  s.render.resolution_x=s.render.resolution_y=size
  m.cam.data.ortho_scale=5.4 if i<25 else 6.4
  out=os.path.join(root,'renders','paint-prototype' if frames<12 else 'turntable','%02d'%(i+1));os.makedirs(out,exist_ok=True)
+ if menu_hd:
+  out=os.path.join(root,'renders','menu-hd','%02d'%(i+1));os.makedirs(out,exist_ok=True)
  metadata={'size':size,'count':frames,'views':[]}
  for f in range(frames):
   a=math.atan2(-7,5)+math.tau*f/frames
@@ -134,7 +140,7 @@ for i in range(start,start+count):
    emitters.append({'x':uv.x,'y':1-uv.y,'visible':math.sin(a)<-.22})
   metadata['views'].append({'emitters':emitters})
   s.render.filepath=os.path.join(out,'%02d.png'%f)
-  if i==start and f==0:bpy.ops.wm.save_as_mainfile(filepath=os.path.join(root,'quasar-master.blend' if i==6 else 'paint-prototype.blend' if frames<12 else 'turntable-master.blend'))
-  bpy.ops.render.render(write_still=True)
+  if i==start and f==0 and not menu_hd:bpy.ops.wm.save_as_mainfile(filepath=os.path.join(root,'quasar-master.blend' if i==6 else 'paint-prototype.blend' if frames<12 else 'turntable-master.blend'))
+  if not (menu_hd and os.path.exists(s.render.filepath)):bpy.ops.render.render(write_still=True)
   print('ASTRA_TURNTABLE',i+1,f+1,flush=True)
  with open(os.path.join(out,'views.json'),'w')as fp:json.dump(metadata,fp)

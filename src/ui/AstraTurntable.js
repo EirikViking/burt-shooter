@@ -6,6 +6,20 @@ import {translateText} from '../i18n/index.js';
 // Only displayed hulls retain an atlas. Late async loads release themselves if
 // a pilot navigated away in the meantime; no gameplay RNG or timers are used.
 const atlases=new Map();
+const details=new Map();
+async function acquireDetail(path){
+ let entry=details.get(path);
+ if(entry?.disposal){await entry.disposal;return acquireDetail(path);}
+ if(!entry){entry={refs:0,promise:Assets.load(path)};details.set(path,entry);}
+ entry.refs++;
+ try{return {path,entry,texture:await entry.promise};}
+ catch(error){if(--entry.refs===0&&details.get(path)===entry)details.delete(path);throw error;}
+}
+function releaseDetail(detail){
+ if(!detail||--detail.entry.refs>0)return;
+ const {path,entry}=detail;
+ entry.disposal=entry.promise.then(()=>Assets.unload(path)).catch(()=>{}).finally(()=>{if(details.get(path)===entry)details.delete(path);});
+}
 async function acquire(index){
  let entry=atlases.get(index);
  if(entry?.disposal){await entry.disposal;return acquire(index);}
@@ -28,9 +42,10 @@ function release(index,entry){
 }
 
 export class AstraTurntable extends Container{
- constructor(index,fallback,{idle=false,captionRatio=.018,captionY=.32}={}){
+ constructor(index,fallback,{idle=false,captionRatio=.018,captionY=.32,highResolution=false}={}){
   super();this.index=index;this.idle=idle;this.viewAngle=0;this.targetAngle=0;this.manualUntil=0;this.clock=0;
   this.baseSize=fallback.width;this.fallback=fallback;this.ready=false;
+  this.highResolution=highResolution;this.detailFrame=-1;this.lastFrame=-1;this.frameSince=0;
   this.views=[new Sprite(fallback),new Sprite(fallback)];this.views.forEach(v=>{v.anchor.set(.5);v.eventMode='none';this.addChild(v);});this.views[1].alpha=0;
   this.caption=createText(translateText('DRAG TO ROTATE'),{fontFamily:'Rajdhani, Bahnschrift, sans-serif',fontSize:this.baseSize*captionRatio,fontWeight:'700',fill:'#a9d9e4',letterSpacing:this.baseSize*.001,stroke:'#05101a',strokeThickness:2});
   this.caption.anchor.set(.5,0);this.caption.y=this.baseSize*captionY;this.caption.eventMode='none';this.addChild(this.caption);
@@ -55,7 +70,21 @@ export class AstraTurntable extends Container{
   if(!this.asset)return;
   const {data,frames}=this.asset;const p=((this.viewAngle/(Math.PI*2)*data.count)%data.count+data.count)%data.count;const a=Math.round(p)%data.count,blend=0;
   for(let i=0;i<2;i++){this.views[i].texture=frames[(a+i)%data.count];this.views[i].scale.set(this.baseSize/data.size);this.views[i].alpha=i?blend:1-blend;}
+  if(this.lastFrame!==a){this.lastFrame=a;this.frameSince=this.clock;}
+  if(this.detailFrame===a&&this.detail){this.views[0].texture=this.detail.texture;this.views[0].scale.set(this.baseSize/this.detail.texture.width);}
+  // Keep the compact atlas responsive during a drag. Once the view settles,
+  // stream just that full-size image; at most one displayed and one loading.
+  if(this.highResolution&&!this.dragging&&this.clock-this.frameSince>=.12&&this.detailFrame!==a&&!this.detailPending&&this.failedDetailFrame!==a){
+   this.detailPending=true;
+   acquireDetail(`/art/astra/menu-hd/${String(this.index+1).padStart(2,'0')}/${String(a).padStart(2,'0')}.webp`).then(detail=>{
+    if(this.destroyed||this.lastFrame!==a){releaseDetail(detail);return;}
+    const previous=this.detail;this.detail=detail;this.detailFrame=a;
+    this.views[0].texture=detail.texture;this.views[0].scale.set(this.baseSize/detail.texture.width);
+    releaseDetail(previous);
+   }).catch(error=>{this.failedDetailFrame=a;console.warn('[AstraTurntable] Detailed view unavailable',this.index,a,error);}).finally(()=>{this.detailPending=false;});
+  }
  }
- destroy(options){if(this.destroyed)return;if(this.asset){release(this.index,this.asset.entry);this.asset=null;}super.destroy({...options,children:true,texture:false,textureSource:false});}
+ destroy(options){if(this.destroyed)return;if(this.asset){release(this.index,this.asset.entry);this.asset=null;}const detail=this.detail;this.detail=null;super.destroy({...options,children:true,texture:false,textureSource:false});releaseDetail(detail);}
  static getResidentCount(){return atlases.size;}
+ static getDetailResidentCount(){return details.size;}
 }
