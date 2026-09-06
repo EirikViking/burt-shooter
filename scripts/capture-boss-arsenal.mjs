@@ -4,7 +4,7 @@ import path from 'node:path';
 const out=path.resolve(process.env.CHECK_OUTPUT_DIR||'test-results/boss-arsenal');mkdirSync(out,{recursive:true});
 const native=Boolean(process.env.ASTRA_EXE);
 const log=native?createWriteStream(path.join(out,'process.log')):null;
-const app=native?await electron.launch({executablePath:process.env.ASTRA_EXE,args:['--nova-fresh-profile','--windowed','--disable-backgrounding-occluded-windows','--disable-renderer-backgrounding'],env:{...process.env,NOVA_SWARM_USER_DATA_DIR:path.join(out,'profile'),NOVA_SWARM_FRESH_PROFILE:'1',NOVA_SWARM_WINDOWED:'1'},timeout:120000}):null;
+const app=native?await electron.launch({executablePath:process.env.ASTRA_EXE,args:[...(process.env.CLASSIC?['--nova-boss-classic']:[]),'--nova-fresh-profile','--windowed','--disable-backgrounding-occluded-windows','--disable-renderer-backgrounding'],env:{...process.env,NOVA_SWARM_USER_DATA_DIR:path.join(out,'profile'),NOVA_SWARM_FRESH_PROFILE:'1',NOVA_SWARM_WINDOWED:'1'},timeout:120000}):null;
 if(app){app.process().stdout?.pipe(log,{end:false});app.process().stderr?.pipe(log,{end:false});}
 const browser=native?null:await chromium.launch({channel:'chrome',headless:true,args:['--autoplay-policy=no-user-gesture-required']});
 const context=native?app.context():await browser.newContext({viewport:{width:1280,height:720},recordVideo:process.env.RECORD?{dir:out,size:{width:1280,height:720}}:undefined});
@@ -15,7 +15,15 @@ try{
  const url=new URL(native?page.url():(process.env.CHECK_URL||'http://127.0.0.1:4399'));
  if(process.env.CLASSIC)url.searchParams.set('bossArsenal','classic');
  for(const[k,v]of Object.entries({autostart:1,offlineLeaderboard:1,controlSmoke:1,debugBossToken:'NOVA_DEBUG_2026','nova-devtools-hash':'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c',startAtBoss:1,startLevel:2}))url.searchParams.set(k,v);
- await page.goto(url.href,{waitUntil:'domcontentloaded'});
+ if(native){
+  await page.waitForFunction(()=>window.__game?.scenes.menu?.astraMenuShip?.ready,null,{timeout:120000});
+  await page.evaluate(()=>window.__novaDisplay.applySettings({mode:'windowed',windowSize:{width:1280,height:720},uiScale:1}));
+  await page.evaluate(()=>window.__game.scenes.menu.quickStartRun('ranked_tactical'));
+  await page.waitForFunction(()=>window.__game?.scenes.play?.player?.active,null,{timeout:120000});
+  await page.evaluate(()=>{const g=window.__game,p=g.scenes.play;g.markUnrankedRun('arsenal_qa');p.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;p.setPaused(false);p.player.invulnerable=true;p.player.invulnerableTime=1e9;});
+  await page.waitForFunction(()=>window.__game.scenes.play.enemyManager?.state==='WAVE_ACTIVE',null,{timeout:120000});
+  await page.evaluate(()=>{const p=window.__game.scenes.play;p.clearPendingEnemyStart();p.enemyManager.forceBossStart(2);});
+ }else await page.goto(url.href,{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.__game?.scenes.play?.enemyManager?.boss?.animationRig,null,{timeout:120000});
  await page.evaluate(()=>{const g=window.__game,p=g.scenes.play;g.app.ticker.stop();p.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;p.setPaused(false);p.clearToastState();p.player.invulnerable=true;p.player.invulnerableTime=1e9;});
  const levels=process.env.LEVELS?process.env.LEVELS.split(',').map(Number):Array.from({length:10},(_,i)=>i+1);
