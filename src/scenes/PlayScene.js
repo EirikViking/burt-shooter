@@ -1,3 +1,4 @@
+import { TacticalWeaponPreview, getTacticalWeaponPreviewModel } from '../ui/TacticalWeaponPreview.js';
 import { AstraCoronation } from '../ui/AstraCoronation.js';
 import { usesOpeningCombatReadability, isSecondaryCombatNotice } from '../config/OpeningCombatReadability.js';
 import { drawAstraWarningLane, drawAstraWarningSector, drawAstraWarningRing } from '../effects/AstraWarningField.js';
@@ -10899,7 +10900,8 @@ export class PlayScene {
 
     const buildSummary = this.createTacticalDraftBuildSummary();
     overlay.addChild(buildSummary);
-    const cards = offers.map((offer, index) => this.createTacticalDraftCard(offer, index));
+    const showWeaponPreview = Number(sectorCleared) === 1 && this.game?.runMode !== 'daily_signal' && !this.player.runAugmentIds?.length;
+    const cards = offers.map((offer, index) => this.createTacticalDraftCard(offer, index, showWeaponPreview));
     cards.forEach((card) => overlay.addChild(card));
     const rescan = this.createTacticalDraftRescanControl();
     const hold = this.createTacticalDraftHoldControl();
@@ -10914,6 +10916,7 @@ export class PlayScene {
       offers,
       focusIndex: initialFocusIndex,
       initialFocusIndex,
+      showWeaponPreview,
       confirmedId: null,
       passed: false,
       result: null,
@@ -10974,7 +10977,7 @@ export class PlayScene {
     return true;
   }
 
-  createTacticalDraftCard(offer, index) {
+  createTacticalDraftCard(offer, index, showWeaponPreview = this.tacticalDraft?.showWeaponPreview === true) {
     const card = new PIXI.Container();
     card.label = `tactical_draft_card_${offer.id}`;
     card.eventMode = 'static';
@@ -11190,6 +11193,11 @@ export class PlayScene {
       scoreRouteBadge
     );
     if (icon) card.addChild(icon);
+    const previewModel = showWeaponPreview ? getTacticalWeaponPreviewModel(offer, this.player) : null;
+    const weaponPreview = previewModel
+      ? new TacticalWeaponPreview(previewModel, this.player.shipSprite?.texture, GameAssets.getBonusDroneTexture?.(8))
+      : null;
+    if (weaponPreview) card.addChild(weaponPreview);
     card.addChild(
       name,
       description,
@@ -11224,6 +11232,7 @@ export class PlayScene {
       scoreRouteBadge,
       scoreRouteBadgeBg,
       scoreRouteBadgeText,
+      weaponPreview,
       icon,
       name,
       description,
@@ -11654,12 +11663,14 @@ export class PlayScene {
     }
 
     const shortCompact = compact && height < 600;
-    const compactCardGap = shortCompact ? 6 : 24;
     const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(420, (width - 140) / 3);
     const cardHeight = compact
       ? Math.max(shortCompact ? 104 : 112, Math.min(shortCompact ? 112 : 132, (height - 192) / 3 - 8))
       : Math.min(460, Math.max(410, height - 420));
     const cardTop = compact ? (shortCompact ? 174 : 178) : 246;
+    // Keep the last CHOOSE action inside 600px windows without shrinking copy.
+    const compactCardGap = shortCompact ? 6 : Math.min(24, Math.max(6,
+      (height - cardTop - state.cards.length * cardHeight - 18) / Math.max(1, state.cards.length - 1)));
 
     if (state.rescan && state.hold && state.ban && state.pass) {
       const controlGap = compact ? 6 : 12;
@@ -11714,6 +11725,15 @@ export class PlayScene {
           Math.min(maxWidth / Math.max(1, node.width), maxHeight / Math.max(1, node.height))
         )));
       };
+      if (nodes.weaponPreview) {
+        nodes.weaponPreview.setCompact(compact);
+        const previewScale = compact ? 1 : Math.min(1, (cardWidth - 48) / 286);
+        nodes.weaponPreview.scale.set(previewScale);
+        nodes.weaponPreview.position.set(compact ? -cardWidth / 2 + 46 : 0, compact ? 0 : -cardHeight / 2 + 88);
+        if (nodes.icon) nodes.icon.visible = false;
+        nodes.heroPlate.visible = false;
+        nodes.artBloom.visible = false;
+      }
       if (compact) {
         nodes.category.anchor.set(0, 0.5);
         nodes.category.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 17);
@@ -11836,14 +11856,14 @@ export class PlayScene {
         }
         nodes.name.anchor.set(0.5);
         nodes.name.style.fontSize = 24;
-        nodes.name.position.set(0, -cardHeight / 2 + 132);
+        nodes.name.position.set(0, -cardHeight / 2 + (nodes.weaponPreview ? 162 : 132));
         fitTextWidth(nodes.name, cardWidth - 36, 0.62);
         nodes.description.anchor.set(0.5);
         nodes.description.style.fontSize = 16;
         nodes.description.style.align = 'center';
         nodes.description.style.wordWrap = true;
         nodes.description.style.wordWrapWidth = cardWidth - 48;
-        nodes.description.position.set(0, -cardHeight / 2 + 184);
+        nodes.description.position.set(0, -cardHeight / 2 + (nodes.weaponPreview ? 196 : 184));
         const impactY = -cardHeight / 2 + 252;
         nodes.impactBadge.position.set(0, impactY);
         nodes.impactBadge._pillLayout = {
@@ -12696,6 +12716,7 @@ export class PlayScene {
     const state = this.tacticalDraft;
     if (!state?.active) return;
     state.pulse += Math.max(0, Number(delta) || 0) * 0.075;
+    for (const card of state.cards) card._nodes.weaponPreview?.update(delta, card._draftIndex === state.focusIndex);
     if (state.material?._baseScale) {
       const materialDrift = Math.sin(state.pulse * 0.22);
       state.material.rotation = materialDrift * 0.0018;

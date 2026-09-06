@@ -507,13 +507,15 @@ for (const [offerId, partnerId, fusionId] of [
 function findFusionOfferCase(targetId, selectedIds, sectorCleared) {
   for (let index = 0; index < 800; index += 1) {
     const seed = `fusion-blueprint-${targetId}-${index}`;
-    const offers = buildTacticalDraftOffers({ seed, sectorCleared, selectedIds, lives: 3, maxLives: 4 });
+    const offers = buildTacticalDraftOffers({ openingLoadoutChoice: true, seed, sectorCleared, selectedIds, lives: 3, maxLives: 4 });
     if (offers.some((offer) => offer.id === targetId)) return { seed, sectorCleared, selectedIds, offerIds: offers.map((offer) => offer.id) };
   }
   throw new Error(`Unable to find deterministic Draft case for ${targetId}`);
 }
 
-const phaseBlueprintCase = findFusionOfferCase('phase_reactor', [], 1);
+// Normal Sector 1 now has an authored three-upgrade opening. Search the next
+// eligible draft for this Fusion fixture; retain every blueprint assertion.
+const phaseBlueprintCase = findFusionOfferCase('phase_reactor', [], 2);
 const phaseCompletionCase = findFusionOfferCase('phase_reactor', ['phase_wake'], 2);
 
 mkdirSync(outputDir, { recursive: true });

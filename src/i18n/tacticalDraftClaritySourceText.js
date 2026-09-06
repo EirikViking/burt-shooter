@@ -70,8 +70,47 @@ const TRANSLATIONS = Object.freeze({
   ])
 });
 
+const PREVIEW_TRANSLATIONS = {
+  "de": [
+    "AKTUELL",
+    "MIT UPGRADE",
+    "VORSCHAU"
+  ],
+  "es": [
+    "ACTUAL",
+    "CON MEJORA",
+    "VISTA PREVIA"
+  ],
+  "ru": [
+    "СЕЙЧАС",
+    "С УЛУЧШЕНИЕМ",
+    "ПРОСМОТР"
+  ],
+  "zh-CN": [
+    "当前",
+    "强化后",
+    "预览"
+  ],
+  "pt-BR": [
+    "ATUAL",
+    "COM MELHORIA",
+    "PRÉVIA"
+  ],
+  "ko": [
+    "현재",
+    "강화 후",
+    "미리보기"
+  ],
+  "ja": [
+    "現在",
+    "強化後",
+    "プレビュー"
+  ]
+};
+
 export function getTacticalDraftClaritySourceText(locale) {
   const localized = TRANSLATIONS[locale];
   if (!localized || localized.length !== SOURCE.length) return {};
-  return Object.fromEntries(SOURCE.map((source, index) => [source, localized[index]]));
+  return { ...Object.fromEntries(SOURCE.map((source, index) => [source, localized[index]])),
+    ...Object.fromEntries(['CURRENT', 'WITH UPGRADE', 'PREVIEW'].map((source, index) => [source, PREVIEW_TRANSLATIONS[locale][index]])) };
 }
