@@ -26,9 +26,57 @@ Preserved source tag: `codex/boss-reinvention-before-20260906`. No reset, stash 
 Eleven new PNGs (ten hulls and one plasma texture), approximately 21.4MiB total, created using the built-in OpenAI image generation tool. No external asset pack, font or paid API was added. Runtime articulation, crop frames, mesh sectors and mipmaps use the existing PixiJS stack. Blender was not used for these assets: the production sprites are generated rasters, not claimed Blender renders.
 Prompts and source generation IDs are in `colossus-art-prompts.json`; source files remain in the Codex generated-images folder. Commercial use is based on the output ownership provision in [OpenAI Europe Terms of Use](https://openai.com/policies/terms-of-use/), checked 2026-09-06. This is generated output, not exclusive commissioned copyright; no third-party attribution was imported.
 
-## Validation in progress
+## Final build and launch
 
-Source captures and actual short scripted gameplay recordings are in `test-results/colossus-*`. They are staged QA with isolated services/invulnerability, not a human playtest or trailer.
-Passed: 300 classic rollback parity cases; 300 reinvented budget/flight-age cases; thirty exposure cases; warning lifecycle; current and previous telegraph checks; previous arming readability; projectile lifecycle; ranked-policy parity; content director; audio catalog; Steam bridge; i18n; release-line; installed web-game skill input loop.
-Initial QA failures are retained: HMR module identity invalidated audio mocks, a staging fixture retained a destroyed boss, new cues initially omitted the countdown, and wall guide drawing exceeded its budget. These were corrected rather than relaxing existing assertions.
-Separate Windows packaging, native comparison, final evidence and launch handoff are pending. Steamworks and live services have not been changed.
+Runtime source commit: `f61d1b3`. Final delivery-only commit is recorded in `test-results/colossus-delivery/delivery.json`.
+Build: `D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\test-results\astra-build-2026-09-06T19-13-59-279Z`.
+Double-click its `launch.vbs`, or the desktop **Nova Swarm - Visual Upgrade** shortcut. The executable is `win-unpacked/Nova Swarm.exe`; use the launcher to ensure offline services and the isolated test profile. Normal manual play does not enable QA invulnerability.
+
+Exact rollback launch (same package, separate isolated profile):
+
+```powershell
+wscript.exe "D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\test-results\astra-build-2026-09-06T19-13-59-279Z\previous.vbs"
+```
+
+The desktop **Nova Swarm - Previous Bosses** shortcut does the same. The preserved previous package is untouched.
+
+## Validation completed
+
+- 300 paired attack budget/flight-age cases across all 50 profiles and three phases: 1,216 delayed projectiles and 295 moving fields. Thirty family/phase exposure cases passed.
+- Ten textured rigs, Reduced Motion, forty field-bound checks, visual RNG isolation, bounded drawing and pending-projectile collision/pause/release checks passed.
+- 300 classic rollback parity cases; warning lifecycle; current and previous telegraph and arming readability checks; projectile lifecycle; ranked-policy parity; content director; audio catalog; Steam bridge; controller flow; release-line passed.
+- `check:i18n`, source and production `check:i18n-ui`, and `build:current` passed. Production UI QA captured 80 screens across eight languages, without page/console errors, placeholders or English leaks. No player-facing text was added; no new untranslated text remains.
+- Packaged native QA passed all twelve checks on the baseline and final executable: menu, controls/firing, pause/resume, Daily, Sector 90 dense combat, boss, destruction, rewards, death, restart and menu relaunch. Isolated profiles, runtime identity and offline services verified. Final-package previous-mode capture also passed.
+- Installed web-game skill client ran its input/screenshot loop. No existing test assertions were weakened.
+
+Initial failures are retained in the QA logs: HMR module identity invalidated audio mocks, a staging fixture retained a destroyed boss, new cues initially omitted signature countdown/arming gates, and wall guide drawing exceeded its budget. These were corrected. The final executable includes the fixes.
+
+## Performance
+
+Same PC, 1280 x 720, no recording during timing. Before is the preserved `ed673fc` executable; after is final `f61d1b3`. Daily used the same seed; Sector 90 used the same stress procedure, not an identical replay. Values are before -> after.
+
+| Scene | p95 frame | p99 frame | Retained JS heap |
+|---|---|---|---|
+| Daily | 17.1 -> 17.1 ms | 17.3 -> 17.2 ms | 46.87 -> 45.46 MiB |
+| Sector 90 dense | 17.1 -> 17.0 ms | 17.2 -> 17.2 ms | 44.18 -> 43.08 MiB |
+| Boss | 17.0 -> 17.0 ms | 17.2 -> 17.3 ms | 35.23 -> 34.44 MiB |
+
+One 33.1ms boss frame occurred in the final run; no zero-stutter claim is made. Retained JS heap is not total RAM or GPU VRAM; full native reports include process memory samples. Paired new-profile warm-cache startup was 5,692 -> 5,322ms. Menu-to-controllable was 6,684 -> 6,161ms; dense loading 9,758 -> 10,111ms. Initial launches were strongly filesystem-cache dependent (60.0s before / 41.4s after), so those uncontrolled cold-ish runs are not presented as a measured speedup.
+
+## Evidence and remaining limits
+
+Open `test-results/colossus-delivery/index.html` for all ten matched native before/after encounters. Original 1280 x 720 captures are in `colossus-native-before-hd` and `colossus-native-final`; each records executable SHA and viewport.
+
+Actual normal-speed, silent Windows gameplay recordings:
+
+- `test-results/colossus-native-lane-motion/boss-attacks-normal-speed.mp4`: 14.66s, phase-two Lane Eater, scripted alternating dodges.
+- `test-results/astra-desktop-colossus-final/gameplay-normal-speed.mp4`: 25.47s dense combat.
+- `test-results/astra-desktop-colossus-final/boss-destruction-normal-speed.mp4`: 10.08s boss destruction and reward transition.
+
+These use staged QA state/invulnerability; the defeat is triggered through the damage system. They are actual engine output, not offline renders, human playtests or marketing trailers. Captured sequences and representative full-resolution frames were visually inspected.
+
+Ten family hulls are shared across fifty profiles; this is not fifty unique models or a rewrite of every boss AI. Early boss hazard suppression remains. Human comparison is still necessary for overall difficulty and enjoyment. Existing reinforcement popup/HUD timing and occasional boss-name proximity to the top HUD remain outside this correction; this delivery does not claim every presentation issue is fixed.
+
+Files changed: boss/bullet/play-scene behavior; Colossus configuration, rig and attack effects; hull breakup; RNG-safe audio playback; Codex art selection; Electron rollback flag; eleven sprite assets; focused tests, capture helpers and delivery/provenance documentation. Existing PixiJS/Electron/Vite stack retained.
+
+Steamworks settings, live Cloud/achievements/leaderboards and release outputs were untouched. No Steam upload or deployment performed for this correction.
