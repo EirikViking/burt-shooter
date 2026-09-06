@@ -30,16 +30,16 @@ try{
  for(const level of levels){
   const details=await page.evaluate(async level=>{
    const g=window.__game,p=g.scenes.play,Boss=p.enemyManager.boss.constructor;
-   const old=p.enemyManager.boss;old?.destroy();old?.sprite?.destroy({children:true});
+   const old=p.enemyManager.boss;p.enemyManager.enemies=p.enemyManager.enemies.filter(e=>e!==old);old?.destroy();old?.sprite?.destroy({children:true});
    const w=p.gameplayGame.getWidth(),h=p.gameplayGame.getHeight();
-   g.level=level;const b=new Boss(w*.5,h*.23,level,p.gameplayGame);await b.createSprite();p.enemyManager.boss=b;p.gameContainer.addChild(b.sprite);
+   g.level=level;p.enemyManager.level=level;const b=new Boss(w*.5,h*.23,level,p.gameplayGame);await b.createSprite();p.enemyManager.boss=b;p.enemyManager.enemies.push(b);p.gameContainer.addChild(b.sprite);
    b.entryStartMs=Date.now()-b.entryDurationMs-1000;b.x=w*.5;b.y=h*.28;b.sprite.position.set(b.x,b.y);b.baseX=b.x;b.targetY=b.y;b.phase=2;b.health=b.maxHealth*.6;b.updateHealthBar();
    p.player.x=w*.5;p.player.y=h*.85;p.player.sprite.position.set(p.player.x,p.player.y);
    p.bulletManager.enemyBullets.forEach(b=>{b.active=false;b.sprite.visible=false;});p.clearBossHazards('arsenal_qa');
    b.startSignatureTelegraph(b.profile.signature,p.player.x,p.player.y);b.setAttackWarningVisibleElapsedForDebug(b.attackWarningToken.duration*.80);
    b.moveTimer=170;b.updateBossAnimation(0,p.player.x,p.player.y);b.updateTelegraphVisual(.80,p.player.x,p.player.y);p.clearToastState();if(p.hud){p.hud.notificationFocus=null;p.hud.updateMissionStatus?.();}
    g.app.renderer.render(g.app.stage);
-   return {level,archetype:b.profile.archetype,name:b.name,signature:b.profile.signature,width:w,height:h,rig:b.animationRig.arsenalRig?.debug||null};
+   return {level,archetype:b.profile.archetype,name:b.name,signature:b.profile.signature,width:w,height:h,rig:b.colossusRig?.debug||b.animationRig.arsenalRig?.debug||null};
   },level);
   await page.screenshot({path:path.join(out,`${level}-${details.archetype}-charge.png`)});
   await page.evaluate(()=>{
@@ -47,7 +47,7 @@ try{
    b.setAttackWarningVisibleElapsedForDebug(token.duration);b.executeSignatureMove(token.type,p.player.x,p.player.y,token);b.finishAttackWarning(token,'released','arsenal_qa');b.clearTelegraphVisual();
    const bullets=p.bulletManager.enemyBullets.filter(b=>b.active);for(const bullet of bullets){for(let i=0;i<40;i++)bullet.update(1);}
    b.fireRecoilUntil=Date.now()+220;b.updateBossAnimation(0,p.player.x,p.player.y);
-   for(const h of p.bossHazards){h.elapsedMs=(h.armingMs||0)+60;}p.updateBossHazards(0,1);
+   for(const h of p.bossHazards){h.elapsedMs=(h.armingMs||0)+(h.colossus?370:60);}p.updateBossHazards(0,1);
    g.app.renderer.render(g.app.stage);
   });
   await page.screenshot({path:path.join(out,`${level}-${details.archetype}-fire.png`)});
@@ -57,6 +57,8 @@ try{
   await page.evaluate(()=>{const g=window.__game,p=g.scenes.play,b=p.enemyManager.boss;b.cancelAttackWarning('qa');p.clearBossHazards('qa');b.shootCooldown=0;b.regularAttackReadyAt=0;b.signatureCooldown=0;g.app.ticker.start();});
   for(let i=0;i<8;i++){const key=i%2?'ArrowLeft':'ArrowRight';await page.keyboard.down(key);await page.keyboard.down('Space');await page.waitForTimeout(1200);await page.keyboard.up(key);}await page.keyboard.up('Space');
  }
+ if(await page.locator('body').innerText().then(t=>t.includes('GAME LOOP CRASH')))report.errors.push('Game loop crash overlay detected');
  report.ok=!report.errors.length;
+ if(!report.ok)throw new Error(report.errors.join('\n'));
 }finally{writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));if(app){await app.close();log.end();}else{await context.close();await browser.close();}}
 console.log(JSON.stringify(report));

@@ -530,7 +530,7 @@ class AudioController {
     );
 
     // 3. Pick a non-repeating variant before returning to the start of the bag.
-    const src = this.pickSfxVariant(eventName, variants);
+    const src = options.preserveGameplayRng ? variants[0] : this.pickSfxVariant(eventName, variants);
 
     // 4. Play
     if (!src) return false;
@@ -549,7 +549,7 @@ class AudioController {
     const rateMax = this.readMixNumber(options.playbackRateMax, mix.playbackRateMax ?? authoredRate);
     const lowRate = Math.max(0.55, Math.min(1.8, Math.min(rateMin, rateMax)));
     const highRate = Math.max(lowRate, Math.min(1.8, Math.max(rateMin, rateMax)));
-    const playbackRate = lowRate + Math.random() * (highRate - lowRate);
+    const playbackRate = options.preserveGameplayRng ? lowRate : lowRate + Math.random() * (highRate - lowRate);
     try {
       audio.playbackRate = playbackRate;
       if ('preservesPitch' in audio) audio.preservesPitch = options.preservePitch === true;

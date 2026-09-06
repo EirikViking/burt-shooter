@@ -824,6 +824,13 @@ export class Bullet {
 
   update(delta) {
     if (!this.active) return;
+    if(this.colossusLaunchRemainingMs>0){
+      const consumed=Math.min(this.colossusLaunchRemainingMs,delta*16.67);
+      this.colossusLaunchRemainingMs-=consumed;
+      delta=Math.max(0,delta-consumed/16.67);
+      this.sprite.visible=this.colossusLaunchRemainingMs<=0;
+      if(delta<=0)return;
+    }
 
     this.age += delta;
     this.ageMs += delta * 16.67;

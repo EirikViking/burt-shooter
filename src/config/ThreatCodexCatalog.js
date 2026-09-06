@@ -1,3 +1,4 @@
+import { hasColossus } from './BossReinvention.js';
 import { ENEMY_THREAT_ACTIONS } from './EnemyThreatActions.js';
 import { WAVE_TACTIC_VARIANTS } from './WaveTacticVariants.js';
 import { GENERATED_ENEMY_PROFILES } from './GeneratedEnemyProfiles.js';
@@ -1424,7 +1425,7 @@ function bossEntry(profile) {
     role: profile.title,
     description: '',
     tip: epicLore?.localized?.en?.tip || epicLore?.tip || 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.',
-    art: profile.art,
+    art: hasColossus(profile.archetype) ? `/assets/astra/colossus/${profile.archetype}.png` : profile.art,
     accent: profile.accent,
     tint: profile.palette,
     signalClass: epicLore?.localized?.en?.signalClass || epicLore?.signalClass || profile.archetype,

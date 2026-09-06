@@ -30,6 +30,21 @@ export class HullBreakup {
   emit(enemy) {
     if (!enemy || this.seen.has(enemy) || getReducedMotionEnabled()) return;
     this.seen.add(enemy);
+    if(enemy.colossusRig){
+      if(enemy.colossusRig.design.layout==='rotor'){this.emitBoss(enemy,enemy.colossusRig.deathBody);return;}
+      for(const [i,body]of [...enemy.colossusRig.halves,enemy.colossusRig.spine].entries()){
+        if(this.active.length>=this.maxFragments)break;
+        const local=this.container.getGlobalTransform().clone().invert().append(body.getGlobalTransform());
+        const sprite=this.pool.pop()||new PIXI.Sprite();
+        const ownedTexture=new PIXI.Texture({source:body.texture.source,frame:body.texture.frame.clone()});
+        sprite.texture=ownedTexture;sprite.anchor.copyFrom(body.anchor);
+        sprite.position.set(local.tx,local.ty);sprite.scale.set(Math.hypot(local.a,local.b),Math.hypot(local.c,local.d));
+        sprite.rotation=Math.atan2(local.b,local.a);sprite.alpha=1;sprite.tint=0xffffff;sprite.visible=true;
+        sprite.eventMode='none';if(!sprite.parent)this.container.addChild(sprite);
+        this.active.push({sprite,ownedTexture,age:0,sx:i===0?-1:i===1?1:0,sy:i===2?-.8:.3,speed:6.5,lifetime:100});
+      }
+      return;
+    }
     const body = enemy.body?.texture ? enemy.body : enemy.hitboxRef;
     const texture = body?.texture;
     if (enemy.kind === 'boss' && texture?.source) {
@@ -99,7 +114,11 @@ export class HullBreakup {
     let write = 0;
     for (const f of this.active) {
       f.age += delta;
-      if (f.age >= f.lifetime) { f.sprite.visible = false; this.pool.push(f.sprite); continue; }
+      if (f.age >= f.lifetime) {
+        f.sprite.visible = false;
+        if(f.ownedTexture){f.sprite.texture=PIXI.Texture.EMPTY;f.ownedTexture.destroy(false);}
+        this.pool.push(f.sprite); continue;
+      }
       const drag = Math.exp(-f.age * 0.04);
       f.sprite.x += f.sx * f.speed * drag * delta;
       f.sprite.y += (f.sy * f.speed * drag + 0.25) * delta;

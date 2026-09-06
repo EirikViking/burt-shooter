@@ -1,4 +1,6 @@
 import { BOSS_ARSENAL_ENABLED, getBossArsenalDangerColor } from '../config/BossArsenal.js';
+import { configureColossusAssault, isInsideColossusFront } from '../config/ColossusAssault.js';
+import { drawColossusAssault } from '../effects/ColossusAssaultVfx.js';
 import { drawArsenalField } from '../effects/BossArsenalFields.js';
 import { drawAstraShatterBurst } from '../effects/AstraShatterBurst.js';
 import { drawEnergyGlint } from '../effects/AstraBossEnergy.js';
@@ -8631,7 +8633,7 @@ export class PlayScene {
     // Enemy bullets vs player
     measure('collision.enemy_bullets_player', () => {
     this.bulletManager.enemyBullets.forEach(bullet => {
-      if (bullet.active && this.player.active) {
+      if (bullet.active && !bullet.colossusLaunchRemainingMs && this.player.active) {
         collisionStats.enemyBulletPlayerChecks += 1;
         const dx = bullet.x - this.player.x;
         const dy = bullet.y - this.player.y;
@@ -8950,6 +8952,7 @@ export class PlayScene {
   }
 
   checkCollision(a, b) {
+    if(a?.colossusLaunchRemainingMs>0||b?.colossusLaunchRemainingMs>0)return false;
     if (!this._uiCollisionWarned) {
       const nameA = a?.label || a?.sprite?.label;
       const nameB = b?.label || b?.sprite?.label;
@@ -17001,6 +17004,8 @@ export class PlayScene {
 
     hazard = this.capBossHazardForHighSector(hazard, width, height);
     if (!hazard) return null;
+    configureColossusAssault(hazard, boss);
+    if(hazard.colossus && Number.isFinite(details.lockedAngle) && ['beam','cone'].includes(hazard.kind))hazard.angle=details.lockedAngle;
     this.bossHazards.push(hazard);
     this.playBossHazardFireSfx(hazard);
     return hazard;
@@ -17089,6 +17094,7 @@ export class PlayScene {
     const layer = this.bossHazardLayer;
     if (!layer) return;
     this.bossHazardLayerHasGeometry = true;
+    if (hazard.colossus) { drawColossusAssault(layer, hazard); return; }
     const alpha = Math.max(0, Math.min(1, (1 - progress) * 4)) * 0.85;
     const palette = this.getBossHazardVfxPalette(hazard, hazard.color || 0xfff45c);
     const armingMs = Math.max(0, Number(hazard.armingMs) || 0);
@@ -17218,6 +17224,7 @@ export class PlayScene {
     if (this.player.isGhostActive?.()) return false;
 
     const playerRadius = this.player.radius || 12;
+    if (hazard.colossus) return isInsideColossusFront(hazard, this.player.x, this.player.y, playerRadius*.55);
     if (hazard.kind === 'wall') {
       const py = this.player.y;
       if (py + playerRadius < hazard.startY || py - playerRadius > hazard.endY) return false;
@@ -23983,6 +23990,7 @@ export class PlayScene {
         (Number(texture.height) || 0) >= 48;
       const activeBoss = this.enemyManager?.boss || null;
       const activeTexture = [
+        activeBoss?.colossusRig?.sourceTexture,
         activeBoss?.hitboxRef?.texture,
         activeBoss?.visualContainer?.children?.find?.((child) => isUsable(child?.texture))?.texture
       ].find((texture) => isUsable(texture)) || null;
@@ -24461,6 +24469,7 @@ export class PlayScene {
     const findActiveBossTexture = () => {
       const boss = this.enemyManager?.boss || null;
       const candidates = [
+        boss?.colossusRig?.sourceTexture,
         boss?.hitboxRef?.texture,
         boss?.visualContainer?.children?.find?.((child) => isWarningTextureUsable(child?.texture))?.texture,
         boss?.sprite?.children?.find?.((child) => isWarningTextureUsable(child?.texture))?.texture

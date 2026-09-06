@@ -1,21 +1,21 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {mkdirSync,writeFileSync} from 'node:fs';
-const out='test-results/boss-arsenal-parity';mkdirSync(out,{recursive:true});
+const out='test-results/colossus-balance';mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({channel:'chrome',headless:true});
 const reports=[];
 try{
  for(const classic of [true,false]){
   const page=await browser.newPage();
   await page.route('**/*',r=>/^(https?:\/\/(127\.0\.0\.1|localhost)|data:|blob:)/.test(r.request().url())?r.continue():r.abort());
-  const url=new URL(process.env.CHECK_URL||'http://127.0.0.1:4399');url.searchParams.set('offlineLeaderboard','1');if(classic)url.searchParams.set('bossArsenal','classic');
+  const url=new URL(process.env.CHECK_URL||'http://127.0.0.1:4399');url.searchParams.set('offlineLeaderboard','1');if(classic)url.searchParams.set('bossEncounter','previous');
   await page.goto(url.href,{waitUntil:'domcontentloaded'});
   // Both branches must have the same fully loaded texture bank. Racing the asset
   // loader selects different Bullet constructor paths and invalidates RNG parity.
   await page.waitForFunction(()=>document.body.dataset.menuReady==='1',null,{timeout:120000});
   const report=await page.evaluate(async()=>{
    const {Boss}=await import('/src/entities/Boss.js');
-   const {BOSS_ARSENAL_ENABLED}=await import('/src/config/BossArsenal.js');
+   const {BOSS_REINVENTION_ENABLED:BOSS_ARSENAL_ENABLED}=await import('/src/config/BossReinvention.js');
    const {AudioManager}=await import('/src/audio/AudioManager.js');
    const {PlayScene}=await import('/src/scenes/PlayScene.js');
    AudioManager.playSfx=()=>{};AudioManager.stopSfxGroup=()=>{};
@@ -41,9 +41,11 @@ try{
      b.setAttackWarningVisibleElapsedForDebug(token.durationMs);
      if(category==='regular')projectiles.push(...b.shoot(play.player.x,play.player.y));else b.releaseSignatureAttackWarning(play.player.x,play.player.y);
      const emitted=projectiles.map(q=>({x:q.x,y:q.y,vx:q.vx,vy:q.vy,radius:q.radius,damage:q.damage,behavior:q.behavior,accel:q.accel,phase:q.behaviorPhase,style:q.sourceFireStyle}));
+     const delays=projectiles.map(q=>q.colossusLaunchDelayMs||0);
+     for(const q of projectiles)if(q.colossusLaunchRemainingMs>0)q.update(q.colossusLaunchRemainingMs/16.67);
      const paths=[];for(let frame=0;frame<120;frame++){for(const bullet of projectiles)bullet.update(1);if(frame%15===0)paths.push(projectiles.map(q=>({x:q.x,y:q.y,vx:q.vx,vy:q.vy,active:q.active})));}
      const hazards=play.bossHazards.map(({arsenalArchetype,...h})=>h);
-     results.push({level,phase,category,warning,emitted,paths,hazards,adds,rngCalls:calls,health:b.maxHealth});
+     results.push({level,phase,category,warning,emitted,paths,hazards,delays,adds,rngCalls:calls,health:b.maxHealth});
      for(const bullet of projectiles)bullet.sprite.destroy({children:true});
     }
    }finally{Math.random=originalRandom;Date.now=originalNow;}
@@ -53,7 +55,27 @@ try{
  }
  assert.equal(reports[0].enabled,false);assert.equal(reports[1].enabled,true);
  assert.equal(reports[1].results.length,reports[0].results.length);
- for(let i=0;i<reports[0].results.length;i++)assert.deepEqual(reports[1].results[i],reports[0].results[i],`classic/arsenal case ${i}: exact attacks, warnings, hazards, health, summons, RNG and 120-frame trajectories`);
- writeFileSync(`${out}/report.json`,JSON.stringify({ok:true,cases:reports[0].results.length,framesPerCase:120,classic:reports[0],arsenal:reports[1]},null,2));
- console.log(`PASS ${reports[0].results.length} classic/arsenal attack cases, exact warning/health/projectile/hazard/summon/RNG and 120-frame trajectory parity`);
+ let delayed=0,fronts=0;
+ for(let i=0;i<reports[0].results.length;i++){
+  const {hazards:beforeHazards,delays:beforeDelays,...before}=reports[0].results[i];
+  const {hazards:afterHazards,delays:afterDelays,...after}=reports[1].results[i];
+  assert.deepEqual(after,before,`case ${i}: ammunition, damage, warnings, health, summons, RNG and flight-age trajectories`);
+  assert.equal(afterHazards.length,beforeHazards.length);
+  for(let j=0;j<afterHazards.length;j++){
+   const {colossus,durationMs,angle,...geometry}=afterHazards[j];
+   const {durationMs:oldDuration,angle:oldAngle,...oldGeometry}=beforeHazards[j];
+   assert.deepEqual(geometry,oldGeometry,`case ${i}: spatial limits and arming unchanged`);
+   assert.ok(colossus);assert.equal(colossus.legacyDurationMs,oldDuration);
+   assert.equal(colossus.legacyActiveMs,oldDuration-oldGeometry.armingMs);
+   assert.equal(durationMs,oldGeometry.armingMs+colossus.travelMs);
+   if(angle!==undefined)assert.equal(angle,after.warning.angle??oldAngle);
+   fronts++;
+  }
+  assert.equal(afterDelays.length,beforeDelays.length);
+  for(const d of afterDelays){assert.ok(d>=0&&d<=270);if(d)delayed++;}
+ }
+ assert.ok(delayed>100);assert.ok(fronts>100);
+
+ writeFileSync(`${out}/report.json`,JSON.stringify({ok:true,cases:reports[0].results.length,framesPerCase:120,delayed,fronts,previous:reports[0],colossus:reports[1]},null,2));
+ console.log(`PASS ${reports[0].results.length} reinvented attack cases: same budgets and flight-age trajectories, changed launch timing and moving fields`);
 }finally{await browser.close();}

@@ -1,4 +1,8 @@
 import { BOSS_ARSENAL_ENABLED, getBossArsenal } from '../config/BossArsenal.js';
+import { hasColossus } from '../config/BossReinvention.js';
+import { ColossusRig, loadColossus } from '../effects/ColossusRig.js';
+import { drawColossusWarning } from '../effects/ColossusAssaultVfx.js';
+import { choreographColossusSalvo } from '../config/ColossusSalvo.js';
 import { BossArsenalRig } from '../effects/BossArsenalRig.js';
 import { getArsenalProjectile } from '../effects/BossArsenalMaterials.js';
 import { drawArsenalAnnulus } from '../effects/BossArsenalFields.js';
@@ -256,6 +260,15 @@ export class Boss {
     }
 
     this.createBossAnimationRig();
+    if (hasColossus(this.profile?.archetype)) {
+      const texture = await loadColossus(this.profile.archetype);
+      this.colossusRig = new ColossusRig(texture, this.animationRig.radius, this.profile.archetype, this.radius);
+      this.colossusRig.zIndex = 2;
+      this.sprite.addChild(this.colossusRig);
+      this.visualContainer.visible = false;
+      this.animationRig.root.visible = false;
+      this.entryStartMs=Date.now();
+    }
     this.setPresentationState('arrival', this.entryDurationMs + 420);
 
     // Health bar overlay
@@ -471,7 +484,7 @@ export class Boss {
       strokeThickness: 3
     });
     this.healthText.anchor.set(0.5);
-    this.healthText.y = visualRadius + 14.5;
+    this.healthText.y = visualRadius + 14.5 + (this.colossusRig ? this.animationRig.radius*.73 : 0);
     if (this.sprite) {
       this.sprite.addChild(this.healthText);
     }
@@ -510,7 +523,7 @@ export class Boss {
       return;
     }
 
-    if (!this.telegraph?.movementLocked) {
+    if (!this.attackWarningToken?.movementLocked) {
       this.moveTimer += delta;
     }
     if ((this.healPulseUntil || 0) > Date.now()) {
@@ -1066,6 +1079,22 @@ export class Boss {
 
   updateBossAnimation(delta, playerX, playerY) {
     if (!this.animationRig || !this.visualContainer) return;
+    if (this.colossusRig) {
+      const now = Date.now(), token = this.attackWarningToken;
+      this.colossusVisualTime=(this.colossusVisualTime||0)+Math.max(0,delta)/60;
+      const charge = token?.terminalState === 'active' ? this.getAttackWarningProgress(token) : 0;
+      const recoil = clamp((this.fireRecoilUntil - now) / BOSS_FIRE_RECOIL_MS, 0, 1);
+      this.colossusRig.update({charge, recoil, phase:this.phase, time:this.colossusVisualTime,
+        angle:token?.lockedAngle ?? this.lastFireAngle ?? Math.PI/2,
+        signature:token?.category==='signature', hurt:clamp((this.hurtFlashUntil-now)/BOSS_HURT_FLASH_MS,0,1),
+        death:this.defeatPresentationAt>0?clamp((now-this.defeatPresentationAt)/840,0,1):0});
+      if(this.healthBar)this.healthBar.y=this.animationRig.radius*.73;
+      if(this.healthText)this.healthText.y=this.getVisualRadius()+14.5+this.animationRig.radius*.73;
+      if(this.nameText)this.nameText.y=-this.animationRig.radius*1.1;
+      this.animationDebug={...this.colossusRig.debug,telegraph:charge,recoil,phase:this.phase,state:this.getPresentationState(),
+        visualRadius:this.getVisualRadius(),gameplayRadius:this.radius,polishVersion:'colossus-20260906'};
+      return;
+    }
     const rig = this.animationRig;
     const now = Date.now();
     const t = this.moveTimer * 0.032;
@@ -1673,7 +1702,7 @@ export class Boss {
   }
 
   applyBossMovement(delta, playerX, playerY) {
-    if (this.telegraph?.movementLocked) return;
+    if (this.attackWarningToken?.movementLocked) return;
 
     const profile = this.moveProfile || this.getMoveProfile(this.bossType);
     const t = this.moveTimer * 0.02;
@@ -2566,6 +2595,10 @@ export class Boss {
 
   updateTelegraphVisual(progress, playerX, playerY) {
     if (!this.telegraph) return;
+    if(this.colossusRig && this.signatureWarningLayer && drawColossusWarning(this.signatureWarningLayer,this,this.telegraph,progress)){
+      this.drawSignatureCountdownRing(this.signatureWarningLayer,progress,this.getVisualRadius());
+      return;
+    }
 
     const baseWarningColor = this.telegraph.type === 'ring' || this.telegraph.type === 'adds'
       ? (this.profile?.accent || 0xff3355)
@@ -2682,11 +2715,17 @@ export class Boss {
       type,
       durationMs: duration,
       lockedAngle,
+      movementLocked: hasColossus(this.profile?.archetype),
       laneOffsets: type === 'split' ? [-0.18, 0.18] : null,
       originX: this.x,
       originY: this.y,
       safeLanes: this.safeLanes
     });
+    if(hasColossus(this.profile?.archetype)){
+      AudioManager.playSfx(`boss_arsenal_${this.profile.archetype}`,{volume:.46,minIntervalMs:500,sfxGroup:this.regularTelegraph.audioGroup,preserveGameplayRng:true});
+      this.regularTelegraph.audioCueActive=true;
+      this.regularTelegraph.audioTerminalState='playing';
+    }
     this.lastRegularTelegraphStart = {
       attack,
       type,
@@ -2722,6 +2761,7 @@ export class Boss {
 
   updateRegularAttackTelegraphVisual(progress, playerX, playerY) {
     if (!this.attackWarningLayer || !this.regularTelegraph || this.telegraph) return;
+    if(this.colossusRig && drawColossusWarning(this.attackWarningLayer,this,this.regularTelegraph,progress))return;
     const layer = this.attackWarningLayer;
     layer.clear();
 
@@ -2875,7 +2915,7 @@ export class Boss {
       const vy = Math.sin(angle) * speed;
       bullets.push(this.markBossBullet(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig), attackType));
     }
-    bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
+    choreographColossusSalvo(this,bullets).forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
   }
 
   fireRingBurst(count = 16, gapSize = 2) {
@@ -2905,7 +2945,7 @@ export class Boss {
       const vy = Math.sin(angle) * speed;
       bullets.push(this.markBossBullet(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig), this.telegraph?.type || 'ring'));
     }
-    bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
+    choreographColossusSalvo(this,bullets).forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
   }
 
   markBossBullet(bullet, fireStyle = 'boss') {
@@ -3144,7 +3184,7 @@ export class Boss {
 
     this.finishAttackWarning(warningToken, 'released', 'regular_release');
 
-    return bullets;
+    return choreographColossusSalvo(this,bullets);
   }
 
   getArmorBleedThreshold() {
