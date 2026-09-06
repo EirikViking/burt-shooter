@@ -779,7 +779,9 @@ export class PlayScene {
       GameAssets.ensureGameOverFinalSignalTexture?.(this.gameOverFinalTransmissionVariant)
     ]).catch(() => [null, null]);
     this.overrunClearLayer = new PIXI.Container();
-    this.overrunClearLayer.zIndex = 9600;
+    // The paused ceremony sits above ordinary rank/achievement notifications,
+    // while pause, settings and terminal overlays retain their higher layers.
+    this.overrunClearLayer.zIndex = 12000;
     this.overrunClearLayer.sortableChildren = true;
     this.uiOverlay.addChild(this.overrunClearLayer);
     this.overrunMilestoneInterlude = null;

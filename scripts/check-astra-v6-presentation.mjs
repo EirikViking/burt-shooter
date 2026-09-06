@@ -68,6 +68,8 @@ try{
  checks.push({lastHangarShip:selected,restoredAcrossReload:true,transientLoanerIgnored:true});
  await open('autostart=1&debugBossToken=NOVA_DEBUG_2026&startLevel=10&nova-devtools-hash=f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c');
  await page.waitForFunction(()=>window.__game.scenes.play?.isReady&&window.__game.scenes.play?.player?.shipSprite?.texture?.width>1,null,{timeout:120000});
+ const layers=await page.evaluate(()=>{const p=window.__game.scenes.play,t=p.createNovaCommandPilotToast({novaCommandVariant:'major',primaryText:'RANK UP'},{width:innerWidth,height:innerHeight,y:150,slot:'corner'});const result={ceremony:p.overrunClearLayer.zIndex,rankBanner:t.zIndex};t.destroy({children:true});return result;});
+ assert.ok(layers.ceremony>layers.rankBanner,'Rank-up banner must stay behind the paused ceremony');checks.push({layers});
  for(const sector of [10,20,30,40,50,60,70]){
   await page.evaluate(sector=>{const game=window.__game,p=game.scenes.play;p.introActive=false;p.introComplete=true;p.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;if(p.isPaused)p.setPaused(false);p.enemyManager.clearEnemies();p.clearOverrunConfirmationHandlers();for(const e of p.overrunClearEffects)e.container.destroy({children:true});p.overrunClearEffects=[];p.overrunMilestoneInterlude=null;game.level=sector;p.triggerOverrunClearCelebration({milestoneSector:sector,nextSector:sector+1,eventKind:sector===10?'run_clear':'overrun_milestone',clearBonus:10000,livesBonus:7500});},sector);
   await page.waitForFunction(()=>window.__game.scenes.play.overrunMilestoneInterlude?.effect?.interludeCard?._coronation?.ready,null,{timeout:30000});
