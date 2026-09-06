@@ -1,3 +1,4 @@
+import { AstraCoronation } from '../ui/AstraCoronation.js';
 import { drawAstraWarningLane, drawAstraWarningSector, drawAstraWarningRing } from '../effects/AstraWarningField.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
@@ -17711,8 +17712,9 @@ export class PlayScene {
     milestoneReward = null
   }) {
     const compact = width < 720;
-    const cardWidth = Math.min(width - (compact ? 32 : 96), compact ? 560 : 860);
-    const cardHeight = Math.min(height - (compact ? 42 : 96), compact ? 350 : 460);
+    const portraitLayout = width >= 1050;
+    const cardWidth = Math.min(width - (compact ? 32 : 96), compact ? 560 : (portraitLayout ? 1040 : 860));
+    const cardHeight = Math.min(height - (compact ? 42 : 96), compact ? 350 : (portraitLayout ? 520 : 460));
     const visual = celebration?.visual || {};
     const primaryColor = visual.primaryColor || 0xffd15c;
     const accentColor = visual.accentColor || 0x61f6ff;
@@ -17931,8 +17933,36 @@ export class PlayScene {
       cardWidth,
       cardHeight,
       paused: true,
-      visualLanguage: 'restrained_overrun_command_modal_v2'
+      visualLanguage: 'astra_coronation_v6'
     };
+
+    // Keep the existing translated report, rewards and confirmation contract.
+    // The new portrait occupies its own column, so it cannot obscure those cues.
+    dais.visible = false;
+    bg.clear();
+    drawAstraPanel(bg, -cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 20,
+      { color: backgroundColor, alpha: 0.96 }, { color: frameColor, width: 1.4, alpha: 0.72 });
+    const trim = new PIXI.Graphics();
+    trim.rect(-cardWidth / 2 + 20, -cardHeight / 2 + 12, cardWidth - 40, 2).fill({color: primaryColor, alpha: 0.8});
+    trim.rect(-cardWidth / 2 + 20, cardHeight / 2 - 14, cardWidth - 40, 1).fill({color: accentColor, alpha: 0.38});
+    for (let i = 0; i < 8; i++) {
+      trim.poly([-cardWidth/2+25+i*13,-cardHeight/2+20,-cardWidth/2+32+i*13,-cardHeight/2+20,-cardWidth/2+28+i*13,-cardHeight/2+27,-cardWidth/2+21+i*13,-cardHeight/2+27]).fill({color:primaryColor,alpha:.34});
+    }
+    card.addChildAt(trim, 1);
+    const coronation = new AstraCoronation({visual, milestone:milestoneSector, shipIndex:this.player?.selectedShipTextureIndex, getShipTexture:()=>this.player?.shipSprite?.texture});
+    card.addChildAt(coronation, 2);
+    coronation.x = portraitLayout ? -cardWidth * .32 : 0;
+    card._coronation = coronation;
+    card._coronationLayout = {width:portraitLayout ? cardWidth*.33 : cardWidth*.7, height:cardHeight*.9, compact:!portraitLayout};
+    if (portraitLayout) {
+      trim.moveTo(-cardWidth*.13,-cardHeight*.34).lineTo(-cardWidth*.13,cardHeight*.34).stroke({color:accentColor,width:1,alpha:.23});
+      const contentX = cardWidth * .165;
+      for (const item of [title,flavorText,reportText,sectorText,bonusText,rewardText,warning,button]) {
+        item.x = contentX;
+        if (item.style) item.style.wordWrapWidth = cardWidth * .56;
+      }
+      title.style.fontSize = 34;
+    }
 
     return card;
   }
@@ -18006,6 +18036,10 @@ export class PlayScene {
     const progress = waitingForConfirm ? Math.min(rawProgress, 0.82) : rawProgress;
     const card = interlude.effect?.interludeCard;
     if (card && !card.destroyed) {
+      if (card._coronation) {
+        const layout = card._coronationLayout;
+        card._coronation.update(elapsed, layout.width, layout.height, {compact:layout.compact});
+      }
       const intro = Math.min(1, progress * 5.2);
       const outro = !waitingForConfirm && progress > 0.82 ? Math.max(0, 1 - (progress - 0.82) / 0.18) : 1;
       card.alpha = (1 - Math.pow(1 - intro, 3)) * outro;
@@ -18076,6 +18110,13 @@ export class PlayScene {
           : Math.max(0, 1 - (rawProgress - 0.82) / 0.18);
         effect.flash.rect(0, 0, width, height);
         effect.flash.fill({ color: 0x01040a, alpha: 0.62 * intro * outro });
+        const color = effect.visual?.primaryColor || 0xffd15c;
+        const motion = !getAccessibilitySettings().prefersReducedMotion;
+        const t = motion ? elapsed / 1000 : 3;
+        for (let i = 0; i < 12; i++) {
+          const x = width * (i / 11), sway = Math.sin(t * .12 + i) * width * .02;
+          effect.flash.poly([width*.5,height*.52,x+sway,0,x+sway+width*.018,0]).fill({color,alpha:.018*intro*outro});
+        }
         return true;
       }
 

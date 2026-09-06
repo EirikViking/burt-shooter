@@ -1,3 +1,4 @@
+import { AstraCoronation } from '../ui/AstraCoronation.js';
 import { AstraTurntable } from '../ui/AstraTurntable.js';
 import { AstraDockAtmosphere } from '../ui/AstraDockAtmosphere.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
@@ -935,7 +936,7 @@ export class MenuScene {
       this.astraDock = new AstraDockAtmosphere();
       this.astraDock.zIndex = -17;
       this.container.addChild(this.astraDock);
-      this.astraMenuShip = new AstraTurntable(0, shipTexture, {idle:true});
+      this.astraMenuShip = new AstraTurntable(0, shipTexture, {idle:false});
       this.astraMenuShip.zIndex = -16;
       this.astraMenuShip.eventMode = 'static';
       this.container.addChild(this.astraMenuShip);
@@ -3110,7 +3111,7 @@ export class MenuScene {
 
   getRunModeExplainerText(briefing = this.getRunModeBriefing()) {
     if (this.isNewPilot && briefing.id === 'launchTactical') {
-      return translateText('Fight through sectors, beat bosses, and choose upgrades along the way.');
+      return translateText('Three starter ships await in the Hangar. Beat bosses and build your run.');
     }
     const summary = Array.isArray(briefing.summary)
       ? briefing.summary.slice(0, 2).map((line) => translateText(line)).filter(Boolean)
@@ -3194,6 +3195,9 @@ export class MenuScene {
         this.dismissOverrunUnlockCelebration();
       });
       overlay.addChild(panel, title, milestone, modes, rewards, confirm);
+      overlay._coronation = new AstraCoronation({milestone:30,shipTexture:this.astraMenuShip?.views?.[0]?.texture});
+      overlay.addChildAt(overlay._coronation,1);
+      overlay._startedAt = performance.now();
       overlay._panel = panel;
       overlay._title = title;
       overlay._milestone = milestone;
@@ -3207,8 +3211,9 @@ export class MenuScene {
     }
 
     const overlay = this.overrunUnlockCelebration;
-    const panelWidth = clampNumber(width * 0.58, 620, 900);
-    const panelHeight = clampNumber(height * 0.46, 360, 500);
+    const portraitLayout = width >= 1050;
+    const panelWidth = Math.min(width - 32, portraitLayout ? 1040 : 700);
+    const panelHeight = Math.min(height - 40, portraitLayout ? 520 : 430);
     const panelX = (width - panelWidth) / 2;
     const panelY = (height - panelHeight) / 2;
     const g = overlay._panel;
@@ -3257,6 +3262,16 @@ export class MenuScene {
       { color: 0xffd15c, alpha: 0.92 }, { color: 0xffffff, width: 2, alpha: 0.88 });
     overlay._confirmText.x = confirmW / 2;
     overlay._confirmText.y = confirmH / 2;
+    if (portraitLayout) {
+      const center = width / 2 + panelWidth * .165;
+      for (const text of [overlay._title,overlay._milestone,overlay._modes,overlay._rewards]) {
+        text.x = center;
+        fitTextToWidth(text, panelWidth*.56, {minScale:.6});
+      }
+      overlay._confirm.x = center-confirmW/2;
+    }
+    overlay._coronation.position.set(portraitLayout ? width/2-panelWidth*.32 : width/2,height/2);
+    overlay._coronationLayout = {width:panelWidth*(portraitLayout?.33:.7),height:panelHeight*.9,compact:!portraitLayout};
     overlay.visible = true;
     this.overrunUnlockCelebrationVisible = true;
     if (!overlay._announced) {
@@ -7803,6 +7818,11 @@ export class MenuScene {
   }
 
   update(delta) {
+    const ceremony = this.overrunUnlockCelebration;
+    if (ceremony?.visible && ceremony._coronationLayout) {
+      const layout = ceremony._coronationLayout;
+      ceremony._coronation.update(performance.now()-ceremony._startedAt,layout.width,layout.height,{compact:layout.compact});
+    }
     this.animationTime += delta * 0.016;
     this.astraDock?.update(delta, this.game.getWidth(), this.game.getHeight(), getReducedMotionEnabled());
     if (this.astraMenuShip && this.astraMenuLights) {

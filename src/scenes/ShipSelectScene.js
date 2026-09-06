@@ -491,7 +491,9 @@ export class ShipSelectScene {
     fitDisplayToBox(title, capWidth - 32, this.layout.isMobile ? 38 : 50, { minScale: 0.58 });
     headerContainer.addChild(title);
 
-    const subtitle = createText('Pick the hull, read the trait, launch the next run.', {
+    const subtitle = createText(translateText(Number(this.unlockProgress?.totalRuns || 0) === 0
+      ? 'Three starter ships. Compare their firepower, then launch.'
+      : 'Pick the hull, read the trait, launch the next run.'), {
       fontFamily: FONT_BODY,
       fontSize: this.layout.isMobile ? 14 : 17,
       fill: '#9ceeff',

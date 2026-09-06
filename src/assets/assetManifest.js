@@ -541,6 +541,7 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_boss_death_choir.mp3',
             '/audio/sfx/nova-swarm/nova_boss_death_clock.mp3',
             '/audio/sfx/nova-swarm/nova_overrun_clear_coronation.mp3',
+            '/audio/sfx/nova-swarm/astra_overrun_coronation_v6.mp3',
             '/audio/sfx/nova-swarm/nova_overrun_clear_shockwave.mp3',
             '/audio/sfx/nova-swarm/nova_row_core_pickup.mp3',
             '/audio/sfx/nova-swarm/nova_row_core_horn.mp3',

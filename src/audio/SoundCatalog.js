@@ -974,7 +974,7 @@ export const SFX_CATALOG = {
         getSfx('nova_danger_mid_pop')
     ],
     'overrun_clear_coronation': [
-        getSfx('nova_overrun_clear_coronation')
+        getSfx('astra_overrun_coronation_v6')
     ],
     'overrun_clear_shockwave': [
         getSfx('nova_overrun_clear_shockwave')
