@@ -1,3 +1,4 @@
+import { getFirstRunRetentionSourceText } from '../firstRunRetentionSourceText.js';
 import { getAstraPresentationSourceText } from '../astraPresentationSourceText.js';
 import { buildArcadePatterns } from './patterns.js';
 
@@ -1869,6 +1870,6 @@ export const ko = {
   diagnostics: {
     interfaceLanguage: '인터페이스 언어'
   },
-  sourceText: Object.freeze({ ...getAstraPresentationSourceText('ko'), ...getModeBriefingReviewSourceText('ko'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getOverrunModeSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko'), ...getTyrianFeedbackSourceText('ko'), ...getCompetitionLearningSourceText('ko'), ...getTacticalDraftClaritySourceText('ko'), ...getWonderCodexSourceText('ko'), ...getHangarLaunchModeSourceText('ko'), ...getNewestTyrianFeedbackSourceText('ko'), ...getSecondPolishSourceText('ko'), ...getTyrian112SourceText('ko'), ...getHighSectorSourceText('ko'), ...getLateGameExperimentSourceText('ko') }),
+  sourceText: Object.freeze({ ...getAstraPresentationSourceText('ko'), ...getFirstRunRetentionSourceText('ko'), ...getModeBriefingReviewSourceText('ko'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getOverrunModeSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko'), ...getTyrianFeedbackSourceText('ko'), ...getCompetitionLearningSourceText('ko'), ...getTacticalDraftClaritySourceText('ko'), ...getWonderCodexSourceText('ko'), ...getHangarLaunchModeSourceText('ko'), ...getNewestTyrianFeedbackSourceText('ko'), ...getSecondPolishSourceText('ko'), ...getTyrian112SourceText('ko'), ...getHighSectorSourceText('ko'), ...getLateGameExperimentSourceText('ko') }),
   patterns
 };

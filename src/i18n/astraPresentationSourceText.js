@@ -39,4 +39,5 @@ const hazardAdvice = {
  ko: '공격이 발동하기 전에 표시된 구역을 벗어나세요.',
  ja: '攻撃が発動する前に、マークされた範囲から離れよう。'
 };
-export const getAstraPresentationSourceText = locale => ({ 'DRAG TO ROTATE': labels[locale] || labels.en, 'FIRING PATTERN': firing[locale] || firing.en, 'Three starter ships. Compare their firepower, then launch.': starter[locale] || starter.en, 'Three starter ships await in the Hangar. Beat bosses and build your run.': welcome[locale] || welcome.en, 'Move out of the marked area before it fires.': hazardAdvice[locale] || hazardAdvice.en });
+const hangar = {en: 'HANGAR', de: 'HANGAR', es: 'HANGAR', ru: 'АНГАР', 'zh-CN': '机库', 'pt-BR': 'HANGAR', ko: '격납고', ja: '格納庫'};
+export const getAstraPresentationSourceText = locale => ({ 'HANGAR': hangar[locale] || hangar.en, 'DRAG TO ROTATE': labels[locale] || labels.en, 'FIRING PATTERN': firing[locale] || firing.en, 'Three starter ships. Compare their firepower, then launch.': starter[locale] || starter.en, 'Three starter ships await in the Hangar. Beat bosses and build your run.': welcome[locale] || welcome.en, 'Move out of the marked area before it fires.': hazardAdvice[locale] || hazardAdvice.en });

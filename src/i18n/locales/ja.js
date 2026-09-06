@@ -1,3 +1,4 @@
+import { getFirstRunRetentionSourceText } from '../firstRunRetentionSourceText.js';
 import { getAstraPresentationSourceText } from '../astraPresentationSourceText.js';
 import { buildArcadePatterns } from './patterns.js';
 
@@ -1869,6 +1870,6 @@ export const ja = {
   diagnostics: {
     interfaceLanguage: 'インターフェイス言語'
   },
-  sourceText: Object.freeze({ ...getAstraPresentationSourceText('ja'), ...getModeBriefingReviewSourceText('ja'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ja'), ...getNovaHumorSourceText('ja'), ...getMayhemModesSourceText('ja'), ...getOverrunModeSourceText('ja'), ...getEliteExpansionSourceText('ja'), ...getHowToPlayCompleteSourceText('ja'), ...getTacticalFusionSourceText('ja'), ...getDailyCabinetSignalSourceText('ja'), ...getMenuHierarchySourceText('ja'), ...getForumFollowupSourceText('ja'), ...getPlayerFeedbackReliabilitySourceText('ja'), ...getTyrianFeedbackSourceText('ja'), ...getCompetitionLearningSourceText('ja'), ...getTacticalDraftClaritySourceText('ja'), ...getWonderCodexSourceText('ja'), ...getHangarLaunchModeSourceText('ja'), ...getNewestTyrianFeedbackSourceText('ja'), ...getSecondPolishSourceText('ja'), ...getTyrian112SourceText('ja'), ...getHighSectorSourceText('ja'), ...getLateGameExperimentSourceText('ja') }),
+  sourceText: Object.freeze({ ...getAstraPresentationSourceText('ja'), ...getFirstRunRetentionSourceText('ja'), ...getModeBriefingReviewSourceText('ja'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ja'), ...getNovaHumorSourceText('ja'), ...getMayhemModesSourceText('ja'), ...getOverrunModeSourceText('ja'), ...getEliteExpansionSourceText('ja'), ...getHowToPlayCompleteSourceText('ja'), ...getTacticalFusionSourceText('ja'), ...getDailyCabinetSignalSourceText('ja'), ...getMenuHierarchySourceText('ja'), ...getForumFollowupSourceText('ja'), ...getPlayerFeedbackReliabilitySourceText('ja'), ...getTyrianFeedbackSourceText('ja'), ...getCompetitionLearningSourceText('ja'), ...getTacticalDraftClaritySourceText('ja'), ...getWonderCodexSourceText('ja'), ...getHangarLaunchModeSourceText('ja'), ...getNewestTyrianFeedbackSourceText('ja'), ...getSecondPolishSourceText('ja'), ...getTyrian112SourceText('ja'), ...getHighSectorSourceText('ja'), ...getLateGameExperimentSourceText('ja') }),
   patterns
 };
