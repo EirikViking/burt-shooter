@@ -13,14 +13,20 @@ const app = await electron.launch({ executablePath: executable, args: ['--nova-f
 app.process().stdout?.pipe(log,{end:false});app.process().stderr?.pipe(log,{end:false});
 const p = await app.firstWindow();p.on('pageerror',e=>report.errors.push(e.message));
 await app.context().route('**/*',r=>/^(nova-swarm:|data:|blob:)/.test(r.request().url())?r.continue():r.abort());
+async function resize(width,height) {
+ await p.evaluate(size=>window.__novaDisplay.applySettings({mode:'windowed',windowSize:size,uiScale:1}),{width,height});
+ await app.evaluate(({BrowserWindow},size)=>{const w=BrowserWindow.getAllWindows()[0];w.setFullScreen(false);w.unmaximize();w.setContentSize(size.width,size.height);w.webContents.setBackgroundThrottling(false);},{width,height});
+ await p.waitForFunction(size=>innerWidth===size.width&&innerHeight===size.height,{width,height},{timeout:5000});
+}
 try {
  await p.waitForFunction(()=>window.__game?.scenes.menu?.astraMenuShip?.ready,null,{timeout:120000});
- await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setContentSize(1280,720);w.webContents.setBackgroundThrottling(false);});
+ await resize(1280,720);
  await p.evaluate(()=>window.__game.scenes.menu.quickStartRun('ranked_tactical'));
  await p.waitForFunction(()=>window.__game?.scenes.play?.player?.active,null,{timeout:120000});
  await p.evaluate(()=>{const s=window.__game.scenes.play;s.introActive=false;s.introComplete=true;s.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;s.setPaused(false);s.player.invulnerable=true;s.player.invulnerableTime=1e9;s.openTacticalDraft({sectorCleared:1});});
  await p.waitForFunction(()=>window.__game.scenes.play.tacticalDraft?.inputArmed);
  await p.waitForTimeout(1000);
+ assert.deepEqual(await p.evaluate(()=>[innerWidth,innerHeight]),[1280,720]);
  report.runtime=await p.evaluate(()=>JSON.parse(window.render_game_to_text()).gitSha);
  report.offers=await p.evaluate(()=>window.__game.scenes.play.tacticalDraft.offers.map(x=>x.id));assert.deepEqual(report.offers,['pierce','double_shot','drones']);
  const session=await app.context().newCDPSession(p);await session.send('Performance.enable');await session.send('HeapProfiler.collectGarbage');
@@ -31,15 +37,15 @@ try {
   const recorder=await app.context().newCDPSession(p);const frames=[];const dir=path.join(out,'frames');mkdirSync(dir,{recursive:true});
   recorder.on('Page.screencastFrame',e=>{const file=path.join(dir,`${String(frames.length).padStart(5,'0')}.jpg`);writeFileSync(file,Buffer.from(e.data,'base64'));frames.push({file,time:e.metadata.timestamp});recorder.send('Page.screencastFrameAck',{sessionId:e.sessionId}).catch(()=>{});});
   await recorder.send('Page.startScreencast',{format:'jpeg',quality:88,maxWidth:1280,maxHeight:720,everyNthFrame:2});
-  for(const [key,id] of [['ArrowLeft','pierce'],['ArrowRight','double_shot'],['ArrowRight','drones']]){await p.keyboard.press(key);assert.equal(await p.evaluate(()=>{let d=window.__game.scenes.play.tacticalDraft;return d.offers[d.focusIndex]?.id;}),id);await p.waitForTimeout(2800);await p.screenshot({path:path.join(out,id+'.png')});}
+  for(const [key,id] of [['ArrowLeft','pierce'],['ArrowRight','double_shot'],['ArrowRight','drones']]){await p.keyboard.press(key,{delay:80});await p.waitForFunction(id=>{const d=window.__game.scenes.play.tacticalDraft;return d.offers[d.focusIndex]?.id===id;},id,{timeout:3000});assert.equal(await p.evaluate(()=>{let d=window.__game.scenes.play.tacticalDraft;return d.offers[d.focusIndex]?.id;}),id);await p.waitForTimeout(2800);await p.screenshot({path:path.join(out,id+'.png')});}
   const target=await p.evaluate(()=>{const d=window.__game.scenes.play.tacticalDraft;return d.cards[2]._nodes.weaponPreview.model.after;});
-  await p.keyboard.press('Enter');await p.waitForFunction(()=>!window.__game.scenes.play.tacticalDraft?.active,null,{timeout:15000});
+  await p.keyboard.press('Enter',{delay:80});await p.waitForFunction(()=>!window.__game.scenes.play.tacticalDraft?.active,null,{timeout:15000});
   assert.equal(await p.evaluate(()=>window.__game.scenes.play.player.droneCount),target.drones);
   await p.keyboard.down('Space');await p.keyboard.down('ArrowLeft');await p.waitForTimeout(450);await p.keyboard.up('ArrowLeft');await p.waitForTimeout(3000);await p.keyboard.up('Space');
   await p.screenshot({path:path.join(out,'back-in-combat.png')});await recorder.send('Page.stopScreencast');await recorder.detach();assert.ok(frames.length>100);
   const lines=[];for(let i=0;i<frames.length-1;i++)lines.push(`file '${frames[i].file.replaceAll('\\','/')}'`,`duration ${Math.max(.001,frames[i+1].time-frames[i].time).toFixed(6)}`);lines.push(`file '${frames.at(-1).file.replaceAll('\\','/')}'`);
   const list=path.join(out,'frames.txt');writeFileSync(list,lines.join('\n'));const ff=spawnSync('ffmpeg',['-hide_banner','-loglevel','error','-y','-safe','0','-f','concat','-i',list,'-vsync','vfr','-c:v','libx264','-pix_fmt','yuv420p',path.join(out,'choice-to-combat.mp4')],{encoding:'utf8',windowsHide:true});assert.equal(ff.status,0,ff.stderr);report.video={frames:frames.length,seconds:frames.at(-1).time-frames[0].time,note:'Actual packaged runtime at wall-clock speed. Staged reward; scripted keyboard input; QA invulnerability; silent.'};
-  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(960,640));
+  await resize(960,640);
   await p.evaluate(()=>{let s=window.__game.scenes.play;s.player.runAugmentIds=[];s.player.recalculateStats();s.openTacticalDraft({sectorCleared:1});});await p.waitForTimeout(500);await p.screenshot({path:path.join(out,'compact.png')});
   assert.ok(await p.evaluate(()=>window.__game.scenes.play.tacticalDraft.cards.every(c=>c._nodes.weaponPreview?.compact.visible)));
   report.checks.push('keyboard focus all three cards, confirm Drones, actual applied drone count, fire/move on return, compact resize');
