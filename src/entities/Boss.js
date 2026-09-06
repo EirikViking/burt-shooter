@@ -1,5 +1,6 @@
 import { drawAstraWarningLane, drawAstraWarningSector, drawAstraWarningRing } from '../effects/AstraWarningField.js';
 import { AstraAttackRig } from '../effects/AstraAttackRig.js';
+import { drawBossChargeCrown, drawBossDischarge } from '../effects/AstraBossEnergy.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { Bullet } from './Bullet.js';
@@ -968,6 +969,7 @@ export class Boss {
     const now = Date.now();
     const angle = Math.atan2(playerY - this.y, playerX - this.x);
     this.lastFireAngle = Number.isFinite(angle) ? angle : this.lastFireAngle;
+    this.lastFireVisualFamily = type;
     this.fireRecoilUntil = now + (signature ? BOSS_FIRE_RECOIL_MS + 120 : BOSS_FIRE_RECOIL_MS);
     this.setPresentationState('firing', signature ? 380 : 240);
 
@@ -1404,6 +1406,9 @@ export class Boss {
     }
 
     if (recoilProgress > 0) {
+      drawBossDischarge(layer, { radius, color: palette, edge: accent,
+        angle: this.lastFireAngle, progress: recoilProgress,
+        family: this.lastFireVisualFamily || this.profile?.attack });
       const length = radius * (0.5 + recoilProgress * 0.52);
       const spread = 0.18 + recoilProgress * 0.08;
       const start = radius * 0.14;
@@ -2411,14 +2416,11 @@ export class Boss {
 
   drawTelegraphChargeHalo(layer, originX, originY, radius, palette, progress, options = {}) {
     if (!layer) return;
-    const charge = clamp(progress, 0, 1);
-    const r = Math.max(14, radius * (options.scale || 1) * 0.71);
-    for (let i = 0; i < 4; i += 1) {
-      const a = Math.PI * (0.25 + i * 0.5);
-      layer.moveTo(originX + Math.cos(a - 0.09) * r, originY + Math.sin(a - 0.09) * r);
-      layer.arc(originX, originY, r, a - 0.09, a + 0.09);
-      layer.stroke({ color: palette.edge, width: 2, alpha: 0.16 + charge * 0.32 });
-    }
+    drawBossChargeCrown(layer, { x: originX, y: originY,
+      radius: Math.max(14, radius * (options.scale || 1)),
+      color: palette.warning, edge: palette.edge, progress,
+      family: this.telegraph?.type || this.regularTelegraph?.type || 'aim',
+      reverse: options.reverse });
   }
 
   drawTelegraphReleaseGate(layer, originX, originY, angle, length, spread, palette, progress, options = {}) {

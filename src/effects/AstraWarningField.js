@@ -29,6 +29,11 @@ export function drawAstraWarningLane(g, {x=0, y=0, angle=Math.PI/2, start=0,
   if (!g || length <= start || halfWidth <= 0) return;
   const p = Math.max(0, Math.min(1, progress)), c = Math.cos(angle), s = Math.sin(angle);
   const px = -s, py = c, len = length-start;
+  const motion = !getReducedMotionEnabled(), flash = getFlashIntensityScale();
+  // Integrated acceleration avoids speed jumps as charge increases. This clock
+  // only affects the ink inside the attack-owned, stationary boundary.
+  const flow = motion ? (Date.now() * .00055 + p * p * 1.7) % 1 : .35;
+  const pulse = motion ? .5 + .5 * Math.sin(p * p * Math.PI * 6) : .5;
   const sx=x+c*start, sy=y+s*start, ex=x+c*length, ey=y+s*length;
   const points=[sx-px*halfWidth,sy-py*halfWidth,ex-px*halfWidth,ey-py*halfWidth,
     ex+px*halfWidth,ey+py*halfWidth,sx+px*halfWidth,sy+py*halfWidth];
@@ -40,7 +45,7 @@ export function drawAstraWarningLane(g, {x=0, y=0, angle=Math.PI/2, start=0,
   const matrix=new Matrix(c*len/128,s*len/128,px*halfWidth/16,py*halfWidth/16,
     sx-px*halfWidth,sy-py*halfWidth);
   g.poly(points).fill({texture:material(),matrix,textureSpace:'global',color,
-    alpha:alpha*(active ? .8 : .08+p*.12)});
+    alpha:alpha*(active ? .8 : .13+p*.15+pulse*p*.07*flash)});
   const edge=(d0,d1,w,ink,width,opacity)=>{
     g.moveTo(sx+c*d0+px*w,sy+s*d0+py*w)
       .lineTo(sx+c*d1+px*w,sy+s*d1+py*w)
@@ -60,16 +65,22 @@ export function drawAstraWarningLane(g, {x=0, y=0, angle=Math.PI/2, start=0,
   }
   if(active) {
     edge(0,len,0,0xfff4dc,Math.min(halfWidth*.45,3),.8*getFlashIntensityScale());
-    return;
   }
   if (!markers) return;
   const size=Math.min(halfWidth*.65,6);
-  for(const t of [.32,.72]) {
+  const count = Math.max(2, Math.min(5, Math.ceil(len / 120)));
+  for(let i=0;i<count;i++) {
+    const t=(i+flow)/count;
     const cx=sx+c*len*t,cy=sy+s*len*t;
+    const fade=Math.min(1,t*10,(1-t)*10);
     g.moveTo(cx-c*size+px*size,cy-s*size+py*size).lineTo(cx+c*size*.7,cy+s*size*.7)
       .lineTo(cx-c*size-px*size,cy-s*size-py*size)
-      .stroke({color:0xffdf9c,width:1.2,alpha:alpha*(.38+p*.3)});
+      .stroke({color:0xffdf9c,width:active?1.6:1.3,alpha:alpha*fade*(.4+p*.35)});
   }
+  // A short ion filament travels down the center; it never sweeps safe space.
+  const head=len*(.06+flow*.88),tail=Math.max(0,head-Math.min(30,len*.12));
+  edge(tail,head,0,color,Math.min(halfWidth*.6,4),(.16+p*.2)*flash);
+  edge(Math.max(tail,head-9),head,0,0xffeed4,1.2,(.35+p*.4)*flash);
 }
 
 export function drawAstraWarningSector(g,{x=0,y=0,angle,length,spread,color=0xff8356,
@@ -84,6 +95,17 @@ export function drawAstraWarningSector(g,{x=0,y=0,angle,length,spread,color=0xff
   }
   g.moveTo(x+Math.cos(angle-half)*length,y+Math.sin(angle-half)*length);
   g.arc(x,y,length,angle-half,angle+half).stroke({color,width:1.1,alpha:alpha*.35});
+  const motion=!getReducedMotionEnabled(),p=Math.max(0,Math.min(1,progress));
+  const phase=motion?(Date.now()*.00042+p*p*.8)%1:.5;
+  // Broken wavefronts inside the existing fan, never across its safe exterior.
+  for(let i=0;i<3;i++){
+    const u=(i+phase)/3,r=length*(.12+u*.83),fade=Math.sin(u*Math.PI);
+    for(const side of [-1,1]){
+      const a=angle+side*half*.18,b=angle+side*half*.86;
+      g.moveTo(x+Math.cos(Math.min(a,b))*r,y+Math.sin(Math.min(a,b))*r);
+      g.arc(x,y,r,Math.min(a,b),Math.max(a,b)).stroke({color,width:1.2,alpha:alpha*fade*(.15+p*.22)*getFlashIntensityScale()});
+    }
+  }
 }
 
 export function drawAstraWarningRing(g,{x=0,y=0,inner,outer,color=0xff715c,
@@ -101,6 +123,12 @@ export function drawAstraWarningRing(g,{x=0,y=0,inner,outer,color=0xff715c,
     g.arc(x,y,r,start,end).stroke({color,width:active?2.4:1.5,alpha:alpha*(.5+progress*.3)});
   }
   const phase=getReducedMotionEnabled()?0:(Date.now()*.00013)%1;
+  // Concentric charge waves respect the exact open escape wedge.
+  for(let i=0;i<2;i++){
+    const u=(i*.5+phase*2)%1,r=inner+(outer-inner)*(.08+u*.84);
+    g.moveTo(x+Math.cos(start)*r,y+Math.sin(start)*r);
+    g.arc(x,y,r,start,end).stroke({color,width:1.2,alpha:alpha*Math.sin(u*Math.PI)*(.15+progress*.16)*getFlashIntensityScale()});
+  }
   for(let i=0;i<12;i++) {
     const a=start+(end-start)*(i+.3)/12,r=inner+(outer-inner)*(.18+((phase+i*.19)%1)*.64);
     g.moveTo(x+Math.cos(a)*r,y+Math.sin(a)*r);

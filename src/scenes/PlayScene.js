@@ -1,3 +1,6 @@
+import { drawAstraShatterBurst } from '../effects/AstraShatterBurst.js';
+import { drawEnergyGlint } from '../effects/AstraBossEnergy.js';
+import { getReactorMaterials } from '../effects/AstraReactorRupture.js';
 import { TacticalWeaponPreview, getTacticalWeaponPreviewModel } from '../ui/TacticalWeaponPreview.js';
 import { AstraCoronation } from '../ui/AstraCoronation.js';
 import { usesOpeningCombatReadability, isSecondaryCombatNotice } from '../config/OpeningCombatReadability.js';
@@ -21258,9 +21261,9 @@ export class PlayScene {
 
     const layer = new PIXI.Graphics();
     layer.label = 'enemyDeathClarityBurst';
-    // The compact tier markers stay legible beneath the combustion sprite;
-    // their former full-strength diagrams competed with the destroyed hull.
-    layer.alpha = this.particleManager?.detonations?.active?.length ? 0.18 : 1;
+    // Supplemental heated fragments sit over the existing combustion flipbook.
+    // No circular reticles, grid rings or echo bands remain in death feedback.
+    layer.alpha = this.particleManager?.detonations?.active?.length ? 0.65 : 1;
     layer.blendMode = 'add';
     layer.zIndex = 46;
     layer.x = Number(profile.x) || 0;
@@ -21279,82 +21282,15 @@ export class PlayScene {
     const baseColor = Number.isFinite(profile.baseColor) ? profile.baseColor : 0xffaa00;
     const accent = Number.isFinite(profile.accent) ? profile.accent : 0xffffff;
     const lineWidth = Math.max(1, (Number(profile.lineWidth) || 1.6) * (performanceLite ? 0.86 : 1));
-    const gridRingCount = performanceLite ? 1 : (profile.highTier ? 3 : 2);
-    const debrisSpokeCount = performanceLite ? Math.max(4, markerCount - 1) : Math.max(5, markerCount);
-    const implosionDiamondCount = performanceLite ? (profile.highTier ? 4 : 3) : (profile.highTier ? 6 : 4);
-    const echoBandCount = performanceLite ? 1 : (profile.highTier ? 3 : 2);
-    const killWakeCount = performanceLite ? 2 : (profile.highTier ? 5 : 3);
+    const gridRingCount = 0, implosionDiamondCount = 0, echoBandCount = 0;
+    const debrisSpokeCount = markerCount, killWakeCount = markerCount;
     let elapsedMs = 0;
-
     const draw = (progress = 0) => {
       const t = Math.max(0, Math.min(1, progress));
-      const fade = Math.pow(1 - t, 0.78);
       const ringRadius = visualRadius * (0.64 + t * 0.56);
-      const innerRadius = Math.max(6, ringRadius * 0.46);
-      const tickInner = ringRadius * 0.82;
-      const tickOuter = ringRadius + 7 + (profile.highTier ? 5 : 0);
-      layer.clear();
-      for (let i = 0; i < gridRingCount; i += 1) {
-        const gridRadius = visualRadius * (0.34 + i * 0.24 + t * 0.24);
-        layer.circle(0, 0, gridRadius);
-      }
-      layer.stroke({ color: 0xffffff, width: 0.8, alpha: 0.08 * fade });
-      layer.circle(0, 0, ringRadius);
-      layer.stroke({ color: baseColor, width: lineWidth, alpha: 0.46 * fade });
-      layer.circle(0, 0, innerRadius);
-      layer.stroke({ color: accent, width: Math.max(1, lineWidth - 0.45), alpha: 0.22 * fade });
-      for (let i = 0; i < markerCount; i += 1) {
-        const angle = (Math.PI * 2 * i) / markerCount + t * 0.95;
-        layer.moveTo(Math.cos(angle) * tickInner, Math.sin(angle) * tickInner);
-        layer.lineTo(Math.cos(angle) * tickOuter, Math.sin(angle) * tickOuter);
-      }
-      layer.stroke({ color: accent, width: Math.max(1, lineWidth - 0.2), alpha: 0.5 * fade });
-      for (let i = 0; i < debrisSpokeCount; i += 1) {
-        const angle = (Math.PI * 2 * i) / debrisSpokeCount - t * 0.65;
-        const inner = innerRadius * (0.6 + (i % 2) * 0.18);
-        const outer = ringRadius * (1.02 + (i % 3) * 0.08 + t * 0.16);
-        layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
-        layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
-      }
-      layer.stroke({ color: baseColor, width: 0.9, alpha: 0.2 * fade });
-      const diamondRadius = Math.max(8, ringRadius * (0.34 - t * 0.12));
-      for (let i = 0; i < implosionDiamondCount; i += 1) {
-        const angle = t * 1.2 + i * (Math.PI * 2 / implosionDiamondCount);
-        const cx = Math.cos(angle) * diamondRadius;
-        const cy = Math.sin(angle) * diamondRadius;
-        const tangent = angle + Math.PI * 0.5;
-        const size = 3.5 + (i % 2) * 0.8;
-        layer.poly([
-          cx + Math.cos(angle) * size, cy + Math.sin(angle) * size,
-          cx + Math.cos(tangent) * size * 0.72, cy + Math.sin(tangent) * size * 0.72,
-          cx - Math.cos(angle) * size, cy - Math.sin(angle) * size,
-          cx - Math.cos(tangent) * size * 0.72, cy - Math.sin(tangent) * size * 0.72
-        ]);
-      }
-      layer.fill({ color: 0xffffff, alpha: 0.2 * fade });
-      for (let i = 0; i < echoBandCount; i += 1) {
-        const p = (t + i * 0.22) % 1;
-        const echoRadius = visualRadius * (0.5 + p * 0.75);
-        layer.circle(0, 0, echoRadius);
-        layer.stroke({ color: i % 2 ? accent : baseColor, width: Math.max(0.8, lineWidth - i * 0.35), alpha: (0.16 - i * 0.025) * fade });
-      }
-      for (let i = 0; i < killWakeCount; i += 1) {
-        const lane = i - (killWakeCount - 1) / 2;
-        const x = lane * visualRadius * 0.14;
-        const startY = -ringRadius * 0.36;
-        const endY = ringRadius * (0.72 + t * 0.24);
-        layer.moveTo(x, startY);
-        layer.lineTo(x + Math.sin(t * 3 + i) * 6, endY);
-      }
-      layer.stroke({ color: 0xffffff, width: 0.8, alpha: 0.09 * fade });
-      if (profile.highTier) {
-        const cross = ringRadius * 0.34;
-        layer.moveTo(-cross, 0);
-        layer.lineTo(cross, 0);
-        layer.moveTo(0, -cross);
-        layer.lineTo(0, cross);
-        layer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.2 * fade });
-      }
+      drawAstraShatterBurst(layer, { progress: t, radius: visualRadius,
+        count: markerCount, color: baseColor, accent,
+        seed: (Number(profile.x) || 0) * .017 + (Number(profile.y) || 0) * .013 });
       layer._debugEnemyDeathClarity = {
         visible: true,
         tier: profile.tier || 'normal',
@@ -25395,13 +25331,7 @@ export class PlayScene {
     layer.addChild(root);
 
     const screenFlash = new PIXI.Graphics();
-    if (index === 0) {
-      screenFlash.rect(-x, -y, width, height);
-      screenFlash.fill({ color: superStorm ? 0xff6bfa : boss ? 0xff6d82 : 0xffef9a, alpha: 0.12 });
-    } else {
-      screenFlash.circle(0, 0, radius * 1.76);
-      screenFlash.fill({ color: superStorm ? 0xff6bfa : boss ? 0xff6d82 : 0xffef9a, alpha: 0.075 });
-    }
+    drawEnergyGlint(screenFlash, 0, 0, radius * 2.4, primary, .5);
     root.addChild(screenFlash);
 
     const impactField = new PIXI.Graphics();
@@ -25412,25 +25342,38 @@ export class PlayScene {
     root.addChild(portal);
 
     const halo = new PIXI.Graphics();
-    halo.circle(0, 0, radius * 1.45);
-    halo.stroke({ color: secondary, width: compact ? 8 : 12, alpha: 0.16 });
-    halo.circle(0, 0, radius);
-    halo.stroke({ color: primary, width: compact ? 3 : 5, alpha: 0.78 });
+    // Torn, uneven aperture edges replace the circular portal/target artwork.
+    for (const side of [-1, 1]) {
+      halo.moveTo(side * radius * .12, -radius * 1.3);
+      halo.bezierCurveTo(side * radius * .72, -radius * .55,
+        side * radius * .32, radius * .6, -side * radius * .08, radius * 1.22);
+      halo.stroke({ color: secondary, width: compact ? 7 : 10, alpha: .1 });
+      halo.moveTo(side * radius * .12, -radius * 1.3);
+      halo.bezierCurveTo(side * radius * .72, -radius * .55,
+        side * radius * .32, radius * .6, -side * radius * .08, radius * 1.22);
+      halo.stroke({ color: side < 0 ? primary : secondary, width: 1.8, alpha: .8 });
+    }
     portal.addChild(halo);
 
     const rotor = new PIXI.Graphics();
-    rotor.circle(0, 0, radius * 0.72);
-    rotor.stroke({ color: 0xffffff, width: 1.5, alpha: 0.76 });
-    for (let spoke = 0; spoke < 10; spoke += 1) {
-      const angle = (Math.PI * 2 * spoke) / 10;
-      rotor.moveTo(Math.cos(angle) * radius * 0.54, Math.sin(angle) * radius * 0.54);
-      rotor.lineTo(Math.cos(angle) * radius * (spoke % 2 ? 0.9 : 1.08), Math.sin(angle) * radius * (spoke % 2 ? 0.9 : 1.08));
-      rotor.stroke({ color: spoke % 2 ? primary : secondary, width: spoke % 2 ? 2.4 : 1.4, alpha: 0.78 });
-    }
+    drawAstraShatterBurst(rotor, { radius: radius * .9, count: 7,
+      color: primary, accent: secondary, progress: .18, seed: index + 2 });
     portal.addChild(rotor);
 
     const tear = new PIXI.Graphics();
     portal.addChild(tear);
+    // Reuse the prewarmed filament texture as short, ragged venting plumes.
+    const riftJets = Array.from({ length: reducedMotion ? 2 : 6 }, (_, i) => {
+      const jet = new PIXI.Sprite(getReactorMaterials().jet);
+      jet.anchor.set(.08, .5);
+      jet.blendMode = 'add';
+      const side = i % 2 ? 1 : -1;
+      jet.position.set(side * radius * .08, (Math.floor(i / 2) - 1) * radius * .38);
+      jet.rotation = (side < 0 ? Math.PI : 0) + (Math.floor(i / 2) - 1) * side * .43;
+      jet.tint = i % 3 ? primary : secondary;
+      portal.addChild(jet);
+      return jet;
+    });
     const streaks = new PIXI.Graphics();
     root.addChild(streaks);
 
@@ -25525,6 +25468,12 @@ export class PlayScene {
       halo.scale.set(0.72 + impact * 0.48 + pulse * 0.12);
       halo.alpha = 0.48 + pulse * 0.52;
       screenFlash.alpha = Math.max(0, 1 - t / 0.2) * (reducedMotion ? 0.16 : superStorm ? 0.78 : 0.5);
+      for (let i = 0; i < riftJets.length; i += 1) {
+        const jet = riftJets[i];
+        jet.width = radius * (.66 + (i % 3) * .24 + impact * .6);
+        jet.height = radius * (.24 + impact * .22);
+        jet.alpha = Math.min(1, t * 14) * Math.max(0, 1 - t / .68) * .8 * getAccessibilitySettings().flashIntensity;
+      }
 
       if (previewShip) {
         const shipTravel = Math.min(1, Math.max(0, (t - 0.06) / 0.58));
@@ -25533,43 +25482,15 @@ export class PlayScene {
         previewShip.scale.y = Math.abs(previewShip.scale.x) * (0.62 + shipTravel * 0.58);
       }
 
-      impactField.clear();
-      const crowdedArrival = count >= 3;
-      const shockwaveCount = reducedMotion
-        ? 1
-        : (crowdedArrival ? (index === 0 ? 2 : 1) : 3);
-      for (let ring = 0; ring < shockwaveCount; ring += 1) {
-        const phase = Math.min(1, Math.max(0, t * 1.45 - ring * 0.11));
-        const ringRadius = radius * (0.72 + phase * (3.1 + ring * 0.25));
-        impactField.circle(0, 0, ringRadius);
-        impactField.stroke({
-          color: ring % 2 ? secondary : primary,
-          width: Math.max(1, (compact ? 6 : 9) * (1 - phase)),
-          alpha: (0.58 - ring * 0.08) * (1 - phase) * fade
-        });
-      }
-      const rayCount = reducedMotion
-        ? 6
-        : (crowdedArrival ? (index === 0 ? 10 : 7) : 16);
-      for (let ray = 0; ray < rayCount; ray += 1) {
-        const angle = (Math.PI * 2 * ray) / rayCount + index * 0.31;
-        const rayTravel = Math.min(1, t * (1.7 + (ray % 4) * 0.08));
-        const inner = radius * (0.82 + rayTravel * 0.3);
-        const outer = radius * (1.35 + rayTravel * (2.4 + (ray % 5) * 0.38));
-        impactField.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
-        impactField.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
-        impactField.stroke({
-          color: ray % 3 === 0 ? primary : ray % 3 === 1 ? secondary : 0xffffff,
-          width: ray % 4 === 0 ? (compact ? 3 : 5) : 1.4,
-          alpha: (ray % 4 === 0 ? 0.5 : 0.24) * fade
-        });
-      }
+      drawAstraShatterBurst(impactField, { progress: t, radius: radius * 2.6,
+        count: reducedMotion ? 5 : count >= 3 ? 8 : 12,
+        color: primary, accent: secondary, seed: index + count });
 
       tear.clear();
       const slitHeight = radius * (0.2 + impact * 1.8);
       tear.moveTo(0, -slitHeight);
       tear.bezierCurveTo(-radius * 0.28, -slitHeight * 0.34, radius * 0.28, slitHeight * 0.34, 0, slitHeight);
-      tear.stroke({ color: 0xffffff, width: compact ? 4 : 7, alpha: 0.72 + pulse * 0.28 });
+      tear.stroke({ color: 0xffffff, width: compact ? 1.5 : 2.4, alpha: 0.6 + pulse * 0.2 });
       tear.moveTo(-radius * 0.18, -slitHeight * 0.78);
       tear.lineTo(radius * 0.2, slitHeight * 0.8);
       tear.stroke({ color: secondary, width: compact ? 8 : 13, alpha: 0.16 + pulse * 0.22 });

@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-09-06 boss drama
+- User requested restoration of moving charge cues and more dramatic, varied boss telegraphs/attacks. Clean starting commit bef81e2a5a9636663687a39de5b191653645d53b on existing codex/astra-visual-overhaul. Fetch/status/branch/log/worktree checks completed; current checkout remains the authorized baseline.
+- Baseline boss telegraph suite passes; actual captures in test-results/boss-drama-before. Keep warning geometry, timings, aim locking, lifecycle, gameplay RNG and rules intact. Implement bounded presentation on existing graphics layers, respect Reduced Motion and flash settings, inspect actual encounters and package separately.
+- Moving lane filaments/chevrons restored; fan/ring interiors animate within unchanged boundaries; boss-local capacitors, reactor glints, charge filaments and family-dependent muzzle releases added. Nine staged shapes inspected; ten boss animation profiles and warning/arming/lifecycle checks pass. Render-only checks confirm zero RNG, identical charge/active lane boundary, static Reduced Motion and bounded commands.
+- User screenshot reproduced: gold hoops are reinforcement entry portals, plus smaller enemy-death reticles. Both replaced with torn apertures, cached venting plumes and analytic heated shards. Exact source-stage before/after: arrival-circles-before-verified / arrival-circles-final. Death test now requires zero rings/echoes/diagram diamonds instead of explicitly requiring rejected artwork; tier/particle/size/runtime assertions retained.
+- i18n, Steam bridge, release-line, ranked parity, content director and exact legacy detonation RNG/allocator tests pass. No new text, assets, licenses or audio. Existing family charge/release audio retained; no paid APIs used.
+- Reinforcement-wow suite fails an upstream warning-placement assertion before the changed arrival effect; initial attempt also timed out on its self-started server. Unchanged assertion retained, not claimed passing. Package/native verification pending.
+
 ## 2026-09-06 opening combat readability
 - Authorized focused presentation pass: player/hostile distinction, fewer enemy rings, warning lane states, secondary HUD notices, immediate fatal-cause advice. Preserve simulation, controls, scoring and progression.
 - Clean baseline e8f635e10996b92e976b03d92308f497be711d6f on existing codex/astra-visual-overhaul; fetch/status/log/worktree verified. No branch switching, external deployment or real saves.
