@@ -1,3 +1,8 @@
+import { BOSS_ARSENAL_ENABLED, getBossArsenal } from '../config/BossArsenal.js';
+import { BossArsenalRig } from '../effects/BossArsenalRig.js';
+import { getArsenalProjectile } from '../effects/BossArsenalMaterials.js';
+import { drawArsenalAnnulus } from '../effects/BossArsenalFields.js';
+import { getReducedMotionEnabled, getFlashIntensityScale } from '../config/AccessibilitySettings.js';
 import { drawAstraWarningLane, drawAstraWarningSector, drawAstraWarningRing } from '../effects/AstraWarningField.js';
 import { AstraAttackRig } from '../effects/AstraAttackRig.js';
 import { drawBossChargeCrown, drawBossDischarge } from '../effects/AstraBossEnergy.js';
@@ -1188,6 +1193,22 @@ export class Boss {
       rig.root.addChild(rig.astraAttackRig);
     }
     rig.astraAttackRig.update({charge: telegraphProgress, recoil: recoilProgress, time: now * .001, active: recoilProgress > 0, aim: this.lastFireAngle});
+    if (BOSS_ARSENAL_ENABLED) {
+      rig.astraAttackRig.visible = false;
+      if (!rig.arsenalRig) {
+        rig.arsenalRig = new BossArsenalRig(radius, archetype, accent, this.profile?.chapter || 1);
+        rig.arsenalRig.zIndex = 8;
+        rig.root.addChild(rig.arsenalRig);
+      }
+      rig.arsenalRig.update({
+        charge: this.attackWarningToken ? this.getAttackWarningProgress(this.attackWarningToken) : 0,
+        recoil: recoilProgress, time: this.moveTimer * .01667,
+        angle: this.attackWarningToken?.lockedAngle ?? this.lastFireAngle ?? Math.PI / 2,
+        phase: this.phase, signature: this.attackWarningToken?.category === 'signature', death: deathProgress,
+        sequence: this.attackWarningTokenSequence || 0
+      });
+    }
+
 
     rig.weaponNodes.forEach((node, index) => {
       const nodePhase = t * (archetype === 'clock' ? 0.34 : 0.28) + index * ((Math.PI * 2) / rig.weaponNodes.length);
@@ -2320,8 +2341,9 @@ export class Boss {
 
   playSignatureTelegraphSfx(type, warningToken = this.attackWarningToken) {
     const family = this.getSignatureSfxFamily(type);
-    AudioManager.playSfx('boss_charge_lattice', {
-      volume: 0.42,
+    const mechanismCue = BOSS_ARSENAL_ENABLED ? `boss_arsenal_${this.profile?.archetype || 'conductor'}` : 'boss_charge_lattice';
+    AudioManager.playSfx(mechanismCue, {
+      volume: BOSS_ARSENAL_ENABLED ? 0.34 : 0.42,
       minIntervalMs: 720,
       sfxGroup: warningToken?.audioGroup
     });
@@ -2416,6 +2438,7 @@ export class Boss {
 
   drawTelegraphChargeHalo(layer, originX, originY, radius, palette, progress, options = {}) {
     if (!layer) return;
+    if (BOSS_ARSENAL_ENABLED) return; // The deployed physical arsenal owns boss-local charging.
     drawBossChargeCrown(layer, { x: originX, y: originY,
       radius: Math.max(14, radius * (options.scale || 1)),
       color: palette.warning, edge: palette.edge, progress,
@@ -2453,6 +2476,13 @@ export class Boss {
     drawAstraWarningRing(layer, { x: originX, y: originY + (options.centerY || 0),
       inner, outer, color, progress, safeAngle: Number(safe?.angle) || 0,
       safeWedge: Number(safe?.width) || 0 });
+    if (BOSS_ARSENAL_ENABLED) {
+      drawArsenalAnnulus(layer,{x:originX,y:originY+(options.centerY||0),inner,outer,
+        safeAngle:Number(safe?.angle)||0,safeWedge:Number(safe?.width)||0,
+        material:getBossArsenal(this.profile?.archetype).material,
+        time:getReducedMotionEnabled()?0:this.moveTimer*.01667,
+        alpha:(.08+progress*.20)*getFlashIntensityScale()});
+    }
   }
 
   drawSignatureCountdownRing(layer, progress, visualRadius) {
@@ -2884,6 +2914,12 @@ export class Boss {
     bullet.sourceFireStyle = fireStyle;
     bullet.sourceBossLevel = this.level;
     bullet.sourceBossName = this.name || null;
+    if (BOSS_ARSENAL_ENABLED && bullet.core?.__astraProjectile) {
+      const material = getBossArsenal(this.profile?.archetype).material;
+      bullet.core.texture = getArsenalProjectile(material, bullet.hostileInk || bullet.color);
+      bullet.arsenalMaterial = material;
+    }
+
     return bullet;
   }
 

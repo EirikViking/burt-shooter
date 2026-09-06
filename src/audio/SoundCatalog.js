@@ -1,4 +1,5 @@
 import { AssetManifest } from '../assets/assetManifest.js';
+import { BOSS_ARSENALS } from '../config/BossArsenal.js';
 import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
 import { GAME_OVER_TAUNT_VOICE_COUNT } from '../config/GameOverTauntVoiceLines.js';
 import { LEVEL_CLEAR_VOICE_COUNT } from '../config/LevelClearVoiceLines.js';
@@ -521,6 +522,7 @@ export const VOICE_EVENT_FALLBACKS = {
 };
 
 export const SFX_CATALOG = {
+    ...Object.fromEntries(Object.keys(BOSS_ARSENALS).map(key => [`boss_arsenal_${key}`, [`/audio/sfx/arsenal/${key}.wav`]])),
     'shoot_small': [
         getSfx('laserSmall_000'), getSfx('laserSmall_001'), getSfx('laserSmall_002'), getSfx('laserSmall_003'), getSfx('laserSmall_004')
     ],

@@ -1,3 +1,5 @@
+import { BOSS_ARSENAL_ENABLED, getBossArsenalDangerColor } from '../config/BossArsenal.js';
+import { drawArsenalField } from '../effects/BossArsenalFields.js';
 import { drawAstraShatterBurst } from '../effects/AstraShatterBurst.js';
 import { drawEnergyGlint } from '../effects/AstraBossEnergy.js';
 import { getReactorMaterials } from '../effects/AstraReactorRupture.js';
@@ -16921,6 +16923,7 @@ export class PlayScene {
       category,
       type,
       attack,
+      arsenalArchetype: BOSS_ARSENAL_ENABLED ? boss.profile?.archetype : null,
       sourceX,
       sourceY,
       startedAt,
@@ -17032,6 +17035,9 @@ export class PlayScene {
   }
 
   getBossHazardVfxPalette(hazard, fallbackColor = 0xfff45c) {
+    if (BOSS_ARSENAL_ENABLED && hazard?.arsenalArchetype) {
+      return { base: getBossArsenalDangerColor(hazard.arsenalArchetype), hot: 0xfff8e8, edge: 0xffd8a5 };
+    }
     if (hazard?.kind === 'beam' || hazard?.type === 'lance' || hazard?.attack === 'sniper') {
       return { base: 0x72fff1, hot: 0xffffff, edge: 0xff4fe4 };
     }
@@ -17058,6 +17064,8 @@ export class PlayScene {
     const t = Math.min(0.98, 0.08 + progress * 0.9);
     if (hazard.kind === 'ring') {
       const r = hazard.innerRadius + (hazard.outerRadius - hazard.innerRadius) * t;
+      layer.moveTo(hazard.sourceX + Math.cos(hazard.safeAngle + hazard.safeWedge) * r,
+        hazard.sourceY + Math.sin(hazard.safeAngle + hazard.safeWedge) * r);
       layer.arc(hazard.sourceX, hazard.sourceY, r,
         hazard.safeAngle + hazard.safeWedge, hazard.safeAngle + Math.PI * 2 - hazard.safeWedge);
       layer.stroke({ color: palette.hot, width: 1.4, alpha: alpha * 0.28 });
@@ -17113,6 +17121,7 @@ export class PlayScene {
         color, progress: armingProgress, active: armed, alpha });
       this.drawBossHazardMuzzleBurst(layer, hazard, palette, alpha, progress);
     }
+    if (BOSS_ARSENAL_ENABLED) drawArsenalField(layer, hazard, progress);
     this.drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress);
     this.drawBossHazardArmingGate(layer, hazard, palette, alpha, armingProgress);
   }
