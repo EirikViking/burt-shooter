@@ -910,10 +910,11 @@ export class MenuScene {
     // Re-entering the menu must release owned filters/geometry, while the asset
     // cache retains shared images. removeChildren alone leaves GPU resources.
     this.astraBackdropRequest = (this.astraBackdropRequest || 0) + 1;
-    for (const key of ['astraMenuLights', 'astraDock', 'astraMenuShip', 'backdropShade', 'backdrop']) {
+    for (const key of ['astraMenuLights', 'astraDock', 'astraMenuShip', 'backdropShade', 'backdrop', 'overrunUnlockCelebration']) {
       this[key]?.destroy?.({children:true,texture:false,textureSource:false});
       this[key] = null;
     }
+    this.overrunUnlockCelebrationVisible = false;
   }
 
   async initBackdrop() {
