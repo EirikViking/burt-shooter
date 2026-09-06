@@ -511,7 +511,7 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_boss_arrival_alarm.mp3',
             '/audio/sfx/nova-swarm/nova_boss_entrance_impact.mp3',
             '/audio/sfx/nova-swarm/nova_boss_charge_lattice.mp3',
-            // Original synthesized boss weapon mechanisms, regenerable locally.
+            // ElevenLabs boss weapon mechanisms; original prompts and receipts in docs/boss-arsenal-audio.
             '/audio/sfx/arsenal/conductor.wav', '/audio/sfx/arsenal/forge.wav',
             '/audio/sfx/arsenal/mirror.wav', '/audio/sfx/arsenal/needle.wav',
             '/audio/sfx/arsenal/vortex.wav', '/audio/sfx/arsenal/jester.wav',

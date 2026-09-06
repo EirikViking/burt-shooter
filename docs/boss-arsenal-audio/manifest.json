@@ -1,0 +1,152 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-09-06T16:38:53.467Z",
+  "planAtGeneration": "creator",
+  "commercialLicenseSource": "https://help.elevenlabs.io/hc/en-us/articles/13313564601361-Can-I-publish-the-content-I-generate-on-the-platform",
+  "license": "Generated on active paid plan; commercial use under ElevenLabs terms. No voice, sample uploads, third-party characters or music.",
+  "cues": [
+    {
+      "name": "conductor",
+      "request": {
+        "text": "A heavy alien weapon mechanism charging with metallic servo movement and rising electrical tension. No voices, music or firing.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.66
+      },
+      "raw": "docs/boss-arsenal-audio/raw/conductor.mp3",
+      "output": "public/audio/sfx/arsenal/conductor.wav",
+      "rawSha256": "cedcbac9b68751202d892ecd71703c7f6dd128ff76c3eecffbfd51b3965e3267",
+      "outputSha256": "e4f91a1c463bed50f742ce0088f0d1160f65ae1337636baf8a322fc3cd204bca",
+      "bytes": 88278
+    },
+    {
+      "name": "forge",
+      "request": {
+        "text": "One-second cinematic sci-fi weapon CHARGE, immediate onset. A colossal industrial starship furnace weapon priming: two massive hydraulic jaws grind open, dense forged metal strain, a compact sub bass pressure surge and hot crackling reactor combustion building inside. Detailed, weighty, tense. No speech, music, firing, beeps or long tail.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.66
+      },
+      "raw": "docs/boss-arsenal-audio/raw/forge.mp3",
+      "output": "public/audio/sfx/arsenal/forge.wav",
+      "rawSha256": "19b31f6787957edb46cb6040b6acc28140c740101d8f403840194007510226c7",
+      "outputSha256": "d5d356d8d859c63fe6098d1f4f9d89d131bce46ee054c6c671032ec681a00f9a",
+      "bytes": 88278
+    },
+    {
+      "name": "mirror",
+      "request": {
+        "text": "One-second cinematic sci-fi weapon CHARGE, immediate onset. An alien prismatic weapon unfolding: sharp layered glass-metal facets sliding apart, intricate refracted electric shivers, an unsettling dimensional resonance tightening toward a charged crystal focus. Detailed, weighty, tense. No speech, music, firing, beeps or long tail.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.66
+      },
+      "raw": "docs/boss-arsenal-audio/raw/mirror.mp3",
+      "output": "public/audio/sfx/arsenal/mirror.wav",
+      "rawSha256": "0db2f6be3885379a3264fa859372723b8f550271fdc5b60200070a6229b3856a",
+      "outputSha256": "60975f42fc9a3b5c157ccdfbf90fdf9870968c81f648705ba0b44077e045a61f",
+      "bytes": 88278
+    },
+    {
+      "name": "needle",
+      "request": {
+        "text": "One-second cinematic sci-fi weapon CHARGE, immediate onset. A lethal precision rail cannon charging: titanium rails lock with a weighty mechanical click, tightly focused rising magnetic induction whine over restrained bass, microscopic high voltage crackle, surgical and menacing. Detailed, weighty, tense. No speech, music, firing, beeps or long tail.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.66
+      },
+      "raw": "docs/boss-arsenal-audio/raw/needle.mp3",
+      "output": "public/audio/sfx/arsenal/needle.wav",
+      "rawSha256": "38294be51ff1900d9145ce547f18eeb40a797b3910af2af545a6309eeb9fe7ab",
+      "outputSha256": "36c3b6a20b29aebaf7b027d8cb2c14f6b2b85b82da8d8e6c6d61a662a9123415",
+      "bytes": 88278
+    },
+    {
+      "name": "vortex",
+      "request": {
+        "text": "One-second cinematic sci-fi weapon CHARGE, immediate onset. A dangerous gravitic turbine spooling up: heavy rotating machinery, warped Doppler suction, a deep spatial groan with fine swirling ion sparks, tension winding inward toward a singularity. Detailed, weighty, tense. No speech, music, firing, beeps or long tail.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.66
+      },
+      "raw": "docs/boss-arsenal-audio/raw/vortex.mp3",
+      "output": "public/audio/sfx/arsenal/vortex.wav",
+      "rawSha256": "6ad16732f79f594f6036c1aac3a30eb58794892ddaff55f32012840d2ea501b3",
+      "outputSha256": "eadb0b9f4354d79d022a83671258971a1f51d61dabbd6696dae1dd36e7cd8a81",
+      "bytes": 88278
+    },
+    {
+      "name": "jester",
+      "request": {
+        "text": "One-second cinematic sci-fi weapon CHARGE, immediate onset. A sinister alien trickster weapon preparing: three asymmetrical sharp metal shutter snaps alternating in direction, short fractured electrical echoes, an unsettling pitch bend and dark low power swell. No cartoon sounds. Detailed, weighty, tense. No speech, music, firing, beeps or long tail.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.66
+      },
+      "raw": "docs/boss-arsenal-audio/raw/jester.mp3",
+      "output": "public/audio/sfx/arsenal/jester.wav",
+      "rawSha256": "7280b21b309936bc978bd059db50702839061c803a0f5738a24fb7d8050d516a",
+      "outputSha256": "37a78262cd433e1e80281d7de4a4f291c876aeee805ff02f209e5094f6b1a458",
+      "bytes": 88278
+    },
+    {
+      "name": "carrier",
+      "request": {
+        "text": "One-second cinematic sci-fi weapon CHARGE, immediate onset. A vast armored drone carrier opening launch bays: four sequential heavy magnetic clamps releasing, intricate hydraulic doors sliding, compressed gas venting and multiple tiny turbine ignitions beneath a low threatening engine tone. Detailed, weighty, tense. No speech, music, firing, beeps or long tail.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.66
+      },
+      "raw": "docs/boss-arsenal-audio/raw/carrier.mp3",
+      "output": "public/audio/sfx/arsenal/carrier.wav",
+      "rawSha256": "816313db5a042a9a7df71b720ecbe0646f8053677bc6173af65ffb69982d2561",
+      "outputSha256": "b85c9f624310f40a4397d8996a9a02ed3c99c027ba907268b59781171d65b38e",
+      "bytes": 88278
+    },
+    {
+      "name": "monolith",
+      "request": {
+        "text": "One-second cinematic sci-fi weapon CHARGE, immediate onset. A towering siege weapon battery arming: several immense tungsten breeches locking in a staggered rhythm, crushing mechanical weight, industrial servo teeth and dense restrained sub bass pressure. Powerful, threatening, clean. Detailed, weighty, tense. No speech, music, firing, beeps or long tail.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.66
+      },
+      "raw": "docs/boss-arsenal-audio/raw/monolith.mp3",
+      "output": "public/audio/sfx/arsenal/monolith.wav",
+      "rawSha256": "c14dc79978edb99b62804491c97e601599c145259bff3307d9d9fd1486100d66",
+      "outputSha256": "146d4ff85c3e7ee0be36da79670f602007483fb6883de25d701f0d87efd5e747",
+      "bytes": 88278
+    },
+    {
+      "name": "choir",
+      "request": {
+        "text": "One-second cinematic sci-fi weapon CHARGE, immediate onset. An alien organ-like energy weapon charging: six resonant metallic emitter tubes locking into place, eerie dissonant electrical overtones tightening into a powerful coherent tone above a dark mechanical rumble. No human choir or music. Detailed, weighty, tense. No speech, music, firing, beeps or long tail.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.66
+      },
+      "raw": "docs/boss-arsenal-audio/raw/choir.mp3",
+      "output": "public/audio/sfx/arsenal/choir.wav",
+      "rawSha256": "59a4f93a276f006a78f3489e5db277dc5db2a0c043dbaf78783d4c01d169e0c0",
+      "outputSha256": "4f16e6d0510946fd8981f96957d44f0bf98a00eb0f7bb6035adefe61e195d56a",
+      "bytes": 88278
+    },
+    {
+      "name": "clock",
+      "request": {
+        "text": "One-second cinematic sci-fi weapon CHARGE, immediate onset. An ancient precision war machine priming: eight exquisitely detailed escapement clicks rapidly locking in sequence, metallic spring tension winding, heavy clockwork gears and a sharp magnetic energy tension. Ominous and intricate. Detailed, weighty, tense. No speech, music, firing, beeps or long tail.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.66
+      },
+      "raw": "docs/boss-arsenal-audio/raw/clock.mp3",
+      "output": "public/audio/sfx/arsenal/clock.wav",
+      "rawSha256": "39afd02729bd43f2f58edd3daa008016121afcd27de54560d375436f141876d1",
+      "outputSha256": "b96379100735f4cbcc573f3aa1763a43ac97fa3ffd32f64fd7e18b8d4fadf456",
+      "bytes": 88278
+    }
+  ],
+  "observedCreditCounterDelta": 0,
+  "billingNote": "Subscription counter snapshot may lag. This delta is not a billing receipt or proof of zero credit cost."
+}
