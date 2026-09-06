@@ -22,7 +22,9 @@ try{
   report.runtime=await page.evaluate(()=>JSON.parse(window.render_game_to_text()).gitSha);
   await page.evaluate(()=>window.__game.scenes.menu.quickStartRun('ranked_tactical'));
   await page.waitForFunction(()=>window.__game?.scenes.play?.player?.active,null,{timeout:120000});
-  await page.evaluate(()=>{const g=window.__game,p=g.scenes.play;g.markUnrankedRun('boss_drama_qa');p.introActive=false;p.introComplete=true;p.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;p.setPaused(false);p.clearPendingEnemyStart();p.enemyManager.forceBossStart(1);});
+  await page.evaluate(()=>{const g=window.__game,p=g.scenes.play;g.markUnrankedRun('boss_drama_qa');p.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;p.setPaused(false);p.player.invulnerable=true;p.player.invulnerableTime=1e9;});
+  await page.waitForFunction(()=>window.__game.scenes.play.enemyManager?.state==='WAVE_ACTIVE',null,{timeout:120000});
+  await page.evaluate(()=>{const p=window.__game.scenes.play;p.clearPendingEnemyStart();p.enemyManager.forceBossStart(1);});
  }else await page.goto(url.href,{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.__game?.scenes?.play?.enemyManager?.boss,null,{timeout:120000});
  await page.waitForTimeout(2000);
