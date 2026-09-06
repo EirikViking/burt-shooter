@@ -7760,12 +7760,11 @@ export class MenuScene {
     const animationToken = (element._introAnimationToken || 0) + 1;
     element._introAnimationToken = animationToken;
     const startTime = Date.now() + delay * 1000;
-    const targetY = Number.isFinite(element._layoutY) ? element._layoutY : element.y;
-    const offsetY = 20;
-    element.y = targetY + offsetY;
+    // Layout owns position: a delayed entrance must not restore coordinates
+    // captured before a font finishes loading or the native window resizes.
 
     const animate = () => {
-      if (element._introAnimationToken !== animationToken) return;
+      if (element.destroyed || element._introAnimationToken !== animationToken) return;
       const now = Date.now();
       if (now < startTime) {
         requestAnimationFrame(animate);
@@ -7776,7 +7775,6 @@ export class MenuScene {
       const eased = this.easeOutCubic(progress);
 
       element.alpha = eased;
-      element.y = targetY + offsetY * (1 - eased);
 
       if (progress < 1) {
         requestAnimationFrame(animate);
