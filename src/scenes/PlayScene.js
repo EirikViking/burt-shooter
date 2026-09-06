@@ -17094,7 +17094,12 @@ export class PlayScene {
     const layer = this.bossHazardLayer;
     if (!layer) return;
     this.bossHazardLayerHasGeometry = true;
-    if (hazard.colossus) { drawColossusAssault(layer, hazard); return; }
+    if (hazard.colossus) {
+      drawColossusAssault(layer, hazard);
+      const armingProgress=Math.min(1,(hazard.elapsedMs||0)/Math.max(1,hazard.armingMs||0));
+      this.drawBossHazardArmingGate(layer,hazard,this.getBossHazardVfxPalette(hazard,hazard.color),.85,armingProgress);
+      return;
+    }
     const alpha = Math.max(0, Math.min(1, (1 - progress) * 4)) * 0.85;
     const palette = this.getBossHazardVfxPalette(hazard, hazard.color || 0xfff45c);
     const armingMs = Math.max(0, Number(hazard.armingMs) || 0);

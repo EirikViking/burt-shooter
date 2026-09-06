@@ -8,7 +8,11 @@
     "monolith": "4adea0ca-4cc1-4a1f-8df5-e0a7df04e34d",
     "choir": "d8d263ae-0251-41f0-825f-48ccce7b6c81",
     "clock": "cda20fa7-c849-4b72-a857-6c80adf4434b",
-    "plasma": "edf16dac-d59f-4a61-a26a-04c3b00c248e"
+    "plasma": "edf16dac-d59f-4a61-a26a-04c3b00c248e",
+    "needle": "44b882cb-51ce-4dd4-beb5-09cb3dd3552b",
+    "conductor": "d2779603-54aa-496b-a8fb-e7a873531cb5",
+    "forge": "27789974-e9c5-43e8-911f-156b8a7d08b2",
+    "mirror": "2b34e01b-9a72-4ca4-895d-95edba801b5c"
   },
   "prompts": {
     "vortex": "Production-ready SINGLE 2D boss game sprite on genuinely TRANSPARENT background. a terrifying emerald-black TURBINE ORGANISM spaceship. SIX enormous curved scythe arms spiral around a dense round armored reactor, creating a swirling pinwheel silhouette, radial symmetry, large negative spaces BETWEEN the hooked arms. Burnished dark green metallic blades with glowing acid green recessed machinery and copper rings built INTO the mechanical reactor. Short wide circular rotor craft, no forked nose, no two side hulls, no cockpit head. Central mechanical reactor occupies center. Ortho TOP DOWN. Complete object centered with 8% transparent margin. Extremely high quality physically shaded hard surface CGI, convincing mass, strongly sculpted broad readable armor plates, deep shadowed recesses with readable midtones, tiny bolts and conduits supporting strong large forms. Warm shaped key light from upper left, silver edge highlights. AAA RTS game unit rendering at 1024x1024. Threatening imposing villain machine. Full orthographic top view, no scenery, no background, no ground shadow, no interface, no text, no diagram or decorative circles outside ship. Actual final game asset, not concept sheet. Unique silhouette must be readable at 300px.",
@@ -18,5 +22,53 @@
     "choir": "A production-ready 2D game sprite PNG with genuinely TRANSPARENT alpha background. ONE single boss spacecraft: a tall narrow alien CATHEDRAL WARSHIP: SIX tall slender ribbed organ pipes of different lengths arranged in rising stepped banks on each side of a long ornate vertical central spine. A Gothic science-fiction weapon array, pointed blade pinnacles, antiqued silver and dark teal armor, amber glowing resonator throats, enclosed dense main reactor. Silhouette like a tall pointed cathedral with swept side buttresses. Pipes terminate in downward firing nozzles. TOP DOWN orthographic spaceship, not an actual building. Exceptional physically shaded hard surface CGI craftsmanship, very strongly readable broad shapes with fine panel bevels, inset turbines and machinery, complex deep layering. Warm upper-left key light, controlled silver highlights, rich midtones, restrained hot glowing seams. AAA RTS game unit render, scary and massive. Full object centered with generous 8% transparent margins on a square1024 canvas. Entire background must be invisible alpha=0, no black/gray backdrop, no floor or scenery. No typography, no labels, no HUD, no diagram, no halo circles outside the ship. Actual game sprite, not concept art.",
     "clock": "A production-ready 2D game sprite PNG with genuinely TRANSPARENT alpha background. ONE single boss spacecraft: a terrifying brass-and-obsidian CLOCKWORK STAR BOSS. EIGHT enormous straight interlocking radial weapon spokes form an eight-pointed angular star around a solid elaborate central armored octagonal engine. Layered bronze gearing, mechanical escapement teeth, black steel recesses, glowing amber timing nodes built INTO the hull. Broad radial symmetrical silhouette, straight segmented limbs, no curved pinwheel scythes. Full orthographic TOP DOWN spacecraft. Exceptional physically shaded hard surface CGI craftsmanship, very strongly readable broad shapes with fine panel bevels, inset turbines and machinery, complex deep layering. Warm upper-left key light, controlled silver highlights, rich midtones, restrained hot glowing seams. AAA RTS game unit render, scary and massive. Full object centered with generous 8% transparent margins on a square1024 canvas. Entire background must be invisible alpha=0, no black/gray backdrop, no floor or scenery. No typography, no labels, no HUD, no diagram, no halo circles outside the ship. Actual game sprite, not concept art.",
     "plasma": "A production game VFX texture: ONE horizontal elongated molten PLASMA ENERGY TORPEDO, travels LEFT to RIGHT, on a genuinely transparent alpha background. Wide 4:1 composition. A fiercely bright ivory-white leading shock front on the RIGHT tapering into dense branching amber-gold plasma streams and hot turbulent filaments toward LEFT. Thick volumetric fiery energy body, black negative-space fissures inside, complex curls and shredded vapor detail. Cinematic fusion plasma, highly detailed physical fluid simulation look. No circles or rings, no lens flare, no extra floating debris, no text, no scenery, NO black backdrop or gradient background. Isolated transparent PNG sprite, important: only the plasma should be opaque. A rich turbulent texture usable stretched along a beam in a 2D space shooter. Entire effect contained inside image with generous transparent margin."
-  }
+  },
+  "sourceDirectory": "C:/Users/cromk/.codex/generated_images/01a06e4b-7ace-7b30-abec-8c1e1ad791f3",
+  "productionFiles": {
+    "carrier.png": {
+      "sha256": "f79449e2aff07368c5560e8f027fadfb23592c6bc7a2e82598c1282fe847f8cc",
+      "bytes": 2844608
+    },
+    "choir.png": {
+      "sha256": "74cd72dd7b95b0ff65d8eca161a34a40f7834393453215770548ffe24b5d7525",
+      "bytes": 1111069
+    },
+    "clock.png": {
+      "sha256": "02dafd5022fbc265cdff523e0f9aed6ced2a8926218199bb2a19bda0408244b6",
+      "bytes": 1741243
+    },
+    "conductor.png": {
+      "sha256": "de5f65e42b16ccd63e1852a1632d6a607f4ba8cba9e31f9bf129e4cf39c41147",
+      "bytes": 2128990
+    },
+    "forge.png": {
+      "sha256": "dd87bd79eb1ea921636099b71fe796e5cd82ee18ef28f1b19fbd3fe56a9dc042",
+      "bytes": 2176672
+    },
+    "jester.png": {
+      "sha256": "bdd6b0ff1e38b51dd5408cd10dc93d33fa721badcfb3b91e7f69f12d6d3067b6",
+      "bytes": 1338058
+    },
+    "mirror.png": {
+      "sha256": "d25dd876a0743e2a69905ca94fdb9084231de3e6dc2da91b36ca78964bfd272b",
+      "bytes": 2027798
+    },
+    "monolith.png": {
+      "sha256": "8e573e607632ce63d10d24c1d451b0536a9b3ebef8b995e674a5f2321d1fd168",
+      "bytes": 2531801
+    },
+    "needle.png": {
+      "sha256": "8c99464d4066327afc281d98e6047dc3294d367ffe63c1487898cc624ed31669",
+      "bytes": 1923797
+    },
+    "plasma.png": {
+      "sha256": "c41064d1d123966720b162ffcbb1dad38e5287f790a1db84b3193fd381ad6407",
+      "bytes": 2407748
+    },
+    "vortex.png": {
+      "sha256": "06fce30ca0f88529a5765a001d8f2c2ce624123bf4ad119af4f47431fb789bbd",
+      "bytes": 2246889
+    }
+  },
+  "firstFourPromptNote": "The first four exact generation prompts are in the task tool history; not reconstructed as exact prompts here. Needle: ivory/navy twin rail jaws; Conductor: ivory/burgundy six-cannon crown; Forge: orange furnace claws; Mirror: silver/purple prism wings. All were requested as transparent orthographic production sprites with physically shaded armor."
 }
