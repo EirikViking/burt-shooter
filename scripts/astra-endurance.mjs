@@ -3,9 +3,13 @@ import {mkdirSync,readFileSync,writeFileSync,createWriteStream} from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 const label=process.argv[2]||'candidate',seconds=Number(process.argv[3]||1200);
+const startSector=Number(process.env.ASTRA_ENDURANCE_SECTOR||1);
+assert.ok(Number.isInteger(startSector)&&startSector>=1&&startSector<=240);
 const executable=process.argv[4]||JSON.parse(readFileSync('test-results/astra-build-location.json')).executable;
 const out=path.resolve(`test-results/astra-endurance-${label}`);mkdirSync(out,{recursive:true});
 const report={executable,seconds,qaInvulnerability:true,normalSpeed:true,isolatedProfile:true,samples:[],errors:[],note:'Stability soak with ordinary keyboard firing; invulnerability solely keeps the QA pilot alive. Not marketing footage or proof of player enjoyment.'};
+report.startSector=startSector;
+if(startSector>1)report.note+=' Late-sector state is staged, not accumulated through a complete run; this cannot exclude an earlier accumulation-dependent crash.';
 const flush=()=>writeFileSync(`${out}/report.json`,JSON.stringify(report,null,2));
 const app=await electron.launch({executablePath:executable,args:['--nova-fresh-profile','--windowed','--disable-backgrounding-occluded-windows','--disable-renderer-backgrounding','--disable-features=CalculateNativeWinOcclusion'],env:{...process.env,NOVA_SWARM_USER_DATA_DIR:`${out}/profile`,NOVA_SWARM_FRESH_PROFILE:'1',NOVA_SWARM_WINDOWED:'1'},timeout:120000});
 const log=createWriteStream(`${out}/process.log`);app.process().stdout?.pipe(log,{end:false});app.process().stderr?.pipe(log,{end:false});
@@ -16,16 +20,17 @@ try{
  await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setFullScreen(false);w.setContentSize(1280,720);w.webContents.setBackgroundThrottling(false);w.showInactive();});
  await page.evaluate(()=>window.__game.scenes.menu.quickStartRun());
  await page.waitForFunction(()=>window.__game.scenes.play?.player?.shipSprite?.texture,null,{timeout:120000});
- await page.evaluate(()=>{
+ await page.evaluate(startSector=>{
   const g=window.__game,p=g.scenes.play,mode=g.runMode;
   // Retain Pure's mechanics. The generic unranked mode enables Tactical drafts;
   // retain only its debug policy (no submissions/rewards), then restore Pure.
   g.markUnrankedRun('astra_endurance');g.runMode=mode;
+  if(startSector>1){p.clearPendingEnemyStart();g.level=startSector;p.startLevel('astra_endurance_late');}
   p.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;if(p.isPaused)p.setPaused(false);
   p.player.invulnerable=true;p.player.invulnerableTime=1e9;
   window.__endurance={frames:0,last:performance.now(),gaps:[]};
   function tick(now){const q=window.__endurance;q.frames++;q.gaps.push(now-q.last);q.last=now;if(q.gaps.length>7200)q.gaps.shift();requestAnimationFrame(tick);}requestAnimationFrame(tick);
- });
+ },startSector);
  const started=Date.now();let held=null,nextSample=0,lastFrames=-1;
  await page.keyboard.down('Space');
  while(Date.now()-started<seconds*1000){
