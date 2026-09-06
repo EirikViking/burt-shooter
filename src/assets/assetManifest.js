@@ -12,7 +12,7 @@ import { CABINET_WONDER_DEFINITIONS } from '../config/CabinetWonderLore.js';
 export const AssetManifest = {
     generated: {
         astraThreatCounts: { elites: 50, supports: 111, late: 177 },
-        fleetV5Count: 96,
+        fleetV5Count: 227,
         bonusDrones: Array.from({ length: 12 }, (_, i) => `/art/astra/drone-v5/${String(i + 1).padStart(2, '0')}.png`),
         bossPresentation: Array.from({ length: 50 }, (_, i) => `/art/astra/boss/${String(i + 1).padStart(2, '0')}.png`),
         playerPresentation: Array.from({ length: 30 }, (_, i) => `/art/astra/player/${String(i + 1).padStart(2, '0')}.png`),
@@ -82,7 +82,7 @@ export const AssetManifest = {
         ],
         enemies: [
             ...Array.from({ length: 50 }, (_, i) => `/art/astra/fleet-v5/${String(i + 1).padStart(3, '0')}.png`),
-            ...Array.from({ length: 177 }, (_, i) => i < 46 ? `/art/astra/fleet-v5/${String(i + 51).padStart(3, '0')}.png` : `/art/generated/nova-swarm/enemies/late-mayhem/nova-late-mayhem-enemy-${String(i + 1).padStart(3, '0')}.png`)
+            ...Array.from({ length: 177 }, (_, i) => `/art/astra/fleet-v5/${String(i + 51).padStart(3, '0')}.png`)
         ],
         eliteMiddleShips: [
             '/art/generated/nova-swarm/elites/nova-elite-middle-01-tractor-puller-20260523.png',

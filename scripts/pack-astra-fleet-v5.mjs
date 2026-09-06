@@ -19,13 +19,23 @@ async function cells(file){
  for(let row=0;row<3;row++)for(let col=0;col<4;col++){
   const rows=new Uint32Array(info.height);for(let y=0;y<info.height;y++)for(let x=xs[col];x<xs[col+1];x++)if(data[(y*info.width+x)*4+3]>32)rows[y]++;
   const ys=[0,...[1,2].map(n=>divide(rows,info.height*n/3,info.height*.045)),info.height];
-  const crop=await sharp(file).extract({left:xs[col],top:ys[row],width:xs[col+1]-xs[col],height:ys[row+1]-ys[row]}).png().toBuffer();
+  const extracted=await sharp(file).extract({left:xs[col],top:ys[row],width:xs[col+1]-xs[col],height:ys[row+1]-ys[row]}).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  // Faint generation haze must not determine the hull's registration envelope.
+  // Preserve the untouched sheet; downsampling restores antialiased edge pixels.
+  for(let p=3;p<extracted.data.length;p+=4)if(extracted.data[p]<24)extracted.data[p]=0;
+  const crop=await sharp(extracted.data,{raw:extracted.info}).png().toBuffer();
   result.push(await sharp(crop).extract((await bounds(crop)).box).png().toBuffer());
  }
  return result;
 }
 const fleet=[];
 for(let n=1;existsSync(`${root}/source/fleet-${String(n).padStart(2,'0')}.png`);n++)fleet.push(...await cells(`${root}/source/fleet-${String(n).padStart(2,'0')}.png`));
+// Art-directed normalization after inspecting the complete sheets. The two
+// broadside craft face upward; replace the disconnected pontoon concept with
+// the explicitly connected alternative from the final sheet.
+if(fleet[159])fleet[159]=await sharp(fleet[159]).rotate(90).png().toBuffer();
+if(fleet[185])fleet[185]=await sharp(fleet[185]).rotate(-90).png().toBuffer();
+if(fleet[227])fleet[188]=fleet[227];
 for(let i=0;i<Math.min(227,fleet.length);i++){
  const id=String(i+1).padStart(3,'0');await writeFile(`${root}/cells/${id}.png`,fleet[i]);
  const old=i<50?`public/art/astra/enemy/${String(i+1).padStart(2,'0')}.png`:`public/art/astra/late/${String(i-49).padStart(3,'0')}.png`;

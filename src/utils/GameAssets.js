@@ -23,9 +23,9 @@ class GameAssetsManager {
 
     getCodexPresentationSource(entry) {
         const source = entry?.art;
-        if (source?.includes('/fleet-v5/')) return source.replace('/astra/fleet-v5/', '/astra/dossier/fleet-v5/').replace('.png', '.webp');
         const support = /^boss_support_ship_(\d+)$/.exec(entry?.id || '');
         if (support && Number(support[1]) <= AssetManifest.generated.astraThreatCounts.supports) return `/art/astra/dossier/supports/${support[1]}.webp`;
+        if (source?.includes('/fleet-v5/')) return source.replace('/astra/fleet-v5/', '/astra/dossier/fleet-v5/').replace('.png', '.webp');
         const elite = AssetManifest.generated.eliteMiddleShips.indexOf(source);
         if (elite >= 0 && elite < AssetManifest.generated.astraThreatCounts.elites) return `/art/astra/dossier/elites/${String(elite + 1).padStart(3, '0')}.webp`;
         const enemy = AssetManifest.generated.enemies.indexOf(source);

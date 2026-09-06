@@ -2415,6 +2415,7 @@ export class Boss {
     const r = Math.max(14, radius * (options.scale || 1) * 0.71);
     for (let i = 0; i < 4; i += 1) {
       const a = Math.PI * (0.25 + i * 0.5);
+      layer.moveTo(originX + Math.cos(a - 0.09) * r, originY + Math.sin(a - 0.09) * r);
       layer.arc(originX, originY, r, a - 0.09, a + 0.09);
       layer.stroke({ color: palette.edge, width: 2, alpha: 0.16 + charge * 0.32 });
     }
@@ -2458,17 +2459,20 @@ export class Boss {
     const radius = Math.max(82, visualRadius * 1.34);
     const start = -Math.PI / 2;
     const sweep = Math.PI * charge;
-    const timerColor = charge >= 0.86 ? 0xffffff : 0xfff45c;
+    const timerColor = charge >= 0.86 ? 0xffffff : 0xffc16b;
 
     layer.circle(0, 0, radius);
-    layer.stroke({ color: 0x05070c, width: 13, alpha: 0.84 });
+    layer.stroke({ color: 0x05070c, width: 8, alpha: 0.72 });
     layer.circle(0, 0, radius);
-    layer.stroke({ color: 0xffffff, width: 2, alpha: 0.42 });
+    layer.stroke({ color: 0xffffff, width: 1, alpha: 0.28 });
 
     if (sweep > 0.001) {
+      // Separate paths prevent Pixi connecting the two sweeps across the hull.
+      layer.moveTo(Math.cos(start) * radius, Math.sin(start) * radius);
       layer.arc(0, 0, radius, start, start + sweep);
+      layer.moveTo(Math.cos(start) * radius, Math.sin(start) * radius);
       layer.arc(0, 0, radius, start, start - sweep, true);
-      layer.stroke({ color: timerColor, width: 8, alpha: 0.96 });
+      layer.stroke({ color: timerColor, width: 4, alpha: 0.94 });
     }
 
     for (const angle of [start, Math.PI / 2]) {

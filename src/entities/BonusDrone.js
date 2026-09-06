@@ -180,6 +180,7 @@ export class BonusDrone {
         // gold collectible from the compact red shoot-target cue.
         for (let side = 0; side < 2; side++) {
             const a = side * Math.PI + (isPowerup ? 0.3 : 1.05);
+            this.intentHalo.moveTo(Math.cos(a) * radius, Math.sin(a) * radius);
             this.intentHalo.arc(0, 0, radius, a, a + (isPowerup ? 0.8 : 0.35));
             this.intentHalo.stroke({ color: primary, width: isPowerup ? 2 : 1.4, alpha: alpha * 0.75 });
         }

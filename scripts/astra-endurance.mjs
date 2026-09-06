@@ -29,7 +29,7 @@ try{
  const started=Date.now();let held=null,nextSample=0,lastFrames=-1;
  await page.keyboard.down('Space');
  while(Date.now()-started<seconds*1000){
-  const state=await page.evaluate(()=>{const g=window.__game,p=g.scenes.play,b=p.enemyManager.boss;return {x:p.player.x,width:g.getWidth(),target:b?.active?b.x:null,dead:p.player.lives<=0,paused:p.isPaused,mode:g.runMode,submission:g.isScoreSubmissionAllowed()};});
+  const state=await page.evaluate(()=>{const g=window.__game,p=g.scenes.play,b=p.enemyManager.boss;return {x:p.player.x,width:g.getWidth(),target:b?.active?b.x:null,dead:g.lives<=0,paused:p.isPaused,mode:g.runMode,submission:g.isScoreSubmissionAllowed()};});
   assert.equal(state.mode,'ranked');assert.equal(state.submission,false);
   assert.ok(!state.dead&&!state.paused,'Pure run must keep advancing');
   const elapsed=(Date.now()-started)/1000,target=state.target??(state.width*(.5+.31*Math.sin(elapsed*.28))),key=Math.abs(target-state.x)<24?null:target<state.x?'ArrowLeft':'ArrowRight';

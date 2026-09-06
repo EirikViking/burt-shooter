@@ -1,7 +1,7 @@
 import {chromium} from 'playwright';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
-const out='test-results/astra-v5-slice';mkdirSync(out,{recursive:true});
+const out=`test-results/astra-v5-slice${process.argv[2]?'-'+process.argv[2]:''}`;mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
 const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
@@ -11,13 +11,15 @@ try {
  await page.goto('http://127.0.0.1:4399/?offlineLeaderboard=1');
  await page.waitForFunction(()=>window.__game?.scenes?.menu?.astraMenuShip?.ready,null,{timeout:120000});
  await shot('01-menu');
- await page.evaluate(async()=>{
-  const {writeThreatDiscoveryState}=await import('/src/progression/ThreatDiscoveryState.js');
-  const {getThreatCodexCatalog}=await import('/src/config/ThreatCodexCatalog.js');
-  const items={};for(const [cat,list]of Object.entries(getThreatCodexCatalog())){if(!Array.isArray(list))continue;items[cat]={};for(const e of list)items[cat][e.id]={timesSeen:5,timesDefeated:2,discoveredAt:Date.now(),lastSeenAt:Date.now(),unread:false};}
-  writeThreatDiscoveryState({version:1,items});window.__game.showThreatCodex();
+ await page.evaluate(()=>{
+  window.__game.showThreatCodex();
+  const items={};for(const [cat,list]of Object.entries(window.__game.scenes.threatCodex.catalog)){if(!Array.isArray(list))continue;items[cat]={};for(const e of list)items[cat][e.id]={timesSeen:5,timesDefeated:2,discoveredAt:Date.now(),lastSeenAt:Date.now(),unread:false};}
+  localStorage.setItem('nova.threatDiscovery.v1',JSON.stringify({version:1,items}));
  });
- for(const [id,name]of [['nova_enemy_001','02-interceptor'],['nova_enemy_002','03-crab'],['nova_enemy_009','04-lance'],['pilot_rank_00','05-rank-cadet'],['pilot_rank_19','06-rank-veteran'],['pilot_rank_39','07-rank-legend']]){
+ await page.reload();await page.waitForFunction(()=>window.__game?.scenes?.menu?.astraMenuShip?.ready,null,{timeout:120000});
+ await page.evaluate(()=>window.__game.showThreatCodex());
+ assert.ok(await page.evaluate(()=>Object.keys(window.__game.scenes.threatCodex.discoveryState.items.enemies).length>2000),'Fully discovered isolated Codex profile');
+ for(const [id,name]of [['nova_enemy_001','02-interceptor'],['nova_enemy_002','03-crab'],['nova_enemy_009','04-lance'],['pilot_rank_00','05-rank-cadet'],['pilot_rank_19','06-rank-veteran'],['pilot_rank_39','07-rank-legend'],['boss_support_ship_040','10-support-bandage-rig'],['nova_enemy_1778','11-late-hull']]){
   const found=await page.evaluate(id=>{const c=window.__game.scenes.threatCodex;c.categoryIndex=id.startsWith('pilot_')?11:0;c.entryIndex=c.getEntriesForCategory().findIndex(e=>e.id===id);c.init();return c.entryIndex>=0;},id);assert.ok(found,id);await shot(name);
  }
  await page.evaluate(()=>{const g=window.__game;g.switchScene('menu');g.startGame(g.selectedShipSpriteKey);});

@@ -71,6 +71,7 @@ export function drawAstraWarningSector(g,{x=0,y=0,angle,length,spread,color=0xff
     g.moveTo(x,y).lineTo(ex,ey).stroke({color:0x090e18,width:3.5,alpha:alpha*.6});
     g.moveTo(x,y).lineTo(ex,ey).stroke({color,width:1.3,alpha:alpha*(.45+progress*.35)});
   }
+  g.moveTo(x+Math.cos(angle-half)*length,y+Math.sin(angle-half)*length);
   g.arc(x,y,length,angle-half,angle+half).stroke({color,width:1.1,alpha:alpha*.35});
 }
 
@@ -83,12 +84,15 @@ export function drawAstraWarningRing(g,{x=0,y=0,inner,outer,color=0xff715c,
   for(let i=steps;i>=0;i--){const a=start+(end-start)*i/steps;points.push(x+Math.cos(a)*inner,y+Math.sin(a)*inner);}
   g.poly(points).fill({color,alpha:alpha*(active?.13:.055)});
   for(const r of [inner,outer]) {
+    g.moveTo(x+Math.cos(start)*r,y+Math.sin(start)*r);
     g.arc(x,y,r,start,end).stroke({color:0x070d17,width:5,alpha:alpha*.55});
+    g.moveTo(x+Math.cos(start)*r,y+Math.sin(start)*r);
     g.arc(x,y,r,start,end).stroke({color,width:active?2.4:1.5,alpha:alpha*(.5+progress*.3)});
   }
   const phase=getReducedMotionEnabled()?0:(Date.now()*.00013)%1;
   for(let i=0;i<12;i++) {
     const a=start+(end-start)*(i+.3)/12,r=inner+(outer-inner)*(.18+((phase+i*.19)%1)*.64);
+    g.moveTo(x+Math.cos(a)*r,y+Math.sin(a)*r);
     g.arc(x,y,r,a,a+Math.min(.08,(end-start)/48)).stroke({color:0xffe5c4,width:2,alpha:alpha*.34});
   }
   if(safeWedge>0)for(const a of [start,end]) {
