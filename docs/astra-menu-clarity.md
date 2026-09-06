@@ -29,7 +29,36 @@ The existing original geometry and materials are reused. No new third-party art,
 - All-eight-language `check:i18n-ui` passes with no errors or English leaks; `check:i18n`, Steam bridge, isolated Cloud save and debug-unranked safeguards pass.
 - Installed develop-web-game skill client executed: `test-results/astra-menu-hd-skill`. Visual inspection uses compositor captures, not its black raw-Pixi-canvas image.
 - All 2,160 images pass dimensions/alpha/completeness checks. Added disk assets: 256,360,764 bytes (244.5 MiB); only the active view is decoded at full resolution.
-- Windows package, candidate native performance and Steam receipt pending.
+- `build:current`, release-line and separate Windows packaging pass. Existing large-JavaScript-chunk warning remains.
+- Packaged all-ship test passes: 30 saved ship selections, three fixed angles plus real mouse dragging per ship, texture release on exit, and delayed-load navigation/re-entry. No runtime errors. Evidence: `test-results/astra-menu-hd-packaged-all-ships`.
+- Native keyboard/gamepad launch, movement, shooting and pause checks pass: `test-results/astra-native-menu-clarity-control-smoke/report.json`, embedded source `7caef35`. Browser controller-only flow also passes.
+- Source and native visual captures were inspected. Native before/after for the same ship and angle: [before](../test-results/astra-menu-hd-baseline/ship-3-frame-18.png), [after](../test-results/astra-menu-hd-packaged-performance/ship-3-frame-18.png). Ambient bobbing differs slightly between captures.
+
+### Native 1920×1080 menu performance
+
+Same ship, isolated fresh profiles, same scripted selection/rotation sequence; 10-second settled-menu samples after Blender finished. These are short measurements, not a universal stutter guarantee.
+
+| Measurement | Baseline | Patch |
+|---|---:|---:|
+| Frames sampled | 600 | 600 |
+| p95 frame time | 16.9 ms | 16.9 ms |
+| p99 frame time | 17.0 ms | 17.1 ms |
+| Maximum frame time | 33.5 ms | 17.4 ms |
+| Retained JS heap after GC | 36.70 MiB | 36.37 MiB |
+| Additional full-detail RGBA view | 0 | 4 MiB |
+
+Raw reports: `test-results/astra-menu-hd-baseline-performance/report.json` and `test-results/astra-menu-hd-packaged-performance/report.json`. Combat code is untouched; native combat/control smoke passes. Dense-combat performance was not rebenchmarked for this menu-only patch.
+
+## Build and launch
+
+- Runtime/source checkpoint: `7caef35cd9f42d140ff3b14b9862e80ea929d39a`.
+- Windows executable: `D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\test-results\astra-build-2026-09-06T09-55-46-913Z\win-unpacked\Nova Swarm.exe`.
+- Isolated local launch: double-click `Nova Swarm - Visual Upgrade` on the Desktop, or `Play Nova Swarm.vbs` in that build's parent folder. Logs use file handles to avoid the previous broken-pipe dialogs. The isolated profile does not call live Cloud, achievements or leaderboards.
+- Steam upload completed: **BuildID 25150873**, depot `4765071`, manifest `6050223532267578627`. Fresh Steam app-info confirms `sector-continue-test` points to it. Payload source/ASAR SHA-256: `A8FCAC21CE4587C9F95328F230F20B05B49F7A924A28ABFE457981A254FFD851`; 410 payload files, 1,626,653,859 bytes. Receipt folder: `test-results/astra-steam-menu-clarity-20260906-120539`.
+- The upload VDF sets only `sector-continue-test`. Pre-upload public was `25150290`; the post-upload Steam snapshot also shows public `25150873`, with a public update timestamp 38 seconds after the test-branch update. This task did not issue a public-branch promotion or rollback; the actor responsible for that later update is not established here. No store-page, language, Cloud or leaderboard configuration changes or Git push were performed.
+- The updated desktop shortcut launches the tested executable with `isolated-play-profile`; process `14692` was verified responding with the correct executable path. Prior packages and the previous shortcut backup remain intact.
+
+Changed runtime files are `src/ui/AstraTurntable.js` and the single constructor option in `src/scenes/MenuScene.js`. Supporting changes: the existing Blender script, menu-view packing script, focused runtime/asset checks, this report and progress notes, and the original rendered menu images. No player-facing text was added or changed; no untranslated text remains from this patch.
 
 The existing first-run retention test limitation described in `docs/astra-v6-delivery.md` is outside this visual-only patch. No broader bug fix or universal stutter guarantee is claimed.
 

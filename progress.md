@@ -3186,3 +3186,5 @@ Original request: continue improving the current non-Unity game and choose three
 - 2026-09-06 Astra V6 continuation: menu idle rotation/service craft removal, Overrun coronation art/audio, and subtle first-flight starter cues; see docs/astra-visual-progress.md and docs/astra-v6-models/README.md for active provenance and QA.
 
 - 2026-09-06 narrow menu blur fix: baseline 46437f6, existing experimental branch. Full-size menu views with bounded ownership; see docs/astra-visual-progress.md. No unrelated redesign.
+
+- Menu clarity hotfix complete: 7caef35 runtime, Steam 25150873 verified, all-ship/native checks pass. Full receipt and public-branch observation in docs/astra-menu-clarity.md.

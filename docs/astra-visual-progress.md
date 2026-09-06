@@ -115,3 +115,6 @@ Original prompt: Transform Nova Swarm's actual PixiJS/Electron/Vite presentation
 - Clean starting branch codex/astra-visual-overhaul at 46437f61cf96ade578803937fc01fc817d502dc5. Fetch/status/worktree verified. Current Steam public and sector-continue-test both 25150290; preserve public.
 - Root cause: selected ships use 384px rotation frames at roughly 1080px display size. Separate registered 1024px menu views from 1280px Blender renders; stream only the settled angle and release it on menu exit. No new art, text, gameplay, saves, or platform changes.
 - Rendering and focused native before/after QA in progress; no patch upload yet.
+
+- Menu clarity complete: runtime 7caef35; all 30 ships/2160 assets checked; packaged selection/rotation/lifecycle, controls, i18n and release checks pass. Native 1080p menu p95 16.9 ms before/after, one 4 MiB detail view. Build test-results/astra-build-2026-09-06T09-55-46-913Z.
+- Steam BuildID 25150873 / manifest 6050223532267578627 uploaded with SetLive sector-continue-test. Fresh server info also shows public advanced 38 seconds later; no public promotion was issued by this task. See docs/astra-menu-clarity.md for receipts, limits and rollback. Updated desktop shortcut; isolated game left open.
