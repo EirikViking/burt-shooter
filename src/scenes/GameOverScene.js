@@ -5201,7 +5201,10 @@ export class GameOverScene {
     const labelSize = layout.isMobile ? 13 : 15;
     const bodySize = layout.isMobile ? 14 : 17;
     const adviceText = visible ? this.getCounterAdviceText() : '';
-    const labelText = translateText(firstFlight ? 'NEXT TRY' : 'COUNTER ADVICE: LAST DEATH').toLocaleUpperCase();
+    const damage = this.getDeathCoachAdvice();
+    const labelText = [translateText(firstFlight ? 'NEXT TRY' : 'COUNTER ADVICE: LAST DEATH'),
+      damage?.source && damage.source !== 'unknown' ? damage.label : '']
+      .filter(Boolean).join(' · ').toLocaleUpperCase();
 
     this.counterAdviceLabel.text = labelText;
     this.counterAdviceLabel.style.fontSize = labelSize;
@@ -5217,6 +5220,7 @@ export class GameOverScene {
     this.counterAdviceBody.y = padTop + labelSize + (layout.isMobile ? 4 : 5);
 
     this.counterAdviceLabel.updateText?.(false);
+    fitDisplayToBox(this.counterAdviceLabel, cardWidth - padX * 2, labelSize + 3, { minScale: 0.65 });
     this.counterAdviceBody.updateText?.(false);
     const bodyHeight = adviceText ? (this.counterAdviceBody.height || bodySize) : 0;
     const cardHeight = visible

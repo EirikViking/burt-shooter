@@ -1067,6 +1067,21 @@ export class Player {
     const color = lowLife ? 0xff55d9 : this.focusDriftActive ? 0xffef7e : 0x66f7ff;
 
     this.focusRing.clear();
+    if (this.game?.level >= 1 && this.game.level <= 3 && !this.isDodging && !this.invulnerable) {
+      // Locator brackets leave the hull and exact collision reticle open.
+      for (const side of [-1, 1]) {
+        const x = side * radius * .84;
+        this.focusRing.moveTo(x - side * 6, -9).lineTo(x, -9).lineTo(x, 9).lineTo(x - side * 6, 9);
+      }
+      this.focusRing.stroke({ color: 0x03101a, width: 4, alpha: .9 });
+      for (const side of [-1, 1]) {
+        const x = side * radius * .84;
+        this.focusRing.moveTo(x - side * 6, -9).lineTo(x, -9).lineTo(x, 9).lineTo(x - side * 6, 9);
+      }
+      this.focusRing.stroke({ color, width: 1.6, alpha: Math.max(.65, alpha) });
+      this.focusRing.visible = true;
+      return;
+    }
     this.focusRing.circle(0, 0, radius + pulse * 2);
     this.focusRing.stroke({ color, width: 2 + focusScale * 1.2, alpha });
     this.focusRing.circle(0, 0, radius * 0.62);
@@ -1131,13 +1146,17 @@ export class Player {
     const color = nearMissActive ? nearMissColor : pulsing && !this.focusDriftActive ? 0xff66ff : phaseColor;
     const alpha = Math.min(0.95, (settingEnabled ? 0.58 : 0.7) + (nearMissActive ? 0.12 : 0));
     const strokeWidth = settingEnabled ? 1.5 : 2;
-    const ringRadius = radius + (pulsing ? 1.4 + pulse * 1.6 : pulse * 0.8);
+    const ringRadius = radius;
     const tickInner = ringRadius + 2;
     const tickOuter = ringRadius + 7;
 
     this.hitboxReticle.clear();
     this.hitboxReticle.circle(0, 0, ringRadius);
-    this.hitboxReticle.stroke({ color, width: strokeWidth, alpha });
+    this.hitboxReticle.stroke({ color: 0x030912, width: strokeWidth + 3, alpha: .95 });
+    this.hitboxReticle.circle(0, 0, ringRadius);
+    this.hitboxReticle.stroke({ color, width: strokeWidth, alpha: Math.max(.85, alpha) });
+    this.hitboxReticle.circle(0, 0, 3.8);
+    this.hitboxReticle.fill({ color: 0x030912, alpha: .95 });
     this.hitboxReticle.circle(0, 0, 2.4);
     this.hitboxReticle.fill({ color: 0xffffff, alpha: Math.min(0.72, alpha + 0.12) });
     this.hitboxReticle.moveTo(-tickOuter, 0);

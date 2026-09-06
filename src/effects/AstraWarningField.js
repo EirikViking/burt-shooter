@@ -32,33 +32,44 @@ export function drawAstraWarningLane(g, {x=0, y=0, angle=Math.PI/2, start=0,
   const sx=x+c*start, sy=y+s*start, ex=x+c*length, ey=y+s*length;
   const points=[sx-px*halfWidth,sy-py*halfWidth,ex-px*halfWidth,ey-py*halfWidth,
     ex+px*halfWidth,ey+py*halfWidth,sx+px*halfWidth,sy+py*halfWidth];
-  g.poly(points).fill({color:0x100e19,alpha:alpha*(active?.12:.18)});
+  // Charging lanes have a quiet interior and dashed boundaries; damaging
+  // lanes switch to an unbroken edge and luminous core at the supplied state.
+  // Geometry and lifecycle continue to belong entirely to the attack owner.
+  g.poly(points).fill({color:0x080d18,alpha:alpha*(active ? .32 : .24)});
+  g.poly(points).fill({color,alpha:alpha*(active ? .36 : .035+p*.045)});
   const matrix=new Matrix(c*len/128,s*len/128,px*halfWidth/16,py*halfWidth/16,
     sx-px*halfWidth,sy-py*halfWidth);
   g.poly(points).fill({texture:material(),matrix,textureSpace:'global',color,
-    alpha:alpha*(active?.74:.24+p*.27)});
+    alpha:alpha*(active ? .8 : .08+p*.12)});
+  const edge=(d0,d1,w,ink,width,opacity)=>{
+    g.moveTo(sx+c*d0+px*w,sy+s*d0+py*w)
+      .lineTo(sx+c*d1+px*w,sy+s*d1+py*w)
+      .stroke({color:ink,width,alpha:alpha*opacity});
+  };
   for(const side of [-1,1]) {
     const w=halfWidth*side;
-    g.moveTo(sx+px*w,sy+py*w).lineTo(ex+px*w,ey+py*w)
-      .stroke({color:0x0a101a,width:3,alpha:alpha*.64});
-    g.moveTo(sx+px*w,sy+py*w).lineTo(ex+px*w,ey+py*w)
-      .stroke({color,width:active?2:1.7,alpha:alpha*(.58+p*.3)});
+    edge(0,len,w,0x030811,4,.88);
+    if(active) edge(0,len,w,color,2,.95);
+    else {
+      // Fixed dashes do not drift or imply that an attack is already moving.
+      const count=Math.max(1,Math.min(16,Math.ceil(len/52))),step=len/count;
+      for(let i=0;i<count;i++) edge(i*step,Math.min(len,(i+.6)*step),w,color,2.2,.82+p*.18);
+      // Charge moves only along the boundary, leaving the safe gaps unobscured.
+      if(p>0) edge(0,len*p,w,0xffdf9c,1,.35+p*.4);
+    }
   }
-  if(active) g.moveTo(sx,sy).lineTo(ex,ey).stroke({color:0xffeed8,width:1.15,alpha:alpha*.56});
+  if(active) {
+    edge(0,len,0,0xfff4dc,Math.min(halfWidth*.45,3),.8*getFlashIntensityScale());
+    return;
+  }
   if (!markers) return;
-  const motion=!getReducedMotionEnabled(), phase=motion?(Date.now()*.00038)%1:.5;
-  const count=Math.max(2,Math.min(6,Math.floor(len/105)));
-  const size=Math.min(halfWidth*.72,7);
-  for(let i=0;i<count;i++) {
-    const t=(i+phase)/count, d=start+len*(.08+t*.84), cx=x+c*d,cy=y+s*d;
+  const size=Math.min(halfWidth*.65,6);
+  for(const t of [.32,.72]) {
+    const cx=sx+c*len*t,cy=sy+s*len*t;
     g.moveTo(cx-c*size+px*size,cy-s*size+py*size).lineTo(cx+c*size*.7,cy+s*size*.7)
       .lineTo(cx-c*size-px*size,cy-s*size-py*size)
-      .stroke({color:0xffe4b9,width:1.3,alpha:alpha*(.28+p*.28)});
+      .stroke({color:0xffdf9c,width:1.2,alpha:alpha*(.38+p*.3)});
   }
-  // The travelling charge highlight remains strictly inside its own lane.
-  const d=start+len*(.10+p*.78), flash=getFlashIntensityScale();
-  g.moveTo(x+c*(d-10),y+s*(d-10)).lineTo(x+c*(d+9),y+s*(d+9))
-    .stroke({color:0xfff5df,width:Math.min(3,halfWidth*.45),alpha:alpha*(.2+p*.36)*flash});
 }
 
 export function drawAstraWarningSector(g,{x=0,y=0,angle,length,spread,color=0xff8356,

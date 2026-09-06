@@ -29,4 +29,14 @@ const welcome = {
  ko: '격납고에서 시작 기체 세 대를 골라 보세요. 보스를 격파하고 기체를 강화하세요.',
  ja: '格納庫で最初の3機から選ぼう。ボスを倒して自分だけの機体構成を作ろう。'
 };
-export const getAstraPresentationSourceText = locale => ({ 'DRAG TO ROTATE': labels[locale] || labels.en, 'FIRING PATTERN': firing[locale] || firing.en, 'Three starter ships. Compare their firepower, then launch.': starter[locale] || starter.en, 'Three starter ships await in the Hangar. Beat bosses and build your run.': welcome[locale] || welcome.en });
+const hazardAdvice = {
+ en: 'Move out of the marked area before it fires.',
+ de: 'Verlasse den markierten Bereich, bevor der Angriff ausgelöst wird.',
+ es: 'Sal de la zona marcada antes de que se active el ataque.',
+ ru: 'Покиньте отмеченную область до срабатывания атаки.',
+ 'zh-CN': '在攻击发动前离开标记区域。',
+ 'pt-BR': 'Saia da área marcada antes que o ataque seja disparado.',
+ ko: '공격이 발동하기 전에 표시된 구역을 벗어나세요.',
+ ja: '攻撃が発動する前に、マークされた範囲から離れよう。'
+};
+export const getAstraPresentationSourceText = locale => ({ 'DRAG TO ROTATE': labels[locale] || labels.en, 'FIRING PATTERN': firing[locale] || firing.en, 'Three starter ships. Compare their firepower, then launch.': starter[locale] || starter.en, 'Three starter ships await in the Hangar. Beat bosses and build your run.': welcome[locale] || welcome.en, 'Move out of the marked area before it fires.': hazardAdvice[locale] || hazardAdvice.en });

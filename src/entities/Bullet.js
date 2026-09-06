@@ -1,4 +1,5 @@
 import { getAstraProjectileTexture } from '../effects/AstraProjectileMaterial.js';
+import { getHostileProjectileInk } from '../config/OpeningCombatReadability.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
@@ -158,7 +159,8 @@ export class Bullet {
 
     if (!isPlayer && typeof document !== 'undefined') {
       if (this.core) this.core.destroy();
-      this.core = new PIXI.Sprite(getAstraProjectileTexture(`${this.coreAnimationStyle}:${this.weaponProfileId || ''}`, this.visualConfig.warningColor || this.color || 0xff6655));
+      this.hostileInk = getHostileProjectileInk(this.visualConfig.warningColor || this.color || 0xff6655);
+      this.core = new PIXI.Sprite(getAstraProjectileTexture(`${this.coreAnimationStyle}:${this.weaponProfileId || ''}`, this.hostileInk));
       this.core.anchor.set(0.5);
       this.core.rotation = this.angle;
       this.core.scale.set(this.radius / 16);
@@ -180,7 +182,7 @@ export class Bullet {
     const drawProjectileFrame = !generatedProjectileCore || colorAssist || this.visualConfig.forceProjectileFrame === true;
     const trailColor = colorAssist
       ? (this.isPlayer ? 0xfff45c : 0xffffff)
-      : (this.isPlayer ? this.color : (this.visualConfig.trailColor || 0xff6655));
+      : (this.isPlayer ? this.color : (this.hostileInk || this.visualConfig.trailColor || 0xff6655));
     const trailLength = this.visualConfig.trailLength || Math.max(this.isPlayer ? 18 : 18, Math.min(this.isPlayer ? 34 : 34, this.speed * (this.isPlayer ? 5 : 5.5)));
     const trailWidth = this.visualConfig.trailWidth || (colorAssist ? (this.isPlayer ? 4 : 7) : (this.isPlayer ? 3 : 5));
     const backX = -Math.cos(this.angle) * trailLength;

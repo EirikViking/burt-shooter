@@ -39,6 +39,9 @@ export function getDeathCoachAdvice(value) {
     boss_bullet: 'During bosses, pick a safe lane before chasing damage again.',
     enemy_contact: 'Clear small ships before they cross your nose; drift sideways instead of chasing down.',
     boss_contact: 'Keep one ship length from the boss body; contact is never a safe damage race.',
+    boss_hazard: 'Move out of the marked area before it fires.',
+    boss_wall: 'Move out of the marked area before it fires.',
+    hazard: 'Move out of the marked area before it fires.',
     ambient_hazard_contact: 'Orange hazard drones are not pickups; shoot them or give them a wider lane.',
     hazard_contact: 'Orange hazard drones are not pickups; shoot them or give them a wider lane.',
     unknown: 'Run it back with one survival pickup in mind: Shield, Ghost, Slow Time, or repair.'
@@ -46,7 +49,11 @@ export function getDeathCoachAdvice(value) {
   return {
     source,
     label: getPlayerDamageCause(source).label,
-    advice: adviceBySource[source] || adviceBySource.unknown
+    advice: adviceBySource[source] || adviceBySource[{
+      hostile_fire: 'enemy_bullet', projectile: 'enemy_bullet',
+      boss_projectile: 'boss_bullet', ship_contact: 'enemy_contact',
+      boss_hazard: 'boss_bullet', boss_wall: 'boss_bullet', hazard: 'boss_bullet'
+    }[source]] || adviceBySource.unknown
   };
 }
 

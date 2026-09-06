@@ -16,7 +16,11 @@ export function getAstraProjectileTexture(style='pulse',color=0xff6349){
  else if(shape==='star'){for(let i=0;i<16;i++){const a=i*Math.PI/8,r=i%2?14:22;if(i)c.lineTo(Math.cos(a)*r,Math.sin(a)*r);else c.moveTo(r,0);}c.closePath();}
  else if(shape==='crescent'){c.ellipse(0,0,17,19,0,0,Math.PI*2);}
  else c.arc(0,0,18,0,Math.PI*2);
- c.fillStyle='#120b23';c.fill();c.lineWidth=3;c.strokeStyle=hex;c.stroke();
+ c.fillStyle='#120b23';c.fill();
+ // Opaque keyline survives both luminous clouds and empty space. It is baked
+ // once into the shared material, with no extra runtime filter or draw layer.
+ c.lineWidth=8;c.strokeStyle='#080b15';c.stroke();
+ c.lineWidth=3;c.strokeStyle=hex;c.stroke();
  const core=c.createRadialGradient(4,-4,1,0,0,17);core.addColorStop(0,'#ffffff');core.addColorStop(.30,'#fff9df');core.addColorStop(.60,hex);core.addColorStop(1,hex+'60');
  c.fillStyle=core;c.fill();
  c.beginPath();c.ellipse(2,-2,shape==='lance'?10:7,shape==='lance'?4.5:7,-.2,0,Math.PI*2);c.fillStyle='#fffdec';c.fill();

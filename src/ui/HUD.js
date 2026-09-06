@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { usesOpeningCombatReadability } from '../config/OpeningCombatReadability.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 
 import { GameAssets } from '../utils/GameAssets.js';
@@ -564,6 +565,22 @@ export class HUD {
       this.highscoreChaseGroup._debugSkippedRealtime = true;
     }
     this.updateFirstRunOpeningDisclosure();
+    this.updateOpeningCombatReadability();
+  }
+
+  updateOpeningCombatReadability() {
+    const play = this.game?.scenes?.play;
+    const early = usesOpeningCombatReadability(this.game);
+    const fighting = early && !play?.isPaused && !play?.introActive &&
+      (play?.hasActiveCombatThreats?.() || play?.enemyManager?.boss?.active === true);
+    // Score remains readable. Its secondary target returns between waves and
+    // on pause. Daily objectives retain their dedicated persistent display.
+    if (this.highscoreChaseGroup) {
+      const chase = this.highscoreChaseGroup._debugChase;
+      this.highscoreChaseGroup.renderable = !fighting || this.game?.runMode === 'daily_signal' ||
+        Boolean(chase?.nearTarget || chase?.surpassed);
+    }
+    this._debugOpeningReadability = { early, fighting: Boolean(fighting) };
   }
 
   getFirstRunOpeningDisclosureTargets() {

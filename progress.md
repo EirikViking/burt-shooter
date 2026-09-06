@@ -1,5 +1,11 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-09-06 opening combat readability
+- Authorized focused presentation pass: player/hostile distinction, fewer enemy rings, warning lane states, secondary HUD notices, immediate fatal-cause advice. Preserve simulation, controls, scoring and progression.
+- Clean baseline e8f635e10996b92e976b03d92308f497be711d6f on existing codex/astra-visual-overhaul; fetch/status/log/worktree verified. No branch switching, external deployment or real saves.
+- Baseline running captures: test-results/astra-readability-baseline and astra-warning-readability-baseline. Release-line and content-director pass. Existing run-report suite fails 'Leaderboard action should remain visible by default' before changes; no test weakened.
+- In progress: implement, inspect matched scenes, validate and build an isolated Windows package. Five fresh human playtests require actual participants and cannot be replaced by automated QA.
+
 ## 2026-08-22 Forum 129 powerup-art and pilot-name improvements
 
 - Current prompt: inspect the 20 distinct historical powerup icons from `4eed7c6` first, but replace any asset that is materially below the released game's visual quality; add perceptual/icon integrity regression coverage and complete UI evidence; replace duplicated 14-character public pilot-name truncation with one shared limit of at least 18 while preserving stored/submitted identity; do not package, deploy, upload, change Steamworks, or post publicly.

@@ -1,4 +1,5 @@
 import { drawAstraWarningLane } from '../effects/AstraWarningField.js';
+import { usesOpeningCombatReadability } from '../config/OpeningCombatReadability.js';
 import { AstraAttackRig } from '../effects/AstraAttackRig.js';
 import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
@@ -2124,6 +2125,39 @@ export class Enemy {
       // The enemy container turns to face its flight vector. Keep the bounty
       // contract level so its identity and reward stay readable in motion.
       this.aceLabelPlate.rotation = -(this.sprite?.rotation || 0);
+    }
+
+    if (usesOpeningCombatReadability(this.game)) {
+      // The hull, health bar and attack telegraph already identify ordinary
+      // durable targets. Priority ships retain compact, stationary brackets.
+      hideMicroSignals(layer, 'ace_');
+      const priority = profile.tier !== 'durable';
+      const r = Math.max(22, this.radius * 1.5);
+      const guard = profile.tier === 'elite' && this.state === 'ENTRY';
+      if (priority) {
+        for (const side of [-1, 1]) {
+          layer.moveTo(side * (r - 6), -r * .48).lineTo(side * r, -r * .48)
+            .lineTo(side * r, r * .48).lineTo(side * (r - 6), r * .48);
+        }
+        layer.stroke({ color: 0x07101b, width: 4.5, alpha: .9 });
+        for (const side of [-1, 1]) {
+          layer.moveTo(side * (r - 6), -r * .48).lineTo(side * r, -r * .48)
+            .lineTo(side * r, r * .48).lineTo(side * (r - 6), r * .48);
+        }
+        layer.stroke({ color: profile.color, width: 1.7, alpha: .86 });
+        if (guard) {
+          for (const start of [-Math.PI * .8, Math.PI * .2]) {
+            layer.moveTo(Math.cos(start) * (r + 5), Math.sin(start) * (r + 5));
+            layer.arc(0, 0, r + 5, start, start + Math.PI * .6)
+              .stroke({ color: 0xffffff, width: 2, alpha: .72 });
+          }
+        }
+      }
+      layer.visible = priority;
+      layer._debugThreatFrame = { visible: priority, tier: profile.tier,
+        radius: r, orbitalPipCount: 0, warningBracketCount: priority ? 2 : 0,
+        arrivalGuardActive: guard, visualLanguage: 'opening_priority_brackets' };
+      return;
     }
 
     if (profile.tier === 'ace') {

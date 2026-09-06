@@ -1,4 +1,5 @@
 import { AstraCoronation } from '../ui/AstraCoronation.js';
+import { usesOpeningCombatReadability, isSecondaryCombatNotice } from '../config/OpeningCombatReadability.js';
 import { drawAstraWarningLane, drawAstraWarningSector, drawAstraWarningRing } from '../effects/AstraWarningField.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
@@ -13598,6 +13599,7 @@ export class PlayScene {
     if (this.isPaused === paused) return;
     this.resetTransientGameplayInput(paused ? 'pause_enter' : 'pause_exit', { preserveFire: true, preserveMovement: true });
     this.isPaused = paused;
+    this.hud?.updateOpeningCombatReadability?.();
     if (paused) {
       this.showPauseOverlay();
       AudioManager.setPauseDucked(true);
@@ -18802,9 +18804,34 @@ export class PlayScene {
     return relocated;
   }
 
+  deferOpeningCombatNotices(now) {
+    if (!usesOpeningCombatReadability(this.game) || this.isPaused || this.introActive) return;
+    const boss = this.enemyManager?.boss;
+    let hostileCount = 0;
+    for (const bullet of this.bulletManager?.enemyBullets || []) {
+      if (bullet.active && ++hostileCount >= 8) break;
+    }
+    const urgent = Boolean(boss?.telegraph || boss?.regularTelegraph ||
+      this.bossHazards?.length ||
+      this.enemyManager?.enemies?.some(e => e.active && e.eliteAbility?.state === 'telegraph') ||
+      hostileCount >= 8);
+    if (!urgent) return;
+    for (const queue of [this.toastQueue, this.toastTopQueue, this.toastCornerQueue]) {
+      for (const entry of queue || []) {
+        if (!isSecondaryCombatNotice(entry.options?.type)) continue;
+        // Retain the existing bounded queue and full on-screen duration. Hold
+        // expiry with the notice so danger does not silently discard progress.
+        entry.notBefore = Math.max(entry.notBefore || 0, now + 250);
+        entry.options.notBefore = entry.notBefore;
+        entry.expiresAt = Math.max(entry.expiresAt || 0, entry.notBefore + 2600);
+      }
+    }
+  }
+
   processToastQueue() {
     if (this.overrunMilestoneInterlude?.active) return;
     const now = Date.now();
+    this.deferOpeningCombatNotices(now);
     this.deferQueuedRoutineFocusLane(now);
     if (this.activeAchievementToast) {
       const delayedCenter = !this.activeBossIntroCard && !this.activeCenterToast
