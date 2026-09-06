@@ -17,7 +17,7 @@ import { ModeBriefingOverlay } from '../ui/ModeBriefingOverlay.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
-import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
+import { getDefaultShipKey, getShipMetadata, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
 import { getMenuSettings } from '../config/MenuSettings.js';
 import { getReducedMotionEnabled } from '../config/AccessibilitySettings.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
@@ -932,16 +932,20 @@ export class MenuScene {
       this.backdrop.zIndex = -20;
       this.container.addChild(this.backdrop);
 
-      const shipTexture = await PIXI.Assets.load('/art/astra/menu-ship.webp');
+      // Reuse the persisted Hangar choice, including Steam Cloud restoration.
+      // A temporary Daily loaner must not replace the pilot's own flagship.
+      const shipIndex = getShipMetadata(this.getQuickStartShipKey())?.textureIndex ?? 0;
+      const portraitPath = `/art/astra/showroom/${String(shipIndex + 1).padStart(2, '0')}`;
+      const shipTexture = await PIXI.Assets.load(`${portraitPath}.webp`);
       if (request !== this.astraBackdropRequest) return;
       this.astraDock = new AstraDockAtmosphere();
       this.astraDock.zIndex = -17;
       this.container.addChild(this.astraDock);
-      this.astraMenuShip = new AstraTurntable(0, shipTexture, {idle:false});
+      this.astraMenuShip = new AstraTurntable(shipIndex, shipTexture, {idle:false});
       this.astraMenuShip.zIndex = -16;
       this.astraMenuShip.eventMode = 'static';
       this.container.addChild(this.astraMenuShip);
-      this.astraMenuEmitters = (await PIXI.Assets.load('/art/astra/menu-ship.json')).emitters;
+      this.astraMenuEmitters = (await PIXI.Assets.load(`${portraitPath}.json`)).emitters;
       if (request !== this.astraBackdropRequest) return;
       this.astraMenuLights = new AstraShowroomLights();
       this.astraMenuLights.zIndex = -15.5;
@@ -3196,7 +3200,7 @@ export class MenuScene {
         this.dismissOverrunUnlockCelebration();
       });
       overlay.addChild(panel, title, milestone, modes, rewards, confirm);
-      overlay._coronation = new AstraCoronation({milestone:30,shipTexture:this.astraMenuShip?.views?.[0]?.texture});
+      overlay._coronation = new AstraCoronation({milestone:30,shipIndex:this.astraMenuShip?.index ?? 0,shipTexture:this.astraMenuShip?.views?.[0]?.texture});
       overlay.addChildAt(overlay._coronation,1);
       overlay._startedAt = performance.now();
       overlay._panel = panel;

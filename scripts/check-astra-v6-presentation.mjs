@@ -14,15 +14,24 @@ page.on('pageerror',e=>errors.push(e.message));
 await page.addInitScript(()=>{localStorage.setItem('nova_display_mode_v1','windowed');localStorage.setItem('nova_display_window_size_v1',JSON.stringify({width:1280,height:720}));});
 await page.route('**/*',r=>/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url())||/^(nova-swarm:|data:|blob:)/.test(r.request().url())?r.continue():r.abort());
 async function shot(name){await page.screenshot({path:`${out}/${name}.png`});}
-async function open(params=''){await page.goto(`${url}/?offlineLeaderboard=1&${params}`);await page.waitForFunction(()=>window.__game&&document.body.dataset.menuReady==='1',null,{timeout:120000});}
+async function resize(width,height){
+ if(app){await page.evaluate(s=>window.__novaDisplay.applySettings({mode:'windowed',windowSize:{width:s[0],height:s[1]},uiScale:1}),[width,height]);await page.waitForTimeout(400);await app.evaluate(({BrowserWindow},s)=>BrowserWindow.getAllWindows()[0].setContentSize(...s),[width,height]);}
+ else await page.setViewportSize({width,height});
+ await page.waitForFunction(s=>innerWidth===s[0]&&innerHeight===s[1]&&window.__game.app.screen.width===s[0]&&window.__game.app.screen.height===s[1],[width,height]);
+}
+async function open(params=''){await page.goto(`${url}/?offlineLeaderboard=1&${params}`);await page.waitForFunction(()=>window.__game&&document.body.dataset.menuReady==='1',null,{timeout:120000});if(app)await resize(1280,720);}
 try{
  await open();await page.waitForFunction(()=>window.__game.scenes.menu.astraMenuShip?.ready,null,{timeout:120000});
  // Resize while the staggered entrance is pending, then compare settled bounds.
  for(const [width,height] of [[1920,1080],[1280,720]]){
   await page.evaluate(()=>window.__game.scenes.menu.startAnimations());
-  if(app)await app.evaluate(({BrowserWindow},s)=>BrowserWindow.getAllWindows()[0].setContentSize(...s),[width,height]);
-  else await page.setViewportSize({width,height});
-  await page.waitForFunction(s=>innerWidth===s[0]&&innerHeight===s[1],[width,height]);
+  await resize(width,height);
+  // Native pointer hover can select a different menu item during resize.
+  // Exercise the Mayhem selector explicitly before checking its bounds.
+  await page.waitForTimeout(200);
+  const tactical=await page.evaluate(()=>{const b=window.__game.scenes.menu.tacticalStartBtn.getBounds();return{x:b.x+b.width/2,y:b.y+b.height/2};});
+  await page.mouse.move(tactical.x,tactical.y);
+  await page.waitForFunction(()=>window.__game.scenes.menu.runModeVariantSelector.visible);
   await page.waitForTimeout(200);
   const getBounds=()=>page.evaluate(()=>{const m=window.__game.scenes.menu;return Object.fromEntries(['runModeTitle','runModeVariantSelector','runModeExplainer'].map(k=>{const b=m[k].getBounds();return[k,{x:b.x,y:b.y,width:b.width,height:b.height}]}));});
   const initial=await getBounds();await page.waitForTimeout(2600);const settled=await getBounds();
@@ -41,6 +50,22 @@ try{
  await page.waitForTimeout(1000);await shot('02-starter-hangar');
  const hangar=await page.evaluate(()=>({scene:window.__game.currentSceneName,subtitle:window.__game.scenes.shipSelect.hangarHeaderNodes.subtitle.text}));
  assert.match(hangar.subtitle,/Three starter ships/);checks.push(hangar);
+ await page.evaluate(()=>{const s=window.__game.scenes.shipSelect;s.navigateTo(1);s.startSelectedShipInMode();});
+ await page.waitForFunction(()=>window.__game.currentSceneName==='play'&&window.__game.scenes.play.isReady&&window.__game.scenes.play.player?.selectedShipTextureIndex>0,null,{timeout:120000});
+ const selected=await page.evaluate(()=>({index:window.__game.scenes.play.player.selectedShipTextureIndex,key:localStorage.getItem('burt.selectedShip.v1')}));
+ await page.evaluate(()=>window.__game.showMenu());
+ await page.waitForFunction(index=>window.__game.scenes.menu.astraMenuShip?.ready&&window.__game.scenes.menu.astraMenuShip.index===index,selected.index,{timeout:120000});
+ await page.waitForTimeout(2400);
+ await shot('menu-last-hangar-ship');
+ await open();
+ await page.waitForFunction(index=>window.__game.scenes.menu.astraMenuShip?.ready&&window.__game.scenes.menu.astraMenuShip.index===index,selected.index,{timeout:120000});
+ // A run-specific loaner can change the active game key without changing Hangar storage.
+ await page.evaluate(()=>{window.__game.selectedShipSpriteKey='nova-player-ship-04.png';window.__game.showShipSelect();});
+ await page.waitForFunction(()=>window.__game.currentSceneName==='shipSelect');
+ await page.evaluate(()=>window.__game.showMenu());
+ await page.waitForFunction(index=>window.__game.scenes.menu.astraMenuShip?.ready&&window.__game.scenes.menu.astraMenuShip.index===index,selected.index,{timeout:120000});
+ assert.equal(await page.evaluate(()=>localStorage.getItem('burt.selectedShip.v1')),selected.key);
+ checks.push({lastHangarShip:selected,restoredAcrossReload:true,transientLoanerIgnored:true});
  await open('autostart=1&debugBossToken=NOVA_DEBUG_2026&startLevel=10&nova-devtools-hash=f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c');
  await page.waitForFunction(()=>window.__game.scenes.play?.isReady&&window.__game.scenes.play?.player?.shipSprite?.texture?.width>1,null,{timeout:120000});
  for(const sector of [10,20,30,40,50,60,70]){
