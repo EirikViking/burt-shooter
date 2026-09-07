@@ -385,6 +385,7 @@ export class ThreatCodexScene {
       alpha: 0.44,
       openVolume: 0.16
     });
+    resizeMenuFx(this, this.game.getWidth() / this.layoutScale, this.game.getHeight() / this.layoutScale);
     this.keyHandler = (event) => this.handleKeyDown(event);
     this.wheelHandler = (event) => this.handleWheel(event);
     window.addEventListener('keydown', this.keyHandler);
@@ -563,8 +564,12 @@ export class ThreatCodexScene {
   }
 
   createLayout(token) {
-    const width = this.game.getWidth();
-    const height = this.game.getHeight();
+    // Keep room for the art, story, tip and records at the smallest window size.
+    // Scale the complete dossier instead of compressing its vertical sections.
+    this.layoutScale = Math.min(1, this.game.getWidth() / 1280, this.game.getHeight() / 720);
+    this.container.scale.set(this.layoutScale);
+    const width = this.game.getWidth() / this.layoutScale;
+    const height = this.game.getHeight() / this.layoutScale;
     const compact = width < 920 || height < 740;
     const categoryLayout = getCategoryLayout(width, height, compact);
     resizeMenuFx(this, width, height);
@@ -1556,6 +1561,7 @@ export class ThreatCodexScene {
   updateScrollDrag(y) {
     const drag = this.scrollDrag;
     if (!drag?.bounds) return;
+    y /= this.layoutScale || 1;
     if (drag.kind === 'detail') {
       this.setDetailScrollFromY(y, drag.bounds);
     } else {
@@ -1593,8 +1599,8 @@ export class ThreatCodexScene {
   }
 
   handleWheel(event) {
-    const x = Number(event.clientX);
-    const y = Number(event.clientY);
+    const x = Number(event.clientX) / (this.layoutScale || 1);
+    const y = Number(event.clientY) / (this.layoutScale || 1);
     const direction = Math.sign(Number(event.deltaY) || 0);
     if (!direction) return;
     const detail = this.lastDetailBodyDebug;
