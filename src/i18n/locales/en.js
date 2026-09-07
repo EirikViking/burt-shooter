@@ -1,3 +1,4 @@
+import { getLaunchHomeSourceText } from '../launchHomeText.js';
 import { getShipTraitSummarySourceText } from "../shipTraitSummaryText.js";
 import { getBonusCoreSourceText } from '../bonusCoreText.js';
 import { getCoreSerpentSourceText } from '../coreSerpentText.js';
@@ -25,6 +26,6 @@ export const en = {
   diagnostics: {
     interfaceLanguage: 'Interface language'
   },
-  sourceText: Object.freeze({ ...getShipTraitSummarySourceText("en"), ...getBonusCoreSourceText('en'), ...getCoreSerpentSourceText('en'), ...getAstraPresentationSourceText('en'),}),
+  sourceText: Object.freeze({ ...getLaunchHomeSourceText('en'), ...getShipTraitSummarySourceText("en"), ...getBonusCoreSourceText('en'), ...getCoreSerpentSourceText('en'), ...getAstraPresentationSourceText('en'),}),
   patterns: Object.freeze([])
 };

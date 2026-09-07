@@ -1,4 +1,5 @@
 import { AstraCoronation } from '../ui/AstraCoronation.js';
+import { AstraLaunchHome } from '../ui/AstraLaunchHome.js';
 import { AstraTurntable } from '../ui/AstraTurntable.js';
 import { AstraDockAtmosphere } from '../ui/AstraDockAtmosphere.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
@@ -428,6 +429,8 @@ export class MenuScene {
   }
 
   init() {
+    this.launchHome?.destroy({children:true}); this.launchHome=null;
+    const previousLegacyMenu=this.legacyMenuLayer; this.legacyMenuLayer=null;
     this.disposeAstraBackdrop();
     this.container.removeChildren();
     this.scoutAnomaly = readScoutAnomalySelection();
@@ -467,7 +470,16 @@ export class MenuScene {
       .then(() => GameAssets.loadShips())
       .catch((error) => console.warn('[MenuScene] Menu asset preload failed:', error));
     this.initBonusDecorations();
+    const decorationChildren=new Set(this.container.children);
     this.createElements();
+    previousLegacyMenu?.destroy({children:true});
+    this.legacyMenuLayer=new PIXI.Container(); this.legacyMenuLayer.sortableChildren=true; this.legacyMenuLayer.zIndex=10;
+    for(const child of [...this.container.children]) {
+      if(!decorationChildren.has(child)&&child!==this.sectorSelectorOverlay&&child!==this.quitConfirmOverlay)this.legacyMenuLayer.addChild(child);
+    }
+    this.container.addChild(this.legacyMenuLayer);
+    this.launchHome=new AstraLaunchHome(this);this.container.addChild(this.launchHome);
+    this.buildMenuNavigation();
     const menuTypographyReady = this.warmMenuFonts();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutMenu());
     this.layoutMenu();
@@ -592,6 +604,10 @@ export class MenuScene {
         }
         return;
       }
+      if(this.launchHome?.surface==='home') {
+        this.launchHome.navigate({up:isMoveUp,down:isMoveDown,left:isMoveLeft,right:isMoveRight,confirm:isPrimaryStart,cancel:isCancel,tab:isDetailsFocus,reverse:event.shiftKey});return;
+      }
+      if(this.launchHome?.surface==='modes'&&isCancel&&!this.runModeDetailsFocused&&!this.missionBoardFocusActive){this.launchHome.closeModes();return;}
       if (isDetailsShortcut && this.getRunModeBriefing()?.details) {
         this.runModeDetailsFocused = true;
         this.missionBoardFocusActive = false;
@@ -921,8 +937,8 @@ export class MenuScene {
     const request = this.astraBackdropRequest = (this.astraBackdropRequest || 0) + 1;
     try {
       const texture = await PIXI.Assets.load({
-        alias: 'generated_menu_backdrop',
-        src: AssetManifest.generated.menuBackdrop
+        alias: 'astra_launch_bay_20260907',
+        src: '/art/astra/menu-launch-bay-20260907.png'
       });
 
       if (request !== this.astraBackdropRequest) return;
@@ -2306,7 +2322,7 @@ export class MenuScene {
       (isShortLayout ? 250 : 342) * briefingScale
     ));
     const denseBriefing = Boolean(
-      !(this.isNewPilot && runModeBriefing.id === 'launchTactical')
+      !(this.isNewPilot && this.launchHome?.surface !== 'modes' && runModeBriefing.id === 'launchTactical')
       && ((runModeBriefing.tiles || []).length || runModeBriefing.restriction || runModeBriefing.personalBest)
     );
     let briefingHeight = Math.round(
@@ -2530,6 +2546,7 @@ export class MenuScene {
     this.applyMenuModalDimming();
     this.layoutSectorSelector(layout, width, height);
     this.layoutQuitConfirmation(width, height);
+    this.launchHome?.layout(width,height);
   }
 
   applyMenuModalDimming() {
@@ -2725,7 +2742,7 @@ export class MenuScene {
     }
     this.runModeExplainer.alpha = this.runModeExplainer.alpha || 1;
 
-    const firstRunMayhem = Boolean(this.isNewPilot && briefing.id === 'launchTactical');
+    const firstRunMayhem = Boolean(this.isNewPilot && this.launchHome?.surface !== 'modes' && briefing.id === 'launchTactical');
     // Reserve the text's rendered height, including the readability scale
     // floor. Capping this to the desired height placed following tiles under
     // the still-visible final line in longer/localized summaries.
@@ -3115,7 +3132,7 @@ export class MenuScene {
   }
 
   getRunModeExplainerText(briefing = this.getRunModeBriefing()) {
-    if (this.isNewPilot && briefing.id === 'launchTactical') {
+    if (this.isNewPilot && this.launchHome?.surface !== 'modes' && briefing.id === 'launchTactical') {
       return translateText('Three starter ships await in the Hangar. Beat bosses and build your run.');
     }
     const summary = Array.isArray(briefing.summary)
@@ -5064,6 +5081,7 @@ export class MenuScene {
         height: Math.round(this.game.getHeight())
       },
       panel: this.lastMenuPanelBounds,
+      launchHome: this.launchHome?.debug() || null,
       focusedOption: this.menuOptions?.[this.focusedMenuIndex]?.id || null,
       optionOrder: this.menuOptions?.map((option) => option.id).filter(Boolean) || [],
       inputDevice: this.lastInputDevice,
@@ -5422,12 +5440,19 @@ export class MenuScene {
     }
 
     if (this.astraMenuShip) {
-      this.astraMenuShip.position.set(width * 0.485, height * 0.49);
-      this.astraMenuShip.scale.set(Math.min(width * 0.62, height) / this.astraMenuShip.texture.width);
+      const home=this.launchHome?.surface!=='modes';
+      const portrait=home&&width<600, tall=height/width>1.9;
+      this.astraMenuShip._launchYRatio=portrait ? (tall ? .31 : .235) : .47;
+      this.astraMenuShip.position.set(width * (portrait ? (tall ? .62 : .76) : home ? .71 : .485), height * this.astraMenuShip._launchYRatio);
+      this.astraMenuShip.scale.set(Math.min(width * (portrait ? (tall ? .76 : .43) : home ? .54 : .62), height*.94) / this.astraMenuShip.texture.width);
     }
 
     if (this.backdropShade) {
       this.backdropShade.clear();
+      if(this.launchHome?.surface==='home') {
+        this.backdropShade.rect(0,0,width,height).fill({color:0x020711,alpha:.055});
+        return;
+      }
       this.backdropShade.rect(0, 0, width, height);
       this.backdropShade.fill({ color: 0x020711, alpha: 0.08 });
       this.backdropShade.rect(0, 0, Math.min(width * 0.38, 660), height * 0.38);
@@ -6659,6 +6684,7 @@ export class MenuScene {
   }
 
   drawMenuButton(container, isHover = false) {
+    if(container?._launchHomeButton){container._paint();return;}
     if (container?._isRunModeCard) {
       this.drawRunModeCard(container, isHover);
       return;
@@ -6905,6 +6931,13 @@ export class MenuScene {
       { id: 'exit', button: this.exitBtn, activate: () => this.openQuitConfirmation() }
     ].filter((option) => option.button);
 
+    if(this.launchHome) {
+      if(this.launchHome.surface==='home')this.menuOptions=this.launchHome.options;
+      else {
+        this.menuOptions=this.menuOptions.filter(o=>o.id!=='music').map(o=>this.launchHome.buttons[o.id]?{...o,button:this.launchHome.buttons[o.id]}:o);
+        this.menuOptions.push({id:'backHome',button:this.launchHome.buttons.backHome,activate:()=>this.launchHome.closeModes()});
+      }
+    }
     this.menuOptions.forEach((option) => {
       option.button._menuOptionId = option.id;
       option.button._menuVoiceId = option.id;
@@ -6947,6 +6980,7 @@ export class MenuScene {
       this.drawMenuButton(option.button, false);
     });
     this.focusedMenuIndex = next;
+    this.launchHome?.rememberMode();
     if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
     this.updateRunModeBriefing();
     this.drawSectorStartStepperCue();
@@ -7018,6 +7052,8 @@ export class MenuScene {
       }
       return;
     }
+    if(this.launchHome?.surface==='home') {this.launchHome.navigate({...nav.pressed,cancel:nav.pressed.cancel||nav.pressed.back});return;}
+    if(this.launchHome?.surface==='modes'&&(nav.pressed.cancel||nav.pressed.back)&&!this.missionBoardFocusActive){this.launchHome.closeModes();return;}
     if (nav.pressed.y && this.getRunModeBriefing()?.details) {
       this.runModeDetailsFocused = true;
       this.missionBoardFocusActive = false;
@@ -7171,6 +7207,7 @@ export class MenuScene {
 
   quickStartRun(runMode = RUN_MODES.RANKED) {
     if (this.launchingRun) return;
+    this.launchHome?.rememberMode();
     this.launchingRun = true;
     if (this.isNewPilot) this.newPilotCueDismissed = true;
     try {
@@ -7827,10 +7864,13 @@ export class MenuScene {
       ceremony._coronation.update(performance.now()-ceremony._startedAt,layout.width,layout.height,{compact:layout.compact});
     }
     this.animationTime += delta * 0.016;
-    this.astraDock?.update(delta, this.game.getWidth(), this.game.getHeight(), getReducedMotionEnabled());
+    this.astraDock?.update(delta, this.game.getWidth(), this.game.getHeight(), getReducedMotionEnabled(),this.launchHome?.surface==='home'?.71:.485);
     if (this.astraMenuShip && this.astraMenuLights) {
       const motion = !getReducedMotionEnabled();
-      this.astraMenuShip.y = this.game.getHeight() * (0.49 + (motion ? Math.sin(this.animationTime * 0.65) * 0.007 : 0));
+      const modal=Boolean(this.settingsOverlay||this.howToPlayOverlay||this.modeBriefingOverlay||this.quitConfirmOpen||this.sectorSelectorOpen);
+      this.astraMenuShip.eventMode=modal?'none':'static';
+      if(modal)this.astraMenuShip.dragging=false;
+      this.astraMenuShip.y = this.game.getHeight() * ((this.astraMenuShip._launchYRatio||.47) + (motion ? Math.sin(this.animationTime * 0.65) * 0.007 : 0));
       this.astraMenuShip.rotation = motion ? Math.sin(this.animationTime * 0.35) * 0.014 : 0;
       this.astraMenuShip.update(delta);
       const lamps = this.astraMenuShip.emitters || this.astraMenuEmitters;
@@ -7864,9 +7904,10 @@ export class MenuScene {
     if (this.backdrop?.texture) {
       const width = this.game.getWidth();
       const height = this.game.getHeight();
-      this.backdrop.x = width / 2 + Math.sin(this.animationTime * 0.18) * width * 0.0045;
-      this.backdrop.y = height / 2 + Math.cos(this.animationTime * 0.16) * height * 0.003;
-      this.backdrop.alpha = 0.965 + Math.sin(this.animationTime * 0.42) * 0.018;
+      const motion=!getReducedMotionEnabled();
+      this.backdrop.x = width / 2 + (motion?Math.sin(this.animationTime * 0.18) * width * 0.0045:0);
+      this.backdrop.y = height / 2 + (motion?Math.cos(this.animationTime * 0.16) * height * 0.003:0);
+      this.backdrop.alpha = motion?0.965 + Math.sin(this.animationTime * 0.42) * 0.018:.98;
     }
 
     // PART A: Update typewriter
