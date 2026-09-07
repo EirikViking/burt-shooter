@@ -10,7 +10,7 @@ export function usesArcadeFlight(config) {
   return ARCADE_FLIGHT_ENABLED && !!config && !config.isChallenge && !config.isMayhemReinforcement && !config.isBossMayhemReinforcement && !config.highSectorAuthoredEncounter;
 }
 export function arcadeEntryDuration(durationMs, flight) {
-  return flight ? Math.max(flight.durationMs || 2800, durationMs) : durationMs;
+  return flight ? Math.max(flight.durationMs || 2200, durationMs) : durationMs;
 }
 export function arcadeBriefingDuration(durationMs, announceMs, config, waveIndex) {
   // Reclaim idle briefing time, not cleanup/pickup time or encounter warnings.
@@ -22,10 +22,10 @@ export function waveFlightPlan(config, level, waveIndex, slot, width, height) {
   const route = level <= 1 ? 'crown' : ENTRY_ROUTES[Math.abs((level*3+waveIndex*5)%ENTRY_ROUTES.length)];
   // Alternate measured sweeps and brisk arrivals across waves. The whole
   // formation shares its tempo; selection consumes no gameplay random draws.
-  // Average duration stays close to the original 2.8-second entrance floor.
-  const tempos = [2500,3100,2800,3400,2650,3000];
-  const routeBias = {braid:100,hook:100,ribbon:0,crown:0,scissor:-100,coil:100};
-  const durationMs = level === 1 && waveIndex === 0 ? 2800
+  // Keep the tempo tight enough to intercept a formation without waiting.
+  const tempos = [2050,2250,2150,2500,2350,2200];
+  const routeBias = {braid:50,hook:50,ribbon:0,crown:0,scissor:-50,coil:50};
+  const durationMs = level === 1 && waveIndex === 0 ? 2200
     : tempos[Math.abs((level * 7 + waveIndex) % tempos.length)] + routeBias[route];
   return {route,side:slot%2?1:-1,wing:Math.floor(slot/2)%2?1:-1,width,height,
     durationMs,strength:level<=2?.45:level<=4?.72:1};

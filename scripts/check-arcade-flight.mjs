@@ -16,13 +16,13 @@ try {
  const tempos=new Set();
  for(let level=1;level<=100;level++)for(let wave=0;wave<6;wave++){
    const p=waveFlightPlan({},level,wave,0,1280,720),duration=arcadeEntryDuration(1000,p);tempos.add(duration);
-   assert.ok(duration>=2400&&duration<=3500);
+   assert.ok(duration>=2000&&duration<=2550);
    assert.equal(arcadeEntryDuration(4000,p),4000);
    assert.equal(waveFlightPlan({},level,wave,11,1920,1080).durationMs,duration,'Formation and resolution share tempo');
    assert.deepEqual(waveFlightPlan({},level,wave,0,1280,720),p,'Repeatable selection');
  }
  assert.ok(tempos.size>=6,'Several distinct entrance speeds');
- assert.equal(waveFlightPlan({},1,0,0,1280,720).durationMs,2800);
+ assert.equal(waveFlightPlan({},1,0,0,1280,720).durationMs,2200);
  assert.equal(arcadeEntryDuration(1000,null),1000);
  assert.equal(arcadeBriefingDuration(740,260,{},1),380);
  assert.equal(arcadeBriefingDuration(740,260,{},0),740);
@@ -39,5 +39,5 @@ try {
  }
  assert.ok(shapes.size>=20);assert.equal(rng,0);
 } finally {Math.random=original;}
-const report={ok:true,entries,bossSamples,zeroGameplayRng:rng===0,protectedSpecialEntries:true,ordinaryEntryRangeMs:[2400,3500],ordinaryFollowupBriefingMs:380};
+const report={ok:true,entries,bossSamples,zeroGameplayRng:rng===0,protectedSpecialEntries:true,ordinaryEntryRangeMs:[2000,2550],ordinaryFollowupBriefingMs:380};
 mkdirSync('test-results/flight-revision',{recursive:true});writeFileSync('test-results/flight-revision/numeric.json',JSON.stringify(report,null,2));console.log(report);
