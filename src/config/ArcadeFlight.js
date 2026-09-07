@@ -6,11 +6,22 @@ export const ARCADE_FLIGHT_ENABLED = (() => {
 const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 const tau = Math.PI*2;
 export const ENTRY_ROUTES = ['braid','hook','ribbon','crown','scissor','coil'];
+export function usesArcadeFlight(config) {
+  return ARCADE_FLIGHT_ENABLED && !!config && !config.isChallenge && !config.isMayhemReinforcement && !config.isBossMayhemReinforcement && !config.highSectorAuthoredEncounter;
+}
+export function arcadeEntryDuration(durationMs, flight) {
+  return flight ? Math.max(2800, durationMs) : durationMs;
+}
+export function arcadeBriefingDuration(durationMs, announceMs, config, waveIndex) {
+  // Reclaim idle briefing time, not cleanup/pickup time or encounter warnings.
+  return waveIndex > 0 && usesArcadeFlight(config)
+    ? Math.min(durationMs, Math.max(380, announceMs + 120)) : durationMs;
+}
 export function waveFlightPlan(config, level, waveIndex, slot, width, height) {
-  if (!ARCADE_FLIGHT_ENABLED || config.isChallenge || config.isMayhemReinforcement || config.isBossMayhemReinforcement || config.highSectorAuthoredEncounter) return null;
+  if (!usesArcadeFlight(config)) return null;
   const route = level <= 1 ? 'crown' : ENTRY_ROUTES[Math.abs((level*3+waveIndex*5)%ENTRY_ROUTES.length)];
   return {route,side:slot%2?1:-1,wing:Math.floor(slot/2)%2?1:-1,width,height,
-    strength:level<=2?.45:level<=4?.72:1,durationScale:level<4?1:.94};
+    strength:level<=2?.45:level<=4?.72:1};
 }
 export function sampleWaveFlight(curve,t) {
   const q=clamp(t,0,1),u=1-q,f=curve.flight;

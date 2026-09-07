@@ -53,9 +53,9 @@ export function drawColossusWarning(g,b,token,progress) {
   g.poly([...p(start,-width(start)),...p(length,-w),...p(length,w),...p(start,width(start))]).fill({color,alpha:.045+progress*.035});
   for(const side of [-1,1]){
     g.moveTo(...p(start,side*width(start))).lineTo(...p(length,side*w)).stroke({color,width:3,alpha:.65});
-    // Broad inward-moving charge packets run on the dangerous side of the edge.
+    // Charge packets preview the same outward direction as the damaging front.
     for(let i=0;i<9;i++){
-      const u=((i/9+(1-progress)*.7)%1),a=start+(length-start)*u,half=width(a);
+      const u=((i/9+progress*.7)%1),a=start+(length-start)*u,half=width(a);
       g.moveTo(...p(a,side*half)).lineTo(...p(Math.min(length,a+18),side*half*.72)).stroke({color:0xffe5b5,width:3,alpha:.24+progress*.6});
     }
   }

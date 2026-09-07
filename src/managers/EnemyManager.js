@@ -1,4 +1,4 @@
-import { waveFlightPlan, ARCADE_FLIGHT_ENABLED } from '../config/ArcadeFlight.js';
+import { waveFlightPlan, arcadeEntryDuration, arcadeBriefingDuration, ARCADE_FLIGHT_ENABLED } from '../config/ArcadeFlight.js';
 import * as PIXI from 'pixi.js';
 import { Enemy } from '../entities/Enemy.js';
 import { Boss } from '../entities/Boss.js';
@@ -2547,7 +2547,7 @@ export class EnemyManager {
         const conditionReadMs = Number(this.pendingWaveConfig?.highSectorConditionReadMs) || 0;
         const reliefMs = Number(this.pendingWaveConfig?.highSectorPreCombatReliefMs) || 0;
         const briefingMs = Math.max(
-          this.getOpeningMomentumTuning().waveBriefingMs,
+          arcadeBriefingDuration(this.getOpeningMomentumTuning().waveBriefingMs, announceMs, this.pendingWaveConfig, this.currentWaveIndex),
           conditionReadMs > 0 ? announceMs + conditionReadMs : 0,
           reliefMs > 0 ? announceMs + reliefMs : 0
         );
@@ -3516,7 +3516,9 @@ export class EnemyManager {
         const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs + (Number(config.reinforcementEntryDelayMs) || 0));
         const resolvedEntryDurationMs = entryDurationMs * Math.max(0.6, Math.min(1.2, Number(enemy.nemesisOpeningEntryDurationMult) || 1));
         const flight = waveFlightPlan(config, this.level, this.currentWaveIndex, i, screenW, this.game.getHeight());
-        enemy.startEntry(startX, startY, pos.x, pos.y, flight ? Math.max(entryDurationFloor, resolvedEntryDurationMs * flight.durationScale) : resolvedEntryDurationMs, entryDelayMs, flight);
+        const flightDurationMs = arcadeEntryDuration(resolvedEntryDurationMs, flight);
+        enemy.startEntry(startX, startY, pos.x, pos.y, flightDurationMs, entryDelayMs, flight);
+        if (flight && enemy.tacticalDiveAt) enemy.tacticalDiveAt += flightDurationMs - entryDurationMs;
         if (enemy.contactSafeDuringEntry) {
           enemy.bottomEntrySafetyDebug = {
             route: reinforcementEntryRoute,

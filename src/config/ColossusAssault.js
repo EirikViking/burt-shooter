@@ -26,15 +26,11 @@ export function assaultWindows(h, span=1, slot=0) {
   const t=elapsed>=1?1:(elapsed*cycles)%1;
   // Integral of the moving, clipped interval equals the old full-field exposure.
   const tail=duty/(1-duty),head=t*(1+tail);
-  let windows=[[Math.max(0,head-tail)*span,Math.min(1,head)*span]].filter(([a,b])=>b>a);
-  if(c.motion==='crush'||c.motion==='guillotine'||(c.motion==='rake'&&c.phase%2===0)||
-    (['feint','chords'].includes(c.motion)&&slot%2))windows=windows.map(([a,b])=>[span-b,span-a]);
-  if(c.motion==='braid'){
-    // Opposing fronts each own half of the lane, then meet and pass at its center.
-    const half=span*.5;
-    windows=windows.flatMap(([a,b])=>[[a*.5,b*.5],[span-b*.5,span-a*.5]]);
-  }
-  return windows;
+  // Every weapon front travels away from its emitter. Reversing an interval
+  // made flames spawn near the player and fly back into the boss; the mirror
+  // family's split interval also introduced a second front from the far end.
+  // Keep bank delays, repeat cycles and point exposure, but never reverse space.
+  return [[Math.max(0,head-tail)*span,Math.min(1,head)*span]].filter(([a,b])=>b>a);
 }
 export function assaultSectors(h) {
   const n=h.colossus.motion==='ratchet'?8:h.colossus.motion==='chords'?6:12;
