@@ -41,4 +41,16 @@ Gallery: `test-results/flight-delivery/index.html`. Includes actual source compa
 
 Packaged identity/isolation/frame/previous-flight switch checks passed, as did native basic smoke, controls and 60-second performance smoke: average 59.69 FPS, minimum 58.14 FPS against the existing 50 FPS floor. Steam SDK/runtime packaging check passed for app 4765070 and the existing leaderboard. Exact runtime label verified in the executable: `2333f64`.
 
-Authorized Steam upload is being finalized. Verified pre-upload: both public and test branches reference build `25150873`; `test-build` remains `23782673`. Public/default and Steamworks service settings must remain unchanged.
+**Steam build 25163288 is assigned to `sector-continue-test`.** Upload completed successfully at 08:21:19 UTC; refreshed authenticated app info verified the assignment at 08:22:46 UTC. Public/default remains **25150873**, and `test-build` remains **23782673**. App 4765070, depot 4765071, manifest 2048505359033859356. No public release, store change or Steamworks service-setting change was performed.
+
+The separate upload copy contains 410 files / 1,655,325,990 bytes. Its `resources/app.asar` matches the validated Windows package: SHA256 `aa57d388b6a688e4d82b44a1261036a131e9587bb47d5fb0b72784374ee368b9`. Steam reused its existing depot content and uploaded about 42.81 MiB of changed file data. Upload configuration explicitly targets only `sector-continue-test`; receipt and logs are under `test-results/astra-steam-upload-20260907-flight-2333f64/`.
+
+Published Cloud configuration was compared before/after and is identical: `WinAppDataRoaming/nova-swarm/steam-cloud/nova-swarm-save.json`, Windows, 1 MiB quota / 20 files. Existing leaderboard identities remain `nova_swarm_global_score_v2`, `nova_swarm_tactical_score_v1` and `nova_swarm_sector_start_score_v1`. Local QA used offline isolation; successful live Cloud synchronization, achievement writes and leaderboard submissions were deliberately not tested against the user's account.
+
+## How to play
+
+In Steam: Nova Swarm → Properties → Betas → `sector-continue-test`. Let Steam update, then launch normally. Selecting **None** returns to the unchanged public build 25150873. Steam-side test-branch rollback target is also the preserved prior build 25150873.
+
+Locally: double-click **Nova Swarm - Visual Upgrade** on the desktop. It now points to `D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\test-results\astra-build-2026-09-07T07-32-39-014Z\launch.vbs`. Alternatively, double-click that file directly. The launcher uses an isolated profile inside this new build folder; the game is left open. `previous-flight.vbs` in the same folder launches the rollback comparison with its own isolated profile. Keep the complete `win-unpacked` folder together.
+
+All changes are checkpointed locally. Runtime commit is 2333f64; the validation checkpoint is 048959d. Later delivery-only commits do not change the uploaded executable. Existing releases were preserved; no Git push, pull, merge, rebase, reset or stash was performed.
