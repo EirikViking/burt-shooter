@@ -1,3 +1,4 @@
+import { sampleWaveFlight } from '../config/ArcadeFlight.js';
 import { drawAstraWarningLane } from '../effects/AstraWarningField.js';
 import { usesOpeningCombatReadability } from '../config/OpeningCombatReadability.js';
 import { AstraAttackRig } from '../effects/AstraAttackRig.js';
@@ -1594,7 +1595,7 @@ export class Enemy {
     return Math.max(minX, Math.min(maxX, x));
   }
 
-  startEntry(startX, startY, endX, endY, duration, delay = 0) {
+  startEntry(startX, startY, endX, endY, duration, delay = 0, flight = null) {
     const width = this.game?.getWidth?.() || 800;
     const centerX = width / 2;
     if (Number.isFinite(this.combatBounds?.minX) && Number.isFinite(this.combatBounds?.maxX)) {
@@ -1628,6 +1629,7 @@ export class Enemy {
       p1: { x: cpX, y: cpY },
       p2: { x: endX, y: endY },
       duration: duration,
+      flight,
       startTime: Date.now() + delay,
       delay: delay
     };
@@ -2318,13 +2320,9 @@ export class Enemy {
     const elapsed = now - curve.startTime;
     const t = Math.min(1, elapsed / curve.duration);
 
-    const invT = 1 - t;
-    const p0 = curve.p0;
-    const p1 = curve.p1;
-    const p2 = curve.p2;
-
-    const nextX = (invT * invT * p0.x) + (2 * invT * t * p1.x) + (t * t * p2.x);
-    const nextY = (invT * invT * p0.y) + (2 * invT * t * p1.y) + (t * t * p2.y);
+    const point = sampleWaveFlight(curve, t);
+    const nextX = point.x;
+    const nextY = point.y;
 
     // Calc rotation based on delta
     const dx = nextX - this.x;

@@ -6890,7 +6890,11 @@ export class PlayScene {
       root.addChild(overlay);
     }
 
+    const squadronClear = Number(options.squadronCount)>0 ? new PIXI.Graphics() : null;
+    if (squadronClear) { squadronClear.label='squadron_clear_wings'; root.addChild(squadronClear); }
     root.__waveClearCommandHudFx = {
+      squadronClear,
+      squadronCount:Math.min(6,Math.max(1,Number(options.squadronCount)||1)),
       left,
       right,
       sweep,
@@ -7416,6 +7420,7 @@ export class PlayScene {
       restrained: !isSectorClear,
       novaCommandVariant: isSectorClear ? 'major' : undefined,
       accent: isSectorClear ? 0x75ff8d : NOVA_COMMAND_HUD_TOKENS.primaryEdge,
+      squadronCount: Number(options.squadronCount) || 0,
       waveClearCommandHud: !isSectorClear,
       primaryText: label,
       secondaryText: secondaryLine,
@@ -20510,6 +20515,22 @@ export class PlayScene {
             commandFx.sweep.x = -commandFx.plateWidth / 2 + 34 +
               sweepProgress * (commandFx.plateWidth - 68);
             commandFx.sweep.alpha = Math.sin(sweepProgress * Math.PI) * 0.54;
+          }
+        }
+        if (commandFx.squadronClear) {
+          const g=commandFx.squadronClear;g.clear();
+          const progress=commandFx.reducedMotion?1:Math.min(1,elapsed/680);
+          const count=commandFx.squadronCount,edge=commandFx.plateWidth/2;
+          const room=Math.max(0,(commandFx.panelWidth-commandFx.plateWidth)/2-12);
+          for(const side of [-1,1])for(let i=0;i<count;i++){
+            const k=(i+1)/(count+1),hot=progress>=k;
+            const x=side*(edge+8+k*Math.max(0,room-8)),span=hot?12:7;
+            g.moveTo(x-side*4,-span).lineTo(x+side*4,0).lineTo(x-side*4,span)
+              .stroke({color:hot?0xffd891:0x315566,width:hot?2.5:1,alpha:hot?.95:.35});
+            if(hot&&!commandFx.reducedMotion){
+              const burst=Math.max(0,1-(progress-k)*4);
+              g.moveTo(x,0).lineTo(x+side*burst*9,-burst*17).stroke({color:0xfff3ce,width:1.2,alpha:burst*.8});
+            }
           }
         }
         if (display._debugWaveClearEffect) {

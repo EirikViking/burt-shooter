@@ -30,6 +30,7 @@ const isFramePacingProbe = process.argv.includes('--frame-pacing-probe') || proc
 const isFreshProfile = process.argv.includes('--nova-fresh-profile') || process.env.NOVA_SWARM_FRESH_PROFILE === '1';
 const FRESH_PROFILE_STEAM_REASON = 'fresh_profile_isolated';
 const useClassicBossArsenal = process.argv.includes('--nova-boss-classic') || process.env.NOVA_SWARM_BOSS_ARSENAL === 'classic';
+const usePreviousFlight = process.argv.includes('--nova-flight-previous') || process.env.NOVA_SWARM_FLIGHT === 'previous';
 const usePreviousBossEncounter = process.argv.includes('--nova-boss-previous') || process.env.NOVA_SWARM_BOSS_ENCOUNTER === 'previous';
 const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
 const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isPerfSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isSteamCaptureProbe && !isWindowed;
@@ -687,6 +688,7 @@ function createWindow() {
     ? `${baseUrl}/?desktop=1${isFreshProfile ? '&offlineLeaderboard=1' : ''}`
     : `${pathToFileURL(path.join(distDir, 'index.html')).toString()}${isFreshProfile ? '?offlineLeaderboard=1' : ''}`;
   if (useClassicBossArsenal) gameUrl += `${gameUrl.includes('?') ? '&' : '?'}bossArsenal=classic`;
+  if (usePreviousFlight) gameUrl += `${gameUrl.includes('?') ? '&' : '?'}flight=previous`;
   if (usePreviousBossEncounter) gameUrl += `${gameUrl.includes('?') ? '&' : '?'}bossEncounter=previous`;
   const framePacingProbeUrl = baseUrl
     ? `${baseUrl}/frame-pacing-probe.html`

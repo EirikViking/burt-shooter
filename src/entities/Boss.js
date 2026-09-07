@@ -1,3 +1,4 @@
+import { ARCADE_FLIGHT_ENABLED, sampleBossFlight } from '../config/ArcadeFlight.js';
 import { BOSS_ARSENAL_ENABLED, getBossArsenal } from '../config/BossArsenal.js';
 import { hasColossus } from '../config/BossReinvention.js';
 import { ColossusRig, loadColossus } from '../effects/ColossusRig.js';
@@ -1704,6 +1705,7 @@ export class Boss {
   applyBossMovement(delta, playerX, playerY) {
     if (this.attackWarningToken?.movementLocked) return;
 
+    const previousX = this.x, previousY = this.y;
     const profile = this.moveProfile || this.getMoveProfile(this.bossType);
     const t = this.moveTimer * 0.02;
     const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
@@ -1789,6 +1791,14 @@ export class Boss {
         break;
     }
 
+    if (ARCADE_FLIGHT_ENABLED && hasColossus(this.profile?.archetype)) {
+      const target = sampleBossFlight({family:this.profile.archetype,time:this.moveTimer/60,phase:this.phase,level:this.level,
+        width:gameWidth,height:gameHeight,anchorX,laneY});
+      const distance=Math.hypot(target.x-previousX,target.y-previousY);
+      const step=Math.min(1, Math.max(0,delta)/60 * gameWidth*.15 / Math.max(.001,distance));
+      this.x=previousX+(target.x-previousX)*step;this.y=previousY+(target.y-previousY)*step;
+      this.flightDebug={...target,speedCap:gameWidth*.15};
+    }
     this.x = clamp(this.x, gameWidth * 0.12, gameWidth * 0.88);
     this.y = clamp(this.y, gameHeight * 0.13, gameHeight * 0.43);
 

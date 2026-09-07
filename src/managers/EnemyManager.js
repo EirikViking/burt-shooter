@@ -1,3 +1,4 @@
+import { waveFlightPlan, ARCADE_FLIGHT_ENABLED } from '../config/ArcadeFlight.js';
 import * as PIXI from 'pixi.js';
 import { Enemy } from '../entities/Enemy.js';
 import { Boss } from '../entities/Boss.js';
@@ -3514,7 +3515,8 @@ export class EnemyManager {
         }
         const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs + (Number(config.reinforcementEntryDelayMs) || 0));
         const resolvedEntryDurationMs = entryDurationMs * Math.max(0.6, Math.min(1.2, Number(enemy.nemesisOpeningEntryDurationMult) || 1));
-        enemy.startEntry(startX, startY, pos.x, pos.y, resolvedEntryDurationMs, entryDelayMs);
+        const flight = waveFlightPlan(config, this.level, this.currentWaveIndex, i, screenW, this.game.getHeight());
+        enemy.startEntry(startX, startY, pos.x, pos.y, flight ? Math.max(entryDurationFloor, resolvedEntryDurationMs * flight.durationScale) : resolvedEntryDurationMs, entryDelayMs, flight);
         if (enemy.contactSafeDuringEntry) {
           enemy.bottomEntrySafetyDebug = {
             route: reinforcementEntryRoute,
@@ -5853,6 +5855,7 @@ export class EnemyManager {
         const waveClearPresented = this.measurePerformance('first_use_asset_effect_creation.wave_bonus_effect', () => (
           this.game.scenes.play.showWaveBonusEffect(appliedBonus, transitionLabel, {
             compact: hasUpcomingWave,
+            squadronCount: ARCADE_FLIGHT_ENABLED ? Number(clearedWave?.count) || 0 : 0,
             subtitle: `${nextLabel}${repairLabel}`,
             sfxKey: hasUpcomingWave ? 'nova_wave_clear_sweep' : 'levelComplete'
           })
