@@ -997,6 +997,18 @@ async function runSmoke() {
     if (blockingIssues.length) {
       throw new Error(`Smoke playtest failed: ${blockingIssues.join('; ')}`);
     }
+  } catch (error) {
+    // Preserve real failure state before closing tabs, especially intermittent
+    // startup waits. This does not relax any smoke assertion or timeout.
+    const failedPages = [];
+    for (const context of browser.contexts()) {
+      for (const page of context.pages()) {
+        failedPages.push({ url: page.url(), state: await collectGameState(page).catch(() => null) });
+        await page.screenshot({ path: path.join(outputDir, `failure-${failedPages.length}.png`) }).catch(() => {});
+      }
+    }
+    writeFileSync(path.join(outputDir, 'failure-state.json'), JSON.stringify(failedPages, null, 2));
+    throw error;
   } finally {
     await browser.close();
     if (server) server.kill();

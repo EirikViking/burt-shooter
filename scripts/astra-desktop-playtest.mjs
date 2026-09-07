@@ -116,5 +116,5 @@ try {
   await open();await page.waitForFunction(()=>window.__game.scenes.menu?.runModeLaunchButton);const b=await page.evaluate(()=>{const b=window.__game.scenes.menu.runModeLaunchButton.getBounds();return{x:b.x+b.width/2,y:b.y+b.height/2};});await page.mouse.click(b.x,b.y);await ready();await shot('12-relaunched');
   assert.equal(report.errors.length,0,report.errors.join('\n'));report.status='passed';flush();
   }
-} catch(error){report.status='failed';report.failure=error.stack;flush();await page.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});throw error;}
+} catch(error){report.status='failed';report.failure=error.stack;report.failureState=await state().catch(()=>null);report.startupState=await page.evaluate(()=>{const p=window.__game?.scenes?.play;return Object.fromEntries(Object.entries(p||{}).filter(([k,v])=>/intro|start|pending|pause|ready|token/i.test(k)&&['string','number','boolean'].includes(typeof v)));}).catch(()=>null);flush();await page.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});throw error;}
 finally{await app.close();log.end();}
