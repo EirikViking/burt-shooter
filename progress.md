@@ -3249,3 +3249,5 @@ Original request: continue improving the current non-Unity game and choose three
 
 ## 2026-09-07 flight revision
 - Clean baseline 384cec24de8836d6e75cdc8b2b067aa2661d5417; same experimental branch. Fetch/status/branch/log/worktree verified; no upstream configured, current user-tested checkout is baseline. Rollback tag codex/flight-revision-before-20260907. Investigating faint boss square; six authored normal-wave routes, bounded family patrols, modest 6% entry-time trim from sector 4, stronger existing reward presentation. No new sound or score inflation; preserve challenge/reinforcement/authored special routes.
+
+- User screenshot Skjermbilde (75).png identifies constant pink chamfered outline. Root cause is PlayScene.updateBossPriorityEdge: four arcs in one connected Graphics path draw joining lines. Decorative only, no collision/arming role. Removed for all bosses; kept diagnostic method/layer compatibility. Updated obsolete visual-presence assertion to require removal; warning/collision tests remain intact.

@@ -582,10 +582,10 @@ async function captureBossReadability(page, sizeLabel) {
     state.healthBar?.missionStatusDuplicatesHealth === false &&
     !String(state.missionText).includes('BOSS HP'),
   `boss HP remained duplicated at ${sizeLabel}: ${JSON.stringify(state)}`);
-  assert(state.priorityEdge?.visible === true &&
-    state.priorityEdge?.routineFriendlyProjectilesBelow === true &&
-    state.priorityEdge?.hostileProjectilesAbove === true,
-  `boss priority edge ordering failed at ${sizeLabel}: ${JSON.stringify(state)}`);
+  assert(state.priorityEdge?.visible === false &&
+    state.priorityEdge?.reason === 'decorative_frame_removed' &&
+    state.priorityEdge?.segmentCount === 0,
+  `rejected boss frame returned at ${sizeLabel}: ${JSON.stringify(state)}`);
   return {
     state,
     dense,

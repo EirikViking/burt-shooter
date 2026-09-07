@@ -96,7 +96,7 @@ const telegraphPalette = block(boss, 'getTelegraphVfxPalette(', 'drawTelegraphCh
 for (const safeCyan of ['0x72fff1', '0x74fff0', '0x8cffb5']) {
   assert(!telegraphPalette.includes(safeCyan), `boss danger palette still uses safe/player hue ${safeCyan}`);
 }
-assert.match(play, /restrained_boss_priority_edge_v1/, 'boss priority edge pass is missing');
+assert.match(play, /reason: 'decorative_frame_removed'/, 'rejected decorative boss frame must remain disabled');
 assert.match(play, /routineFriendlyProjectilesBelow:\s*80 < layer\.zIndex/, 'boss edge is not proven above routine friendly fire');
 
 for (const metric of [

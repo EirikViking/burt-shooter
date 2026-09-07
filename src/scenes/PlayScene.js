@@ -10343,65 +10343,18 @@ export class PlayScene {
     };
   }
 
-  updateBossPriorityEdge(delta = 1) {
+  updateBossPriorityEdge() {
     const layer = this.bossPriorityEdgeLayer;
-    const boss = this.enemyManager?.boss;
     if (!layer) return null;
+    // The old four connected arcs formed a faint box around the ship. This
+    // decorative target marker carries no collision or warning information.
     layer.clear();
-    if (
-      !boss?.active ||
-      !boss.sprite?.visible ||
-      this.isPaused ||
-      this.gameOverSequenceStarted ||
-      this.gameOverInterlude?.active ||
-      this.overrunMilestoneInterlude?.active
-    ) {
-      layer.visible = false;
-      layer._debugBossPriorityEdge = {
-        visible: false,
-        reason: boss?.active ? 'scene_suppressed' : 'no_active_boss',
-        segmentCount: 0
-      };
-      return layer._debugBossPriorityEdge;
-    }
-
-    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
-    const radius = Math.max(46, Number(boss.getVisualRadius?.() || boss.visualRadius || boss.radius) + 18);
-    const pulse = reducedMotion ? 0.5 : (0.5 + Math.sin(Date.now() * 0.008 + (Number(delta) || 0) * 0.04) * 0.5);
-    const segmentSweep = 0.23;
-    const rotation = reducedMotion ? Math.PI / 4 : Math.PI / 4 + Math.sin(Date.now() * 0.0013) * 0.025;
-    const dangerColor = Number(boss.health) <= Number(boss.maxHealth) * 0.25 ? 0xffd166 : 0xff5f72;
-    layer.visible = true;
-    for (let index = 0; index < 4; index += 1) {
-      const angle = rotation + index * Math.PI / 2;
-      layer.arc(boss.x, boss.y, radius, angle - segmentSweep, angle + segmentSweep);
-    }
-    layer.stroke({
-      color: dangerColor,
-      width: 1.35,
-      alpha: (reducedMotion ? 0.32 : 0.3 + pulse * 0.16)
-    });
-    for (let index = 0; index < 4; index += 1) {
-      const angle = rotation + index * Math.PI / 2;
-      const inner = radius - 5;
-      const outer = radius + 5;
-      layer.moveTo(boss.x + Math.cos(angle) * inner, boss.y + Math.sin(angle) * inner);
-      layer.lineTo(boss.x + Math.cos(angle) * outer, boss.y + Math.sin(angle) * outer);
-    }
-    layer.stroke({ color: 0xffffff, width: 1, alpha: reducedMotion ? 0.22 : 0.18 + pulse * 0.12 });
+    layer.visible = false;
     layer._debugBossPriorityEdge = {
-      visible: true,
-      visualLanguage: 'restrained_boss_priority_edge_v1',
-      x: Math.round(boss.x),
-      y: Math.round(boss.y),
-      radius: Math.round(radius),
-      segmentCount: 4,
-      tickCount: 4,
-      dangerColor,
-      zIndex: layer.zIndex,
-      hostileProjectilesAbove: 120 > layer.zIndex,
-      routineFriendlyProjectilesBelow: 80 < layer.zIndex,
-      reducedMotion
+      visible: false,
+      reason: 'decorative_frame_removed',
+      segmentCount: 0,
+      tickCount: 0
     };
     return layer._debugBossPriorityEdge;
   }
