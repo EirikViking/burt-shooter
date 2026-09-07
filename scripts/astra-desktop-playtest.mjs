@@ -80,7 +80,7 @@ try {
   await open();await page.waitForFunction(()=>window.__game.scenes.menu?.backdrop?.texture,null,{timeout:120000});
   if(!baseline)await page.waitForFunction(()=>window.__game.scenes.menu.astraMenuShip?.ready,null,{timeout:120000});
   await page.waitForTimeout(1200);await shot('01-menu');
-  const bounds=await page.evaluate(()=>{const b=window.__game.scenes.menu.runModeLaunchButton.getBounds();return{x:b.x,y:b.y,width:b.width,height:b.height};});
+  const bounds=await page.evaluate(()=>{const m=window.__game.scenes.menu,o=m.launchHome?.buttons.launchTactical||m.runModeLaunchButton;if(!o.visible||!o.parent.visible)throw Error('Launch control must be visible');const b=o.getBounds();return{x:b.x,y:b.y,width:b.width,height:b.height};});
   const launchAt=Date.now();await page.mouse.click(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await ready();report.performance.push({name:'menu-to-controllable',loadMs:Date.now()-launchAt});
   await shot('02-opening');
   if(process.argv.includes('--record-opening')){
@@ -113,7 +113,7 @@ try {
   await page.keyboard.press('Enter');await page.waitForTimeout(1200);report.restartAfterEnter=(await state()).scene;
   assert.equal(report.restartAfterEnter,'play','Enter must restart directly from the result screen');await ready();await shot('11-restarted');
   // Record a second launch as well as the input-driven result-screen transition.
-  await open();await page.waitForFunction(()=>window.__game.scenes.menu?.runModeLaunchButton);const b=await page.evaluate(()=>{const b=window.__game.scenes.menu.runModeLaunchButton.getBounds();return{x:b.x+b.width/2,y:b.y+b.height/2};});await page.mouse.click(b.x,b.y);await ready();await shot('12-relaunched');
+  await open();await page.waitForFunction(()=>window.__game.scenes.menu?.runModeLaunchButton);const b=await page.evaluate(()=>{const m=window.__game.scenes.menu,o=m.launchHome?.buttons.launchTactical||m.runModeLaunchButton;if(!o.visible||!o.parent.visible)throw Error('Relaunch control must be visible');const b=o.getBounds();return{x:b.x+b.width/2,y:b.y+b.height/2};});await page.mouse.click(b.x,b.y);await ready();await shot('12-relaunched');
   assert.equal(report.errors.length,0,report.errors.join('\n'));report.status='passed';flush();
   }
 } catch(error){report.status='failed';report.failure=error.stack;report.failureState=await state().catch(()=>null);report.startupState=await page.evaluate(()=>{const p=window.__game?.scenes?.play;return Object.fromEntries(Object.entries(p||{}).filter(([k,v])=>/intro|start|pending|pause|ready|token/i.test(k)&&['string','number','boolean'].includes(typeof v)));}).catch(()=>null);flush();await page.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});throw error;}
