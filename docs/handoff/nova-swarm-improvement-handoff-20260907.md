@@ -1,6 +1,14 @@
 # Nova Swarm: continuation handoff — 7 September 2026
 
-## Latest delivery: cores and serpents
+## Latest delivery: cinematic launch menu
+
+The subsequently approved main-menu redesign is complete. Read `docs/cinematic-launch-menu-20260907.md` for full provenance, QA, intermediate failures and rollback. Baseline was clean `6b2e86b5b8611fdbc796db9b9be80e8a1c45280a` on this uniquely owned `codex/astra-visual-overhaul` branch. Runtime **373e23f** adds the cinematic generated launch bay, dominant direct Tactical Play, saved ship/manual rotation, visible Other Modes with remembered alternative selection, restrained navigation and all eight translations. Detailed alternative-mode rules remain available. Existing ElevenLabs sounds and the earlier core/snake/HUD expansion are preserved.
+
+Steam Build **25175308** is verified on **sector-continue-test**, manifest **7033274111373604527**. Public/default remains **25169120**, test-build **23782673**, Cloud/service settings unchanged. Package: `test-results/astra-build-2026-09-07T21-15-45-887Z/win-unpacked/Nova Swarm.exe`; receipt: `test-results/launch-menu-steam-upload-373e23f/receipt.json`. Every one of 410 uploaded regular files matches the tested package. This verifies server assignment and packaged QA, not a Steam-client download or human test.
+
+Final packaged menu, twelve-step desktop, startup, controls and performance checks pass without renderer warnings/errors. Production localization covers eight languages/80 captures; controller, responsive and gameplay smoke checks pass. One-minute native performance: **60.42 average / 58.82 minimum sampled FPS**. Settings return dimming and duplicate rotation hints were caught visually and corrected; old tests were updated to target visible controls. Preserve all older unresolved stall/pacing limitations and the fact that the user bot has not been supplied. No further implementation or upload is pending; await the user's test feedback or next request. Rollback test build is **25173832**; source rollback is documented in the menu report. Later documentation/test-only commits do not change runtime 373e23f.
+
+## Previous delivery: cores and serpents
 
 The later user-approved expansion is complete. Read `docs/core-serpent-expansion-20260907.md` before continuing; it supersedes the runtime, Steam build and rollback values in the earlier handoff below. Baseline was `67c84381fb3e3304fa99a2424b9583905a3dafa4` on the same uniquely owned `codex/astra-visual-overhaul` branch. Delivered runtime is `8b2b9870c018c0a9033b045eb55283b80f75667f`; later documentation commits do not alter the executable. Steam Build **25173832** is verified on **sector-continue-test**, with public/default **25169120**, test-build **23782673**, and Cloud configuration unchanged.
 
