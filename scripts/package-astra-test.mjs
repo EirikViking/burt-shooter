@@ -10,6 +10,9 @@ mkdirSync(output,{recursive:true});
 const config=JSON.parse(readFileSync('electron-builder.json','utf8'));
 config.directories.output=output;
 config.files=config.files.map(entry=>entry==='dist/**/*'?{from:candidateDist,to:'dist',filter:['**/*']}:entry);
+// The candidate dist above has its own file matcher. Do not recursively scan
+// preserved builds and capture evidence through the repository-root matcher.
+config.files.push('!test-results{,/**/*}');
 const configPath=path.join(output,'builder-config.json');writeFileSync(configPath,JSON.stringify(config,null,2));
 writeFileSync('test-results/astra-build-location.json',JSON.stringify({output,configPath,executable:path.join(output,'win-unpacked','Nova Swarm.exe')},null,2));
 const log=openSync(path.join(output,'packaging.log'),'w');
