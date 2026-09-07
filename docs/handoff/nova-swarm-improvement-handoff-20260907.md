@@ -1,5 +1,13 @@
 # Nova Swarm: continuation handoff — 7 September 2026
 
+## Latest delivery: cores and serpents
+
+The later user-approved expansion is complete. Read `docs/core-serpent-expansion-20260907.md` before continuing; it supersedes the runtime, Steam build and rollback values in the earlier handoff below. Baseline was `67c84381fb3e3304fa99a2424b9583905a3dafa4` on the same uniquely owned `codex/astra-visual-overhaul` branch. Delivered runtime is `8b2b9870c018c0a9033b045eb55283b80f75667f`; later documentation commits do not alter the executable. Steam Build **25173832** is verified on **sector-continue-test**, with public/default **25169120**, test-build **23782673**, and Cloud configuration unchanged.
+
+Delivered: ten rare non-power bonus cores with a shared randomized 2–4-sector budget, four connected snake species eligible from sector 6 with randomized 20% rolls on eligible ordinary waves, full Codex/localization and ElevenLabs monster/reward sounds, six rotating enemy effect families, +50% boss fuel in sectors 1–20, central sector headline and contextual trait display. The user rejected a large gold sidebar sector box. Keep the short trait introduction, actionable experimental notices, pause explanation and ship-centered phase cues. Snakes always pay a bounty; their core drops spend the same shared rarity budget.
+
+Final native feature/startup/controller/twelve-step/performance checks pass. One-minute performance: 59.86 FPS average, 58.82 minimum sampled reading. Preserve the older unexplained 13.1-second stall and three inherited incompatible checks; no claim of a fix or human enjoyment validation. The user's testing bot remains unsupplied and unused. The report records intermediate failures and the browser resource-buffer warning, as well as exact package, hash proof, Steam receipt and rollback. Do not repeat completed asset production or upload this build to public/default without a new instruction.
+
 ## Start here
 
 Continue improving the actual game in `D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822`. Read the current root `AGENTS.md`, this handoff, `docs/astra-opening-balance-20260907.md` and the newest section of `progress.md` before editing. This file transfers context; it is not permission to publish public announcements, change Steamworks service settings or discard work.
