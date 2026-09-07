@@ -25,6 +25,7 @@ export class EnemyOrbitRig extends PIXI.Container {
     this.satellites = [];
     const count = this.familyIndex === 2 ? 2 : 3;
     for(let j=0;j<count;j++) {
+      const ring = new PIXI.Container();
       const g = new PIXI.Graphics();
       const radius = this.radius + j * 5;
       const blades = [3,5,6,2,4,8][this.familyIndex];
@@ -44,7 +45,8 @@ export class EnemyOrbitRig extends PIXI.Container {
           .fill({color:j%2?0xc2dce4:this.accent,alpha:.92});
         g.circle(x,y,2.4).fill({color:0xffffff,alpha:.92});
       }
-      this.rings.push(g);this.addChild(g);
+      ring.addChild(g);
+      this.rings.push(ring);this.addChild(ring);
     }
     preloadEnemyOrbitMaterial().then(texture => {
       if(this.destroyed)return;
