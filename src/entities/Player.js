@@ -1947,8 +1947,6 @@ export class Player {
       if (this.sprite.alpha > 1) this.sprite.alpha = 1;
     }
 
-    updateRelicHullDetail(this);
-
     // Damage Flash Effect
     if (this.flashTimer < this.flashDuration) {
       this.flashTimer += dt;
@@ -2079,6 +2077,7 @@ export class Player {
         }
       }
     }
+    updateRelicHullDetail(this);
     this.updateEngineVfx(dx, dy, deltaSeconds);
     this.updateFocusRing(deltaSeconds);
     this.updateStatusEffectVisuals(deltaSeconds);
