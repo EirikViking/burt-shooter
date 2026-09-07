@@ -302,7 +302,8 @@ async function snapshot(page) {
       },
       pause: {
         title: pause?.title?.text || scene?.pauseTitle?.text || null,
-        resume: pause?.resumeButton?._label?.text || null
+        resume: pause?.resumeButton?._label?.text || null,
+        trait: play?.pauseOverlay?.children?.find(child => child.label === 'ui_pauseTraitExplanation')?.text || null
       },
       gameOver: {
         title: game?.scenes?.gameOver?.title?.text || null,

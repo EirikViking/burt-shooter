@@ -7,6 +7,14 @@ import { getCoreReward } from '../src/progression/BonusCoreRewards.js';
 import { rollCoreSectorGap, makeCoreCadence, spendCoreCadence } from '../src/config/BonusCoreCadence.js';
 import { getThreatCodexCatalog } from '../src/config/ThreatCodexCatalog.js';
 import { getSpaceSnakeText } from '../src/i18n/coreSerpentText.js';
+import { ShipData } from '../src/config/ShipData.js';
+import { buildSelectableShipVariants } from '../src/config/VisualVariantCatalog.js';
+const traitSummaries = [...new Set(buildSelectableShipVariants(ShipData).map(ship => ship.trait?.description).filter(Boolean))];
+assert.ok(traitSummaries.length >= 29);
+for (const locale of ['de','es','ru','zh-CN','pt-BR','ko','ja']) {
+ const dictionary = Object.values(await import(`../src/i18n/locales/${locale}.js`)).find(value => value?.sourceText)?.sourceText;
+ for (const summary of traitSummaries) assert.ok(dictionary?.[summary] && dictionary[summary] !== summary, `${locale}: untranslated pause trait ${summary}`);
+}
 assert.equal(BONUS_CORES.length,10);
 assert.equal(new Set(BONUS_CORES.map(c=>c.reward)).size,10);
 assert.equal(new Set(BONUS_CORES.map(c=>c.art)).size,10);
