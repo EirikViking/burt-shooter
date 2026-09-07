@@ -108,6 +108,7 @@ try {
     if (!game || !play || !hud || !player) return { ok: false, reason: 'missing play HUD/player' };
 
     play.introActive = false;
+    play.gameTime = 20; // Review the normal HUD after the brief trait introduction.
     play.introComplete = true;
     if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
     if (play.enemyManager) {
@@ -183,6 +184,7 @@ try {
         recordPriority: hud.highscoreChaseGroup?._debugPriority || null,
         powerupPriority: hud.activePowerupGroup?._debugPriority || null,
         traitPriority: hud.traitGroup?._debugPriority || null,
+        traitVisible: Boolean(hud.traitGroup?.visible),
         livesAlpha: Number(hud.livesGroup?.alpha ?? 0),
         missionTextAlpha: Number(hud.missionText?.alpha ?? 0),
         directiveAlpha: Number(hud.directiveText?.alpha ?? 0),
@@ -256,7 +258,7 @@ try {
       state.hierarchy?.livesAlpha >= state.hierarchy?.scoreAlpha &&
       state.hierarchy?.scoreAlpha > state.hierarchy?.rankAlpha &&
       state.hierarchy?.scoreAlpha > state.hierarchy?.recordAlpha &&
-      state.hierarchy?.traitAlpha > state.hierarchy?.rankAlpha &&
+      (!state.hierarchy?.traitVisible || state.hierarchy?.traitAlpha > state.hierarchy?.rankAlpha) &&
       state.hierarchy?.missionTextAlpha > state.hierarchy?.directiveAlpha &&
       bossHierarchy?.tier === 'critical' &&
       bossHierarchy?.boss === true &&

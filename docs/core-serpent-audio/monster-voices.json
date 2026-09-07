@@ -1,0 +1,97 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "createdAt": "2026-09-07T16:22:19.372Z",
+  "plan": "creator",
+  "license": "Original monster SFX generated on an active commercial ElevenLabs plan.",
+  "cues": [
+    {
+      "name": "serpent_1_hunt",
+      "path": "public/audio/sfx/core-serpent/serpent_1_hunt.mp3",
+      "request": {
+        "text": "Terrifying cinematic alien SNAKE MONSTER vocalization. Cinder Maw: enormous burned serpent, gravelly furnace throat, crackling wet rasp, harsh rising reptilian screech over a powerful guttural roar. Aggressive hunting threat call, immediate onset, fierce and frightening. Same family of biological reptilian throats, no speech, music, lasers or beeps.",
+        "duration_seconds": 3.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "0fabbea587f06a7ca10fd1faffbe20b710f8475827896ffb93f650504e77e0f9"
+    },
+    {
+      "name": "serpent_1_death",
+      "path": "public/audio/sfx/core-serpent/serpent_1_death.mp3",
+      "request": {
+        "text": "Terrifying cinematic alien SNAKE MONSTER vocalization. Cinder Maw: enormous burned serpent, gravelly furnace throat, crackling wet rasp, harsh rising reptilian screech over a powerful guttural roar. Violent death scream, vocal strain breaking into a deep collapsing final exhale. Same family of biological reptilian throats, no speech, music, lasers or beeps.",
+        "duration_seconds": 2.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "aab85048e0a96c708e6026865d914679543f035333d1b41ab0ac3080cfff4365"
+    },
+    {
+      "name": "serpent_2_hunt",
+      "path": "public/audio/sfx/core-serpent/serpent_2_hunt.mp3",
+      "request": {
+        "text": "Terrifying cinematic alien SNAKE MONSTER vocalization. Thorn Cathedral: enormous thorn-armored serpent, venomous pressurized hiss swelling into a serrated rattling snake-monster scream, resonant chest growl underneath. Aggressive hunting threat call, immediate onset, fierce and frightening. Same family of biological reptilian throats, no speech, music, lasers or beeps.",
+        "duration_seconds": 3.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "05d89a973907611d0daf9aa150cb559e7e7147a688825c3ed7b714474c456bed"
+    },
+    {
+      "name": "serpent_2_death",
+      "path": "public/audio/sfx/core-serpent/serpent_2_death.mp3",
+      "request": {
+        "text": "Terrifying cinematic alien SNAKE MONSTER vocalization. Thorn Cathedral: enormous thorn-armored serpent, venomous pressurized hiss swelling into a serrated rattling snake-monster scream, resonant chest growl underneath. Violent death scream, vocal strain breaking into a deep collapsing final exhale. Same family of biological reptilian throats, no speech, music, lasers or beeps.",
+        "duration_seconds": 2.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "bdc6a78187895a91af229f6327f1c95e5ee6b514bbe28c65c89f77b54f915ad2"
+    },
+    {
+      "name": "serpent_3_hunt",
+      "path": "public/audio/sfx/core-serpent/serpent_3_hunt.mp3",
+      "request": {
+        "text": "Terrifying cinematic alien SNAKE MONSTER vocalization. Violet Widow: enormous alien serpent, chilling high piercing shriek with two discordant throaty pitches beating together, predatory breath hiss and a savage rasp. Aggressive hunting threat call, immediate onset, fierce and frightening. Same family of biological reptilian throats, no speech, music, lasers or beeps.",
+        "duration_seconds": 3.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "f21325f1f37ead26501dcfc916ef3e227ced20166c6ec2cebe76ca4f55c9d84b"
+    },
+    {
+      "name": "serpent_3_death",
+      "path": "public/audio/sfx/core-serpent/serpent_3_death.mp3",
+      "request": {
+        "text": "Terrifying cinematic alien SNAKE MONSTER vocalization. Violet Widow: enormous alien serpent, chilling high piercing shriek with two discordant throaty pitches beating together, predatory breath hiss and a savage rasp. Violent death scream, vocal strain breaking into a deep collapsing final exhale. Same family of biological reptilian throats, no speech, music, lasers or beeps.",
+        "duration_seconds": 2.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "38a59c94614b9f1530b3e614cb9a62b0b0e03c8e804d2ea25c6a3f4025105d1f"
+    },
+    {
+      "name": "serpent_4_hunt",
+      "path": "public/audio/sfx/core-serpent/serpent_4_hunt.mp3",
+      "request": {
+        "text": "Terrifying cinematic alien SNAKE MONSTER vocalization. Abyss Crown: enormous deep-space serpent, abyssal resonant bellow rising into an anguished metallic reptile screech, huge chest resonance and cold rattling breath. Aggressive hunting threat call, immediate onset, fierce and frightening. Same family of biological reptilian throats, no speech, music, lasers or beeps.",
+        "duration_seconds": 3.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "19248588c86b718c038c735073bfd3410d6646dcdfd43f1670fb0e75a6597365"
+    },
+    {
+      "name": "serpent_4_death",
+      "path": "public/audio/sfx/core-serpent/serpent_4_death.mp3",
+      "request": {
+        "text": "Terrifying cinematic alien SNAKE MONSTER vocalization. Abyss Crown: enormous deep-space serpent, abyssal resonant bellow rising into an anguished metallic reptile screech, huge chest resonance and cold rattling breath. Violent death scream, vocal strain breaking into a deep collapsing final exhale. Same family of biological reptilian throats, no speech, music, lasers or beeps.",
+        "duration_seconds": 2.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "299ba366423fc6489eb89058ebeeeba2507ca8552df8fe2d020972ce2918d6e3"
+    }
+  ]
+}

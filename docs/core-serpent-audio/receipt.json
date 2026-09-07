@@ -1,0 +1,42 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "createdAt": "2026-09-07T16:17:03.752Z",
+  "plan": "creator",
+  "license": "Original SFX generated on active paid ElevenLabs plan for commercial game use.",
+  "cues": [
+    {
+      "name": "serpent_arrive",
+      "path": "public/audio/sfx/core-serpent/serpent_arrive.mp3",
+      "request": {
+        "text": "A terrifying biomechanical space serpent emerging: deep resonant alien growl under interlocking metal vertebrae sliding and clicking in a sinuous cascade. Rich cinematic bass, organic electrical menace, polished science fiction game effect. One distinct arrival, no voice, music or beeps.",
+        "duration_seconds": 2.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.65
+      },
+      "sha256": "cba7801e9c8382a00f9ad819d02f25cb29e69c25ae07c2c90dd2ebef7c2cfe05"
+    },
+    {
+      "name": "serpent_break",
+      "path": "public/audio/sfx/core-serpent/serpent_break.mp3",
+      "request": {
+        "text": "A heavy alien armored vertebra shattering: sharp brittle titanium fracture, wet electrical plasma snap, tiny falling mechanical fragments, compact satisfying cinematic impact. Single short game enemy destruction sound, no voices, no music.",
+        "duration_seconds": 1.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.65
+      },
+      "sha256": "7b6ae1241568265a565ec9d8618cbe09d7b4b878be72989db740634a58bec61e"
+    },
+    {
+      "name": "core_capture",
+      "path": "public/audio/sfx/core-serpent/core_capture.mp3",
+      "request": {
+        "text": "A valuable futuristic crystal reactor being captured: a satisfying magnetic lock, exquisite glass metal chime, warm rising energy flourish with a rich soft low pulse. Premium rewarding sci-fi game pickup sound, short and joyful, no voice, music or beeps.",
+        "duration_seconds": 1.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.65
+      },
+      "sha256": "e0f96c6e1f0a5b21b10c250ca002bee4abfca0451b996e88a3656db866d433b4"
+    }
+  ]
+}

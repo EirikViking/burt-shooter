@@ -1,3 +1,4 @@
+import { BONUS_CORES } from '../config/BonusCoreCatalog.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { BOSS_ARSENALS } from '../config/BossArsenal.js';
 import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
@@ -523,6 +524,10 @@ export const VOICE_EVENT_FALLBACKS = {
 
 export const SFX_CATALOG = {
     ...Object.fromEntries(Object.keys(BOSS_ARSENALS).map(key => [`boss_arsenal_${key}`, [`/audio/sfx/arsenal/${key}.wav`]])),
+    serpent_arrive: ['/audio/sfx/core-serpent/serpent_arrive.mp3'],
+    serpent_break: ['/audio/sfx/core-serpent/serpent_break.mp3'],
+    ...Object.fromEntries(BONUS_CORES.map(core => [core.sound, [`/audio/sfx/core-serpent/${core.sound}.mp3`]])),
+    ...Object.fromEntries([1,2,3,4].flatMap(i => ['hunt','death'].map(event => [`serpent_${i}_${event}`, [`/audio/sfx/core-serpent/serpent_${i}_${event}.mp3`]]))),
     'shoot_small': [
         getSfx('laserSmall_000'), getSfx('laserSmall_001'), getSfx('laserSmall_002'), getSfx('laserSmall_003'), getSfx('laserSmall_004')
     ],

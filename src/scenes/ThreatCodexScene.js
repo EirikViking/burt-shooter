@@ -37,8 +37,8 @@ const CATEGORY_ACCENTS = Object.freeze({
   pilotRanks: 0xffe76a
 });
 
-function localize(source) {
-  return translateText(source);
+function localize(source, vars = {}) {
+  return translateText(source, vars);
 }
 
 function codexUi(key) {
@@ -191,7 +191,7 @@ function makeSignalSeed(id = '') {
 }
 
 function getCodexStatLabels(categoryId) {
-  if (categoryId === 'enemies' || categoryId === 'elites') {
+  if (categoryId === 'enemies' || categoryId === 'elites' || categoryId === 'spaceSnakes') {
     return {
       primary: 'ENCOUNTERS',
       secondary: 'DESTROYED',
@@ -413,7 +413,11 @@ export class ThreatCodexScene {
   getEntriesForCategory(categoryId = this.getCategory().id) {
     const catalogEntries = this.catalog[categoryId] || [];
     const discovered = this.discoveryState.items?.[categoryId] || {};
-    const merged = [...catalogEntries];
+    const merged = catalogEntries.map(entry => {
+      if (entry.id !== 'bonus_core_relic') return entry;
+      const count = Math.min(3, Number(discovered[entry.id]?.metadata?.collected) || 0);
+      return { ...entry, description: entry.description + '\n\n' + localize(count >= 3 ? 'Gold hull detailing unlocked' : 'Relics: {count}/3', { count }) };
+    });
     const known = new Set(catalogEntries.map((entry) => entry.id));
     Object.entries(discovered).forEach(([id, item]) => {
       if (known.has(id)) return;

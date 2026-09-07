@@ -1,4 +1,5 @@
 import { sampleWaveFlight } from '../config/ArcadeFlight.js';
+import { EnemyOrbitRig } from '../effects/EnemyOrbitRig.js';
 import { drawAstraWarningLane } from '../effects/AstraWarningField.js';
 import { usesOpeningCombatReadability } from '../config/OpeningCombatReadability.js';
 import { AstraAttackRig } from '../effects/AstraAttackRig.js';
@@ -939,6 +940,19 @@ export class Enemy {
   }
 
   updateMayhemVfx(delta) {
+    if (!this.orbitRig && this.sprite && !this.visualsDeactivated && this.type !== 'bonus_challenge'
+      && (this.isEliteMiddleShip || this.isAce || this.generatedProfile?.lateMayhem
+        || (this.generatedProfile && this.generatedProfile.spriteIndex % 7 === 0))) {
+      this.orbitRig = new EnemyOrbitRig(this);
+      this.sprite.addChildAt(this.orbitRig, 0);
+      this.ownedVisuals.push(this.orbitRig);
+      if (this.mayhemVfx) this.mayhemVfx.visible = false;
+    }
+    if (this.orbitRig) {
+      this.orbitRig.visible = this.active && !this.visualsDeactivated && !this.waitingForEntry;
+      if (this.orbitRig.visible) this.orbitRig.update(delta);
+      return;
+    }
     if (!this.mayhemVfx || !this.generatedProfile?.lateMayhem) return;
     const spin = this.generatedProfile.mayhemSpin || 0.5;
     this.mayhemVfx.rotation += delta * 0.012 * spin;
@@ -4172,7 +4186,9 @@ export class Enemy {
         this.splitterReleased = true;
         this.game?.scenes?.play?.enemyManager?.spawnEliteSupportDrone?.(this, { count: 2, split: true });
       }
-      if (this.kind === 'boss_fuel_ship') {
+      if (this.kind === 'space_snake') {
+        AudioManager.playSfx('serpent_break', { volume: .48, minIntervalMs: 160 });
+      } else if (this.kind === 'boss_fuel_ship') {
         AudioManager.playSfx('nova_fuel_ship_pop', { force: true, volume: 0.74, minIntervalMs: 80 });
         this.game?.scenes?.play?.particleManager?.createHitSpark?.(this.x, this.y, 0x7dffcc, 1.5);
       } else if (this.kind === 'danger_mid_ship') {

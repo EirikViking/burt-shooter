@@ -1,0 +1,131 @@
+{
+  "process": "FFmpeg gain reduction of 3 dB from preserved ElevenLabs originals; no local synthesis.",
+  "rows": [
+    {
+      "name": "core_archive.mp3",
+      "original": "docs/core-serpent-audio/originals/core_archive.mp3",
+      "output": "public/audio/sfx/core-serpent/core_archive.mp3",
+      "sha256": "1f322136712d2fe8448df47a278c6ae6208b9940dc8bebb97e18063ca8d1b2d0"
+    },
+    {
+      "name": "core_capture.mp3",
+      "original": "docs/core-serpent-audio/originals/core_capture.mp3",
+      "output": "public/audio/sfx/core-serpent/core_capture.mp3",
+      "sha256": "d07b31d84b32369220969b9e05de0105ac1cea548051dba6ec93f5ceae10a86e"
+    },
+    {
+      "name": "core_collector.mp3",
+      "original": "docs/core-serpent-audio/originals/core_collector.mp3",
+      "output": "public/audio/sfx/core-serpent/core_collector.mp3",
+      "sha256": "98a8c632c555212716f098dee61c9190472d035058e205443ed5f0286f24659a"
+    },
+    {
+      "name": "core_constellation.mp3",
+      "original": "docs/core-serpent-audio/originals/core_constellation.mp3",
+      "output": "public/audio/sfx/core-serpent/core_constellation.mp3",
+      "sha256": "596a29203233007a386b09526cb6d9c89b8472f7fd1d915b0bae30ac59fc95ff"
+    },
+    {
+      "name": "core_daredevil.mp3",
+      "original": "docs/core-serpent-audio/originals/core_daredevil.mp3",
+      "output": "public/audio/sfx/core-serpent/core_daredevil.mp3",
+      "sha256": "3c75914888284ac840c7bfe6278542ad99cb0793e7fbb474b75e218854023fe8"
+    },
+    {
+      "name": "core_hunter.mp3",
+      "original": "docs/core-serpent-audio/originals/core_hunter.mp3",
+      "output": "public/audio/sfx/core-serpent/core_hunter.mp3",
+      "sha256": "3d42f681b8d101d11f7d8f5ee49344a457dc74be45292646a28eb5ef824dbb95"
+    },
+    {
+      "name": "core_jackpot.mp3",
+      "original": "docs/core-serpent-audio/originals/core_jackpot.mp3",
+      "output": "public/audio/sfx/core-serpent/core_jackpot.mp3",
+      "sha256": "58f9a904ecab07c2817d2e6872adbd4152b52c132dd6e8848a18268e95fa279c"
+    },
+    {
+      "name": "core_pursuit.mp3",
+      "original": "docs/core-serpent-audio/originals/core_pursuit.mp3",
+      "output": "public/audio/sfx/core-serpent/core_pursuit.mp3",
+      "sha256": "407b4744626090cae2dc75f104d85f2557b164a5a3474d7b75d29c76e3c49a84"
+    },
+    {
+      "name": "core_relic.mp3",
+      "original": "docs/core-serpent-audio/originals/core_relic.mp3",
+      "output": "public/audio/sfx/core-serpent/core_relic.mp3",
+      "sha256": "9e33a345eb41e6366e3245abee2a284046199c5a3d8c710617860fd1d3dc3d7b"
+    },
+    {
+      "name": "core_survivor.mp3",
+      "original": "docs/core-serpent-audio/originals/core_survivor.mp3",
+      "output": "public/audio/sfx/core-serpent/core_survivor.mp3",
+      "sha256": "c0bbd500b5734416ff2aff722f9a5fd72a802340ee39ec3353e3e92554cf5996"
+    },
+    {
+      "name": "core_treasure.mp3",
+      "original": "docs/core-serpent-audio/originals/core_treasure.mp3",
+      "output": "public/audio/sfx/core-serpent/core_treasure.mp3",
+      "sha256": "e75aba24eafc52a3fd4ae7d2bd914d05c9139f8a2cb9600a646226819b75c1f2"
+    },
+    {
+      "name": "serpent_1_death.mp3",
+      "original": "docs/core-serpent-audio/originals/serpent_1_death.mp3",
+      "output": "public/audio/sfx/core-serpent/serpent_1_death.mp3",
+      "sha256": "ad1d37c38f9ec281012973611fae11851eba23ae2b1b271f3d311e752c64b536"
+    },
+    {
+      "name": "serpent_1_hunt.mp3",
+      "original": "docs/core-serpent-audio/originals/serpent_1_hunt.mp3",
+      "output": "public/audio/sfx/core-serpent/serpent_1_hunt.mp3",
+      "sha256": "cb3b2bceb20a7aba71c22214f46fa13f66edb20f9b4fc64321a875542ed92e92"
+    },
+    {
+      "name": "serpent_2_death.mp3",
+      "original": "docs/core-serpent-audio/originals/serpent_2_death.mp3",
+      "output": "public/audio/sfx/core-serpent/serpent_2_death.mp3",
+      "sha256": "43dc13ca2c2b9ada7887ad3f0ba74280caef09a17864474a1911a5e71d6df352"
+    },
+    {
+      "name": "serpent_2_hunt.mp3",
+      "original": "docs/core-serpent-audio/originals/serpent_2_hunt.mp3",
+      "output": "public/audio/sfx/core-serpent/serpent_2_hunt.mp3",
+      "sha256": "3e975d10680b03030b8b67adcb51147833cf6f1437f21f37795e6e451ab0d6e9"
+    },
+    {
+      "name": "serpent_3_death.mp3",
+      "original": "docs/core-serpent-audio/originals/serpent_3_death.mp3",
+      "output": "public/audio/sfx/core-serpent/serpent_3_death.mp3",
+      "sha256": "f5d61be7a3d358a82598402082a76ffea94d07a2e25ac4f0da1e0f0574f866a3"
+    },
+    {
+      "name": "serpent_3_hunt.mp3",
+      "original": "docs/core-serpent-audio/originals/serpent_3_hunt.mp3",
+      "output": "public/audio/sfx/core-serpent/serpent_3_hunt.mp3",
+      "sha256": "d7417b5636efe8d1f7a67a8c5909955e19ea98c27593cbbb9d03fff41bd7fb32"
+    },
+    {
+      "name": "serpent_4_death.mp3",
+      "original": "docs/core-serpent-audio/originals/serpent_4_death.mp3",
+      "output": "public/audio/sfx/core-serpent/serpent_4_death.mp3",
+      "sha256": "3a11c068675092cd1be6de2db8a5d26a4290a2dd659a0035bca1db2423d15ed5"
+    },
+    {
+      "name": "serpent_4_hunt.mp3",
+      "original": "docs/core-serpent-audio/originals/serpent_4_hunt.mp3",
+      "output": "public/audio/sfx/core-serpent/serpent_4_hunt.mp3",
+      "sha256": "254352d6efe935c15edf9284f63e4dadf842ce97f4e9bdd5dac62574eec4388f"
+    },
+    {
+      "name": "serpent_arrive.mp3",
+      "original": "docs/core-serpent-audio/originals/serpent_arrive.mp3",
+      "output": "public/audio/sfx/core-serpent/serpent_arrive.mp3",
+      "sha256": "9c34b407118804a8f23b35bf407ddd13c048ff05f121dd56dd00f34922ce85f9"
+    },
+    {
+      "name": "serpent_break.mp3",
+      "original": "docs/core-serpent-audio/originals/serpent_break.mp3",
+      "output": "public/audio/sfx/core-serpent/serpent_break.mp3",
+      "sha256": "402290f3846c4fdb19f05f1d63a5352b29fea81e04d1e16c9938e697680adbef"
+    }
+  ]
+}

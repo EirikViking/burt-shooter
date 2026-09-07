@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { updateRelicHullDetail } from '../effects/RelicHullDetail.js';
 import { createAstraEnginePlume } from '../effects/AstraEnginePlume.js';
 import { Bullet } from './Bullet.js';
 import { computeSupportDroneTextureScale } from './SupportDroneVisual.js';
@@ -1945,6 +1946,8 @@ export class Player {
       this.sprite.alpha += deltaSeconds * (1000 / this.spawnFadeDuration);
       if (this.sprite.alpha > 1) this.sprite.alpha = 1;
     }
+
+    updateRelicHullDetail(this);
 
     // Damage Flash Effect
     if (this.flashTimer < this.flashDuration) {

@@ -1,3 +1,5 @@
+import { getBonusCoreSourceText } from '../bonusCoreText.js';
+import { getCoreSerpentSourceText } from '../coreSerpentText.js';
 import { getAstraPresentationSourceText } from '../astraPresentationSourceText.js';
 export const en = {
   code: 'en',
@@ -22,6 +24,6 @@ export const en = {
   diagnostics: {
     interfaceLanguage: 'Interface language'
   },
-  sourceText: Object.freeze({ ...getAstraPresentationSourceText('en'),}),
+  sourceText: Object.freeze({ ...getBonusCoreSourceText('en'), ...getCoreSerpentSourceText('en'), ...getAstraPresentationSourceText('en'),}),
   patterns: Object.freeze([])
 };

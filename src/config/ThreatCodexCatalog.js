@@ -1,4 +1,8 @@
 import { hasColossus } from './BossReinvention.js';
+import { SPACE_SNAKES } from './SpaceSnakes.js';
+import { getSpaceSnakeText } from '../i18n/coreSerpentText.js';
+import { BONUS_CORES } from './BonusCoreCatalog.js';
+import { getBonusCoreText } from '../i18n/bonusCoreText.js';
 import { ENEMY_THREAT_ACTIONS } from './EnemyThreatActions.js';
 import { WAVE_TACTIC_VARIANTS } from './WaveTacticVariants.js';
 import { GENERATED_ENEMY_PROFILES } from './GeneratedEnemyProfiles.js';
@@ -49,9 +53,11 @@ When its mirror signal fractures, do not follow the brightest reflection. Read t
 
 export const THREAT_CODEX_CATEGORIES = Object.freeze([
   { id: 'enemies', label: 'Enemies' },
+  { id: 'spaceSnakes', label: 'Space Snakes' },
   { id: 'attackPatterns', label: 'Attack Patterns' },
   { id: 'waveTactics', label: 'Wave Tactics' },
   { id: 'powerups', label: 'Powerups' },
+  { id: 'bonusCores', label: 'Bonus Cores' },
   { id: 'augments', label: 'Augments' },
   { id: 'sectors', label: 'Sectors' },
   { id: 'elites', label: 'Elites' },
@@ -1568,10 +1574,23 @@ export function getThreatCodexCatalog({ locale = getCurrentLanguage() } = {}) {
     cabinetLogs: getCabinetLogEntries({}, locale).map(cabinetLogEntry),
     pilotRanks: getAllRankTitles().map(pilotRankEntry)
   };
-  return applyCodexLore(rawCatalog, {
+  const catalog = applyCodexLore(rawCatalog, {
     locale,
     translate: (value) => translateTextForLocale(locale, value)
   });
+  catalog.spaceSnakes = SPACE_SNAKES.map(profile => ({
+    id: profile.id, category: 'spaceSnakes', art: profile.art,
+    role: translateTextForLocale(locale, 'Segmented predator'),
+    rarity: translateTextForLocale(locale, 'Rare'),
+    ...getSpaceSnakeText(profile.index, locale), codexBodyMode: 'story'
+  }));
+  catalog.bonusCores = BONUS_CORES.map(core => ({
+    id: core.id, category: 'bonusCores', art: core.art,
+    ...getBonusCoreText(core.index, locale), codexBodyMode: 'story',
+    role: translateTextForLocale(locale, 'Bonus core'),
+    rarity: translateTextForLocale(locale, 'Rare'), accent: core.color
+  }));
+  return catalog;
 }
 
 export function getThreatCodexRuntimeDescription(identity = '', locale = getCurrentLanguage()) {

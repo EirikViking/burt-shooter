@@ -12,9 +12,11 @@ export const THREAT_DISCOVERY_VERSION = 1;
 
 export const DISCOVERY_CATEGORIES = Object.freeze([
   'enemies',
+  'spaceSnakes',
   'attackPatterns',
   'waveTactics',
   'powerups',
+  'bonusCores',
   'augments',
   'sectors',
   'elites',

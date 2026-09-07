@@ -1,6 +1,10 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { BalanceConfig } from '../config/BalanceConfig.js';
+import { BONUS_CORES, pickBonusCore } from '../config/BonusCoreCatalog.js';
+import { getBonusCoreText } from '../i18n/bonusCoreText.js';
+import { coreRunState, getCoreReward, grantCoreReward } from '../progression/BonusCoreRewards.js';
+import { translateText, getCurrentLanguage } from '../i18n/index.js';
+import { createText } from '../utils/pixiText.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import {
     destroyMicroSignals,
@@ -9,7 +13,7 @@ import {
 } from '../effects/MicroSignalVfx.js';
 
 export class BonusDrone {
-    constructor(x, y, game, type = 'HAZARD') {
+    constructor(x, y, game, type = 'HAZARD', coreId = null) {
         this.x = x;
         this.y = y;
         this.game = game;
@@ -33,6 +37,14 @@ export class BonusDrone {
         this.edgeMarker = null;
         // Cosmetic selection uses spawn coordinates, never another gameplay roll.
         this.visualVariant = Math.abs(Math.round(x * 13 + y * 7)) % 4;
+        this.coreProfile = type === 'POWERUP' ? (BONUS_CORES.find(c => c.id === coreId) || pickBonusCore(Math.random())) : null;
+        this.ageSeconds = 0;
+        this.fragment = this.coreProfile?.reward === 'constellation' ? Math.floor(Math.random() * 3) : 0;
+        if (this.coreProfile) {
+            this.vx = Math.sign(this.vx) * this.coreProfile.speed;
+            this.vy = this.coreProfile.descent;
+            this.radius = 24;
+        }
 
         this.createSprite();
 
@@ -55,11 +67,11 @@ export class BonusDrone {
         this.intentHalo.label = 'bonusDroneIntentHalo';
         this.sprite.addChild(this.intentHalo);
 
-        const texture = GameAssets.getBonusDroneTexture(this.visualVariant + (this.type === 'POWERUP' ? 4 : 0));
+        const texture = this.coreProfile ? GameAssets.bonusCoreVariants?.[this.coreProfile.id] : GameAssets.getBonusDroneTexture(this.visualVariant);
         if (GameAssets.isValidTexture(texture)) {
             const s = new PIXI.Sprite(texture);
             s.anchor.set(0.5);
-            const size = this.type === 'POWERUP' ? 52 : 46;
+            const size = this.type === 'POWERUP' ? 72 : 46;
             s.width = size;
             s.height = size;
 
@@ -78,11 +90,11 @@ export class BonusDrone {
             this.sprite.addChild(g);
             GameAssets.ensureBonusCoreTexture().then(() => {
                 if (!this.active || !this.sprite || this.sprite.destroyed) return;
-                const loaded = GameAssets.getBonusDroneTexture(this.visualVariant + (this.type === 'POWERUP' ? 4 : 0));
+                const loaded = this.coreProfile ? GameAssets.bonusCoreVariants?.[this.coreProfile.id] : GameAssets.getBonusDroneTexture(this.visualVariant);
                 if (!GameAssets.isValidTexture(loaded)) return;
                 const hull = new PIXI.Sprite(loaded);
                 hull.anchor.set(0.5);
-                hull.width = hull.height = this.type === 'POWERUP' ? 52 : 46;
+                hull.width = hull.height = this.type === 'POWERUP' ? 72 : 46;
                 const index = this.sprite.getChildIndex(g);
                 this.sprite.removeChild(g); g.destroy();
                 this.sprite.addChildAt(hull, index);
@@ -93,6 +105,15 @@ export class BonusDrone {
         this.intentGlyph = new PIXI.Graphics();
         this.intentGlyph.label = 'bonusDroneIntentGlyph';
         this.sprite.addChild(this.intentGlyph);
+        if (this.coreProfile) {
+            const name = getBonusCoreText(this.coreProfile.index, getCurrentLanguage()).name;
+            this.pickupLabel = createText(translateText('COLLECT: {name}', { name }), {
+                fontFamily: 'Rajdhani', fontSize: 20, fontWeight: 'bold', fill: '#fff4b7',
+                stroke: { color: '#03101b', width: 4 }
+            });
+            this.pickupLabel.anchor.set(.5, 0); this.pickupLabel.y = 46;
+            this.sprite.addChild(this.pickupLabel);
+        }
         this.updateClarityVisuals(0, 1);
     }
 
@@ -100,6 +121,18 @@ export class BonusDrone {
         if (!this.active) return;
 
         const width = this.game.getWidth();
+        this.ageSeconds += Math.max(0, delta) / 60;
+        if (this.coreProfile && this.pickupLabel && this.ageSeconds >= (this.nextLabelAt || 0)) {
+            const scene = this.game.scenes?.play;
+            if (scene?.player) {
+                const name = getBonusCoreText(this.coreProfile.index, getCurrentLanguage()).name;
+                const base = getCoreReward(this, scene);
+                const score = this.game.getScoreAward?.(base) ?? base;
+                const value = translateText(this.coreProfile.reward === 'constellation' ? '{name} · {fragment} · +{score}' : '{name} · +{score}', { name, fragment: ['I','II','III'][this.fragment], score });
+                this.pickupLabel.text = translateText('COLLECT: {name}', { name: value });
+            }
+            this.nextLabelAt = this.ageSeconds + .15;
+        }
         this.intentTimer += delta * 0.12;
         this.clarityPulse = 0.5 + Math.sin(this.intentTimer * 2.4) * 0.5;
 
@@ -113,6 +146,7 @@ export class BonusDrone {
         // Physics
         this.x += this.vx * delta * speedMultiplier;
         this.y += this.vy * delta * speedMultiplier;
+        if (this.coreProfile) this.x += Math.sin(this.intentTimer * .38 + this.coreProfile.index) * delta * .9;
 
         // Wall Bounce
         if (this.x < this.radius) {
@@ -127,8 +161,9 @@ export class BonusDrone {
         if (this.type === 'POWERUP') {
             this.bobTimer += delta * 0.1;
             // Float down slowly but bob up and down
-            this.sprite.y = this.y + Math.sin(this.bobTimer) * 5;
-            this.sprite.rotation = Math.sin(this.bobTimer * 0.5) * 0.2;
+            this.sprite.y = this.y;
+            this.sprite.rotation = 0;
+            if (this.mainSprite) this.mainSprite.rotation = Math.sin(this.bobTimer * .5) * .12;
 
             // Visual pulse
             if (this.mainSprite) {
@@ -156,6 +191,8 @@ export class BonusDrone {
         if (this.y > this.game.getHeight() + 50) {
             this.hideEdgeMarker('despawn');
             if (this.type === 'POWERUP' && this.active) {
+                const scene = this.game.scenes?.play;
+                if (scene) coreRunState(scene).chain = 0;
                 // Missed it - Fade out
                 this.active = false;
                 // Cooldown logic handled by manager that spawned it
@@ -171,7 +208,7 @@ export class BonusDrone {
         const pulse = Number.isFinite(this.clarityPulse) ? this.clarityPulse : 0.5;
         const baseRadius = isPowerup ? 33 : 29;
         const radius = baseRadius + pulse * (isPowerup ? 4 : 3);
-        const primary = isPowerup ? 0xfff2a8 : 0xff516d;
+        const primary = isPowerup ? (this.coreProfile?.color || 0xfff2a8) : 0xff516d;
         const secondary = isPowerup ? 0x38f7ff : 0xffd15c;
         const alpha = isPowerup ? 0.38 + pulse * 0.24 : 0.34 + pulse * 0.22;
 
@@ -382,80 +419,15 @@ export class BonusDrone {
         this.hideEdgeMarker('collected');
         this.active = false;
 
-        // Effect
-        AudioManager.playSfx('pickup'); // Positive sound
-        const voiceOk = AudioManager.playPowerupVoice();
-        if (!voiceOk) {
-            AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
-        }
-
-        const effects = [
-            { type: 'shield', weight: 1 },
-            { type: 'rapid_fire', weight: 1.3 },
-            { type: 'double_shot', weight: 1.1 },
-            { type: 'damage_up', weight: 1.1 },
-            { type: 'speed_up', weight: 1.0 },
-            { type: 'pierce', weight: 0.9 },
-            { type: 'slow_time', weight: 0.8 },
-            { type: 'score_boost', weight: 0.8 },
-            { type: 'score_x2', weight: 0.7 }
-        ];
-
-        const total = effects.reduce((sum, e) => sum + e.weight, 0);
-        let roll = Math.random() * total;
-        let picked = effects[0].type;
-        for (const effect of effects) {
-            roll -= effect.weight;
-            if (roll <= 0) {
-                picked = effect.type;
-                break;
-            }
-        }
-
-        if (picked === 'shield' && player.shieldActive) {
-            const fallback = effects.find(e => e.type !== 'shield');
-            picked = fallback ? fallback.type : 'score_boost';
-        }
-
-        const durations = {
-            shield: 15000,
-            rapid_fire: 8000,
-            double_shot: 8000,
-            damage_up: 8000,
-            speed_up: 8000,
-            pierce: 7000,
-            slow_time: 8000,
-            score_boost: BalanceConfig.powerups.bonusCore.scoreBoostDuration,
-            score_x2: 10000
-        };
-        const durationMs = durations[picked] || 8000;
-        console.log(`[Powerup] pickup source=bonus_core rolled=${picked} durationMs=${durationMs}`);
-
-        if (picked === 'score_boost') {
-            this.applyScoreBoost(scene);
-            scene.showToast("SCORE BOOST!", { fontSize: 32, fill: '#00ff00', duration: 1200 });
-            return;
-        }
-        if (picked === 'score_x2') {
-            if (scene.applyScoreMultiplier) {
-                scene.applyScoreMultiplier(2, durationMs, 'bonus_core');
-            }
-            return;
-        }
-
-        if (player.applyPowerup) {
-            player.applyPowerup(picked);
-        }
-        scene.showToast(`BONUS CORE: ${picked.toUpperCase()}`, { fontSize: 28, fill: '#00ffff', duration: 1200 });
-    }
-
-    applyScoreBoost(scene) {
-        // Simple boost logic: Score Multiplier
-        // We need to implement this in Game or Scene
-        // For now, let's just trigger the state
-        if (scene.applyScoreMultiplier) {
-            scene.applyScoreMultiplier(BalanceConfig.powerups.bonusCore.scoreMultiplier, BalanceConfig.powerups.bonusCore.scoreBoostDuration, 'bonus_core');
-        }
+        const result = grantCoreReward(this, scene, player);
+        AudioManager.playSfx(this.coreProfile.sound, { volume: .72, minIntervalMs: 120 });
+        const name = getBonusCoreText(this.coreProfile.index, getCurrentLanguage()).name;
+        let message = translateText('{name} · +{score}', { name, score: result.score });
+        if (result.archiveName) message += '\n' + translateText('Archive recovered: {name}', { name: result.archiveName });
+        if (this.coreProfile.reward === 'relic') message += '\n' + translateText(result.collected >= 3 ? 'Gold hull detailing unlocked' : 'Relics: {count}/3', { count: result.collected });
+        scene.showToast(message, { fontSize: 24, fill: '#fff2a8', duration: 1800 });
+        scene.particleManager?.createHitSpark?.(this.x, this.y, this.coreProfile.color, 2);
+        this.lastReward = result;
     }
 
     destroy() {

@@ -1,0 +1,34 @@
+# Core and serpent expansion
+
+Baseline: `67c84381fb3e3304fa99a2424b9583905a3dafa4`, checked-out branch `codex/astra-visual-overhaul`. Root instructions, handoff and prior balance report read; fetch, status, branch, HEAD and unique worktree ownership verified. Existing opening balance and precision-hull improvements retained. Initial premature implementation was disclosed and paused; the user then explicitly approved the revised core rewards and full update.
+
+## Gameplay and presentation
+
+- Ten bonus cores grant collection rewards, never combat powers: Treasure, Pursuit, Daredevil, Survivor, Hunter, Collector, Constellation, Jackpot, Archive and Relic. Their art, colors, movement, labels and ElevenLabs sounds are distinct. On-screen values reflect the current score calculation. Codex tips describe base rewards and explain score scaling.
+- A shared randomized schedule spaces cores by 2–4 sectors, averaging three. It selects a wave and arrival delay, rather than rolling every frame. Missing a core breaks the Collector chain. Core drops from snakes spend the same budget. Archive recovers previously unknown Cabinet logs; three Relics collected across runs unlock automatic gold inlays clipped to the ship's hull. Persistent progress uses existing threat-discovery metadata and session rules, with no new save or Cloud key.
+- Four Space Snake species first become eligible at sector 6. Ordinary eligible waves roll a 20% encounter chance with a separate species roll; there is no fixed every-fifth-wave schedule. Boss/challenge/reinforcement/authored special/Daily/experimental waves retain their rules. Real connected sections can be destroyed independently; the surviving front keeps hunting. All sections must die for the final bounty and celebration. Four complete translated Codex backstories and tips accompany distinct, related ElevenLabs monster screams and death cries.
+- Six rotating enemy rig families use generated machined armor, counter-rotating tilted layers, energy tracks and satellites. Decorative geometry does not consume gameplay randomness. Reduced-motion behavior is retained.
+- Boss fuel deliveries heal 50% more in sectors 1–20. Existing support-group and single-support modifiers remain; sector 21 onward retains its prior fuel values.
+- Current sector is the prominent headline in the existing central mission frame. The rejected large gold sidebar box is removed. Narrow displays place the mission frame below the top HUD to prevent frame overlap. The passive trait card retires after an eight-second introduction; actionable experimental recharge/ready notices remain. The pause screen shows the full trait description. Existing ship-centered phase cooldown/ready cues remain.
+
+## Art and sound provenance
+
+Final sprites are under `public/art/core-serpent/`: ten core sprites, four monster heads, one shared articulated body sprite and a machined orbit ring. Built-in OpenAI image generation produced the final transparent sprites. `docs/core-serpent-models-20260907/imagegen-subjects.json` records the visual subjects and workflow. Editable Blender source models and their superseded draft renders remain under that same docs directory; they are not the final in-game sprites. The original Blender recipe is `scripts/render-core-serpent-assets.py`.
+
+All new audio is ElevenLabs output from a verified active commercial plan. Requests, original hashes and preserved MP3s are under `docs/core-serpent-audio/`. Final audio has 3 dB of gain reduction for headroom, recorded in `mastering.json`; no local synthesis was used. Twenty-one files decode successfully at 44.1 kHz with valid durations and signal levels. These checks do not claim a human audition.
+
+## Validation to date
+
+- Reward/cadence tests: ten independent rewards, no combat-power grants, bounded payouts, random 2–4-sector gaps averaging three, no snakes before six, randomized snake sample 1,934/10,000 with 31 observed gap lengths, path bounds at three resolutions and fuel boundaries through sector 410.
+- Threat Codex: 14 categories, 2,482 entries; new core/snake text present in all eight supported languages. Source i18n, release-line, 396-key audio catalog and prebuild checks passed.
+- Staged runtime: all ten actual reward grants leave combat powers unchanged, duplicate collection does not pay twice, all four snakes remain connected and damageable, final bounty/core obeys cleanup rules, Relic cosmetic unlocks, six textured orbital families. Sixteen Codex screenshots cover both new categories in eight languages. Corrected an initial QA language setter that addressed a duplicate source module; the final test asserts the running game's actual locale. Uppercase category lookup aliases were added after visual review found English tab labels.
+- Actual keyboard input: a real player collision collected Treasure. A staged level-six Cinder Maw was defeated in 16.839 seconds without invulnerability or forced damage, ending with two lives. Bounty/core and pause trait explanation verified. This is staged scripted QA, not natural progression to sector six or evidence of human enjoyment.
+- Existing HUD readability check passes. Its assertion now permits a deliberately hidden trait card while retaining priority checks whenever the card is visible. The legacy trait introduction remains available. An earlier staged snake-input test accidentally scheduled ordinary wave cleanup before the snake; that fixture was corrected and its failure log retained. A separate expanded runtime pass was interrupted by source HMR; final stable passes supersede it without deleting evidence.
+
+Production build, 80-screen locale UI review, controller/smoke and final Windows executable validation are still pending. No Steam upload of this change has occurred yet. The intended delivery is the explicitly authorized `sector-continue-test` branch only. Steamworks service settings, public/default assignment, public announcements and store media remain untouched.
+
+## Retained limitations and rollback
+
+The three inherited checks recorded in the handoff remain outside this change: two expect five opening waves despite the accepted three-wave opening, and one expects an absent Cabinet Wonder clock guard. The prior isolated 13.1-second sector-90 stall remains unexplained; this pass does not claim to fix it. The user's testing bot has not been supplied or used. Local QA uses isolated profiles and offline/mock platform services, with no real save, achievement, Cloud or leaderboard submission.
+
+All edits are task-owned and will be checkpointed locally. Source rollback will use `git revert` of this task's checkpoint commits after a clean ownership/status check; no reset, clean or stash. Steam rollback is separate and requires assigning the previously verified test build, not reverting Git alone. Exact delivery commit, executable and Steam receipt will be added after final validation.

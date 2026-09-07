@@ -1,3 +1,5 @@
+import { getBonusCoreSourceText } from '../bonusCoreText.js';
+import { getCoreSerpentSourceText } from '../coreSerpentText.js';
 import { getAstraPresentationSourceText } from '../astraPresentationSourceText.js';
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
 import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
@@ -2259,6 +2261,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText: Object.freeze({ ...getAstraPresentationSourceText('de'), ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getTyrianFeedbackSourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de'), ...getNewestTyrianFeedbackSourceText('de'), ...getSecondPolishSourceText('de'), ...getTyrian112SourceText('de'), ...getHighSectorSourceText('de'), ...getLateGameExperimentSourceText('de'), ...getFirstRunRetentionSourceText('de') }),
+  sourceText: Object.freeze({ ...getBonusCoreSourceText('de'), ...getCoreSerpentSourceText('de'), ...getAstraPresentationSourceText('de'), ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getTyrianFeedbackSourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de'), ...getNewestTyrianFeedbackSourceText('de'), ...getSecondPolishSourceText('de'), ...getTyrian112SourceText('de'), ...getHighSectorSourceText('de'), ...getLateGameExperimentSourceText('de'), ...getFirstRunRetentionSourceText('de') }),
   patterns
 };

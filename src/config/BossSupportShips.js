@@ -2,6 +2,7 @@ import { GENERATED_ENEMY_ASSET_COUNT } from './GeneratedEnemyProfiles.js';
 import { hashString } from './VisualVariantCatalog.js';
 
 export const BOSS_SUPPORT_SHIP_TOTAL = 111;
+export function getEarlyBossFuelMultiplier(level) { return level >= 1 && level <= 20 ? 1.5 : 1; }
 
 const SUPPORT_PREFIXES = [
   'Mercy', 'Suture', 'Patch', 'Fuel', 'Halo', 'Spare', 'Med', 'Weld', 'Rescue', 'Bandage',

@@ -1,3 +1,6 @@
+import { SpaceSnake } from '../entities/SpaceSnake.js';
+import { SPACE_SNAKES, isSpaceSnakeEligible, isSpaceSnakeWave } from '../config/SpaceSnakes.js';
+import { getEarlyBossFuelMultiplier } from '../config/BossSupportShips.js';
 import { waveFlightPlan, arcadeEntryDuration, arcadeBriefingDuration, ARCADE_FLIGHT_ENABLED } from '../config/ArcadeFlight.js';
 import { openingWaveEntry } from '../config/OpeningWaveEngagement.js';
 import * as PIXI from 'pixi.js';
@@ -3264,6 +3267,15 @@ export class EnemyManager {
     }
 
     this.resetWaveWatchdog();
+    if (isSpaceSnakeEligible(config, this.level, this.game)) {
+      const ordinal = this.spaceSnakeEligibleWaves || 0;
+      this.spaceSnakeEligibleWaves = ordinal + 1;
+      if (isSpaceSnakeWave(this.getStableReinforcementRoll(this.level, ordinal, 'space-snake-encounter'))) {
+        const speciesRoll = this.getStableReinforcementRoll(this.level, ordinal, 'space-snake-species');
+        this.spawnSpaceSnake(SPACE_SNAKES[Math.min(3, Math.floor(speciesRoll * SPACE_SNAKES.length))]);
+        return;
+      }
+    }
     const { count, formation, type } = config;
     let normalWaveLevel = 1;
     let tactic = null;
@@ -3664,6 +3676,22 @@ export class EnemyManager {
       }
     }
     console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count} threats=${threatPlan.assignedIds.join(',') || 'none'}`);
+  }
+
+  spawnSpaceSnake(profile) {
+    this.currentNormalWaveDifficultyLevel = this.getNormalWaveDifficultyLevel(this.level);
+    const chain = { age: 0, sections: [] };
+    for (let i = 0; i < profile.segments; i++) {
+      const section = new SpaceSnake(this.game.getWidth() * .5, -140 - i * 29, profile.id, this.level, this.game);
+      section.chain = chain;
+      if (i === 0) section.health = section.maxHealth = section.health * 2;
+      chain.sections.push(section);
+      this.enemies.push(section);
+      this.container.addChildAt(section.sprite, 0);
+    }
+    this.game.scenes.play.recordThreatDiscovery?.(profile.id, 'spaceSnakes', { sector: this.level });
+    AudioManager.playSfx(`${profile.voice}_hunt`, { volume: .74, minIntervalMs: 1000 });
+    return chain;
   }
 
   getRareChaosVisitorWaveKey(level = this.level, waveIndex = this.currentWaveIndex) {
@@ -4893,7 +4921,7 @@ export class EnemyManager {
     enemy.bossFuelProfile = {
       id: supportProfile.id,
       displayName: supportProfile.displayName,
-      healPercent: Math.min(baseHealCap * singleSupportHealMultiplier, baseHealPercent * singleSupportHealMultiplier) * swarmHealMultiplier,
+      healPercent: Math.min(baseHealCap * singleSupportHealMultiplier, baseHealPercent * singleSupportHealMultiplier) * swarmHealMultiplier * getEarlyBossFuelMultiplier(level),
       baseHealPercent: Math.min(baseHealCap, baseHealPercent),
       singleSupportHealMultiplier,
       swarmHealMultiplier,

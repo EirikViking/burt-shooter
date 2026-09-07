@@ -1,0 +1,65 @@
+{
+  "cores": [
+    [
+      "core-02",
+      "Redline: three interlocked incandescent orange plasma cylinders in a chunky angular gunmetal and copper reactor cradle, cooling fins, braided cables, asymmetrical mechanical speed fins. Three barrel silhouette."
+    ],
+    [
+      "core-03",
+      "Twin: emerald dual crystal hearts in two silver armored prongs forming a broad split tuning fork, luminous green energy bridge between them, exposed intricate connectors, two mirrored power sources."
+    ],
+    [
+      "core-04",
+      "Prism: enormous violet diamond held by four wickedly elegant gold and titanium angular containment claws, floating internal crystalline fractures, bold four-pointed star silhouette."
+    ],
+    [
+      "core-05",
+      "Comet: brilliant yellow comet energy engine with two sweeping bronze crescent wings pointing back, narrow streamlined teardrop core, turbine recesses and intricate precision engineered machinery."
+    ],
+    [
+      "core-06",
+      "Lance: long azure crystal needle between parallel gunmetal accelerator rails, silver clamp teeth and blue capacitor cells; tall narrow spear silhouette, jewel-like tip."
+    ],
+    [
+      "core-07",
+      "Hourglass: rose pink temporal energy hourglass, two bulbous rose quartz chambers with fine shimmering energy grains and a narrow waist, armored platinum rings and curved side supports."
+    ],
+    [
+      "core-08",
+      "Lodestone: thick U-shaped celestial electromagnet, white cyan poles, dark titanium yoke with precision silver edging, tiny floating metal fragments ONLY inside the horseshoe, gorgeous electric conduction details."
+    ],
+    [
+      "core-09",
+      "Brood: three small violet jeweled metallic drone eggs connected around a central lavender power hub in a triangular nest, each egg visibly distinct armored pod with silver folded wings and little luminous optics."
+    ],
+    [
+      "core-10",
+      "Sun: beautiful golden sun reactor, amber liquid plasma orb with eight articulated gold mechanical rays, silver gears and layered jeweled crown; compact radial sun silhouette."
+    ]
+  ],
+  "snakes": [
+    [
+      "snake-1-head",
+      "Cinder Maw head: terrifying predatory biomechanical space serpent skull, massive furnace-orange inner mouth, charred titanium jaws with swept hooked fangs, thick black overlapping chitin plates and copper heat scars. Compact menacing head, not a whole snake."
+    ],
+    [
+      "snake-2-head",
+      "Thorn Cathedral head: terrifying biomechanical space serpent skull, poisonous emerald optics, enormous swept serrated thorn mandibles, dark olive layered armored chitin and silver hooked crown. Compact menacing head, not a whole snake."
+    ],
+    [
+      "snake-3-head",
+      "Violet Widow head: terrifying biomechanical space serpent skull, four glowing violet eyes, black obsidian arachnid armor, long curved silver scythe jaws and elegant alien head crest. Compact menacing head, not a whole snake."
+    ],
+    [
+      "snake-4-head",
+      "Abyss Crown head: terrifying biomechanical space serpent skull, icy cyan inner organs, heavy dark naval titanium chitin, broad crown of angular antenna horns, angler-like mouth with many silver fangs. Compact menacing head, not a whole snake."
+    ],
+    [
+      "snake-body",
+      "One modular biomechanical space serpent body vertebra, no head: heavy overlapping dark graphite chitin plates, layered silver edges, interlocking mechanical tendons, a glowing white central spinal channel, two swept side spikes, dorsal armor scale over a visible black ball-joint at top and bottom. Segmented predatory alien machine with rich exquisite material detail. Keep it roughly square so consecutive sections can overlap into a connected snake."
+    ]
+  ],
+  "workflow": "Built-in OpenAI image generation, one independent request per sprite; final transparent PNG copied to public/art/core-serpent. Ten editable Blender originals retained under docs/core-serpent-models-20260907; generated sprites supersede their simpler rendered drafts. Prompt subjects below retain the original visual working names; gameplay reward names were revised after user approval.",
+  "orbit": "Premium front-on transparent segmented titanium gyroscope ring with empty center, polished beveled silver edges, inset gold bearings, cyan plasma channels and three swept razor fins. No ship, text, floor, background or large bloom. Built-in image generation.",
+  "aegis": "Premium transparent top-down blue jeweled reactor core in ornate layered silver and gold containment machinery. Original working name Aegis; now Treasure."
+}

@@ -1,3 +1,4 @@
+import { BONUS_CORES } from '../config/BonusCoreCatalog.js';
 import { menuBossBarkLines } from '../config/MenuBossBarkLines.js';
 import { mayhemSuperStormVoiceLines } from '../config/MayhemSuperStormVoiceLines.js';
 import { tacticalBossBanterLines } from '../config/TacticalBossBanterLines.js';
@@ -512,6 +513,10 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_boss_entrance_impact.mp3',
             '/audio/sfx/nova-swarm/nova_boss_charge_lattice.mp3',
             // ElevenLabs boss weapon mechanisms; original prompts and receipts in docs/boss-arsenal-audio.
+            '/audio/sfx/core-serpent/serpent_arrive.mp3',
+            '/audio/sfx/core-serpent/serpent_break.mp3',
+            ...BONUS_CORES.map(core => `/audio/sfx/core-serpent/${core.sound}.mp3`),
+            ...[1,2,3,4].flatMap(i => ['hunt','death'].map(event => `/audio/sfx/core-serpent/serpent_${i}_${event}.mp3`)),
             '/audio/sfx/arsenal/conductor.wav', '/audio/sfx/arsenal/forge.wav',
             '/audio/sfx/arsenal/mirror.wav', '/audio/sfx/arsenal/needle.wav',
             '/audio/sfx/arsenal/vortex.wav', '/audio/sfx/arsenal/jester.wav',

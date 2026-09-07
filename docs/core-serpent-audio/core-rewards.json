@@ -1,0 +1,119 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "createdAt": "2026-09-07T16:40:55.780Z",
+  "plan": "creator",
+  "license": "Original reward SFX generated on an active commercial ElevenLabs plan.",
+  "cues": [
+    {
+      "name": "core_treasure",
+      "path": "public/audio/sfx/core-serpent/core_treasure.mp3",
+      "request": {
+        "text": "Premium science fiction arcade collectible reward sound. Treasure vault opening: satisfying heavy magnetic clasp followed by exquisite cascading crystal and gold coin chimes, luxurious rich reward. Immediate clear onset, beautifully layered and satisfying, compact controlled bass, clean natural decay. One coherent sound effect, no speech, no background music, no harsh piercing tones.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "9dee911e4fc5d6957e7f8d3c1b7113364d6247d0fe272d8d78d47c3dd6898bc3"
+    },
+    {
+      "name": "core_pursuit",
+      "path": "public/audio/sfx/core-serpent/core_pursuit.mp3",
+      "request": {
+        "text": "Premium science fiction arcade collectible reward sound. Successful high speed courier interception: silky accelerating air rush, decisive kinetic capture click, soaring victorious crystalline flourish. Immediate clear onset, beautifully layered and satisfying, compact controlled bass, clean natural decay. One coherent sound effect, no speech, no background music, no harsh piercing tones.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "98fd053fdb8d27c44f8b713af6481240c4073595c2e581d4926d0e9bf308a2a0"
+    },
+    {
+      "name": "core_daredevil",
+      "path": "public/audio/sfx/core-serpent/core_daredevil.mp3",
+      "request": {
+        "text": "Premium science fiction arcade collectible reward sound. Daring close-call bounty: sharp confident impact, sizzling energetic rising accent, sparkling triumphant reward tail. Immediate clear onset, beautifully layered and satisfying, compact controlled bass, clean natural decay. One coherent sound effect, no speech, no background music, no harsh piercing tones.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "ba1f28576ab3d6c1adf642c522b1ded3727bdf5e40c12fbd8765aa738e766932"
+    },
+    {
+      "name": "core_survivor",
+      "path": "public/audio/sfx/core-serpent/core_survivor.mp3",
+      "request": {
+        "text": "Premium science fiction arcade collectible reward sound. Survival commendation: warm deep resonant strike, three uplifting delicate harmonic glass notes, a dignified luminous reward. Immediate clear onset, beautifully layered and satisfying, compact controlled bass, clean natural decay. One coherent sound effect, no speech, no background music, no harsh piercing tones.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "1417f826c736b70a27327cd96a00ddf199d7ae5b0b7e2396b68607071d11935e"
+    },
+    {
+      "name": "core_hunter",
+      "path": "public/audio/sfx/core-serpent/core_hunter.mp3",
+      "request": {
+        "text": "Premium science fiction arcade collectible reward sound. Hunter bounty claimed: weighty mechanical stamp, tight metallic clack, brilliant rising coin cascade with rich low support. Immediate clear onset, beautifully layered and satisfying, compact controlled bass, clean natural decay. One coherent sound effect, no speech, no background music, no harsh piercing tones.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "45cfcf74aeb0669d8f5ec2b9ef0d49df4bb795615cace839f99f0c1b017f2611"
+    },
+    {
+      "name": "core_collector",
+      "path": "public/audio/sfx/core-serpent/core_collector.mp3",
+      "request": {
+        "text": "Premium science fiction arcade collectible reward sound. Collection streak extended: a clean polished latch then a delightful ascending cascade of tiny shimmering gem impacts. Immediate clear onset, beautifully layered and satisfying, compact controlled bass, clean natural decay. One coherent sound effect, no speech, no background music, no harsh piercing tones.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "36845d794dce1445553476bedfdcdcc66c9e18994c1819e3b3dcc4c9c5d8c966"
+    },
+    {
+      "name": "core_constellation",
+      "path": "public/audio/sfx/core-serpent/core_constellation.mp3",
+      "request": {
+        "text": "Premium science fiction arcade collectible reward sound. Lost constellation reunited: celestial glass fragments clicking together, wide magnificent shimmering resonance, warm wondrous completion swell. Immediate clear onset, beautifully layered and satisfying, compact controlled bass, clean natural decay. One coherent sound effect, no speech, no background music, no harsh piercing tones.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "cac6bb433e92c509d634dae90bbea75637895ba383ee1a43443ca658f831a303"
+    },
+    {
+      "name": "core_jackpot",
+      "path": "public/audio/sfx/core-serpent/core_jackpot.mp3",
+      "request": {
+        "text": "Premium science fiction arcade collectible reward sound. Arcade jackpot won: instant rewarding vault slam followed by a glorious glittering prize cascade and exuberant bright flourish. Immediate clear onset, beautifully layered and satisfying, compact controlled bass, clean natural decay. One coherent sound effect, no speech, no background music, no harsh piercing tones.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "d2c5260d2eae131055a6960ca3e54dd78f1e5071b29291eb976b78b11818e6ce"
+    },
+    {
+      "name": "core_archive",
+      "path": "public/audio/sfx/core-serpent/core_archive.mp3",
+      "request": {
+        "text": "Premium science fiction arcade collectible reward sound. Ancient archive recovered: intricate mechanical unlock, delicate crystalline memory shimmer, mysterious warm revealing resonance. Immediate clear onset, beautifully layered and satisfying, compact controlled bass, clean natural decay. One coherent sound effect, no speech, no background music, no harsh piercing tones.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "42f274bb6c7849803fe5ce6da3152ab46da864674d956fbc205a3c13ad6223a3"
+    },
+    {
+      "name": "core_relic",
+      "path": "public/audio/sfx/core-serpent/core_relic.mp3",
+      "request": {
+        "text": "Premium science fiction arcade collectible reward sound. Golden relic acquired: antique ceremonial metal strike, gleaming majestic golden chimes and a beautiful resonant triumphant tail. Immediate clear onset, beautifully layered and satisfying, compact controlled bass, clean natural decay. One coherent sound effect, no speech, no background music, no harsh piercing tones.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.7
+      },
+      "sha256": "30aa5eb46cde3794e3f14f08be57e5b3d38a5df809057ba7ffd7721a3e9a1880"
+    }
+  ]
+}

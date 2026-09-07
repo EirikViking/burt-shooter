@@ -1,4 +1,7 @@
 import { AssetManifest } from '../assets/assetManifest.js';
+import { BONUS_CORES } from '../config/BonusCoreCatalog.js';
+import { SPACE_SNAKES } from '../config/SpaceSnakes.js';
+import { preloadEnemyOrbitMaterial } from '../effects/EnemyOrbitRig.js';
 import { GENERATED_ENEMY_LEGACY_ASSET_COUNT } from '../config/GeneratedEnemyProfiles.js';
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import * as PIXI from 'pixi.js';
@@ -90,7 +93,27 @@ class GameAssetsManager {
         };
     }
 
+    async loadCoreSerpentTexture(path) {
+        const texture = await PIXI.Assets.load(path);
+        texture.source.autoGenerateMipmaps = true;
+        texture.source.scaleMode = 'linear';
+        texture.source.updateMipmaps();
+        return texture;
+    }
+
     async ensureBonusCoreTexture() {
+        if (!this.coreSerpentLoad) {
+            this.bonusCoreVariants = {};
+            this.serpentTextures = {};
+            this.coreSerpentLoad = Promise.all([
+                preloadEnemyOrbitMaterial(),
+                ...BONUS_CORES.map(async core => { this.bonusCoreVariants[core.id] = await this.loadCoreSerpentTexture(core.art); }),
+                ...SPACE_SNAKES.flatMap(profile => ['head', 'body', 'tail'].map(async part => {
+                    this.serpentTextures[`${profile.index}-${part}`] = await this.loadCoreSerpentTexture(part === 'head' ? profile.art : '/art/core-serpent/snake-body-imagegen.png');
+                }))
+            ]);
+        }
+        await this.coreSerpentLoad;
         if (!this.bonusDroneTextures) {
             this.bonusDroneTextures = [];
             this.bonusDroneLoad = Promise.all(AssetManifest.generated.bonusDrones.map(async (src, index) => {

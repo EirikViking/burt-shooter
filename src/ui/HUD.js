@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { getReducedMotionEnabled } from '../config/AccessibilitySettings.js';
 import { usesOpeningCombatReadability } from '../config/OpeningCombatReadability.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 
@@ -389,6 +390,9 @@ export class HUD {
     this.hudContainer.addChild(this.directiveText);
 
     // Current sector label.
+    this.sectorPlate = new PIXI.Graphics();
+    this.sectorPlate.label = 'ui_currentSectorPlate';
+    this.hudContainer.addChild(this.sectorPlate);
     this.locationArt = new PIXI.Sprite(PIXI.Texture.EMPTY);
     this.locationArt.anchor.set(0.5);
     this.locationArt.label = 'authoredSectorCommandCapsule';
@@ -399,8 +403,11 @@ export class HUD {
       compact: true
     }), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 12,
-      fill: '#9eb7c0'
+      fontSize: 28,
+      fontWeight: '900',
+      align: 'right',
+      fill: '#fff0b3',
+      stroke: { color: '#020b15', width: 3 }
     });
     this.locationText.anchor.set(1, 0);
     this.hudContainer.addChild(this.locationText);
@@ -552,7 +559,17 @@ export class HUD {
     this.locationText.text = formatSectorLabel(this.game.level || 1, {
       sectorWord: translateText('SECTOR'),
       compact: true
-    });
+    }).replace(': ', ' · ');
+    const currentSector = Math.max(1, Number(this.game.level) || 1);
+    if (this.lastVisibleSector !== currentSector) {
+      this.lastVisibleSector = currentSector;
+      this.sectorEmphasisUntil = Date.now() + 1400;
+    }
+    const emphasizeSector = !getReducedMotionEnabled() && Date.now() < this.sectorEmphasisUntil;
+    this.locationText.style.fill = emphasizeSector ? '#ffffff' : '#cff6ff';
+    this.locationText.alpha = 1;
+    this.locationText._debugPriority = 'primary';
+    if (this.sectorTextMaxWidth) this.fitTextToWidth(this.locationText, this.sectorTextMaxWidth, .75);
 
     this.updateActivePowerup();
     this.updateTacticalAugmentTray();
@@ -1603,7 +1620,7 @@ export class HUD {
     if (canvasWidth) {
       const margin = Math.round(10 * uiScale);
       const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 : 0;
-      const locationBottom = this.locationText ? this.locationText.y + this.locationText.height + 6 : 0;
+      const locationBottom = this.locationText ? Math.max(this.locationText.y + this.locationText.height, this.sectorPlate?.getBounds?.().maxY || 0) + 6 : 0;
       const groupX = canvasWidth - margin - width;
       const overlayBottom = this.getBlockingToastBottom(groupX, width);
       const desiredY = Math.max(livesBottom, locationBottom, overlayBottom);
@@ -2396,7 +2413,8 @@ export class HUD {
   }
 
   updateTraitMeter() {
-    const player = this.game?.scenes?.play?.player;
+    const play = this.game?.scenes?.play;
+    const player = play?.player;
     const state = player?.getTraitState ? player.getTraitState() : null;
     if (!state?.label) {
       this.traitGroup.visible = false;
@@ -2404,6 +2422,16 @@ export class HUD {
     }
 
     const event = this.getTraitMeterEvent(state);
+    const intro = (Number(play?.gameTime) || 0) < 8;
+    const pulse = state.experimentalPulse;
+    const charging = Boolean(pulse?.available && pulse.remainingMs > 0);
+    const now = player.getGameplayClockMs?.() || 0;
+    if (this.traitPulseWasCharging && !charging && pulse?.available) this.traitReadyNoticeUntil = now + 1800;
+    this.traitPulseWasCharging = charging;
+    const readyNotice = Boolean(pulse?.available && now < (this.traitReadyNoticeUntil || 0));
+    const visible = intro || charging || readyNotice;
+    this.traitGroup._debugContext = { visible, intro, charging, readyNotice, reason: intro ? 'introduction' : charging ? 'recharge' : readyNotice ? 'newly_ready' : 'passive_hidden' };
+    if (!visible) { this.traitGroup.visible = false; return; }
     const layout = getCurrentLayout();
     const canvasWidth = this.game.getWidth ? this.game.getWidth() : Number(layout?.width) || 0;
     const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
@@ -2425,6 +2453,7 @@ export class HUD {
     }
     const label = `TRAIT: ${this.truncateLabel(state.label, 17)}`;
     this.traitLabel.text = label;
+    this.traitLabel.visible = intro;
     this.traitText.text = event.text;
     this.traitLabel.updateText?.(false);
     this.traitText.updateText?.(false);
@@ -2434,7 +2463,8 @@ export class HUD {
       (isLargeDesktop ? 300 : 260) * uiScale
     ));
     const width = Math.max(minWidth, Math.min(maxWidth, Math.max(this.traitLabel.width, this.traitText.width) + authoredInset + paddingX));
-    const textHeight = this.traitLabel.height + this.traitText.height + 1;
+    const labelHeight = intro ? this.traitLabel.height : 0;
+    const textHeight = labelHeight + this.traitText.height + 1;
     const height = textHeight + barGap + barHeight + paddingY * 2;
 
     this.traitBg.clear();
@@ -2446,7 +2476,7 @@ export class HUD {
     this.traitLabel.x = authoredInset;
     this.traitLabel.y = paddingY - 2;
     this.traitText.x = authoredInset;
-    this.traitText.y = paddingY + this.traitLabel.height - 2;
+    this.traitText.y = paddingY + labelHeight - 2;
 
     const barWidth = Math.max(24, width - authoredInset - paddingX);
     const barY = paddingY + textHeight + barGap - 3;
@@ -2469,7 +2499,7 @@ export class HUD {
         ? this.activePowerupGroup.y + this.activePowerupGroup.height + 6 * uiScale
         : 0;
       const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 * uiScale : 0;
-      const locationBottom = this.locationText ? this.locationText.y + this.locationText.height + 6 * uiScale : 0;
+      const locationBottom = this.locationText ? Math.max(this.locationText.y + this.locationText.height, this.sectorPlate?.getBounds?.().maxY || 0) + 6 * uiScale : 0;
       this.traitGroup.x = canvasWidth - margin - width;
       this.traitGroup.y = Math.max(powerupBottom, livesBottom, locationBottom);
     }
@@ -2759,14 +2789,14 @@ export class HUD {
     const rightPanelWidth = Math.round((layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164)) * uiScale);
     const rightPanelHeight = Math.round((layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52)) * uiScale);
     const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : Math.min(canvasWidth * 0.52, (isLargeDesktop ? 480 : 420) * uiScale);
-    const missionPanelHeight = Math.round((layout.isMobile ? 60 : (isLargeDesktop ? 74 : 68)) * uiScale);
+    const missionPanelHeight = Math.round((layout.isMobile ? 84 : 88) * uiScale);
     const missionPanelX = layout.isMobile ? margin : canvasWidth / 2 - missionPanelWidth / 2;
-    const missionPanelY = layout.isMobile ? margin + leftPanelHeight + 7 : margin;
+    const missionPanelY = layout.isMobile || canvasWidth < 1100 ? margin + leftPanelHeight + 7 : margin;
 
     this.scoreText.style.fontSize = scoreFont;
     this.levelText.style.fontSize = scoreFont;
     this.livesText.style.fontSize = livesFont;
-    this.locationText.style.fontSize = Math.round((layout.isMobile ? 11 : (isLargeDesktop ? 16 : 14)) * uiScale);
+    this.locationText.style.fontSize = Math.round((layout.isMobile ? 20 : (isLargeDesktop ? 24 : 22)) * uiScale);
     this.rankText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 15 : 14)) * uiScale);
     this.missionLabel.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11)) * uiScale);
     this.missionText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 17 : 15)) * uiScale);
@@ -2791,10 +2821,7 @@ export class HUD {
       missionPanelY + missionPanelHeight / 2
     );
     this.missionFrameArt.width = missionPanelWidth + Math.round(20 * uiScale);
-    this.missionFrameArt.height = Math.min(
-      missionPanelHeight + Math.round(12 * uiScale),
-      this.missionFrameArt.width * (265 / 2148)
-    );
+    this.missionFrameArt.height = missionPanelHeight + Math.round(12 * uiScale);
     this.updateMissionPriorityVisual();
 
     this.rankGroup.alpha = 0.72;
@@ -2868,9 +2895,9 @@ export class HUD {
     this.missionLabel.x = missionPanelX + missionPanelWidth / 2;
     this.missionLabel.y = missionPanelY + (layout.isMobile ? 10 : (isLargeDesktop ? 13 : 11));
     this.missionText.x = missionPanelX + missionPanelWidth / 2;
-    this.missionText.y = missionPanelY + (layout.isMobile ? 25 : (isLargeDesktop ? 32 : 29));
+    this.missionText.y = missionPanelY + Math.round(36 * uiScale);
     this.directiveText.x = missionPanelX + missionPanelWidth / 2;
-    this.directiveText.y = missionPanelY + Math.round((layout.isMobile ? 47 : (isLargeDesktop ? 57 : 52)) * uiScale);
+    this.directiveText.y = missionPanelY + Math.round(65 * uiScale);
     if (this.experimentLabelGroup) {
       const labelWidth = Math.min(missionPanelWidth - 24, Math.round((layout.isMobile ? 250 : 286) * Math.min(uiScale, 1.35)));
       const labelHeight = Math.round((layout.isMobile ? 18 : 21) * Math.min(uiScale, 1.35));
@@ -2891,7 +2918,7 @@ export class HUD {
       ));
       const railHeight = Math.max(3, Math.round((layout.isMobile ? 3 : 4) * Math.min(uiScale, 1.6)));
       this.missionProgressBg.__x = Math.round(missionPanelX + railPad);
-      this.missionProgressBg.__y = Math.round(missionPanelY + (layout.isMobile ? 35 : (isLargeDesktop ? 43 : 38)) * uiScale);
+      this.missionProgressBg.__y = Math.round(missionPanelY + 56 * uiScale);
       this.missionProgressBg.__w = Math.round(Math.max(0, missionPanelWidth - railPad * 2));
       this.missionProgressBg.__h = railHeight;
     }
@@ -2907,28 +2934,17 @@ export class HUD {
       this.directiveProgressBg.__h = railHeight;
     }
 
-    this.locationText.x = canvasWidth - margin - Math.round(12 * uiScale);
-    this.locationText.y = layout.isMobile
-      ? missionPanelY + missionPanelHeight + 6
-      : margin + blockSpacing * 2.5;
-    const locationWidth = Math.max(
-      Math.round((layout.isMobile ? 142 : 178) * uiScale),
-      this.locationText.width + Math.round(54 * uiScale)
-    );
-    const locationHeight = Math.max(28, Math.round((layout.isMobile ? 28 : 34) * uiScale));
-    this.locationArt.width = locationWidth;
-    this.locationArt.height = locationHeight;
-    this.locationArt.position.set(
-      canvasWidth - margin - locationWidth / 2,
-      this.locationText.y + locationHeight / 2 - Math.round(5 * uiScale)
-    );
-    this.locationArt.tint = 0x8adfff;
-    this.locationArt.alpha = 0.62;
-    this.locationArt._debugVisual = {
-      authoredCapsuleReady: GameAssets.isValidTexture(this.locationArt.texture),
-      primitiveOrnamentCount: 0,
-      visualLanguage: 'authored_sector_capsule_v1'
-    };
+    // Sector identity belongs to the mission header, directly above wave status.
+    this.missionLabel.visible = false;
+    this.locationArt.visible = false;
+    this.sectorPlate.clear();
+    this.sectorPlate.visible = false;
+    this.locationText.anchor.set(.5, 0);
+    this.locationText.style.align = 'center';
+    this.locationText.position.set(missionPanelX + missionPanelWidth / 2, missionPanelY + Math.round(8 * uiScale));
+    this.sectorTextMaxWidth = missionPanelWidth - Math.round(34 * uiScale);
+    this.fitTextToWidth(this.locationText, this.sectorTextMaxWidth, .8);
+    this.locationText._debugSectorHeader = { integrated: true, prominent: true, width: this.sectorTextMaxWidth };
 
     this.updateLivesVisuals();
     this.livesGroup.x = canvasWidth - margin - this.livesGroup.width;

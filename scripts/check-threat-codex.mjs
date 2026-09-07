@@ -288,10 +288,10 @@ const sceneSource = readFileSync('src/scenes/ThreatCodexScene.js', 'utf8');
 const playSource = readFileSync('src/scenes/PlayScene.js', 'utf8');
 if (!menuSource.includes('THREAT CODEX')) fail('Threat Codex must be visible in main menu');
 if (!gameSource.includes('showThreatCodex')) fail('Game must expose showThreatCodex');
-if (!playSource.includes("const threatCategory = isEliteMiddleShip ? 'elites' : 'enemies'")) {
+if (!playSource.includes("const threatCategory = enemy?.kind === 'space_snake' ? 'spaceSnakes' : isEliteMiddleShip ? 'elites' : 'enemies'")) {
   fail('elite middle ship kills should queue defeats into the elites Codex bucket');
 }
-if (!playSource.includes("['enemies', 'elites', 'bosses']")) {
+if (!playSource.includes("['enemies', 'elites', 'bosses', 'spaceSnakes']")) {
   fail('defeat seen-key cache should include elites so first-defeat scoring stays stable');
 }
 for (const token of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'pointerdown', 'gamepad', 'PageUp', 'PageDown', 'wheelNavigation', 'entryScroll']) {

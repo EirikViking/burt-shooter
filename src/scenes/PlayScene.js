@@ -1,4 +1,7 @@
 import { BOSS_ARSENAL_ENABLED, getBossArsenalDangerColor } from '../config/BossArsenal.js';
+import { coreRunState, recordCoreWaveKill } from '../progression/BonusCoreRewards.js';
+import { makeCoreCadence, spendCoreCadence } from '../config/BonusCoreCadence.js';
+import { celebrateSpaceSnakeDeath } from '../effects/SpaceSnakeDeath.js';
 import { configureColossusAssault, isInsideColossusFront } from '../config/ColossusAssault.js';
 import { drawColossusAssault } from '../effects/ColossusAssaultVfx.js';
 import { drawArsenalField } from '../effects/BossArsenalFields.js';
@@ -602,6 +605,8 @@ export class PlayScene {
     this.totalKills = 0;
     this.bossKills = 0;
     this.wavesCleared = 0;
+    this.bonusCoreRun = null;
+    this.bonusCoreCadence = null;
     this.noHitWavesThisRun = 0;
     this.flawlessWaveStreak = 0;
     this.noHitSectorsThisRun = 0;
@@ -858,6 +863,8 @@ export class PlayScene {
     this.totalKills = 0;
     this.bossKills = 0;
     this.wavesCleared = 0;
+    this.bonusCoreRun = null;
+    this.bonusCoreCadence = null;
     this.comboCount = 0;
     this.comboMultiplier = 1;
     this.comboTimerMs = 0;
@@ -13845,9 +13852,12 @@ export class PlayScene {
     status.zIndex = 7;
     overlay.addChild(status);
 
-    const experimentStatus = createText(translateText('EXPERIMENTAL TEST // NO AWARDS'), {
+    const pauseTrait = this.player?.getTraitState?.();
+    const isExperiment = this.game?.lateGameExperiment?.active === true;
+    const experimentStatus = createText(isExperiment ? translateText('EXPERIMENTAL TEST // NO AWARDS')
+      : `${translateText(pauseTrait?.label || '')}: ${translateText(pauseTrait?.description || '')}`, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 13,
+      fontSize: isExperiment ? 13 : 12,
       fontWeight: '900',
       fill: '#ffb36e',
       stroke: '#17030b',
@@ -13856,7 +13866,9 @@ export class PlayScene {
     });
     experimentStatus.anchor.set(0.5);
     experimentStatus.position.set(centerX, panelY + 132);
-    experimentStatus.visible = this.game?.lateGameExperiment?.active === true;
+    experimentStatus.visible = isExperiment || Boolean(pauseTrait?.label);
+    experimentStatus.label = isExperiment ? 'ui_pauseExperimentStatus' : 'ui_pauseTraitExplanation';
+    if (experimentStatus.width > panelWidth - 76) experimentStatus.scale.set((panelWidth - 76) / experimentStatus.width);
     experimentStatus.zIndex = 7;
     overlay.addChild(experimentStatus);
 
@@ -15772,6 +15784,7 @@ export class PlayScene {
     }
     this.lastLifeLossSource = source;
     this.lifeLossesThisRun = (Number(this.lifeLossesThisRun) || 0) + 1;
+    coreRunState(this).lastHitWave = this.wavesCleared || 0;
     this.damageTakenThisWave = (Number(this.damageTakenThisWave) || 0) + 1;
     this.damageTakenThisSector = (Number(this.damageTakenThisSector) || 0) + 1;
     if (this.game?.lateGameExperiment?.active === true) {
@@ -20782,7 +20795,7 @@ export class PlayScene {
     if (!RunPacingConfig.threatCodexEnabled || !this.game?.isRankedRun?.()) return seen;
     try {
       const items = readThreatDiscoveryState()?.items || {};
-      for (const category of ['enemies', 'elites', 'bosses']) {
+      for (const category of ['enemies', 'elites', 'bosses', 'spaceSnakes']) {
         const bucket = items[category] || {};
         for (const [id, item] of Object.entries(bucket)) {
           if ((Number(item?.timesDefeated) || 0) > 0) seen.add(`${category}:${id}`);
@@ -22068,6 +22081,8 @@ export class PlayScene {
   }
 
   onEnemyKilled(enemy, options = {}) {
+    recordCoreWaveKill(this);
+    if (enemy?.kind === 'space_snake') celebrateSpaceSnakeDeath(this, enemy);
     const now = Date.now();
     this.particleManager?.hullBreakup?.emit(enemy);
     this.enemyManager?.recordCombatReadabilityDeath?.(enemy);
@@ -22085,9 +22100,9 @@ export class PlayScene {
         role: enemy?.profile?.title || 'boss',
         sector: this.game.level
       });
-    } else {
+    } else if (enemy?.kind !== 'space_snake' || enemy.chain.sections.every(section => !section.active)) {
       const isEliteMiddleShip = enemy?.kind === 'elite_middle_ship' || enemy?.isEliteMiddleShip || Boolean(enemy?.middleShipProfile);
-      const threatCategory = isEliteMiddleShip ? 'elites' : 'enemies';
+      const threatCategory = enemy?.kind === 'space_snake' ? 'spaceSnakes' : isEliteMiddleShip ? 'elites' : 'enemies';
       const threatId = enemy?.isRareChaosVisitor
         ? enemy?.rareChaosVisitorVariant?.id
         : isEliteMiddleShip
@@ -23185,30 +23200,17 @@ export class PlayScene {
       }
     }
 
-    // 2. Spawn bonus core powerup logic
-    // WAVE FIX: Don't spawn during wave ending or cleanup
-    if (canSpawn) {
-      const config = BalanceConfig.powerups.bonusCore;
-      const now = Date.now();
-      const runTime = this.gameTime * 1000; // approx ms
-
-      // Conditions:
-      // - Not waiting for cooldown
-      // - Game time > 20s
-      // - No bonus core currently exists
-      // - Player not already boosted (optional, but requested "If player already has the same active effect, do NOT spawn" - checking boost simpler here)
-      if (!this.hasActiveBonusCore &&
-        now - this.lastBonusCoreTime > config.cooldown &&
-        runTime > config.minTime &&
-        this.scoreMultiplier === 1) { // Don't spawn if boost active
-
-        if (Math.random() < config.spawnChance) {
-          this.spawnAmbientBonusDrone('POWERUP');
-          this.lastBonusCoreTime = now;
-          this.hasActiveBonusCore = true;
-          this.showToast("BONUS CORE APPEARED!", { fontSize: 24, fill: '#ffffff', y: 100 });
-        }
-      }
+    // Rare collectibles use one sector budget, independent of frame rate.
+    this.bonusCoreCadence ||= makeCoreCadence(this.game.level);
+    const cadence = this.bonusCoreCadence;
+    const waveKey = this.game.level + ':' + this.enemyManager?.currentWaveIndex;
+    if (cadence.waveKey !== waveKey) { cadence.waveKey = waveKey; cadence.age = 0; }
+    if (canSpawn) cadence.age += Math.max(0, delta) / 60;
+    const selectedWave = Math.floor(cadence.waveRoll * Math.max(1, (this.enemyManager?.waves?.length || 3) - 1));
+    const snakeActive = this.enemyManager?.enemies?.some(e => e.active && e.kind === 'space_snake');
+    if (canSpawn && !snakeActive && !this.hasActiveBonusCore && this.game.level >= cadence.nextLevel
+        && this.enemyManager.currentWaveIndex >= selectedWave && cadence.age >= cadence.entryDelay) {
+      this.spawnAmbientBonusDrone('POWERUP');
     }
 
     // Update existing
@@ -23231,6 +23233,7 @@ export class PlayScene {
       bonusDrone.update(updateDelta, hazardCount); // Pass hazard count for wave easing
       return true;
     });
+    this.hasActiveBonusCore = this.ambientBonusDrones.some(drone => drone.active && drone.type === 'POWERUP');
   }
 
   cleanupSkippedFrameVisuals(reason = 'skipped_frame') {
@@ -23885,13 +23888,20 @@ export class PlayScene {
     return true;
   }
 
-  spawnAmbientBonusDrone(type) {
-    const x = Math.random() * (this.gameplayGame.getWidth() - 100) + 50;
-    const y = -50;
+  spawnAmbientBonusDrone(type, position = {}) {
+    if (type === 'POWERUP') {
+      this.bonusCoreCadence ||= makeCoreCadence(this.game.level);
+      if (this.hasActiveBonusCore || this.game.level < this.bonusCoreCadence.nextLevel) return null;
+      spendCoreCadence(this.bonusCoreCadence, this.game.level);
+      this.hasActiveBonusCore = true;
+    }
+    const x = Number.isFinite(position.x) ? position.x : Math.random() * (this.gameplayGame.getWidth() - 100) + 50;
+    const y = Number.isFinite(position.y) ? position.y : -50;
 
     const bonusDrone = new BonusDrone(x, y, this.gameplayGame, type);
     this.gameContainer.addChild(bonusDrone.sprite);
     this.ambientBonusDrones.push(bonusDrone);
+    return bonusDrone;
   }
 
   // CLEANUP FIX: Authoritative collector for wave cleanup targets
@@ -23909,7 +23919,7 @@ export class PlayScene {
 
     // Collect ambient bonus drones from PlayScene.
     const ambientBonusDrones = this.ambientBonusDrones.filter(b =>
-      b.active && b.kind === 'bonus_drone'
+      b.active && b.kind === 'bonus_drone' && b.type !== 'POWERUP'
     );
     targets.push(...ambientBonusDrones);
 
