@@ -1,16 +1,26 @@
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright';
+import { chromium, _electron as electron } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-const base=process.env.CHECK_URL||'http://127.0.0.1:4403';
+let base=process.env.CHECK_URL||'http://127.0.0.1:4403';
 const out=path.resolve(process.env.CHECK_OUTPUT_DIR||'test-results/launch-menu');mkdirSync(out,{recursive:true});
-const browser=await chromium.launch({channel:'chrome',headless:true});
-const context=await browser.newContext({viewport:{width:1280,height:720}});
-await context.route('**/*',r=>/^(data:|blob:|https?:\/\/(127\.0\.0\.1|localhost)(:|\/))/.test(r.request().url())?r.continue():r.abort());
-const page=await context.newPage(), report={errors:[],checks:[],locales:[],runs:[]};
+const native=process.env.ASTRA_EXE;
+const browser=native?await electron.launch({executablePath:native,args:['--nova-fresh-profile','--windowed'],env:{...process.env,NOVA_SWARM_USER_DATA_DIR:path.join(out,'profile'),NOVA_SWARM_FRESH_PROFILE:'1',NOVA_SWARM_WINDOWED:'1'},timeout:120000}):await chromium.launch({channel:'chrome',headless:true});
+const context=native?browser.context():await browser.newContext({viewport:{width:1280,height:720}});
+await context.route('**/*',r=>/^(nova-swarm:|data:|blob:|https?:\/\/(127\.0\.0\.1|localhost)(:|\/))/.test(r.request().url())?r.continue():r.abort());
+const page=native?await browser.firstWindow():await context.newPage(), report={executable:native||null,errors:[],checks:[],locales:[],runs:[]};
+if(native){
+ await page.waitForFunction(()=>window.__game?.scenes?.menu?.launchHome,null,{timeout:120000});
+ report.profile=await browser.evaluate(({app})=>({packaged:app.isPackaged,path:app.getPath('userData')}));
+ assert.equal(report.profile.packaged,true);assert.equal(report.profile.path,path.join(out,'profile'));
+ report.runtime=await page.evaluate(()=>JSON.parse(window.render_game_to_text()).gitSha);
+ assert.equal(report.runtime,process.env.ASTRA_EXPECTED_SHA);
+ await browser.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setFullScreen(false);w.setContentSize(1280,720);});
+ base=page.url().split('?')[0].replace(/\/$/,'');
+}
 page.on('pageerror',e=>report.errors.push(e.message));
 const flush=()=>writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));
-async function ready(){await page.goto(`${base}/?offlineLeaderboard=1`,{waitUntil:'domcontentloaded',timeout:120000});await page.waitForFunction(()=>window.__game?.scenes?.menu?.astraMenuShip?.ready&&window.__game.scenes.menu.launchHome,null,{timeout:120000});await page.waitForTimeout(400);}
+async function ready(){await page.goto(`${base}${native?'':'/'}?offlineLeaderboard=1`,{waitUntil:'domcontentloaded',timeout:120000});await page.waitForFunction(()=>window.__game?.scenes?.menu?.astraMenuShip?.ready&&window.__game.scenes.menu.launchHome,null,{timeout:120000});await page.waitForTimeout(400);}
 async function clickHome(id){const b=await page.evaluate(id=>window.__game.scenes.menu.launchHome.debug().buttons[id],id);assert.ok(b.visible,id);await page.mouse.click(b.x+b.width/2,b.y+b.height/2);}
 async function clickMode(key){const b=await page.evaluate(key=>{const o=window.__game.scenes.menu[key],b=o.getBounds();return{x:b.x+b.width/2,y:b.y+b.height/2,visible:o.visible&&o.parent.visible};},key);assert.ok(b.visible,key);await page.mouse.click(b.x,b.y);}
 async function assertRun(expected){await page.waitForFunction(()=>window.__game?.currentScene===window.__game.scenes.play&&window.__game.scenes.play.player,null,{timeout:120000});const state=await page.evaluate(()=>({mode:window.__game.runMode,level:window.__game.level,briefing:!!window.__game.scenes.menu.modeBriefingOverlay}));assert.equal(state.mode,expected);assert.equal(state.briefing,false);report.runs.push(state);flush();}

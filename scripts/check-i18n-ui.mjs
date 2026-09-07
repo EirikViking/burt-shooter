@@ -279,6 +279,8 @@ async function snapshot(page) {
         launch: game?.scenes?.menu?.launchHome?.buttons?.launchTactical?._label?.text || null,
         settings: game?.scenes?.menu?.launchHome?.buttons?.settings?._label?.text || null,
         primaryRunMode: game?.scenes?.menu?.launchHome?.debug?.().primaryRunMode || null,
+        homeAlpha: game?.scenes?.menu?.launchHome?.alpha,
+        duplicateRotateHint: game?.scenes?.menu?.astraMenuShip?.caption?.visible,
         missionBriefing: state.menu?.missionBriefing || null,
         launchDeck: state.menu?.launchDeck || null,
         modeBriefing: state.menu?.modeBriefing
@@ -457,6 +459,8 @@ async function captureLanguage(page, language, index) {
 
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !window.__game?.currentScene?.settingsOverlay, null, { timeout: 10000 });
+  await page.waitForFunction(() => window.__game?.scenes?.menu?.astraMenuShip?.ready, null, { timeout: 120000 });
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   snaps.menu = await snapshot(page);
   assertSnapshotClean(snaps.menu, language, `${language.slug}.menu`);
   shots.menu = await screenshot(page, `${prefix}-main-menu.png`);
@@ -464,6 +468,8 @@ async function captureLanguage(page, language, index) {
   const homePlay = {en:'PLAY',de:'SPIELEN',es:'JUGAR',ru:'ИГРАТЬ','zh-CN':'游玩','pt-BR':'JOGAR',ko:'플레이',ja:'プレイ'};
   assert(snaps.menu.menu.launch === homePlay[language.code], `${language.slug} visible home Play label mismatch`);
   assert(snaps.menu.menu.primaryRunMode === 'ranked_tactical', `${language.slug} home Play must stay Tactical`);
+  assert(snaps.menu.menu.homeAlpha === 1, `${language.slug} home must recover brightness after Settings`);
+  assert(snaps.menu.menu.duplicateRotateHint === false, `${language.slug} home must have only one rotation hint`);
 
   await page.evaluate((showAttempt) => {
     const menu = window.__game?.scenes?.menu || window.__game?.currentScene;
