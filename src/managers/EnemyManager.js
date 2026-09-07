@@ -1,4 +1,5 @@
 import { waveFlightPlan, arcadeEntryDuration, arcadeBriefingDuration, ARCADE_FLIGHT_ENABLED } from '../config/ArcadeFlight.js';
+import { openingWaveEntry } from '../config/OpeningWaveEngagement.js';
 import * as PIXI from 'pixi.js';
 import { Enemy } from '../entities/Enemy.js';
 import { Boss } from '../entities/Boss.js';
@@ -3412,7 +3413,12 @@ export class EnemyManager {
       }
       this.measurePerformance('enemy_batch_creation', () => {
         const reinforcementEntryRoute = String(config.reinforcementEntryRoute || '');
-        const entryStart = this.getWaveEntryStart({
+        const openingEntry = ARCADE_FLIGHT_ENABLED ? openingWaveEntry({
+          config, sourceLevel: this.level, waveIndex: this.currentWaveIndex,
+          slot: i, count, runMode: this.game?.runMode,
+          width: screenW, height: this.game.getHeight()
+        }) : null;
+        const entryStart = openingEntry || this.getWaveEntryStart({
           route: reinforcementEntryRoute,
           entry: config.entry || 'single',
           index: i,
@@ -3513,12 +3519,21 @@ export class EnemyManager {
         if (enemyTactic.forcedDive) {
           enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
         }
-        const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs + (Number(config.reinforcementEntryDelayMs) || 0));
+        const entryDelayMs = Math.max(0, Math.max(i * delayStep, openingEntry?.delayMs || 0) - scheduledDelayMs + (Number(config.reinforcementEntryDelayMs) || 0));
         const resolvedEntryDurationMs = entryDurationMs * Math.max(0.6, Math.min(1.2, Number(enemy.nemesisOpeningEntryDurationMult) || 1));
         const flight = waveFlightPlan(config, this.level, this.currentWaveIndex, i, screenW, this.game.getHeight());
+        if (flight && openingEntry) {
+          flight.route = openingEntry.route;
+          flight.side = openingEntry.side;
+          flight.strength = openingEntry.strength;
+        }
         const flightDurationMs = arcadeEntryDuration(resolvedEntryDurationMs, flight);
         enemy.startEntry(startX, startY, pos.x, pos.y, flightDurationMs, entryDelayMs, flight);
         if (flight && enemy.tacticalDiveAt) enemy.tacticalDiveAt += flightDurationMs - entryDurationMs;
+        if (openingEntry && enemy.tacticalDiveAt) {
+          // Delayed wings must still settle before their authored dive begins.
+          enemy.tacticalDiveAt = Math.max(enemy.tacticalDiveAt, enemy.entryCurve.startTime + flightDurationMs + 520);
+        }
         if (enemy.contactSafeDuringEntry) {
           enemy.bottomEntrySafetyDebug = {
             route: reinforcementEntryRoute,
