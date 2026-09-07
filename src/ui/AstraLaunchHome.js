@@ -131,8 +131,15 @@ export class AstraLaunchHome extends Container {
     this.scene.legacyMenuLayer.visible=this.surface==='modes';
     for(const key of ['highscoreBtn','storyBtn','threatCodexBtn','achievementsBtn','settingsBtn','musicBtn','helpBtn','exitBtn'])this.scene[key].visible=false;
     if(this.surface==='modes') { this.scene.title.text=t('OTHER MODES'); this.scene.subtitle.visible=false; this.scene.menuPanel.visible=false; }
-    this.eventMode=(this.scene.quitConfirmOpen||this.scene.sectorSelectorOpen||this.scene.settingsOverlay||this.scene.howToPlayOverlay||this.scene.modeBriefingOverlay)?'none':'passive';
-    this.alpha=this.eventMode==='none'?.3:1;
+    this.syncModalPresentation();
+  }
+
+  syncModalPresentation() {
+    const modal=Boolean(this.scene.quitConfirmOpen||this.scene.sectorSelectorOpen||this.scene.settingsOverlay||this.scene.howToPlayOverlay||this.scene.modeBriefingOverlay);
+    this.eventMode=modal?'none':'passive';
+    this.alpha=modal?.3:1;
+    // Settings language changes can replace the turntable after layout finishes.
+    if(this.scene.astraMenuShip)this.scene.astraMenuShip.caption.visible=this.surface!=='home';
   }
 
   openModes() {

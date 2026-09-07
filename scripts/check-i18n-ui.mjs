@@ -276,8 +276,9 @@ async function snapshot(page) {
       language: state.language,
       scene: state.scene,
       menu: {
-        launch: game?.scenes?.menu?.startBtn?._label?.text || null,
-        settings: game?.scenes?.menu?.settingsBtn?._label?.text || null,
+        launch: game?.scenes?.menu?.launchHome?.buttons?.launchTactical?._label?.text || null,
+        settings: game?.scenes?.menu?.launchHome?.buttons?.settings?._label?.text || null,
+        primaryRunMode: game?.scenes?.menu?.launchHome?.debug?.().primaryRunMode || null,
         missionBriefing: state.menu?.missionBriefing || null,
         launchDeck: state.menu?.launchDeck || null,
         modeBriefing: state.menu?.modeBriefing
@@ -460,10 +461,13 @@ async function captureLanguage(page, language, index) {
   assertSnapshotClean(snaps.menu, language, `${language.slug}.menu`);
   shots.menu = await screenshot(page, `${prefix}-main-menu.png`);
   assert(snaps.menu.menu.settings === language.menuSettings, `${language.slug} menu Settings label mismatch`);
-  assert(snaps.menu.menu.launch === language.launch, `${language.slug} launch label mismatch`);
+  const homePlay = {en:'PLAY',de:'SPIELEN',es:'JUGAR',ru:'ИГРАТЬ','zh-CN':'游玩','pt-BR':'JOGAR',ko:'플레이',ja:'プレイ'};
+  assert(snaps.menu.menu.launch === homePlay[language.code], `${language.slug} visible home Play label mismatch`);
+  assert(snaps.menu.menu.primaryRunMode === 'ranked_tactical', `${language.slug} home Play must stay Tactical`);
 
   await page.evaluate((showAttempt) => {
     const menu = window.__game?.scenes?.menu || window.__game?.currentScene;
+    menu.launchHome.openModes();
     const syntheticRecord = {
       score: 123456,
       sectorReached: 9,

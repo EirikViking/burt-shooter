@@ -7864,6 +7864,7 @@ export class MenuScene {
       ceremony._coronation.update(performance.now()-ceremony._startedAt,layout.width,layout.height,{compact:layout.compact});
     }
     this.animationTime += delta * 0.016;
+    this.launchHome?.syncModalPresentation();
     this.astraDock?.update(delta, this.game.getWidth(), this.game.getHeight(), getReducedMotionEnabled(),this.launchHome?.surface==='home'?.71:.485);
     if (this.astraMenuShip && this.astraMenuLights) {
       const motion = !getReducedMotionEnabled();

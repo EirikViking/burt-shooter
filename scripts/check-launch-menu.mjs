@@ -31,6 +31,8 @@ try {
  assert.equal(await page.evaluate(()=>window.__game.scenes.menu.astraMenuShip.eventMode),'none');
  await page.keyboard.press('Escape');await page.waitForTimeout(200);assert.equal(await page.evaluate(()=>!!window.__game.scenes.menu.settingsOverlay),false);
  report.checks.push('Settings gates ship drag and closes with Escape');
+ assert.equal(await page.evaluate(()=>window.__game.scenes.menu.launchHome.alpha),1);
+ assert.equal(await page.evaluate(()=>window.__game.scenes.menu.astraMenuShip.caption.visible),false);
  await page.evaluate(()=>{localStorage.setItem('nova_accessibility_reduced_motion','1');localStorage.setItem('nova.hangarProgress.v1',JSON.stringify({bestLevel:6,bestSector:6,totalRuns:2}));localStorage.setItem('burt.selectedShip.v1','nova-player-ship-02.png');});
  await ready();
  assert.equal(await page.evaluate(()=>window.__game.scenes.menu.launchHome.debug().selectedShip),'nova-player-ship-02.png');
@@ -46,7 +48,10 @@ try {
  await page.evaluate(()=>localStorage.setItem('nova_accessibility_reduced_motion','0'));await ready();
  for(const language of ['en','de','es','ru','zh-CN','pt-BR','ko','ja']) {
   await page.evaluate(async language=>{await window.__novaI18n.setLanguagePreference(language);window.__game.scenes.menu.refreshMenuText({forceGpuRefresh:true});},language);
-  await page.waitForFunction(()=>window.__game.scenes.menu.astraMenuShip?.ready,null,{timeout:120000});await page.waitForTimeout(250);await page.screenshot({path:path.join(out,`${language}-home.png`)});
+  await page.waitForFunction(()=>window.__game.scenes.menu.astraMenuShip?.ready,null,{timeout:120000});await page.waitForTimeout(250);
+  assert.equal(await page.evaluate(()=>window.__game.scenes.menu.launchHome.alpha),1);
+  assert.equal(await page.evaluate(()=>window.__game.scenes.menu.astraMenuShip.caption.visible),false);
+  await page.screenshot({path:path.join(out,`${language}-home.png`)});
   await clickHome('otherModes');await page.waitForTimeout(200);await page.screenshot({path:path.join(out,`${language}-modes.png`)});
   await clickHome('backHome');report.locales.push(language);
  }
