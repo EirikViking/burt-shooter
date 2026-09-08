@@ -2739,7 +2739,7 @@ export class EnemyManager {
     // WAVE FIX: Use spawn gate
     if (this.allowBonusDroneSpawns() && this.enemies.length < 20) {
       const clutchBoost = this.directorState?.clutchDropChance || 0;
-      const chance = 0.0005 + clutchBoost * 0.0008;
+      const chance = (0.0005 + clutchBoost * 0.0008) * 0.65;
       if (Math.random() < chance) { // very rare per tick
         this.spawnBonusDrone('bonus');
       }

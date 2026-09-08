@@ -15,7 +15,7 @@ export const AssetManifest = {
     generated: {
         astraThreatCounts: { elites: 50, supports: 111, late: 177 },
         fleetV5Count: 227,
-        bonusDrones: [...Array.from({ length: 12 }, (_, i) => `/art/astra/drone-v5/${String(i + 1).padStart(2, '0')}.png`), ...Array.from({length:15},(_,i)=>`/art/fleet-identity-20260908/drones/${String(i+1).padStart(2,'0')}.png`)],
+        bonusDrones: [...Array.from({length:12},(_,i)=>i<4?`/art/bonus-drones-20260908/gameplay/${String(i+1).padStart(2,'0')}.png`:`/art/astra/drone-v5/${String(i+1).padStart(2,'0')}.png`), ...Array.from({length:15},(_,i)=>`/art/bonus-drones-20260908/gameplay/${String(i+5).padStart(2,'0')}.png`)],
         bossPresentation: Array.from({ length: 50 }, (_, i) => `/art/astra/boss/${String(i + 1).padStart(2, '0')}.png`),
         playerPresentation: Array.from({ length: 30 }, (_, i) => `/art/solid-fleet-20260908/player/${String(i + 1).padStart(2, '0')}.png`),
         bossComponents: [1, 2, 3].map((i) => `/art/astra/component/${String(i).padStart(2, '0')}.png`),

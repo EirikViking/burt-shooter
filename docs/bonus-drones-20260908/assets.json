@@ -1,0 +1,308 @@
+{
+  "files": [
+    {
+      "file": "public/art/bonus-drones-20260908/codex/01.webp",
+      "sha256": "be07be99a1309f6a3ecddfbc26dfaa77b60a5680d4ff7d5aaf16fa8460263103",
+      "bytes": 493804,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/01.png",
+      "sha256": "e31c8553fc893f883e899d9657f5a3e009131c3535b7f51189a4e5d4a9a70532",
+      "bytes": 59864,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/02.webp",
+      "sha256": "133873d35d0bbea7ef18a653369e19f708a8db13e8b29af4ff9eeaf69677f214",
+      "bytes": 1026314,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/02.png",
+      "sha256": "71b7b35a973705271dfd79176e83ff91e93217045167515a2c3a21e45a94180b",
+      "bytes": 119481,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/03.webp",
+      "sha256": "9c75fcc203bdf7125a25780c84c5cc9fb3c3674110cbfd2cc653b10f3c245599",
+      "bytes": 383992,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/03.png",
+      "sha256": "3ebd08fdf7d78c6d536a97261828dab830941c04cf116838f256d33f121f5761",
+      "bytes": 46969,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/04.webp",
+      "sha256": "2a5a0242dd737612648ef53e7ed258c71d945dcd03d8d68495e630640c1b1413",
+      "bytes": 874976,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/04.png",
+      "sha256": "08d05e140821f9cf18d6adb0e784179ec049d4f1de36452bd37d9168eac4880f",
+      "bytes": 99799,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/05.webp",
+      "sha256": "2a9e7d0950648614ee5a816e3310432ac6058c04815ec77555bb8e1300f52cc1",
+      "bytes": 691214,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/05.png",
+      "sha256": "6b920798cef432ece95ddd6f88aaa6fddc398825dea350a08ad6eeac0ae5bda1",
+      "bytes": 83051,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/06.webp",
+      "sha256": "1a870d3f5c32351293d84c2036657cb6ec189c7c27b4063572c81ba9f40a9924",
+      "bytes": 1099486,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/06.png",
+      "sha256": "c9fdffda7a23bea3dee76e7b1c0aa136a5caa565cc90793440a607ed2bd406f8",
+      "bytes": 123299,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/07.webp",
+      "sha256": "e304388c8f4e4ce182041d1a4e2b3628ef8b5d0c46eaa330fa8b035fded28dbb",
+      "bytes": 585434,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/07.png",
+      "sha256": "cda0f3f08cd0f8c5fe7f3f9853922fa7a11cf2d3c5b8525eeb8158408c7f32f9",
+      "bytes": 68523,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/08.webp",
+      "sha256": "0d6ced1cf0d0c054fd44ee35bdf0a5ecc6420f88b0db6b3b711b2a61e8654f2d",
+      "bytes": 1056716,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/08.png",
+      "sha256": "baa4f8df11b9f4176a6ef03ec74d76288567ef0761c4dd04b2e33c72d8e9f5a1",
+      "bytes": 121666,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/09.webp",
+      "sha256": "6a5b789d8b330e2effb0cc3b92db7fee11f8a291b1d644e9748431fca787b481",
+      "bytes": 689584,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/09.png",
+      "sha256": "8fc862f11fefdc4306ed51a1a76b7b2da2fedfb093fc06b85a74c102b8e462ad",
+      "bytes": 80198,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/10.webp",
+      "sha256": "97a71dad2be4e4fe845698253fcb29d19d887b47a932eec5f9445f43dd3849f5",
+      "bytes": 630026,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/10.png",
+      "sha256": "58a2505a04778e7fe2efb52b9e72d95d1eb2b24f76d1b52ad94a30efb366192a",
+      "bytes": 81010,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/11.webp",
+      "sha256": "a9405cb8c189ed81f71a3989ba1fbe34cdd02c5e56cd329bc3b097466d333fb6",
+      "bytes": 826274,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/11.png",
+      "sha256": "4e019a63c680e1efc5dc67eba8ddb70aacdce595acb36ebab668b674e3681892",
+      "bytes": 95809,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/12.webp",
+      "sha256": "afaf33363adde0fee504b3d289ae6409eb68cc20809854344e00f8dec287b74b",
+      "bytes": 897232,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/12.png",
+      "sha256": "05c3493f41b525f57f541a8bcb148d3f49af42994e4da0546c4f3eb3e8fb619e",
+      "bytes": 100990,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/13.webp",
+      "sha256": "117de2d9579af26388e85ecd2c5dceaaf4a4c5ec53be7e4149a848891405b1f9",
+      "bytes": 489766,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/13.png",
+      "sha256": "49fb380ac6225a76112003f1d450236baa2d56be99896694f8e23577b8151b3c",
+      "bytes": 58299,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/14.webp",
+      "sha256": "76108f03a51937342e7b87fef485d5df5bf2910669dcedbba0ab039ef33cc398",
+      "bytes": 800664,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/14.png",
+      "sha256": "8415a2fdbb53769efcaf45fd1007013986ec57ce84d6b7fe97e5a8a03333c11a",
+      "bytes": 94833,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/15.webp",
+      "sha256": "f58d908a9dd51f8280486270d7bb6744a356cbfe11b3d38dfeaed02c42186c08",
+      "bytes": 577034,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/15.png",
+      "sha256": "a27d2cf0becacdd853369c81f7cc8389e859c5630431fc4a3b3dd63291afdc81",
+      "bytes": 68647,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/16.webp",
+      "sha256": "3cc0535ca30b2f6a04a76af9a564e9d14debff40ebec7909db22c0656f4716dd",
+      "bytes": 626066,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/16.png",
+      "sha256": "df0b0f870d141a1506e5fe59f535c88a185af414fd10589a122871298419ea91",
+      "bytes": 76690,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/17.webp",
+      "sha256": "eb0a0a8ac7a90b21bc613c50861e241c6c317deafb6987e980843f728046e073",
+      "bytes": 973346,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/17.png",
+      "sha256": "7a91fb2e0a8246a390baaefc5a0d79bcb028264bc0f4bc0f3a4503ff59860838",
+      "bytes": 109273,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/18.webp",
+      "sha256": "2edc013537c9120babde06d094605d8d2d8199d5843049848efb32d6d3ae4078",
+      "bytes": 1170742,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/18.png",
+      "sha256": "27e0543b817a696df1cd21ff155acd7cc9ebbaf96ecd9789988bab65303aa11f",
+      "bytes": 129616,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/codex/19.webp",
+      "sha256": "0fefb9a7be38d7d645b3050d661963390c5770048aa5705a880dbe639c07eb2c",
+      "bytes": 1095912,
+      "width": 1024,
+      "height": 1024,
+      "alpha": true
+    },
+    {
+      "file": "public/art/bonus-drones-20260908/gameplay/19.png",
+      "sha256": "693429727e87e5ebc99f241cf526537a5648d40e9d80356be5f06becc8ed4812",
+      "bytes": 126903,
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    }
+  ]
+}

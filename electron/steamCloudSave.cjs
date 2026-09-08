@@ -1011,6 +1011,7 @@ function sanitizeAudioSettings(audio = {}) {
   if (audio.voiceEnabled !== undefined) next.voiceEnabled = Boolean(audio.voiceEnabled);
   if (audio.bossVoiceEnabled !== undefined) next.bossVoiceEnabled = Boolean(audio.bossVoiceEnabled);
   if (audio.menuVoiceEnabled !== undefined) next.menuVoiceEnabled = Boolean(audio.menuVoiceEnabled);
+  if (audio.menuAudioMode !== undefined) next.menuAudioMode = audio.menuAudioMode === 'music' ? 'music' : 'ambient';
   if (audio.ctaVoiceEnabled !== undefined) next.ctaVoiceEnabled = Boolean(audio.ctaVoiceEnabled);
   if (audio.musicPack !== undefined) {
     const musicPack = String(audio.musicPack || '').trim();

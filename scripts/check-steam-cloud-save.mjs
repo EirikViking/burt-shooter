@@ -161,6 +161,7 @@ try {
         voiceEnabled: true,
         bossVoiceEnabled: false,
         menuVoiceEnabled: true,
+        menuAudioMode: 'music',
         ctaVoiceEnabled: false,
         musicPack: 'generated'
       },
@@ -282,6 +283,7 @@ try {
   assert.equal(merged.settings.audio.musicPack, 'generated');
   assert.equal(merged.settings.audio.bossVoiceEnabled, false);
   assert.equal(merged.settings.audio.menuVoiceEnabled, true);
+  assert.equal(merged.settings.audio.menuAudioMode, 'music');
   assert.equal(merged.settings.display.mode, 'windowed');
   assert.deepEqual(merged.settings.display.windowSize, { width: 1600, height: 900 });
   assert.equal(merged.settings.menu.confirmExit, false);
@@ -630,7 +632,7 @@ try {
       screenShake: 0.2,
       playerFocus: 0.75,
       colorAssist: true,
-      audio: { musicEnabled: false, bossVoiceEnabled: false, menuVoiceEnabled: false, musicPack: 'classic' },
+      audio: { musicEnabled: false, bossVoiceEnabled: false, menuVoiceEnabled: false, menuAudioMode: 'ambient', musicPack: 'classic' },
       display: { mode: 'borderless', windowSize: { width: 1920, height: 1080 } },
       menu: { confirmExit: false, showPilotOrders: false },
       controls: { fireInput: 'toggle', mouseSteering: true }
@@ -661,6 +663,7 @@ try {
   assert.equal(restoredScoutRecords.best.shipName, 'Local Scout Best');
   assert.equal(restartStorage.getItem('burt_boss_voice_enabled'), 'false');
   assert.equal(restartStorage.getItem('burt_menu_voice_enabled'), 'false');
+  assert.equal(restartStorage.getItem('burt_menu_audio_mode'), 'ambient');
 
   const systemStorage = new MemoryStorage([[CLOUD_LANGUAGE_KEY, 'de']]);
   restoreSteamCloudPersistenceToStorage({ language: { preference: 'system' } }, { storage: systemStorage });

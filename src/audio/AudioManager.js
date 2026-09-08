@@ -244,8 +244,10 @@ class AudioController {
 
   loadPreferences() {
     this.menuVoiceEnabled = false;
+    this.menuAudioMode = 'ambient';
     if (typeof localStorage === 'undefined') return;
     this.menuVoiceEnabled = localStorage.getItem('burt_menu_voice_enabled') === 'true';
+    this.menuAudioMode = localStorage.getItem('burt_menu_audio_mode') === 'music' ? 'music' : 'ambient';
 
     this.masterVolume = this.readStoredFloat('burt_volume_master', this.masterVolume);
     this.musicVolume = this.readStoredFloat('burt_volume_music', this.musicVolume);
@@ -326,7 +328,7 @@ class AudioController {
       await this.context.resume();
     }
     // Mobile Safari often needs this on the Audio element too
-    if (!['menu','scoreboard'].includes(this.currentContext) && this.musicAudio.src) {
+    if (!this.isAmbientMusicContext() && this.musicAudio.src) {
       this.musicAudio.play().catch(() => { });
       this.musicAudio.pause();
     }
@@ -970,11 +972,24 @@ class AudioController {
     if (this.inMenu && !this.menuVoiceEnabled) this.silenceVoicePlayback('menu_voices_disabled');
   }
 
+  isAmbientMusicContext(contextName = this.currentContext) {
+    return ['menu', 'scoreboard'].includes(contextName) && this.menuAudioMode !== 'music';
+  }
+
+  setMenuAudioMode(mode) {
+    this.menuAudioMode = mode === 'music' ? 'music' : 'ambient';
+    try { localStorage.setItem('burt_menu_audio_mode', this.menuAudioMode); } catch { }
+    if (['menu', 'scoreboard'].includes(this.currentContext)) {
+      this.playMusicContext(this.currentContext, { resetPlaylist: true });
+    }
+    return this.menuAudioMode;
+  }
+
   playMusicContext(contextName, options = {}) {
     // Late combat callbacks cannot reclaim audio after returning to a menu.
     if (this.inMenu && !['menu', 'scoreboard'].includes(contextName)) return;
     if (!this.enabled || !this.musicEnabled) { this.currentContext=contextName; return; }
-    if (contextName === 'menu' || contextName === 'scoreboard') {
+    if (this.isAmbientMusicContext(contextName)) {
       const alreadyAmbient = this.hangarAmbience?.active;
       this.currentContext=contextName;this.playlist=[];
       this.pendingTrackRequest=null;this.clearPendingTrackTimer();
@@ -982,7 +997,7 @@ class AudioController {
       this.hangarAmbience ||= new HangarAmbience(this.context,()=>this.enabled&&this.musicEnabled?this.clampUnit(this.masterVolume*this.musicVolume*this.musicDuckFactor*this.pauseDuckFactor*.65):0);
       void this.hangarAmbience.start();
       if(!alreadyAmbient)this.fadeMusicLevel(0,.9,()=>{
-        if (['menu','scoreboard'].includes(this.currentContext)) this.musicAudio.pause();
+        if (this.isAmbientMusicContext()) this.musicAudio.pause();
       });
       if(this.context?.state==='suspended')this.addUnlockListener(null);
       return;
@@ -1092,7 +1107,7 @@ class AudioController {
   }
 
   startTrack(src) {
-    if (['menu','scoreboard'].includes(this.currentContext)) return;
+    if (this.isAmbientMusicContext()) return;
     if (!src) return;
     if (this.isSwitchingTrack) {
       this.pendingTrackRequest = {
@@ -1284,6 +1299,7 @@ class AudioController {
       musicEnabled: this.musicEnabled,
       voiceEnabled: this.voiceEnabled,
       menuVoiceEnabled: this.menuVoiceEnabled,
+      menuAudioMode: this.menuAudioMode,
       ctaVoiceEnabled: this.ctaVoiceEnabled,
       bossVoiceEnabled: this.bossVoiceEnabled,
       chatterFrequency: this.chatterFrequency,

@@ -1,0 +1,176 @@
+{
+  "tool": "image_gen.imagegen",
+  "assets": [
+    {
+      "id": 1,
+      "name": "Scout",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Scout. Design: compact arrowhead reconnaissance drone, three articulated swept fins, blackened steel and vermilion armor, one amber sensor eye, slim engine pods. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-01f9761e-bf71-4fb3-9e62-2959da5a086b.png",
+      "sourceSha256": "ebf1cfd9c691a9c1c6a48922afbbc277f6d20bb98931dc7b9033ccdc5c0180ea",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 2,
+      "name": "Courier",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Courier. Design: broad four-claw cargo runner, protected central sealed cargo vault, titanium rib cage, dark orange panels, four separate turbine pods. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-6e7b4313-e983-4abc-b4fd-a5d9164212fd.png",
+      "sourceSha256": "004e2ba454a846174031971aced544c54ddc6bdc958ebb2724f2367483b9d993",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 3,
+      "name": "Skimmer",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Skimmer. Design: very narrow dart drone with two long outrigger skids, sharp forked prow, racing red armor, black recessed mechanical spine, orange optics. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-1f4094f3-a7fd-4214-8b24-76c3c8f85c4a.png",
+      "sourceSha256": "2f1df8f2da907a241b11ceba25cad64217c874081eb07785baf4dee9c4db0ded",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 4,
+      "name": "Warden",
+      "prompt": "Create one premium game-ready spaceship drone sprite for Nova Swarm: WARDEN, a compact unmanned armored bounty drone. Single isolated object, transparent background with real alpha, no text, no border, no floor or drop shadow. Orthographic TOP DOWN view, nose points straight up, entire craft visible centered with generous 8% transparent margin. Complex dark titanium oval armored reactor body, layered overlapping armored shells, two swept forward talon arms, orange-red reactor optic, substantial engine housings, recessed vents, machined metal edge wear, copper conduits, engraved panel seams, beautiful cinematic PBR material quality, strong readable silhouette. Looks like a dangerous expensive industrial spacecraft, never a household gadget, toy or blockout. Rich carefully controlled metallic contrast; luminous accents confined to hull, no huge glow. Extremely sharp, meticulously rendered high resolution 1024x1024. This will be shown at 450 pixels tall in a game Codex, so surfaces must be genuinely detailed and crisp. Produce only the sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-91774c59-3f2e-46e4-aed9-8160fa8220c9.png",
+      "sourceSha256": "7f29ace25f7ffc1ea4448371022d868be8dbd7454016564b954280eea0722835",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 5,
+      "name": "Giltwing",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Giltwing. Design: wide manta-shaped gold bounty drone, dramatic swept crescent wings, black titanium skeleton, champagne gold layered armor, amber reactor core. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-84a8a247-4f8c-4491-838b-7d67a8357872.png",
+      "sourceSha256": "a015cf093356867e50557f1d97b7ae726dafd1a9b366624377e085d269ea5474",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 6,
+      "name": "Lockjaw",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Lockjaw. Design: heavy angular pincer drone with two articulated forward jaws, short stocky central secure vault, vermilion copper armor, hydraulic claw joints. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-ff981928-9156-4dd0-81ab-5eab894688bb.png",
+      "sourceSha256": "b49329815faff304e7db1fa91decfedae6a7ca4dbe4c4d2c902d5b1c751e9c62",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 7,
+      "name": "Spindle",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Spindle. Design: asymmetric three-armed spindle drone, violet ceramic armor and dark steel, three curved mechanical arms radiating from a central luminous violet gyroscope, round turbine nodes. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-edcef1f2-58ca-4765-9e80-788f4be98f57.png",
+      "sourceSha256": "2523724879af9eeffb3a69be5a2ad8cc50bba78698a8e08306138356ece13b90",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 8,
+      "name": "Bullion",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Bullion. Design: broad armored gold bullion hauler, two stout segmented gold cargo pods, central black mechanical spine and large rear engine cluster, strong industrial silhouette. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-67fc1be9-eb3e-42c6-9917-62f9d3edf896.png",
+      "sourceSha256": "8e16fb579663807807081d30da80597d739999e9d95c1cc2648023a97cd36977",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 9,
+      "name": "Razorfold",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Razorfold. Design: scarlet origami-like stealth drone, two enormous folded angular razor wings, sharp triangular negative spaces, narrow faceted cockpitless spine and crimson engine slits. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-eae2cf6f-d2ca-4134-a9e2-e2c006c37b61.png",
+      "sourceSha256": "5ae62076eee1f7e2c33935c3820603a813c62e6eabab3b2c460fe710c43d77e8",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 10,
+      "name": "Parcel Ghost",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Parcel Ghost. Design: pale ice-blue stealth courier, sealed faceted cargo sarcophagus, offset protective fins and concealed engines, silver ceramic armor with cyan sensor slits. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-88813d7d-703b-46a8-ac58-e424c154f78e.png",
+      "sourceSha256": "8316fcd62dedac959841c0a0e34fdcaa1a7c2ab6ae212153300d5dadcaaa5128",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 11,
+      "name": "Twinmint",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Twinmint. Design: twin copper rocket-shaped vault pods connected by a deep intricate mechanical bridge, twin amber reactor rings, charcoal armored struts, clear twin-body silhouette. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-e2dc432c-ed55-4304-80b0-ed88dc827e9e.png",
+      "sourceSha256": "0d305d56dac122ff85019e4ac6679968835732c3fdfc1035e35a660f3ddd7b0d",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 12,
+      "name": "Crownbreaker",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Crownbreaker. Design: aggressive golden crown-shaped drone, five substantial forward armored points, dark armored circular reactor body, chunky gilded plates and orange hazard panels. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-f29a6873-137e-48f8-b081-bad15d5c5c5d.png",
+      "sourceSha256": "98a3d263ef55a7f54758b787d3e2ef1de8ac140d55dcdfbf9b2926152ea68265",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 13,
+      "name": "Centipenny",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Centipenny. Design: long segmented green metallic centipede-like cargo drone, six linked armored modules and many angled mechanical outriggers, jade reactor nodes, clear biomechanical industrial silhouette. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-cb3a4e64-d6ea-4a24-b5d0-551fce42c0ae.png",
+      "sourceSha256": "cf28693203a14223e96ed196613dcdeef4faddbc5410559cb0871236d8061c83",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 14,
+      "name": "Longwave",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Longwave. Design: premium intimidating electronic-warfare spacecraft, two long complex articulated antenna booms flanking a layered armored magenta titanium chassis, intricate phased-array sensor panels, violet energy resonators, rear twin thrusters. It must look like an expensive spacecraft rather than a household radio, antenna toy or pink plastic appliance. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-c2c63742-eefa-4c23-b510-f9d5bf4ab8dd.png",
+      "sourceSha256": "b8dcc5ef18918f06fa5cbae0156dd5279791b0b8e4c3ab6d9ea27625b5dcf524",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 15,
+      "name": "Trident",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Trident. Design: three long bronze armored lances with black machined inner skeleton, a compact armored rear bridge and three cyan thrusters, sharp imposing trident silhouette. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-e45eaff6-f4f0-4553-87bf-f7946c205ddb.png",
+      "sourceSha256": "21c5beb0422910d080d712150f15b9b1a1ce1ff27ad8a03169a111a28c5508b8",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 16,
+      "name": "Drillbit",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Drillbit. Design: armored mining bounty drone with faceted conical drill prow pointing up, helical cutting plates, chunky gunmetal turbine midbody, violet accents and twin stabilizers. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-1f30d86b-b3b7-46e2-bd42-f26c2a32ac29.png",
+      "sourceSha256": "ea6a1fdd43c51d23875ba8c33dc13ba1db6b759609757b8cc333593ff298c177",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 17,
+      "name": "Crablock",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Crablock. Design: crab-shaped burnt-copper drone, six jointed mechanical arms, reinforced dark vault body, two substantial forward armored pincers, orange hydraulic reservoirs and rear turbines. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-ba641c28-f5a3-48ac-8ca7-ee7cf9e0648f.png",
+      "sourceSha256": "635326eb87f8ed6b78b4abb6c171638a31510c89d80237958b56898f3f86af9c",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 18,
+      "name": "Sawtooth",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Sawtooth. Design: circular industrial cutter drone with segmented gold armored outer ring and twelve sharp large steel teeth, intricate mechanical central reactor and two rear engines, strong circular silhouette. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-62998f42-c7ad-4a43-bc24-86efa5f2d6a4.png",
+      "sourceSha256": "28ba4e2ac71436608d3d27aa6ac16b5cc1374bce43fd5765960ae3093f10f7a0",
+      "width": 1254,
+      "height": 1254
+    },
+    {
+      "id": 19,
+      "name": "Vaultkeeper",
+      "prompt": "Create one premium game-ready unmanned spaceship bounty drone sprite for Nova Swarm: Vaultkeeper. Design: heavy rose-gold armored mobile bank vault drone, concentric offset armor shells, thick black titanium spine, four retractable defensive wings and enormous paired rear reactor housings. Single isolated object on transparent background with real alpha. Orthographic TOP DOWN view, nose toward top, entire craft centered with 8% transparent margin. No text, numbers, floor, border or drop shadow. Extremely detailed cinematic PBR spacecraft: overlapping armor plates, machined metal edge wear, recessed vents, visible mechanical depth, copper conduits, engraved panel seams, turbine blades, restrained luminous optics. Rich polished and rough metallic contrast. Bold unique silhouette readable at 48px, exquisitely sharp surfaces for a 450px Codex portrait. Never a toy, primitive blockout, household gadget or plastic box. Color comes from the specified armor, preserve realistic dark mechanical structure. Avoid hazy bloom and blur. Highest resolution, 1024x1024 or larger. Produce only this one spacecraft sprite.",
+      "path": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-2b9860bc-bfb8-406f-a7a0-f61eeb7a228f.png",
+      "sourceSha256": "9a832160472c225f2c903d6176777ea46b79c1d3f11a1f5cf6ae893eda58a65b",
+      "width": 1254,
+      "height": 1254
+    }
+  ]
+}

@@ -110,7 +110,7 @@ export class BonusDrone {
         this.intentGlyph.label = 'bonusDroneIntentGlyph';
         this.sprite.addChild(this.intentGlyph);
         if (this.droneProfile) {
-            this.targetLabel = createText(`${translateText('SHOOT')} · ${this.scoreValue}`, {
+            this.targetLabel = createText(`${translateText('SHOOT')} · +${this.scoreValue}`, {
                 fontFamily:'Rajdhani',fontSize:16,fontWeight:'bold',fill:'#ffd18a',
                 stroke:{color:'#130904',width:4}
             });
@@ -134,16 +134,14 @@ export class BonusDrone {
 
         const width = this.game.getWidth();
         this.ageSeconds += Math.max(0, delta) / 60;
-        if (this.coreProfile && this.pickupLabel && this.ageSeconds >= (this.nextLabelAt || 0)) {
+        if (this.coreProfile && this.pickupLabel) {
             const scene = this.game.scenes?.play;
             if (scene?.player) {
                 const name = getBonusCoreText(this.coreProfile.index, getCurrentLanguage()).name;
-                const base = getCoreReward(this, scene);
-                const score = this.game.getScoreAward?.(base) ?? base;
+                const score = getCoreReward(this, scene);
                 const value = translateText(this.coreProfile.reward === 'constellation' ? '{name} · {fragment} · +{score}' : '{name} · +{score}', { name, fragment: ['I','II','III'][this.fragment], score });
                 this.pickupLabel.text = translateText('COLLECT: {name}', { name: value });
             }
-            this.nextLabelAt = this.ageSeconds + .15;
         }
         this.intentTimer += delta * 0.12;
         this.clarityPulse = 0.5 + Math.sin(this.intentTimer * 2.4) * 0.5;

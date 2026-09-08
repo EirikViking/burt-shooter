@@ -53,7 +53,7 @@ export function grantCoreReward(core, scene, player) {
       if (result?.isNew) archiveName = entry.name;
     }
   }
-  const applied = scene.game.addScore(score, 'bonusScore');
+  const applied = scene.game.addBonusScore(score);
   scene.scorePopupManager?.addScorePopup?.(core.x, core.y - 25, applied, { color: profile.color });
   return { score: applied, collected, archiveName, relicUnlocked: profile.reward === 'relic' && collected === 3 };
 }

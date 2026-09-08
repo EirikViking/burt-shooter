@@ -395,6 +395,8 @@ export class SettingsOverlay {
       );
       this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
       if (includeAudioTest) {
+        y += tighterGap;
+        this.addMenuAudioRow(y);
         y = Math.min(
           y + Math.round((dense ? 38 : 42) * this.uiScale),
           contentBottom - Math.round(18 * this.uiScale)
@@ -453,8 +455,9 @@ export class SettingsOverlay {
         setFormColumn(rightX);
         this.addSectionLabel('VOLUME', startY);
         const volumeEndY = renderVolumeRows(startY + sectionGap);
+        this.addMenuAudioRow(volumeEndY + rowGap);
         const audioTestY = Math.min(
-          volumeEndY + Math.round((dense ? 48 : 54) * this.uiScale),
+          volumeEndY + rowGap + Math.round((dense ? 48 : 54) * this.uiScale),
           contentBottom - Math.round(18 * this.uiScale)
         );
         this.addAudioTestRow('TEST', audioTestY);
@@ -1238,6 +1241,15 @@ export class SettingsOverlay {
         }
       }
     );
+  }
+
+  addMenuAudioRow(y) {
+    let buttonRef;
+    const value = () => translateText(AudioManager.menuAudioMode === 'music' ? 'MUSIC' : 'AMBIENCE');
+    return this.addChoiceRow('MENU AUDIO', value(), y, () => {
+      AudioManager.setMenuAudioMode(AudioManager.menuAudioMode === 'music' ? 'ambient' : 'music');
+      if (buttonRef?._label) { buttonRef._label.text = value(); buttonRef._fitLabel?.(); }
+    }, { id: 'menu_audio_mode', onButton: button => { buttonRef = button; } });
   }
 
   addMusicPackRow(label, initialPack, y) {

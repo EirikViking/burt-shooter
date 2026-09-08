@@ -5278,7 +5278,7 @@ export class PlayScene {
       this.schedulePilotOrdersRunStartToast();
     }
     this.resetRandomTimers();
-    this.ambientBonusDroneTimer = 2000 + Math.random() * 3000;
+    this.ambientBonusDroneTimer = (2000 + Math.random() * 3000) / 0.65;
   }
 
   clearPendingEnemyStart() {
@@ -8693,10 +8693,7 @@ export class PlayScene {
             const destroyed = this.applyCombatDamage(bonusDrone, experimentalHit.damage, getCombatDamageSourceForBullet(bullet));
             if (destroyed) {
               collisionStats.playerBulletAmbientKills += 1;
-              let appliedScore = 0;
-              if (!this.player.isSlowTimeActive?.()) {
-                appliedScore = this.game.addScore(this.getComboScore(bonusDrone.scoreValue || 500));
-              }
+              const appliedScore = this.game.addBonusScore(bonusDrone.scoreValue || 500);
               const bonusDroneLabel = translateText('BONUS DRONE DOWN!');
               const bonusDroneText = appliedScore > 0
                 ? `${bonusDroneLabel}\n+${appliedScore.toLocaleString('en-US')}`
@@ -23124,7 +23121,8 @@ export class PlayScene {
       this.ambientBonusDroneTimer -= delta * 16.67;
       if (this.ambientBonusDroneTimer <= 0) {
         this.spawnAmbientBonusDrone('HAZARD');
-        this.ambientBonusDroneTimer = 4000 + Math.random() * 4000;
+        // 35% fewer arrivals per eligible minute; keep the randomized spacing.
+        this.ambientBonusDroneTimer = (4000 + Math.random() * 4000) / 0.65;
       }
     }
 

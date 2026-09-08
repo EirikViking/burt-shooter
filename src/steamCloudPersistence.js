@@ -93,6 +93,7 @@ const AUDIO_KEYS = Object.freeze({
   musicEnabled: 'burt_music_enabled',
   voiceEnabled: 'burt_voice_enabled',
   menuVoiceEnabled: 'burt_menu_voice_enabled',
+  menuAudioMode: 'burt_menu_audio_mode',
   bossVoiceEnabled: 'burt_boss_voice_enabled',
   ctaVoiceEnabled: 'burt_cta_voice_enabled',
   musicPack: 'burt_music_pack',
@@ -849,6 +850,7 @@ function collectAudioSettings(storage) {
   if (has(AUDIO_KEYS.musicEnabled)) audio.musicEnabled = readStorage(storage, AUDIO_KEYS.musicEnabled) !== 'false';
   if (has(AUDIO_KEYS.voiceEnabled)) audio.voiceEnabled = readStorage(storage, AUDIO_KEYS.voiceEnabled) !== 'false';
   if (has(AUDIO_KEYS.menuVoiceEnabled)) audio.menuVoiceEnabled = readStorage(storage, AUDIO_KEYS.menuVoiceEnabled) === 'true';
+  if (has(AUDIO_KEYS.menuAudioMode)) audio.menuAudioMode = readStorage(storage, AUDIO_KEYS.menuAudioMode) === 'music' ? 'music' : 'ambient';
   if (has(AUDIO_KEYS.bossVoiceEnabled)) audio.bossVoiceEnabled = readStorage(storage, AUDIO_KEYS.bossVoiceEnabled) !== 'false';
   if (has(AUDIO_KEYS.ctaVoiceEnabled)) audio.ctaVoiceEnabled = readStorage(storage, AUDIO_KEYS.ctaVoiceEnabled) !== 'false';
   if (has(AUDIO_KEYS.musicPack)) audio.musicPack = String(readStorage(storage, AUDIO_KEYS.musicPack) || '').slice(0, 64);
@@ -859,6 +861,7 @@ function collectAudioSettings(storage) {
 function restoreAudioSettings(storage, audio = {}) {
   if (!audio || typeof audio !== 'object') return 0;
   let changed = 0;
+  if (audio.menuAudioMode !== undefined && writeStorage(storage, AUDIO_KEYS.menuAudioMode, audio.menuAudioMode === 'music' ? 'music' : 'ambient')) changed += 1;
   for (const key of ['masterVolume', 'musicVolume', 'sfxVolume', 'uiVolume', 'voiceVolume']) {
     if (audio[key] !== undefined && writeStorage(storage, AUDIO_KEYS[key], clampUnit(audio[key], 1))) changed += 1;
   }

@@ -81,6 +81,8 @@ function createArtMask(parent, x, y, width, height, radius = 8) {
   const mask = new PIXI.Graphics();
   mask.roundRect(x, y, width, height, radius);
   mask.fill({ color: 0xffffff, alpha: 1 });
+  // The clipping shape must not flash white while artwork is still loading.
+  mask.renderable = false;
   parent.addChild(mask);
   return mask;
 }

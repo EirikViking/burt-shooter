@@ -999,7 +999,12 @@ export class Game {
     };
   }
 
-  addScore(points, source = 'baseScore') {
+  addBonusScore(points) {
+    // Bounties are literal advertised prizes, independent of combat scaling.
+    return this.addScore(points, 'bonusScore', { exactBonus: true });
+  }
+
+  addScore(points, source = 'baseScore', { exactBonus = false } = {}) {
     if (this.finalScoreLocked) return 0;
     const base = Number(points) || 0;
     const gameMult = Number(this.scoreMultiplier) || 1;
@@ -1008,8 +1013,9 @@ export class Game {
     const addScoreStartedAt = diagnostics?.enabled ? performance.now() : 0;
     const measurePerformance = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
     const playerMult = playScene?.player?.scoreMultiplier || 1;
-    const preDangerAward = normalizeScoreDelta(base, GLOBAL_SCORE_TUNING_MULTIPLIER * gameMult * playerMult);
-    const applied = this.getScoreAward(points);
+    const fixedPrize = Math.max(0, Math.round(Number.isFinite(base) ? base : 0));
+    const preDangerAward = exactBonus ? fixedPrize : normalizeScoreDelta(base, GLOBAL_SCORE_TUNING_MULTIPLIER * gameMult * playerMult);
+    const applied = exactBonus ? fixedPrize : this.getScoreAward(points);
     this.score += applied;
     this.updateNoRepairReceiptsQualification();
     const breakdownKey = this.scoreBreakdown[source] !== undefined ? source : 'baseScore';
