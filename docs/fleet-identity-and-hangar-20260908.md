@@ -35,3 +35,8 @@ Frozen production validation passed: complete `build:current` guard chain, relea
 Source rollback from verified clean ownership: `git revert 09187d9 dcbb7b7`. Steam testing rollback is separately build 25185903. Do not reset or discard the checkout.
 
 Package: `test-results/astra-build-2026-09-08T13-43-06-693Z/win-unpacked/Nova Swarm.exe`. Steam native runtime staging and verification passed. Isolated packaged desktop checks passed for 48-view Sparrow presentation, four active ambience layers, four help illustrations, nineteen Codex bonus drone entries, Escape back to menu, gameplay entry and complete ambience shutdown. No page errors. The first native fixture attempted to inspect a null unloaded scene; a fixture-only optional-chain correction fixed it without changing the build. Native QA and browser servers were closed after checks. No live leaderboard writes were made.
+
+
+## Completed Steam test delivery
+
+Steam server verified 2026-09-08T14:17:47.388Z: test branch sector-continue-test build **25189001**, depot 4765071 manifest **7633105530588293812**. Public remains 25169120, other test-build 23782673; Cloud configuration unchanged. ASAR SHA256 9e77390662e9d1367d097faa67c9d4349f9616d7cc78e7b6ab30fc9c339168d6. All requested source work, production validation and packaged checks were complete before upload. No public deployment, settings change or forum publication. Receipt: docs/fleet-identity-steam-delivery-20260908.json.

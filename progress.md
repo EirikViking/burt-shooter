@@ -3312,3 +3312,5 @@ Approved items 1, 2 and 4 only; runtime 78a41f0 from clean 830fc3b. Distinct vul
 
 ## 2026-09-08 — Fleet identity and orbital hangar ambience
 User explicitly requested 15 additional shootable drones, unread Codex animation, illustrated/shared menu polish, stronger original-art ship identities and dedicated ElevenLabs-only hangar ambience. Baseline bb26bb8 on codex/astra-visual-overhaul. Source changes and validation are recorded in docs/fleet-identity-and-hangar-20260908.md. Thirty matched presentation sets and four ElevenLabs stems; stats/hitboxes preserved, including wider Railbreaker readability. Production/package/test delivery pending at source freeze. Preserve prior performance limitations and public deployment boundaries.
+
+Fleet/drone/menu/hangar batch complete: runtime 09187d9, Steam sector-continue-test 25189001; full report and handoff updated. All work completed before upload.
