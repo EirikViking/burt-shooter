@@ -56,7 +56,7 @@ export class AstraLaunchHome extends Container {
     b._bg = new Graphics(); b.addChild(b._bg);
     b._label = this.text('', variant === 'primary' ? 32 : 17, 0xeaf7ff, variant === 'primary' ? DISPLAY : FONT, b);
     b._subtitle = this.text('', 15, 0xa5e2d9, FONT, b);
-    if (variant === 'primary') { b._energy = new Graphics(); b._energy.eventMode='none'; b.addChild(b._energy); }
+    if (id === 'launchTactical' || id === 'otherModes') { b._energy = new Graphics(); b._energy.eventMode='none'; b.addChildAt(b._energy,1); }
     b.activate = activate; b._paint = () => this.paint(b);
     b.on('pointerover', () => { this.scene.setMenuFocusByButton(b); b._hovered = true; this.paint(b); playMenuFocusSfx(.075); });
     b.on('pointerout', () => { b._hovered = false; this.paint(b); });
@@ -67,8 +67,21 @@ export class AstraLaunchHome extends Container {
   paint(b) {
     const w = b._btnWidth || 150, h = b._btnHeight || 44, active = b._focused || b._hovered;
     const g = b._bg; g.clear(); b._label.text = t(b._source);
-    const primary = b._variant === 'primary', solid = primary || b._variant === 'secondary';
-    if (solid) {
+    const primary = b._variant === 'primary', solid = primary || b._variant === 'secondary', action=Boolean(b._energy);
+    if (action) {
+      const edge=primary?0xffce91:0xa9bcff, tint=primary?0x53d9d0:0x6f8cff;
+      const outline=[0,0,w-18,0,w,18,w,h,18,h,0,h-18,0,0];
+      g.poly(outline).fill({color:primary?0x092b36:0x101d38,alpha:.97});
+      for(let i=0;i<16;i++)g.rect(8,8+i*(h-16)/16,w-16,(h-16)/16+.2).fill({color:tint,alpha:(active?.2:.12)*(1-i/16)});
+      g.poly([w*.52,7,w-22,7,w-7,22,w-7,h-7,w*.38,h-7]).fill({color:tint,alpha:active?.1:.055});
+      for(let i=0;i<4;i++)g.moveTo(w*.58+i*18,8).lineTo(w*.58+i*18-h*.55,h-8).stroke({color:tint,width:1,alpha:.13});
+      g.poly(outline).stroke({color:edge,width:active?2:1,alpha:active?.95:.6});
+      g.moveTo(14,5).lineTo(w-24,5).stroke({color:0xe0faff,width:1,alpha:.35});
+      g.moveTo(20,h-5).lineTo(w-14,h-5).stroke({color:edge,width:1,alpha:.3});
+      g.poly([0,14,5,19,5,h-18,0,h-23]).fill({color:edge,alpha:active?1:.75});
+      g.moveTo(14,0).lineTo(Math.min(w*.32,140),0).stroke({color:edge,width:3,alpha:.95});
+      g.moveTo(w-4,24).lineTo(w-4,h-14).stroke({color:tint,width:2,alpha:.5});
+    } else if (solid) {
       g.poly([0,0,w-14,0,w,14,w,h,14,h,0,h-14]).fill({color:primary ? (active ? 0x16483f : 0x102c32) : 0x071623,alpha:primary ? .96 : .84});
       g.poly([0,0,w-14,0,w,14,w,h,14,h,0,h-14,0,0]).stroke({color:primary ? 0xe6fff4 : 0x82b5bf,width:active ? 2 : 1,alpha:active ? 1 : .48});
       g.moveTo(16,3).lineTo(w-18,3).stroke({color:0xffffff,width:1,alpha:primary ? .65 : .13});
@@ -84,12 +97,41 @@ export class AstraLaunchHome extends Container {
     b._label.style.fill = primary ? 0xedfff7 : active ? 0xc9fff1 : 0xb9d0dc;
     b._label.anchor.set(solid ? 0 : .5, .5);
     b._label.position.set(solid ? 24 : w/2, primary ? h*.38 : h/2);
-    b._label.scale.set(1); if (b._label.width > w-(solid ? 72 : 12)) b._label.scale.set((w-(solid ? 72 : 12))/b._label.width);
+    if(action)b._label.style.fontSize=primary?Math.min(42,h*.36):Math.min(23,h*.38);
+    const textRoom=w-(action?Math.max(100,h*1.55):solid?72:12);
+    b._label.scale.set(1); if (b._label.width > textRoom) b._label.scale.set(textRoom/b._label.width);
     b._subtitle.visible = primary; b._subtitle.text = primary ? t('MAYHEM TACTICAL') : '';
     b._subtitle.position.set(24,h*.65); b._subtitle.scale.set(1);
-    if (b._subtitle.width>w-72) b._subtitle.scale.set((w-72)/b._subtitle.width);
-    if (solid) g.poly([w-34,h/2-6,w-24,h/2,w-34,h/2+6]).stroke({color:primary ? 0xaaffdf : 0x8ce7d2,width:2});
+    if (b._subtitle.width>textRoom) b._subtitle.scale.set(textRoom/b._subtitle.width);
+    if (solid&&!action) g.poly([w-34,h/2-6,w-24,h/2,w-34,h/2+6]).stroke({color:primary ? 0xaaffdf : 0x8ce7d2,width:2});
+    if(action)this.paintActionLight(b,0,true);
     b.hitArea = new Rectangle(0,0,w,h);
+  }
+
+  paintActionLight(b,time,reduced) {
+    const g=b._energy,w=b._btnWidth||150,h=b._btnHeight||44,primary=b._variant==='primary';g.clear();
+    const x=w-h*.7,y=h*.5,r=h*(primary?.29:.30),active=b._focused||b._hovered;
+    const pulse=reduced?.7:.68+.18*Math.sin(time*1.7),colour=primary?0x7bfff0:0xabbcff;
+    for(let i=3;i>0;i--)g.circle(x,y,r+i*3).fill({color:colour,alpha:(active?.025:.015)*pulse});
+    g.circle(x,y,r).fill({color:0x03131e,alpha:.9}).stroke({color:colour,width:1,alpha:.35});
+    if(primary){
+      for(let i=0;i<3;i++){
+        const a=(reduced?0:time*.22)+i*Math.PI*2/3;
+        g.arc(x,y,r+4,a,a+1.25).stroke({color:i===0?0xffd29b:colour,width:2,alpha:.75});
+      }
+      g.poly([x-r*.24,y-r*.48,x+r*.45,y,x-r*.24,y+r*.48,x-r*.08,y,x-r*.24,y-r*.48]).fill({color:0xe3fff6,alpha:.95});
+      for(let i=0;i<3;i++){
+        const cx=x-r-14-i*10;
+        g.moveTo(cx-4,y-6).lineTo(cx+1,y).lineTo(cx-4,y+6).stroke({color:colour,width:2,alpha:reduced?.45:.25+.4*(.5+.5*Math.sin(time*2.7+i*.8))});
+      }
+    }else{
+      const points=[[-.48,.3],[0,-.4],[.48,.3]];
+      g.moveTo(x-r*.48,y+r*.3).lineTo(x,y-r*.4).lineTo(x+r*.48,y+r*.3).closePath().stroke({color:colour,width:1,alpha:.55});
+      points.forEach(([px,py],i)=>{const nx=x+px*r,ny=y+py*r;g.circle(nx,ny,3.2).fill({color:i===1?0xffd39b:colour,alpha:reduced?.85:.6+.3*Math.sin(time*1.6+i)**2});});
+      g.arc(x,y,r+3,-.6,1.8).stroke({color:0xa497ff,width:2,alpha:pulse});
+    }
+    const length=w-42,travel=reduced?.38:(time*.12)%1,beam=20+travel*(length-42);
+    g.moveTo(beam,h-2).lineTo(beam+32,h-2).stroke({color:primary?0xffd09a:colour,width:2,alpha:pulse});
   }
 
   place(id,x,y,w,h) { const b=this.buttons[id]; b.position.set(x,y); b._btnWidth=w; b._btnHeight=h; this.paint(b); }
@@ -112,13 +154,9 @@ export class AstraLaunchHome extends Container {
       const p = reduced ? .5 : (time * .24) % 1, x = 24 + p * (cw - 72);
       signal.moveTo(x, ch - 4).lineTo(x + 24, ch - 4).stroke({color:0xd7fff8, width:2, alpha:pulse});
     }
-    const w=b._btnWidth||150,h=b._btnHeight||44,g=b._energy;
-    g.clear();
-    // Small luminous edge accents leave the label and input geometry still.
-    for(let i=0;i<3;i++){
-      const p=(time*.13+i/3)%1,x=18+p*(w-60);
-      g.moveTo(x,1).lineTo(Math.min(w-18,x+24),1).stroke({color:0xc9fff0,width:2,alpha:reduced?.45:Math.sin(p*Math.PI)*.85});
-    }
+    const w=b._btnWidth||150;
+    this.paintActionLight(b,time,reduced);
+    this.paintActionLight(this.buttons.otherModes,time,reduced);
     this.signature.clear();
     const x=this.title.x+5,y=this.title.y+this.title.height+9,span=Math.min(w*.6,240);
     this.signature.moveTo(x,y).lineTo(x+span,y).stroke({color:0x91d8dc,width:1,alpha:.25});
