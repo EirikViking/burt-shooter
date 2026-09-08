@@ -1,0 +1,509 @@
+{
+  "process": "ElevenLabs originals preserved; gain-only normalization to -2.5 dB peak or -18 dB mean, whichever is quieter; 44.1kHz. No compression or local synthesis. Decode/level QC is not a human audition.",
+  "rows": [
+    {
+      "name": "boss_beast_1_1.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -3.9000000000000004,
+      "peakDb": -3.6,
+      "meanDb": -18,
+      "sha256": "32fa505aa4b859bfa2cff10712b8c2c4bf90ef8b7c845c0c4589449575b68d6a"
+    },
+    {
+      "name": "boss_beast_1_2.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.8000000000000007,
+      "peakDb": -1.3,
+      "meanDb": -17.9,
+      "sha256": "b7b655155568e0ec2a500590fe45add9a243c57b75e2e304cf33186b5593893f"
+    },
+    {
+      "name": "boss_beast_1_3.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -4.9,
+      "peakDb": -3.8,
+      "meanDb": -18,
+      "sha256": "0d23d21c739e00a062756255fb2e82c03fdd3c88a5d57e36e7d47d3034976410"
+    },
+    {
+      "name": "boss_beast_2_1.mp3",
+      "sourcePeakDb": -0.2,
+      "gainDb": -5.199999999999999,
+      "peakDb": -5.3,
+      "meanDb": -18,
+      "sha256": "5cf01d6bcad8ba26814170567f82de06f16a5f1d97946f319e16e71a607c6484"
+    },
+    {
+      "name": "boss_beast_2_2.mp3",
+      "sourcePeakDb": -0.2,
+      "gainDb": -5.5,
+      "peakDb": -5.6,
+      "meanDb": -18,
+      "sha256": "61f017f2933a21ad001915a5826e1445f2ba154721021db488e2a25f8d1584c0"
+    },
+    {
+      "name": "boss_beast_2_3.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -6.800000000000001,
+      "peakDb": -6,
+      "meanDb": -18,
+      "sha256": "347319b61e87e71c46a3227c425db013a3297c7bd73abe57fd9acbf4650207f3"
+    },
+    {
+      "name": "boss_beast_3_1.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -7.1,
+      "peakDb": -6.7,
+      "meanDb": -18,
+      "sha256": "d80997f2002a9c57c1ee61af36879484199cc12d93bbb240928246b413909bb3"
+    },
+    {
+      "name": "boss_beast_3_2.mp3",
+      "sourcePeakDb": -0.1,
+      "gainDb": -4.800000000000001,
+      "peakDb": -4.8,
+      "meanDb": -18,
+      "sha256": "08efd26fad62bdae8c617550fd76866a2ab1af27de504f312007639d9bccff5b"
+    },
+    {
+      "name": "boss_beast_3_3.mp3",
+      "sourcePeakDb": -0.4,
+      "gainDb": -4.300000000000001,
+      "peakDb": -4.6,
+      "meanDb": -18,
+      "sha256": "3395053d5a16ebe8464e277efb6c59ca4fd081f10ff181e3bb899e8dc3f00b37"
+    },
+    {
+      "name": "boss_beast_4_1.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -4.300000000000001,
+      "peakDb": -4,
+      "meanDb": -18,
+      "sha256": "10b6950f67c6685e5deed9d24d0133e1b6346c3454b857a5213eed10b24ed30c"
+    },
+    {
+      "name": "boss_beast_4_2.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -7,
+      "peakDb": -6.2,
+      "meanDb": -17.9,
+      "sha256": "db24ff462b9a8b7c15f78f0c7e13d7b63cbbad7adfa8f0eae0dcdfde049b088d"
+    },
+    {
+      "name": "boss_beast_4_3.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -5.699999999999999,
+      "peakDb": -5.5,
+      "meanDb": -18,
+      "sha256": "5b0bf4dfd96e93c23191ce447dbf86b1421b453feba023b46604c3a3e4c5def4"
+    },
+    {
+      "name": "boss_beast_5_1.mp3",
+      "sourcePeakDb": -0.2,
+      "gainDb": -3.1999999999999993,
+      "peakDb": -3.3,
+      "meanDb": -18,
+      "sha256": "0c6f184c6d922cc6353374ccab45a55d35a781b67345e12df31850ab4aecb59c"
+    },
+    {
+      "name": "boss_beast_5_2.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -5.300000000000001,
+      "peakDb": -4.8,
+      "meanDb": -18,
+      "sha256": "5616c03033a82fc02bbf44895a0cf4b71df920256f42450c26321c676bfd4f51"
+    },
+    {
+      "name": "boss_beast_5_3.mp3",
+      "sourcePeakDb": -0.3,
+      "gainDb": -3,
+      "peakDb": -3.3,
+      "meanDb": -18,
+      "sha256": "c89721dac7cb7d88fe1b345b8f1952429c7953c99bf5957d1da67de273efed67"
+    },
+    {
+      "name": "boss_beast_6_1.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -8.1,
+      "peakDb": -7.3,
+      "meanDb": -18,
+      "sha256": "ff342f9f91c3ed29a8c85274693028072e1189dc7c805e62c88be1d2702ea0a6"
+    },
+    {
+      "name": "boss_beast_6_2.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -10.6,
+      "peakDb": -9.6,
+      "meanDb": -18,
+      "sha256": "ce374e543274d8b6f3c2cd2ea5faf9859ba9394ad7ef3e5c8eecacd3357a574b"
+    },
+    {
+      "name": "boss_beast_6_3.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -8,
+      "peakDb": -7.4,
+      "meanDb": -17.9,
+      "sha256": "73d9c454375f55b8102a15c1f972d60ebdc27968fbdce13a0e20f2b48e268e7f"
+    },
+    {
+      "name": "core_archive.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.5,
+      "peakDb": -2.4,
+      "meanDb": -27.2,
+      "sha256": "80d43051737fafcf707c45719055e7561cb1511339bfb79f569c54f6359691b7"
+    },
+    {
+      "name": "core_collector.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.5,
+      "peakDb": -2.3,
+      "meanDb": -24.8,
+      "sha256": "c67e59a2565c31a48cbc0e8be25d3310292dbac381ebd5dc381e2de2172d712e"
+    },
+    {
+      "name": "core_constellation.mp3",
+      "sourcePeakDb": -6.3,
+      "gainDb": 3.8,
+      "peakDb": -2.5,
+      "meanDb": -23.7,
+      "sha256": "4c67b1dc1fe3edddfe52f1a81472435509afc3472289c426d73ef5bc0e809c53"
+    },
+    {
+      "name": "core_daredevil.mp3",
+      "sourcePeakDb": -2.8,
+      "gainDb": 0.2999999999999998,
+      "peakDb": -2.5,
+      "meanDb": -19.6,
+      "sha256": "6e0058773079c33fc787acc36deca7933370f927b04bf83419aa984104da9570"
+    },
+    {
+      "name": "core_hunter.mp3",
+      "sourcePeakDb": -4.1,
+      "gainDb": 1.5999999999999996,
+      "peakDb": -2.4,
+      "meanDb": -25.1,
+      "sha256": "8de24957e607e3ff05c25b1efcb76d870fdc7403ce8e7d9978ca1099ae0c60d6"
+    },
+    {
+      "name": "core_jackpot.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.5999999999999996,
+      "peakDb": -2.2,
+      "meanDb": -18,
+      "sha256": "a0647db1a288923dae92fb2fe4c486b7c2085da70d2ccb6baa60001e587f13b7"
+    },
+    {
+      "name": "core_pursuit.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.5,
+      "peakDb": -1.4,
+      "meanDb": -19.5,
+      "sha256": "40b7dba093cfdbc7e04a50976330a3a34d2c8eb711842c91d647576695e78b8c"
+    },
+    {
+      "name": "core_relic.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.5,
+      "peakDb": -2.4,
+      "meanDb": -21.2,
+      "sha256": "ca0080fda3e9f1767f8b1df2a5f39d607b49cac8b6dfab7043d448c6b12b1a5e"
+    },
+    {
+      "name": "core_survivor.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.5,
+      "peakDb": -2.7,
+      "meanDb": -21.1,
+      "sha256": "38764ddf9e3ebb4c1a6b6aaed42351446e113328719a6942b7d833adf29cfda3"
+    },
+    {
+      "name": "core_treasure.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -5,
+      "peakDb": -4.5,
+      "meanDb": -18,
+      "sha256": "261f59913ed8f33ee191ea89b21823b940162cb5ffc53272cf190386589b0eea"
+    },
+    {
+      "name": "serpent_10_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -8.3,
+      "peakDb": -7.2,
+      "meanDb": -18,
+      "sha256": "afaa5f6ac0a49a24537cfdcdede34ff8583f94824c75ae4c0349f96c1700866a"
+    },
+    {
+      "name": "serpent_10_hunt.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.5,
+      "peakDb": -2.1,
+      "meanDb": -21.1,
+      "sha256": "19d19dc42795b09d0ca1f21dd3fd85e9b0e1b44ae97f662603d6c51b43910ac5"
+    },
+    {
+      "name": "serpent_11_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -7.1,
+      "peakDb": -5.5,
+      "meanDb": -18,
+      "sha256": "2f62b6a29ef0c673a5702f9a4ac65d31e84b19fd317a3916de4b2d487ab3c101"
+    },
+    {
+      "name": "serpent_11_hunt.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.9000000000000004,
+      "peakDb": -2,
+      "meanDb": -18,
+      "sha256": "0850b6d13e439e033d9ba94aa2416c33e90d773627ad0a4ffcdb8ce703660279"
+    },
+    {
+      "name": "serpent_12_death.mp3",
+      "sourcePeakDb": -0.1,
+      "gainDb": -2.9000000000000004,
+      "peakDb": -2.9,
+      "meanDb": -18,
+      "sha256": "88d3a0b40345a8306e14ac3868ebc8ac48e923a67f1d272ff766f69ed4f9f1b2"
+    },
+    {
+      "name": "serpent_12_hunt.mp3",
+      "sourcePeakDb": -0.2,
+      "gainDb": -2.3,
+      "peakDb": -2.5,
+      "meanDb": -19.4,
+      "sha256": "e98c275362c48c00d346addf39c2fa8825c241835f6dface7091adaa448f7bea"
+    },
+    {
+      "name": "serpent_13_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -6,
+      "peakDb": -5,
+      "meanDb": -18,
+      "sha256": "15e5d8878fdeb41608431a8fb7bda3d0f1a97dc27ff42f1dbd3cdff937c2a5e0"
+    },
+    {
+      "name": "serpent_13_hunt.mp3",
+      "sourcePeakDb": -0.6,
+      "gainDb": -2.0999999999999996,
+      "peakDb": -2.7,
+      "meanDb": -18,
+      "sha256": "7cd900c20eebc3f9ce2579cdc86587e3125ac206c65144bd2dee007f4fb7ca56"
+    },
+    {
+      "name": "serpent_14_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -7,
+      "peakDb": -6.1,
+      "meanDb": -18,
+      "sha256": "874109233e9dfeb8679be517dfbbc86612ab272ba51317f25d455c9953de7880"
+    },
+    {
+      "name": "serpent_14_hunt.mp3",
+      "sourcePeakDb": -0.3,
+      "gainDb": -3.4000000000000004,
+      "peakDb": -3.7,
+      "meanDb": -17.9,
+      "sha256": "a673c00335e6c38504202f3a9ebb7cd12aa324331f87f42f244fac570c0f0f73"
+    },
+    {
+      "name": "serpent_1_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -5.699999999999999,
+      "peakDb": -4.8,
+      "meanDb": -18,
+      "sha256": "499414b4238b1fbf4ab23bd29e3e6da56ae01a000d79fdafcd254f05d4edcc05"
+    },
+    {
+      "name": "serpent_1_hunt.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.5,
+      "peakDb": -2.1,
+      "meanDb": -18.4,
+      "sha256": "fe502c335703e2d24a5a4688a7bf70611b31a22e57d1fc14aeee25d72bf9eda2"
+    },
+    {
+      "name": "serpent_2_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -6.1,
+      "peakDb": -4.6,
+      "meanDb": -17.9,
+      "sha256": "798520683f9aff6e311b1d2da1b69469569bcd384e839586357a88e2d72b03c5"
+    },
+    {
+      "name": "serpent_2_hunt.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -2.5,
+      "peakDb": -1.7,
+      "meanDb": -17.9,
+      "sha256": "15f925922991469a10c5590b707a640b8fba9398d1330f78ce8ccb502b3aa397"
+    },
+    {
+      "name": "serpent_3_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -7.699999999999999,
+      "peakDb": -6.5,
+      "meanDb": -18,
+      "sha256": "016c93e9bbfc3d1a492ad34dc8f38767d5b23ed8ad81776ab037a78498bfe867"
+    },
+    {
+      "name": "serpent_3_hunt.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -5.4,
+      "peakDb": -5.1,
+      "meanDb": -18,
+      "sha256": "d24b53b0d6519e94352f66d66d61f73e9a0d1180323f29cdbdc01e9df68171bf"
+    },
+    {
+      "name": "serpent_4_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -7,
+      "peakDb": -5.6,
+      "meanDb": -18,
+      "sha256": "da4221b2efaaf722d421dcd71863ca402d15465488d61f54713c4092db61a973"
+    },
+    {
+      "name": "serpent_4_hunt.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -5.800000000000001,
+      "peakDb": -5.2,
+      "meanDb": -18,
+      "sha256": "cb764d1394889d323825315c7fc307dab36b6787a1e260c2be5080c3e1575ba9"
+    },
+    {
+      "name": "serpent_5_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -7.4,
+      "peakDb": -6.1,
+      "meanDb": -18,
+      "sha256": "a578c0e3aed730a1356b6a41d6f0daf0eec89009b8c1dd42f05b98e54c1a3e4c"
+    },
+    {
+      "name": "serpent_5_hunt.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -3.1999999999999993,
+      "peakDb": -3,
+      "meanDb": -18,
+      "sha256": "802d35088668ca6314666840c8d10a971252c55cb623e7343ef59437ac28900a"
+    },
+    {
+      "name": "serpent_6_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -8.2,
+      "peakDb": -7,
+      "meanDb": -18,
+      "sha256": "952d7e35f4e134fd867d7aa0ab1c23b1ac4c6136c50439529485126be9fa5532"
+    },
+    {
+      "name": "serpent_6_hunt.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -5.199999999999999,
+      "peakDb": -5,
+      "meanDb": -18,
+      "sha256": "6b5c5f2895fd4146f873bada7c1c433cd87a838133d5b1ed62944d2edf08349f"
+    },
+    {
+      "name": "serpent_7_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -6.199999999999999,
+      "peakDb": -5.6,
+      "meanDb": -18,
+      "sha256": "e629b3565ada486dc3a8352bbf9894740317d101aab3bbb9b9995ace41f97352"
+    },
+    {
+      "name": "serpent_7_hunt.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -3,
+      "peakDb": -2.5,
+      "meanDb": -18,
+      "sha256": "e83c2001d39619663387d1f99422d0bafe4e30befca1ade320931ba1a47e5cc4"
+    },
+    {
+      "name": "serpent_8_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -5.199999999999999,
+      "peakDb": -4.1,
+      "meanDb": -18.1,
+      "sha256": "840d6cd29bbd4055ee433218445d6ab4193c9bde219de5014554a53d23ab5701"
+    },
+    {
+      "name": "serpent_8_hunt.mp3",
+      "sourcePeakDb": -0.1,
+      "gainDb": -2.4,
+      "peakDb": -2.5,
+      "meanDb": -21,
+      "sha256": "762ef05278cfbcf5549066344f118c5e6034b8ab78402ec7ce5fb7a4e223cece"
+    },
+    {
+      "name": "serpent_9_death.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -7.1,
+      "peakDb": -6.4,
+      "meanDb": -18,
+      "sha256": "a2c7b1a845515e8207bad3f83d9d8cd63959c65c0d720ae38a3889a954900a63"
+    },
+    {
+      "name": "serpent_9_hunt.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -5.300000000000001,
+      "peakDb": -5.2,
+      "meanDb": -18,
+      "sha256": "4af59ba055de31346212df18cfb4c9dfe5d659f25453c5cab23e083691634c38"
+    },
+    {
+      "name": "serpent_arrival_omen.mp3",
+      "sourcePeakDb": -0.1,
+      "gainDb": -2.4,
+      "peakDb": -2.4,
+      "meanDb": -18.3,
+      "sha256": "81d3877c8087a411ccd47a7dc1da5714d20eb27b099caaad0bdcd65a6c524dc4"
+    },
+    {
+      "name": "wave_arrival_1.mp3",
+      "sourcePeakDb": -0.3,
+      "gainDb": -2.2,
+      "peakDb": -2.5,
+      "meanDb": -18,
+      "sha256": "b27874f8d865d007cea611001c72a649c8604161c1bc65bad509cfcd9b2e089c"
+    },
+    {
+      "name": "wave_arrival_2.mp3",
+      "sourcePeakDb": -0.2,
+      "gainDb": -13.6,
+      "peakDb": -13.7,
+      "meanDb": -18,
+      "sha256": "440a4aabba9a6e608c7250d54e2ca9735a283b7f98da2ce0a56d5b65b007f2f3"
+    },
+    {
+      "name": "wave_arrival_3.mp3",
+      "sourcePeakDb": -6.3,
+      "gainDb": 3.8,
+      "peakDb": -3,
+      "meanDb": -21,
+      "sha256": "a24416e46cb17da11c193fbf2540be3686bebc3080e9b868a965de78d8332d14"
+    },
+    {
+      "name": "wave_arrival_4.mp3",
+      "sourcePeakDb": -0.4,
+      "gainDb": -8.8,
+      "peakDb": -9.1,
+      "meanDb": -18.1,
+      "sha256": "d9b06facded02ab8eec3fd8e91f3373fd8d3ef02830815d9a7090540a5f76965"
+    },
+    {
+      "name": "wave_arrival_5.mp3",
+      "sourcePeakDb": -2.9,
+      "gainDb": -3,
+      "peakDb": -5.9,
+      "meanDb": -18.1,
+      "sha256": "4a44c6d0dd419300780c73d272dd081176385f7dc6cce96115ab39f88ff82186"
+    },
+    {
+      "name": "wave_arrival_6.mp3",
+      "sourcePeakDb": 0,
+      "gainDb": -7.199999999999999,
+      "peakDb": -6.1,
+      "meanDb": -18,
+      "sha256": "5a003cff9d0579ba20202867f98a5371feeb076953561fa7f8e6a72659ddd7e2"
+    }
+  ]
+}

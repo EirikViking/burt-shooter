@@ -4282,13 +4282,14 @@ export class Player {
       if (dist > radius) return;
       playScene.bulletManager.deactivateBullet?.(bullet, clearReason);
       cleared += 1;
+      // Rift converts the actual dodge clear, including innate ship pulses.
+      if (phaseClearedPositions.length < 5) {
+        phaseClearedPositions.push({ x: Number(bullet.x) || this.x, y: Number(bullet.y) || this.y });
+      }
       if (traitRadius > 0 && dist <= traitRadius) clearedByRadius.trait += 1;
       if (phaseContributionRadius > 0 && dist <= phaseContributionRadius) {
         phaseCleared += 1;
         clearedByRadius.phase += 1;
-        if (phaseClearedPositions.length < 5) {
-          phaseClearedPositions.push({ x: Number(bullet.x) || this.x, y: Number(bullet.y) || this.y });
-        }
       }
       if (combinedRadiusBonus > 0 && dist > Math.max(traitRadius, phaseRadius)) {
         clearedByRadius.combinedBonus += 1;
@@ -4299,7 +4300,7 @@ export class Player {
     });
 
     const riftCap = 5;
-    const riftEligible = phaseCleared;
+    const riftEligible = cleared;
     let shardsCreated = 0;
     let shardAddRejected = 0;
     const riftTargets = [];

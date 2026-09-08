@@ -2789,7 +2789,7 @@ export class HUD {
     const rightPanelWidth = Math.round((layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164)) * uiScale);
     const rightPanelHeight = Math.round((layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52)) * uiScale);
     const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : Math.min(canvasWidth * 0.52, (isLargeDesktop ? 480 : 420) * uiScale);
-    const missionPanelHeight = Math.round((layout.isMobile ? 84 : 88) * uiScale);
+    const missionPanelHeight = Math.round((layout.isMobile ? 104 : 110) * uiScale);
     const missionPanelX = layout.isMobile ? margin : canvasWidth / 2 - missionPanelWidth / 2;
     const missionPanelY = layout.isMobile || canvasWidth < 1100 ? margin + leftPanelHeight + 7 : margin;
 
@@ -2944,6 +2944,10 @@ export class HUD {
     this.locationText.position.set(missionPanelX + missionPanelWidth / 2, missionPanelY + Math.round(8 * uiScale));
     this.sectorTextMaxWidth = missionPanelWidth - Math.round(34 * uiScale);
     this.fitTextToWidth(this.locationText, this.sectorTextMaxWidth, .8);
+    // Stack from rendered text bounds: font metrics differ by language and size.
+    this.missionText.y = this.locationText.y + this.locationText.height + 5 * uiScale + this.missionText.height / 2;
+    this.missionProgressBg.__y = Math.round(this.missionText.y + this.missionText.height / 2 + 5 * uiScale);
+    this.directiveText.y = this.missionProgressBg.__y + this.missionProgressBg.__h + 5 * uiScale + this.directiveText.height / 2;
     this.locationText._debugSectorHeader = { integrated: true, prominent: true, width: this.sectorTextMaxWidth };
 
     this.updateLivesVisuals();

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { BONUS_CORES, pickBonusCore } from '../src/config/BonusCoreCatalog.js';
-import { SPACE_SNAKES, isSpaceSnakeEligible, isSpaceSnakeWave, sampleSpaceSnake } from '../src/config/SpaceSnakes.js';
+import { SPACE_SNAKES, isSpaceSnakeEligible, isSpaceSnakeWave, sampleSpaceSnake, getSpaceSnakeSectionHealth } from '../src/config/SpaceSnakes.js';
 import { getEarlyBossFuelMultiplier } from '../src/config/BossSupportShips.js';
 import { getPowerupMeta } from '../src/config/PowerupCatalog.js';
 import { getCoreReward } from '../src/progression/BonusCoreRewards.js';
@@ -16,6 +16,17 @@ for (const locale of ['de','es','ru','zh-CN','pt-BR','ko','ja']) {
  for (const summary of traitSummaries) assert.ok(dictionary?.[summary] && dictionary[summary] !== summary, `${locale}: untranslated pause trait ${summary}`);
 }
 assert.equal(BONUS_CORES.length,10);
+assert.equal(SPACE_SNAKES.length,14);
+assert.equal(new Set(SPACE_SNAKES.map(p=>p.art)).size,14);
+assert.equal(new Set(SPACE_SNAKES.map(p=>p.voice)).size,14);
+assert.equal(getSpaceSnakeSectionHealth(6),18);
+assert.ok(getSpaceSnakeSectionHealth(50)>getSpaceSnakeSectionHealth(20));
+assert.ok(getSpaceSnakeSectionHealth(410)<=258);
+for(const p of SPACE_SNAKES){
+ const routes=new Set();let previous=sampleSpaceSnake(p,3,1280,720,53);
+ for(let t=3+1/60;t<60;t+=1/60){const point=sampleSpaceSnake(p,t,1280,720,53);routes.add(point.route);assert.ok(Math.hypot(point.x-previous.x,point.y-previous.y)<16,`${p.id}: route teleport`);previous=point;}
+ assert.ok(routes.size>=6,`${p.id}: insufficient movement variety`);
+}
 assert.equal(new Set(BONUS_CORES.map(c=>c.reward)).size,10);
 assert.equal(new Set(BONUS_CORES.map(c=>c.art)).size,10);
 for(const core of BONUS_CORES){assert.equal(core.effect,undefined);assert.equal(pickBonusCore((core.index+.5)/10),core);}
@@ -56,8 +67,8 @@ for(const p of SPACE_SNAKES)for(const [w,h]of[[800,600],[1280,720],[1920,1080]])
 for(let level=1;level<=20;level++)assert.equal(getEarlyBossFuelMultiplier(level),1.5);
 for(const level of[21,50,90,410])assert.equal(getEarlyBossFuelMultiplier(level),1);
 for(const locale of['en','de','es','ru','zh-CN','pt-BR','ko','ja']){
- const catalog=getThreatCodexCatalog({locale});assert.equal(catalog.spaceSnakes.length,4);
+ const catalog=getThreatCodexCatalog({locale});assert.equal(catalog.spaceSnakes.length,14);
  for(const core of BONUS_CORES){const entry=catalog.bonusCores.find(e=>e.id===core.id);assert.ok(entry?.description&&entry?.tip,`Complete core Codex ${core.id} ${locale}`);assert.ok(!catalog.powerups.some(e=>e.id===core.id));}
  for(const p of SPACE_SNAKES){const text=getSpaceSnakeText(p.index,locale);assert.ok(text.description.length>70&&text.tip.length>20);if(locale!=='en')assert.notEqual(text.description,getSpaceSnakeText(p.index).description);}
 }
-console.log(`PASS ten fixed cores, four snakes, eight locales, bounds, fuel levels 1–410; randomized sample ${spawns}/10000 with ${gaps.size} gap lengths`);
+console.log(`PASS ten fixed cores, fourteen snakes, eight locales, bounds, fuel levels 1–410; randomized sample ${spawns}/10000 with ${gaps.size} gap lengths`);

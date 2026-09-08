@@ -21,6 +21,7 @@ import { createText } from '../utils/pixiText.js';
 import { getBossProfile } from '../config/BossRoster.js';
 import { getBossSignatureWeaponProfile, getBossWeaponProfile, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { getBossMonsterVoice } from '../audio/PredatorSounds.js';
 import { translateText } from '../i18n/index.js';
 import {
   hideMicroSignals,
@@ -535,6 +536,7 @@ export class Boss {
     }
 
     this.updatePhaseTransitions(playerX, playerY);
+    this.updateMonsterVoice(delta);
 
     if (!this.tauntHalfShown && this.health <= this.maxHealth * 0.5) {
       const playScene = this.game?.scenes?.play;
@@ -971,6 +973,22 @@ export class Boss {
     playScene?.screenShake?.shake(6, 16);
     AudioManager.playSfx('boss_spawn', { force: true, volume: 0.36, minIntervalMs: 700 });
     AudioManager.playSfx('boss_entrance_impact', { force: true, volume: 0.72, minIntervalMs: 900 });
+    this.playMonsterVoice();
+  }
+
+  playMonsterVoice() {
+    const voice = getBossMonsterVoice(this.profile, this.level, this.phase);
+    AudioManager.playSfx(voice.event, { volume: .76, playbackRate: voice.rate, minIntervalMs: 2600, priority: 5, priorityHoldMs: 750, preserveGameplayRng: true });
+    this.lastMonsterPhase = this.phase;
+    this.monsterVoiceClock = 0;
+  }
+
+  updateMonsterVoice(delta) {
+    if (!this.entryImpactTriggered || this.health <= 0) return;
+    this.monsterVoiceClock = (this.monsterVoiceClock || 0) + delta / 60;
+    const phaseChanged = this.phase !== this.lastMonsterPhase;
+    const interval = 15 - Math.min(3, this.phase) * 2 + this.level % 3;
+    if ((phaseChanged && this.monsterVoiceClock > 2.8) || this.monsterVoiceClock > interval) this.playMonsterVoice();
   }
 
   getPresentationState(now = Date.now()) {

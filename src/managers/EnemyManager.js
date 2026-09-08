@@ -1214,6 +1214,7 @@ export class EnemyManager {
 
   maybePressureStalledWave(objectiveCount = this.getObjectiveEnemyCount()) {
     if (objectiveCount <= 0 || this.waveEnding || this.waveObjectiveFailsafeTriggered) return false;
+    if (this.enemies.some(enemy => enemy.active && enemy.kind === 'space_snake')) return false;
     const failsafeMs = BalanceConfig.difficulty.waveObjectiveFailsafeMs || WAVE_OBJECTIVE_FAILSAFE_MS;
     const pressureStartMs = Math.min(
       WAVE_STRAGGLER_PRESSURE_MS,
@@ -1261,6 +1262,7 @@ export class EnemyManager {
 
   maybeRetreatStalledWave(objectiveCount = this.getObjectiveEnemyCount()) {
     if (objectiveCount <= 0 || this.waveEnding || this.waveObjectiveFailsafeTriggered || this.waveStragglerRetreatTriggered) return false;
+    if (this.enemies.some(enemy => enemy.active && enemy.kind === 'space_snake')) return false;
     const retreatableRealEnemy = this.enemies.some(enemy =>
       this.isObjectiveEnemy(enemy) && typeof enemy?.startDive === 'function'
     );
@@ -2213,7 +2215,10 @@ export class EnemyManager {
 
   maybeClearStalledWave(objectiveCount = this.getObjectiveEnemyCount()) {
     if (objectiveCount <= 0 || this.waveEnding || this.waveObjectiveFailsafeTriggered) return false;
-    const failsafeMs = BalanceConfig.difficulty.waveObjectiveFailsafeMs || WAVE_OBJECTIVE_FAILSAFE_MS;
+    const ordinaryFailsafeMs = BalanceConfig.difficulty.waveObjectiveFailsafeMs || WAVE_OBJECTIVE_FAILSAFE_MS;
+    const failsafeMs = this.enemies.some(enemy => enemy.active && enemy.kind === 'space_snake')
+      ? Math.max(180000, ordinaryFailsafeMs)
+      : ordinaryFailsafeMs;
     if (this.waveActiveTimer < failsafeMs) return false;
 
     this.waveObjectiveFailsafeTriggered = true;
@@ -2911,7 +2916,7 @@ export class EnemyManager {
       const enemyFireChance = fireChance * (enemy.getTacticalFireScalar?.() || enemy.tacticalFireScalar || 1) * rareFireMultiplier;
       const shouldShoot = enemy.challengeFlightTarget
         ? false
-        : isBoss
+        : isBoss || enemy.kind === 'space_snake'
         ? enemy.canShoot()
         : enemy.canShoot() && Math.random() < enemyFireChance * timeScale;
       if (shouldShoot) {
@@ -3272,11 +3277,16 @@ export class EnemyManager {
       this.spaceSnakeEligibleWaves = ordinal + 1;
       if (isSpaceSnakeWave(this.getStableReinforcementRoll(this.level, ordinal, 'space-snake-encounter'))) {
         const speciesRoll = this.getStableReinforcementRoll(this.level, ordinal, 'space-snake-species');
-        this.spawnSpaceSnake(SPACE_SNAKES[Math.min(3, Math.floor(speciesRoll * SPACE_SNAKES.length))]);
+        this.spawnSpaceSnake(SPACE_SNAKES[Math.min(SPACE_SNAKES.length - 1, Math.floor(speciesRoll * SPACE_SNAKES.length))]);
         return;
       }
     }
     const { count, formation, type } = config;
+    // One spatial arrival per formation, never one competing sound per ship.
+    if (!config.isChallenge) {
+      const arrival = 1 + (this.level * 3 + this.currentWaveIndex + String(formation || '').length) % 6;
+      AudioManager.playSfx(`wave_arrival_${arrival}`, { volume: .58, minIntervalMs: 1400, preserveGameplayRng: true, priority: 2 });
+    }
     let normalWaveLevel = 1;
     let tactic = null;
     let positions = [];
@@ -3680,7 +3690,7 @@ export class EnemyManager {
 
   spawnSpaceSnake(profile) {
     this.currentNormalWaveDifficultyLevel = this.getNormalWaveDifficultyLevel(this.level);
-    const chain = { age: 0, sections: [] };
+    const chain = { age: 0, sections: [], routeSeed: this.level * 7 + this.currentWaveIndex * 11 + profile.index, nextCryAt: 8 };
     for (let i = 0; i < profile.segments; i++) {
       const section = new SpaceSnake(this.game.getWidth() * .5, -140 - i * 29, profile.id, this.level, this.game);
       section.chain = chain;
@@ -3690,7 +3700,9 @@ export class EnemyManager {
       this.container.addChildAt(section.sprite, 0);
     }
     this.game.scenes.play.recordThreatDiscovery?.(profile.id, 'spaceSnakes', { sector: this.level });
-    AudioManager.playSfx(`${profile.voice}_hunt`, { volume: .74, minIntervalMs: 1000 });
+    AudioManager.duckMusic(.28, 4200);
+    AudioManager.playSfx('serpent_arrival_omen', { volume: .78, minIntervalMs: 5000, priority: 6, priorityHoldMs: 1400, preserveGameplayRng: true });
+    AudioManager.playSfx(`${profile.voice}_hunt`, { volume: .93, minIntervalMs: 1000, preserveGameplayRng: true });
     return chain;
   }
 
@@ -6053,7 +6065,7 @@ export class EnemyManager {
         signalPlate: true,
         maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.52)
       });
-      AudioManager.playSfx(isChallenge ? 'combo_breakout' : 'ui_open', {
+      if (isChallenge) AudioManager.playSfx('combo_breakout', {
         volume: isChallenge ? 0.58 : 0.25,
         minIntervalMs: isChallenge ? 0 : 500
       });

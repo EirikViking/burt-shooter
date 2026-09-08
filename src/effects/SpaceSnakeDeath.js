@@ -9,7 +9,8 @@ export function celebrateSpaceSnakeDeath(scene, enemy) {
   const profile = enemy.snakeProfile, x = enemy.x, y = enemy.y;
   const bounty = scene.game.addScore(900 + Math.min(1100, scene.game.level * 20), 'bonusScore');
   scene.scorePopupManager?.addScorePopup?.(x,y-35,bounty,{color:profile.color});
-  AudioManager.playSfx(`${profile.voice}_death`, { force:true, volume:.78, minIntervalMs:500 });
+  AudioManager.duckMusic(.3, 2500);
+  AudioManager.playSfx(`${profile.voice}_death`, { force:true, volume:.94, minIntervalMs:500, priority:7, priorityHoldMs:1600, preserveGameplayRng:true });
   AudioManager.playSfx('boss_explode', { volume:.48, minIntervalMs:500 });
   scene.screenShake?.shake(12,25);
   const reduced = getReducedMotionEnabled();

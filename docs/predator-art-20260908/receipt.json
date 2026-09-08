@@ -1,0 +1,107 @@
+{
+  "provider": "OpenAI imagegen",
+  "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-5bd6f683-c9a9-47ec-aaa5-2c58683faee1.png",
+  "process": "Extracted atlas cells, alpha-bounded crop, aspect-preserving resize and transparent padding. No repainting.",
+  "files": [
+    {
+      "path": "public\\art\\predator-20260908\\snake-5.png",
+      "crop": [
+        0,
+        0,
+        512,
+        288
+      ],
+      "sha256": "c0bbda349cc9a9e55f7c677b1b75704aa653281eca1d11b267b783a90b6cef14"
+    },
+    {
+      "path": "public\\art\\predator-20260908\\snake-6.png",
+      "crop": [
+        512,
+        0,
+        1024,
+        288
+      ],
+      "sha256": "91bf71d7c6261370cfa54179bd9f2d62a8cf6acbbf2fce3963615f05dc33aeab"
+    },
+    {
+      "path": "public\\art\\predator-20260908\\snake-7.png",
+      "crop": [
+        0,
+        288,
+        512,
+        576
+      ],
+      "sha256": "b81fad8362b8d110a03c756402fdb8bf96223112f7f2bad9dbc0618e2954f039"
+    },
+    {
+      "path": "public\\art\\predator-20260908\\snake-8.png",
+      "crop": [
+        512,
+        288,
+        1024,
+        576
+      ],
+      "sha256": "fda8cd833bb87bbb110b4a73f706c79c5969261d7718d7261bd7ce16a23bdec2"
+    },
+    {
+      "path": "public\\art\\predator-20260908\\snake-9.png",
+      "crop": [
+        0,
+        576,
+        512,
+        865
+      ],
+      "sha256": "682ca52b0440aeb4c5383f947a9270f88cb5e6f08c220183a42c88513ca788a5"
+    },
+    {
+      "path": "public\\art\\predator-20260908\\snake-10.png",
+      "crop": [
+        512,
+        576,
+        1024,
+        865
+      ],
+      "sha256": "df8d78aeae4b03d902154e285980969abb14448d64297e88ed97af6f1ac38404"
+    },
+    {
+      "path": "public\\art\\predator-20260908\\snake-11.png",
+      "crop": [
+        0,
+        865,
+        512,
+        1153
+      ],
+      "sha256": "ada1db31a0734a679320c79cae1eecacdfe3b62a4bec4d34536ba3a64aa6c7ad"
+    },
+    {
+      "path": "public\\art\\predator-20260908\\snake-12.png",
+      "crop": [
+        512,
+        865,
+        1024,
+        1153
+      ],
+      "sha256": "c2050e371717ccca53aa66aada9ac0a5899bf6c0f067b237864c59db70474680"
+    },
+    {
+      "path": "public\\art\\predator-20260908\\snake-13.png",
+      "crop": [
+        0,
+        1153,
+        512,
+        1536
+      ],
+      "sha256": "ddcff0b49d9be32a4c828ffd48ec55a0a10c3324c8ad4df83e5b8eb1393c3936"
+    },
+    {
+      "path": "public\\art\\predator-20260908\\snake-14.png",
+      "crop": [
+        512,
+        1153,
+        1024,
+        1536
+      ],
+      "sha256": "c20a316dc7853767536b0931ea17426971020fe80846435ca9b2dd8b84513873"
+    }
+  ]
+}

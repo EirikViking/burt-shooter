@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 import { Enemy } from './Enemy.js';
 import { Bullet } from './Bullet.js';
-import { getSpaceSnakeProfile, sampleSpaceSnake } from '../config/SpaceSnakes.js';
+import { getSpaceSnakeProfile, sampleSpaceSnake, getSpaceSnakeSectionHealth } from '../config/SpaceSnakes.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { AudioManager } from '../audio/AudioManager.js';
 
@@ -13,12 +13,14 @@ export class SpaceSnake extends Enemy {
     this.color = this.snakeProfile.color;
     this.snakeScale = Math.max(.7, this.game.getWidth() / 1280);
     this.radius = 23 * this.snakeScale;
-    this.health = 3 + Math.min(4, Math.floor(this.level / 6));
+    this.health = getSpaceSnakeSectionHealth(this.level);
     this.maxHealth = this.health;
     this.scoreValue = 55 + Math.min(90, this.level * 3);
-    this.shootDelay = this.snakeProfile.fireDelay;
+    this.shootDelay = Math.max(95, this.snakeProfile.fireDelay - Math.min(65, this.level * .7));
     this.shootCooldown = 180;
     this.kind = 'space_snake';
+    // The inherited damage flash must restore authored texture colors.
+    this.usingGeneratedEnemyTexture = true;
   }
 
   createSprite() {
@@ -41,14 +43,14 @@ export class SpaceSnake extends Enemy {
     const index = live.indexOf(this);
     if (index === 0) {
       this.chain.age += delta / 60;
-      if (this.chain.age >= (this.chain.nextCryAt || 14)) {
-        AudioManager.playSfx(`${this.snakeProfile.voice}_hunt`, { volume: .56, minIntervalMs: 12000 });
-        this.chain.nextCryAt = this.chain.age + 14 + this.snakeProfile.index * 2;
+      if (this.chain.age >= (this.chain.nextCryAt || 8)) {
+        AudioManager.playSfx(`${this.snakeProfile.voice}_hunt`, { volume: .86, minIntervalMs: 6500, playbackRate: live.length < this.chain.sections.length / 2 ? 1.12 : .96, priority: 5, priorityHoldMs: 900, preserveGameplayRng: true });
+        this.chain.nextCryAt = this.chain.age + 8 + this.snakeProfile.index % 4;
       }
     }
     const profile = this.snakeProfile;
     const previousX = this.x, previousY = this.y;
-    const target = sampleSpaceSnake(profile, this.chain.age, this.game.getWidth(), this.game.getHeight());
+    const target = sampleSpaceSnake(profile, this.chain.age, this.game.getWidth(), this.game.getHeight(), this.chain.routeSeed || 0);
     if (index === 0) {
       this.x = target.x; this.y = target.y;
     } else {
@@ -56,8 +58,8 @@ export class SpaceSnake extends Enemy {
       const dx = this.x - ahead.x, dy = this.y - ahead.y;
       const distance = Math.hypot(dx, dy) || 1;
       // Fixed, touching joints instead of rubber-band spacing at sharp turns.
-      this.x = ahead.x + dx / distance * 43 * this.snakeScale;
-      this.y = ahead.y + dy / distance * 43 * this.snakeScale;
+      this.x = ahead.x + dx / distance * 43 * this.snakeScale * profile.bodyScale;
+      this.y = ahead.y + dy / distance * 43 * this.snakeScale * profile.bodyScale;
     }
     const ahead = index === 0 ? target : live[index - 1];
     const dx = index === 0 ? this.x - previousX : ahead.x - this.x;
@@ -68,8 +70,8 @@ export class SpaceSnake extends Enemy {
     if (texture && (this.body.texture !== texture || this.bodyPart !== part)) {
       this.bodyPart = part;
       this.body.texture = texture;
-      this.body.width = this.body.height = (part === 'head' ? 100 : part === 'tail' ? 57 : 76) * this.snakeScale;
-      this.body.tint = part === 'head' ? 0xffffff : [0xffc2a1,0xd2ffad,0xd6b6ff,0xb1ddff][profile.index];
+      this.body.width = this.body.height = (part === 'head' ? 100 : part === 'tail' ? 57 : 76) * this.snakeScale * profile.bodyScale;
+      this.body.tint = part === 'head' ? 0xffffff : profile.color;
     }
     this.joint.clear();
     if (index > 0) {
@@ -77,19 +79,26 @@ export class SpaceSnake extends Enemy {
       this.joint.moveTo(0,0).lineTo(ahead.x-this.x,ahead.y-this.y).stroke({ color: profile.color, width: 3, alpha: .75 });
     }
     this.sprite.position.set(this.x,this.y);
-    this.state = this.chain.age < 2.6 ? 'ENTRY' : 'FORMATION';
+    if (index === 0 && this.shootCooldown < 30 && this.chain.age >= 3) {
+      this.joint.circle(0,0,(28+Math.min(30,30-this.shootCooldown)*.32)*this.snakeScale).stroke({color:profile.color,width:2,alpha:.8});
+    }
+    this.state = this.chain.age < 3 ? 'ENTRY' : 'FORMATION';
     this.contactSafeDuringEntry = true;
     this.waitingForEntry = false;
     this.shootCooldown -= delta;
     this.healthBar.visible = this.health < this.maxHealth;
     this.updateHealthBar();
-    this.sprite._debugSpaceSnake = { id: this.type, section: index, liveSections: live.length, part, age: this.chain.age };
+    this.sprite._debugSpaceSnake = { id: this.type, section: index, liveSections: live.length, part, age: this.chain.age, route: target.route };
   }
 
   canShoot() { return this.active && this.state !== 'ENTRY' && this.chain?.sections.find(s => s.active) === this && this.shootCooldown <= 0; }
   shoot(playerX, playerY) {
     this.shootCooldown = this.shootDelay;
     const angle = Math.atan2(playerY-this.y, playerX-this.x);
-    return [-.24,0,.24].map(offset => new Bullet(this.x,this.y,Math.cos(angle+offset)*2.15,Math.sin(angle+offset)*2.15,1,this.color,false));
+    this.chain.shots = (this.chain.shots || 0) + 1;
+    const speed = 2.45 + Math.min(1.65, Math.max(0,this.level-6)*.035);
+    const count = this.level >= 25 ? 5 : 3;
+    const spacing = this.chain.shots % 2 ? .24 : .38;
+    return Array.from({length:count},(_,i) => {const a=angle+(i-(count-1)/2)*spacing;return new Bullet(this.x,this.y,Math.cos(a)*speed,Math.sin(a)*speed,1,this.color,false);});
   }
 }

@@ -9,7 +9,6 @@ import { BonusAsset } from '../utils/BonusAsset.js';
 import {
   getSelectableShips,
   getDefaultShipKey,
-  getShipUnlockHistoryLine,
   getShipUnlockLabel,
   getShipUnlockProgressDetails,
   getShipUnlockProgress,
@@ -3263,7 +3262,7 @@ export class ShipSelectScene {
           ? `${translateText('FIRST FLIGHT')} // ${translateText('YOUR LAUNCHES')}: 0`
           : translateText('STATUS: READY FOR LAUNCH'),
         masterySummary,
-        getShipUnlockHistoryLine(ship.spriteKey, this.unlockProgress, { translate: translateText })
+        getShipUnlockRequirementLine(ship.spriteKey, { translate: translateText })
       ].join('\n')
       : `${getShipUnlockRequirementLine(ship.spriteKey, { translate: translateText })}${progressLine ? `\n${translateText('PROGRESS')}: ${progressLine}` : ''}`;
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
@@ -3776,7 +3775,7 @@ export class ShipSelectScene {
         this.openSelectedShipDetails();
       } else if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault();
-        this.openHangarMenu('keyboard');
+        this.returnToMenu('keyboard');
       } else if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space') {
         e.preventDefault();
         if (this.mainMenuButtonFocused) {

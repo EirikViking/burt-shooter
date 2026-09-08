@@ -1422,7 +1422,7 @@ export class SettingsOverlay {
 
     const focus = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
-    button.addChild(focus, bg);
+    button.addChild(bg, focus);
 
     const text = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -1442,7 +1442,8 @@ export class SettingsOverlay {
       focus.clear();
       if (button._focused) {
         focus.roundRect(-width / 2 + 3, -height / 2 + 3, width - 6, height - 6, 5);
-        focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
+        focus.fill({ color: 0xffef7e, alpha: 0.15 });
+        focus.stroke({ color: 0xffef7e, width: 3, alpha: 1 });
       }
       bg.clear();
       drawAstraPanel(bg, -width / 2, -height / 2, width, height, 6, { color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.95 : 0.84 }, { color: hovered ? 0xffffff : 0x8cc5d0, width: hovered ? 2 : 1, alpha: 0.95 });
@@ -1838,8 +1839,7 @@ export class SettingsOverlay {
       return true;
     }
     if (control.type !== 'slider') {
-      this.moveControlFocus(direction > 0 ? 1 : -1);
-      return true;
+      return false;
     }
     const step = ['slider_screenShake', 'slider_playerFocus', 'slider_flashIntensity'].includes(control.id) ? 0.05 : 0.08;
     control.setValue?.((Number(control.value) || 0) + step * Math.sign(direction || 1));
@@ -2212,6 +2212,12 @@ export class SettingsOverlay {
 
     if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
       this.close();
+      return;
+    }
+    if (nav.pressed.lb || nav.pressed.rb) {
+      const pages = Object.keys(this.pageContainers);
+      const index = pages.indexOf(this.activePage);
+      this.setActiveSettingsPage(pages[(index + (nav.pressed.rb ? 1 : -1) + pages.length) % pages.length], { focusTab: true });
       return;
     }
     if (nav.pressed.up) this.moveControlFocus(-1);

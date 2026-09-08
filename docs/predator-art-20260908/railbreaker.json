@@ -1,0 +1,6 @@
+{
+  "provider": "OpenAI imagegen",
+  "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a07c7f-68cf-7f50-a0f4-45ce84e71f3a\\exec-13a0fc5a-f074-4729-afe6-a2864673e194.png",
+  "process": "Removed only border-connected neutral checkerboard, retained hull pixels; crop and proportional resize",
+  "sha256": "cf416cb9b21a946f3e685e06183d7b45f31c0f340a032d246af4a6154a2b9583"
+}

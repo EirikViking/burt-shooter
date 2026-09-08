@@ -1,4 +1,5 @@
 import { BONUS_CORES } from '../config/BonusCoreCatalog.js';
+import { PREDATOR_SFX, PREDATOR_SOUND_ROOT } from './PredatorSounds.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { BOSS_ARSENALS } from '../config/BossArsenal.js';
 import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
@@ -248,10 +249,10 @@ export const MUSIC_PLAYLISTS = {
 };
 
 export const SFX_MIX = {
-    shoot_small: { volume: 0.78, minIntervalMs: 42 },
-    shoot_alt: { volume: 0.7, minIntervalMs: 50 },
-    shoot_heavy: { volume: 0.82, minIntervalMs: 80 },
-    shoot_railbreaker: { volume: 0.66, minIntervalMs: 145 },
+    shoot_small: { volume: 0.78, minIntervalMs: 42, priority: 3, priorityDuckFactor: 0.55 },
+    shoot_alt: { volume: 0.7, minIntervalMs: 50, priority: 3, priorityDuckFactor: 0.55 },
+    shoot_heavy: { volume: 0.82, minIntervalMs: 80, priority: 3, priorityDuckFactor: 0.55 },
+    shoot_railbreaker: { volume: 0.66, minIntervalMs: 145, priority: 3, priorityDuckFactor: 0.55 },
     enemy_explode: { volume: 0.72, minIntervalMs: 35, playbackRateMin: 0.9, playbackRateMax: 1.08, priority: 7, priorityHoldMs: 170, priorityDuckFactor: 0.68 },
     boss_explode: { volume: 0.95, minIntervalMs: 300, playbackRateMin: 0.94, playbackRateMax: 1.03, priority: 9, priorityHoldMs: 620 },
     hit: { volume: 0.48, minIntervalMs: 45, playbackRateMin: 0.96, playbackRateMax: 1.07 },
@@ -526,8 +527,8 @@ export const SFX_CATALOG = {
     ...Object.fromEntries(Object.keys(BOSS_ARSENALS).map(key => [`boss_arsenal_${key}`, [`/audio/sfx/arsenal/${key}.wav`]])),
     serpent_arrive: ['/audio/sfx/core-serpent/serpent_arrive.mp3'],
     serpent_break: ['/audio/sfx/core-serpent/serpent_break.mp3'],
-    ...Object.fromEntries(BONUS_CORES.map(core => [core.sound, [`/audio/sfx/core-serpent/${core.sound}.mp3`]])),
-    ...Object.fromEntries([1,2,3,4].flatMap(i => ['hunt','death'].map(event => [`serpent_${i}_${event}`, [`/audio/sfx/core-serpent/serpent_${i}_${event}.mp3`]]))),
+    ...Object.fromEntries(BONUS_CORES.map(core => [core.sound, [`${PREDATOR_SOUND_ROOT}/${core.sound}.mp3`]])),
+    ...Object.fromEntries(PREDATOR_SFX.map(event => [event, [`${PREDATOR_SOUND_ROOT}/${event}.mp3`]])),
     'shoot_small': [
         getSfx('laserSmall_000'), getSfx('laserSmall_001'), getSfx('laserSmall_002'), getSfx('laserSmall_003'), getSfx('laserSmall_004')
     ],

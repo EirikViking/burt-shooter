@@ -1,0 +1,702 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "plan": "creator",
+  "license": "Original commercially usable SFX from active paid plan; no local synthesis.",
+  "createdAt": "2026-09-08T08:34:05.108Z",
+  "cues": [
+    {
+      "name": "serpent_1_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_1_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory furnace crocodile, huge gravel throat and tearing burned reptile rasp. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "a6bc76a68aca6aa773fa16e78df6087305154a28fa41848ab236fc149301b5a2"
+    },
+    {
+      "name": "serpent_1_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_1_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory furnace crocodile, huge gravel throat and tearing burned reptile rasp. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "269f51e1b26f45a3c318fe7912b3f8b2bb559691e557241c5f12f8e079c071b8"
+    },
+    {
+      "name": "serpent_2_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_2_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory thorn rattlesnake, venom hiss and violent serrated bone rattle. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "be8664cf931548585d556163579abb64b4b6fbb9880a648d73b8f8ca67605b0a"
+    },
+    {
+      "name": "serpent_2_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_2_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory thorn rattlesnake, venom hiss and violent serrated bone rattle. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "0684ab298abc76b9e090d2e6f4d22a62547a5053ab9e317d4d359702ea8505f6"
+    },
+    {
+      "name": "serpent_3_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_3_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory widow serpent, piercing discordant twin-throat banshee screech over chest growl. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "c7f04a97d18a7ca8da90716c451fd9d44e4b250709e15b4a31748214f433cfc0"
+    },
+    {
+      "name": "serpent_3_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_3_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory widow serpent, piercing discordant twin-throat banshee screech over chest growl. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "6ac7a4eeb49fd7c2315e59708af1ac6ad7e020f864488489f0e64b650c59c04c"
+    },
+    {
+      "name": "serpent_4_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_4_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory abyss sea serpent, impossible deep bellow and rising ice-cold reptilian scream. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "870690203d22c17af55262f6c2c7cfa206c0dad3252c78efeb9ea03bdae40ad9"
+    },
+    {
+      "name": "serpent_4_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_4_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory abyss sea serpent, impossible deep bellow and rising ice-cold reptilian scream. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "967491ea2165a73ba0ea7b8ebbf3f84fa9512d2e12bc91c995aa36b77bfb146e"
+    },
+    {
+      "name": "serpent_5_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_5_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory ivory grave eel, dry skull resonance and haunted tooth chatter. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "346236c4da6b169fc39b1e222bf9810f505e34d91d28a9f16e8b73c6bae30581"
+    },
+    {
+      "name": "serpent_5_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_5_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory ivory grave eel, dry skull resonance and haunted tooth chatter. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "f94e9ba8deb1610a370e24dcbd9cda0f78357d0533cf97c9bce06eacb979c2e2"
+    },
+    {
+      "name": "serpent_6_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_6_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory crimson hammer viper, blunt massive jaw bark and wet crocodilian scream. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "b5ba108d531e909e91108304ead69c7fda911326565f8be1b9322cbb5a3ecbbd"
+    },
+    {
+      "name": "serpent_6_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_6_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory crimson hammer viper, blunt massive jaw bark and wet crocodilian scream. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "be46988dc11dd37bd3e027c4ccb3cb1b5bbf7db62127ed28636a8b57fd0f714f"
+    },
+    {
+      "name": "serpent_7_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_7_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory emerald mantis serpent, staccato mandible clicks and insect rasp. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "9fbe590f66bc7e147b66ec5a93e02ba376158902da993691c6f0183238fea7bb"
+    },
+    {
+      "name": "serpent_7_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_7_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory emerald mantis serpent, staccato mandible clicks and insect rasp. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "162746331b4dae3665641a4877c9ab1fa226f46cb5b915ededc442b7cc9bd1bb"
+    },
+    {
+      "name": "serpent_8_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_8_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory sunforge wyrm, blazing hot open throat roar and molten crackle. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "b105292e965c4d8006563940dc6e9807b7f09e22df02fc55718ff33b094adceb"
+    },
+    {
+      "name": "serpent_8_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_8_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory sunforge wyrm, blazing hot open throat roar and molten crackle. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "4bf50d04f4a0bc5a68f7824eb077b253847515e468fa22810f89c5c456dcdad8"
+    },
+    {
+      "name": "serpent_9_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_9_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory obsidian sawtooth, grinding serrated teeth and furious rasp. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "0bb16d224b63b9d9a62af263f38a06757107b3cfb7634fc76fe430ea94830e7f"
+    },
+    {
+      "name": "serpent_9_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_9_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory obsidian sawtooth, grinding serrated teeth and furious rasp. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "b3adc69a341d9302c3f8f7b63c1b741e206767bd8726f65a982fefd02ddd6f38"
+    },
+    {
+      "name": "serpent_10_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_10_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory pearl lamprey, wet suction gulp exploding into a horrifying circular-mouth scream. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "8622b943ddefb69c3e83db275e308da7924de1d465780333d6c11cb74b847271"
+    },
+    {
+      "name": "serpent_10_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_10_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory pearl lamprey, wet suction gulp exploding into a horrifying circular-mouth scream. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "89b5c6fe9fcb3f28935c38caa915cb16b9c7fdbd793cefc5f445ce873f2272c2"
+    },
+    {
+      "name": "serpent_11_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_11_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory copper storm eel, crackling biological electricity and ragged throat howl. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "5aa2b1f1a197b6737110f99ad23783366ed61c73f73202787626c13ad97d2f0a"
+    },
+    {
+      "name": "serpent_11_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_11_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory copper storm eel, crackling biological electricity and ragged throat howl. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "25ca056a3fe57112999a03b9c955510ba1e1a94f94b00a92b7335e3e6136b2b0"
+    },
+    {
+      "name": "serpent_12_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_12_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory amethyst oracle, three discordant throats singing a wordless piercing cry. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "d05c66401332e6aa4a31f39a383bd4c68f155759ef41635620670a9b972c0706"
+    },
+    {
+      "name": "serpent_12_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_12_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory amethyst oracle, three discordant throats singing a wordless piercing cry. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "e84b25f9bfcedf853f247df3ad4dad740f583c9ac6acfbc2f63f9b488c251305"
+    },
+    {
+      "name": "serpent_13_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_13_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory rust carrion centipede, bone skitter and venomous chattering shriek. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "9f32b02ba74a4bb71c348428b4fea2fe48f5bd32d3652d0ff2775243565daa86"
+    },
+    {
+      "name": "serpent_13_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_13_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory rust carrion centipede, bone skitter and venomous chattering shriek. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "2c9b2a23a45d28447dff01065f447cefa058532e4144579581fc348beed45a5b"
+    },
+    {
+      "name": "serpent_14_hunt",
+      "path": "public/audio/sfx/predator-20260908/serpent_14_hunt.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory eclipse dragon, huge regal predator bellow with a high demonic overtone. Immediate vicious open-jawed SCREECH, powerful snarling lung resonance, close threatening breath; animal rage, terrifying and physical. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "c2475879838ea2c4d708b185f6ae1223e2075321c9d35d64b2ff61895737ae3d"
+    },
+    {
+      "name": "serpent_arrival_omen",
+      "path": "public/audio/sfx/predator-20260908/serpent_arrival_omen.mp3",
+      "request": {
+        "text": "Cinematic horror encounter sting: immediate low orchestral metal impact, bowed contrabass cluster rising under an enormous breathy alien snake hiss, bone rattles circling into an ominous final resonance. Scary epic reveal of a vast space predator. Dramatic dissonant musical sound design, not a song, no speech. Compact clear onset, 5 second arc.",
+        "duration_seconds": 5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "47189d0c953db09194d8c2b6eae8cd2acc02332f5905321c3d052cf13785bd07"
+    },
+    {
+      "name": "wave_arrival_1",
+      "path": "public/audio/sfx/predator-20260908/wave_arrival_1.mp3",
+      "request": {
+        "text": "Premium sci-fi arcade enemy wave fly-in sound. three fast attack fighters streaking past: sharp pneumatic approach, layered hot turbine whooshes with staggered Doppler snaps. One coherent formation approaching then passing, short recognizable attack arrival with movement and weight, no speech, no music, no alarm or UI beeps. Clean onset, controlled bass, no piercing peaks.",
+        "duration_seconds": 2.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "8bff2203c57d2fc8f1a799a17b25724dc93d9e4d5ce802b947ba0516abcefe81"
+    },
+    {
+      "name": "wave_arrival_2",
+      "path": "public/audio/sfx/predator-20260908/wave_arrival_2.mp3",
+      "request": {
+        "text": "Premium sci-fi arcade enemy wave fly-in sound. heavy armored formation emerging: deep pulsing reactor approach, massive metallic air displacement, crunchy thruster ignition. One coherent formation approaching then passing, short recognizable attack arrival with movement and weight, no speech, no music, no alarm or UI beeps. Clean onset, controlled bass, no piercing peaks.",
+        "duration_seconds": 2.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "e380e9bd746032d115bf6d46c2da899592a922536ab41f248f7e961614e93365"
+    },
+    {
+      "name": "wave_arrival_3",
+      "path": "public/audio/sfx/predator-20260908/wave_arrival_3.mp3",
+      "request": {
+        "text": "Premium sci-fi arcade enemy wave fly-in sound. alien swarm assembling: chattering insectoid engine clicks, writhing electrical flutter and a synchronized rushing arrival. One coherent formation approaching then passing, short recognizable attack arrival with movement and weight, no speech, no music, no alarm or UI beeps. Clean onset, controlled bass, no piercing peaks.",
+        "duration_seconds": 2.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "9308f278de2064c295ca5101dc1ef393cd6b77649b10d1808be6c537c2de54b8"
+    },
+    {
+      "name": "wave_arrival_4",
+      "path": "public/audio/sfx/predator-20260908/wave_arrival_4.mp3",
+      "request": {
+        "text": "Premium sci-fi arcade enemy wave fly-in sound. spiraling interceptors: twisting stereo turbine whistle, two entwined rising rushes and a decisive engine bite. One coherent formation approaching then passing, short recognizable attack arrival with movement and weight, no speech, no music, no alarm or UI beeps. Clean onset, controlled bass, no piercing peaks.",
+        "duration_seconds": 2.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "420dbb670520009b8766185f3db3ad996ddabdfa31325414e1529481d1d2308c"
+    },
+    {
+      "name": "wave_arrival_5",
+      "path": "public/audio/sfx/predator-20260908/wave_arrival_5.mp3",
+      "request": {
+        "text": "Premium sci-fi arcade enemy wave fly-in sound. cold stealth fleet: ominous airy vacuum swell sliced by crystalline engine chirps and a tight rushing snap. One coherent formation approaching then passing, short recognizable attack arrival with movement and weight, no speech, no music, no alarm or UI beeps. Clean onset, controlled bass, no piercing peaks.",
+        "duration_seconds": 2.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "17da39fcef20754414f5b794ce68b765034fd9d6b681f830da1249547295bd2b"
+    },
+    {
+      "name": "wave_arrival_6",
+      "path": "public/audio/sfx/predator-20260908/wave_arrival_6.mp3",
+      "request": {
+        "text": "Premium sci-fi arcade enemy wave fly-in sound. ragged raider pack: snarling sputtering jet engines, gritty mechanical acceleration and a rapid succession of flybys. One coherent formation approaching then passing, short recognizable attack arrival with movement and weight, no speech, no music, no alarm or UI beeps. Clean onset, controlled bass, no piercing peaks.",
+        "duration_seconds": 2.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "b47d3c58dc852056a87dc43fc54d396a92f5ac2cdf4cdb5f353a1191a5004c42"
+    },
+    {
+      "name": "boss_beast_1_1",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_1_1.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, armored leviathan: gravelly reptilian bellow, dense throat rattles. menacing territorial roar, confident slow threat. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "de8a9218835622c63461f3efe6ae31989b8fd546735a1acf009d2dd17d753dc6"
+    },
+    {
+      "name": "boss_beast_1_2",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_1_2.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, armored leviathan: gravelly reptilian bellow, dense throat rattles. furious wounded challenge, rising scream and gnashing aggression. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "17b109a8476518d40cb76041d760bc6904d3f4768e5aa3315bf3d23d7054fef6"
+    },
+    {
+      "name": "boss_beast_1_3",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_1_3.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, armored leviathan: gravelly reptilian bellow, dense throat rattles. desperate unhinged final rage, savage strained scream breaking into snarls. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "7503ad340a3e556eed7b131a8a8f04c1f5e9825e44a9d7eb999a1c1bb1a7f760"
+    },
+    {
+      "name": "boss_beast_2_1",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_2_1.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, alien cathedral: multi-throat dissonant choral howl, organic growl. menacing territorial roar, confident slow threat. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "e0a9a174bfc934d0d752a0bb8795a390ebae5b3cf8eccab64b345bedc815de16"
+    },
+    {
+      "name": "boss_beast_2_2",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_2_2.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, alien cathedral: multi-throat dissonant choral howl, organic growl. furious wounded challenge, rising scream and gnashing aggression. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "dda306ae2c3c45e26d322eea500bfbee4b688f02db0794d032f664f5f979df13"
+    },
+    {
+      "name": "boss_beast_2_3",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_2_3.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, alien cathedral: multi-throat dissonant choral howl, organic growl. desperate unhinged final rage, savage strained scream breaking into snarls. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "865a592441e4b722adae18e11c160aaa88d5ba92af8f8cea4680f96ea7636d6e"
+    },
+    {
+      "name": "boss_beast_3_1",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_3_1.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, infernal furnace beast: roaring breath, volcanic guttural rasp. menacing territorial roar, confident slow threat. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "2d6f077c8c260e0892d7650386e16c6984f620f9dd767d23f786506631f9ac63"
+    },
+    {
+      "name": "boss_beast_3_2",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_3_2.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, infernal furnace beast: roaring breath, volcanic guttural rasp. furious wounded challenge, rising scream and gnashing aggression. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "c5071e3776128b1c216fe70f16cb6a49743bc04ea611d055f81254f7f0c9bd11"
+    },
+    {
+      "name": "boss_beast_3_3",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_3_3.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, infernal furnace beast: roaring breath, volcanic guttural rasp. desperate unhinged final rage, savage strained scream breaking into snarls. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "14e5866a191513c22c2c7fe07c195ddf60901903164be54a3d91a672cb0a40b3"
+    },
+    {
+      "name": "boss_beast_4_1",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_4_1.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, insect queen: mandible clicks and savage serrated shriek. menacing territorial roar, confident slow threat. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "7ca73c98518bfc016c366e76ed7f768eaeaecb9f7b9a148069e6251e1a53492f"
+    },
+    {
+      "name": "boss_beast_4_2",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_4_2.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, insect queen: mandible clicks and savage serrated shriek. furious wounded challenge, rising scream and gnashing aggression. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "7f5ff43ec0e47e95b5cda351c2c14d32a3871f44fbcb26982d33764900d69b5e"
+    },
+    {
+      "name": "boss_beast_4_3",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_4_3.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, insect queen: mandible clicks and savage serrated shriek. desperate unhinged final rage, savage strained scream breaking into snarls. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "d4493463d21f4bc345e599b491bf776a853bbf2a332b6fe12dc286b6a0b84cc2"
+    },
+    {
+      "name": "boss_beast_5_1",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_5_1.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, deep ocean titan: cavernous resonant moan and enormous animal lungs. menacing territorial roar, confident slow threat. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "6da5d5034fc2785eacf503d7ad6dc327b9aa0cedc3edfa42e24c62fce1e82519"
+    },
+    {
+      "name": "boss_beast_5_2",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_5_2.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, deep ocean titan: cavernous resonant moan and enormous animal lungs. furious wounded challenge, rising scream and gnashing aggression. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "800acde66d273a2c9c997aabb23ba024437f3dec3dc9bdd38fe88dfea476ebb7"
+    },
+    {
+      "name": "boss_beast_5_3",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_5_3.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, deep ocean titan: cavernous resonant moan and enormous animal lungs. desperate unhinged final rage, savage strained scream breaking into snarls. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "6bce1897002ac43a92eece00c2f1c1a0fcae3a2e565cb52ae16aff98c0166e8c"
+    },
+    {
+      "name": "boss_beast_6_1",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_6_1.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, spectral predator: thin chilling scream wrapped around a sinister throaty snarl. menacing territorial roar, confident slow threat. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "bb2298fe53fbc763e5c1fd3b7c1c8a456373e25ee297d2d42628cd2a87af4f47"
+    },
+    {
+      "name": "boss_beast_6_2",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_6_2.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, spectral predator: thin chilling scream wrapped around a sinister throaty snarl. furious wounded challenge, rising scream and gnashing aggression. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "0acdc6272c9dfced6368bdcadb135b0067b066a64c8872fb4fc94a91aeab7423"
+    },
+    {
+      "name": "boss_beast_6_3",
+      "path": "public/audio/sfx/predator-20260908/boss_beast_6_3.mp3",
+      "request": {
+        "text": "Terrifying cinematic space boss monster vocalization, spectral predator: thin chilling scream wrapped around a sinister throaty snarl. desperate unhinged final rage, savage strained scream breaking into snarls. The SAME creature across its changing emotional states. Audible rich mids, immense bodily weight, visceral scary animal sound, no human words or music or laser. Immediate onset, isolated polished game cue.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "13a59437b512b45747b6274292f26409f02a1761edb12f53ba94d2b416cf0ecd"
+    },
+    {
+      "name": "core_treasure",
+      "path": "public/audio/sfx/predator-20260908/core_treasure.mp3",
+      "request": {
+        "text": "Rare high-value collectible reward in a premium arcade game: golden treasure avalanche and vault impact. Make the pickup feel extremely valuable and satisfying: immediate punchy capture impact, rich layered ascending reward flourish, compact clean bass and shining midrange, elegant decay. Distinct from weapon powerups. No speech, no UI bleeps, no long music.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "33d566f48d4d5f43ed0c9e0ab73311b7b3afb4da4346d94beb66ac8c8467ca98"
+    },
+    {
+      "name": "core_pursuit",
+      "path": "public/audio/sfx/predator-20260908/core_pursuit.mp3",
+      "request": {
+        "text": "Rare high-value collectible reward in a premium arcade game: fast courier capture magnetic snap and victorious rising sparkle. Make the pickup feel extremely valuable and satisfying: immediate punchy capture impact, rich layered ascending reward flourish, compact clean bass and shining midrange, elegant decay. Distinct from weapon powerups. No speech, no UI bleeps, no long music.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "3f97e3fb719a3ea60f08475e60912f4a5c2c5a2f074ece10ee4f46cfa5d12aa8"
+    },
+    {
+      "name": "core_daredevil",
+      "path": "public/audio/sfx/predator-20260908/core_daredevil.mp3",
+      "request": {
+        "text": "Rare high-value collectible reward in a premium arcade game: daring bounty kinetic impact and brilliant ascending metal chimes. Make the pickup feel extremely valuable and satisfying: immediate punchy capture impact, rich layered ascending reward flourish, compact clean bass and shining midrange, elegant decay. Distinct from weapon powerups. No speech, no UI bleeps, no long music.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "f26bc49b30c3d3cdc4b7ebe51ed08a06a1673d4d1cd9ff118e0b071dd2c71454"
+    },
+    {
+      "name": "core_survivor",
+      "path": "public/audio/sfx/predator-20260908/core_survivor.mp3",
+      "request": {
+        "text": "Rare high-value collectible reward in a premium arcade game: survival medal rich warm strike and uplifting glass flourish. Make the pickup feel extremely valuable and satisfying: immediate punchy capture impact, rich layered ascending reward flourish, compact clean bass and shining midrange, elegant decay. Distinct from weapon powerups. No speech, no UI bleeps, no long music.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "a7a5af3e7e899cbfa0fe1cfc1846cc0a8f6bd93a699e389668652ece347146c5"
+    },
+    {
+      "name": "core_hunter",
+      "path": "public/audio/sfx/predator-20260908/core_hunter.mp3",
+      "request": {
+        "text": "Rare high-value collectible reward in a premium arcade game: hunter bounty heavy stamp and cascading prize metal. Make the pickup feel extremely valuable and satisfying: immediate punchy capture impact, rich layered ascending reward flourish, compact clean bass and shining midrange, elegant decay. Distinct from weapon powerups. No speech, no UI bleeps, no long music.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "21d73cf57341ed4e4a06142e1bda9e1d9e244f31a5d6ffcc26515ccbe34ec03b"
+    },
+    {
+      "name": "core_collector",
+      "path": "public/audio/sfx/predator-20260908/core_collector.mp3",
+      "request": {
+        "text": "Rare high-value collectible reward in a premium arcade game: collection streak exquisite multiplying gem cascade. Make the pickup feel extremely valuable and satisfying: immediate punchy capture impact, rich layered ascending reward flourish, compact clean bass and shining midrange, elegant decay. Distinct from weapon powerups. No speech, no UI bleeps, no long music.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "382fa894aca78a988f73d8c216c330f6b34498bc40d3b5e23c3f405f74bacaf4"
+    },
+    {
+      "name": "core_constellation",
+      "path": "public/audio/sfx/predator-20260908/core_constellation.mp3",
+      "request": {
+        "text": "Rare high-value collectible reward in a premium arcade game: constellation reunited celestial crystal click and wondrous luminous swell. Make the pickup feel extremely valuable and satisfying: immediate punchy capture impact, rich layered ascending reward flourish, compact clean bass and shining midrange, elegant decay. Distinct from weapon powerups. No speech, no UI bleeps, no long music.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "d86e8c732ffd8b1e995c96085ffee29d9a3a8c2ab6569ce2d38105c0e26eb676"
+    },
+    {
+      "name": "core_jackpot",
+      "path": "public/audio/sfx/predator-20260908/core_jackpot.mp3",
+      "request": {
+        "text": "Rare high-value collectible reward in a premium arcade game: JACKPOT huge satisfying vault impact and exuberant golden prize avalanche. Make the pickup feel extremely valuable and satisfying: immediate punchy capture impact, rich layered ascending reward flourish, compact clean bass and shining midrange, elegant decay. Distinct from weapon powerups. No speech, no UI bleeps, no long music.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "b715f8be80c474d22ec7716c51a287e8398e6e85be6c9c951e751df921c70886"
+    },
+    {
+      "name": "core_archive",
+      "path": "public/audio/sfx/predator-20260908/core_archive.mp3",
+      "request": {
+        "text": "Rare high-value collectible reward in a premium arcade game: ancient archive unlocking intricate mechanisms and luminous revelation. Make the pickup feel extremely valuable and satisfying: immediate punchy capture impact, rich layered ascending reward flourish, compact clean bass and shining midrange, elegant decay. Distinct from weapon powerups. No speech, no UI bleeps, no long music.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "4acebb3a7b60a640ca74967516d947f1760e86dfcc0a05205441e329263567cf"
+    },
+    {
+      "name": "core_relic",
+      "path": "public/audio/sfx/predator-20260908/core_relic.mp3",
+      "request": {
+        "text": "Rare high-value collectible reward in a premium arcade game: legendary relic ceremonial bronze impact and majestic gold resonance. Make the pickup feel extremely valuable and satisfying: immediate punchy capture impact, rich layered ascending reward flourish, compact clean bass and shining midrange, elegant decay. Distinct from weapon powerups. No speech, no UI bleeps, no long music.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "804bdc1adacb54f5b30c1cc53a09a4ea253801fcb592d1c5c36d7d34896107ca"
+    },
+    {
+      "name": "serpent_14_death",
+      "path": "public/audio/sfx/predator-20260908/serpent_14_death.mp3",
+      "request": {
+        "text": "Horror film creature vocal, a gigantic predatory eclipse dragon, huge regal predator bellow with a high demonic overtone. Explosive agonized death SCREAM breaking into a final colossal collapsing exhale. A satisfying unmistakable monster defeat. Related snake-monster biology. No words, dialogue, laser, or music. Strong audible midrange as well as bass, no long silence.",
+        "duration_seconds": 3.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.8
+      },
+      "sha256": "fbbf43eda946dcea328c412f99697ad68a8931e2a7896f1ab6ae0f7147a162a5"
+    }
+  ]
+}

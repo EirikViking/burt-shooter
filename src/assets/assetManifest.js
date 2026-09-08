@@ -1,4 +1,5 @@
 import { BONUS_CORES } from '../config/BonusCoreCatalog.js';
+import { PREDATOR_SFX, PREDATOR_SOUND_ROOT } from '../audio/PredatorSounds.js';
 import { menuBossBarkLines } from '../config/MenuBossBarkLines.js';
 import { mayhemSuperStormVoiceLines } from '../config/MayhemSuperStormVoiceLines.js';
 import { tacticalBossBanterLines } from '../config/TacticalBossBanterLines.js';
@@ -16,7 +17,7 @@ export const AssetManifest = {
         fleetV5Count: 227,
         bonusDrones: Array.from({ length: 12 }, (_, i) => `/art/astra/drone-v5/${String(i + 1).padStart(2, '0')}.png`),
         bossPresentation: Array.from({ length: 50 }, (_, i) => `/art/astra/boss/${String(i + 1).padStart(2, '0')}.png`),
-        playerPresentation: Array.from({ length: 30 }, (_, i) => `/art/astra/player/${String(i + 1).padStart(2, '0')}.png`),
+        playerPresentation: Array.from({ length: 30 }, (_, i) => i === 28 ? '/art/predator-20260908/railbreaker.png' : `/art/astra/player/${String(i + 1).padStart(2, '0')}.png`),
         bossComponents: [1, 2, 3].map((i) => `/art/astra/component/${String(i).padStart(2, '0')}.png`),
         sectorWorlds: Array.from({ length: 48 }, (_, i) => `/art/astra/world/${String(i + 1).padStart(2, '0')}.webp`),
         codexBackdrop: '/art/astra/archive-v3.webp',
@@ -514,6 +515,8 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_boss_charge_lattice.mp3',
             // ElevenLabs boss weapon mechanisms; original prompts and receipts in docs/boss-arsenal-audio.
             '/audio/sfx/core-serpent/serpent_arrive.mp3',
+            ...PREDATOR_SFX.map(event => `${PREDATOR_SOUND_ROOT}/${event}.mp3`),
+            ...BONUS_CORES.map(core => `${PREDATOR_SOUND_ROOT}/${core.sound}.mp3`),
             '/audio/sfx/core-serpent/serpent_break.mp3',
             ...BONUS_CORES.map(core => `/audio/sfx/core-serpent/${core.sound}.mp3`),
             ...[1,2,3,4].flatMap(i => ['hunt','death'].map(event => `/audio/sfx/core-serpent/serpent_${i}_${event}.mp3`)),

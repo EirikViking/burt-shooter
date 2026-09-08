@@ -1,3 +1,4 @@
+import { readablePowerupTexture } from '../effects/ReadablePowerupIcons.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { BONUS_CORES } from '../config/BonusCoreCatalog.js';
 import { SPACE_SNAKES } from '../config/SpaceSnakes.js';
@@ -761,7 +762,7 @@ class GameAssetsManager {
     }
 
     getPowerupTexture(name) {
-        return this.getXtraPowerup(name);
+        return readablePowerupTexture(name, this.getXtraPowerup(name));
     }
 }
 

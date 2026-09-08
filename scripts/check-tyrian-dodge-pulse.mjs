@@ -158,6 +158,12 @@ try {
   assert.equal(traitResult.discardedReason, 'rift_not_owned');
   assert.equal(traitOnly.counters.deactivations, 1);
 
+  const innateRift = makeHarness({traitRadius:64,riftReprisal:true,bullets:[bulletAt(32),bulletAt(70)]});
+  const innateResult = runDodge(innateRift);
+  assert.equal(innateResult.phaseCleared, 0);
+  assert.equal(innateResult.shards, 1, 'Owned Rift must convert an innate ship pulse clear');
+  assert.equal(innateRift.counters.deactivations, 1);
+
   audioEvents.length = 0;
   const phaseOnly = makeHarness({
     phaseRadius: 58,
@@ -180,17 +186,17 @@ try {
   assert.equal(combinedResult.combinedRadiusBonus, 12, 'combined pulse bonus should be modest and deterministic');
   assert.equal(combinedResult.radius, 84, 'combined pulse should be bounded');
   assert.equal(combinedResult.cleared, 3, 'combined pulse should gain one bounded outer clear');
-  assert.equal(combinedResult.phaseCleared, 2, 'only the Phase/Fusion contribution should feed Rift Reprisal');
-  assert.equal(combinedResult.shards, 2, 'Rift Reprisal should return only Phase-cleared bullets');
+  assert.equal(combinedResult.phaseCleared, 2, 'Phase attribution remains separate from total clears');
+  assert.equal(combinedResult.shards, 3, 'Rift Reprisal should return clears from the entire dodge pulse');
   assert.deepEqual(combinedResult.clearedByRadius, { trait: 2, phase: 2, combinedBonus: 1 }, 'radius/source accounting drifted');
-  assert.equal(combinedResult.riftEligible, 2);
+  assert.equal(combinedResult.riftEligible, 3);
   assert.equal(combinedResult.riftCap, 5);
-  assert.equal(combinedResult.shardsCreated, 2);
-  assert.equal(combinedResult.targets.length, 2, 'each created Rift shard should expose its initial target trajectory');
+  assert.equal(combinedResult.shardsCreated, 3);
+  assert.equal(combinedResult.targets.length, 3, 'each created Rift shard should expose its initial target trajectory');
   assert.equal(combinedResult.discardedReason, null);
   assert.equal(combined.counters.deactivations, 3, 'a combined pulse must clear each bullet exactly once');
-  assert.equal(combined.counters.playerBullets, 2, 'Rift shard count should match Phase-cleared positions');
-  assert(combined.counters.toastMessages.some((message) => message.includes('×2')), 'Rift Reprisal should report the visible shard count');
+  assert.equal(combined.counters.playerBullets, 3, 'Rift shard count should match cleared positions');
+  assert(combined.counters.toastMessages.some((message) => message.includes('×3')), 'Rift Reprisal should report the visible shard count');
   assert.equal(combined.counters.scoreEvents, 0, 'dodge exit clears must remain score-neutral');
   assert.equal(audioEvents.filter((event) => event.id === 'forceField').length, 1, 'combined clear must not duplicate clear audio');
   assert.equal(audioEvents.filter((event) => event.id === 'tactical_phase_reactor').length, 1, 'Rift volley must emit one Fusion audio event');

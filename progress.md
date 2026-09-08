@@ -3299,3 +3299,6 @@ Original request: continue improving the current non-Unity game and choose three
 
 ## 2026-09-08 surgical menu-return hotfix
 - Runtime 77b731b, five-line cached-control reset in MenuScene. Steam test build 25182624 verified on sector-continue-test; public/default 25169120 and Cloud unchanged. Focused return checks only, no smoke or lengthy suites per user. Full receipt and rollback: docs/menu-return-hotfix-20260908.md.
+
+## 2026-09-08 — Predator expansion/readability pass
+Approved implementation based on e3f14db; ten additional snakes (fourteen total), stronger scaling sections, blended routes, 63 new ElevenLabs cues, ten imagegen heads and wider Railbreaker gameplay art. Preserved rare core/snake cadence and sector-six gate. Fixed ordinary straggler logic interfering with snake appearance/lifetime. Added measured HUD spacing, Settings focus, Hangar Escape/unlock requirements, distinct four-powerup glyphs, innate-pulse Rift conversion, and bounded optional result lookups. Full detail and candid test limitations: docs/predator-expansion-20260908.md. Final packaging/testing branch receipt pending. Do not treat deleted long-run report as a confirmed game fix.

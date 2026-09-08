@@ -1,3 +1,4 @@
+import { settleWithin } from '../utils/settleWithin.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
@@ -555,7 +556,7 @@ export class GameOverScene {
       ? this.game.getLeaderboardAdapter()
       : createLeaderboardAdapter();
     if (!this.isDailySignalResult() && !this.isLateGameExperimentResult()) {
-      await this.leaderboardAdapter.refreshAvailability();
+      await settleWithin(this.leaderboardAdapter.refreshAvailability(), 2500);
     }
     this.leaderboardRuntime = this.leaderboardAdapter.getRuntimeSummary();
     this.isRankedRun = typeof this.game.isScoreSubmissionAllowed === 'function'
@@ -567,7 +568,7 @@ export class GameOverScene {
       && (this.leaderboardAdapter.shouldUseSteamSubmission() || tacticalSteamLane)
     );
     this.steamPlayerName = this.steamSubmissionMode
-      ? await this.leaderboardAdapter.getSteamPlayerName().catch(() => null)
+      ? await settleWithin(this.leaderboardAdapter.getSteamPlayerName(), 1500)
       : null;
     this.lastInputDevice = hasConnectedGamepad() ? 'controller' : 'keyboard';
     this.controllerNameCursor = 0;
@@ -7314,7 +7315,7 @@ export class GameOverScene {
     this.updateLeaderboardStatusText();
     this.updateCeremonyPresentation();
 
-    const playerName = this.steamPlayerName || await this.leaderboardAdapter.getSteamPlayerName().catch(() => null) || 'STEAM PILOT';
+    const playerName = this.steamPlayerName || await settleWithin(this.leaderboardAdapter.getSteamPlayerName(), 1500) || 'STEAM PILOT';
     const runResult = this.leaderboardAdapter.createSectorStartRunResult(this.game, {
       name: playerName,
       playerName,

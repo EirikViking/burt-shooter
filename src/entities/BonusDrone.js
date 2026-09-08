@@ -1,3 +1,4 @@
+import { celebrateCoreCapture } from '../effects/CoreCapture.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { BONUS_CORES, pickBonusCore } from '../config/BonusCoreCatalog.js';
@@ -420,7 +421,9 @@ export class BonusDrone {
         this.active = false;
 
         const result = grantCoreReward(this, scene, player);
-        AudioManager.playSfx(this.coreProfile.sound, { volume: .72, minIntervalMs: 120 });
+        AudioManager.duckMusic(.38, 1600);
+        AudioManager.playSfx(this.coreProfile.sound, { force: true, volume: .96, minIntervalMs: 120, priority: 7, priorityHoldMs: 1400, preserveGameplayRng: true });
+        celebrateCoreCapture(scene, this, result.score);
         const name = getBonusCoreText(this.coreProfile.index, getCurrentLanguage()).name;
         let message = translateText('{name} · +{score}', { name, score: result.score });
         if (result.archiveName) message += '\n' + translateText('Archive recovered: {name}', { name: result.archiveName });
