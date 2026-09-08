@@ -29,7 +29,7 @@ for(let i=start;i<start+count;i++){
  const views=meta.views.map(v=>({...v,emitters:v.emitters.map(e=>({...e,x:(e.x*meta.size-crop.left)/side,y:(e.y*meta.size-crop.top)/side}))}));
  await writeFile(`${root}/turntable/${id}.json`,JSON.stringify({...meta,size,columns,views,sourceCrop:crop}));
  await sharp(files[0]).extract(crop).resize(1024,1024).webp({quality:94,alphaQuality:100}).toFile(`${root}/showroom/${id}.webp`);
- await writeFile(`${root}/showroom/${id}.json`,JSON.stringify({size:1024,emitters:views[0].emitters,source:i>=15?'render-fleet-relief.py':'render-fleet-identity.py'}));
+ await writeFile(`${root}/showroom/${id}.json`,JSON.stringify({size:1024,emitters:views[0].emitters,source:i===14?'render-fleet-identity.py':'render-fleet-relief.py'}));
  await sharp(`${input}/player.png`).trim({threshold:8}).resize(512,512,{fit:'contain',background:'#00000000'}).png().toFile(`${root}/player/${id}.png`);
  console.log('PACKED_FLEET_IDENTITY',id);
 }
