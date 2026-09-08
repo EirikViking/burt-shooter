@@ -17,7 +17,10 @@ export class AstraLaunchHome extends Container {
     this.home = new Container(); this.chrome = new Graphics(); this.addChild(this.chrome, this.home);
     this.title = this.text('NOVA\nSWARM', 72, 0xeaf7ff, DISPLAY, this.home);
     this.title.style.fontWeight = '900'; this.title.style.lineHeight = 76;
+    this.title.style.dropShadow = {color:0x4ea4b8,alpha:.32,blur:16,distance:0};
+    this.signature = new Graphics(); this.home.addChild(this.signature);
     this.invitation = this.text('', 22, 0xb8ccd9, FONT, this.home);this.invitation.style.breakWords=true;
+    this.invitation.style.dropShadow={color:0x020811,alpha:.9,blur:4,distance:1};
     this.shipPlaque=new Graphics();this.home.addChild(this.shipPlaque);
     this.rotateHint=this.text('',13,0xc0d8e0,FONT,this.home);this.rotateHint.style.stroke={color:0x041018,width:3};
     this.shipName = this.text('', 22, 0xeaf7ff, DISPLAY, this.home);
@@ -49,7 +52,8 @@ export class AstraLaunchHome extends Container {
     b._launchHomeButton = true; b._source = source; b._variant = variant; b._accent = 0xa4f7e0;
     b._bg = new Graphics(); b.addChild(b._bg);
     b._label = this.text('', variant === 'primary' ? 32 : 17, 0xeaf7ff, variant === 'primary' ? DISPLAY : FONT, b);
-    b._subtitle = this.text('', 15, 0x073b35, FONT, b);
+    b._subtitle = this.text('', 15, 0xa5e2d9, FONT, b);
+    if (variant === 'primary') { b._energy = new Graphics(); b._energy.eventMode='none'; b.addChild(b._energy); }
     b.activate = activate; b._paint = () => this.paint(b);
     b.on('pointerover', () => { this.scene.setMenuFocusByButton(b); b._hovered = true; this.paint(b); playMenuFocusSfx(.075); });
     b.on('pointerout', () => { b._hovered = false; this.paint(b); });
@@ -62,30 +66,52 @@ export class AstraLaunchHome extends Container {
     const g = b._bg; g.clear(); b._label.text = t(b._source);
     const primary = b._variant === 'primary', solid = primary || b._variant === 'secondary';
     if (solid) {
-      g.poly([0,0,w-14,0,w,14,w,h,14,h,0,h-14]).fill({color:primary ? (active ? 0xb5ffe5 : 0x84e9ce) : 0x071623,alpha:primary ? 1 : .84});
+      g.poly([0,0,w-14,0,w,14,w,h,14,h,0,h-14]).fill({color:primary ? (active ? 0x16483f : 0x102c32) : 0x071623,alpha:primary ? .96 : .84});
       g.poly([0,0,w-14,0,w,14,w,h,14,h,0,h-14,0,0]).stroke({color:primary ? 0xe6fff4 : 0x82b5bf,width:active ? 2 : 1,alpha:active ? 1 : .48});
       g.moveTo(16,3).lineTo(w-18,3).stroke({color:0xffffff,width:1,alpha:primary ? .65 : .13});
+      if(primary){
+        g.poly([1,15,5,19,5,h-17,1,h-21]).fill(0x9dffe0);
+        g.poly([w*.65,5,w-19,5,w-5,19,w-5,h-5,w*.47,h-5]).fill({color:0x8fdec6,alpha:.035});
+        g.moveTo(18,h-4).lineTo(w-18,h-4).stroke({color:0xffc58c,width:1,alpha:.35});
+      }
     } else if (active) {
       g.rect(0,0,w,h).fill({color:0x8fead8,alpha:.08});
       g.moveTo(8,h-1).lineTo(w-8,h-1).stroke({color:0xa4f7e0,width:2,alpha:.95});
     }
-    b._label.style.fill = primary ? 0x062923 : active ? 0xc9fff1 : 0xb9d0dc;
+    b._label.style.fill = primary ? 0xedfff7 : active ? 0xc9fff1 : 0xb9d0dc;
     b._label.anchor.set(solid ? 0 : .5, .5);
     b._label.position.set(solid ? 24 : w/2, primary ? h*.38 : h/2);
     b._label.scale.set(1); if (b._label.width > w-(solid ? 72 : 12)) b._label.scale.set((w-(solid ? 72 : 12))/b._label.width);
     b._subtitle.visible = primary; b._subtitle.text = primary ? t('MAYHEM TACTICAL') : '';
     b._subtitle.position.set(24,h*.65); b._subtitle.scale.set(1);
     if (b._subtitle.width>w-72) b._subtitle.scale.set((w-72)/b._subtitle.width);
-    if (solid) g.poly([w-34,h/2-6,w-24,h/2,w-34,h/2+6]).stroke({color:primary ? 0x0b4a3d : 0x8ce7d2,width:2});
+    if (solid) g.poly([w-34,h/2-6,w-24,h/2,w-34,h/2+6]).stroke({color:primary ? 0xaaffdf : 0x8ce7d2,width:2});
     b.hitArea = new Rectangle(0,0,w,h);
   }
 
   place(id,x,y,w,h) { const b=this.buttons[id]; b.position.set(x,y); b._btnWidth=w; b._btnHeight=h; this.paint(b); }
 
+  updatePresentation(delta, reduced = false) {
+    if (!reduced) this.clock += Math.min(3,Math.max(0,delta))/60;
+    const time=reduced?0:this.clock, b=this.buttons.launchTactical;
+    const w=b._btnWidth||150,h=b._btnHeight||44,g=b._energy;
+    g.clear();
+    // Small luminous edge accents leave the label and input geometry still.
+    for(let i=0;i<3;i++){
+      const p=(time*.13+i/3)%1,x=18+p*(w-60);
+      g.moveTo(x,1).lineTo(Math.min(w-18,x+24),1).stroke({color:0xc9fff0,width:2,alpha:reduced?.45:Math.sin(p*Math.PI)*.85});
+    }
+    this.signature.clear();
+    const x=this.title.x+5,y=this.title.y+this.title.height+9,span=Math.min(w*.6,240);
+    this.signature.moveTo(x,y).lineTo(x+span,y).stroke({color:0x91d8dc,width:1,alpha:.25});
+    this.signature.moveTo(x,y).lineTo(x+span*.25,y).stroke({color:0xffcc96,width:2,alpha:.8});
+    this.signature.circle(x+span+8,y,2).fill({color:0xffd7a5,alpha:reduced?.7:.55+.2*Math.sin(time*.8)});
+  }
+
   layout(width, height) {
     const compact=width<900, s=Math.min(1.6, Math.max(.72, Math.min(width/1280,height/720)));
     const fontScale=Math.min(1.35,Math.max(1,getCurrentLayout()?.uiScale||1));
-    const left=width*.055, navY=height-62*s, column=compact ? width*.55 : width*.34;
+    const left=width*.055, navY=height-62*s, column=compact ? width*.42 : width*.34;
     this.home.visible=this.surface==='home';
     for (const id of ['launchTactical','otherModes','changeShip']) this.buttons[id].visible=this.surface==='home';
     this.buttons.backHome.visible=this.surface==='modes';
@@ -101,7 +127,7 @@ export class AstraLaunchHome extends Container {
     this.shipLabel.text=t('SELECTED SHIP'); this.shipLabel.style.fontSize=13*s;
     this.shipName.text=getShipMetadata(this.scene.getQuickStartShipKey())?.name || this.scene.getQuickStartShipKey();
     this.shipName.style.fontSize=Math.max(16,20*s)*fontScale; this.shipName.scale.set(1);
-    const shipX=compact ? width*.65 : width*.59, shipY=height*.77;
+    const shipX=width*.59, shipY=height*.77;
     this.shipLabel.position.set(shipX,shipY); this.shipName.position.set(shipX,shipY+20*s);
     this.shipPlaque.clear();this.shipPlaque.roundRect(shipX-14*s,shipY-9*s,width*.36,93*s,3*s).fill({color:0x04111b,alpha:.88});
     this.shipPlaque.moveTo(shipX-14*s,shipY-9*s).lineTo(shipX-14*s,shipY+84*s).stroke({color:0xd3af76,width:2,alpha:.75});

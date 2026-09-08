@@ -931,7 +931,7 @@ export class MenuScene {
     // Re-entering the menu must release owned filters/geometry, while the asset
     // cache retains shared images. removeChildren alone leaves GPU resources.
     this.astraBackdropRequest = (this.astraBackdropRequest || 0) + 1;
-    for (const key of ['astraMenuLights', 'astraDock', 'astraMenuShip', 'backdropShade', 'backdrop', 'overrunUnlockCelebration']) {
+    for (const key of ['astraHorizon', 'astraMenuLights', 'astraDock', 'astraMenuShip', 'backdropShade', 'backdrop', 'overrunUnlockCelebration']) {
       this[key]?.destroy?.({children:true,texture:false,textureSource:false});
       this[key] = null;
     }
@@ -942,8 +942,8 @@ export class MenuScene {
     const request = this.astraBackdropRequest = (this.astraBackdropRequest || 0) + 1;
     try {
       const texture = await PIXI.Assets.load({
-        alias: 'astra_launch_bay_20260907',
-        src: '/art/astra/menu-launch-bay-20260907.png'
+        alias: 'astra_launch_bay_20260908',
+        src: '/art/menu-horizon-20260908/launch-bay.webp'
       });
 
       if (request !== this.astraBackdropRequest) return;
@@ -952,6 +952,9 @@ export class MenuScene {
       this.backdrop.alpha = 0.98;
       this.backdrop.zIndex = -20;
       this.container.addChild(this.backdrop);
+      this.astraHorizon = new AstraHorizon();
+      this.astraHorizon.zIndex = -18;
+      this.container.addChild(this.astraHorizon);
 
       // Reuse the persisted Hangar choice, including Steam Cloud restoration.
       // A temporary Daily loaner must not replace the pilot's own flagship.
@@ -5439,7 +5442,8 @@ export class MenuScene {
       const textureWidth = this.backdrop.texture.width || width;
       const textureHeight = this.backdrop.texture.height || height;
       const scale = Math.max(width / textureWidth, height / textureHeight);
-      this.backdrop.scale.set(scale);
+      this.backdrop._coverScale = scale;
+      this.backdrop.scale.set(scale * 1.025);
       this.backdrop.x = width / 2;
       this.backdrop.y = height / 2;
     }
@@ -7870,6 +7874,14 @@ export class MenuScene {
     }
     this.animationTime += delta * 0.016;
     this.launchHome?.syncModalPresentation();
+    const horizonReduced=getReducedMotionEnabled();
+    const horizonModal=Boolean(this.settingsOverlay||this.howToPlayOverlay||this.modeBriefingOverlay||this.quitConfirmOpen||this.sectorSelectorOpen);
+    this.astraHorizon?.update(delta,this.game.getWidth(),this.game.getHeight(),{reduced:horizonReduced,home:this.launchHome?.surface==='home',modal:horizonModal,pointer:this.game.app.renderer.events?.pointer?.global});
+    this.launchHome?.updatePresentation(delta,horizonReduced||horizonModal);
+    if(this.backdrop&&this.astraHorizon){
+      this.backdrop.x=this.game.getWidth()*(.5+this.astraHorizon.pan.x*.012);
+      this.backdrop.y=this.game.getHeight()*(.5+this.astraHorizon.pan.y*.009);
+    }
     this.astraDock?.update(delta, this.game.getWidth(), this.game.getHeight(), getReducedMotionEnabled(),this.launchHome?.surface==='home'?.71:.485);
     if (this.astraMenuShip && this.astraMenuLights) {
       const motion = !getReducedMotionEnabled();
@@ -8073,3 +8085,4 @@ export class MenuScene {
     }
   }
 }
+import { AstraHorizon } from '../ui/AstraHorizon.js';
