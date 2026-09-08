@@ -1,0 +1,18 @@
+{
+  "runtime": "8424720",
+  "asarSHA256": "f1e44cdf2def08939e5ad2fc3f02632d579cb3cb26c96fb7f4dff1b385e1e05b",
+  "files": 421,
+  "bytes": 1854411277,
+  "targetBranch": "sector-continue-test",
+  "publicBefore": "25169120",
+  "buildID": "25189882",
+  "depot": "4765071",
+  "manifest": "7413000128645131265",
+  "verifiedBranches": {
+    "public": "25169120",
+    "sector-continue-test": "25189882",
+    "test-build": "23782673"
+  },
+  "cloudSettingsUnchanged": true,
+  "verifiedAt": "2026-09-08T15:08:25.364Z"
+}
