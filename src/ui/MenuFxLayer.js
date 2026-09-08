@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
 
 const DEFAULT_ACCENT = 0x37f5ff;
 const DEFAULT_SECONDARY = 0xff55d9;
@@ -204,7 +205,7 @@ export class MenuFxLayer {
     radius = 96,
     durationMs = 520
   } = {}) {
-    if (!this.pulseLayer) return null;
+    if (!this.pulseLayer || getAccessibilitySettings().prefersReducedMotion) return null;
     const pulse = new PIXI.Graphics();
     pulse.label = 'ui_menuFxBurst';
     pulse.position.set(x, y);
@@ -221,6 +222,7 @@ export class MenuFxLayer {
   }
 
   update(delta = 1) {
+    if (getAccessibilitySettings().prefersReducedMotion) return;
     const dt = clamp(Number(delta) || 1, 0.1, 4);
     this.time += dt * 0.016;
     const width = this.width || 1;
@@ -306,6 +308,31 @@ export function installMenuFx(scene, options = {}) {
 
 export function updateMenuFx(scene, delta) {
   scene?.menuFx?.update?.(delta);
+  const fx = scene?.menuFx;
+  if (!fx || !scene.container || scene.container.destroyed) return;
+  if (!fx.panelLight) {
+    fx.panelLight = new PIXI.Graphics(); fx.panelLight.eventMode='none';
+    fx.panelLight.zIndex=900000;scene.container.addChild(fx.panelLight);
+  }
+  const ink=fx.panelLight;ink.clear();
+  if(getAccessibilitySettings().prefersReducedMotion)return;
+  // A single retained overlay moves broad reflections over panel edges.
+  // Text and hit areas stay stationary. Traversal and draw count are bounded.
+  let visited=0,drawn=0;
+  const visit=(node)=>{
+    if(++visited>180||drawn>=16||node===ink||!node.visible)return;
+    if(node._astraPanelBounds)for(const panel of node._astraPanelBounds.values()){
+      if(drawn++>=16)break;
+      const p=(fx.time*.11+drawn*.13)%1;
+      const point=scene.container.toLocal(node.toGlobal({x:panel.x,y:panel.y}));
+      const x=point.x+12+p*(panel.width-64),y=point.y;
+      ink.moveTo(x,y+3).lineTo(x+36,y+3).stroke({color:panel.color,width:2,alpha:.16+Math.sin(p*Math.PI)*.48});
+      ink.poly([x,y+9,x+15,y+9,x-18,y+Math.min(panel.height-9,110),x-33,y+Math.min(panel.height-9,110)])
+        .fill({color:0xaeeaff,alpha:.018*Math.sin(p*Math.PI)});
+    }
+    for(const child of node.children||[])visit(child);
+  };
+  visit(scene.container);
 }
 
 export function resizeMenuFx(scene, width, height) {
@@ -318,6 +345,7 @@ export function destroyMenuFx(scene) {
     scene.menuFx.container.parent.removeChild(scene.menuFx.container);
   }
   scene.menuFx.destroy();
+  scene.menuFx.panelLight?.destroy();
   scene.menuFx = null;
 }
 

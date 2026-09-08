@@ -2,6 +2,7 @@ import { getActivePilotingText } from '../activePilotingText.js';
 import { getLaunchHomeSourceText } from '../launchHomeText.js';
 import { getShipTraitSummarySourceText } from "../shipTraitSummaryText.js";
 import { getBonusCoreSourceText } from '../bonusCoreText.js';
+import { getBonusDroneSourceText } from '../bonusDroneText.js';
 import { getCoreSerpentSourceText } from '../coreSerpentText.js';
 import { getAstraPresentationSourceText } from '../astraPresentationSourceText.js';
 import { buildArcadePatterns } from './patterns.js';
@@ -1894,6 +1895,6 @@ export const es = {
   diagnostics: {
     interfaceLanguage: 'Idioma de interfaz'
   },
-  sourceText: Object.freeze({ ...getActivePilotingText('es'), ...getLaunchHomeSourceText('es'), ...getShipTraitSummarySourceText("es"), ...getBonusCoreSourceText('es'), ...getCoreSerpentSourceText('es'), ...getAstraPresentationSourceText('es'), ...getModeBriefingReviewSourceText('es'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('es'), ...getNovaHumorSourceText('es'), ...getMayhemModesSourceText('es'), ...getOverrunModeSourceText('es'), ...getEliteExpansionSourceText('es'), ...getHowToPlayCompleteSourceText('es'), ...getTacticalFusionSourceText('es'), ...getDailyCabinetSignalSourceText('es'), ...getMenuHierarchySourceText('es'), ...getForumFollowupSourceText('es'), ...getPlayerFeedbackReliabilitySourceText('es'), ...getTyrianFeedbackSourceText('es'), ...getCompetitionLearningSourceText('es'), ...getTacticalDraftClaritySourceText('es'), ...getWonderCodexSourceText('es'), ...getHangarLaunchModeSourceText('es'), ...getNewestTyrianFeedbackSourceText('es'), ...getSecondPolishSourceText('es'), ...getTyrian112SourceText('es'), ...getHighSectorSourceText('es'), ...getLateGameExperimentSourceText('es'), ...getFirstRunRetentionSourceText('es') }),
+  sourceText: Object.freeze({ ...getActivePilotingText('es'), ...getLaunchHomeSourceText('es'), ...getShipTraitSummarySourceText("es"), ...getBonusCoreSourceText('es'), ...getBonusDroneSourceText('es'), ...getCoreSerpentSourceText('es'), ...getAstraPresentationSourceText('es'), ...getModeBriefingReviewSourceText('es'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('es'), ...getNovaHumorSourceText('es'), ...getMayhemModesSourceText('es'), ...getOverrunModeSourceText('es'), ...getEliteExpansionSourceText('es'), ...getHowToPlayCompleteSourceText('es'), ...getTacticalFusionSourceText('es'), ...getDailyCabinetSignalSourceText('es'), ...getMenuHierarchySourceText('es'), ...getForumFollowupSourceText('es'), ...getPlayerFeedbackReliabilitySourceText('es'), ...getTyrianFeedbackSourceText('es'), ...getCompetitionLearningSourceText('es'), ...getTacticalDraftClaritySourceText('es'), ...getWonderCodexSourceText('es'), ...getHangarLaunchModeSourceText('es'), ...getNewestTyrianFeedbackSourceText('es'), ...getSecondPolishSourceText('es'), ...getTyrian112SourceText('es'), ...getHighSectorSourceText('es'), ...getLateGameExperimentSourceText('es'), ...getFirstRunRetentionSourceText('es') }),
   patterns
 };

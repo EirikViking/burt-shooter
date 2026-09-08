@@ -45,3 +45,7 @@ docs/astra-v2-models/*.blend1
 
 docs/astra-v3-models/renders/
 docs/astra-v3-models/*.blend1
+docs/fleet-identity-20260908/renders/
+docs/fleet-identity-20260908/drones/*.png
+docs/fleet-identity-20260908/*.blend1
+docs/fleet-identity-20260908/drones/*.blend1

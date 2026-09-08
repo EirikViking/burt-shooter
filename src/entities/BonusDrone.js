@@ -2,6 +2,7 @@ import { celebrateCoreCapture } from '../effects/CoreCapture.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { BONUS_CORES, pickBonusCore } from '../config/BonusCoreCatalog.js';
+import { pickBonusDrone } from '../config/BonusDroneCatalog.js';
 import { getBonusCoreText } from '../i18n/bonusCoreText.js';
 import { coreRunState, getCoreReward, grantCoreReward } from '../progression/BonusCoreRewards.js';
 import { translateText, getCurrentLanguage } from '../i18n/index.js';
@@ -37,7 +38,9 @@ export class BonusDrone {
         this.clarityPulse = 0;
         this.edgeMarker = null;
         // Cosmetic selection uses spawn coordinates, never another gameplay roll.
-        this.visualVariant = Math.abs(Math.round(x * 13 + y * 7)) % 4;
+        this.droneProfile = type === 'HAZARD' ? pickBonusDrone(x * 13 + y * 7) : null;
+        this.visualVariant = this.droneProfile?.textureIndex || 0;
+        this.scoreValue = this.droneProfile?.score || 0;
         this.coreProfile = type === 'POWERUP' ? (BONUS_CORES.find(c => c.id === coreId) || pickBonusCore(Math.random())) : null;
         this.ageSeconds = 0;
         this.fragment = this.coreProfile?.reward === 'constellation' ? Math.floor(Math.random() * 3) : 0;
@@ -106,6 +109,14 @@ export class BonusDrone {
         this.intentGlyph = new PIXI.Graphics();
         this.intentGlyph.label = 'bonusDroneIntentGlyph';
         this.sprite.addChild(this.intentGlyph);
+        if (this.droneProfile) {
+            this.targetLabel = createText(`${translateText('SHOOT')} · ${this.scoreValue}`, {
+                fontFamily:'Rajdhani',fontSize:16,fontWeight:'bold',fill:'#ffd18a',
+                stroke:{color:'#130904',width:4}
+            });
+            this.targetLabel.anchor.set(.5,0);this.targetLabel.y=34;
+            this.sprite.addChild(this.targetLabel);
+        }
         if (this.coreProfile) {
             const name = getBonusCoreText(this.coreProfile.index, getCurrentLanguage()).name;
             this.pickupLabel = createText(translateText('COLLECT: {name}', { name }), {
@@ -177,7 +188,7 @@ export class BonusDrone {
             this.x += Math.sin(this.y * 0.02) * zigzagAmplitude * delta;
             this.sprite.y = this.y;
             if (this.mainSprite) {
-                const target = this.visualVariant === 0
+                const target = [0, 14, 25].includes(this.visualVariant)
                     ? this.intentTimer * 0.8
                     : Math.atan2(this.vy, this.vx) + Math.PI / 2;
                 this.mainSprite.rotation += Math.atan2(Math.sin(target - this.mainSprite.rotation), Math.cos(target - this.mainSprite.rotation)) * Math.min(1, delta * 0.075);
@@ -404,6 +415,7 @@ export class BonusDrone {
     }
 
     takeDamage(amount) {
+        if (!this.active) return false;
         if (this.type === 'POWERUP') return false; // Indestructible
         this.health -= amount;
         if (this.health <= 0) {

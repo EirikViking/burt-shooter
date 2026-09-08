@@ -8,6 +8,7 @@ import {
   shouldPlayChatterRequest
 } from './VoicePolicy.js';
 import { BUILD_ID } from '../buildInfo.js';
+import { HangarAmbience } from './HangarAmbience.js';
 
 const UI_SFX_EVENTS = new Set([
   'ui_open', 'ui_close', 'ui_error', 'ui_cancel',
@@ -125,6 +126,9 @@ class AudioController {
     this.currentContext = null;
     this.playlist = [];
     this.currentTrackSrc = null;
+    this.musicTransitionFactor = 1;
+    this.musicTransitionTimer = null;
+    this.hangarAmbience = null;
 
     // Single Audio Instance
     this.musicAudio = new Audio();
@@ -304,10 +308,11 @@ class AudioController {
       this._initialized = true;
       console.log('[AudioManager] INIT OK. Context:', this.context.state);
       this.context.onstatechange = () => {
-        if (this.context.state === 'running') {
+        if (this.context.state === 'running' && !['menu','scoreboard'].includes(this.currentContext)) {
           this.recoverSfx('context_resumed');
         }
       };
+      if (['menu','scoreboard'].includes(this.currentContext) && this.musicEnabled) this.playMusicContext(this.currentContext);
     } catch (e) {
       console.warn('[AudioManager] Failed to init context:', e);
       this.enabled = false;
@@ -319,8 +324,10 @@ class AudioController {
       await this.context.resume();
     }
     // Mobile Safari often needs this on the Audio element too
-    this.musicAudio.play().catch(() => { });
-    this.musicAudio.pause();
+    if (!['menu','scoreboard'].includes(this.currentContext) && this.musicAudio.src) {
+      this.musicAudio.play().catch(() => { });
+      this.musicAudio.pause();
+    }
   }
 
   addUnlockListener(pendingSrc) {
@@ -330,6 +337,10 @@ class AudioController {
     const unlock = () => {
       console.log('[Audio] User gesture detected. Resuming audio context...');
       this.unlockAudio().then(() => {
+        if (['menu','scoreboard'].includes(this.currentContext)) {
+          this.playMusicContext(this.currentContext);
+          return;
+        }
         const currentPlaylist = getMusicPlaylists(this.musicPack)[this.currentContext] || [];
         if (pendingSrc && currentPlaylist.includes(pendingSrc)) {
           this.startTrack(pendingSrc);
@@ -941,7 +952,22 @@ class AudioController {
   // --- MUSIC ---
 
   playMusicContext(contextName, options = {}) {
-    if (!this.enabled || !this.musicEnabled) return;
+    if (!this.enabled || !this.musicEnabled) { this.currentContext=contextName; return; }
+    if (contextName === 'menu' || contextName === 'scoreboard') {
+      const alreadyAmbient = this.hangarAmbience?.active;
+      this.currentContext=contextName;this.playlist=[];
+      this.pendingTrackRequest=null;this.clearPendingTrackTimer();
+      this.trackSwitchToken++;this.isSwitchingTrack=false;
+      this.hangarAmbience ||= new HangarAmbience(this.context,()=>this.enabled&&this.musicEnabled?this.clampUnit(this.masterVolume*this.musicVolume*this.musicDuckFactor*this.pauseDuckFactor*.65):0);
+      void this.hangarAmbience.start();
+      if(!alreadyAmbient)this.fadeMusicLevel(0,.9,()=>this.musicAudio.pause());
+      if(this.context?.state==='suspended')this.addUnlockListener(null);
+      return;
+    }
+    if(this.hangarAmbience?.stop(1.4)) {
+      clearInterval(this.musicTransitionTimer);this.musicTransitionTimer=null;
+      this.musicTransitionFactor=0;
+    }
 
     const playlists = getMusicPlaylists(this.musicPack);
     const newPlaylist = playlists[contextName];
@@ -1079,6 +1105,7 @@ class AudioController {
     if (playPromise !== undefined) {
       playPromise.then(() => {
         if (switchToken !== this.trackSwitchToken) return;
+        if(this.musicTransitionFactor<1)this.fadeMusicLevel(1,1.2);
         this.retryCount = 0; // Success reset
         this.isSwitchingTrack = false;
         this.switchStartedAt = 0;
@@ -1169,11 +1196,25 @@ class AudioController {
   }
 
   stopMusic() {
+    this.hangarAmbience?.stop(.08);
+    clearInterval(this.musicTransitionTimer);this.musicTransitionTimer=null;
     this.musicAudio.pause();
   }
 
+  fadeMusicLevel(target, seconds, finished) {
+    clearInterval(this.musicTransitionTimer);
+    const from=this.musicTransitionFactor,start=performance.now();
+    this.musicTransitionTimer=setInterval(()=>{
+      const p=Math.min(1,(performance.now()-start)/(seconds*1000));
+      this.musicTransitionFactor=from+(target-from)*(p*p*(3-2*p));
+      this.applyMusicVolume();
+      if(p>=1){clearInterval(this.musicTransitionTimer);this.musicTransitionTimer=null;finished?.();}
+    },30);
+  }
+
   applyMusicVolume() {
-    this.musicAudio.volume = this.clampUnit(this.masterVolume * this.musicVolume * this.musicDuckFactor * this.pauseDuckFactor);
+    this.musicAudio.volume = this.clampUnit(this.masterVolume * this.musicVolume * this.musicDuckFactor * this.pauseDuckFactor * (this.musicTransitionFactor ?? 1));
+    this.hangarAmbience?.refreshVolume();
   }
 
   duckMusic(factor = 0.55, durationMs = 1700) {
@@ -1226,10 +1267,11 @@ class AudioController {
       musicDuckFactor: this.musicDuckFactor,
       pauseDuckFactor: this.pauseDuckFactor,
       currentMusicContext: this.currentContext,
+      hangarAmbience: this.hangarAmbience?.debug() || null,
       musicPack: this.musicPack,
-      musicPlaying: Boolean(this.musicAudio && !this.musicAudio.paused && this.musicAudio.currentTime > 0),
+      musicPlaying: Boolean((this.hangarAmbience?.active && this.hangarAmbience.layers.length && this.context?.state==='running') || (this.musicAudio && !this.musicAudio.paused && this.musicAudio.currentTime > 0)),
       musicReadyState: this.musicAudio?.readyState || 0,
-      currentMusicTrack: musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
+      currentMusicTrack: this.hangarAmbience?.active ? 'orbital_hangar_ambience' : musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
       lastSfxEvent: this.lastSfxEvent,
       lastSfxBus: this.lastSfxBus || null,
       lastSfxTrack: this.lastSfxTrack,

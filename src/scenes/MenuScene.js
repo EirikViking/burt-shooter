@@ -959,7 +959,7 @@ export class MenuScene {
       // Reuse the persisted Hangar choice, including Steam Cloud restoration.
       // A temporary Daily loaner must not replace the pilot's own flagship.
       const shipIndex = getShipMetadata(this.getQuickStartShipKey())?.textureIndex ?? 0;
-      const portraitPath = `/art/astra/showroom/${String(shipIndex + 1).padStart(2, '0')}`;
+      const portraitPath = `/art/fleet-identity-20260908/showroom/${String(shipIndex + 1).padStart(2, '0')}`;
       const shipTexture = await PIXI.Assets.load(`${portraitPath}.webp`);
       if (request !== this.astraBackdropRequest) return;
       this.astraDock = new AstraDockAtmosphere();
@@ -6330,7 +6330,6 @@ export class MenuScene {
   }
 
   updateCodexSignalCue(delta = 0) {
-    if (!this.threatCodexBtn?._signalCue) return;
     this.codexCuePollMs -= delta * 16.67;
     if (this.codexCuePollMs <= 0) {
       this.codexCuePollMs = 600;
@@ -6340,7 +6339,9 @@ export class MenuScene {
         this.codexUnreadCount = 0;
       }
     }
-    const cue = this.threatCodexBtn._signalCue;
+    const cue = this.threatCodexBtn?._signalCue;
+    if (!cue) return;
+    if (this.launchHome?.surface === 'home') { cue.visible=false;cue.clear();return; }
     const active = this.codexUnreadCount > 0;
     cue.visible = active;
     if (!active) {

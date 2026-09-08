@@ -2,6 +2,8 @@ import { hasColossus } from './BossReinvention.js';
 import { SPACE_SNAKES } from './SpaceSnakes.js';
 import { getSpaceSnakeText } from '../i18n/coreSerpentText.js';
 import { BONUS_CORES } from './BonusCoreCatalog.js';
+import { BONUS_DRONES } from './BonusDroneCatalog.js';
+import { getBonusDroneText } from '../i18n/bonusDroneText.js';
 import { getBonusCoreText } from '../i18n/bonusCoreText.js';
 import { ENEMY_THREAT_ACTIONS } from './EnemyThreatActions.js';
 import { WAVE_TACTIC_VARIANTS } from './WaveTacticVariants.js';
@@ -58,6 +60,7 @@ export const THREAT_CODEX_CATEGORIES = Object.freeze([
   { id: 'waveTactics', label: 'Wave Tactics' },
   { id: 'powerups', label: 'Powerups' },
   { id: 'bonusCores', label: 'Bonus Cores' },
+  { id: 'bonusDrones', label: 'Bonus Drones' },
   { id: 'augments', label: 'Augments' },
   { id: 'sectors', label: 'Sectors' },
   { id: 'elites', label: 'Elites' },
@@ -1589,6 +1592,10 @@ export function getThreatCodexCatalog({ locale = getCurrentLanguage() } = {}) {
     ...getBonusCoreText(core.index, locale), codexBodyMode: 'story',
     role: translateTextForLocale(locale, 'Bonus core'),
     rarity: translateTextForLocale(locale, 'Rare'), accent: core.color
+  }));
+  catalog.bonusDrones = BONUS_DRONES.map(profile => ({
+    id:profile.id, category:'bonusDrones', art:profile.art, accent:profile.color,
+    ...getBonusDroneText(profile,locale), codexBodyMode:'story'
   }));
   return catalog;
 }

@@ -17,6 +17,7 @@ export const DISCOVERY_CATEGORIES = Object.freeze([
   'waveTactics',
   'powerups',
   'bonusCores',
+  'bonusDrones',
   'augments',
   'sectors',
   'elites',

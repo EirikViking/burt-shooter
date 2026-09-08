@@ -2,6 +2,7 @@ import { getActivePilotingText } from '../activePilotingText.js';
 import { getLaunchHomeSourceText } from '../launchHomeText.js';
 import { getShipTraitSummarySourceText } from "../shipTraitSummaryText.js";
 import { getBonusCoreSourceText } from '../bonusCoreText.js';
+import { getBonusDroneSourceText } from '../bonusDroneText.js';
 import { getCoreSerpentSourceText } from '../coreSerpentText.js';
 import { getAstraPresentationSourceText } from '../astraPresentationSourceText.js';
 export const en = {
@@ -27,6 +28,6 @@ export const en = {
   diagnostics: {
     interfaceLanguage: 'Interface language'
   },
-  sourceText: Object.freeze({ ...getActivePilotingText('en'), ...getLaunchHomeSourceText('en'), ...getShipTraitSummarySourceText("en"), ...getBonusCoreSourceText('en'), ...getCoreSerpentSourceText('en'), ...getAstraPresentationSourceText('en'),}),
+  sourceText: Object.freeze({ ...getActivePilotingText('en'), ...getLaunchHomeSourceText('en'), ...getShipTraitSummarySourceText("en"), ...getBonusCoreSourceText('en'), ...getBonusDroneSourceText('en'), ...getCoreSerpentSourceText('en'), ...getAstraPresentationSourceText('en'),}),
   patterns: Object.freeze([])
 };

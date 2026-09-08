@@ -15,9 +15,9 @@ export const AssetManifest = {
     generated: {
         astraThreatCounts: { elites: 50, supports: 111, late: 177 },
         fleetV5Count: 227,
-        bonusDrones: Array.from({ length: 12 }, (_, i) => `/art/astra/drone-v5/${String(i + 1).padStart(2, '0')}.png`),
+        bonusDrones: [...Array.from({ length: 12 }, (_, i) => `/art/astra/drone-v5/${String(i + 1).padStart(2, '0')}.png`), ...Array.from({length:15},(_,i)=>`/art/fleet-identity-20260908/drones/${String(i+1).padStart(2,'0')}.png`)],
         bossPresentation: Array.from({ length: 50 }, (_, i) => `/art/astra/boss/${String(i + 1).padStart(2, '0')}.png`),
-        playerPresentation: Array.from({ length: 30 }, (_, i) => i === 28 ? '/art/predator-20260908/railbreaker.png' : `/art/astra/player/${String(i + 1).padStart(2, '0')}.png`),
+        playerPresentation: Array.from({ length: 30 }, (_, i) => `/art/fleet-identity-20260908/player/${String(i + 1).padStart(2, '0')}.png`),
         bossComponents: [1, 2, 3].map((i) => `/art/astra/component/${String(i).padStart(2, '0')}.png`),
         sectorWorlds: Array.from({ length: 48 }, (_, i) => `/art/astra/world/${String(i + 1).padStart(2, '0')}.webp`),
         codexBackdrop: '/art/astra/archive-v3.webp',
@@ -75,7 +75,7 @@ export const AssetManifest = {
         sectors: Array.from({ length: 240 }, (_, i) => `/art/generated/nova-swarm/replacements/sector-scenes/nova-sector-scene-${String(i + 1).padStart(3, '0')}-20260616.png`),
         bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
         playerShips: [
-            ...Array.from({ length: 25 }, (_, i) => `/art/astra/player/${String(i + 1).padStart(2, '0')}.png`),
+            ...Array.from({ length: 25 }, (_, i) => `/art/fleet-identity-20260908/player/${String(i + 1).padStart(2, '0')}.png`),
             '/art/generated/nova-swarm/ships/nova-player-ship-phase-seraph-20260801.png',
             '/art/generated/nova-swarm/ships/nova-player-ship-eirik-viking-20260801-v2.png',
             '/art/generated/nova-swarm/ships/nova-player-ship-aegis-comet-20260801.png',
@@ -259,7 +259,7 @@ export const AssetManifest = {
         ships: Array.from({ length: 9 }, (_, i) => `/sprites/Ships/spaceShips_00${(i + 1).toString()}.png`),
         player: '/sprites/player/player_01.png',
         playerRankShips: [
-            ...Array.from({ length: 25 }, (_, i) => `/art/astra/player/${String(i + 1).padStart(2, '0')}.png`),
+            ...Array.from({ length: 25 }, (_, i) => `/art/fleet-identity-20260908/player/${String(i + 1).padStart(2, '0')}.png`),
             '/art/generated/nova-swarm/ships/nova-player-ship-phase-seraph-20260801.png',
             '/art/generated/nova-swarm/ships/nova-player-ship-eirik-viking-20260801-v2.png',
             '/art/generated/nova-swarm/ships/nova-player-ship-aegis-comet-20260801.png',

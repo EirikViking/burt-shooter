@@ -1,4 +1,5 @@
 import { drawAstraPanel } from './AstraConsole.js';
+import { TrainingIllustration } from './TrainingIllustration.js';
 import * as PIXI from 'pixi.js';
 import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -999,6 +1000,14 @@ export class HowToPlayOverlay {
     tip.position.set(textX, tipY);
     fitTextToBox(tip, width - (textX - x) - rightPad, tipMaxHeight, { minScale: veryShort ? 0.48 : shortDesktop ? 0.46 : 0.56 });
     this.container.addChild(tip);
+    const illustrationY = Math.max(tipY + tip.height + 14, y + 91);
+    const illustrationHeight = y + height - 17 - illustrationY;
+    if (illustrationHeight >= 58) {
+      const illustration = new TrainingIllustration(row, width - 40, illustrationHeight);
+      illustration.position.set(x + 20, illustrationY);
+      this.container.addChild(illustration);
+      card._illustration = illustration;
+    }
   }
 
   setFocusedCard(index = 0) {
@@ -1224,6 +1233,7 @@ export class HowToPlayOverlay {
 
   update(delta = 1) {
     updateMenuFx(this, delta);
+    for (const card of this.cards) card._illustration?.update(delta, this.reducedMotion);
     this.updateHeroMotion(delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;

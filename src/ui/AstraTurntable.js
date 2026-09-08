@@ -24,7 +24,7 @@ async function acquire(index){
  let entry=atlases.get(index);
  if(entry?.disposal){await entry.disposal;return acquire(index);}
  if(!entry){
-  const path=`/art/astra/turntable/${String(index+1).padStart(2,'0')}`;
+  const path=`/art/fleet-identity-20260908/turntable/${String(index+1).padStart(2,'0')}`;
   entry={refs:0,path,promise:Promise.all([Assets.load(`${path}.webp`),Assets.load(`${path}.json`)]).then(([sheet,data])=>({sheet,data,frames:Array.from({length:data.count},(_,f)=>new Texture({source:sheet.source,frame:new Rectangle(f%data.columns*data.size,Math.floor(f/data.columns)*data.size,data.size,data.size)}))}))};
   atlases.set(index,entry);
  }
@@ -76,7 +76,7 @@ export class AstraTurntable extends Container{
   // stream just that full-size image; at most one displayed and one loading.
   if(this.highResolution&&!this.dragging&&this.clock-this.frameSince>=.12&&this.detailFrame!==a&&!this.detailPending&&this.failedDetailFrame!==a){
    this.detailPending=true;
-   acquireDetail(`/art/astra/menu-hd/${String(this.index+1).padStart(2,'0')}/${String(a).padStart(2,'0')}.webp`).then(detail=>{
+   acquireDetail(`/art/fleet-identity-20260908/menu-hd/${String(this.index+1).padStart(2,'0')}/${String(a).padStart(2,'0')}.webp`).then(detail=>{
     if(this.destroyed||this.lastFrame!==a){releaseDetail(detail);return;}
     const previous=this.detail;this.detail=detail;this.detailFrame=a;
     this.views[0].texture=detail.texture;this.views[0].scale.set(this.baseSize/detail.texture.width);

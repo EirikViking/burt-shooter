@@ -8695,7 +8695,7 @@ export class PlayScene {
               collisionStats.playerBulletAmbientKills += 1;
               let appliedScore = 0;
               if (!this.player.isSlowTimeActive?.()) {
-                appliedScore = this.game.addScore(this.getComboScore(500));
+                appliedScore = this.game.addScore(this.getComboScore(bonusDrone.scoreValue || 500));
               }
               const bonusDroneLabel = translateText('BONUS DRONE DOWN!');
               const bonusDroneText = appliedScore > 0
@@ -21997,6 +21997,11 @@ export class PlayScene {
   }
 
   onEnemyKilled(enemy, options = {}) {
+    if (enemy?.droneProfile) {
+      this.queueThreatDefeat(enemy.droneProfile.id, 'bonusDrones', {
+        name:enemy.droneProfile.name, sector:this.game.level
+      }, {scoreBonus:false});
+    }
     recordCoreWaveKill(this);
     if (enemy?.kind === 'space_snake') celebrateSpaceSnakeDeath(this, enemy);
     const now = Date.now();
@@ -23822,6 +23827,9 @@ export class PlayScene {
     const y = Number.isFinite(position.y) ? position.y : -50;
 
     const bonusDrone = new BonusDrone(x, y, this.gameplayGame, type);
+    if (bonusDrone.droneProfile) this.recordThreatDiscovery(bonusDrone.droneProfile.id, 'bonusDrones', {
+      name:bonusDrone.droneProfile.name, sector:this.game.level
+    }, {scoreBonus:false,silent:true});
     this.gameContainer.addChild(bonusDrone.sprite);
     this.ambientBonusDrones.push(bonusDrone);
     return bonusDrone;

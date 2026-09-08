@@ -1,0 +1,58 @@
+[
+  {
+    "id": "reactor",
+    "file": "public/audio/ambience/orbital-hangar/reactor.mp3",
+    "request": {
+      "text": "Cinematic orbital hangar ambience. Seamless, mysterious, restrained. No music, melody, beat, voices or alarms. Deep powerful distant reactor resonance with textured bass machinery and a huge enclosed space. The low air pressure very slowly breathes, industrial energy behind thick walls. Rich quiet low midrange so it remains present on small speakers. A restrained living spacecraft, no big loud events.",
+      "duration_seconds": 29,
+      "prompt_influence": 0.65,
+      "model_id": "eleven_text_to_sound_v2",
+      "loop": true
+    },
+    "sha256": "931f1938f0bfdd3cae27e362f5a100dfb74a7eace68c897bc11c529761b8de64",
+    "bytes": 465232,
+    "generatedAt": "2026-09-08T12:49:37.884Z"
+  },
+  {
+    "id": "machinery",
+    "file": "public/audio/ambience/orbital-hangar/machinery.mp3",
+    "request": {
+      "text": "Cinematic orbital hangar ambience. Seamless, mysterious, restrained. No music, melody, beat, voices or alarms. Very distant magnetic machinery moving and turbine systems cycling in an enormous hangar, soft diffuse air and metallic resonances. Uneven slow swells, tiny servo movements, long room reflections. Minimal bass because this is a detail layer over a reactor. Calm anticipation, restrained and realistic.",
+      "duration_seconds": 23,
+      "prompt_influence": 0.65,
+      "model_id": "eleven_text_to_sound_v2",
+      "loop": true
+    },
+    "sha256": "cbe6fcfdcd984f200f7cc426038af28e1118cd71b2d7c91ff1e2e9c3187b8e70",
+    "bytes": 369102,
+    "generatedAt": "2026-09-08T12:49:44.734Z"
+  },
+  {
+    "id": "signals",
+    "file": "public/audio/ambience/orbital-hangar/signals.mp3",
+    "request": {
+      "text": "Cinematic orbital hangar ambience. Seamless, mysterious, restrained. No music, melody, beat, voices or alarms. Sparse distant non melodic electronic energy tones, ghostly communications equipment resonance and faint synthetic pulses with irregular long pauses, blurred by a vast reverberant space. Strange advanced technology working quietly beyond the ship. No recognizable notes or tune, no arpeggios, no regular beep sequence.",
+      "duration_seconds": 19,
+      "prompt_influence": 0.65,
+      "model_id": "eleven_text_to_sound_v2",
+      "loop": true
+    },
+    "sha256": "af9a1aac748a83f6aec4a7755f6c558e0720dc86fa1d65efdc88b5b50036ef13",
+    "bytes": 305154,
+    "generatedAt": "2026-09-08T12:49:50.736Z"
+  },
+  {
+    "id": "shimmer",
+    "file": "public/audio/ambience/orbital-hangar/shimmer.mp3",
+    "request": {
+      "text": "Cinematic orbital hangar ambience. Seamless, mysterious, restrained. No music, melody, beat, voices or alarms. Extremely delicate high frequency crystalline energy shimmer and soft electrical filaments moving in distant space. Airy spectral texture that slowly appears and disappears, faint charged dust and gentle electromagnetic interference, soft non tonal glass-like resonance, never piercing or bright. No percussion or melody.",
+      "duration_seconds": 17,
+      "prompt_influence": 0.65,
+      "model_id": "eleven_text_to_sound_v2",
+      "loop": true
+    },
+    "sha256": "bd55601c82af0812b7440de36fea1b5573514ac0e7bfe57c09772b5eac8558db",
+    "bytes": 272971,
+    "generatedAt": "2026-09-08T12:49:56.401Z"
+  }
+]

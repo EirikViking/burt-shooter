@@ -33,6 +33,9 @@ export class AstraLaunchHome extends Container {
     this.make('hangar', 'SHIP HANGAR', () => scene.openShipSelect(), 'nav');
     this.make('highscores', 'LEADERBOARD', () => scene.storyBtn.emit('pointerdown'), 'nav');
     this.make('threatCodex', 'THREAT CODEX', () => scene.threatCodexBtn.emit('pointerdown'), 'nav');
+    this.codexSignal = new Graphics();
+    this.codexSignal.eventMode = 'none';
+    this.buttons.threatCodex.addChildAt(this.codexSignal, 1);
     this.make('achievements', 'ACHIEVEMENTS', () => scene.achievementsBtn.emit('pointerdown'), 'nav');
     this.make('settings', 'SETTINGS', () => scene.openSettingsOverlay(), 'nav');
     this.make('howToPlay', 'HOW TO PLAY', () => scene.openHowToPlayOverlay(), 'small');
@@ -94,6 +97,21 @@ export class AstraLaunchHome extends Container {
   updatePresentation(delta, reduced = false) {
     if (!reduced) this.clock += Math.min(3,Math.max(0,delta))/60;
     const time=reduced?0:this.clock, b=this.buttons.launchTactical;
+    const codex = this.buttons.threatCodex, signal = this.codexSignal;
+    signal.clear();
+    codex._label.style.fill = codex._focused || codex._hovered ? 0xc9fff1 : this.scene.codexUnreadCount>0 ? 0xffdda1 : 0xb9d0dc;
+    if (this.scene.codexUnreadCount > 0) {
+      const cw = codex._btnWidth || 150, ch = codex._btnHeight || 44;
+      const pulse = reduced ? .7 : .58 + .25 * Math.sin(time * 2.1);
+      signal.roundRect(3, 3, cw - 6, ch - 6, 3).fill({color:0x65e5df, alpha:pulse * .12});
+      for (const side of [0, 1]) {
+        const x = side ? cw - 5 : 5, inward = side ? -1 : 1;
+        signal.moveTo(x + inward * 17, 5).lineTo(x, 5).lineTo(x, ch - 5).lineTo(x + inward * 17, ch - 5)
+          .stroke({color:0xffd391, width:2.5, alpha:Math.min(1,pulse+.15)});
+      }
+      const p = reduced ? .5 : (time * .24) % 1, x = 24 + p * (cw - 72);
+      signal.moveTo(x, ch - 4).lineTo(x + 24, ch - 4).stroke({color:0xd7fff8, width:2, alpha:pulse});
+    }
     const w=b._btnWidth||150,h=b._btnHeight||44,g=b._energy;
     g.clear();
     // Small luminous edge accents leave the label and input geometry still.
