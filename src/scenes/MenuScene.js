@@ -431,6 +431,11 @@ export class MenuScene {
   init() {
     this.launchHome?.destroy({children:true}); this.launchHome=null;
     const previousLegacyMenu=this.legacyMenuLayer; this.legacyMenuLayer=null;
+    // Cached controls belong to the old layer, not the rebuilt menu.
+    this.runModeInfoTileItems = [];
+    this.runModeInfoTileSignature = null;
+    this.runModeVariantTabs = [];
+    this.runModeVariantSignature = null;
     this.disposeAstraBackdrop();
     this.container.removeChildren();
     this.scoutAnomaly = readScoutAnomalySelection();
