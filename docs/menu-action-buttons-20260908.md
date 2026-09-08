@@ -1,0 +1,13 @@
+# Play and Other Modes visual polish
+
+User requested a surgical visual improvement and quick Steam test upload, without broad smoke suites. Verified clean baseline `80d531c7325169039eea0f3e59e649cb1978dffa`, fetch, branch `codex/astra-visual-overhaul` and unique ownership of this checkout before edits.
+
+Only runtime file changed: `src/ui/AstraLaunchHome.js`. Play now has layered teal glass, warm illuminated bevels, a rotating segmented launch emblem, flowing chevrons and light accents. Other Modes has blue-violet glass and a connected navigation emblem. Hover/controller focus brightens the materials. Labels, actions, hit areas, menu geometry and all gameplay remain intact. Reduced motion freezes the new animation. No new text, translations, assets or sounds were added; existing translated labels and audio are reused.
+
+Runtime commits: `8bc5f89`, `8424720` (separate arc paths prevent connecting lines). Source visual inspection at 1920×1080 and 1280×720 and Other Modes/Escape return passed without page errors. Release-line, i18n and the production build guard chain passed. No broad smoke, full campaign or eight-language screenshot rerun was performed, per the user's surgical scope.
+
+Packaging reuses the previous verified Windows wrapper and streams unchanged assets from its archive. All preserved archive file hashes are compared with the previous manifest; only compiled JS chunks/index change. The copied executable's Electron archive-integrity resource is updated. The initial reconstruction encountered non-Windows SDK entries removed by the prior standard runtime-staging script; reconstruction uses matching local SDK files for those entries, verifies their hashes, then applies the same Windows runtime staging. Earlier packages are preserved. Exact package evidence and final native check are under `test-results/menu-buttons/`.
+
+Steam delivery: pending verification. Public release, other test branch, Steamworks settings and Cloud remain protected. No untranslated text or public posts. Source rollback after checking clean ownership: `git revert 8424720 8bc5f89`. Prior Steam test build: `25189001`.
+
+Final package: `test-results/menu-buttons-build-8424720-final/win-unpacked/Nova Swarm.exe`. All 14,032 preserved file payloads verified; packed content matches the prior archive, staged native files match the actual prior runtime (the standard staging script had changed some native package metadata after the old archive was built). Verification paths were normalized for Windows. Steam runtime check passed. Focused packaged menu rendering, Other Modes/Escape return and Play launch passed with no page errors. The isolated QA game was closed. These are packaging/fixture corrections, with no further game-code changes.
