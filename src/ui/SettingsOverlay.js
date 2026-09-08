@@ -374,6 +374,8 @@ export class SettingsOverlay {
       y += tighterGap;
       this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
       y += tighterGap;
+      this.addToggleRow('MENU VOICES', settings.menuVoiceEnabled, y, (enabled) => AudioManager.setMenuVoiceEnabled(enabled), { id: 'menu_voices' });
+      y += tighterGap;
       this.addToggleRow('Boss Voices', settings.bossVoiceEnabled, y, (enabled) => AudioManager.setBossVoiceEnabled(enabled));
       y += tighterGap;
       this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));

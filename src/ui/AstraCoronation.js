@@ -11,7 +11,7 @@ export class AstraCoronation extends Container {
   this.label='astra_coronation';
   Assets.load('/art/astra/coronation-v6.webp').then(texture=>{if(!this.destroyed){this.crest.texture=texture;this.ready=true;}}).catch(error=>console.warn('[AstraCoronation]',error));
   // Own this small portrait texture, independently of hangar/turntable caches.
-  const portrait=`/art/fleet-identity-20260908/showroom/${String(Math.max(0,Math.min(29,Number(shipIndex)||0))+1).padStart(2,'0')}.webp`;
+  const portrait=`/art/solid-fleet-20260908/showroom/${String(Math.max(0,Math.min(29,Number(shipIndex)||0))+1).padStart(2,'0')}.webp`;
   fetch(portrait).then(r=>{if(!r.ok)throw new Error(`Portrait ${r.status}`);return r.blob();})
    .then(blob=>createImageBitmap(blob,{resizeWidth:384,resizeHeight:384,resizeQuality:'high'}))
    .then(bitmap=>{if(this.destroyed){bitmap.close();return;}this.portraitBitmap=bitmap;this.ownedHull=Texture.from(bitmap);this.hull.texture=this.ownedHull;})

@@ -307,6 +307,7 @@ export class Game {
 
     this.currentScene = this.scenes[sceneName];
     this.currentSceneName = sceneName;
+    AudioManager.setSceneContext(sceneName);
     this.app.stage.addChild(this.currentScene.container);
     this.currentScene.init();
     this.flushAchievementToasts(this.currentScene);
@@ -336,6 +337,7 @@ export class Game {
     // Show ship select
     this.currentScene = this.scenes.shipSelect;
     this.currentSceneName = 'shipSelect';
+    AudioManager.setSceneContext('shipSelect');
     this.app.stage.addChild(this.currentScene.container);
     this.syncGameplayCursor();
   }
@@ -351,6 +353,7 @@ export class Game {
     // Show ship details
     this.currentScene = detailsScene;
     this.currentSceneName = 'shipDetails';
+    AudioManager.setSceneContext('shipDetails');
     this.app.stage.addChild(this.currentScene.container);
     this.syncGameplayCursor();
   }

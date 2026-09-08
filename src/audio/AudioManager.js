@@ -243,7 +243,9 @@ class AudioController {
   }
 
   loadPreferences() {
+    this.menuVoiceEnabled = false;
     if (typeof localStorage === 'undefined') return;
+    this.menuVoiceEnabled = localStorage.getItem('burt_menu_voice_enabled') === 'true';
 
     this.masterVolume = this.readStoredFloat('burt_volume_master', this.masterVolume);
     this.musicVolume = this.readStoredFloat('burt_volume_music', this.musicVolume);
@@ -951,6 +953,23 @@ class AudioController {
 
   // --- MUSIC ---
 
+  setSceneContext(sceneName) {
+    this.inMenu = ['menu', 'shipSelect', 'shipDetails', 'highscore', 'achievements', 'threatCodex'].includes(sceneName);
+    if (this.inMenu) {
+      if (!this.menuVoiceEnabled) this.silenceVoicePlayback('menu_voices_disabled');
+      this.setPauseDucked(false);
+      this.playMusicContext('menu');
+    } else if (sceneName === 'play') {
+      this.playMusicContext('gameplay', { resetForNewRun: true });
+    }
+  }
+
+  setMenuVoiceEnabled(enabled) {
+    this.menuVoiceEnabled = Boolean(enabled);
+    if (typeof localStorage !== 'undefined') localStorage.setItem('burt_menu_voice_enabled', String(this.menuVoiceEnabled));
+    if (this.inMenu && !this.menuVoiceEnabled) this.silenceVoicePlayback('menu_voices_disabled');
+  }
+
   playMusicContext(contextName, options = {}) {
     if (!this.enabled || !this.musicEnabled) { this.currentContext=contextName; return; }
     if (contextName === 'menu' || contextName === 'scoreboard') {
@@ -960,7 +979,9 @@ class AudioController {
       this.trackSwitchToken++;this.isSwitchingTrack=false;
       this.hangarAmbience ||= new HangarAmbience(this.context,()=>this.enabled&&this.musicEnabled?this.clampUnit(this.masterVolume*this.musicVolume*this.musicDuckFactor*this.pauseDuckFactor*.65):0);
       void this.hangarAmbience.start();
-      if(!alreadyAmbient)this.fadeMusicLevel(0,.9,()=>this.musicAudio.pause());
+      if(!alreadyAmbient)this.fadeMusicLevel(0,.9,()=>{
+        if (['menu','scoreboard'].includes(this.currentContext)) this.musicAudio.pause();
+      });
       if(this.context?.state==='suspended')this.addUnlockListener(null);
       return;
     }
@@ -1069,6 +1090,7 @@ class AudioController {
   }
 
   startTrack(src) {
+    if (['menu','scoreboard'].includes(this.currentContext)) return;
     if (!src) return;
     if (this.isSwitchingTrack) {
       this.pendingTrackRequest = {
@@ -1259,6 +1281,7 @@ class AudioController {
       voiceVolume: this.voiceVolume,
       musicEnabled: this.musicEnabled,
       voiceEnabled: this.voiceEnabled,
+      menuVoiceEnabled: this.menuVoiceEnabled,
       ctaVoiceEnabled: this.ctaVoiceEnabled,
       bossVoiceEnabled: this.bossVoiceEnabled,
       chatterFrequency: this.chatterFrequency,
@@ -1504,6 +1527,7 @@ class AudioController {
   }
 
   playVoice(eventName, options = {}) {
+    if ((this.inMenu || this.currentContext === 'menu') && !this.menuVoiceEnabled) return false;
     if (!this.enabled) return false;
     if (!this.voiceEnabled && options.ignoreVoiceEnabled !== true) return false;
     if (this.masterVolume <= 0 || this.voiceVolume <= 0) {

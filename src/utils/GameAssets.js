@@ -13,7 +13,7 @@ class GameAssetsManager {
         const safeIndex = Math.max(0, Math.min(29, Math.floor(Number(index) || 0)));
         this.showroomShips ||= new Map();
         if (!this.showroomShips.has(safeIndex)) {
-            const path = `/art/fleet-identity-20260908/showroom/${String(safeIndex + 1).padStart(2, '0')}`;
+            const path = `/art/solid-fleet-20260908/showroom/${String(safeIndex + 1).padStart(2, '0')}`;
             this.showroomShips.set(safeIndex, Promise.all([PIXI.Assets.load(`${path}.webp`), PIXI.Assets.load(`${path}.json`)]).then(([texture, anchors]) => ({ texture, emitters: anchors.emitters })));
         }
         return this.showroomShips.get(safeIndex);

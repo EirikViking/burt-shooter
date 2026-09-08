@@ -959,7 +959,7 @@ export class MenuScene {
       // Reuse the persisted Hangar choice, including Steam Cloud restoration.
       // A temporary Daily loaner must not replace the pilot's own flagship.
       const shipIndex = getShipMetadata(this.getQuickStartShipKey())?.textureIndex ?? 0;
-      const portraitPath = `/art/fleet-identity-20260908/showroom/${String(shipIndex + 1).padStart(2, '0')}`;
+      const portraitPath = `/art/solid-fleet-20260908/showroom/${String(shipIndex + 1).padStart(2, '0')}`;
       const shipTexture = await PIXI.Assets.load(`${portraitPath}.webp`);
       if (request !== this.astraBackdropRequest) return;
       this.astraDock = new AstraDockAtmosphere();
@@ -7118,7 +7118,7 @@ export class MenuScene {
     try {
       AudioManager.init();
       AudioManager.playSfx('ui_open');
-      AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
+      AudioManager.playMusicContext('menu');
       this.game.showShipSelect();
     } catch (e) {
       console.error('[MenuScene] Ship Select Error:', e);
@@ -7223,7 +7223,6 @@ export class MenuScene {
     try {
       AudioManager.init();
       AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.78 });
-      AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
       this.game.startGame(this.getQuickStartShipKey(), {
         runMode,
         scoutAnomalyId: runMode === RUN_MODES.SCOUT ? this.scoutAnomaly?.id : null,
@@ -7243,7 +7242,6 @@ export class MenuScene {
     try {
       AudioManager.init();
       AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.82 });
-      AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
       Promise.resolve(this.game.startGame(contract.loanerShipKey, {
         runMode: RUN_MODES.DAILY_SIGNAL,
         dailySignalContract: contract,
@@ -7427,7 +7425,6 @@ export class MenuScene {
     try {
       AudioManager.init();
       AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.7 });
-      AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
       Promise.resolve(this.game.startGame(this.getQuickStartShipKey(), {
         runMode: RUN_MODES.SECTOR_START,
         startSector: checkpoint,

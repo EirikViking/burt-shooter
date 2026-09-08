@@ -13,7 +13,7 @@ export class AstraHorizon extends Container {
   this.haze=new Sprite(glow());this.haze.anchor.set(.5);this.haze.tint=0x52bfff;this.haze.blendMode='add';
   this.sky=new Graphics();this.trails=new Graphics();this.floor=new Graphics();this.addChild(this.sun,this.haze,this.sky,this.trails,this.floor);
   this.ships=[];
-  for(let i=0;i<3;i++){const s=new Sprite(Texture.EMPTY);s.anchor.set(.5);s.rotation=-.8;this.addChild(s);this.ships.push(s);Assets.load(`/art/fleet-identity-20260908/player/${['01','03','07'][i]}.png`).then(t=>{if(!this.destroyed)s.texture=t;}).catch(()=>{});}
+  for(let i=0;i<3;i++){const s=new Sprite(Texture.EMPTY);s.anchor.set(.5);s.rotation=-.8;this.addChild(s);this.ships.push(s);Assets.load(`/art/solid-fleet-20260908/player/${['01','03','07'][i]}.png`).then(t=>{if(!this.destroyed)s.texture=t;}).catch(()=>{});}
  }
  update(delta,w,h,{reduced=false,home=true,modal=false,pointer=null}={}){
   const dt=Math.min(3,Math.max(0,delta))/60;if(!reduced&&!modal)this.clock+=dt;
