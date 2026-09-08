@@ -36,4 +36,24 @@ Verified requested worktree `D:\vibe-coding-e\nova-swarm-forum-129-improvements-
 
 ## Delivery
 
-Pending final committed packaging and Steam test-branch receipt. No public deployment or Steamworks settings changes are authorized by this pass. Rollback will use `git revert` of the runtime commit from a clean checkout, preserving the baseline and later delivery notes.
+Completed: Build 25183937 is verified on `sector-continue-test`. Detailed package and Steam receipts follow below. No public deployment or Steamworks service-setting changes were performed.
+
+### Final package verification
+
+Runtime commit: `e2f9433` (source baseline `e3f14db`). Final `build:current` and release-line guard passed. Windows package: `test-results/astra-build-2026-09-08T09-22-06-396Z/win-unpacked/Nova Swarm.exe`. Steam native modules/SDK staging and package runtime checks passed. All 63 mastered files match the packaged static snapshot by SHA256.
+
+`test-results/predator-native/report.json`: packaged executable and isolated profile verified. Eclipse Dragon remained at ten active sections during a fifteen-second observation, changing from hook to figure-eight. Head health 36, body health 18 at sector 6; joints 73.53 pixels apart; authored colors retained. Full defeat and fourteen-entry Codex passed with no page errors. Native screenshots are under `test-results/predator-native/`.
+
+Source QA scripts are committed under `scripts/check-predator-runtime.mjs` and `scripts/check-predator-focused.mjs`. Native package QA is `scripts/check-predator-native.mjs`. Direct/staged fixtures are explicitly labeled; they do not prove human fun, full campaign balance, natural completion, listening quality or removal of the historical long-run stall.
+
+Changed file groups: snake configuration/entity/manager/death presentation; fourteen-species Codex text; new art and audio with provenance/mastering receipts; SoundCatalog/asset manifest; boss/core audio and pickup effects; HUD, Settings, Hangar, Player Rift conversion, result lookup helper; focused checks and this report. No leaderboard storage rules, existing rewards, ship stats/hitboxes, Steam Cloud configuration or public announcements changed.
+
+### Steam delivery — verified 2026-09-08 09:40:49 UTC
+
+- App 4765070, depot 4765071; testing branch `sector-continue-test`: **Build 25183937**, manifest **5768472008275080347**.
+- Public/default remains **25169120**; `test-build` remains **23782673**. Steam Cloud settings compared before/after and unchanged. No public promotion, announcement, store update or Steamworks service-setting change.
+- Payload: 410 regular files, 1,692,957,465 bytes, verified from the tested package. Steam's 470-entry count includes directories. ASAR SHA256 `d670af4c7691d9d78ff43fad76a57ae877e0d2ed04cdd81ecbf3a72a24aa9044`.
+- Receipt: `docs/predator-steam-delivery-20260908.json`; detailed upload, payload and fresh app-info evidence: `test-results/predator-steam-e2f9433/`.
+- Steam testing: Properties → Betas → `sector-continue-test`, update and launch. Selecting None returns to public. Existing user saves were not used or modified by the isolated automated checks.
+- Source rollback from a clean checkout: `git revert e2f9433`. This does not change Steam; a Steam rollback would be a separately authorized test-branch operation.
+- Runtime is `e2f9433`; the following delivery commit adds documentation/native QA and whitespace-only script cleanup, without changing shipped game code or assets.

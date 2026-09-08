@@ -39,7 +39,7 @@ try{
  }
  report.trait=await page.evaluate(()=>{const p=window.__game.scenes.play;p.gameTime=10;p.hud.updateTraitMeter();return{time:p.gameTime,visible:p.hud.traitGroup.visible};});assert.equal(report.trait.visible,false);
  await page.evaluate(()=>window.__game.scenes.play.setPaused(true));await page.waitForTimeout(200);report.pauseTrait=await page.evaluate(()=>window.__game.scenes.play.pauseOverlay.children.find(c=>c.label==='ui_pauseTraitExplanation')?.text);assert.ok(report.pauseTrait?.length>15);await page.screenshot({path:path.join(out,'pause-trait.png')});
- 
+
  for(const [width,height,sector]of[[1280,720,6],[1920,1080,20],[960,600,410]]){await page.setViewportSize({width,height});await page.waitForTimeout(400);await page.evaluate(sector=>{const g=window.__game;g.level=sector;g.scenes.play.hud.update();},sector);await page.screenshot({path:path.join(out,`sector-${sector}-${width}.png`)});}
  report.codex=[];
  for(const category of ['bonusCores','spaceSnakes']){const row=await page.evaluate(category=>{const g=window.__game;g.switchScene('threatCodex');const c=g.scenes.threatCodex;for(let i=0;i<14;i++){c.categoryIndex=i;if(c.getCategory().id===category)break;}c.entryIndex=0;c.init();return{category:c.getCategory().id,count:c.getEntriesForCategory().length,discoveries:c.discoveryState.items[category]};},category);assert.equal(row.category,category);assert.equal(row.count,category==='bonusCores'?10:14);for(const item of Object.values(row.discoveries)){assert.ok(category==='spaceSnakes'?item.timesDefeated>0:item.metadata.collected>0,JSON.stringify(item));}report.codex.push(row);await page.waitForTimeout(500);await page.screenshot({path:path.join(out,category+'-codex.png')});}
