@@ -17,3 +17,17 @@ Passed focused distinct/duplicate/protected graze and collision fixtures, Reacto
 Evidence: test-results/active-piloting. Production, native packaging and Steam delivery receipts will be recorded after completion. These checks establish mechanical behavior, not human balance or enjoyment. Earlier isolated sector-90 stall and inherited pacing/Overrun test limitations remain unresolved. No full campaign, real leaderboard submission or Cloud round trip is claimed.
 
 Steam target remains sector-continue-test only; no public promotion, Steamworks settings or announcements are authorized by this pass. Source rollback is a git revert of this runtime commit after checking ownership and clean status; it does not roll Steam back.
+
+## Final candidate validation
+
+Runtime commit: **78a41f0**. Production `build:current` and its guard chain passed; `check:release-line`, `check:i18n`, 80 final production i18n UI captures, controller-only flow and Steam bridge checks passed. Sixteen additional production captures cover Reactor/Rift details across all eight languages; inspected German Reactor and Japanese Rift for layout. Native package staging/runtime checks and isolated packaged mechanics checks passed, including Bomb charge preservation; no page errors. Source, production-preview and packaged QA sessions were closed.
+
+The skill input client was run. Its bundled browser was absent, so a local copy used installed Chrome. Its canvas extraction produced a black image despite live gameplay state; compositor screenshot capture showed gameplay correctly. This was a capture-method limitation, not evidence of a black game screen. Input-client evidence is under `input-client-page`; no full playthrough or human balance claim.
+
+Exact executable: `test-results/astra-build-2026-09-08T11-13-35-722Z/win-unpacked/Nova Swarm.exe`. Upload payload: 410 files, 1,687,926,381 bytes. The archive was verified to contain runtime 78a41f0. Payload hashes and Steam upload material: `test-results/active-piloting-steam-78a41f0/`.
+
+Changed files: Player.js, PlayScene.js, TacticalDraft.js, HowToPlayOverlay.js, activePilotingText.js and all eight locale files, plus three existing graze/Wonder checks and this delivery documentation. No public artwork/audio files changed. No newly untranslated strings; existing proper names remain intentional. Source rollback from a verified clean checkout: `git revert 78a41f0`.
+
+## Steam delivery
+
+Server verified **2026-09-08 11:30:37 UTC**: `sector-continue-test` **25185903**, depot 4765071 manifest **2395758064661931684**. Public remains **25169120**, `test-build` remains **23782673**, Cloud configuration unchanged. No public promotion, announcements or Steamworks settings changes. ASAR SHA256: `78228970c23b9db309d8e049d09601b0ab95640610c1d800ebbb02469c246cfa`. See `docs/active-piloting-steam-delivery-20260908.json` for the verified receipt. Previous test build **25184837** remains the Steam rollback reference; changing Steam back is a separate deployment action.
