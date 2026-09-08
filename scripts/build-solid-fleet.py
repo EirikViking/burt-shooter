@@ -79,7 +79,9 @@ def hull(length=1.7,width=.40,height=.30):
   y=-1.05+j*.29;w=width*(.68 if j<4 else .55-(j-4)*.12);z=.34 if j<4 else .28-(j-4)*.055
   m.poly('Separated dorsal armor panel',[(-w,y-.12),(w,y-.12),(w*.83,y+.12),(-w*.83,y+.12)],z,.065,trim if j==0 else paint,.018)
   for side in [-1,1]:m.cyl('Captive panel fastener',(side*w*.7,y-.065,z+.074),.022,.018,m.silver,vertices=12)
- m.loft('Armored ventral keel',[(-1.0,width*.4,-.27,.10),(.1,width*.52,-.25,.12),(length*.74,.045,-.15,.04)],trim)
+ # A separate, machined keel plate avoids intersecting curved hull shells.
+ m.poly('Armored ventral keel',[(-width*.40,-1.0),(width*.40,-1.0),(width*.30,.65),(0,length*.70),(-width*.30,.65)],-.49,.045,trim,.012)
+ for y in [-.7,.2]:m.box('Keel structural mount',(0,y,-.32),(width*.48,.16,.28),m.black,.015)
 def cockpit(y=.22,w=.22):
  m.loft('Canopy armored rim',[(y-.5,w*.8,.34,.10),(y-.15,w*1.25,.39,.18),(y+.48,.035,.24,.035)],m.black)
  m.loft('Faceted smoked canopy',[(y-.44,w*.72,.44,.08),(y-.14,w*1.08,.49,.19),(y+.42,.026,.32,.025)],m.glass)

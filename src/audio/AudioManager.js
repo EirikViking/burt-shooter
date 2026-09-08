@@ -971,6 +971,8 @@ class AudioController {
   }
 
   playMusicContext(contextName, options = {}) {
+    // Late combat callbacks cannot reclaim audio after returning to a menu.
+    if (this.inMenu && !['menu', 'scoreboard'].includes(contextName)) return;
     if (!this.enabled || !this.musicEnabled) { this.currentContext=contextName; return; }
     if (contextName === 'menu' || contextName === 'scoreboard') {
       const alreadyAmbient = this.hangarAmbience?.active;
