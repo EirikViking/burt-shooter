@@ -1131,7 +1131,8 @@ export class Player {
     const nearMissActive = nearMissRemainingMs > 0 && (Number(this.nearMissVisualStreak) || 0) > 0;
     const invulnerabilityRemainingMs = Math.max(0, Math.round(Number(this.invulnerableTime) || 0));
     const invulnerabilityActive = Boolean(this.invulnerable && !this.isDodging && invulnerabilityRemainingMs > 0);
-    const contextual = this.focusDriftActive || this.isDodging || this.invulnerable || pulsing || nearMissActive;
+    const grazeApproaching = now < (this.grazeApproachUntil || 0);
+    const contextual = this.focusDriftActive || this.isDodging || this.invulnerable || pulsing || nearMissActive || grazeApproaching;
     if (!settingEnabled && !contextual) {
       this.hitboxReticle.visible = false;
       this.hitboxReticle.__debugNearMissStreak = { active: false, streak: 0, filledPips: 0, windowProgress: 0 };
@@ -2567,6 +2568,16 @@ export class Player {
       bullets.push(bonus);
     }
 
+    if (this.runAugmentModifiers?.phaseReload && this.phaseReactorVolleyUntil > this.getGameplayClockMs()) {
+      this.phaseReactorVolleyUntil = 0;
+      for (const bullet of bullets) {
+        bullet.damage *= 1.5;
+        bullet.isPhaseReactorVolley = true;
+        bullet.haloColor = 0xd86bff;
+        bullet.trailLength = Math.max(28, bullet.trailLength || 0);
+      }
+      this.pulseHitboxReticle('phase_reactor_volley', 350);
+    }
     return bullets;
   }
 
@@ -3928,7 +3939,10 @@ export class Player {
     this.dodgeCooldown = this.dodgeDelay;
     this.dodgeFlashMs = this.dodgeDurationMax;
     this.dodgeReadyFlashMs = 0;
-    if (this.runAugmentModifiers?.phaseReload) this.shootCooldown = 0;
+    if (this.runAugmentModifiers?.phaseReload) {
+      this.shootCooldown = 0;
+      this.phaseReactorVolleyUntil = this.getGameplayClockMs() + 1800;
+    }
     AudioManager.playSfx('ghost_phase_shift', { volume: 0.46, minIntervalMs: 160 });
     this.updateDodgeVisual(0);
     return true;
@@ -3943,11 +3957,15 @@ export class Player {
     this.clearDodgeVisual();
     if (!this.isGhostActive() && this.sprite) this.sprite.alpha = 1;
     if (reason === 'duration') this.resolveDodgeExitPulse(token);
-    else this.cancelDodgeExitPulse(reason);
+    else {
+      this.phaseReactorVolleyUntil = 0;
+      this.cancelDodgeExitPulse(reason);
+    }
     return true;
   }
 
   cancelDodgeExitPulse(reason = 'cancelled', { endDodge = false } = {}) {
+    this.phaseReactorVolleyUntil = 0;
     const token = this.pendingDodgeExitPulseToken;
     this.pendingDodgeExitPulseToken = 0;
     if (endDodge) {
@@ -4339,7 +4357,7 @@ export class Player {
             position.y,
             velocityX,
             velocityY,
-            Math.max(0.8, this.bulletDamage * 0.52),
+            Math.max(this.bulletDamage * 1.25, 2 + Math.max(0, Math.min(200, Number(this.game?.level) || 1) - 1) * 0.3),
             index % 2 === 0 ? 0xd86bff : 0x66ffff,
             true,
             { color: index % 2 === 0 ? 'Red' : 'Blue', index: index % 2 === 0 ? 15 : 8 }

@@ -660,8 +660,8 @@ function validateVisualScenario(scenario, failures) {
     width: bounds.width * scaleX,
     height: bounds.height * scaleY
   };
-  const maxWidth = Math.min(active.renderedViewport.width * 0.4416, 773 * scaleX);
-  const maxHeight = Math.min(active.renderedViewport.height * 0.3312, 331 * scaleY);
+  const maxWidth = Math.min(active.renderedViewport.width * 0.76, 1520 * scaleX);
+  const maxHeight = Math.min(active.renderedViewport.height * 0.4, 560 * scaleY);
   const reservedBounds = debug?.active?.reservedTransitionBounds || [];
   const overlapFindings = reservedBounds.filter((reserved) => (
     bounds.x < reserved.x + reserved.width + 15.5
@@ -712,10 +712,10 @@ function validateVisualScenario(scenario, failures) {
     || debug?.active?.generatedArtReady !== true
     || debug?.active?.visualLanguage !== 'cabinet_wonder_cosmic_cameo_authored_art'
     || debug?.active?.decorativeAccentAlpha > 0.1
-    || debug?.active?.presentationTarget?.widthRatio !== 0.4416
-    || debug?.active?.presentationTarget?.heightRatio !== 0.3312
-    || debug?.active?.presentationTarget?.maxWidth !== 773
-    || debug?.active?.presentationTarget?.maxHeight !== 331
+    || debug?.active?.presentationTarget?.widthRatio !== 0.76
+    || debug?.active?.presentationTarget?.heightRatio !== 0.4
+    || debug?.active?.presentationTarget?.maxWidth !== 1520
+    || debug?.active?.presentationTarget?.maxHeight !== 560
     || debug?.active?.presentationTarget?.centerYRatio !== 0.3
     || debug?.active?.presentationTarget?.uiGap !== 16
     || debug?.active?.presentationTarget?.playerLaneTopRatio !== 0.65
@@ -742,9 +742,9 @@ function validateVisualScenario(scenario, failures) {
     || active.eventMode !== 'none'
     || active.interactive
     || active.maskCount < 1
-    || (debug?.active?.generatedArtReady && !['normal', '0'].includes(active.generatedArtBlendMode))
+    || (debug?.active?.generatedArtReady && !['screen', '3'].includes(active.generatedArtBlendMode))
     || (scenario.reducedMotion && (active.scanVisible || !approximatelyEqual(active.scaleX, 1, 0.001)))
-    || (!scenario.reducedMotion && (!active.scanVisible || active.scaleX < 0.985 || active.scaleX > 1.001))
+    || (!scenario.reducedMotion && (active.scanVisible || active.scaleX < 0.985 || active.scaleX > 1.001))
   ) {
     failures.push(scenario.locale + ' render/layer mismatch: ' + JSON.stringify(active));
   }

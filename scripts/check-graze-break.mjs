@@ -145,7 +145,8 @@ try {
     for (let i = 0; i < 3; i += 1) {
       play.nearMissCooldownAt = 0;
       play.updateGrazeBreakFireIntent?.(true);
-      play.applyNearMiss(fakeBullet);
+      // Three distinct threats; a single projectile cannot award repeat grazes.
+      play.applyNearMiss({ ...fakeBullet });
       if (i < 2) await new Promise((resolve) => setTimeout(resolve, 80));
     }
 

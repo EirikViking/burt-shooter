@@ -237,10 +237,10 @@ const CABINET_WONDER_HOLD_MS = 1500;
 const CABINET_WONDER_FADE_OUT_MS = 300;
 const CABINET_WONDER_REDUCED_FADE_IN_MS = 100;
 const CABINET_WONDER_REDUCED_FADE_OUT_MS = 200;
-const CABINET_WONDER_WIDTH_RATIO = 0.4416;
-const CABINET_WONDER_HEIGHT_RATIO = 0.3312;
-const CABINET_WONDER_MAX_WIDTH = 773;
-const CABINET_WONDER_MAX_HEIGHT = 331;
+const CABINET_WONDER_WIDTH_RATIO = 0.76;
+const CABINET_WONDER_HEIGHT_RATIO = 0.4;
+const CABINET_WONDER_MAX_WIDTH = 1520;
+const CABINET_WONDER_MAX_HEIGHT = 560;
 const CABINET_WONDER_CENTER_Y_RATIO = 0.3;
 const CABINET_WONDER_UI_GAP = 16;
 const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0.65;
@@ -3191,7 +3191,7 @@ export class PlayScene {
       };
       generatedArt.scale.set(scale);
       generatedArt.alpha = 0.96;
-      generatedArt.blendMode = 'normal';
+      generatedArt.blendMode = 'screen';
       generatedArt.eventMode = 'none';
       generatedArtMask = new PIXI.Graphics();
       generatedArtMask.label = `cabinet_wonder_art_mask_${variant.id}`;
@@ -3876,7 +3876,7 @@ export class PlayScene {
 
   resolveCabinetWonderFrameLayout(viewportWidth, viewportHeight) {
     const frameWidth = Math.min(viewportWidth * CABINET_WONDER_WIDTH_RATIO, CABINET_WONDER_MAX_WIDTH);
-    const frameHeight = Math.min(viewportHeight * CABINET_WONDER_HEIGHT_RATIO, CABINET_WONDER_MAX_HEIGHT);
+    let frameHeight = Math.min(viewportHeight * CABINET_WONDER_HEIGHT_RATIO, CABINET_WONDER_MAX_HEIGHT);
     const frameCenterX = viewportWidth * 0.5;
     const frameLeft = frameCenterX - frameWidth * 0.5;
     const frameRight = frameCenterX + frameWidth * 0.5;
@@ -3899,8 +3899,9 @@ export class PlayScene {
     for (const bounds of overlappingReservations) {
       frameTop = Math.max(frameTop, bounds.y + bounds.height + CABINET_WONDER_UI_GAP);
     }
-    const maximumTop = viewportHeight * CABINET_WONDER_PLAYER_LANE_TOP_RATIO - frameHeight;
-    if (frameTop > maximumTop) {
+    // Use the largest safe footprint when a transition message needs room.
+    frameHeight = Math.min(frameHeight, viewportHeight * CABINET_WONDER_PLAYER_LANE_TOP_RATIO - frameTop);
+    if (frameHeight < Math.min(140, viewportHeight * 0.2)) {
       return {
         available: false,
         reason: 'no_overlap_lane_unavailable',
@@ -3938,121 +3939,34 @@ export class PlayScene {
       frameBounds,
       reservedBounds
     } = layout;
-    const chamfer = Math.max(8, Math.min(16, frameHeight * 0.075));
-    const framePoints = [
-      chamfer, 0,
-      frameWidth - chamfer, 0,
-      frameWidth, chamfer,
-      frameWidth, frameHeight - chamfer,
-      frameWidth - chamfer, frameHeight,
-      chamfer, frameHeight,
-      0, frameHeight - chamfer,
-      0, chamfer
-    ];
     const root = new PIXI.Container();
     root.label = `cabinet_wonder_cameo_${variant.id}`;
     root.zIndex = 200;
-    root.interactive = false;
-    root.interactiveChildren = false;
     root.eventMode = 'none';
+    root.interactiveChildren = false;
     root.pivot.set(frameWidth * 0.5, frameHeight * 0.5);
     root.position.set(frameCenterX, frameCenterY);
-
-    const glow = new PIXI.Graphics();
-    glow.poly(framePoints);
-    glow.stroke({ color: 0x65e8ff, width: Math.max(5, frameHeight * 0.04), alpha: 0.2 });
-    glow.filters = [new PIXI.BlurFilter({ strength: Math.max(6, Math.min(12, frameHeight * 0.05)) })];
-
-    const backplate = new PIXI.Graphics();
-    backplate.poly(framePoints);
-    backplate.fill({ color: 0x020814, alpha: 0.78 });
-
-    const contentMask = new PIXI.Graphics();
-    contentMask.label = `cabinet_wonder_cameo_mask_${variant.id}`;
-    contentMask.poly(framePoints);
-    contentMask.fill({ color: 0xffffff, alpha: 1 });
-
-    const maskedContent = new PIXI.Container();
-    maskedContent.label = `cabinet_wonder_cameo_content_${variant.id}`;
     const visual = this.createCabinetWonderVisual(variant, frameWidth, frameHeight, reducedMotion);
     if (!visual) return null;
-    const artStage = new PIXI.Graphics();
-    artStage.label = `cabinet_wonder_art_stage_${variant.id}`;
-    artStage.rect(0, 0, frameWidth, frameHeight);
-    artStage.fill({ color: 0x000000, alpha: 0.96 });
     visual.root.zIndex = 0;
-    maskedContent.addChild(artStage, visual.root);
-
-    const topVignette = new PIXI.Graphics();
-    topVignette.rect(0, 0, frameWidth, frameHeight * 0.16);
-    topVignette.fill({ color: 0x020814, alpha: 0.28 });
-    const bottomVignette = new PIXI.Graphics();
-    bottomVignette.rect(0, frameHeight * 0.72, frameWidth, frameHeight * 0.28);
-    bottomVignette.fill({ color: 0x020814, alpha: 0.52 });
-    maskedContent.addChild(topVignette, bottomVignette);
-
-    const scanWidth = Math.max(18, frameWidth * 0.065);
-    const scanSweep = new PIXI.Graphics();
-    scanSweep.label = `cabinet_wonder_cameo_scan_${variant.id}`;
-    scanSweep.rect(0, 0, scanWidth, frameHeight);
-    scanSweep.fill({ color: 0xffffff, alpha: 0.08 });
-    scanSweep.filters = [new PIXI.BlurFilter({ strength: Math.max(3, Math.min(7, frameHeight * 0.025)) })];
-    scanSweep.x = -scanWidth;
-    scanSweep.visible = !reducedMotion;
-    maskedContent.addChild(scanSweep);
-    maskedContent.mask = contentMask;
-
-    const captionBandHeight = Math.max(22, Math.min(32, frameHeight * CABINET_WONDER_CAPTION_BAND_RATIO));
-    const captionBand = new PIXI.Graphics();
-    captionBand.rect(0, frameHeight - captionBandHeight, frameWidth, captionBandHeight);
-    captionBand.fill({ color: 0x020711, alpha: 0.82 });
+    // Luminous art blends into cabinet space; no opaque plate, scanner or border.
+    const atmosphere = new PIXI.Graphics();
+    const palette = variant.palette || [0x7df9ff];
+    for (let i=3;i>0;i--) atmosphere.ellipse(frameWidth*.5,frameHeight*.46,frameWidth*(.22+i*.065),frameHeight*(.20+i*.06)).fill({color:palette[0],alpha:.014});
+    atmosphere.blendMode = 'screen';
     const captionLabel = `${translateText('Cabinet Wonder')}  //  ${translateText('Observed Phenomenon')}`;
     const caption = createText(captionLabel, {
-      fontFamily: FONT_DISPLAY,
-      fontSize: Math.max(10, Math.min(14, frameHeight * 0.065)),
-      fontWeight: '700',
-      fill: '#d8fbff',
-      stroke: '#020711',
-      strokeThickness: 2,
-      letterSpacing: 1,
-      align: 'center',
-      uiScaleMode: 'none'
+      fontFamily: FONT_DISPLAY, fontSize: Math.max(10,Math.min(15,frameHeight*.05)),
+      fontWeight:'700', fill:'#d8fbff', stroke:'#020711', strokeThickness:3,
+      letterSpacing:1, align:'center', uiScaleMode:'none'
     });
-    caption.anchor.set(0.5);
-    caption.position.set(frameWidth * 0.5, frameHeight - captionBandHeight * 0.5);
-    const captionMaxWidth = Math.max(1, frameWidth - 32);
-    if (caption.width > captionMaxWidth) caption.scale.set(captionMaxWidth / caption.width);
-
-    const frame = new PIXI.Graphics();
-    frame.poly(framePoints);
-    frame.stroke({ color: 0x65e8ff, width: 1.6, alpha: 0.78 });
-    const cornerAccents = new PIXI.Graphics();
-    const accentLength = Math.max(16, frameWidth * 0.075);
-    cornerAccents.moveTo(chamfer, 1);
-    cornerAccents.lineTo(chamfer + accentLength, 1);
-    cornerAccents.moveTo(frameWidth - chamfer - accentLength, frameHeight - 1);
-    cornerAccents.lineTo(frameWidth - chamfer, frameHeight - 1);
-    cornerAccents.stroke({ color: 0xff4fd8, width: 2.2, alpha: 0.82 });
-    cornerAccents.moveTo(frameWidth - chamfer - accentLength, 1);
-    cornerAccents.lineTo(frameWidth - chamfer, 1);
-    cornerAccents.moveTo(chamfer, frameHeight - 1);
-    cornerAccents.lineTo(chamfer + accentLength, frameHeight - 1);
-    cornerAccents.stroke({ color: 0xffd166, width: 2.2, alpha: 0.82 });
-
-    root.addChild(glow, backplate, maskedContent, contentMask, captionBand, caption, frame, cornerAccents);
-    root.alpha = 0;
-    root.scale.set(reducedMotion ? 1 : 0.985);
-    return {
-      ...visual,
-      root,
-      scanSweep,
-      scanWidth,
-      frameBounds,
-      frameWidth,
-      frameHeight,
-      reservedBounds,
-      captionLabel
-    };
+    caption.anchor.set(.5);
+    caption.position.set(frameWidth*.5,frameHeight-14);
+    if(caption.width>frameWidth-32)caption.scale.set((frameWidth-32)/caption.width);
+    root.addChild(atmosphere,visual.root,caption);
+    root.alpha=0;
+    root.scale.set(reducedMotion?1:.985);
+    return {...visual,root,scanSweep:null,scanWidth:0,frameBounds,frameWidth,frameHeight,reservedBounds,captionLabel};
   }
 
   showCabinetWonder(decision = {}) {
@@ -8650,7 +8564,9 @@ export class PlayScene {
         const dx = bullet.x - this.player.x;
         const dy = bullet.y - this.player.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const nearThreshold = (this.player.radius || 12) + (bullet.radius || 6) + 12;
+        const protectedFlight = Boolean(this.player.invulnerable || this.player.isDodging || this.player.isGhostActive?.());
+        const nearThreshold = (this.player.radius || 12) + (bullet.radius || 6) + (protectedFlight ? 12 : 22);
+        if (!protectedFlight && dist < nearThreshold + 18) this.player.grazeApproachUntil = Date.now() + 180;
         if (this.checkCollision(bullet, this.player)) {
           collisionStats.enemyBulletPlayerHits += 1;
           // Feature: Ghost Ship prevents hit
@@ -21863,7 +21779,7 @@ export class PlayScene {
     if (streak < 5 || streak % 5 !== 0 || !this.player) return false;
 
     const now = Date.now();
-    if (this.lastNearMissSurge?.streak === streak && now - (this.lastNearMissSurge.startedAt || 0) < 900) {
+    if (this.lastNearMissSurge && now - (this.lastNearMissSurge.startedAt || 0) < 450) {
       return false;
     }
 
@@ -22799,8 +22715,15 @@ export class PlayScene {
       return false;
     }
     const now = Date.now();
-    if (now < this.nearMissCooldownAt) return false;
-    this.nearMissCooldownAt = now + 450;
+    if (bullet?.nearMissRewarded) return false;
+    // Each distinct vulnerable near-miss counts. Invulnerability and ship grazes
+    // retain the shared limiter, so Phase is not the best way to farm a break.
+    const limited = source !== 'bullet' || this.player.invulnerable || this.player.isDodging || this.player.isGhostActive?.();
+    if (limited && now < this.nearMissCooldownAt) return false;
+    if (limited) this.nearMissCooldownAt = now + 450;
+    if (bullet) bullet.nearMissRewarded = true;
+    const showFeedback = now >= (this.nearMissFeedbackAt || 0);
+    if (showFeedback) this.nearMissFeedbackAt = now + 100;
     if (now - this.lastNearMissAt > 2200) {
       this.dangerDodgeCount = 0;
     }
@@ -22846,14 +22769,14 @@ export class PlayScene {
       AudioManager.playSfx('tactical_graze_plating', { force: true, volume: 0.76, minIntervalMs: 500 });
     }
     const nearMissLabel = translateText(labelKey);
-    if (this.particleManager) {
+    if (showFeedback && this.particleManager) {
       if (typeof this.particleManager.createNearMissEffect === 'function') {
         this.particleManager.createNearMissEffect(this.player.x, this.player.y, this.dangerDodgeCount);
       } else {
         this.particleManager.createHitSpark(this.player.x, this.player.y);
       }
     }
-    if (this.scorePopupManager && this.player) {
+    if (showFeedback && this.scorePopupManager && this.player) {
       const nearMissPopupLift = this.dangerDodgeCount >= 3 ? 62 : 42;
       this.scorePopupManager.addScorePopup(this.player.x, this.player.y - nearMissPopupLift, appliedScore, {
         comboEligible: false,
@@ -22865,7 +22788,7 @@ export class PlayScene {
       });
     }
     if (this.dangerDodgeCount >= 3) {
-      AudioManager.playSfx('combo_tick', { volume: 0.56 });
+      if (showFeedback) AudioManager.playSfx('combo_tick', { volume: 0.56, minIntervalMs: 100 });
       this.armGrazeBreak();
       this.triggerCabinetLog('near-miss-streak', {
         streak: this.dangerDodgeCount,

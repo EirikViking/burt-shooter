@@ -57,7 +57,7 @@ const CORE_HELP_ROWS = Object.freeze([
     icon: 'SKIM',
     label: 'GRAZE',
     control: 'PASS CLOSE TO ENEMY SHOTS',
-    tip: 'Skim enemy bullets without getting hit to earn NEAR MISS score popups and build your graze streak.',
+    tip: 'Graze distinct bullets while vulnerable to build your streak. Phase and other invulnerability limit graze counting. Three grazes arm Graze Break.',
     accent: 0x66ff9d
   },
   {

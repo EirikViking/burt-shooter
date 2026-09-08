@@ -1,3 +1,4 @@
+import { getActivePilotingText } from '../activePilotingText.js';
 import { getLaunchHomeSourceText } from '../launchHomeText.js';
 import { getShipTraitSummarySourceText } from "../shipTraitSummaryText.js";
 import { getBonusCoreSourceText } from '../bonusCoreText.js';
@@ -26,6 +27,6 @@ export const en = {
   diagnostics: {
     interfaceLanguage: 'Interface language'
   },
-  sourceText: Object.freeze({ ...getLaunchHomeSourceText('en'), ...getShipTraitSummarySourceText("en"), ...getBonusCoreSourceText('en'), ...getCoreSerpentSourceText('en'), ...getAstraPresentationSourceText('en'),}),
+  sourceText: Object.freeze({ ...getActivePilotingText('en'), ...getLaunchHomeSourceText('en'), ...getShipTraitSummarySourceText("en"), ...getBonusCoreSourceText('en'), ...getCoreSerpentSourceText('en'), ...getAstraPresentationSourceText('en'),}),
   patterns: Object.freeze([])
 };

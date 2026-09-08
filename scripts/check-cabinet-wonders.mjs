@@ -99,8 +99,8 @@ assert.match(
 );
 assert.match(
   playSceneSource,
-  /const CABINET_WONDER_WIDTH_RATIO = 0\.4416;[\s\S]{0,180}const CABINET_WONDER_HEIGHT_RATIO = 0\.3312;[\s\S]{0,180}const CABINET_WONDER_MAX_WIDTH = 773;[\s\S]{0,180}const CABINET_WONDER_MAX_HEIGHT = 331;/,
-  'Cabinet Wonders must use the user-approved additional 15% enlargement: 44.16% by 33.12%, capped at 773 by 331'
+  /const CABINET_WONDER_WIDTH_RATIO = 0\.76;[\s\S]{0,180}const CABINET_WONDER_HEIGHT_RATIO = 0\.4;[\s\S]{0,180}const CABINET_WONDER_MAX_WIDTH = 1520;[\s\S]{0,180}const CABINET_WONDER_MAX_HEIGHT = 560;/,
+  'Cabinet Wonders must use the approved panoramic footprint: 76% by 40%, capped at 1520 by 560'
 );
 assert.match(playSceneSource, /const CABINET_WONDER_CENTER_Y_RATIO = 0\.3;[\s\S]{0,180}const CABINET_WONDER_UI_GAP = 16;[\s\S]{0,180}const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0\.65;/, 'the enlarged Wonder must move down while reserving a measured no-overlap UI gap and the lower 35% player lane');
 assert.match(playSceneSource, /const CABINET_WONDER_HOLD_MS = 1500;/, 'Cabinet Wonders must remain fully readable for the user-approved 1.5-second hold');
@@ -109,12 +109,12 @@ assert.match(
   /const startDelayMs = reducedMotion \? 0 : CABINET_WONDER_START_DELAY_MS;[\s\S]{0,360}const durationMs = startDelayMs \+ fadeInMs \+ holdMs \+ fadeOutMs;/,
   'Cabinet Wonders must fit their complete reveal/hold/fade timeline inside ordinary transition downtime'
 );
-assert.match(playSceneSource, /generatedArt\.blendMode = 'normal';/, 'generated Wonder art must preserve its authored color instead of additive washing');
+assert.match(playSceneSource, /generatedArt\.blendMode = 'screen';/, 'luminous Wonder art must blend into space without a black image rectangle');
 assert.match(playSceneSource, /const artSafeBounds = \{[\s\S]{0,420}height: Math\.max\(1, height - captionBandHeight - insetTop - insetBottom\)/, 'every authored Wonder needs a caption-safe art well');
 assert.match(playSceneSource, /const scale = Math\.min\(\s*artSafeBounds\.width \/ sourceWidth,\s*artSafeBounds\.height \/ sourceHeight\s*\);/, 'every authored Wonder must use full-image contain scaling');
 assert.match(playSceneSource, /generatedArt\.__novaArtFitMode = 'contain';/, 'Wonder debug geometry must report universal contain fitting');
 assert.doesNotMatch(playSceneSource, /Math\.max\(targetWidth \/ sourceWidth, targetHeight \/ sourceHeight\)/, 'Cabinet Wonder art must never return to crop-prone cover scaling');
-assert.match(playSceneSource, /cabinet_wonder_art_stage_[\s\S]{0,220}fill\(\{ color: 0x000000, alpha: 0\.96 \}\)[\s\S]{0,180}maskedContent\.addChild\(artStage, visual\.root\)/, 'safe-contained artwork needs one continuous black inner stage without pasted-image edges');
+assert.doesNotMatch(playSceneSource, /cabinet_wonder_art_stage_/, 'phenomena must not be framed as opaque cards');
 assert.match(playSceneSource, /captionLabel = `\$\{translateText\('Cabinet Wonder'\)\}[\s\S]{0,80}\$\{translateText\('Observed Phenomenon'\)\}`;/, 'the compact cameo needs its localized generic caption');
 assert.match(playSceneSource, /decorativeAccentAlpha = 0\.1;/, 'authored-art decorative accents must stay restrained');
 assert.match(playSceneSource, /prewarmCabinetWonderForTransition\(context = \{\}\)[\s\S]{0,1400}prewarmCabinetWonderVariant\(decision\.variant\.id, 'active_wave_prediction'\)/, 'the deterministic authored Wonder image must warm during the active wave');
