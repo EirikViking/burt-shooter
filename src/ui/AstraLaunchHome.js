@@ -117,7 +117,7 @@ export class AstraLaunchHome extends Container {
     if(primary){
       for(let i=0;i<3;i++){
         const a=(reduced?0:time*.22)+i*Math.PI*2/3;
-        g.arc(x,y,r+4,a,a+1.25).stroke({color:i===0?0xffd29b:colour,width:2,alpha:.75});
+        g.moveTo(x+(r+4)*Math.cos(a),y+(r+4)*Math.sin(a)).arc(x,y,r+4,a,a+1.25).stroke({color:i===0?0xffd29b:colour,width:2,alpha:.75});
       }
       g.poly([x-r*.24,y-r*.48,x+r*.45,y,x-r*.24,y+r*.48,x-r*.08,y,x-r*.24,y-r*.48]).fill({color:0xe3fff6,alpha:.95});
       for(let i=0;i<3;i++){
@@ -128,7 +128,7 @@ export class AstraLaunchHome extends Container {
       const points=[[-.48,.3],[0,-.4],[.48,.3]];
       g.moveTo(x-r*.48,y+r*.3).lineTo(x,y-r*.4).lineTo(x+r*.48,y+r*.3).closePath().stroke({color:colour,width:1,alpha:.55});
       points.forEach(([px,py],i)=>{const nx=x+px*r,ny=y+py*r;g.circle(nx,ny,3.2).fill({color:i===1?0xffd39b:colour,alpha:reduced?.85:.6+.3*Math.sin(time*1.6+i)**2});});
-      g.arc(x,y,r+3,-.6,1.8).stroke({color:0xa497ff,width:2,alpha:pulse});
+      g.moveTo(x+(r+3)*Math.cos(-.6),y+(r+3)*Math.sin(-.6)).arc(x,y,r+3,-.6,1.8).stroke({color:0xa497ff,width:2,alpha:pulse});
     }
     const length=w-42,travel=reduced?.38:(time*.12)%1,beam=20+travel*(length-42);
     g.moveTo(beam,h-2).lineTo(beam+32,h-2).stroke({color:primary?0xffd09a:colour,width:2,alpha:pulse});
