@@ -23,3 +23,19 @@ Focused source check: animated clock, modes/Codex/settings returns, modal input,
 Initial broad i18n UI run timed out entering gameplay while source files were being finalized and the public asset snapshot was being prepared; preserve this failure, then record the final frozen-build run separately. Build/package/delivery status is appended after verification. No human claim of improved sales or first-launch delight; visual quality remains a player judgment. Prior performance observation and gameplay test limitations in the handoff remain unresolved and unchanged.
 
 Steamworks settings and public deployment are outside this visual change. Source rollback is a revert of this pass's runtime commit from a verified clean checkout; it does not change a Steam branch assignment.
+
+## Final candidate verification
+
+Runtime commit: `7ab0116`. `check:i18n`, `build:current`, `check:i18n-ui` (all eight languages, 80 screenshots), `check:controller-flow`, `check:release-line`, `check:steam-electron-bridge`, Steam native staging and package-runtime verification passed. The final frozen production i18n run had zero page errors, placeholder hits or English-leak hits; it supersedes the earlier timed-out source run without erasing that evidence.
+
+The isolated packaged native check verified the artwork SHA256, first launch, modes/Codex/settings mouse and Escape returns, exactly one owned horizon after re-entry and no page errors. Five-second frame sample: 300 frames, median 16.7 ms, p95 16.9 ms. This is a short menu observation, not a broad performance guarantee. Inspected the packaged screenshot. Fresh test profile was isolated and the executable closed after QA.
+
+Executable: `test-results/astra-build-2026-09-08T10-05-32-078Z/win-unpacked/Nova Swarm.exe`. Preserved previous package. Source rollback: `git revert 7ab0116` after ownership/status checks. New artwork SHA256: `5291e0d0fe22af1ffb306d1524aa4fc2312a9bbcce535961872af54b523e6db4`.
+
+Files: `src/scenes/MenuScene.js`, `src/ui/AstraLaunchHome.js`, new `src/ui/AstraHorizon.js`, new versioned backdrop and this delivery documentation. No newly untranslated strings; all existing localized strings reused. No Steamworks setting changes, public release or announcement.
+
+## Steam delivery
+
+Server verified 2026-09-08 10:30:47 UTC: **sector-continue-test Build 25184837**, depot 4765071 manifest **4905702832297288373**. Public remains 25169120; test-build remains 23782673; Cloud settings unchanged. Payload: 410 regular files, 1,687,919,305 bytes. ASAR SHA256: `0029e9bfe722460e8712d55042aaf36ebd87482338233bfbfca82644b8fda71c`. Complete receipt: `docs/menu-horizon-steam-delivery-20260908.json`; hashes/VDF/Steam logs: `test-results/menu-horizon-steam-7ab0116/`.
+
+The prior testing build is 25183937. A Steam rollback is a separate explicitly authorized action; the source revert does not perform it. Temporary source/preview servers and isolated native QA were closed. Animated preview: `test-results/menu-wow/menu-preview.webm`; native screenshot: `test-results/menu-wow/native/menu.png`.
