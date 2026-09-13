@@ -16,8 +16,8 @@ globalThis.Audio ??= class {
 };
 
 const HISTORICAL_INTENDED = {
-  source: 'arcade revamp guard: prevent accidental one-wave boss rush, not old duration lock',
-  minWavesBeforeBoss: 6,
+  source: 'pacing guard: five focused waves, still preventing accidental one-wave boss rush',
+  minWavesBeforeBoss: 5,
   maxPlannedWavesBeforeBoss: 10
 };
 
@@ -111,14 +111,14 @@ assert(diff.wavesPerBossBase === HISTORICAL_INTENDED.minWavesBeforeBoss,
 assert(diff.wavesPerBossMax >= HISTORICAL_INTENDED.minWavesBeforeBoss && diff.wavesPerBossMax <= HISTORICAL_INTENDED.maxPlannedWavesBeforeBoss,
   `wavesPerBossMax should stay within the arcade tuning range ${HISTORICAL_INTENDED.minWavesBeforeBoss}-${HISTORICAL_INTENDED.maxPlannedWavesBeforeBoss}, got ${diff.wavesPerBossMax}.`,
   errors);
-assert(firstTen.every((entry) => entry.waveCount >= 6 && entry.waveCount <= HISTORICAL_INTENDED.maxPlannedWavesBeforeBoss),
-  `Levels 1-10 should generate at least six normal waves without runaway sector length, got ${firstTen.map((entry) => `${entry.level}:${entry.waveCount}`).join(', ')}.`,
+assert(firstTen.every((entry) => entry.waveCount >= HISTORICAL_INTENDED.minWavesBeforeBoss && entry.waveCount <= HISTORICAL_INTENDED.maxPlannedWavesBeforeBoss),
+  `Levels 1-10 should generate at least five normal waves without runaway sector length, got ${firstTen.map((entry) => `${entry.level}:${entry.waveCount}`).join(', ')}.`,
   errors);
 assert(!wavePlan.some((entry) => entry.waveCount <= 1),
   `Normal generation must never create a 1-wave boss gate: ${wavePlan.filter((entry) => entry.waveCount <= 1).map((entry) => entry.level).join(', ')}`,
   errors);
-assert(Array.isArray(diff.earlyWaveEnemyCounts?.[1]) && diff.earlyWaveEnemyCounts[1].length >= 6,
-  'Level 1 curated early counts must include at least six normal waves.',
+assert(Array.isArray(diff.earlyWaveEnemyCounts?.[1]) && diff.earlyWaveEnemyCounts[1].length >= HISTORICAL_INTENDED.minWavesBeforeBoss,
+  'Level 1 curated early counts must include enough entries for the current normal-wave minimum.',
   errors);
 
 const afterFirstWave = makeManager(EnemyManager, {
@@ -137,7 +137,7 @@ const afterSixWaves = makeManager(EnemyManager, {
   elapsedMs: 20000
 });
 EnemyManager.prototype.onWaveCleared.call(afterSixWaves);
-assert(afterSixWaves.state === 'BOSS_GATE', `After six real waves, boss gate should open without a hard seconds rule, got ${afterSixWaves.state}.`, errors);
+assert(afterSixWaves.state === 'BOSS_GATE', `After five real waves, boss gate should open without a hard seconds rule, got ${afterSixWaves.state}.`, errors);
 
 const estimatedSeconds = Number((
   HISTORICAL_INTENDED.minWavesBeforeBoss * (diff.estimatedWaveSeconds ?? 11.5) +
@@ -145,7 +145,7 @@ const estimatedSeconds = Number((
   ((diff.bossGateMs ?? 0) / 1000)
 ).toFixed(1));
 assert(estimatedSeconds >= 45 && estimatedSeconds <= 180,
-  `Six-wave sector setup should remain tunable for arcade pacing without collapsing or stalling, got ${estimatedSeconds}s.`,
+  `Five-wave sector setup should remain tunable for arcade pacing without collapsing or stalling, got ${estimatedSeconds}s.`,
   errors);
 
 const configSource = readFileSync(path.resolve('src/config/BalanceConfig.js'), 'utf8');
@@ -154,11 +154,11 @@ assert(!/(MIN_WAVES_BETWEEN_BOSSES|wavesPerBossBase|waveCountBase)\s*:\s*1\b/.te
   errors);
 
 const playSceneSource = readFileSync(path.resolve('src/scenes/PlayScene.js'), 'utf8');
-assert(/if \(debugToken === 'NOVA_DEBUG_2026'\) \{[\s\S]*this\.debugStartAtBoss = startAtBoss;/.test(playSceneSource),
-  'startAtBoss must stay behind the explicit debugBossToken gate.',
+assert(/if \(this\.canUseMaintainerDevtools\(\) && debugToken === 'NOVA_DEBUG_2026'\) \{[\s\S]*this\.debugStartAtBoss = startAtBoss;/.test(playSceneSource),
+  'startAtBoss must stay behind the maintainer devtools and debugBossToken gates.',
   errors);
-assert(/if \(startAtBoss\) \{\s*this\.enemyManager\.forceBossStart\(this\.game\.level\);/.test(playSceneSource),
-  'The only direct boss-start route should call forceBossStart from the explicit debug startAtBoss branch.',
+assert(/scheduleEnemyStartForLevel\(level,[\s\S]*if \(startAtBoss\) \{\s*this\.enemyManager\.forceBossStart\(targetLevel\);/.test(playSceneSource),
+  'The only direct boss-start route should call forceBossStart from the explicit debug startAtBoss branch after the sector-entry gate.',
   errors);
 
 const report = {
@@ -201,6 +201,6 @@ if (errors.length) {
 }
 
 console.log(
-  `[wave-pacing] PASS restored=${HISTORICAL_INTENDED.minWavesBeforeBoss}waves estimate=${estimatedSeconds}s ` +
+  `[wave-pacing] PASS target=${HISTORICAL_INTENDED.minWavesBeforeBoss}waves estimate=${estimatedSeconds}s ` +
   `level1=${wavePlan[0].waveCount} noOneWave=true report=${path.join(outputDir, 'report.json')}`
 );

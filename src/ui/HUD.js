@@ -1,4 +1,6 @@
 import * as PIXI from 'pixi.js';
+import { getReducedMotionEnabled } from '../config/AccessibilitySettings.js';
+import { usesOpeningCombatReadability } from '../config/OpeningCombatReadability.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 
 import { GameAssets } from '../utils/GameAssets.js';
@@ -6,9 +8,23 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
+import {
+  getActiveTacticalFusionProtocols,
+  getTacticalDraftDisplayMeta,
+  getTacticalDraftMeta
+} from '../config/TacticalDraft.js';
+import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
+import { presentAuthoredSignal, hideMicroSignals } from '../effects/MicroSignalVfx.js';
+import {
+  NOVA_COMMAND_HUD_TOKENS,
+  createNovaCommandFrame
+} from './NovaCommandHud.js';
+import { getShipMetadata, getShipUnlockProgress } from '../config/ShipMetadata.js';
+import { getShipMasteryView } from '../progression/ShipMastery.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
+const FIRST_RUN_HUD_RESTORE_DURATION_MS = 160;
 
 function normalizeFontFamily(fontFamily) {
   const family = String(fontFamily || '').trim();
@@ -39,25 +55,60 @@ export class HUD {
   constructor(container, game) {
     this.container = container;
     this.game = game;
+    const selectedShip = getShipMetadata(game?.selectedShipSpriteKey);
+    const shipProgress = getShipUnlockProgress();
+    this.shipMasteryView = getShipMasteryView(shipProgress?.shipSpecificMilestones?.[selectedShip?.id], selectedShip);
     this.hudContainer = new PIXI.Container();
     this.layoutUnsubscribe = null;
     this.container.addChild(this.hudContainer);
     this.leftPanel = new PIXI.Graphics();
     this.rightPanel = new PIXI.Graphics();
-    this.missionPanel = new PIXI.Graphics();
+    this.missionPanel = new PIXI.Container();
+    this.missionPanel.label = 'novaCommandMissionStatusFrame';
+    this.missionFrameGeometry = null;
+    this.missionFrameRenderKey = '';
+    this.missionFrameArt = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.missionFrameArt.anchor.set(0.5);
+    this.missionFrameArt.eventMode = 'none';
+    this.missionFrameArt.blendMode = 'normal';
+    this.missionFrameArt.label = 'missionAuthoredCommandSpine';
+    this.missionFrameArt.visible = false;
     this.missionLabel = null;
     this.missionText = null;
+    this.missionProgressBg = new PIXI.Graphics();
+    this.missionProgressFill = new PIXI.Graphics();
+    this.missionProgressActive = new PIXI.Graphics();
+    this.missionProgressTicks = new PIXI.Graphics();
+    this.directiveProgressBg = new PIXI.Graphics();
+    this.directiveProgressFill = new PIXI.Graphics();
+    this.directiveText = null;
     this.activePowerupRows = [];
+    this.tacticalAugmentItems = [];
+    this.highscoreChaseRenderKey = '';
+    this.highscoreChaseDisplayKey = '';
+    this.highscoreChaseDisplayScore = 0;
+    this.globalRivalFlash = null;
+    this.globalRivalFlashUntil = 0;
+    this.notificationFocus = 'none';
+    this.missionPriorityState = {};
+    this.firstRunOpeningDisclosure = null;
 
     // Rank Elements
     this.rankGroup = new PIXI.Container();
+    this.rankBadgeBg = new PIXI.Graphics();
+    this.rankTextBg = new PIXI.Graphics();
     this.rankIcon = new PIXI.Sprite();
     this.rankBarBg = new PIXI.Graphics();
     this.rankBarFill = new PIXI.Graphics();
+    this.rankBarGlow = new PIXI.Graphics();
+    this.rankBarTicks = new PIXI.Graphics();
     this.rankText = createText('', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 10,
-      fill: '#ffff00'
+      fontSize: 13,
+      fontWeight: '900',
+      fill: '#fff8ba',
+      stroke: '#020711',
+      strokeThickness: 4
     });
 
     this.createHUD();
@@ -68,11 +119,22 @@ export class HUD {
   createHUD() {
     this.hudContainer.addChild(this.leftPanel);
     this.hudContainer.addChild(this.rightPanel);
+    this.hudContainer.addChild(this.missionFrameArt);
     this.hudContainer.addChild(this.missionPanel);
-
+    this.hudContainer.addChild(this.missionProgressBg);
+    this.hudContainer.addChild(this.missionProgressFill);
+    this.hudContainer.addChild(this.missionProgressActive);
+    this.hudContainer.addChild(this.missionProgressTicks);
+    this.hudContainer.addChild(this.directiveProgressBg);
+    this.hudContainer.addChild(this.directiveProgressFill);
     // Rank Group
+    this.rankIcon.anchor.set(0.5);
+    this.rankGroup.addChild(this.rankBadgeBg);
+    this.rankGroup.addChild(this.rankTextBg);
     this.rankGroup.addChild(this.rankBarBg);
     this.rankGroup.addChild(this.rankBarFill);
+    this.rankGroup.addChild(this.rankBarGlow);
+    this.rankGroup.addChild(this.rankBarTicks);
     this.rankGroup.addChild(this.rankIcon);
     this.rankGroup.addChild(this.rankText);
     this.hudContainer.addChild(this.rankGroup);
@@ -97,6 +159,65 @@ export class HUD {
     this.scoreMultiplierText.visible = false;
     this.hudContainer.addChild(this.scoreMultiplierText);
 
+    this.comboMeterGroup = new PIXI.Container();
+    this.comboMeterBg = new PIXI.Graphics();
+    this.comboMeterFill = new PIXI.Graphics();
+    this.comboMeterTicks = new PIXI.Graphics();
+    this.comboMeterText = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#00111d',
+      strokeThickness: 2
+    });
+    this.comboMeterGroup.addChild(this.comboMeterBg);
+    this.comboMeterGroup.addChild(this.comboMeterFill);
+    this.comboMeterGroup.addChild(this.comboMeterTicks);
+    this.comboMeterGroup.addChild(this.comboMeterText);
+    GameAssets.ensureMicroSignalTextures?.().catch(() => {});
+    this.comboMeterGroup.visible = false;
+    this.hudContainer.addChild(this.comboMeterGroup);
+
+    this.highscoreChaseGroup = new PIXI.Container();
+    this.highscoreChaseBg = new PIXI.Graphics();
+    this.highscoreChaseBarBg = new PIXI.Graphics();
+    this.highscoreChaseBarFill = new PIXI.Graphics();
+    this.highscoreChaseTicks = new PIXI.Graphics();
+    this.highscoreChaseTitle = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      stroke: '#00111d',
+      strokeThickness: 3
+    });
+    this.highscoreChaseTarget = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 12,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#00111d',
+      strokeThickness: 3
+    });
+    this.highscoreChaseTarget.anchor.set(1, 0);
+    this.highscoreChaseGap = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#ff55d9',
+      stroke: '#00111d',
+      strokeThickness: 3
+    });
+    this.highscoreChaseGroup.addChild(this.highscoreChaseBg);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseTitle);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseTarget);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseGap);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseBarBg);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseBarFill);
+    this.highscoreChaseGroup.addChild(this.highscoreChaseTicks);
+    this.hudContainer.addChild(this.highscoreChaseGroup);
+
     // Level
     this.levelText = createText('LEVEL: 1', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -110,8 +231,16 @@ export class HUD {
 
     // Lives group
     this.livesGroup = new PIXI.Container();
+    this.livesArt = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.livesArt.label = 'authoredLivesCommandCapsule';
+    this.livesArt.eventMode = 'none';
     this.livesBg = new PIXI.Graphics();
+    this.livesGroup.addChild(this.livesArt);
     this.livesGroup.addChild(this.livesBg);
+    this.livesShip = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.livesShip.anchor.set(.5);
+    this.livesShip.label = "currentShipLivesPortrait";
+    this.livesGroup.addChild(this.livesShip);
     this.livesIcon = createText('\u2665', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 20,
@@ -127,6 +256,18 @@ export class HUD {
       strokeThickness: 3
     });
     this.livesGroup.addChild(this.livesText);
+    this.shipMasteryMedals = new PIXI.Graphics();
+    this.shipMasteryMedals.label = 'cockpitShipMasteryMedals';
+    this.shipMasteryText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 9,
+      fontWeight: '900',
+      fill: '#d8fbff',
+      stroke: '#000000',
+      strokeThickness: 2
+    });
+    this.livesGroup.addChild(this.shipMasteryMedals);
+    this.livesGroup.addChild(this.shipMasteryText);
     this.hudContainer.addChild(this.livesGroup);
 
     // Active powerup indicator
@@ -169,7 +310,27 @@ export class HUD {
     this.activePowerupGroup.visible = false;
     this.hudContainer.addChild(this.activePowerupGroup);
 
+    this.tacticalAugmentGroup = new PIXI.Container();
+    this.tacticalAugmentBackdrop = new PIXI.Graphics();
+    this.tacticalDoctrineTitle = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 11,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      stroke: '#00111d',
+      strokeThickness: 2
+    });
+    this.tacticalAugmentList = new PIXI.Container();
+    this.tacticalAugmentGroup.addChild(this.tacticalAugmentBackdrop);
+    this.tacticalAugmentGroup.addChild(this.tacticalDoctrineTitle);
+    this.tacticalAugmentGroup.addChild(this.tacticalAugmentList);
+    this.tacticalAugmentGroup.visible = false;
+    this.hudContainer.addChild(this.tacticalAugmentGroup);
+
     this.traitGroup = new PIXI.Container();
+    this.traitArt = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.traitArt.label = 'authoredTraitCommandCapsule';
+    this.traitArt.eventMode = 'none';
     this.traitBg = new PIXI.Graphics();
     this.traitBarBg = new PIXI.Graphics();
     this.traitBarFill = new PIXI.Graphics();
@@ -188,6 +349,7 @@ export class HUD {
       stroke: '#000000',
       strokeThickness: 3
     });
+    this.traitGroup.addChild(this.traitArt);
     this.traitGroup.addChild(this.traitBg);
     this.traitGroup.addChild(this.traitLabel);
     this.traitGroup.addChild(this.traitText);
@@ -196,7 +358,7 @@ export class HUD {
     this.traitGroup.visible = false;
     this.hudContainer.addChild(this.traitGroup);
 
-    this.missionLabel = createText('MISSION STATUS', {
+    this.missionLabel = createText(translateText('MISSION STATUS'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 10,
       fontWeight: 'bold',
@@ -218,22 +380,75 @@ export class HUD {
     this.missionText.anchor.set(0.5);
     this.hudContainer.addChild(this.missionText);
 
+    this.directiveText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      stroke: '#00111d',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    this.directiveText.anchor.set(0.5);
+    this.directiveText.visible = false;
+    this.hudContainer.addChild(this.directiveText);
+
     // Current sector label.
+    this.sectorPlate = new PIXI.Graphics();
+    this.sectorPlate.label = 'ui_currentSectorPlate';
+    this.hudContainer.addChild(this.sectorPlate);
+    this.locationArt = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.locationArt.anchor.set(0.5);
+    this.locationArt.label = 'authoredSectorCommandCapsule';
+    this.locationArt.eventMode = 'none';
+    this.hudContainer.addChild(this.locationArt);
     this.locationText = createText(formatSectorLabel(this.game.level || 1, {
       sectorWord: translateText('SECTOR'),
       compact: true
     }), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 12,
-      fill: '#9eb7c0'
+      fontSize: 28,
+      fontWeight: '900',
+      align: 'right',
+      fill: '#fff0b3',
+      stroke: { color: '#020b15', width: 3 }
     });
     this.locationText.anchor.set(1, 0);
     this.hudContainer.addChild(this.locationText);
+
+    this.experimentLabelGroup = new PIXI.Container();
+    this.experimentLabelGroup.label = 'ui_experimentNoAwardsLabel';
+    this.experimentLabelBg = new PIXI.Graphics();
+    this.experimentLabelText = createText(translateText('EXPERIMENTAL TEST // NO AWARDS'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 11,
+      fontWeight: '900',
+      fill: '#ffcf7d',
+      stroke: '#14030a',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    this.experimentLabelText.anchor.set(0.5);
+    this.experimentLabelGroup.addChild(this.experimentLabelBg, this.experimentLabelText);
+    this.experimentLabelGroup.visible = this.game?.lateGameExperiment?.active === true;
+    this.hudContainer.addChild(this.experimentLabelGroup);
+    GameAssets.ensureMicroSignalTexture?.('hudCapsule').then((texture) => {
+      if (!texture) return;
+      if (!this.livesArt.destroyed) this.livesArt.texture = texture;
+      if (!this.traitArt.destroyed) this.traitArt.texture = texture;
+      if (!this.locationArt.destroyed) this.locationArt.texture = texture;
+    }).catch(() => {});
   }
 
-  update() {
+  update(options = {}) {
+    this.experimentLabelGroup.visible = this.game?.lateGameExperiment?.active === true;
     this.scoreText.text = `SCORE ${this.formatScore(this.game.score)}`;
     const mult = Number(this.game.scoreMultiplier) || 1;
+    this.scoreText.scale.set(1);
+    const scoreWidthReserve = mult > 1
+      ? Math.round(42 * Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1)))
+      : 0;
+    this.fitTextToWidth(this.scoreText, Math.max(72, Number(this.scoreText.__maxWidth || 180) - scoreWidthReserve), 0.72);
     if (mult > 1) {
       this.scoreMultiplierText.text = `x${mult}`;
       this.scoreMultiplierText.visible = true;
@@ -245,9 +460,16 @@ export class HUD {
       this.scoreMultiplierText.visible = false;
       this.scoreMultiplierText.scale.set(1);
     }
-    this.levelText.text = `LEVEL ${this.game.level}`;
+    // `game.level` is the current sector. The authored sector capsule already
+    // communicates that value, so do not present the same number as a second
+    // system called "LEVEL" in the permanent score block.
+    this.levelText.text = '';
+    this.levelText.visible = false;
+    this.levelText._debugSectorDuplicateRemoved = true;
+    this.updateComboMeter();
     this.livesText.text = `LIVES ${this.game.lives}`;
     this.updateMissionStatus();
+    this.updateTacticalDirective();
 
     // TASK 4: Update lives color based on count
     if (this.game.lives === 1) {
@@ -262,110 +484,1124 @@ export class HUD {
     const rankTex = RankAssets.getRankTexture(this.game.rankIndex);
     if (rankTex) {
       this.rankIcon.texture = rankTex;
-      // Make it slightly larger as requested
-      const maxSz = 50;
-      if (this.rankIcon.width > 0) {
+      const maxSz = 42 * Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+      if (this.rankIcon.texture?.width > 0) {
         const scale = Math.min(maxSz / this.rankIcon.texture.width, maxSz / this.rankIcon.texture.height);
         this.rankIcon.scale.set(scale);
       }
     }
 
-    // Clearer text
-    this.rankText.text = rankManager.getRankString(this.game.rankIndex);
-    this.rankText.x = 60; // Fixed offset to clear the icon
-    this.rankText.y = 15;
+    this.rankText.text = rankManager.getCareerRankString(
+      this.game.getCareerDisplayRankExact?.() || String(Math.max(1, Number(this.game.rankIndex || 0) + 1))
+    );
+    const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+    const rankPanelWidth = 164 * uiScale;
+    const rankTextX = 56 * uiScale;
+    const rankTextMaxWidth = 92 * uiScale;
+    this.rankText.x = rankTextX;
+    this.rankText.y = 8 * uiScale;
+    this.rankText.scale.set(1);
+    this.rankText.updateText?.(false);
+    if (this.rankText.width > rankTextMaxWidth) {
+      this.rankText.scale.set(Math.max(0.58, rankTextMaxWidth / this.rankText.width));
+    }
+    this.rankIcon.x = 25 * uiScale;
+    this.rankIcon.y = 24 * uiScale;
+
+    this.rankBadgeBg.clear();
+    this.rankBadgeBg.roundRect(-5 * uiScale, -3 * uiScale, rankPanelWidth, 58 * uiScale, 9 * uiScale);
+    this.rankBadgeBg.fill({ color: 0x020916, alpha: 0.76 });
+    this.rankBadgeBg.stroke({ color: 0xffef7e, width: 1.5, alpha: 0.82 });
+
+    this.rankTextBg.clear();
+    this.rankTextBg.roundRect(rankTextX - 4 * uiScale, 5 * uiScale, rankTextMaxWidth + 8 * uiScale, 22 * uiScale, 4 * uiScale);
+    this.rankTextBg.fill({ color: 0x020711, alpha: 0.72 });
+    this.rankTextBg.stroke({ color: 0x75ecff, width: 1, alpha: 0.2 });
 
     // XP Bar
-    const progress = this.game.getRankProgress();
-    const barW = 40;
-    const barH = 4;
+    const progress = Math.max(0, Math.min(1, Number(this.game.getRankProgress?.()) || 0));
+    const barW = rankTextMaxWidth + 8;
+    const barH = 5 * uiScale;
+    const barX = rankTextX - 4 * uiScale;
+    const barY = 40 * uiScale;
+    const nearRank = progress >= 0.82 && progress < 1;
+    const rankPulse = nearRank ? 0.5 + Math.sin(Date.now() * 0.015) * 0.5 : 0;
+    let tickCount = 0;
+    let readySpark = false;
 
-    this.rankBarBg.clear().rect(0, 42, barW, barH).fill({ color: 0x333333 });
-    this.rankBarFill.clear().rect(0, 42, barW * progress, barH).fill({ color: 0xffff00 });
+    this.rankBarBg.clear().roundRect(barX, barY, barW, barH, 3 * uiScale).fill({ color: 0x102238, alpha: 0.94 });
+    this.rankBarBg.stroke({ color: 0x75ecff, width: 1, alpha: 0.45 });
+    this.rankBarFill.clear().roundRect(barX, barY, barW * progress, barH, 3 * uiScale).fill({ color: 0xffef7e });
+    this.rankBarGlow.clear();
+    this.rankBarTicks.clear();
+    [0.25, 0.5, 0.75, 1].forEach((ratio) => {
+      const tickX = barX + barW * ratio;
+      const filled = progress >= ratio - 0.015;
+      this.rankBarTicks.moveTo(tickX, barY - 2 * uiScale);
+      this.rankBarTicks.lineTo(tickX, barY + barH + 2 * uiScale);
+      this.rankBarTicks.stroke({ color: filled ? 0xffef7e : 0x75ecff, width: ratio >= 1 ? 1.25 : 0.85, alpha: filled ? 0.72 : 0.3 });
+      tickCount += 1;
+    });
+    if (nearRank) {
+      const sparkX = barX + barW * progress;
+      const glowW = Math.min(18 * uiScale, Math.max(6 * uiScale, barW * progress));
+      this.rankBarGlow.roundRect(Math.max(barX, sparkX - glowW), barY - 2 * uiScale, glowW, barH + 4 * uiScale, 4 * uiScale);
+      this.rankBarGlow.fill({ color: 0xffffff, alpha: 0.12 + rankPulse * 0.14 });
+      this.rankBarGlow.circle(sparkX, barY + barH / 2, 2.3 * uiScale + rankPulse * 1.1 * uiScale);
+      this.rankBarGlow.fill({ color: 0xffffff, alpha: 0.34 + rankPulse * 0.42 });
+      readySpark = true;
+    }
+    this.rankGroup._debugRankProgress = {
+      progress,
+      nearRank,
+      rankPulse: Number(rankPulse.toFixed(3)),
+      tickCount,
+      readySpark,
+      fillWidth: Math.round(barW * progress)
+    };
 
     this.locationText.text = formatSectorLabel(this.game.level || 1, {
       sectorWord: translateText('SECTOR'),
       compact: true
-    });
+    }).replace(': ', ' · ');
+    const currentSector = Math.max(1, Number(this.game.level) || 1);
+    if (this.lastVisibleSector !== currentSector) {
+      this.lastVisibleSector = currentSector;
+      this.sectorEmphasisUntil = Date.now() + 1400;
+    }
+    const emphasizeSector = !getReducedMotionEnabled() && Date.now() < this.sectorEmphasisUntil;
+    this.locationText.style.fill = emphasizeSector ? '#ffffff' : '#cff6ff';
+    this.locationText.alpha = 1;
+    this.locationText._debugPriority = 'primary';
+    if (this.sectorTextMaxWidth) this.fitTextToWidth(this.locationText, this.sectorTextMaxWidth, .75);
 
     this.updateActivePowerup();
+    this.updateTacticalAugmentTray();
     this.updateTraitMeter();
+    const diagnostics = this.game?.scenes?.play?.performanceDiagnostics;
+    const measure = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
+    if (options.skipHighscoreChase !== true) {
+      measure('hud.highscore_chase_realtime', () => this.updateHighscoreChase());
+    } else if (this.highscoreChaseGroup) {
+      this.highscoreChaseGroup._debugSkippedRealtime = true;
+    }
+    this.updateFirstRunOpeningDisclosure();
+    this.updateOpeningCombatReadability();
+  }
+
+  updateOpeningCombatReadability() {
+    const play = this.game?.scenes?.play;
+    const early = usesOpeningCombatReadability(this.game);
+    const fighting = early && !play?.isPaused && !play?.introActive &&
+      (play?.hasActiveCombatThreats?.() || play?.enemyManager?.boss?.active === true);
+    // Score remains readable. Its secondary target returns between waves and
+    // on pause. Daily objectives retain their dedicated persistent display.
+    if (this.highscoreChaseGroup) {
+      const chase = this.highscoreChaseGroup._debugChase;
+      this.highscoreChaseGroup.renderable = !fighting || this.game?.runMode === 'daily_signal' ||
+        Boolean(chase?.nearTarget || chase?.surpassed);
+    }
+    this._debugOpeningReadability = { early, fighting: Boolean(fighting) };
+  }
+
+  getFirstRunOpeningDisclosureTargets() {
+    const focusAlpha = this.notificationFocus === 'major'
+      ? 0.16
+      : this.notificationFocus === 'transition'
+        ? 0.72
+        : 1;
+    return [
+      { id: 'directiveText', display: this.directiveText, productionAlpha: 0.62 * focusAlpha },
+      { id: 'directiveProgressBg', display: this.directiveProgressBg, productionAlpha: 0.56 * focusAlpha },
+      { id: 'directiveProgressFill', display: this.directiveProgressFill, productionAlpha: 0.72 * focusAlpha },
+      { id: 'shipMasteryText', display: this.shipMasteryText, productionAlpha: 1 },
+      { id: 'shipMasteryMedals', display: this.shipMasteryMedals, productionAlpha: 1 },
+      { id: 'traitGroup', display: this.traitGroup, productionAlpha: 0.84 }
+    ];
+  }
+
+  beginFirstRunOpeningDisclosure() {
+    if (this.firstRunOpeningDisclosure) return false;
+    this.firstRunOpeningDisclosure = {
+      phase: 'hidden',
+      progress: 0,
+      restoreStartedAtMs: null,
+      restoreCompletedAtMs: null,
+      restoreCount: 0,
+      restoreReason: null,
+      durationMs: FIRST_RUN_HUD_RESTORE_DURATION_MS,
+      reducedMotion: false
+    };
+    this.applyFirstRunOpeningDisclosure(0);
+    return true;
+  }
+
+  restoreFirstRunOpeningDisclosure({
+    reason = 'opening_complete',
+    reducedMotion = false,
+    nowMs = null
+  } = {}) {
+    const disclosure = this.firstRunOpeningDisclosure;
+    if (!disclosure || disclosure.phase !== 'hidden') return false;
+    const timestamp = this.getFirstRunOpeningDisclosureClock(nowMs);
+    disclosure.restoreCount += 1;
+    disclosure.restoreReason = reason;
+    disclosure.reducedMotion = Boolean(reducedMotion);
+    disclosure.restoreStartedAtMs = timestamp;
+    if (disclosure.reducedMotion) {
+      disclosure.phase = 'restored';
+      disclosure.progress = 1;
+      disclosure.restoreCompletedAtMs = timestamp;
+      this.applyFirstRunOpeningDisclosure(1);
+      return true;
+    }
+    disclosure.phase = 'restoring';
+    disclosure.progress = 0;
+    this.applyFirstRunOpeningDisclosure(0);
+    return true;
+  }
+
+  getFirstRunOpeningDisclosureClock(nowMs = null) {
+    if (nowMs !== null && nowMs !== undefined && Number.isFinite(Number(nowMs))) {
+      return Math.max(0, Number(nowMs));
+    }
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      return Math.max(0, performance.now());
+    }
+    return Math.max(0, Date.now());
+  }
+
+  updateFirstRunOpeningDisclosure(nowMs = null) {
+    const disclosure = this.firstRunOpeningDisclosure;
+    if (!disclosure || disclosure.phase === 'restored') return;
+    if (disclosure.phase === 'hidden') {
+      this.applyFirstRunOpeningDisclosure(0);
+      return;
+    }
+    const timestamp = this.getFirstRunOpeningDisclosureClock(nowMs);
+    const elapsedMs = Math.max(0, timestamp - disclosure.restoreStartedAtMs);
+    disclosure.progress = Math.max(0, Math.min(1, elapsedMs / disclosure.durationMs));
+    this.applyFirstRunOpeningDisclosure(disclosure.progress);
+    if (disclosure.progress >= 1) {
+      disclosure.phase = 'restored';
+      disclosure.restoreCompletedAtMs = timestamp;
+    }
+  }
+
+  applyFirstRunOpeningDisclosure(progress = 0) {
+    const normalized = Math.max(0, Math.min(1, Number(progress) || 0));
+    for (const target of this.getFirstRunOpeningDisclosureTargets()) {
+      const display = target.display;
+      if (!display || display.destroyed) continue;
+      display.eventMode = 'none';
+      display.renderable = normalized > 0;
+      display.alpha = target.productionAlpha * normalized;
+    }
+    if (this.firstRunOpeningDisclosure) this.firstRunOpeningDisclosure.progress = normalized;
+  }
+
+  getFirstRunOpeningDisclosureDebug() {
+    const disclosure = this.firstRunOpeningDisclosure;
+    if (!disclosure) return { active: false, phase: 'ordinary', progress: 1, restoreCount: 0, targets: {} };
+    return {
+      active: disclosure.phase !== 'restored',
+      phase: disclosure.phase,
+      progress: Number(disclosure.progress.toFixed(3)),
+      restoreCount: disclosure.restoreCount,
+      restoreReason: disclosure.restoreReason,
+      restoreStartedAtMs: disclosure.restoreStartedAtMs,
+      restoreCompletedAtMs: disclosure.restoreCompletedAtMs,
+      durationMs: disclosure.durationMs,
+      reducedMotion: disclosure.reducedMotion,
+      targets: Object.fromEntries(this.getFirstRunOpeningDisclosureTargets().map((target) => [target.id, {
+        visible: Boolean(target.display?.visible),
+        renderable: Boolean(target.display?.renderable),
+        alpha: Number((Number(target.display?.alpha) || 0).toFixed(3)),
+        productionAlpha: Number(target.productionAlpha.toFixed(3)),
+        eventMode: target.display?.eventMode || null
+      }]))
+    };
   }
 
   formatScore(score) {
     return formatNumber(score);
   }
 
+  formatRunTime(seconds) {
+    const totalSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+    const minutes = Math.floor(totalSeconds / 60);
+    const remainder = totalSeconds % 60;
+    return `${minutes}:${String(remainder).padStart(2, '0')}`;
+  }
+
+  showGlobalRivalPass({ passedTarget = null, nextProjection = null } = {}) {
+    if (!passedTarget || passedTarget.targetKind === 'number_one') return;
+    this.globalRivalFlash = {
+      passedKind: passedTarget.targetKind || 'next_rival',
+      passedName: String(passedTarget.targetName || '').trim(),
+      nextRank: nextProjection?.targetRank || (nextProjection?.projectedNumberOne ? 1 : null),
+      projectedNumberOne: Boolean(nextProjection?.projectedNumberOne)
+    };
+    this.globalRivalFlashUntil = Date.now() + 1100;
+    this.highscoreChaseRenderKey = '';
+  }
+
+  updateHighscoreChase() {
+    if (!this.highscoreChaseGroup) return;
+    const chase = this.game?.getHighscoreChaseState?.() || null;
+    const rawScore = Math.max(0, Math.floor(Number(this.game?.score) || 0));
+    const personalTarget = Math.max(0, Math.floor(Number(chase?.targetScore) || 0));
+    const rivalProjection = this.game?.getGlobalRivalChaseState?.({ score: rawScore }) || null;
+    const isRivalTarget = Boolean(rivalProjection?.targetKind && rivalProjection.targetKind !== 'number_one');
+    const isRivalNumberOne = Boolean(rivalProjection?.projectedNumberOne);
+    const isRivalMode = isRivalTarget || isRivalNumberOne;
+    const target = isRivalTarget
+      ? Math.max(0, Math.floor(Number(rivalProjection?.targetScore) || 0))
+      : personalTarget;
+    const sectorKey = Math.max(1, Math.floor(Number(this.game?.level) || 1));
+    const targetSector = Math.max(1, Math.floor(Number(chase?.targetSector) || 1));
+    const targetTimeSeconds = Math.max(0, Math.floor(Number(chase?.targetTimeSeconds) || 0));
+    const isDailyClearGoal = chase?.runMode === 'daily_signal' && chase?.goalMode === 'daily_clear';
+    const isDailyScoreGoal = chase?.runMode === 'daily_signal' && chase?.goalMode === 'score';
+    const syncingTarget = !isRivalMode && Boolean(chase?.syncingTarget);
+    const hasScoreTarget = target > 0 && !syncingTarget;
+    const hasTarget = isDailyClearGoal || hasScoreTarget || isRivalNumberOne;
+    const now = Date.now();
+    const rivalFlashActive = isRivalMode && this.globalRivalFlashUntil > now && Boolean(this.globalRivalFlash);
+    if (!rivalFlashActive && this.globalRivalFlashUntil > 0) {
+      this.globalRivalFlash = null;
+      this.globalRivalFlashUntil = 0;
+    }
+    const displayKey = [
+      chase?.runMode || 'none',
+      chase?.goalMode || 'score',
+      target,
+      rivalProjection?.targetKind || 'personal',
+      rivalProjection?.targetRank || 0,
+      rivalProjection?.targetName || '',
+      targetSector,
+      targetTimeSeconds,
+      syncingTarget ? 1 : 0,
+      sectorKey,
+      rawScore
+    ].join('|');
+    const crossedTarget = !isRivalMode && hasScoreTarget &&
+      rawScore > target &&
+      Math.max(0, Math.floor(Number(this.highscoreChaseDisplayScore) || 0)) <= target;
+    if (displayKey !== this.highscoreChaseDisplayKey || crossedTarget) {
+      this.highscoreChaseDisplayKey = displayKey;
+      this.highscoreChaseDisplayScore = rawScore;
+    }
+    const score = Math.max(0, Math.floor(Number(this.highscoreChaseDisplayScore) || 0));
+    const remaining = Math.max(0, target - score);
+    const ratio = isDailyClearGoal
+      ? Math.min(1, sectorKey / targetSector)
+      : isRivalNumberOne
+        ? 1
+        : hasScoreTarget ? Math.min(1.25, score / target) : 0;
+    const surpassed = isRivalNumberOne || (isDailyClearGoal ? Boolean(this.game?.runCleared) : hasScoreTarget && score > target);
+    const nearTarget = hasTarget && !surpassed && ratio >= 0.9;
+    const chaseIsHot = rivalFlashActive || nearTarget || surpassed;
+    const pulse = chaseIsHot ? (Math.sin(now * 0.009) + 1) / 2 : 0.5;
+    const pulseBucket = chaseIsHot ? Math.floor(now / 140) % 16 : 0;
+    const dangerColor = rivalFlashActive || surpassed
+      ? 0xffef7e
+      : (ratio >= 0.9 ? 0xff55d9 : (isRivalMode ? 0x37f5ff : (ratio >= 0.5 ? 0x7fffd8 : 0x37f5ff)));
+    const label = rivalFlashActive
+      ? translateText(this.globalRivalFlash?.passedKind === 'board_gate' ? 'TOP 50 BREACHED' : 'RIVAL PASSED')
+      : isRivalNumberOne
+        ? translateText('PROJECTED #1')
+        : rivalProjection?.targetKind === 'board_gate'
+          ? translateText('TOP 50 GATE')
+          : isRivalTarget
+            ? translateText('RIVAL TARGET #{rank}', { rank: rivalProjection.targetRank })
+            : isDailyClearGoal
+              ? translateText('DAILY OBJECTIVE')
+              : chase?.runMode === 'sector_start'
+                ? translateText('SECTOR RECORD TARGET')
+                : chase?.runMode === 'daily_signal'
+                  ? translateText('BEST CLEAR')
+                  : translateText('HIGH SCORE TARGET');
+    const w = this.highscoreChaseGroup.__w || 178;
+    const h = this.highscoreChaseGroup.__h || 52;
+    const renderKey = [
+      chase?.runMode || 'none',
+      chase?.goalMode || 'score',
+      target,
+      rivalProjection?.targetKind || 'personal',
+      rivalProjection?.targetRank || 0,
+      rivalProjection?.targetName || '',
+      rivalFlashActive ? 1 : 0,
+      this.globalRivalFlash?.passedName || '',
+      targetSector,
+      targetTimeSeconds,
+      score,
+      sectorKey,
+      syncingTarget ? 1 : 0,
+      surpassed ? 1 : 0,
+      nearTarget ? 1 : 0,
+      pulseBucket,
+      w,
+      h,
+      this.highscoreChaseTitle?.style?.fontSize || '',
+      this.highscoreChaseTarget?.style?.fontSize || '',
+      this.highscoreChaseGap?.style?.fontSize || ''
+    ].join('|');
+    if (renderKey === this.highscoreChaseRenderKey) return;
+    this.highscoreChaseRenderKey = renderKey;
+
+    this.highscoreChaseTitle.text = label;
+    this.highscoreChaseTarget.text = rivalFlashActive
+      ? (this.globalRivalFlash?.passedName || translateText('TARGET CLEARED'))
+      : isRivalNumberOne
+        ? translateText('BOARD SNAPSHOT CLEARED')
+        : isRivalTarget
+          ? translateText('#{rank} {name} // {score}', {
+            rank: rivalProjection.targetRank,
+            name: rivalProjection.targetName,
+            score: this.formatScore(rivalProjection.targetEntryScore)
+          })
+          : isDailyClearGoal
+            ? translateText('CLEAR SECTOR {sector}', { sector: targetSector })
+            : hasScoreTarget
+              ? `${translateText('BEAT')} ${this.formatScore(target)}`
+              : syncingTarget
+                ? translateText('CHECKING BOARD')
+                : translateText('BEAT THE EMPTY THRONE');
+    this.highscoreChaseGap.text = rivalFlashActive
+      ? (this.globalRivalFlash?.projectedNumberOne
+        ? translateText('PROJECTED #1')
+        : translateText('NEXT TARGET #{rank}', { rank: this.globalRivalFlash?.nextRank || '?' }))
+      : isRivalNumberOne
+        ? translateText('SUBMIT TO CONFIRM')
+        : isRivalTarget
+          ? translateText('{score} TO PASS', { score: this.formatScore(rivalProjection.scoreToPass) })
+          : isDailyClearGoal
+            ? translateText('SECTOR {current} OF {target}', {
+              current: Math.min(sectorKey, targetSector),
+              target: targetSector
+            })
+            : isDailyScoreGoal && surpassed
+              ? translateText('SCORE READY // CLEAR SECTOR {sector}', { sector: targetSector })
+              : isDailyScoreGoal && targetTimeSeconds > 0
+                ? `= ${this.formatScore(target)} // ${translateText('TIME')} < ${this.formatRunTime(targetTimeSeconds)}`
+                : surpassed
+                  ? translateText('OLD SCORE HUMILIATED')
+                  : translateText('{score} TO MAKE IT CRY', { score: this.formatScore(remaining + 1) });
+    this.highscoreChaseGap.visible = hasTarget;
+
+    this.highscoreChaseTitle.style.fill = rivalFlashActive || surpassed ? '#fff05c' : (isRivalMode ? '#87f8ff' : '#ffef7e');
+    this.highscoreChaseGap.style.fill = rivalFlashActive || surpassed ? '#fff05c' : (ratio >= 0.9 ? '#ff55d9' : '#7fffd8');
+    this.highscoreChaseGroup.alpha = hasTarget
+      ? (chaseIsHot ? 0.82 + pulse * 0.16 : 0.62)
+      : 0.5;
+    this.highscoreChaseGroup.scale.set(1);
+    this.highscoreChaseGroup._debugPriority = chaseIsHot ? 'support-hot' : 'secondary';
+
+    const barW = Math.max(48, w - 22);
+    const progress = isRivalNumberOne ? 1 : (hasTarget ? Math.min(1, ratio) : 0.08 + pulse * 0.08);
+    this.highscoreChaseTitle.updateText?.(false);
+    this.highscoreChaseTarget.updateText?.(false);
+    this.highscoreChaseGap.updateText?.(false);
+    const narrow = w < 248;
+    const padX = 14;
+    const targetMaxWidth = narrow
+      ? w - padX * 2
+      : isRivalMode
+        ? Math.min(214, Math.max(136, w * 0.56))
+        : Math.min(132, Math.max(92, w * 0.36));
+    this.highscoreChaseTitle.x = padX;
+    this.highscoreChaseTitle.y = narrow ? 5 : 6;
+    this.highscoreChaseTitle.scale.set(1);
+    this.highscoreChaseTarget.scale.set(1);
+    if (narrow) {
+      this.highscoreChaseTarget.anchor.set(0, 0);
+      this.highscoreChaseTarget.x = padX;
+      this.highscoreChaseTarget.y = 19;
+      this.fitTextToWidth(this.highscoreChaseTarget, targetMaxWidth, 0.68);
+      this.fitTextToWidth(this.highscoreChaseTitle, w - padX * 2, 0.68);
+    } else {
+      this.highscoreChaseTarget.anchor.set(1, 0);
+      this.highscoreChaseTarget.x = w - padX;
+      this.highscoreChaseTarget.y = 6;
+      this.fitTextToWidth(this.highscoreChaseTarget, targetMaxWidth, 0.7);
+      const titleMaxWidth = Math.max(92, w - padX * 2 - this.highscoreChaseTarget.width - 14);
+      this.fitTextToWidth(this.highscoreChaseTitle, titleMaxWidth, 0.68);
+    }
+    this.highscoreChaseGap.x = padX;
+    this.highscoreChaseGap.y = narrow ? Math.max(21, h - 27) : Math.max(24, h - 28);
+    this.highscoreChaseGap.scale.set(1);
+    this.fitTextToWidth(this.highscoreChaseGap, Math.max(44, w - padX * 2), 0.6);
+
+    this.highscoreChaseBg.clear();
+    this.highscoreChaseBg.roundRect(0, 0, w, h, 6);
+    this.highscoreChaseBg.fill({ color: 0x020711, alpha: 0.5 });
+    this.highscoreChaseBg.stroke({ color: dangerColor, width: 1.25, alpha: 0.68 + pulse * 0.22 });
+    this.highscoreChaseBg.rect(6, 5, 3, h - 10);
+    this.highscoreChaseBg.fill({ color: dangerColor, alpha: 0.72 });
+    this.highscoreChaseBg.rect(w - 9, 5, 3, h - 10);
+    this.highscoreChaseBg.fill({ color: 0xff55d9, alpha: 0.52 });
+    if (rivalFlashActive) {
+      this.highscoreChaseBg.roundRect(3, 3, w - 6, h - 6, 5);
+      this.highscoreChaseBg.stroke({ color: 0xffef7e, width: 2.2, alpha: 0.54 + pulse * 0.4 });
+      const sweepX = 10 + ((now % 900) / 900) * Math.max(1, w - 20);
+      this.highscoreChaseBg.rect(sweepX - 7, 4, 14, h - 8);
+      this.highscoreChaseBg.fill({ color: 0xffffff, alpha: 0.05 + pulse * 0.05 });
+    } else if (nearTarget) {
+      this.highscoreChaseBg.roundRect(3, 3, w - 6, h - 6, 5);
+      this.highscoreChaseBg.stroke({ color: 0xff55d9, width: 1.1, alpha: 0.22 + pulse * 0.24 });
+    } else if (surpassed) {
+      this.highscoreChaseBg.roundRect(3, 3, w - 6, h - 6, 5);
+      this.highscoreChaseBg.stroke({ color: 0xffef7e, width: 1.4, alpha: 0.36 + pulse * 0.28 });
+      this.highscoreChaseBg.roundRect(7, 7, w - 14, h - 14, 4);
+      this.highscoreChaseBg.stroke({ color: 0xffffff, width: 0.8, alpha: 0.18 + pulse * 0.18 });
+    }
+
+    const barX = 11;
+    const barY = h - 10;
+    this.highscoreChaseBarBg.clear();
+    this.highscoreChaseBarBg.roundRect(barX, barY, barW, 4, 2);
+    this.highscoreChaseBarBg.fill({ color: 0x102238, alpha: 0.88 });
+    this.highscoreChaseBarFill.clear();
+    this.highscoreChaseBarFill.roundRect(barX, barY, barW * progress, 4, 2);
+    this.highscoreChaseBarFill.fill({ color: dangerColor, alpha: 0.92 });
+    this.highscoreChaseTicks.clear();
+    let targetChevronCount = 0;
+    let victoryBurstCount = 0;
+    if (hasTarget) {
+      const markerValues = [0.25, 0.5, 0.75, 1];
+      for (const mark of markerValues) {
+        const x = Math.round(barX + barW * mark);
+        const cleared = ratio >= mark;
+        this.highscoreChaseTicks.moveTo(x, barY - 3);
+        this.highscoreChaseTicks.lineTo(x, barY + 7);
+        this.highscoreChaseTicks.stroke({
+          color: cleared ? 0xffffff : 0x6d8aa3,
+          width: mark >= 1 ? 1.6 : 1.1,
+          alpha: cleared ? 0.9 : 0.52
+        });
+      }
+      const glintX = Math.round(barX + barW * Math.min(1, progress));
+      this.highscoreChaseTicks.roundRect(glintX - 2, barY - 5, 4, 14, 2);
+      this.highscoreChaseTicks.fill({ color: 0xffffff, alpha: 0.32 + pulse * 0.3 });
+      if (nearTarget) {
+        this.highscoreChaseTicks.roundRect(barX - 2, barY - 4, barW + 4, 12, 5);
+        this.highscoreChaseTicks.stroke({ color: 0xff55d9, width: 1.1, alpha: 0.36 });
+        for (let i = 0; i < 3; i += 1) {
+          const x = Math.min(barX + barW - 5, glintX + 8 + i * 8);
+          const y = barY + 2;
+          this.highscoreChaseTicks.moveTo(x - 4, y - 4);
+          this.highscoreChaseTicks.lineTo(x, y);
+          this.highscoreChaseTicks.lineTo(x - 4, y + 4);
+          targetChevronCount += 1;
+        }
+        this.highscoreChaseTicks.stroke({ color: 0xffffff, width: 1.1, alpha: 0.24 + pulse * 0.36 });
+      }
+      if (surpassed) {
+        this.highscoreChaseTicks.roundRect(barX - 2, barY - 4, barW + 4, 12, 5);
+        this.highscoreChaseTicks.stroke({ color: 0xffef7e, width: 1.4, alpha: 0.58 });
+        this.highscoreChaseTicks.circle(barX + barW, barY + 2, 3.4);
+        this.highscoreChaseTicks.fill({ color: 0xffef7e, alpha: 0.88 });
+        const burstX = barX + barW;
+        const burstY = barY + 2;
+        for (let i = 0; i < 6; i += 1) {
+          const angle = (Math.PI * 2 * i) / 6 + pulse * 0.12;
+          const inner = 7;
+          const outer = 13 + pulse * 4;
+          this.highscoreChaseTicks.moveTo(burstX + Math.cos(angle) * inner, burstY + Math.sin(angle) * inner);
+          this.highscoreChaseTicks.lineTo(burstX + Math.cos(angle) * outer, burstY + Math.sin(angle) * outer);
+          victoryBurstCount += 1;
+        }
+        this.highscoreChaseTicks.stroke({ color: 0xffffff, width: 1.1, alpha: 0.2 + pulse * 0.3 });
+      }
+    }
+    this.highscoreChaseGroup._debugChase = {
+      hasTarget,
+      goalMode: isDailyClearGoal ? 'daily_clear' : 'score',
+      currentSector: isDailyClearGoal ? sectorKey : null,
+      targetSector: isDailyClearGoal ? targetSector : null,
+      ratio: Number(ratio.toFixed(3)),
+      progress: Number(progress.toFixed(3)),
+      nearTarget,
+      surpassed,
+      tickCount: hasTarget ? 4 : 0,
+      targetChevronCount,
+      victoryBurstCount,
+      glintX: hasTarget ? Math.round(barX + barW * Math.min(1, progress)) : null,
+      pulseBucket,
+      targetKind: rivalProjection?.targetKind || 'personal_best',
+      targetName: rivalProjection?.targetName || null,
+      targetRank: rivalProjection?.targetRank || null,
+      targetScore: isRivalTarget ? rivalProjection.targetScore : personalTarget,
+      scoreToPass: isRivalTarget ? rivalProjection.scoreToPass : null,
+      projectedNumberOne: isRivalNumberOne,
+      rivalFlashActive
+    };
+  }
+
   updateMissionStatus() {
     if (!this.missionText) return;
+    if (this.missionLabel) this.missionLabel.text = translateText('MISSION STATUS');
+    if (this.notificationFocus === 'major' || this.notificationFocus === 'transition') {
+      if (this.missionPanel?._debugPriority) {
+        this.missionPanel._debugPriority.semanticFrozen = true;
+        this.missionPanel._debugPriority.frozenText = this.missionText.text;
+      }
+      return;
+    }
     const play = this.game?.scenes?.play;
     const manager = play?.enemyManager;
+    const challengeFlight = manager?.getChallengeFlightDebugState?.();
+    if (challengeFlight?.active) {
+      const kills = Math.max(0, Number(challengeFlight.kills) || 0);
+      const total = Math.max(1, Number(challengeFlight.targetCount) || 1);
+      if (this.missionLabel) this.missionLabel.text = translateText('CABINET SKILL FLIGHT');
+      this.missionText.text = translateText('HOLOGRAM TARGETS {kills}/{total} // CONTACT SAFE', { kills, total });
+      this.updateMissionProgress({ state: 'CHALLENGE_FLIGHT', phase: 'SKILL', waveTotal: total, waveIndex: kills + 1, activeEnemies: 0, activeBullets: 0 });
+      return;
+    }
     const activeEnemies = manager?.enemies?.filter(enemy => enemy?.active !== false && enemy?.kind !== 'bonus_drone').length || 0;
     const activeBullets = play?.bulletManager?.enemyBullets?.filter(bullet => bullet?.active !== false).length || 0;
     const waveTotal = manager?.normalWavesTotal || 0;
     const waveIndex = Number.isFinite(manager?.currentWaveIndex) ? manager.currentWaveIndex + 1 : 1;
     const phase = manager?.phase || 'WAVES';
     const state = manager?.state || 'IDLE';
+    const waveConfig = manager?.pendingWaveConfig || manager?.waves?.[manager?.currentWaveIndex] || null;
+    const authoredObjective = waveConfig?.highSectorAuthoredEncounter
+      ? translateText(waveConfig.highSectorObjective)
+      : null;
 
     if (phase === 'BOSS' || state === 'BOSS_ACTIVE' || state === 'BOSS_GATE') {
-      const bossHealth = manager?.boss ? Math.max(0, Math.ceil(manager.boss.health)) : null;
-      this.missionText.text = bossHealth === null
-        ? 'BOSS SIGNAL INBOUND'
-        : `BOSS HP ${bossHealth}`;
+      const boss = manager?.boss;
+      const bossName = String(boss?.name || '').trim();
+      const bossPhase = Math.max(1, Math.min(3, Math.round(Number(boss?.phase) || 1)));
+      const authoredSupportVisible = Boolean(
+        manager?.authoredBossSupportState?.state === 'warned'
+        || manager?.enemies?.some((enemy) => enemy?.kind === 'high_sector_boss_support' && enemy?.active !== false)
+      );
+      this.missionText.text = authoredSupportVisible
+        ? translateText('BOSS SUPPORT INTERCEPT')
+        : bossName
+          ? `${bossName} // ${translateText('PHASE')} ${bossPhase}`
+          : translateText('BOSS SIGNAL INBOUND');
+      this.updateMissionProgress({
+        state,
+        phase: 'BOSS',
+        waveTotal,
+        waveIndex,
+        activeEnemies,
+        activeBullets
+      });
       return;
     }
 
     if (state === 'LEVEL_COMPLETE') {
       this.missionText.text = 'SECTOR CLEAR';
+      this.updateMissionProgress({
+        state,
+        phase,
+        waveTotal,
+        waveIndex,
+        activeEnemies: 0,
+        activeBullets: 0
+      });
       return;
     }
 
     if (state === 'WAVE_BRIEFING') {
-      this.missionText.text = `INCOMING WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}`;
+      this.missionText.text = authoredObjective
+        ? translateText('BEAT {current}/{total} // {objective}', {
+          current: Math.min(waveIndex, waveTotal),
+          total: waveTotal,
+          objective: authoredObjective
+        })
+        : `INCOMING WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}`;
+      this.updateMissionProgress({
+        state,
+        phase,
+        waveTotal,
+        waveIndex,
+        activeEnemies,
+        activeBullets
+      });
       return;
     }
 
-    const waveText = waveTotal > 0 ? `WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}` : `LEVEL ${this.game.level}`;
-    this.missionText.text = `${waveText}  HOSTILES ${activeEnemies}  THREATS ${activeBullets}`;
+    if (authoredObjective) {
+      this.missionText.text = translateText('BEAT {current}/{total} // {objective}', {
+        current: Math.min(waveIndex, waveTotal),
+        total: waveTotal,
+        objective: authoredObjective
+      });
+      this.updateMissionProgress({
+        state,
+        phase,
+        waveTotal,
+        waveIndex,
+        activeEnemies,
+        activeBullets
+      });
+      return;
+    }
+
+    this.missionText.text = waveTotal > 0
+      ? translateText(`WAVE: ${Math.min(waveIndex, waveTotal)}/${waveTotal} | HOSTILES: ${activeEnemies} | THREATS: ${activeBullets}`)
+      : translateText('SECTOR {sector} | HOSTILES {hostiles} | THREATS {threats}', {
+        sector: this.game.level,
+        hostiles: activeEnemies,
+        threats: activeBullets
+      });
+    this.updateMissionProgress({
+      state,
+      phase,
+      waveTotal,
+      waveIndex,
+      activeEnemies,
+      activeBullets
+    });
+  }
+
+  updateTacticalDirective() {
+    const play = this.game?.scenes?.play;
+    const debugState = play?.getTacticalDirectiveDebugState?.();
+    const active = debugState?.active;
+    const rail = this.directiveProgressBg;
+    const fill = this.directiveProgressFill;
+    if (!this.directiveText || !rail || !fill) return;
+    const width = Math.max(0, Number(rail.__w) || 0);
+    const height = Math.max(0, Number(rail.__h) || 0);
+    const x = Number(rail.__x) || 0;
+    const y = Number(rail.__y) || 0;
+    rail.clear();
+    fill.clear();
+    const challengeFlight = play?.enemyManager?.getChallengeFlightDebugState?.();
+    if (challengeFlight?.active) {
+      const kills = Math.max(0, Number(challengeFlight.kills) || 0);
+      const total = Math.max(1, Number(challengeFlight.targetCount) || 1);
+      const ratio = Math.max(0, Math.min(1, kills / total));
+      this.directiveText.text = translateText('HOLOGRAM TARGETS {kills}/{total} // CONTACT SAFE', { kills, total });
+      this.directiveText.style.fill = '#8ff7ff';
+      this.directiveText.visible = true;
+      this.directiveText.scale.set(1);
+      this.fitTextToWidth(this.directiveText, Math.max(120, width), this.game.getWidth() < 1000 ? 0.78 : 0.62);
+      rail.visible = fill.visible = width > 0 && height > 0;
+      rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+      rail.fill({ color: 0x06141b, alpha: 0.9 });
+      rail.stroke({ color: 0x58efff, width: 0.9, alpha: 0.7 });
+      if (ratio > 0) {
+        fill.roundRect(x, y, Math.max(height, width * ratio), height, Math.max(1, height / 2));
+        fill.fill({ color: 0x58efff, alpha: 0.9 });
+      }
+      return;
+    }
+
+    const ace = play?.getAceBountyDebugState?.()?.active;
+    const compactAceReady = ace?.spawned && !ace?.completed && Date.now() >= (Number(ace.compactObjectiveReadyAt) || 0);
+    if (compactAceReady) {
+      const number = String(ace.number || 0).padStart(4, '0');
+      const reward = translateText(ace.rewardLabel || 'EXTRA RESCAN');
+      this.directiveText.text = translateText('DESTROY ACE {number} // {reward}', { number, reward });
+      this.directiveText.style.fill = '#fff3a0';
+      this.directiveText.visible = true;
+      this.directiveText.scale.set(1);
+      this.fitTextToWidth(this.directiveText, Math.max(120, width), this.game.getWidth() < 1000 ? 0.78 : 0.62);
+      rail.visible = fill.visible = width > 0 && height > 0;
+      rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+      rail.fill({ color: 0x06141b, alpha: 0.9 });
+      rail.stroke({ color: ace.color || 0xffd15c, width: 0.9, alpha: 0.68 });
+      rail._debugDirective = {
+        visible: true,
+        compactAce: true,
+        number,
+        label: this.directiveText.text,
+        suspendedDirectiveId: active?.id || null,
+        suspendedDirectiveQueued: Boolean(active?.queued),
+        railBounds: { x, y, width, height }
+      };
+      return;
+    }
+
+    if (!active) {
+      const capped = Number(debugState?.completedCount) >= Number(debugState?.completionCap)
+        && Number(debugState?.completionCap) > 0;
+      this.directiveText.visible = capped;
+      rail.visible = fill.visible = capped && width > 0;
+      if (capped) {
+        this.directiveText.text = translateText('DIRECTIVES COMPLETE {count}/{cap}', {
+          count: debugState.completedCount,
+          cap: debugState.completionCap
+        });
+        this.directiveText.style.fill = '#88ffb0';
+        rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+        rail.fill({ color: 0x06141b, alpha: 0.9 });
+        fill.roundRect(x, y, width, height, Math.max(1, height / 2));
+        fill.fill({ color: 0x66ff9d, alpha: 0.92 });
+      }
+      rail._debugDirective = { visible: capped, completed: capped, ratio: capped ? 1 : 0 };
+      return;
+    }
+
+    if (active.queued) {
+      this.directiveText.text = translateText('DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}', {
+        current: debugState.currentOrdinal,
+        cap: debugState.completionCap,
+        sector: active.eligibleFromSector
+      });
+      this.directiveText.style.fill = '#9cfbff';
+      this.directiveText.visible = true;
+      this.directiveText.scale.set(1);
+      this.fitTextToWidth(this.directiveText, Math.max(120, width), this.game.getWidth() < 1000 ? 0.78 : 0.62);
+      rail.visible = fill.visible = width > 0 && height > 0;
+      rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+      rail.fill({ color: 0x06141b, alpha: 0.92 });
+      rail.stroke({ color: 0x66f7ff, width: 0.8, alpha: 0.62 });
+      rail._debugDirective = {
+        visible: true,
+        queued: true,
+        currentOrdinal: debugState.currentOrdinal,
+        completionCap: debugState.completionCap,
+        eligibleFromSector: active.eligibleFromSector,
+        ratio: 0,
+        label: this.directiveText.text,
+        textBounds: this.directiveText.getBounds?.() || null,
+        railBounds: { x, y, width, height }
+      };
+      return;
+    }
+
+    const objective = translateText(active.objectiveLabel);
+    const reward = translateText(active.rewardLabel);
+    const compact = this.game.getWidth() < 1000;
+    this.directiveText.text = translateText('DIRECTIVE {current}/{cap}: {objective} {progress} // {reward}', {
+      current: debugState.currentOrdinal,
+      cap: debugState.completionCap,
+      objective,
+      progress: active.progressLabel,
+      reward
+    });
+    this.directiveText.style.fill = '#fff3a0';
+    this.directiveText.visible = true;
+    this.directiveText.scale.set(1);
+    this.fitTextToWidth(this.directiveText, Math.max(120, width), compact ? 0.78 : 0.62);
+
+    const ratio = Math.max(0, Math.min(1, Number(active.ratio) || 0));
+    rail.visible = fill.visible = width > 0 && height > 0;
+    rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+    rail.fill({ color: 0x06141b, alpha: 0.92 });
+    rail.stroke({ color: active.accent || 0x66f7ff, width: 0.8, alpha: 0.42 });
+    if (ratio > 0) {
+      const fillWidth = Math.max(height, width * ratio);
+      fill.roundRect(x, y, fillWidth, height, Math.max(1, height / 2));
+      fill.fill({ color: active.rewardAccent || active.accent || 0xffef7e, alpha: 0.9 });
+    }
+    rail._debugDirective = {
+      visible: true,
+      id: active.id,
+      objectiveId: active.objectiveId,
+      rewardId: active.rewardId,
+      currentOrdinal: debugState.currentOrdinal,
+      completionCap: debugState.completionCap,
+      eligibleFromSector: active.eligibleFromSector,
+      queued: false,
+      progress: active.progress,
+      target: active.target,
+      ratio: Number(ratio.toFixed(3)),
+      label: this.directiveText.text,
+      textBounds: this.directiveText.getBounds?.() || null,
+      railBounds: { x, y, width, height }
+    };
+  }
+
+  updateMissionProgress({
+    state = 'IDLE',
+    phase = 'WAVES',
+    waveTotal = 0,
+    waveIndex = 1,
+    activeEnemies = 0,
+    activeBullets = 0
+  } = {}) {
+    const rail = this.missionProgressBg;
+    const fill = this.missionProgressFill;
+    const active = this.missionProgressActive;
+    const ticks = this.missionProgressTicks;
+    if (!rail || !fill || !active || !ticks) return;
+
+    const width = Math.max(0, Number(rail.__w) || 0);
+    const height = Math.max(0, Number(rail.__h) || 0);
+    const x = Number(rail.__x) || 0;
+    const y = Number(rail.__y) || 0;
+    const total = Math.max(0, Math.floor(Number(waveTotal) || 0));
+    const clampedWave = total > 0
+      ? Math.max(1, Math.min(total, Math.floor(Number(waveIndex) || 1)))
+      : 0;
+    const hasRail = width > 12 && height > 1 && total > 0;
+    const isBoss = phase === 'BOSS' || state === 'BOSS_ACTIVE' || state === 'BOSS_GATE';
+    const isClear = state === 'LEVEL_COMPLETE';
+    const isBriefing = state === 'WAVE_BRIEFING';
+    const pressure = Math.min(1, (Math.max(0, activeEnemies) / 10) + (Math.max(0, activeBullets) / 36));
+    const pulse = 0.5 + Math.sin(Date.now() * 0.012) * 0.5;
+    const activeColor = isBoss
+      ? 0xff55d9
+      : isClear
+        ? 0x75ff8d
+        : isBriefing
+          ? 0xffef7e
+          : pressure > 0.75
+            ? 0xff7a55
+            : 0x66f7ff;
+
+    this.updateMissionPriorityVisual({ isBoss, isClear, isBriefing, pressure });
+
+    rail.clear();
+    fill.clear();
+    active.clear();
+    ticks.clear();
+    rail.visible = fill.visible = active.visible = ticks.visible = hasRail;
+    if (!hasRail) {
+      rail._debugMissionProgress = { visible: false, waveTotal: total };
+      return;
+    }
+
+    const completedRatio = isBoss || isClear ? 1 : Math.max(0, Math.min(1, (clampedWave - 1) / total));
+    const activeStart = Math.max(0, Math.min(1, (clampedWave - 1) / total));
+    const activeEnd = Math.max(activeStart, Math.min(1, clampedWave / total));
+    const radius = Math.max(1.5, height / 2);
+
+    rail.roundRect(x, y, width, height, radius);
+    rail.fill({ color: 0x020711, alpha: 0.82 });
+    rail.stroke({ color: 0x66f7ff, width: 1, alpha: 0.24 });
+
+    if (completedRatio > 0) {
+      fill.roundRect(x, y, Math.max(height, width * completedRatio), height, radius);
+      fill.fill({ color: isClear ? 0x75ff8d : (isBoss ? 0xff55d9 : 0x4ce7ff), alpha: isClear ? 0.92 : 0.72 });
+    }
+
+    if (!isBoss && !isClear) {
+      const segmentX = x + width * activeStart;
+      const segmentW = Math.max(height * 1.6, width * Math.max(0.015, activeEnd - activeStart));
+      active.roundRect(segmentX, y - 1, Math.min(segmentW, x + width - segmentX), height + 2, radius + 1);
+      active.fill({ color: activeColor, alpha: 0.34 + pulse * (pressure > 0.5 ? 0.34 : 0.18) });
+      active.stroke({ color: activeColor, width: 1.25, alpha: 0.62 + pulse * 0.22 });
+      const sparkX = Math.min(x + width - 2, segmentX + segmentW * 0.5);
+      active.circle(sparkX, y + height / 2, 2.2 + pressure * 2.2 + pulse * 0.8);
+      active.fill({ color: activeColor, alpha: 0.42 + pressure * 0.22 });
+    } else {
+      active.roundRect(x, y - 1, width, height + 2, radius + 1);
+      active.stroke({ color: activeColor, width: isClear ? 1.8 : 1.4, alpha: isClear ? 0.72 : 0.58 + pulse * 0.24 });
+      if (isClear) {
+        active.circle(x + width - height / 2, y + height / 2, height * 0.95);
+        active.fill({ color: activeColor, alpha: 0.82 });
+      }
+    }
+
+    const tickEvery = Math.max(1, Math.ceil(total / 12));
+    let tickCount = 0;
+    for (let i = 1; i < total; i += 1) {
+      if (i % tickEvery !== 0) continue;
+      const tx = Math.round(x + width * (i / total));
+      ticks.moveTo(tx, y - 1);
+      ticks.lineTo(tx, y + height + 1);
+      tickCount += 1;
+    }
+    if (tickCount) {
+      ticks.stroke({ color: 0xf8fbff, width: 1, alpha: 0.38 });
+    }
+
+    let pressureMarkerCount = 0;
+    let threatChevronCount = 0;
+    if (!isClear && pressure > 0.2) {
+      const markerX = x + width * Math.max(activeStart, Math.min(activeEnd, 0.5));
+      ticks.circle(markerX, y - 4, 1.6 + pressure * 0.8);
+      ticks.fill({ color: activeColor, alpha: 0.36 + pressure * 0.28 + pulse * 0.1 });
+      pressureMarkerCount = 1;
+    }
+
+    rail._debugMissionProgress = {
+      visible: true,
+      state,
+      phase,
+      waveTotal: total,
+      waveIndex: clampedWave,
+      completedRatio: Number(completedRatio.toFixed(3)),
+      activeStart: Number(activeStart.toFixed(3)),
+      activeEnd: Number(activeEnd.toFixed(3)),
+      pressure: Number(pressure.toFixed(3)),
+      tickCount,
+      heatPipCount: pressureMarkerCount,
+      pressureMarkerCount,
+      threatChevronCount,
+      color: activeColor
+    };
+  }
+
+  setNotificationFocus(focus = 'none') {
+    const previousFocus = this.notificationFocus;
+    this.notificationFocus = focus === 'major' || focus === 'transition' ? focus : 'none';
+    this.updateMissionPriorityVisual(this.missionPriorityState);
+    if (previousFocus !== 'none' && this.notificationFocus === 'none') {
+      this.updateMissionStatus();
+      this.updateTacticalDirective();
+    }
+  }
+
+  updateMissionPriorityVisual({ isBoss = false, isClear = false, isBriefing = false, pressure = 0 } = {}) {
+    const layout = this.missionPanel?.__layout;
+    if (!layout) return;
+    this.missionPriorityState = { isBoss, isClear, isBriefing, pressure };
+
+    const immediateDanger = !isClear && pressure >= 0.7;
+    const critical = isBoss || immediateDanger;
+    const accent = isBoss
+      ? 0xff55d9
+      : immediateDanger
+        ? 0xff765c
+        : isClear
+          ? 0x75ff8d
+          : 0x66dff7;
+
+    const frameKey = [
+      Math.round(layout.x),
+      Math.round(layout.y),
+      Math.round(layout.width),
+      Math.round(layout.height),
+      accent,
+      critical ? 1 : 0
+    ].join('|');
+    if (frameKey !== this.missionFrameRenderKey) {
+      this.missionFrameRenderKey = frameKey;
+      this.missionFrameGeometry?.root?.destroy?.({ children: true });
+      this.missionPanel.removeChildren();
+      this.missionFrameGeometry = createNovaCommandFrame({
+        variant: 'persistent',
+        width: layout.width,
+        height: layout.height,
+        accent,
+        secondaryAccent: NOVA_COMMAND_HUD_TOKENS.secondaryEdge,
+        decorativeAccents: false,
+        surfaceAlpha: critical ? 0.42 : 0.3,
+        liftAlpha: critical ? 0.2 : 0.12
+      });
+      this.missionFrameGeometry.root.position.set(
+        layout.x + layout.width / 2,
+        layout.y + layout.height / 2
+      );
+      this.missionPanel.addChild(this.missionFrameGeometry.root);
+    }
+    this.missionFrameArt.visible = false;
+    const focusAlpha = this.notificationFocus === 'major'
+      ? 0.16
+      : this.notificationFocus === 'transition'
+        ? 0.72
+        : 1;
+    this.missionPanel.alpha = focusAlpha;
+    this.missionFrameArt.alpha = 0;
+
+    this.missionLabel.alpha = (critical ? 0.9 : 0.68) * focusAlpha;
+    // Transition banners sit below the persistent mission panel. Keep the
+    // current sector/wave context readable instead of making the top bar blink
+    // off and on between Wave Cleared and Wave Incoming.
+    const semanticSuppressed = false;
+    this.missionText.alpha = semanticSuppressed
+      ? 0
+      : this.notificationFocus === 'none'
+        ? 1
+        : this.notificationFocus === 'transition' ? focusAlpha : focusAlpha * 0.72;
+    this.missionText.style.fill = immediateDanger ? '#fff0d8' : '#f8fbff';
+    this.directiveText.alpha = semanticSuppressed ? 0 : 0.62 * focusAlpha;
+    this.directiveProgressBg.alpha = semanticSuppressed ? 0 : 0.56 * focusAlpha;
+    this.directiveProgressFill.alpha = semanticSuppressed ? 0 : 0.72 * focusAlpha;
+    this.missionProgressBg.alpha = semanticSuppressed ? 0 : focusAlpha;
+    this.missionProgressFill.alpha = semanticSuppressed ? 0 : focusAlpha;
+    this.missionProgressActive.alpha = semanticSuppressed ? 0 : focusAlpha;
+    this.missionProgressTicks.alpha = semanticSuppressed ? 0 : focusAlpha;
+    this.missionPanel._debugPriority = {
+      tier: critical ? 'critical' : 'objective',
+      boss: isBoss,
+      immediateDanger,
+      neutralBriefing: isBriefing && !critical,
+      pressure: Number(Math.max(0, Number(pressure) || 0).toFixed(3)),
+      accent,
+      notificationFocus: this.notificationFocus,
+      semanticFrozen: this.notificationFocus !== 'none',
+      semanticSuppressed,
+      missionTextAlpha: Number(this.missionText.alpha.toFixed(3)),
+      directiveTextAlpha: Number(this.directiveText.alpha.toFixed(3)),
+      progressAlpha: Number(this.missionProgressBg.alpha.toFixed(3)),
+      authoredFrameReady: false,
+      deterministicFrameReady: Boolean(this.missionFrameGeometry?.root),
+      frame: this.missionFrameGeometry?.debug || null,
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'nova_command_hud_persistent_v1'
+    };
   }
 
   updateActivePowerup() {
-    const player = this.game?.scenes?.play?.player;
+    const playScene = this.game?.scenes?.play;
+    const player = playScene?.player;
     const states = player?.getActivePowerupStates
       ? player.getActivePowerupStates()
       : (player?.getActivePowerupState ? [player.getActivePowerupState()] : []);
+    if (playScene?.grazeBreakReady) {
+      states.push({
+        type: 'graze_break',
+        label: translateText('GRAZE BREAK'),
+        remainingMs: Math.max(0, (Number(playScene.grazeBreakExpiresAt) || 0) - playScene.getGameplayClockMs()),
+        durationMs: 6500,
+        color: 0xff66ff,
+        category: 'defense'
+      });
+    }
     const activeStates = states.filter(state => state?.label);
     if (!activeStates.length) {
       this.activePowerupRows.forEach(row => { row.container.visible = false; });
       this.activePowerupGroup.visible = false;
+      this.activePowerupGroup._debugStatus = { visible: false, count: 0 };
       return;
     }
 
     const layout = getCurrentLayout();
     const isMobile = Boolean(layout?.isMobile);
-    const width = isMobile ? 184 : 232;
+    const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
+    const width = Math.round((isMobile ? 194 : 256) * uiScale);
     const paddingX = 7;
     const paddingTop = 6;
     const rowGap = 5;
-    const rowHeight = isMobile ? 31 : 34;
-    const titleHeight = 16;
+    const rowHeight = Math.round((isMobile ? 44 : 48) * uiScale);
+    const titleHeight = Math.round((isMobile ? 16 : 18) * uiScale);
     const height = paddingTop + titleHeight + activeStates.length * rowHeight + Math.max(0, activeStates.length - 1) * rowGap + 7;
 
+    const hasDebuff = activeStates.some((state) => String(state.type || '').startsWith('debuff_'));
+    const hasSpent = activeStates.some((state) => Boolean(state.spent));
+    const hasExpiring = activeStates.some((state) => this.isPowerupExpiring(state));
+    const statusColor = hasDebuff ? 0xff6688 : hasSpent ? 0xff6677 : hasExpiring ? 0xffd166 : 0x00e5ff;
+    const statusAlpha = hasDebuff ? 0.88 : hasSpent ? 0.86 : hasExpiring ? 0.82 : 0.7;
     this.activePowerupBg.clear();
     this.activePowerupBg.roundRect(0, 0, width, height, 8);
-    this.activePowerupBg.fill({ color: 0x020914, alpha: 0.62 });
-    const hasDebuff = activeStates.some((state) => String(state.type || '').startsWith('debuff_'));
-    this.activePowerupBg.stroke({ color: hasDebuff ? 0xff6688 : 0x00e5ff, width: hasDebuff ? 2 : 1.2, alpha: hasDebuff ? 0.88 : 0.7 });
+    this.activePowerupBg.fill({ color: hasSpent ? 0x12050b : 0x020914, alpha: hasSpent ? 0.68 : 0.62 });
+    this.activePowerupBg.stroke({ color: statusColor, width: hasDebuff || hasSpent || hasExpiring ? 2 : 1.2, alpha: statusAlpha });
     this.activePowerupBg.rect(1, 1, Math.max(0, width - 2), 14);
-    this.activePowerupBg.fill({ color: hasDebuff ? 0xff6688 : 0x00e5ff, alpha: hasDebuff ? 0.17 : 0.11 });
+    this.activePowerupBg.fill({ color: statusColor, alpha: hasDebuff || hasSpent || hasExpiring ? 0.17 : 0.11 });
 
     this.activePowerupTitle.text = hasDebuff
       ? 'SYSTEM STATUS'
       : activeStates.length > 1 ? 'POWERUPS ONLINE' : 'POWERUP ONLINE';
-    this.activePowerupTitle.style.fontSize = isMobile ? 9 : 10;
+    this.activePowerupTitle.style.fill = hasDebuff ? '#ffb7c8' : hasSpent ? '#ffb0b8' : hasExpiring ? '#ffe08a' : '#7ee9ff';
+    this.activePowerupTitle.style.fontSize = Math.round((isMobile ? 10 : 12) * uiScale);
     this.activePowerupTitle.x = paddingX + 1;
     this.activePowerupTitle.y = paddingTop - 2;
     this.activePowerupTitle.visible = true;
+    this.activePowerupGroup._debugStatus = {
+      visible: true,
+      count: activeStates.length,
+      hasDebuff,
+      hasSpent,
+      hasExpiring,
+      statusColor,
+      states: activeStates.map((state) => ({
+        type: state.type,
+        remainingMs: Math.round(Number(state.remainingMs) || 0)
+      }))
+    };
 
     activeStates.forEach((state, index) => {
       const row = this.getActivePowerupRow(index);
@@ -386,9 +1622,9 @@ export class HUD {
 
     const canvasWidth = this.game.getWidth ? this.game.getWidth() : 0;
     if (canvasWidth) {
-      const margin = 10;
+      const margin = Math.round(10 * uiScale);
       const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 : 0;
-      const locationBottom = this.locationText ? this.locationText.y + this.locationText.height + 6 : 0;
+      const locationBottom = this.locationText ? Math.max(this.locationText.y + this.locationText.height, this.sectorPlate?.getBounds?.().maxY || 0) + 6 : 0;
       const groupX = canvasWidth - margin - width;
       const overlayBottom = this.getBlockingToastBottom(groupX, width);
       const desiredY = Math.max(livesBottom, locationBottom, overlayBottom);
@@ -411,6 +1647,322 @@ export class HUD {
     const groupRight = groupX + groupWidth;
     const overlaps = right >= groupX && left <= groupRight;
     return overlaps ? top + height + 8 : 0;
+  }
+
+  getTacticalAugmentItem(index) {
+    if (this.tacticalAugmentItems[index]) return this.tacticalAugmentItems[index];
+
+    const container = new PIXI.Container();
+    const glow = new PIXI.Graphics();
+    const bg = new PIXI.Graphics();
+    const accentRail = new PIXI.Graphics();
+    const emblem = new PIXI.Graphics();
+    const icon = new PIXI.Sprite();
+    icon.anchor.set(0.5);
+    const label = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 11,
+      fontWeight: '900',
+      fill: '#f8fbff',
+      stroke: '#00111d',
+      strokeThickness: 2
+    });
+    const stackBg = new PIXI.Graphics();
+    const stack = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: 9,
+      fontWeight: '900',
+      fill: '#07111d',
+      align: 'center'
+    });
+    stack.anchor.set(0.5);
+    container.addChild(glow, bg, accentRail, emblem, icon, label, stackBg, stack);
+    this.tacticalAugmentList.addChild(container);
+
+    const item = { container, glow, bg, accentRail, emblem, icon, label, stackBg, stack };
+    this.tacticalAugmentItems[index] = item;
+    return item;
+  }
+
+  drawTacticalAugmentEmblem(graphics, category, color, x, y, radius) {
+    graphics.clear();
+    graphics.circle(x, y, radius);
+    graphics.fill({ color: 0x03101d, alpha: 0.96 });
+    graphics.circle(x, y, radius - 1);
+    graphics.stroke({ color, width: 1.25, alpha: 0.88 });
+    const mark = radius * 0.58;
+    if (category === 'offense') {
+      graphics.poly([x - mark * 0.65, y - mark, x + mark, y, x - mark * 0.65, y + mark, x - mark * 0.15, y]);
+      graphics.fill({ color, alpha: 0.9 });
+    } else if (category === 'mobility') {
+      graphics.moveTo(x - mark, y - mark * 0.7);
+      graphics.lineTo(x, y);
+      graphics.lineTo(x - mark, y + mark * 0.7);
+      graphics.moveTo(x, y - mark * 0.7);
+      graphics.lineTo(x + mark, y);
+      graphics.lineTo(x, y + mark * 0.7);
+      graphics.stroke({ color, width: 1.7, alpha: 0.92 });
+    } else if (category === 'defense') {
+      graphics.poly([x, y - mark, x + mark * 0.82, y - mark * 0.45, x + mark * 0.68, y + mark * 0.52, x, y + mark, x - mark * 0.68, y + mark * 0.52, x - mark * 0.82, y - mark * 0.45]);
+      graphics.stroke({ color, width: 1.5, alpha: 0.94 });
+    } else if (category === 'fusion') {
+      for (let index = 0; index < 4; index += 1) {
+        const angle = index * Math.PI / 2 + Math.PI / 4;
+        graphics.circle(x + Math.cos(angle) * mark * 0.58, y + Math.sin(angle) * mark * 0.58, mark * 0.18);
+        graphics.fill({ color: index % 2 ? 0x66efff : color, alpha: 0.92 });
+      }
+      graphics.poly([x, y - mark * 0.46, x + mark * 0.46, y, x, y + mark * 0.46, x - mark * 0.46, y]);
+      graphics.stroke({ color: 0xffffff, width: 1.35, alpha: 0.82 });
+    } else {
+      graphics.circle(x, y, mark * 0.34);
+      graphics.fill({ color, alpha: 0.9 });
+      for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        graphics.circle(x + dx * mark * 0.72, y + dy * mark * 0.72, mark * 0.2);
+        graphics.fill({ color, alpha: 0.7 });
+      }
+    }
+  }
+
+  updateTacticalAugmentItem(item, entry, width, height, compact, overflow = false) {
+    const color = Number(entry?.color) || 0x37f5ff;
+    const isFusion = entry?.category === 'fusion';
+    const iconX = compact ? 13 : 15;
+    const iconY = height / 2;
+    const iconSize = compact ? 17 : 20;
+    item.glow.clear();
+    item.glow.roundRect(-2, -2, width + 4, height + 4, 7);
+    item.glow.fill({ color, alpha: overflow ? 0.035 : isFusion ? 0.1 : 0.055 });
+    item.glow.stroke({ color, width: isFusion ? 2 : 1.2, alpha: overflow ? 0.12 : isFusion ? 0.26 : 0.16 });
+    item.glow.blendMode = 'add';
+    item.bg.clear();
+    item.bg.roundRect(0, 0, width, height, 6);
+    item.bg.fill({ color: isFusion ? 0x090b1d : 0x03101d, alpha: overflow ? 0.78 : 0.84 });
+    item.bg.stroke({ color, width: overflow ? 1.2 : isFusion ? 1.35 : 1, alpha: overflow ? 0.72 : isFusion ? 0.72 : 0.46 });
+    item.bg.roundRect(3, 3, width - 6, height - 6, 4);
+    item.bg.fill({ color, alpha: overflow ? 0.025 : isFusion ? 0.075 : 0.035 });
+    item.bg.stroke({ color: 0xffffff, width: 0.6, alpha: overflow ? 0.08 : 0.13 });
+
+    item.accentRail.clear();
+    item.accentRail.roundRect(1, 5, isFusion ? 3 : 2, height - 10, 1.5);
+    item.accentRail.fill({ color, alpha: overflow ? 0.46 : 0.9 });
+    item.accentRail.moveTo(width - 12, 3);
+    item.accentRail.lineTo(width - 4, 3);
+    item.accentRail.lineTo(width - 4, 9);
+    item.accentRail.stroke({ color: isFusion ? 0xffffff : color, width: 1, alpha: isFusion ? 0.48 : 0.28 });
+    if (isFusion && !overflow) {
+      item.accentRail.poly([width - 15, height - 4, width - 10, height - 9, width - 5, height - 4, width - 10, height - 1]);
+      item.accentRail.fill({ color: 0x7ee9ff, alpha: 0.62 });
+    }
+
+    item.icon.visible = false;
+    item.emblem.visible = !overflow;
+    if (!overflow) {
+      const fusionTexture = entry.id === 'drone_constellation'
+        ? GameAssets.getMicroSignalTexture('droneConstellation')
+        : null;
+      const texture = fusionTexture || GameAssets.getPowerupTexture?.(entry.id);
+      if (texture && GameAssets.isValidTexture?.(texture)) {
+        item.icon.visible = true;
+        item.icon.texture = texture;
+        const scale = Math.min(iconSize / texture.width, iconSize / texture.height);
+        item.icon.scale.set(Number.isFinite(scale) ? scale : 1);
+        item.icon.x = iconX;
+        item.icon.y = iconY;
+        item.icon.label = fusionTexture ? 'authoredDroneConstellationHudCrest' : 'tacticalAugmentIcon';
+        item.emblem.clear();
+        item.emblem.circle(iconX, iconY, iconSize * 0.62);
+        item.emblem.fill({ color: 0x03101d, alpha: 0.94 });
+        item.emblem.circle(iconX, iconY, iconSize * 0.78);
+        item.emblem.stroke({ color, width: isFusion ? 1.6 : 1, alpha: isFusion ? 0.34 : 0.18 });
+        item.emblem.circle(iconX, iconY, iconSize * 0.61);
+        item.emblem.stroke({ color, width: isFusion ? 1.45 : 1, alpha: isFusion ? 0.92 : 0.72 });
+      } else {
+        this.drawTacticalAugmentEmblem(item.emblem, entry.category, color, iconX, iconY, iconSize * 0.62);
+      }
+    } else {
+      item.emblem.clear();
+    }
+
+    item.label.text = overflow ? `+${entry.hiddenCount}` : translateText(entry.name || entry.id);
+    item.label.style.fontSize = compact ? 10 : 11;
+    item.label.style.fill = overflow ? '#fff3a0' : '#f8fbff';
+    item.label.scale.set(1);
+    item.label.x = overflow ? 0 : (compact ? 25 : 29);
+    item.label.y = Math.round((height - item.label.height) / 2) - 1;
+    if (overflow) {
+      item.label.anchor.set(0.5, 0);
+      item.label.x = width / 2;
+    } else {
+      item.label.anchor.set(0, 0);
+      this.fitTextToWidth(item.label, width - item.label.x - 5, 0.68);
+    }
+
+    const showStack = !overflow && entry.stacks > 1;
+    item.stackBg.visible = showStack;
+    item.stack.visible = showStack;
+    item.stackBg.clear();
+    if (showStack) {
+      const badgeX = compact ? 7 : 8;
+      const badgeY = compact ? 6 : 7;
+      const badgeRadius = compact ? 6.5 : 7;
+      item.stackBg.circle(badgeX, badgeY, badgeRadius);
+      item.stackBg.fill({ color, alpha: 0.98 });
+      item.stackBg.circle(badgeX, badgeY, badgeRadius);
+      item.stackBg.stroke({ color: 0xffffff, width: 0.8, alpha: 0.66 });
+      item.stack.text = String(entry.stacks);
+      item.stack.x = badgeX;
+      item.stack.y = badgeY - 0.5;
+    }
+    item.container._debugTacticalAugment = overflow
+      ? { overflow: true, hiddenCount: entry.hiddenCount }
+      : { id: entry.id, name: item.label.text, stacks: entry.stacks, category: entry.category, color };
+  }
+
+  updateTacticalAugmentTray() {
+    if (!this.tacticalAugmentGroup) return;
+    const player = this.game?.scenes?.play?.player;
+    const allSelectedIds = Array.isArray(player?.runAugmentIds)
+      ? player.runAugmentIds
+      : [];
+    const consumedIds = new Set(Array.isArray(player?.consumedRunAugmentIds) ? player.consumedRunAugmentIds : []);
+    const selectedIds = allSelectedIds.filter((id) => !consumedIds.has(id));
+    const grouped = new Map();
+    for (const id of selectedIds) {
+      const meta = getTacticalDraftMeta(id);
+      if (!meta) continue;
+      const current = grouped.get(id);
+      if (current) current.stacks += 1;
+      else grouped.set(id, { id, name: meta.name, category: meta.category, color: meta.color, stacks: 1 });
+    }
+    const augmentEntries = [...grouped.values()].map((entry) => {
+      const display = getTacticalDraftDisplayMeta(entry.id, entry.stacks);
+      return { ...entry, name: display?.displayName || entry.name, evolved: Boolean(display?.evolved) };
+    });
+    const fusionEntries = getActiveTacticalFusionProtocols(selectedIds).map((fusion) => {
+      const skyState = fusion.id === 'sky_verdict'
+        ? String(player?.skyVerdictEmergencyState || 'unavailable')
+        : null;
+      const stateLabel = skyState === 'ready'
+        ? translateText('READY')
+        : skyState === 'spent'
+          ? translateText('SPENT')
+          : null;
+      return {
+        id: fusion.id,
+        name: stateLabel ? `${fusion.name} / ${stateLabel}` : fusion.name,
+        category: 'fusion',
+        color: skyState === 'spent' ? 0x8f6f63 : fusion.color,
+        stacks: 1,
+        evolved: false,
+        fusion: true,
+        state: skyState
+      };
+    });
+    const entries = [...fusionEntries, ...augmentEntries];
+    const doctrine = analyzeTacticalDoctrine(allSelectedIds, [...consumedIds]);
+    if (!entries.length) {
+      this.tacticalAugmentItems.forEach((item) => { item.container.visible = false; });
+      this.tacticalAugmentBackdrop.clear();
+      this.tacticalDoctrineTitle.visible = false;
+      this.tacticalAugmentGroup.visible = false;
+      this.tacticalAugmentGroup._debugTacticalAugments = {
+        visible: false,
+        selectedCount: allSelectedIds.length,
+        activeCount: selectedIds.length,
+        consumedCount: consumedIds.size,
+        fusionCount: 0,
+        uniqueCount: 0,
+        entries: [],
+        hiddenCount: 0
+      };
+      return;
+    }
+
+    const layout = getCurrentLayout();
+    const canvasWidth = this.game.getWidth ? this.game.getWidth() : Number(layout?.width) || 0;
+    const canvasHeight = this.game.getHeight ? this.game.getHeight() : Number(layout?.height) || 0;
+    const compact = canvasWidth < 1180 || canvasHeight < 700;
+    const itemWidth = compact ? 84 : 108;
+    const itemHeight = compact ? 26 : 30;
+    const gap = compact ? 4 : 5;
+    const overflowWidth = compact ? 38 : 44;
+    const columns = 4;
+    const maxVisibleItems = 8;
+    const doctrineHeight = doctrine ? (compact ? 19 : 22) : 0;
+    const layoutState = this.tacticalAugmentGroup._layout || {};
+    const maxWidth = Math.max(itemWidth * columns, Number(layoutState.maxWidth) || Math.min(canvasWidth - 28, compact ? 430 : 560));
+    const visibleCount = Math.min(entries.length, maxVisibleItems);
+    const hiddenCount = Math.max(0, entries.length - visibleCount);
+    const visibleEntries = entries.slice(0, visibleCount);
+    visibleEntries.forEach((entry, index) => {
+      const item = this.getTacticalAugmentItem(index);
+      item.container.visible = true;
+      item.container.x = 4 + (index % columns) * (itemWidth + gap);
+      item.container.y = doctrineHeight + 4 + Math.floor(index / columns) * (itemHeight + gap);
+      this.updateTacticalAugmentItem(item, entry, itemWidth, itemHeight, compact, false);
+    });
+    if (hiddenCount > 0) {
+      const item = this.getTacticalAugmentItem(visibleEntries.length);
+      item.container.visible = true;
+      item.container.x = 4 + columns * (itemWidth + gap);
+      item.container.y = doctrineHeight + 4 + itemHeight + gap;
+      this.updateTacticalAugmentItem(item, { hiddenCount, color: 0xffef7e }, overflowWidth, itemHeight, compact, true);
+    }
+    this.tacticalAugmentItems.slice(visibleEntries.length + (hiddenCount > 0 ? 1 : 0)).forEach((item) => {
+      item.container.visible = false;
+    });
+
+    const visibleColumns = Math.min(columns, visibleEntries.length);
+    const gridWidth = visibleColumns > 0 ? visibleColumns * itemWidth + Math.max(0, visibleColumns - 1) * gap : 0;
+    const trayWidth = 8 + gridWidth + (hiddenCount > 0 ? gap + overflowWidth : 0);
+    const trayRows = Math.max(1, Math.ceil(visibleEntries.length / columns));
+    const trayHeight = doctrineHeight + 8 + trayRows * itemHeight + Math.max(0, trayRows - 1) * gap;
+    this.tacticalAugmentBackdrop.clear();
+    this.tacticalAugmentBackdrop.roundRect(0, 0, trayWidth, trayHeight, 8);
+    this.tacticalAugmentBackdrop.fill({ color: 0x010711, alpha: 0.54 });
+    this.tacticalAugmentBackdrop.stroke({ color: 0x37f5ff, width: 0.8, alpha: 0.22 });
+    this.tacticalAugmentBackdrop.roundRect(4, 4, trayWidth - 8, trayHeight - 8, 5);
+    this.tacticalAugmentBackdrop.stroke({ color: 0xffffff, width: 0.5, alpha: 0.08 });
+    this.tacticalDoctrineTitle.visible = Boolean(doctrine);
+    if (doctrine) {
+      this.tacticalDoctrineTitle.text = translateText('{name} // {stage}', {
+        name: translateText(doctrine.name),
+        stage: translateText(doctrine.stage)
+      });
+      this.tacticalDoctrineTitle.style.fontSize = compact ? 9 : 11;
+      this.tacticalDoctrineTitle.style.fill = doctrine.color;
+      this.tacticalDoctrineTitle.scale.set(1);
+      this.tacticalDoctrineTitle.anchor.set(0.5, 0);
+      this.tacticalDoctrineTitle.x = trayWidth / 2;
+      this.tacticalDoctrineTitle.y = compact ? 3 : 4;
+      this.fitTextToWidth(this.tacticalDoctrineTitle, trayWidth - 12, 0.64);
+    }
+    this.tacticalAugmentGroup.x = Number(layoutState.x) || 14;
+    this.tacticalAugmentGroup.y = Number(layoutState.y) || 164;
+    this.tacticalAugmentGroup.visible = true;
+
+    const rightHudLeft = Number(layoutState.rightHudLeft) || canvasWidth;
+    const trayRight = this.tacticalAugmentGroup.x + trayWidth;
+    this.tacticalAugmentGroup._debugTacticalAugments = {
+      visible: true,
+      selectedCount: allSelectedIds.length,
+      activeCount: selectedIds.length,
+      fusionCount: fusionEntries.length,
+      consumedCount: consumedIds.size,
+      uniqueCount: entries.length,
+      entries: entries.map((entry) => ({ id: entry.id, name: translateText(entry.name), stacks: entry.stacks, category: entry.category, evolved: entry.evolved })),
+      doctrine: doctrine ? { ...doctrine, display: translateText('{name} // {stage}', { name: translateText(doctrine.name), stage: translateText(doctrine.stage) }) } : null,
+      visibleEntries: visibleEntries.map((entry) => entry.id),
+      hiddenCount,
+      compact,
+      columns,
+      rows: trayRows,
+      itemWidth,
+      bounds: { x: this.tacticalAugmentGroup.x, y: this.tacticalAugmentGroup.y, width: trayWidth, height: trayHeight },
+      maxWidth,
+      rightHudLeft,
+      overlapsRightHud: trayRight > rightHudLeft
+    };
   }
 
   getActivePowerupRow(index) {
@@ -438,10 +1990,18 @@ export class HUD {
       stroke: '#00111d',
       strokeThickness: 2
     });
+    const categoryAccent = new PIXI.Graphics();
     const barBg = new PIXI.Graphics();
     const barFill = new PIXI.Graphics();
+    const barTicks = new PIXI.Graphics();
+    const categoryRailPips = new PIXI.Graphics();
+    const chargePips = new PIXI.Graphics();
+    const urgencyChevrons = new PIXI.Graphics();
+    const expiryOverlay = new PIXI.Graphics();
+    const spentOverlay = new PIXI.Graphics();
 
     container.addChild(bg);
+    container.addChild(categoryAccent);
     container.addChild(iconGlow);
     container.addChild(iconFrame);
     container.addChild(icon);
@@ -449,30 +2009,46 @@ export class HUD {
     container.addChild(meta);
     container.addChild(barBg);
     container.addChild(barFill);
+    container.addChild(barTicks);
+    container.addChild(categoryRailPips);
+    container.addChild(chargePips);
+    container.addChild(urgencyChevrons);
+    container.addChild(expiryOverlay);
+    container.addChild(spentOverlay);
     this.activePowerupList.addChild(container);
 
-    const row = { container, bg, iconGlow, iconFrame, icon, label, meta, barBg, barFill };
+    const row = { container, bg, categoryAccent, iconGlow, iconFrame, icon, label, meta, barBg, barFill, barTicks, categoryRailPips, chargePips, urgencyChevrons, expiryOverlay, spentOverlay };
     this.activePowerupRows[index] = row;
     return row;
   }
 
   updateActivePowerupRow(row, state, width, height, isMobile) {
+    const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
     const color = Number.isFinite(state.color) ? state.color : this.getPowerupColor(state.type);
-    const iconSize = isMobile ? 20 : 23;
-    const iconX = 17;
+    const spent = Boolean(state.spent);
+    const progress = this.getPowerupProgress(state);
+    const expiring = this.isPowerupExpiring(state);
+    const pulse = 0.5 + Math.sin(Date.now() * 0.018) * 0.5;
+    const category = this.getPowerupCategory(state.type, state);
+    const categoryColor = this.getPowerupCategoryColor(category, color);
+    const rowColor = spent ? 0xff6677 : expiring ? 0xffd166 : color;
+    const iconSize = Math.round((isMobile ? 20 : 23) * uiScale);
+    const iconX = Math.round(17 * uiScale);
     const iconY = height / 2 - 1;
     const texture = GameAssets.getPowerupTexture(state.iconType || state.type);
     row.bg.clear();
     row.bg.roundRect(0, 0, width, height, 7);
-    row.bg.fill({ color: 0x03101d, alpha: 0.58 });
-    row.bg.stroke({ color, width: 1, alpha: 0.65 });
+    row.bg.fill({ color: spent ? 0x1e0710 : 0x03101d, alpha: spent ? 0.76 : 0.58 });
+    row.bg.stroke({ color: rowColor, width: spent || expiring ? 1.7 : 1, alpha: spent ? 0.95 : expiring ? 0.68 + pulse * 0.25 : 0.65 });
+
+    this.drawPowerupCategoryAccent(row.categoryAccent, category, categoryColor, height, pulse, spent);
 
     row.iconGlow.clear();
     row.iconGlow.circle(iconX, iconY, iconSize * 0.62);
-    row.iconGlow.fill({ color, alpha: 0.16 });
+    row.iconGlow.fill({ color, alpha: spent ? 0.08 : 0.16 });
     row.iconFrame.clear();
     row.iconFrame.circle(iconX, iconY, iconSize * 0.58);
-    row.iconFrame.stroke({ color, width: 1.4, alpha: 0.82 });
+    row.iconFrame.stroke({ color, width: spent ? 1.8 : 1.4, alpha: spent ? 0.95 : 0.82 });
 
     if (texture) {
       row.icon.visible = true;
@@ -481,44 +2057,267 @@ export class HUD {
       row.icon.scale.set(Number.isFinite(scale) ? scale : 1);
       row.icon.x = iconX;
       row.icon.y = iconY;
+      row.icon.alpha = spent ? 0.55 : 1;
     } else {
       row.icon.visible = false;
     }
 
-    row.label.style.fontSize = isMobile ? 10 : 12;
-    row.meta.style.fontSize = isMobile ? 10 : 11;
-    row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 15 : 19);
+    row.label.style.fontSize = Math.round((isMobile ? 11 : 14) * uiScale);
+    row.meta.style.fontSize = Math.round((isMobile ? 10 : 12) * uiScale);
+    row.label.style.fill = spent ? '#ffd6d6' : '#f8fbff';
+    row.meta.style.fill = spent ? '#ff9d9d' : expiring ? (pulse > 0.5 ? '#fff2a6' : '#ffc95b') : '#ffff66';
+    row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 18 : 24);
     row.meta.text = this.formatPowerupMeta(state);
-    row.label.x = 34;
-    row.label.y = 4;
-    row.meta.x = Math.max(row.label.x + 42, width - 7 - row.meta.width);
-    row.meta.y = 4;
+    const textX = Math.round((isMobile ? 32 : 34) * uiScale);
+    const rightPad = Math.round(7 * uiScale);
+    const maxCharges = Math.max(0, Math.min(6, Number(state?.maxCharges || 0)));
+    const chargeReserve = maxCharges > 1 ? 11 + (maxCharges - 1) * 7 : 0;
+    const urgencyReserve = expiring ? Math.round(38 * uiScale) : 0;
+    row.label.x = textX;
+    row.label.y = Math.round(2 * uiScale);
+    this.fitTextToWidth(row.label, Math.max(42, width - textX - rightPad - chargeReserve), 0.68);
+    row.meta.x = textX;
+    row.meta.y = Math.round((isMobile ? 21 : 23) * uiScale);
+    this.fitTextToWidth(row.meta, Math.max(42, width - textX - rightPad - urgencyReserve), 0.58);
 
-    const barX = 34;
-    const barY = height - 8;
+    const barX = textX;
+    const barY = height - 5;
     const barWidth = Math.max(34, width - barX - 7);
-    const progress = this.getPowerupProgress(state);
     row.barBg.clear();
     row.barBg.roundRect(barX, barY, barWidth, 4, 2);
-    row.barBg.fill({ color: 0x143042, alpha: 0.9 });
+    row.barBg.fill({ color: spent ? 0x3a1118 : 0x143042, alpha: 0.9 });
     row.barFill.clear();
-    row.barFill.roundRect(barX, barY, Math.max(2, barWidth * progress), 4, 2);
-    row.barFill.fill({ color, alpha: 0.98 });
+    const fillWidth = spent ? 0 : Math.max(2, barWidth * progress);
+    if (fillWidth > 0) {
+      row.barFill.roundRect(barX, barY, fillWidth, 4, 2);
+      row.barFill.fill({ color: rowColor, alpha: expiring ? 0.72 + pulse * 0.26 : 0.98 });
+    }
+    const timerTickCount = this.drawPowerupTimerTicks(row.barTicks, state, barX, barY, barWidth, spent);
+    const categoryRailPipCount = this.drawPowerupCategoryRailPips(row.categoryRailPips, category, categoryColor, height, progress, expiring, spent, pulse);
+    const chargeDebug = this.drawPowerupChargePips(row.chargePips, state, width, height, rowColor, spent);
+    const urgencyChevronCount = this.drawPowerupUrgencyChevrons(row.urgencyChevrons, expiring, width, height, pulse);
+
+    row.expiryOverlay.clear();
+    row.expiryOverlay.visible = expiring;
+    if (expiring) {
+      row.expiryOverlay.roundRect(1, 1, Math.max(0, width - 2), Math.max(0, height - 2), 7);
+      row.expiryOverlay.stroke({ color: 0xffd166, width: 1.2, alpha: 0.25 + pulse * 0.36 });
+      row.expiryOverlay.rect(3, 4, 3, Math.max(0, height - 8));
+      row.expiryOverlay.fill({ color: 0xffd166, alpha: 0.34 + pulse * 0.34 });
+    }
+
+    row.spentOverlay.clear();
+    row.spentOverlay.visible = spent;
+    if (spent) {
+      const slashPad = iconSize * 0.48;
+      row.spentOverlay.moveTo(iconX - slashPad, iconY - slashPad);
+      row.spentOverlay.lineTo(iconX + slashPad, iconY + slashPad);
+      row.spentOverlay.stroke({ color: 0xffc1c8, width: 2.2, alpha: 0.95 });
+      const hatchStart = Math.max(barX + 70, width - 45);
+      for (let i = 0; i < 3; i += 1) {
+        const hx = hatchStart + i * 10;
+        row.spentOverlay.moveTo(hx, height - 15);
+        row.spentOverlay.lineTo(hx + 8, height - 7);
+      }
+      row.spentOverlay.stroke({ color: 0xff7584, width: 1.4, alpha: 0.82 });
+    }
+
+    row.container._debugPowerupState = {
+      type: state.type || null,
+      label: row.label.text,
+      meta: row.meta.text,
+      spent,
+      expiring,
+      category,
+      progress: Number(progress.toFixed(3)),
+      rowWidth: Number(width.toFixed(2)),
+      rowHeight: Number(height.toFixed(2)),
+      categoryAccentVisible: Boolean(row.categoryAccent.visible),
+      categoryRailPipCount,
+      timerTickCount,
+      chargePipCount: chargeDebug.count,
+      chargePipActive: chargeDebug.active,
+      urgencyChevronCount,
+      labelBounds: {
+        x: Number(row.label.x.toFixed(2)),
+        y: Number(row.label.y.toFixed(2)),
+        width: Number(row.label.width.toFixed(2)),
+        height: Number(row.label.height.toFixed(2))
+      },
+      metaBounds: {
+        x: Number(row.meta.x.toFixed(2)),
+        y: Number(row.meta.y.toFixed(2)),
+        width: Number(row.meta.width.toFixed(2)),
+        height: Number(row.meta.height.toFixed(2))
+      },
+      barBounds: {
+        x: Number(barX.toFixed(2)),
+        y: Number(barY.toFixed(2)),
+        width: Number(barWidth.toFixed(2)),
+        height: 4
+      },
+      textOverlap: (
+        row.label.x < row.meta.x + row.meta.width
+        && row.label.x + row.label.width > row.meta.x
+        && row.label.y < row.meta.y + row.meta.height
+        && row.label.y + row.label.height > row.meta.y
+      ),
+      spentOverlayVisible: Boolean(row.spentOverlay.visible),
+      expiryOverlayVisible: Boolean(row.expiryOverlay.visible)
+    };
+  }
+
+  drawPowerupCategoryAccent(graphics, category, color, height, pulse = 0, spent = false) {
+    graphics.clear();
+    graphics.visible = Boolean(category);
+    if (!graphics.visible) return;
+
+    const alpha = spent ? 0.42 : 0.66 + pulse * 0.18;
+    graphics.roundRect(2, 5, 4, Math.max(10, height - 10), 2);
+    graphics.fill({ color, alpha });
+
+    const midY = height / 2;
+    const markAlpha = spent ? 0.34 : 0.78;
+    if (category === 'offense') {
+      graphics.poly([7, midY - 7, 14, midY - 3, 7, midY + 1]);
+      graphics.fill({ color, alpha: markAlpha });
+      graphics.poly([7, midY + 2, 14, midY + 6, 7, midY + 10]);
+      graphics.fill({ color, alpha: markAlpha * 0.78 });
+    } else if (category === 'defense') {
+      graphics.circle(10, midY - 4, 3.5);
+      graphics.stroke({ color, width: 1.2, alpha: markAlpha });
+      graphics.circle(10, midY + 5, 2.2);
+      graphics.fill({ color, alpha: markAlpha * 0.55 });
+    } else if (category === 'control') {
+      graphics.moveTo(7, midY);
+      graphics.lineTo(15, midY);
+      graphics.moveTo(11, midY - 4);
+      graphics.lineTo(11, midY + 4);
+      graphics.stroke({ color, width: 1.2, alpha: markAlpha });
+      graphics.circle(11, midY, 5.5);
+      graphics.stroke({ color, width: 0.8, alpha: markAlpha * 0.48 });
+    } else if (category === 'status') {
+      graphics.moveTo(7, midY - 6);
+      graphics.lineTo(15, midY + 6);
+      graphics.moveTo(15, midY - 6);
+      graphics.lineTo(7, midY + 6);
+      graphics.stroke({ color, width: 1.4, alpha: markAlpha });
+    } else {
+      graphics.poly([11, midY - 6, 16, midY, 11, midY + 6, 6, midY]);
+      graphics.stroke({ color, width: 1.2, alpha: markAlpha });
+    }
+  }
+
+  drawPowerupCategoryRailPips(graphics, category, color, height, progress = 1, expiring = false, spent = false, pulse = 0) {
+    graphics.clear();
+    graphics.visible = Boolean(category);
+    if (!graphics.visible) return 0;
+
+    const countByCategory = { offense: 4, defense: 3, control: 3, utility: 3, status: 3 };
+    const count = countByCategory[category] || 3;
+    const litCount = spent ? 0 : Math.max(1, Math.ceil(Math.max(0, Math.min(1, progress)) * count));
+    const startX = 39;
+    const y = Math.max(18, height - 15);
+    const gap = 7;
+    for (let i = 0; i < count; i += 1) {
+      const active = i < litCount && !spent;
+      const x = startX + i * gap;
+      const alpha = active ? (expiring ? 0.72 + pulse * 0.2 : 0.78) : (spent ? 0.18 : 0.25);
+      if (category === 'offense') {
+        graphics.poly([x - 2, y - 3, x + 3, y, x - 2, y + 3]);
+        graphics.fill({ color, alpha });
+      } else if (category === 'defense') {
+        graphics.circle(x, y, active ? 2.25 : 1.8);
+        graphics.stroke({ color, width: active ? 1 : 0.8, alpha });
+      } else if (category === 'control') {
+        graphics.moveTo(x, y - 3.5);
+        graphics.lineTo(x, y + 3.5);
+        graphics.moveTo(x - 2.5, y);
+        graphics.lineTo(x + 2.5, y);
+        graphics.stroke({ color, width: active ? 1.1 : 0.85, alpha });
+      } else if (category === 'status') {
+        graphics.moveTo(x - 2.5, y - 2.5);
+        graphics.lineTo(x + 2.5, y + 2.5);
+        graphics.moveTo(x + 2.5, y - 2.5);
+        graphics.lineTo(x - 2.5, y + 2.5);
+        graphics.stroke({ color, width: active ? 1.05 : 0.8, alpha });
+      } else {
+        graphics.poly([x, y - 3, x + 3, y, x, y + 3, x - 3, y]);
+        graphics.stroke({ color, width: active ? 1 : 0.8, alpha });
+      }
+    }
+    return count;
+  }
+
+  drawPowerupTimerTicks(graphics, state, barX, barY, barWidth, spent = false) {
+    graphics.clear();
+    const hasTimer = Number(state?.remainingMs || 0) > 0 || Number(state?.durationMs || 0) > 0;
+    graphics.visible = hasTimer;
+    if (!hasTimer) return 0;
+
+    const tickColor = spent ? 0xff8392 : 0xf8fbff;
+    for (let i = 1; i <= 3; i += 1) {
+      const x = barX + barWidth * (i / 4);
+      graphics.moveTo(x, barY - 1);
+      graphics.lineTo(x, barY + 5);
+    }
+    graphics.stroke({ color: tickColor, width: 0.9, alpha: spent ? 0.28 : 0.48 });
+    return 3;
+  }
+
+  drawPowerupChargePips(graphics, state, width, height, color, spent = false) {
+    graphics.clear();
+    const maxCharges = Math.max(0, Math.min(6, Number(state?.maxCharges || 0)));
+    const charges = Math.max(0, Math.min(maxCharges, Number(state?.charges || 0)));
+    graphics.visible = maxCharges > 1;
+    if (!graphics.visible) return { count: 0, active: 0 };
+
+    const pipGap = 7;
+    const startX = Math.max(45, width - 9 - (maxCharges - 1) * pipGap);
+    const y = Math.max(11, Math.min(height - 16, height * 0.28));
+    for (let i = 0; i < maxCharges; i += 1) {
+      const active = i < charges && !spent;
+      const x = startX + i * pipGap;
+      graphics.circle(x, y, active ? 2.5 : 2.1);
+      graphics.fill({ color: active ? color : 0x31465c, alpha: active ? 0.94 : 0.68 });
+      graphics.circle(x, y, active ? 3.7 : 3.1);
+      graphics.stroke({ color: active ? color : 0x7e8da0, width: active ? 0.9 : 0.7, alpha: active ? 0.74 : 0.42 });
+    }
+    return { count: maxCharges, active: spent ? 0 : charges };
+  }
+
+  drawPowerupUrgencyChevrons(graphics, expiring, width, height, pulse = 0) {
+    graphics.clear();
+    graphics.visible = Boolean(expiring);
+    if (!graphics.visible) return 0;
+
+    const color = 0xffd166;
+    const alpha = 0.44 + pulse * 0.34;
+    const baseX = width - 34;
+    const y = height - 22;
+    for (let i = 0; i < 3; i += 1) {
+      const x = baseX + i * 9;
+      graphics.poly([x, y, x + 5, y + 4, x, y + 8]);
+      graphics.fill({ color, alpha: Math.max(0.24, alpha - i * 0.08) });
+    }
+    return 3;
   }
 
   formatPowerupMeta(state) {
     const remaining = Math.max(0, Math.ceil((state.remainingMs || 0) / 1000));
-    const detail = String(state.detail || '').trim();
+    const detail = translateText(String(state.detail || '').trim());
     const charges = Number(state.charges || 0);
+    if (state.spent) return translateText(detail || 'EMPTY');
     if (remaining && detail) return `${remaining}s | ${detail}`;
     if (remaining && charges) return `${remaining}s | ${charges}`;
     if (remaining) return `${remaining}s`;
     if (detail) return detail;
-    if (charges) return `${charges} LEFT`;
-    return 'ACTIVE';
+    if (charges) return `${charges} ${translateText('LEFT')}`;
+    return translateText('ACTIVE');
   }
 
   getPowerupProgress(state) {
+    if (state.spent) return 0;
     const charges = Number(state.charges || 0);
     const maxCharges = Number(state.maxCharges || 0);
     if ((state.remainingMs || 0) > 0) {
@@ -529,6 +2328,13 @@ export class HUD {
       return Math.max(0, Math.min(1, charges / maxCharges));
     }
     return 1;
+  }
+
+  isPowerupExpiring(state) {
+    if (!state || state.spent) return false;
+    const remainingMs = Number(state.remainingMs || 0);
+    if (remainingMs <= 0) return false;
+    return this.getPowerupProgress(state) <= 0.25;
   }
 
   getPowerupDurationMs(type, remainingMs = 0) {
@@ -588,8 +2394,31 @@ export class HUD {
     return colors[type] || 0x00ffff;
   }
 
+  getPowerupCategory(type, state = {}) {
+    const normalized = String(type || '');
+    if (String(state.category || '') === 'debuff' || normalized.startsWith('debuff_')) return 'status';
+    if (normalized.startsWith('rank_') || normalized.startsWith('synergy_')) return 'utility';
+    if (['shield', 'ghost', 'point_defense', 'vampire', 'super_extra_life'].includes(normalized)) return 'defense';
+    if (['slow_time', 'magnet', 'speed_up', 'vector_boost'].includes(normalized)) return 'control';
+    if (['score_x2', 'drones'].includes(normalized)) return 'utility';
+    if (['rapid_fire', 'double_shot', 'damage_up', 'pierce', 'bomb', 'chain_lightning', 'orbital_strike', 'triple_beam', 'rapid_cabinet', 'overdrive_core', 'row_core'].includes(normalized)) return 'offense';
+    return 'utility';
+  }
+
+  getPowerupCategoryColor(category, fallbackColor = 0x00ffff) {
+    const colors = {
+      defense: 0x66ffff,
+      offense: 0xff9a44,
+      control: 0x9a8cff,
+      utility: 0xffee66,
+      status: 0xff6688
+    };
+    return colors[category] || fallbackColor;
+  }
+
   updateTraitMeter() {
-    const player = this.game?.scenes?.play?.player;
+    const play = this.game?.scenes?.play;
+    const player = play?.player;
     const state = player?.getTraitState ? player.getTraitState() : null;
     if (!state?.label) {
       this.traitGroup.visible = false;
@@ -597,51 +2426,116 @@ export class HUD {
     }
 
     const event = this.getTraitMeterEvent(state);
-    const paddingX = 8;
-    const paddingY = 6;
-    const barHeight = 4;
-    const barGap = 4;
+    const intro = (Number(play?.gameTime) || 0) < 8;
+    const pulse = state.experimentalPulse;
+    const charging = Boolean(pulse?.available && pulse.remainingMs > 0);
+    const now = player.getGameplayClockMs?.() || 0;
+    if (this.traitPulseWasCharging && !charging && pulse?.available) this.traitReadyNoticeUntil = now + 1800;
+    this.traitPulseWasCharging = charging;
+    const readyNotice = Boolean(pulse?.available && now < (this.traitReadyNoticeUntil || 0));
+    const visible = intro || charging || readyNotice;
+    this.traitGroup._debugContext = { visible, intro, charging, readyNotice, reason: intro ? 'introduction' : charging ? 'recharge' : readyNotice ? 'newly_ready' : 'passive_hidden' };
+    if (!visible) { this.traitGroup.visible = false; return; }
+    const layout = getCurrentLayout();
+    const canvasWidth = this.game.getWidth ? this.game.getWidth() : Number(layout?.width) || 0;
+    const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
+    const isLargeDesktop = !layout?.isMobile && canvasWidth >= 1920;
+    const paddingX = Math.round(8 * uiScale);
+    const authoredInset = Math.round(42 * uiScale);
+    const paddingY = Math.round(6 * uiScale);
+    const barHeight = Math.max(4, Math.round(4 * uiScale));
+    const barGap = Math.round(4 * uiScale);
+    // A new stroke object invalidates Pixi's canvas text texture even when its
+    // values are identical. Rebuild typography only when the layout changes.
+    const typographyKey = `${isLargeDesktop}:${uiScale}`;
+    if (this.traitTypographyKey !== typographyKey) {
+      this.traitTypographyKey = typographyKey;
+      this.traitLabel.style.fontSize = Math.round((isLargeDesktop ? 12 : 11) * uiScale);
+      this.traitLabel.style.stroke = { color: '#000000', width: Math.round(3 * uiScale) };
+      this.traitText.style.fontSize = Math.round((isLargeDesktop ? 13 : 12) * uiScale);
+      this.traitText.style.stroke = { color: '#000000', width: Math.round(3 * uiScale) };
+    }
     const label = `TRAIT: ${this.truncateLabel(state.label, 17)}`;
     this.traitLabel.text = label;
+    this.traitLabel.visible = intro;
     this.traitText.text = event.text;
-    const width = Math.max(154, Math.min(228, Math.max(this.traitLabel.width, this.traitText.width) + paddingX * 2));
-    const textHeight = this.traitLabel.height + this.traitText.height + 1;
+    this.traitLabel.updateText?.(false);
+    this.traitText.updateText?.(false);
+    const minWidth = Math.round(154 * uiScale);
+    const maxWidth = Math.round(Math.min(
+      canvasWidth ? canvasWidth * (layout?.isMobile ? 0.74 : 0.34) : 300 * uiScale,
+      (isLargeDesktop ? 300 : 260) * uiScale
+    ));
+    const width = Math.max(minWidth, Math.min(maxWidth, Math.max(this.traitLabel.width, this.traitText.width) + authoredInset + paddingX));
+    const labelHeight = intro ? this.traitLabel.height : 0;
+    const textHeight = labelHeight + this.traitText.height + 1;
     const height = textHeight + barGap + barHeight + paddingY * 2;
 
     this.traitBg.clear();
-    this.traitBg.roundRect(0, 0, width, height, 8);
-    this.traitBg.fill({ color: 0x050914, alpha: 0.52 });
-    this.traitBg.stroke({ color: event.color, width: 1.2, alpha: 0.7 });
+    this.traitArt.width = width;
+    this.traitArt.height = height;
+    this.traitArt.tint = 0xffffff;
+    this.traitArt.alpha = 0.82;
 
-    this.traitLabel.x = paddingX;
+    this.traitLabel.x = authoredInset;
     this.traitLabel.y = paddingY - 2;
-    this.traitText.x = paddingX;
-    this.traitText.y = paddingY + this.traitLabel.height - 2;
+    this.traitText.x = authoredInset;
+    this.traitText.y = paddingY + labelHeight - 2;
 
-    const barWidth = Math.max(24, width - paddingX * 2);
+    const barWidth = Math.max(24, width - authoredInset - paddingX);
     const barY = paddingY + textHeight + barGap - 3;
     this.traitBarBg.clear();
-    this.traitBarBg.roundRect(paddingX, barY, barWidth, barHeight, 2);
+    this.traitBarBg.roundRect(authoredInset, barY, barWidth, barHeight, 2 * uiScale);
     this.traitBarBg.fill({ color: 0x231a14, alpha: 0.85 });
     this.traitBarFill.clear();
-    this.traitBarFill.roundRect(paddingX, barY, Math.max(2, barWidth * event.progress), barHeight, 2);
+    this.traitBarFill.roundRect(authoredInset, barY, Math.max(2 * uiScale, barWidth * event.progress), barHeight, 2 * uiScale);
     this.traitBarFill.fill({ color: event.color, alpha: 0.96 });
     this.traitGroup.visible = true;
+    this.traitGroup._debugVisual = {
+      authoredCapsuleReady: GameAssets.isValidTexture(this.traitArt.texture),
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'authored_trait_capsule_v1'
+    };
 
-    const canvasWidth = this.game.getWidth ? this.game.getWidth() : 0;
     if (canvasWidth) {
-      const margin = 10;
+      const margin = Math.round(10 * Math.min(uiScale, 1.45));
       const powerupBottom = this.activePowerupGroup?.visible
-        ? this.activePowerupGroup.y + this.activePowerupGroup.height + 6
+        ? this.activePowerupGroup.y + this.activePowerupGroup.height + 6 * uiScale
         : 0;
-      const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 : 0;
-      const locationBottom = this.locationText ? this.locationText.y + this.locationText.height + 6 : 0;
+      const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 * uiScale : 0;
+      const locationBottom = this.locationText ? Math.max(this.locationText.y + this.locationText.height, this.sectorPlate?.getBounds?.().maxY || 0) + 6 * uiScale : 0;
       this.traitGroup.x = canvasWidth - margin - width;
       this.traitGroup.y = Math.max(powerupBottom, livesBottom, locationBottom);
     }
   }
 
   getTraitMeterEvent(state) {
+    const experimentalPulse = state.experimentalPulse;
+    if (experimentalPulse) {
+      if (!experimentalPulse.available) {
+        return {
+          text: translateText('PULSE UNAVAILABLE'),
+          progress: 0,
+          color: 0x8b7682
+        };
+      }
+      const rechargeMs = Math.max(1, Number(experimentalPulse.rechargeMs) || 2000);
+      const remainingMs = Math.max(0, Number(experimentalPulse.remainingMs) || 0);
+      if (remainingMs > 0) {
+        return {
+          text: translateText('PULSE RECHARGING // {seconds}s', {
+            seconds: Math.max(0.1, remainingMs / 1000).toFixed(1)
+          }),
+          progress: Math.max(0, Math.min(1, 1 - remainingMs / rechargeMs)),
+          color: 0xffb86b
+        };
+      }
+      return {
+        text: translateText('PULSE READY'),
+        progress: 1,
+        color: 0x66f7ff
+      };
+    }
     const candidates = [
       {
         every: Number(state.critEvery || 0),
@@ -696,7 +2590,7 @@ export class HUD {
       };
     }
 
-    if (Number(state.projectileRadiusMult || 1) !== 1) {
+    if (Number(state.projectileRadiusMult || 1) >= 1.08) {
       return {
         text: 'WIDE SHOTS ACTIVE',
         progress: 1,
@@ -717,62 +2611,351 @@ export class HUD {
     return `${text.slice(0, Math.max(1, maxLength - 1))}.`;
   }
 
+  fitTextToWidth(textNode, maxWidth, minScale = 0.68) {
+    if (!textNode || !Number.isFinite(maxWidth) || maxWidth <= 0) return;
+    textNode.scale.set(1);
+    textNode.updateText?.(false);
+    const width = Number(textNode.width) || 0;
+    if (width > maxWidth) {
+      textNode.scale.set(Math.max(minScale, maxWidth / width));
+    }
+  }
+
+  updateComboMeter() {
+    const playScene = this.game?.scenes?.play;
+    const count = Math.max(0, Math.round(Number(playScene?.comboCount) || 0));
+    const multiplier = Math.max(1, Math.round(Number(playScene?.comboMultiplier) || 1));
+    const timerMs = Math.max(0, Number(playScene?.comboTimerMs) || 0);
+    const windowMs = Math.max(1, Number(playScene?.comboWindowMs) || 1);
+    if (!this.comboMeterGroup || count < 2 || timerMs <= 0) {
+      if (this.comboMeterGroup) {
+        this.comboMeterGroup.visible = false;
+        this.comboMeterTicks?.clear?.();
+        hideMicroSignals(this.comboMeterGroup, 'combo_');
+        this.comboMeterGroup._debugComboMeter = { visible: false, count, multiplier, progress: 0 };
+      }
+      return;
+    }
+
+    const progress = Math.max(0, Math.min(1, timerMs / windowMs));
+    const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+    const width = Math.round(this.comboMeterGroup.__w || (106 * uiScale));
+    const height = Math.round(this.comboMeterGroup.__h || (22 * uiScale));
+    const low = progress <= 0.25;
+    const pulse = low ? 0.5 + Math.sin(Date.now() * 0.018) * 0.5 : 0;
+    const color = low ? 0xffd166 : multiplier >= 3 ? 0xff66ff : multiplier >= 2 ? 0x66f7ff : 0x75ff8d;
+    this.comboMeterGroup.x = Number.isFinite(Number(this.comboMeterGroup.__fixedX))
+      ? Number(this.comboMeterGroup.__fixedX)
+      : this.scoreText.x + this.scoreText.width + Math.round(9 * uiScale);
+    const configuredComboY = Number.isFinite(Number(this.comboMeterGroup.__fixedY))
+      ? Number(this.comboMeterGroup.__fixedY)
+      : this.scoreText.y + this.scoreText.height + Math.round(5 * uiScale);
+    this.comboMeterGroup.y = Math.max(
+      configuredComboY,
+      this.scoreText.y + this.scoreText.height + Math.round(5 * uiScale)
+    );
+
+    this.comboMeterBg.clear();
+    this.comboMeterBg.roundRect(0, 0, width, height, 5);
+    this.comboMeterBg.fill({ color: low ? 0x221304 : 0x03101d, alpha: 0.76 });
+    this.comboMeterBg.stroke({ color, width: low ? 1.6 : 1.1, alpha: low ? 0.66 + pulse * 0.26 : 0.72 });
+
+    this.comboMeterFill.clear();
+    const fillWidth = Math.max(2, (width - 4) * progress);
+    this.comboMeterFill.roundRect(2, height - 5, fillWidth, 3, 2);
+    this.comboMeterFill.fill({ color, alpha: low ? 0.74 + pulse * 0.22 : 0.92 });
+
+    this.comboMeterTicks.clear();
+    const glintX = Math.round(2 + fillWidth);
+    let alarmBracketCount = 0;
+    let authoredSignalCount = 0;
+    const highMomentum = count >= 20 || multiplier >= 3;
+    this.comboMeterTicks.roundRect(glintX - 2, height - 8, 4, 8, 2);
+    this.comboMeterTicks.fill({ color: 0xffffff, alpha: low ? 0.34 + pulse * 0.3 : 0.42 });
+    const tierPips = Math.max(1, Math.min(4, multiplier));
+    const crest = presentAuthoredSignal(this.comboMeterGroup, 'combo_meter_crest', {
+      textureKey: 'combo',
+      x: width - 24,
+      y: 7,
+      width: highMomentum ? 46 : 36,
+      height: 14,
+      color,
+      alpha: highMomentum ? 0.74 : 0.48,
+      pulse
+    });
+    authoredSignalCount += crest ? 1 : 0;
+    if (highMomentum) {
+      const railLeft = Math.round(width * 0.28);
+      const railRight = Math.max(railLeft + 12, width - 34);
+      this.comboMeterTicks.moveTo(railLeft, 3);
+      this.comboMeterTicks.lineTo(railRight, 3);
+      this.comboMeterTicks.stroke({ color, width: 0.85, alpha: low ? 0.16 + pulse * 0.18 : 0.22 });
+    }
+    if (low) {
+      const hatchStart = Math.max(6, width - 25);
+      for (let x = hatchStart; x < width - 4; x += 6) {
+        this.comboMeterTicks.moveTo(x, 4);
+        this.comboMeterTicks.lineTo(x + 7, height - 6);
+      }
+      this.comboMeterTicks.stroke({ color: 0xffd166, width: 1.1, alpha: 0.28 + pulse * 0.3 });
+
+      const bracketInset = 3;
+      const bracketY = Math.round(height * 0.5);
+      for (const sideX of [bracketInset, width - bracketInset]) {
+        const direction = sideX < width * 0.5 ? 1 : -1;
+        this.comboMeterTicks.moveTo(sideX, bracketY - 6);
+        this.comboMeterTicks.lineTo(sideX, bracketY + 6);
+        this.comboMeterTicks.moveTo(sideX, bracketY - 6);
+        this.comboMeterTicks.lineTo(sideX + direction * 7, bracketY - 6);
+        this.comboMeterTicks.moveTo(sideX, bracketY + 6);
+        this.comboMeterTicks.lineTo(sideX + direction * 7, bracketY + 6);
+        alarmBracketCount += 1;
+      }
+      this.comboMeterTicks.stroke({ color: 0xff4b6b, width: 1.45, alpha: 0.42 + pulse * 0.34 });
+
+      const alarm = presentAuthoredSignal(this.comboMeterGroup, 'combo_deadline_rune', {
+        textureKey: 'contact',
+        x: Math.min(width - 13, Math.max(glintX + 11, width * 0.66)),
+        y: height - 5,
+        width: 14,
+        height: 16,
+        color: 0xffd166,
+        alpha: 0.42 + pulse * 0.5,
+        rotation: Math.sin(Date.now() * 0.018) * 0.18,
+        pulse
+      });
+      authoredSignalCount += alarm ? 1 : 0;
+    } else {
+      hideMicroSignals(this.comboMeterGroup, 'combo_deadline');
+    }
+
+    const comboLabel = translateText('COMBO');
+    this.comboMeterText.text = [comboLabel, String(count), `x${multiplier}`].join(' ');
+    this.comboMeterText.style.fontSize = Math.round((getCurrentLayout()?.isMobile ? 11 : 13) * uiScale);
+    this.comboMeterText.x = Math.round(5 * uiScale);
+    this.comboMeterText.y = Math.max(0, Math.round((height - this.comboMeterText.height) / 2) - 1);
+    this.fitTextToWidth(this.comboMeterText, width - Math.round(10 * uiScale), 0.6);
+    this.comboMeterGroup.visible = true;
+    const scoreBounds = {
+      x: Math.round(this.scoreText.x),
+      y: Math.round(this.scoreText.y),
+      width: Math.round(this.scoreText.width),
+      height: Math.round(this.scoreText.height)
+    };
+    const comboBounds = {
+      x: Math.round(this.comboMeterGroup.x),
+      y: Math.round(this.comboMeterGroup.y),
+      width,
+      height
+    };
+    const scoreOverlap = !(
+      scoreBounds.x + scoreBounds.width + 3 <= comboBounds.x ||
+      comboBounds.x + comboBounds.width + 3 <= scoreBounds.x ||
+      scoreBounds.y + scoreBounds.height + 3 <= comboBounds.y ||
+      comboBounds.y + comboBounds.height + 3 <= scoreBounds.y
+    );
+    this.comboMeterGroup._debugComboMeter = {
+      visible: true,
+      count,
+      multiplier,
+      progress: Number(progress.toFixed(3)),
+      low,
+      tierPips,
+      glintX,
+      highMomentum,
+      authoredSignalCount,
+      primitiveSignalCount: 0,
+      visualLanguage: 'authored_combo_crest_v3',
+      lowWarning: low,
+      alarmBracketCount,
+      label: this.comboMeterText.text,
+      placement: this.comboMeterGroup.__placement || 'adaptive',
+      scoreBounds,
+      comboBounds,
+      scoreOverlap
+    };
+  }
+
   applyLayout(layout = getCurrentLayout()) {
     if (!layout || typeof layout.width !== 'number') return;
 
     const canvasWidth = this.game.getWidth ? this.game.getWidth() : layout.width;
-    const margin = layout.isMobile ? 14 : 12;
-    const blockSpacing = layout.isMobile ? 24 : 22;
-    const scoreFont = layout.isMobile ? 15 : 18;
-    const livesFont = layout.isMobile ? 16 : 18;
-    const leftPanelWidth = layout.isMobile ? Math.min(180, canvasWidth * 0.46) : 250;
-    const leftPanelHeight = layout.isMobile ? 76 : 82;
-    const rightPanelWidth = layout.isMobile ? 118 : 150;
-    const rightPanelHeight = layout.isMobile ? 42 : 46;
-    const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : 390;
-    const missionPanelHeight = layout.isMobile ? 38 : 44;
+    const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
+    const isLargeDesktop = !layout.isMobile && canvasWidth >= 1920;
+    const margin = Math.round((layout.isMobile ? 14 : 16) * Math.min(uiScale, 1.45));
+    const blockSpacing = Math.round((layout.isMobile ? 24 : (isLargeDesktop ? 26 : 24)) * uiScale);
+    const scoreFont = Math.round((layout.isMobile ? 15 : (isLargeDesktop ? 22 : 20)) * uiScale);
+    const livesFont = Math.round((layout.isMobile ? 16 : (isLargeDesktop ? 22 : 20)) * uiScale);
+    const leftPanelWidth = layout.isMobile
+      ? Math.min(286 * uiScale, canvasWidth * 0.72)
+      : Math.min(canvasWidth * 0.42, (isLargeDesktop ? 410 : 390) * uiScale);
+    const leftPanelHeight = Math.round((layout.isMobile ? 126 : (isLargeDesktop ? 142 : 136)) * uiScale);
+    const rightPanelWidth = Math.round((layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164)) * uiScale);
+    const rightPanelHeight = Math.round((layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52)) * uiScale);
+    const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : Math.min(canvasWidth * 0.52, (isLargeDesktop ? 480 : 420) * uiScale);
+    const missionPanelHeight = Math.round((layout.isMobile ? 104 : 110) * uiScale);
     const missionPanelX = layout.isMobile ? margin : canvasWidth / 2 - missionPanelWidth / 2;
-    const missionPanelY = layout.isMobile ? margin + leftPanelHeight + 7 : margin;
+    const missionPanelY = layout.isMobile || canvasWidth < 1100 ? margin + leftPanelHeight + 7 : margin;
 
     this.scoreText.style.fontSize = scoreFont;
     this.levelText.style.fontSize = scoreFont;
     this.livesText.style.fontSize = livesFont;
-    this.locationText.style.fontSize = layout.isMobile ? 10 : 12;
-    this.rankText.style.fontSize = layout.isMobile ? 9 : 10;
-    this.missionLabel.style.fontSize = layout.isMobile ? 8 : 10;
-    this.missionText.style.fontSize = layout.isMobile ? 11 : 14;
+    this.locationText.style.fontSize = Math.round((layout.isMobile ? 20 : (isLargeDesktop ? 24 : 22)) * uiScale);
+    this.rankText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 15 : 14)) * uiScale);
+    this.missionLabel.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11)) * uiScale);
+    this.missionText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 17 : 15)) * uiScale);
+    this.directiveText.style.fontSize = Math.round((layout.isMobile ? 9 : 12) * uiScale);
+    this.experimentLabelText.style.fontSize = Math.round((layout.isMobile ? 9 : 11) * Math.min(uiScale, 1.35));
 
-    this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, leftPanelHeight, 0x00d9ff, 0.16);
-    this.drawGlassPanel(this.rightPanel, canvasWidth - margin - rightPanelWidth, margin, rightPanelWidth, rightPanelHeight, 0x75ff8d, 0.14);
-    this.drawGlassPanel(this.missionPanel, missionPanelX, missionPanelY, missionPanelWidth, missionPanelHeight, 0xff55d9, 0.1);
+    this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, Math.min(leftPanelHeight, Math.round(68 * uiScale)), 0x5fa8bd, 0.035, {
+      fillAlpha: 0.72,
+      strokeAlpha: 0.44,
+      strokeWidth: 1
+    });
+    this.rightPanel.clear();
+    this.rightPanel.visible = false;
+    this.missionPanel.__layout = {
+      x: missionPanelX,
+      y: missionPanelY,
+      width: missionPanelWidth,
+      height: missionPanelHeight
+    };
+    this.missionFrameArt.position.set(
+      missionPanelX + missionPanelWidth / 2,
+      missionPanelY + missionPanelHeight / 2
+    );
+    this.missionFrameArt.width = missionPanelWidth + Math.round(20 * uiScale);
+    this.missionFrameArt.height = missionPanelHeight + Math.round(12 * uiScale);
+    this.updateMissionPriorityVisual();
+
+    this.rankGroup.alpha = 0.72;
+    this.rankGroup._debugPriority = 'secondary';
+    this.scoreText.alpha = 0.94;
+    this.scoreText._debugPriority = 'primary';
+    this.scoreMultiplierText.alpha = 0.78;
+    this.levelText.alpha = 0.68;
+    this.levelText._debugPriority = 'secondary';
+    this.activePowerupGroup.alpha = 0.86;
+    this.activePowerupGroup._debugPriority = 'support';
+    this.tacticalAugmentGroup.alpha = 0.66;
+    this.tacticalAugmentGroup._debugPriority = 'secondary';
+    this.traitGroup.alpha = 0.84;
+    this.traitGroup._debugPriority = 'support';
 
     // Rank Position (Top Left)
     this.rankGroup.x = margin + 10;
     this.rankGroup.y = margin + 10;
 
     // Shift Score and Level to the right of Rank
-    const rankOffset = 66;
+    const rankOffset = Math.round((layout.isMobile ? 186 : (isLargeDesktop ? 204 : 198)) * uiScale);
 
     this.scoreText.x = margin + rankOffset;
     this.scoreText.y = margin + 10;
+    this.scoreText.__maxWidth = Math.max(92, margin + leftPanelWidth - 14 - this.scoreText.x);
     this.scoreMultiplierText.x = this.scoreText.x + this.scoreText.width + 10;
     this.scoreMultiplierText.y = this.scoreText.y + 2;
+    if (this.comboMeterGroup) {
+      const comboWidth = Math.round((layout.isMobile ? 90 : (isLargeDesktop ? 124 : 108)) * uiScale);
+      const comboHeight = Math.round((layout.isMobile ? 19 : 22) * uiScale);
+      this.comboMeterGroup.__w = comboWidth;
+      this.comboMeterGroup.__h = comboHeight;
+      this.comboMeterGroup.__fixedX = this.scoreText.x;
+      this.comboMeterGroup.__fixedY = margin + blockSpacing + Math.round(14 * uiScale);
+      this.comboMeterGroup.__placement = 'score-lane';
+    }
 
     this.levelText.x = margin + rankOffset;
     this.levelText.y = margin + blockSpacing + 8;
 
-    this.missionLabel.x = missionPanelX + missionPanelWidth / 2;
-    this.missionLabel.y = missionPanelY + 10;
-    this.missionText.x = missionPanelX + missionPanelWidth / 2;
-    this.missionText.y = missionPanelY + 27;
+    if (this.highscoreChaseGroup) {
+      const chaseWidth = Math.min(
+        leftPanelWidth - 24,
+        Math.round((layout.isMobile ? 248 : (isLargeDesktop ? 332 : 308)) * uiScale)
+      );
+      const chaseHeight = Math.round((layout.isMobile ? 50 : (isLargeDesktop ? 54 : 52)) * uiScale);
+      this.highscoreChaseGroup.__w = chaseWidth;
+      this.highscoreChaseGroup.__h = chaseHeight;
+      this.highscoreChaseGroup.x = margin + 12;
+      this.highscoreChaseGroup.y = margin + (layout.isMobile ? 70 : 74);
+      this.highscoreChaseTitle.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11)) * uiScale);
+      this.highscoreChaseTarget.style.fontSize = Math.round((layout.isMobile ? 11 : (isLargeDesktop ? 14 : 13)) * uiScale);
+      this.highscoreChaseGap.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 11 : 10)) * uiScale);
+    }
 
-    this.locationText.x = canvasWidth - margin;
-    this.locationText.y = layout.isMobile
-      ? missionPanelY + missionPanelHeight + 6
-      : margin + blockSpacing * 2.5;
+    // Expose stable HUD reservations to render-only world labels. This lets
+    // elite identity plates avoid the permanent score/objective/survival lanes
+    // without changing enemy movement or collision coordinates.
+    this.reservedRegions = {
+      left: { x: margin, y: margin, width: leftPanelWidth, height: leftPanelHeight },
+      center: { x: missionPanelX, y: missionPanelY, width: missionPanelWidth, height: missionPanelHeight },
+      right: {
+        x: canvasWidth - margin - rightPanelWidth,
+        y: margin,
+        width: rightPanelWidth,
+        height: Math.max(rightPanelHeight, Math.round(138 * uiScale))
+      }
+    };
+
+    this.missionLabel.x = missionPanelX + missionPanelWidth / 2;
+    this.missionLabel.y = missionPanelY + (layout.isMobile ? 10 : (isLargeDesktop ? 13 : 11));
+    this.missionText.x = missionPanelX + missionPanelWidth / 2;
+    this.missionText.y = missionPanelY + Math.round(36 * uiScale);
+    this.directiveText.x = missionPanelX + missionPanelWidth / 2;
+    this.directiveText.y = missionPanelY + Math.round(65 * uiScale);
+    if (this.experimentLabelGroup) {
+      const labelWidth = Math.min(missionPanelWidth - 24, Math.round((layout.isMobile ? 250 : 286) * Math.min(uiScale, 1.35)));
+      const labelHeight = Math.round((layout.isMobile ? 18 : 21) * Math.min(uiScale, 1.35));
+      this.experimentLabelGroup.position.set(
+        missionPanelX + missionPanelWidth / 2,
+        missionPanelY + missionPanelHeight + labelHeight / 2 + 4
+      );
+      this.experimentLabelBg.clear();
+      this.experimentLabelBg.roundRect(-labelWidth / 2, -labelHeight / 2, labelWidth, labelHeight, labelHeight / 2);
+      this.experimentLabelBg.fill({ color: 0x170711, alpha: 0.88 });
+      this.experimentLabelBg.stroke({ color: 0xff8b64, width: 1, alpha: 0.86 });
+      this.fitTextToWidth(this.experimentLabelText, labelWidth - 16, 0.72);
+    }
+    if (this.missionProgressBg) {
+      const railPad = Math.round(Math.max(
+        (layout.isMobile ? 18 : 30) * uiScale,
+        missionPanelWidth * 0.09
+      ));
+      const railHeight = Math.max(3, Math.round((layout.isMobile ? 3 : 4) * Math.min(uiScale, 1.6)));
+      this.missionProgressBg.__x = Math.round(missionPanelX + railPad);
+      this.missionProgressBg.__y = Math.round(missionPanelY + 56 * uiScale);
+      this.missionProgressBg.__w = Math.round(Math.max(0, missionPanelWidth - railPad * 2));
+      this.missionProgressBg.__h = railHeight;
+    }
+    if (this.directiveProgressBg) {
+      const railPad = Math.round(Math.max(
+        (layout.isMobile ? 18 : 30) * uiScale,
+        missionPanelWidth * 0.09
+      ));
+      const railHeight = Math.max(3, Math.round((layout.isMobile ? 3 : 4) * Math.min(uiScale, 1.6)));
+      this.directiveProgressBg.__x = Math.round(missionPanelX + railPad);
+      this.directiveProgressBg.__y = Math.round(missionPanelY + missionPanelHeight - railHeight - 4 * Math.min(uiScale, 1.4));
+      this.directiveProgressBg.__w = Math.round(Math.max(0, missionPanelWidth - railPad * 2));
+      this.directiveProgressBg.__h = railHeight;
+    }
+
+    // Sector identity belongs to the mission header, directly above wave status.
+    this.missionLabel.visible = false;
+    this.locationArt.visible = false;
+    this.sectorPlate.clear();
+    this.sectorPlate.visible = false;
+    this.locationText.anchor.set(.5, 0);
+    this.locationText.style.align = 'center';
+    this.locationText.position.set(missionPanelX + missionPanelWidth / 2, missionPanelY + Math.round(8 * uiScale));
+    this.sectorTextMaxWidth = missionPanelWidth - Math.round(34 * uiScale);
+    this.fitTextToWidth(this.locationText, this.sectorTextMaxWidth, .8);
+    // Stack from rendered text bounds: font metrics differ by language and size.
+    this.missionText.y = this.locationText.y + this.locationText.height + 5 * uiScale + this.missionText.height / 2;
+    this.missionProgressBg.__y = Math.round(this.missionText.y + this.missionText.height / 2 + 5 * uiScale);
+    this.directiveText.y = this.missionProgressBg.__y + this.missionProgressBg.__h + 5 * uiScale + this.directiveText.height / 2;
+    this.locationText._debugSectorHeader = { integrated: true, prominent: true, width: this.sectorTextMaxWidth };
 
     this.updateLivesVisuals();
-    this.livesGroup.x = canvasWidth - margin - rightPanelWidth + 10;
+    this.livesGroup.x = canvasWidth - margin - this.livesGroup.width;
     this.livesGroup.y = margin + 7;
 
     if (this.activePowerupGroup) {
@@ -785,31 +2968,87 @@ export class HUD {
         ? this.activePowerupGroup.y + this.activePowerupGroup.height + 6
         : this.livesGroup.y + this.livesGroup.height + 6;
     }
+    if (this.tacticalAugmentGroup) {
+      this.tacticalAugmentGroup._layout = {
+        x: margin,
+        y: margin + leftPanelHeight + Math.round(8 * Math.min(uiScale, 1.4)),
+        maxWidth: Math.max(180, Math.min(canvasWidth - margin * 2, (isLargeDesktop ? 720 : 520) * Math.min(uiScale, 1.25))),
+        rightHudLeft: canvasWidth - margin - rightPanelWidth - 8
+      };
+      this.updateTacticalAugmentTray();
+    }
   }
 
-  drawGlassPanel(graphics, x, y, width, height, accent, alpha = 0.14) {
+  drawGlassPanel(graphics, x, y, width, height, accent, alpha = 0.14, {
+    fillAlpha = 0.58,
+    strokeAlpha = 0.85,
+    strokeWidth = 1.5
+  } = {}) {
     if (!graphics) return;
     graphics.clear();
     graphics.roundRect(x, y, width, height, 8);
-    graphics.fill({ color: 0x03101d, alpha: 0.58 });
-    graphics.stroke({ color: accent, width: 1.5, alpha: 0.85 });
+    graphics.fill({ color: 0x03101d, alpha: fillAlpha });
+    graphics.stroke({ color: accent, width: strokeWidth, alpha: strokeAlpha });
     graphics.rect(x + 1, y + 1, Math.max(0, width - 2), Math.max(0, height * 0.38));
     graphics.fill({ color: accent, alpha });
+    graphics.moveTo(x + 10, y + 2);
+    graphics.lineTo(x + width - 10, y + 2);
+    graphics.stroke({ color: 0xc5e7ef, width: 1, alpha: 0.18 });
+    graphics.moveTo(x + 9, y + height - 2);
+    graphics.lineTo(x + width - 9, y + height - 2);
+    graphics.stroke({ color: 0x00050a, width: 2, alpha: 0.65 });
+    for (const px of [x + 6, x + width - 6]) {
+      for (const py of [y + 7, y + height - 7]) {
+        graphics.circle(px, py, 1.35);
+        graphics.fill({ color: 0x99bac6, alpha: 0.48 });
+      }
+    }
   }
 
   updateLivesVisuals() {
     if (!this.livesGroup || !this.livesText || !this.livesIcon) return;
-    const padding = 8;
-    const height = Math.max(this.livesIcon.height, this.livesText.height) + padding;
+    const padding = 10;
+    const critical = Number(this.game?.lives || 0) === 1;
+    const pulse = critical ? 0.5 + Math.sin(Date.now() * 0.014) * 0.5 : 0;
+    this.livesIcon.visible = false;
+    this.livesText.style.fill = critical ? (pulse > 0.52 ? '#ff716d' : '#ffd166') : '#d9ffb8';
+    const mastery = this.shipMasteryView || getShipMasteryView();
+    this.shipMasteryText.text = translateText('TOURS ×{count}', { count: mastery.tours });
+    const height = Math.max(54, this.livesText.height + this.shipMasteryText.height + padding + 7);
     this.livesGroup.pivot.set(0, 0);
-    this.livesIcon.x = padding / 2;
-    this.livesIcon.y = height / 2 - this.livesIcon.height / 2;
-    this.livesText.x = this.livesIcon.x + this.livesIcon.width + 6;
-    this.livesText.y = height / 2 - this.livesText.height / 2;
-    const width = this.livesText.x + this.livesText.width + padding / 2;
+    this.livesText.x = 48;
+    this.livesText.y = 5;
+    this.shipMasteryText.x = 48;
+    this.shipMasteryText.y = this.livesText.y + this.livesText.height + 1;
+    const width = Math.max(154, this.livesText.x + Math.max(this.livesText.width, this.shipMasteryText.width) + padding);
     this.livesBg.clear();
-    this.livesBg.roundRect(0, 0, width, height, 8); // v8 syntax prefer roundRect
-    this.livesBg.fill({ color: 0x000000, alpha: 0.02 });
+    this.shipMasteryMedals.clear();
+    this.livesArt.visible = false;
+    this.livesBg.roundRect(0, 0, width, height, 8).fill({color:0x051421,alpha:.94});
+    this.livesBg.roundRect(0, 0, width, height, 8).stroke({color:critical?0xff795e:0x56bfc9,width:1.2,alpha:critical?.65+pulse*.3:.55});
+    this.livesBg.moveTo(47, 10).lineTo(47, height-10).stroke({color:0x73d7df,width:1,alpha:.3});
+    const player = this.game?.currentScene?.player;
+    const portrait = GameAssets.getRankShipTexture(player?.selectedShipTextureIndex ?? player?.config?.textureIndex ?? 0);
+    if (GameAssets.isValidTexture(portrait)) {
+      this.livesShip.texture = portrait;
+      this.livesShip.scale.set(Math.min(40/portrait.width, (height-10)/portrait.height));
+      this.livesShip.position.set(24, height/2);
+    }
+    this.livesGroup._debugCritical = critical;
+    this.livesGroup._debugPulse = Number(pulse.toFixed(3));
+    this.livesGroup._debugPriority = 'critical';
+    this.livesGroup._debugShipMastery = {
+      tier: mastery.tier.id,
+      medalCount: mastery.medalCount,
+      clears: mastery.clears,
+      tally: this.shipMasteryText.text,
+      rewardsAdded: false
+    };
+    this.livesGroup._debugVisual = {
+      authoredCapsuleReady: GameAssets.isValidTexture(this.livesArt.texture),
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'current_ship_lives_portrait_v2'
+    };
   }
 
   destroy() {

@@ -1,3 +1,5 @@
+import { getDisplaySettings } from '../config/DisplaySettings.js';
+
 const MOBILE_BREAKPOINT = 720;
 const BASE_WIDTH = 1280;
 const BASE_HEIGHT = 720;
@@ -13,6 +15,7 @@ const layoutState = {
   isMobile: false,
   isPortrait: true,
   scale: 1,
+  uiScale: 1,
   safeArea: { left: 0, top: 0, right: 0, bottom: 0 }
 };
 
@@ -51,6 +54,7 @@ export function applyResponsiveLayout(viewportW = window.innerWidth, viewportH =
   const isMobile = detectMobile(width, height);
   const isPortrait = height >= width;
   const scale = computeScale(width, height, isMobile);
+  const uiScale = getDisplaySettings().uiScale || 1;
   const safeArea = computeSafeArea(width, height, isMobile);
 
   layoutState.width = width;
@@ -58,6 +62,7 @@ export function applyResponsiveLayout(viewportW = window.innerWidth, viewportH =
   layoutState.isMobile = isMobile;
   layoutState.isPortrait = isPortrait;
   layoutState.scale = scale;
+  layoutState.uiScale = uiScale;
   layoutState.safeArea = safeArea;
 
   listeners.forEach((listener) => {

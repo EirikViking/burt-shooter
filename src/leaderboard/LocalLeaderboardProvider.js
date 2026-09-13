@@ -121,11 +121,14 @@ export class LocalLeaderboardProvider {
       options.name || runResult.playerName || runResult.name || 'PILOT',
       runResult.score
     );
+    const levelReached = runResult.levelReached ?? runResult.level;
     const entry = {
       name,
       score: runResult.score,
-      level: runResult.level,
+      level: levelReached,
+      levelReached,
       rankIndex: runResult.rankIndex,
+      careerRankExact: runResult.careerRankExact || null,
       submissionId: runResult.submissionId,
       shipId: runResult.shipId,
       shipName: runResult.shipName,
@@ -161,7 +164,14 @@ export class LocalLeaderboardProvider {
   }
 
   async getPlayerBest() {
-    const [best] = LocalLeaderboard.getScores(1);
+    let entries = null;
+    try {
+      entries = await getDesktopLocalScores(1);
+    } catch (error) {
+      console.warn('[LocalLeaderboardProvider] Desktop local best read failed, using renderer storage:', error?.message || error);
+    }
+    if (!entries) entries = LocalLeaderboard.getScores(1);
+    const [best] = normalizeLeaderboardEntries(entries.filter((entry) => !entry?.seed), { source: 'local' });
     return best || null;
   }
 }

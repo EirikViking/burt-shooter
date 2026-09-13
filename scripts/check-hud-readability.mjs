@@ -1,0 +1,287 @@
+import { spawn } from 'node:child_process';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:net';
+import path from 'node:path';
+import { chromium } from 'playwright';
+
+const host = process.env.CHECK_HOST || '127.0.0.1';
+const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4460));
+const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
+const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/hud-readability-${timestamp()}`);
+
+function timestamp() {
+  return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+function withQuery(url, params) {
+  const next = new URL(url);
+  for (const [key, value] of Object.entries(params)) next.searchParams.set(key, value);
+  return next.toString();
+}
+
+async function isPortAvailable(candidatePort) {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => server.close(() => resolve(true)));
+    server.listen(candidatePort, host);
+  });
+}
+
+async function findAvailablePort(startPort) {
+  for (let candidate = startPort; candidate < startPort + 40; candidate += 1) {
+    if (await isPortAvailable(candidate)) return candidate;
+  }
+  throw new Error(`No available HUD readability port found starting at ${startPort}`);
+}
+
+async function canFetch(url) {
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function viteCommand() {
+  const viteEntry = path.resolve('node_modules/vite/bin/vite.js');
+  if (existsSync(viteEntry)) return { command: process.execPath, args: [viteEntry] };
+  return { command: process.platform === 'win32' ? 'npx.cmd' : 'npx', args: ['vite'] };
+}
+
+async function startPreviewServer() {
+  if (await canFetch(baseUrl)) return null;
+  const { command, args } = viteCommand();
+  const server = spawn(command, [...args, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
+    cwd: process.cwd(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true
+  });
+  server.stdout.on('data', (chunk) => process.stdout.write(`[preview] ${chunk}`));
+  server.stderr.on('data', (chunk) => process.stderr.write(`[preview] ${chunk}`));
+
+  const start = Date.now();
+  while (Date.now() - start < 15000) {
+    if (await canFetch(baseUrl)) return server;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  server.kill();
+  throw new Error(`Preview server did not become ready at ${baseUrl}`);
+}
+
+function findChrome() {
+  const candidates = [
+    process.env.CHROME_PATH,
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+  ].filter(Boolean);
+  return candidates.find((candidate) => existsSync(candidate));
+}
+
+mkdirSync(outputDir, { recursive: true });
+const server = await startPreviewServer();
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: findChrome(),
+  args: ['--disable-gpu', '--no-sandbox', '--autoplay-policy=no-user-gesture-required']
+});
+
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+const pageErrors = [];
+const consoleErrors = [];
+page.on('pageerror', (error) => pageErrors.push(error.message));
+page.on('console', (message) => {
+  if (message.type() === 'error') consoleErrors.push(message.text());
+});
+
+try {
+  await page.goto(withQuery(baseUrl, { autostart: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.scenes?.play?.hud && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
+  await page.waitForTimeout(500);
+
+  const state = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const hud = play?.hud;
+    const player = play?.player;
+    if (!game || !play || !hud || !player) return { ok: false, reason: 'missing play HUD/player' };
+
+    play.introActive = false;
+    play.gameTime = 20; // Review the normal HUD after the brief trait introduction.
+    play.introComplete = true;
+    if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
+    if (play.enemyManager) {
+      play.enemyManager.enemies = [];
+      play.enemyManager.state = 'HUD_READABILITY_CHECK';
+    }
+    if (play.bulletManager) {
+      play.bulletManager.bullets = [];
+      play.bulletManager.enemyBullets = [];
+    }
+    player.invulnerable = true;
+    player.x = game.getWidth() * 0.5;
+    player.y = game.getHeight() - 86;
+
+    game.lives = 1;
+    player.getActivePowerupStates = () => ([
+      {
+        type: 'shield',
+        iconType: 'shield',
+        label: 'SHIELD',
+        detail: 'EMPTY',
+        spent: true,
+        remainingMs: 0,
+        color: 0xff6677
+      },
+      {
+        type: 'slow_time',
+        iconType: 'slow_time',
+        label: 'SLOW TIME',
+        remainingMs: 1400,
+        durationMs: 10000,
+        color: 0x6be8ff
+      }
+    ]);
+    play.comboCount = 12;
+    play.comboMultiplier = 2;
+    play.comboTimerMs = 820;
+    play.comboWindowMs = 2000;
+    game.getRankProgress = () => 0.92;
+
+    hud.update();
+    hud.updateActivePowerup();
+
+    const rows = (hud.activePowerupRows || [])
+      .filter((row) => row?.container?.visible)
+      .map((row) => row.container._debugPowerupState || {});
+
+    return {
+      ok: true,
+      livesCritical: Boolean(hud.livesGroup?._debugCritical),
+      livesPulse: hud.livesGroup?._debugPulse ?? null,
+      rankProgress: hud.rankGroup?._debugRankProgress || null,
+      comboMeter: hud.comboMeterGroup?._debugComboMeter || null,
+      sectorSemantics: {
+        duplicateLevelVisible: Boolean(hud.levelText?.visible),
+        duplicateLevelText: hud.levelText?.text || '',
+        sectorText: hud.locationText?.text || ''
+      },
+      status: hud.activePowerupGroup?._debugStatus || null,
+      rows,
+      activePowerupVisible: Boolean(hud.activePowerupGroup?.visible),
+      activePowerupBounds: {
+        x: Math.round(hud.activePowerupGroup?.x || 0),
+        y: Math.round(hud.activePowerupGroup?.y || 0),
+        width: Math.round(hud.activePowerupGroup?.width || 0),
+        height: Math.round(hud.activePowerupGroup?.height || 0)
+      },
+      hierarchy: {
+        livesPriority: hud.livesGroup?._debugPriority || null,
+        missionPriority: hud.missionPanel?._debugPriority || null,
+        scorePriority: hud.scoreText?._debugPriority || null,
+        rankPriority: hud.rankGroup?._debugPriority || null,
+        recordPriority: hud.highscoreChaseGroup?._debugPriority || null,
+        powerupPriority: hud.activePowerupGroup?._debugPriority || null,
+        traitPriority: hud.traitGroup?._debugPriority || null,
+        traitVisible: Boolean(hud.traitGroup?.visible),
+        livesAlpha: Number(hud.livesGroup?.alpha ?? 0),
+        missionTextAlpha: Number(hud.missionText?.alpha ?? 0),
+        directiveAlpha: Number(hud.directiveText?.alpha ?? 0),
+        scoreAlpha: Number(hud.scoreText?.alpha ?? 0),
+        rankAlpha: Number(hud.rankGroup?.alpha ?? 0),
+        recordAlpha: Number(hud.highscoreChaseGroup?.alpha ?? 0),
+        powerupAlpha: Number(hud.activePowerupGroup?.alpha ?? 0),
+        traitAlpha: Number(hud.traitGroup?.alpha ?? 0)
+      }
+    };
+  });
+
+  await page.waitForTimeout(250);
+  const screenshot = path.join(outputDir, 'hud-readability.png');
+  await page.screenshot({ path: screenshot, fullPage: true });
+
+  const bossHierarchy = await page.evaluate(() => {
+    const hud = window.__game?.scenes?.play?.hud;
+    if (!hud) return null;
+    hud.missionText.text = 'BOSS HP 420';
+    hud.updateMissionProgress({
+      state: 'BOSS_ACTIVE',
+      phase: 'BOSS',
+      waveTotal: 5,
+      waveIndex: 5,
+      activeEnemies: 1,
+      activeBullets: 32
+    });
+    return { ...(hud.missionPanel?._debugPriority || {}) };
+  });
+  await page.waitForTimeout(120);
+  const bossScreenshot = path.join(outputDir, 'hud-boss-priority.png');
+  await page.screenshot({ path: bossScreenshot, fullPage: true });
+
+  const spentRow = state.rows?.find((row) => row.spent);
+  const expiringRow = state.rows?.find((row) => row.expiring);
+  const report = {
+    ok: Boolean(
+      state.ok &&
+      state.livesCritical &&
+      state.rankProgress?.nearRank &&
+      state.rankProgress?.readySpark &&
+      (state.rankProgress?.tickCount || 0) >= 4 &&
+      state.rankProgress?.progress > 0.9 &&
+      state.comboMeter?.visible &&
+      state.comboMeter?.count === 12 &&
+      state.comboMeter?.multiplier === 2 &&
+      state.comboMeter?.progress > 0.35 &&
+      state.comboMeter?.progress < 0.5 &&
+      state.comboMeter?.scoreOverlap === false &&
+      state.comboMeter?.placement === 'score-lane' &&
+      state.sectorSemantics?.duplicateLevelVisible === false &&
+      state.sectorSemantics?.duplicateLevelText === '' &&
+      /SECTOR/i.test(state.sectorSemantics?.sectorText || '') &&
+      state.activePowerupVisible &&
+      state.status?.hasSpent &&
+      state.status?.hasExpiring &&
+      spentRow?.meta === 'EMPTY' &&
+      spentRow?.progress === 0 &&
+      spentRow?.spentOverlayVisible &&
+      expiringRow?.progress > 0 &&
+      expiringRow?.progress <= 0.25 &&
+      expiringRow?.expiryOverlayVisible &&
+      state.hierarchy?.livesPriority === 'critical' &&
+      state.hierarchy?.missionPriority?.tier === 'objective' &&
+      state.hierarchy?.scorePriority === 'primary' &&
+      state.hierarchy?.rankPriority === 'secondary' &&
+      state.hierarchy?.recordPriority === 'secondary' &&
+      state.hierarchy?.powerupPriority === 'support' &&
+      state.hierarchy?.traitPriority === 'support' &&
+      state.hierarchy?.livesAlpha >= state.hierarchy?.scoreAlpha &&
+      state.hierarchy?.scoreAlpha > state.hierarchy?.rankAlpha &&
+      state.hierarchy?.scoreAlpha > state.hierarchy?.recordAlpha &&
+      (!state.hierarchy?.traitVisible || state.hierarchy?.traitAlpha > state.hierarchy?.rankAlpha) &&
+      state.hierarchy?.missionTextAlpha > state.hierarchy?.directiveAlpha &&
+      bossHierarchy?.tier === 'critical' &&
+      bossHierarchy?.boss === true &&
+      pageErrors.length === 0 &&
+      consoleErrors.length === 0
+    ),
+    baseUrl,
+    screenshot,
+    bossScreenshot,
+    bossHierarchy,
+    state,
+    pageErrors,
+    consoleErrors
+  };
+  writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
+
+  if (!report.ok) {
+    console.error(JSON.stringify(report, null, 2));
+    process.exitCode = 1;
+  } else {
+    console.log(`[hud-readability] PASS screenshot=${screenshot} boss=${bossScreenshot}`);
+  }
+} finally {
+  await browser.close();
+  if (server) server.kill();
+}

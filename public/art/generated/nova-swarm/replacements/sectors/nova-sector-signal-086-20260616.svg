@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Nova Swarm sector 086 signal emblem">
+<defs>
+<radialGradient id="g" cx="50%" cy="48%" r="48%"><stop offset="0%" stop-color="hsl(82 100% 72%)"/><stop offset="46%" stop-color="hsl(238 100% 45%)"/><stop offset="100%" stop-color="#020712"/></radialGradient>
+<filter id="glow" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="256" height="256" fill="#020712"/>
+<circle cx="128" cy="128" r="106" fill="url(#g)" opacity="0.32"/>
+<circle cx="36.8" cy="105.3" r="1.26" fill="hsl(82 100% 75%)" opacity="0.35"/>
+<circle cx="162.1" cy="109.1" r="1.54" fill="hsl(103 100% 75%)" opacity="0.45"/>
+<circle cx="108.8" cy="187.0" r="0.70" fill="hsl(124 100% 75%)" opacity="0.55"/>
+<circle cx="92.1" cy="51.0" r="0.98" fill="hsl(145 100% 75%)" opacity="0.65"/>
+<circle cx="228.1" cy="168.5" r="1.26" fill="hsl(166 100% 75%)" opacity="0.75"/>
+<circle cx="78.5" cy="147.0" r="1.54" fill="hsl(187 100% 75%)" opacity="0.35"/>
+<circle cx="161.3" cy="59.7" r="0.70" fill="hsl(208 100% 75%)" opacity="0.45"/>
+<circle cx="156.9" cy="222.7" r="0.98" fill="hsl(229 100% 75%)" opacity="0.55"/>
+<circle cx="89.9" cy="106.0" r="1.26" fill="hsl(250 100% 75%)" opacity="0.65"/>
+<circle cx="193.3" cy="112.9" r="1.54" fill="hsl(271 100% 75%)" opacity="0.75"/>
+<circle cx="77.7" cy="202.6" r="0.70" fill="hsl(292 100% 75%)" opacity="0.35"/>
+<circle cx="110.3" cy="16.4" r="0.98" fill="hsl(313 100% 75%)" opacity="0.45"/>
+<circle cx="173.7" cy="163.7" r="1.26" fill="hsl(334 100% 75%)" opacity="0.55"/>
+<circle cx="47.3" cy="135.1" r="1.54" fill="hsl(355 100% 75%)" opacity="0.65"/>
+<circle cx="197.6" cy="50.7" r="0.70" fill="hsl(16 100% 75%)" opacity="0.75"/>
+<circle cx="128.9" cy="177.0" r="0.98" fill="hsl(37 100% 75%)" opacity="0.35"/>
+<circle cx="78.0" cy="76.2" r="1.26" fill="hsl(58 100% 75%)" opacity="0.45"/>
+<circle cx="222.9" cy="133.0" r="1.54" fill="hsl(79 100% 75%)" opacity="0.55"/>
+<circle cx="97.4" cy="153.7" r="0.70" fill="hsl(100 100% 75%)" opacity="0.65"/>
+<circle cx="135.7" cy="65.5" r="0.98" fill="hsl(121 100% 75%)" opacity="0.75"/>
+<circle cx="178.5" cy="197.6" r="1.26" fill="hsl(142 100% 75%)" opacity="0.35"/>
+<circle cx="21.0" cy="107.2" r="1.54" fill="hsl(163 100% 75%)" opacity="0.45"/>
+<g filter="url(#glow)">
+<circle cx="128" cy="128" r="33" fill="none" stroke="hsl(238 96% 58%)" stroke-width="1.2" stroke-dasharray="12 5" opacity="0.45"/>
+<circle cx="128" cy="128" r="53" fill="none" stroke="hsl(258 96% 58%)" stroke-width="1.2" stroke-dasharray="13 6" opacity="0.56"/>
+<circle cx="128" cy="128" r="73" fill="none" stroke="hsl(278 96% 58%)" stroke-width="1.2" stroke-dasharray="14 7" opacity="0.67"/>
+<circle cx="128" cy="128" r="93" fill="none" stroke="hsl(298 96% 58%)" stroke-width="2.4" stroke-dasharray="15 8" opacity="0.78"/>
+<path d="M168.0 128.0 L218.0 128.0" stroke="hsl(82 100% 62%)" stroke-width="2.6" stroke-linecap="round"/>
+<path d="M167.8 148.9 L197.1 164.2" stroke="hsl(95 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M145.0 152.7 L175.7 197.1" stroke="hsl(108 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M132.2 162.7 L138.8 217.3" stroke="hsl(121 100% 62%)" stroke-width="2.6" stroke-linecap="round"/>
+<path d="M113.8 165.4 L100.3 200.9" stroke="hsl(134 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M94.3 157.8 L65.1 183.7" stroke="hsl(147 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M98.9 135.2 L40.6 149.5" stroke="hsl(160 100% 62%)" stroke-width="2.6" stroke-linecap="round"/>
+<path d="M94.0 119.6 L52.3 109.3" stroke="hsl(173 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M98.1 101.5 L65.1 72.3" stroke="hsl(186 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M112.0 85.9 L96.1 43.8" stroke="hsl(199 100% 62%)" stroke-width="2.6" stroke-linecap="round"/>
+<path d="M131.6 98.2 L137.4 50.6" stroke="hsl(212 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M147.9 99.2 L175.7 58.9" stroke="hsl(225 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M163.4 109.4 L207.7 86.2" stroke="hsl(238 100% 62%)" stroke-width="2.6" stroke-linecap="round"/>
+<path d="M128 54 L163 128 L128 202 L93 128 Z" fill="none" stroke="hsl(348 100% 70%)" stroke-width="3.4"/>
+<path d="M128 70 L151 128 L128 186 L105 128 Z" fill="hsl(82 100% 56%)" opacity="0.24"/>
+<circle cx="128" cy="128" r="15" fill="hsl(82 100% 72%)"/>
+</g>
+</svg>

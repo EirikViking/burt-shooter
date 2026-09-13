@@ -1,38 +1,47 @@
 // Cloudflare Pages Function for highscores API
 import { getRankFromLevel } from '../shared/RankPolicy.js';
+import {
+  getPilotNameValidation,
+  toPublicPilotName
+} from '../../electron/pilotNamePolicy.cjs';
 
-const BLOCKED_PUBLIC_NAME_TERMS = [
-  ['K', 'LAUS'].join(''),
-  ['F', 'ITTE'].join(''),
-  ['K', 'UKEN'].join(''),
-  ['FAT', 'MAN'].join(''),
-  ['MOR', 'DER'].join('')
-];
-const PUBLIC_PILOT_NAME_MAX_LENGTH = 14;
-
-function validatePublicPilotName(rawName, { allowBlank = false } = {}) {
-  const cleaned = String(rawName || '')
-    .toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, '')
-    .trim()
-    .slice(0, PUBLIC_PILOT_NAME_MAX_LENGTH);
-  if (!cleaned) {
-    return allowBlank
-      ? { valid: true, publicName: '', reason: null }
-      : { valid: false, publicName: '', reason: 'blank' };
+function readScoreLevel(entry = {}, fallback = 1) {
+  const details = Array.isArray(entry.details)
+    ? entry.details
+    : Array.isArray(entry.scoreDetails)
+      ? entry.scoreDetails
+      : Array.isArray(entry.metadata?.details)
+        ? entry.metadata.details
+        : [];
+  for (const value of [
+    entry.level,
+    entry.levelReached,
+    entry.metadata?.level,
+    entry.metadata?.levelReached,
+    details[0]
+  ]) {
+    if (value === null || value === undefined || value === '') continue;
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return Math.max(1, Math.floor(parsed));
   }
-  const compact = cleaned.replace(/\s+/g, '');
-  if (BLOCKED_PUBLIC_NAME_TERMS.some(term => compact.includes(term))) {
-    return { valid: false, publicName: cleaned, reason: 'blocked' };
-  }
-  return { valid: true, publicName: cleaned, reason: null };
+  return Math.max(1, Math.floor(Number(fallback) || 1));
 }
 
-function toPublicPilotName(rawName, fallbackSeed = 0) {
-  const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
-  const validation = validatePublicPilotName(rawName, { allowBlank: false });
-  if (!validation.valid) return `PILOT${seed}`;
-  return validation.publicName;
+function hasScoreLevel(entry = {}) {
+  const details = Array.isArray(entry.details)
+    ? entry.details
+    : Array.isArray(entry.scoreDetails)
+      ? entry.scoreDetails
+      : Array.isArray(entry.metadata?.details)
+        ? entry.metadata.details
+        : [];
+  return [
+    entry.level,
+    entry.levelReached,
+    entry.metadata?.level,
+    entry.metadata?.levelReached,
+    details[0]
+  ].some(value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)));
 }
 
 // Schema detection cache
@@ -112,11 +121,12 @@ export async function onRequestPost(context) {
     const db = context.env.DB;
     const body = await context.request.json();
 
-    const { name, score, level, submissionId } = body;
+    const { name, score, submissionId } = body;
+    const level = hasScoreLevel(body) ? readScoreLevel(body, 1) : NaN;
     // NOTE: Ignore any client-provided rank or rankIndex - backend is authoritative
 
     // Validation
-    if (!name || typeof score !== 'number' || typeof level !== 'number') {
+    if (!name || typeof score !== 'number' || !Number.isFinite(score) || !Number.isFinite(level)) {
       return new Response(JSON.stringify({ error: 'Invalid input' }), {
         status: 400,
         headers: {
@@ -126,7 +136,7 @@ export async function onRequestPost(context) {
       });
     }
 
-    const nameValidation = validatePublicPilotName(name);
+    const nameValidation = getPilotNameValidation(name);
     if (!nameValidation.valid) {
       return new Response(JSON.stringify({ error: nameValidation.reason === 'blocked' ? 'Name not available' : 'Invalid name' }), {
         status: 400,

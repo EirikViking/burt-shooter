@@ -60,10 +60,10 @@ const minArcadePreBossSeconds = Math.max(90, Math.round((RunPacingConfig.sectorT
 const maxArcadePreBossSeconds = Math.min(150, Math.round((RunPacingConfig.sectorTargetSeconds ?? 150) * 1.0));
 const errors = [];
 
-assert(wavePlan[0].waveCount >= 6, `Level 1 needs at least six waves before the first boss, got ${wavePlan[0].waveCount}.`, errors);
+assert(wavePlan[0].waveCount >= 5, `Level 1 needs at least five waves before the first boss, got ${wavePlan[0].waveCount}.`, errors);
 assert(wavePlan[0].enemyCount >= 44, `Level 1 should make a stronger first impression, got ${wavePlan[0].enemyCount} enemies.`, errors);
-assert(firstTen.every((level) => level.waveCount >= 6 && level.waveCount <= 8), 'Levels 1-10 should use at least six and at most eight regular waves before each boss.', errors);
-assert(totalNormalWavesToLevel10 >= 60, `Too few normal waves before level 10 (${totalNormalWavesToLevel10}).`, errors);
+assert(firstTen.every((level) => level.waveCount >= 5 && level.waveCount <= 8), 'Levels 1-10 should use at least five and at most eight regular waves before each boss.', errors);
+assert(totalNormalWavesToLevel10 >= 50, `Too few normal waves before level 10 (${totalNormalWavesToLevel10}).`, errors);
 assert(totalNormalWavesToLevel10 <= 72, `Too many normal waves before level 10 (${totalNormalWavesToLevel10}).`, errors);
 assert(totalEnemiesToLevel10 >= 480, `Too few normal enemies before level 10 (${totalEnemiesToLevel10}).`, errors);
 assert(totalEnemiesToLevel10 <= 780, `Too many normal enemies before level 10 (${totalEnemiesToLevel10}).`, errors);
@@ -72,8 +72,8 @@ assert(wavePlan[19].bossHealth <= 285, `Level 20 boss health is too high for dif
 assert(wavePlan.slice(0, 10).every((level) => level.estimatedBossIntervalSeconds >= minArcadePreBossSeconds && level.estimatedBossIntervalSeconds <= maxArcadePreBossSeconds),
   `Early pre-boss wave spans should fit the arcade sector target (${minArcadePreBossSeconds}-${maxArcadePreBossSeconds}s), got ${wavePlan.slice(0, 10).map((level) => `${level.level}:${level.estimatedBossIntervalSeconds}`).join(', ')}.`,
   errors);
-assert((diff.MIN_WAVES_BETWEEN_BOSSES ?? 0) >= 6, `MIN_WAVES_BETWEEN_BOSSES must be at least 6, got ${diff.MIN_WAVES_BETWEEN_BOSSES}.`, errors);
-assert((diff.MIN_SECONDS_BETWEEN_BOSSES ?? 0) === 0, `MIN_SECONDS_BETWEEN_BOSSES should remain 0 so the six-wave floor drives sector flow, got ${diff.MIN_SECONDS_BETWEEN_BOSSES}.`, errors);
+assert((diff.MIN_WAVES_BETWEEN_BOSSES ?? 0) >= 5, `MIN_WAVES_BETWEEN_BOSSES must be at least 5, got ${diff.MIN_WAVES_BETWEEN_BOSSES}.`, errors);
+assert((diff.MIN_SECONDS_BETWEEN_BOSSES ?? 0) === 0, `MIN_SECONDS_BETWEEN_BOSSES should remain 0 so the five-wave floor drives sector flow, got ${diff.MIN_SECONDS_BETWEEN_BOSSES}.`, errors);
 assert(diff.waveDelayMs <= 950, `Between-wave briefing is too long (${diff.waveDelayMs}ms).`, errors);
 assert(diff.waveCleanupMs <= 850, `Wave cleanup window is too long (${diff.waveCleanupMs}ms).`, errors);
 assert(diff.bossGateMs <= 1050, `Boss gate is too long (${diff.bossGateMs}ms).`, errors);

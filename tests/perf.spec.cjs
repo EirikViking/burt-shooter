@@ -33,9 +33,12 @@ test('perf run', async ({ page }, testInfo) => {
   }
 
   const durationMs = Number(process.env.PERF_DURATION_MS || 120000);
+  const minFps = Number(process.env.PERF_MIN_FPS || 0);
+  const warmupSamples = Number(process.env.PERF_WARMUP_SAMPLES || 1);
   const sampleMs = 5000;
   const logs = [];
   const errors = [];
+  const fpsSamples = [];
   attachLogging(page, logs, errors);
 
   let failure;
@@ -88,6 +91,7 @@ test('perf run', async ({ page }, testInfo) => {
         `bullets=${sample.bullets} enemies=${sample.enemies} particles=${sample.particles} ` +
         `children=${sample.children} level=${sample.level} mem=${memMb}MB scene=${sample.scene}`
       );
+      if (sampleIndex > warmupSamples) fpsSamples.push(sample.fps);
 
       if (sample.fatal || sample.fatalOverlay) {
         throw new Error('Fatal overlay detected');
@@ -95,6 +99,10 @@ test('perf run', async ({ page }, testInfo) => {
       if (lag > 2000) {
         throw new Error(`rAF stalled for ${Math.round(lag)}ms at sample ${sampleIndex}`);
       }
+    }
+    const sustainedMinFps = fpsSamples.length ? Math.min(...fpsSamples) : 0;
+    if (minFps > 0 && sustainedMinFps < minFps) {
+      throw new Error(`Sustained FPS below threshold: min=${sustainedMinFps.toFixed(1)} threshold=${minFps}`);
     }
   } catch (error) {
     failure = error;

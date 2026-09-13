@@ -33,6 +33,12 @@ export const ENEMY_MOVEMENT_STYLE_IDS = ENEMY_MOVEMENT_STYLE_DEFS.map((style) =>
 
 const STYLE_BY_ID = new Map(ENEMY_MOVEMENT_STYLE_DEFS.map((style) => [style.id, style]));
 
+function smoothStepWave(value, sharpness = 2.4) {
+  const normalized = Math.max(-1, Math.min(1, Number(value) || 0));
+  const scale = Math.tanh(sharpness) || 1;
+  return Math.tanh(normalized * sharpness) / scale;
+}
+
 export function getEnemyMovementStyle(id) {
   return STYLE_BY_ID.get(id) || STYLE_BY_ID.get('sine');
 }
@@ -57,7 +63,7 @@ export function getEnemyMovementOffset(styleId, context = {}) {
     case 'sine':
       return { x: Math.sin(phase) * 8, y: Math.cos(phase * 0.7) * 3 };
     case 'zigzag':
-      return { x: Math.sign(Math.sin(phase)) * 10, y: Math.cos(phase * 0.6) * 4 };
+      return { x: smoothStepWave(Math.sin(phase), 2.6) * 10, y: Math.cos(phase * 0.6) * 4 };
     case 'circle':
       return { x: Math.cos(phase) * 12, y: Math.sin(phase) * 8 };
     case 'drunk':
@@ -71,15 +77,16 @@ export function getEnemyMovementOffset(styleId, context = {}) {
     case 'orbit':
       return { x: Math.cos(phase) * 15, y: Math.sin(phase) * 10 };
     case 'snap':
-      return { x: Math.round(Math.sin(phase) * 2) * 6, y: Math.round(Math.cos(phase * 0.7) * 1.5) * 4 };
+      return { x: smoothStepWave(Math.sin(phase), 2.2) * 12, y: smoothStepWave(Math.cos(phase * 0.7), 2) * 8 };
     case 'weave':
       return { x: Math.sin(phase * 1.4) * 14, y: Math.cos(phase * 0.8) * 7 };
     case 'strafe':
       return { x: Math.sin(phase * 0.72) * 24, y: Math.cos(phase * 0.45) * 4 };
     case 'laneSwap':
-      return { x: Math.round(Math.sin(phase * 0.5)) * 18, y: Math.sin(phase * 0.9) * 5 };
+      return { x: smoothStepWave(Math.sin(phase * 0.5), 2.4) * 18, y: Math.sin(phase * 0.9) * 5 };
     case 'dashPause': {
-      const dash = Math.sign(Math.sin(phase)) * Math.max(0, Math.abs(Math.sin(phase)) - 0.52);
+      const raw = Math.sin(phase);
+      const dash = smoothStepWave(raw, 2.8) * Math.max(0, Math.abs(raw) - 0.52);
       return { x: dash * 36, y: Math.cos(phase * 0.8) * 4 };
     }
     case 'anchor':
@@ -113,7 +120,7 @@ export function getEnemyMovementOffset(styleId, context = {}) {
     case 'hookTurn':
       return { x: side * (Math.sin(phase * 0.72) * 18 + Math.max(0, Math.cos(phase * 0.72)) * 14), y: Math.sin(phase * 1.05) * 9 };
     case 'fastNeedle':
-      return { x: Math.sign(Math.sin(tacticalWave * 1.7 + slotPhase)) * 16, y: Math.cos(tacticalWave * 1.1) * 5 };
+      return { x: smoothStepWave(Math.sin(tacticalWave * 1.7 + slotPhase), 2.8) * 16, y: Math.cos(tacticalWave * 1.1) * 5 };
     default:
       return { x: 0, y: 0 };
   }

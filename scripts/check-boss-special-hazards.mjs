@@ -8,6 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4341));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/boss-special-hazards-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -89,21 +90,43 @@ const pageErrors = [];
 const consoleWarningsOrErrors = [];
 page.on('pageerror', (error) => pageErrors.push(error.message));
 page.on('console', (message) => {
-  if (message.type() === 'error' || message.type() === 'warning') consoleWarningsOrErrors.push(message.text());
+  if (message.type() !== 'error' && message.type() !== 'warning') return;
+  const text = message.text();
+  if (/Service worker script missing or invalid/i.test(text)) return;
+  consoleWarningsOrErrors.push(text);
 });
 
 try {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
+    controlSmoke: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
     startAtBoss: '1',
     startLevel: '6'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
 
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE';
-  }, { timeout: 30000 });
+    const play = window.__game?.scenes?.play;
+    return state?.scene === 'play' && play?.enemyManager && play?._lastStartedLevel === 6;
+  }, undefined, { timeout: 30000 });
+
+  await page.evaluate(async () => {
+    const play = window.__game?.scenes?.play;
+    if (!play?.enemyManager || play.enemyManager.state === 'BOSS_ACTIVE') return;
+    play.clearPendingEnemyStart?.();
+    play.enemyManager.forceBossStart?.(6);
+    await play.enemyManager.spawnBoss?.(6);
+    play.enemyManager.state = 'BOSS_ACTIVE';
+    play.enemyManager.bossSpawning = false;
+  });
+
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    const boss = window.__game?.scenes?.play?.enemyManager?.boss;
+    return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE' && Boolean(boss?.active);
+  }, undefined, { timeout: 30000 });
 
   const results = await page.evaluate(async () => {
     const game = window.__game;
@@ -130,6 +153,11 @@ try {
       }
       play.bossHazards = [];
       play.lastBossHazardHit = null;
+      play.bossMercyUntilMs = 0;
+      play.resetBossLifeLossCap?.('boss_special_hazards_case');
+      play.lastBossMercyBlockLogAt = 0;
+      play.lastBossMercyFeedbackAt = 0;
+      play.lastHitAt = 0;
     };
 
     const runCase = (name, setup) => {
@@ -143,7 +171,7 @@ try {
       play.updateBossHazards(1);
       return {
         name,
-        ok: game.lives === beforeLives - 1 && Boolean(play.lastBossHazardHit),
+        ok: game.lives === beforeLives - 1 && Boolean(hazard?.hit),
         livesBefore: beforeLives,
         livesAfter: game.lives,
         hazard: hazard ? {

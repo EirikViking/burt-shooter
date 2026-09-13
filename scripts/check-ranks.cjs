@@ -1,5 +1,5 @@
 // Rank System Build Guard
-// Prevents accidental reintroduction of 78-rank assumptions
+// Prevents accidental reintroduction of retired rank-count assumptions.
 
 const fs = require('fs');
 const path = require('path');
@@ -20,7 +20,7 @@ const FILES_TO_CHECK = [
 
 let hasErrors = false;
 
-console.log('[Rank Guard] Checking for 78-rank regressions...\n');
+console.log('[Rank Guard] Checking for retired rank-count regressions...\n');
 
 FILES_TO_CHECK.forEach(filePath => {
     const fullPath = path.join(process.cwd(), filePath);
@@ -35,7 +35,7 @@ FILES_TO_CHECK.forEach(filePath => {
     BANNED_PATTERNS.forEach(({ pattern, description }) => {
         const matches = content.match(pattern);
         if (matches) {
-            console.error(`❌ ERROR in ${filePath}:`);
+            console.error(`ERROR in ${filePath}:`);
             console.error(`   Found: ${description}`);
             console.error(`   Matches: ${matches.join(', ')}`);
             console.error('');
@@ -44,26 +44,29 @@ FILES_TO_CHECK.forEach(filePath => {
     });
 });
 
-// Verify RankPolicy constants
 const rankPolicyPath = path.join(process.cwd(), 'src/shared/RankPolicy.js');
 if (fs.existsSync(rankPolicyPath)) {
     const rankPolicyContent = fs.readFileSync(rankPolicyPath, 'utf8');
     if (!rankPolicyContent.includes('START_LEVEL = 1')) {
-        console.error('❌ ERROR: RankPolicy missing START_LEVEL = 1');
+        console.error('ERROR: RankPolicy missing START_LEVEL = 1');
         hasErrors = true;
     }
-    if (!rankPolicyContent.includes('END_LEVEL = 60')) {
-        console.error('❌ ERROR: RankPolicy missing END_LEVEL = 60');
+    if (!rankPolicyContent.includes('END_LEVEL = 410')) {
+        console.error('ERROR: RankPolicy missing END_LEVEL = 410');
+        hasErrors = true;
+    }
+    if (!rankPolicyContent.includes('NUM_RANKS = 40')) {
+        console.error('ERROR: RankPolicy missing NUM_RANKS = 40');
         hasErrors = true;
     }
 }
 
 if (hasErrors) {
-    console.error('❌ RANK GUARD FAILED: Rank system violations detected!');
-    console.error('   The game uses 20 ranks (0-19) with level thresholds 1-60.');
+    console.error('RANK GUARD FAILED: Rank system violations detected.');
+    console.error('   The game uses 40 ranks (0-39) with level thresholds 1-410.');
     console.error('   Check src/shared/RankPolicy.js for the source of truth.');
     console.error('');
     process.exit(1);
 } else {
-    console.log('✅ Rank guard passed: No rank system violations detected.');
+    console.log('Rank guard passed: No rank system violations detected.');
 }

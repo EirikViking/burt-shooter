@@ -1,22 +1,41 @@
+import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { getDefaultShipKey, getShipMetadata, getShipUnlockLabel, getShipUnlockProgress, getShipUsage, getTotalUsage, isShipUnlocked } from '../config/ShipMetadata.js';
+import {
+    getDefaultShipKey,
+    getShipMetadata,
+    getShipUnlockHistoryLine,
+    getShipUnlockProgress,
+    getShipUnlockRequirementLine,
+    getShipUsage,
+    getTotalUsage,
+    isShipUnlocked
+} from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { createText } from '../utils/pixiText.js';
-import { createShipStatPanel } from '../ui/ShipStatPanel.js';
+import { createShipStatPanel, getShipTierLabel } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitExplanation } from '../config/ShipTraitDescriptions.js';
 import { translateText } from '../i18n/index.js';
+import { AssetManifest } from '../assets/assetManifest.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
+import { getShipMasteryView, SHIP_MASTERY_TIERS } from '../progression/ShipMastery.js';
+import { RUN_MODES } from '../game/RunMode.js';
+import { HangarLaunchModeOverlay } from '../ui/HangarLaunchModeOverlay.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
         this.game = game;
         this.spriteKey = spriteKey;
         this.container = new PIXI.Container();
+        this.container.sortableChildren = true;
         this.ship = getShipMetadata(spriteKey);
         this.gamepadNavigator = new GamepadNavigator();
         this.buttons = [];
+        this.menuFx = null;
         this.focusedButtonIndex = 1;
+        this.launchModeOverlay = null;
+        this.launchInProgress = false;
 
         if (!this.ship) {
             console.error('[ShipDetails] Invalid sprite key:', spriteKey);
@@ -25,8 +44,6 @@ export class ShipDetailsScene {
         }
         this.unlockProgress = getShipUnlockProgress();
 
-        // Ensure state is updated
-        setSelectedShipKey(this.spriteKey);
     }
 
     async create() {
@@ -36,8 +53,21 @@ export class ShipDetailsScene {
         // Background
         const bg = new PIXI.Graphics();
         bg.rect(0, 0, width, height);
-        bg.fill({ color: 0x000000 });
+        bg.fill({ color: 0x020711 });
+        bg.zIndex = -3;
         this.container.addChild(bg);
+        await this.createHangarBackdrop(width, height);
+        installMenuFx(this, {
+            label: 'ui_menuFxShipDetails',
+            zIndex: 0,
+            accent: this.ship?.visuals?.variant?.accent || 0x66ffcc,
+            secondary: 0xd8a66b,
+            gold: 0xffef7e,
+            intensity: 0.68,
+            density: 0.7,
+            alpha: 0.42,
+            openVolume: 0.18
+        });
 
         // Determine layout
         const isMobile = width < 900;
@@ -45,12 +75,17 @@ export class ShipDetailsScene {
         const panelHeight = Math.min(750, height - 60);
         const panelX = (width - panelWidth) / 2;
         const panelY = (height - panelHeight) / 2;
+        const accent = this.ship?.visuals?.variant?.accent || 0x37f5ff;
 
         // Main panel
         const panel = new PIXI.Graphics();
-        panel.rect(panelX, panelY, panelWidth, panelHeight);
-        panel.fill({ color: 0x1a1a1a });
-        panel.stroke({ color: 0x00ff00, width: 3 });
+        drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x06111f, alpha: 0.92 }, { color: accent, width: 2, alpha: 0.88 });
+        panel.roundRect(panelX + 12, panelY + 12, panelWidth - 24, panelHeight - 24, 6);
+        panel.stroke({ color: 0xd8a66b, width: 1, alpha: 0.2 });
+        panel.rect(panelX + 26, panelY + 22, Math.max(120, panelWidth * 0.22), 2);
+        panel.fill({ color: 0xffef7e, alpha: 0.34 });
+        panel.rect(panelX + panelWidth - Math.max(170, panelWidth * 0.26) - 26, panelY + panelHeight - 28, Math.max(150, panelWidth * 0.22), 2);
+        panel.fill({ color: accent, alpha: 0.32 });
         this.container.addChild(panel);
 
         // Content container
@@ -65,9 +100,9 @@ export class ShipDetailsScene {
         const title = createText(this.ship.name, {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: isMobile ? 26 : 32,
-            fill: '#00ff00',
-            stroke: '#000000',
-            strokeThickness: 4,
+            fill: '#f5fdff',
+            stroke: '#00d5ff',
+            strokeThickness: 5,
             fontWeight: 'bold'
         });
         title.anchor.set(0.5, 0);
@@ -91,6 +126,12 @@ export class ShipDetailsScene {
             sprite.scale.set(scale);
 
             contentContainer.addChild(sprite);
+            GameAssets.ensureShowroomShip(this.ship.textureIndex).then((display) => {
+                if (sprite.destroyed) return;
+                sprite.texture = display.texture;
+                sprite.tint = 0xffffff;
+                sprite.scale.set(maxSize / display.texture.width);
+            }).catch((error) => console.warn('[ShipDetails] Showroom art failed to load:', error));
         }
         yOffset += isMobile ? 130 : 130;
 
@@ -102,31 +143,37 @@ export class ShipDetailsScene {
         const locked = !isShipUnlocked(this.spriteKey, this.unlockProgress);
         const usageText = createText([translateText('YOUR LAUNCHES') + ':', usageCount, '//', translateText('LOCAL PROFILE')].join(' '), {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: 13,
+            fontSize: 16,
             fill: '#999999',
             align: 'center'
         });
         usageText.anchor.set(0.5, 0);
         usageText.position.set(panelWidth / 2, yOffset);
         contentContainer.addChild(usageText);
-        yOffset += 35;
+        yOffset += 24;
+        yOffset = this.createShipMasterySection(contentContainer, panelWidth, yOffset, isMobile);
 
-        if (locked) {
-            const unlockText = createText(getShipUnlockLabel(this.spriteKey), {
-                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-                fontSize: isMobile ? 12 : 14,
-                fill: '#ffcc00',
-                align: 'center',
-                wordWrap: true,
-                wordWrapWidth: panelWidth - 80,
-                stroke: '#000000',
-                strokeThickness: 2
-            });
-            unlockText.anchor.set(0.5, 0);
-            unlockText.position.set(panelWidth / 2, yOffset);
-            contentContainer.addChild(unlockText);
-            yOffset += unlockText.height + 18;
-        }
+        const unlockLine = locked
+            ? getShipUnlockRequirementLine(this.spriteKey, { translate: translateText })
+            : getShipUnlockHistoryLine(this.spriteKey, this.unlockProgress, { translate: translateText });
+        const unlockText = createText(unlockLine, {
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+            fontSize: isMobile ? 15 : 18,
+            fill: locked ? '#ffcc00' : '#ffef7e',
+            align: 'center',
+            wordWrap: true,
+            wordWrapWidth: panelWidth - 80,
+            lineHeight: isMobile ? 16 : 18,
+            stroke: '#000000',
+            strokeThickness: 2,
+            fontWeight: '700'
+        });
+        unlockText.anchor.set(0.5, 0);
+        unlockText.position.set(panelWidth / 2, yOffset);
+        unlockText.label = 'ui_shipDetailsUnlockProvenance';
+        contentContainer.addChild(unlockText);
+        this.unlockProvenanceText = unlockText;
+        yOffset += unlockText.height + 16;
 
         // Lore section with better formatting. Keep it inside the space above the fixed buttons.
         const buttonTop = panelHeight - (isMobile ? 78 : 84);
@@ -140,6 +187,31 @@ export class ShipDetailsScene {
 
         // Setup input
         this.setupInput();
+    }
+
+    async createHangarBackdrop(width, height) {
+        const backdropSrc = AssetManifest.generated?.shipHangar;
+        if (!backdropSrc) return;
+        try {
+            const texture = await PIXI.Assets.load(backdropSrc);
+            const sprite = new PIXI.Sprite(texture);
+            sprite.label = 'ui_shipDetailsHangarBackdrop';
+            sprite.anchor.set(0.5);
+            const scale = Math.max(width / Math.max(1, texture.width), height / Math.max(1, texture.height));
+            sprite.scale.set(scale);
+            sprite.position.set(width / 2, height / 2);
+            sprite.alpha = 0.34;
+            sprite.zIndex = -2;
+            this.container.addChild(sprite);
+            const shade = new PIXI.Graphics();
+            shade.label = 'ui_shipDetailsHangarShade';
+            shade.rect(0, 0, width, height);
+            shade.fill({ color: 0x020711, alpha: 0.5 });
+            shade.zIndex = -1;
+            this.container.addChild(shade);
+        } catch (error) {
+            console.warn('[ShipDetails] Hangar backdrop failed to load:', error);
+        }
     }
 
     createStatsSection(container, panelWidth, yOffset, isMobile) {
@@ -158,11 +230,36 @@ export class ShipDetailsScene {
         container.addChild(statPanel);
         yOffset += statPanel.height + 18;
 
+        const tierLabel = getShipTierLabel(this.ship);
+        if (tierLabel || this.ship.role || this.ship.weakness) {
+            const metaLine = [
+                tierLabel,
+                this.ship.role ? String(this.ship.role).toUpperCase() : '',
+                this.ship.weakness ? `WEAKNESS: ${this.ship.weakness}` : ''
+            ].filter(Boolean).join(' // ');
+            const metaText = createText(metaLine, {
+                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+                fontSize: isMobile ? 13 : 15,
+                fill: tierLabel ? '#ffef7e' : '#d8fbff',
+                align: 'center',
+                wordWrap: true,
+                wordWrapWidth: panelWidth - 100,
+                lineHeight: isMobile ? 14 : 16,
+                stroke: '#000000',
+                strokeThickness: 2,
+                fontWeight: '800'
+            });
+            metaText.anchor.set(0.5, 0);
+            metaText.position.set(panelWidth / 2, yOffset);
+            container.addChild(metaText);
+            yOffset += metaText.height + 12;
+        }
+
         const explanation = getTraitExplanation(trait, this.ship);
         const traitTitleText = 'TRAIT: ' + explanation.label;
         const traitTitle = createText(traitTitleText, {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: isMobile ? 13 : 15,
+            fontSize: isMobile ? 15 : 18,
             fill: '#66ffcc',
             align: 'center',
             stroke: '#000000',
@@ -176,7 +273,7 @@ export class ShipDetailsScene {
 
         const traitBody = createText(explanation.lines.map(line => `- ${line}`).join('\n'), {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: isMobile ? 10 : 12,
+            fontSize: isMobile ? 13 : 15,
             fill: '#d8fbff',
             align: 'left',
             wordWrap: true,
@@ -191,6 +288,77 @@ export class ShipDetailsScene {
         return yOffset + traitBody.height + 16;
     }
 
+    createShipMasterySection(container, panelWidth, yOffset, isMobile) {
+        const mastery = getShipMasteryView(this.unlockProgress?.shipSpecificMilestones?.[this.ship.id], this.ship);
+        const row = new PIXI.Container();
+        row.label = 'ui_shipMasteryMedals';
+        row.position.set(panelWidth / 2, yOffset);
+        container.addChild(row);
+
+        const title = createText(translateText('SHIP MASTERY'), {
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+            fontSize: isMobile ? 14 : 16,
+            fill: '#d8fbff',
+            fontWeight: '800'
+        });
+        title.anchor.set(1, 0.5);
+        title.position.set(-42, 10);
+        row.addChild(title);
+
+        const tiers = [
+            SHIP_MASTERY_TIERS.bronze,
+            SHIP_MASTERY_TIERS.silver,
+            SHIP_MASTERY_TIERS.gold
+        ];
+        tiers.forEach((tier, index) => {
+            const earned = mastery.tier.rank >= tier.rank;
+            const medal = new PIXI.Graphics();
+            const x = index * 34;
+            medal.circle(x, 10, 11);
+            medal.fill({ color: earned ? tier.color : 0x142433, alpha: earned ? 0.96 : 0.72 });
+            medal.stroke({ color: earned ? 0xffffff : 0x4c6578, width: earned ? 2 : 1, alpha: earned ? 0.82 : 0.48 });
+            medal.moveTo(x - 6, 18);
+            medal.lineTo(x - 2, 28);
+            medal.lineTo(x + 1, 19);
+            medal.lineTo(x + 6, 28);
+            medal.lineTo(x + 7, 18);
+            medal.stroke({ color: earned ? tier.color : 0x4c6578, width: 3, alpha: earned ? 0.88 : 0.42 });
+            row.addChild(medal);
+        });
+
+        const tierLabel = createText(translateText(mastery.tier.label), {
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+            fontSize: isMobile ? 14 : 16,
+            fill: mastery.tier.id === 'none' ? '#8298aa' : `#${mastery.tier.color.toString(16).padStart(6, '0')}`,
+            fontWeight: '900'
+        });
+        tierLabel.anchor.set(0, 0.5);
+        tierLabel.position.set(110, 10);
+        row.addChild(tierLabel);
+
+        const goal = mastery.maxed
+            ? translateText('MASTERY COMPLETE')
+            : mastery.nextGoal.id === 'clear_run'
+                ? translateText('CLEAR A RANKED RUN FOR {tier}', {
+                    tier: translateText(mastery.nextGoal.targetTier.label)
+                })
+                : translateText('REACH SECTOR {sector} FOR {tier}', {
+                    sector: mastery.nextGoal.target,
+                    tier: translateText(mastery.nextGoal.targetTier.label)
+                });
+        const goalText = createText(goal, {
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+            fontSize: isMobile ? 13 : 15,
+            fill: '#91b7c7',
+            align: 'center'
+        });
+        goalText.anchor.set(0.5, 0);
+        goalText.position.set(34, 31);
+        row.addChild(goalText);
+
+        return yOffset + 51;
+    }
+
     createLoreSection(container, panelWidth, yOffset, isMobile, maxHeight = Infinity) {
         // Format lore into paragraphs
         const loreLong = this.ship.loreLong || this.ship.description;
@@ -200,7 +368,7 @@ export class ShipDetailsScene {
         for (const para of paragraphs) {
             const paraText = createText(para, {
                 fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-                fontSize: isMobile ? 11 : 13,
+                fontSize: isMobile ? 13 : 15,
                 fill: '#dddddd',
                 align: 'left',
                 wordWrap: true,
@@ -249,6 +417,7 @@ export class ShipDetailsScene {
         const buttonWidth = isMobile ? 130 : 150;
         const buttonHeight = isMobile ? 38 : 42;
         const spacing = 20;
+        const accent = this.ship?.visuals?.variant?.accent || 0x37f5ff;
 
         // Back button
         const backButton = new PIXI.Container();
@@ -264,7 +433,7 @@ export class ShipDetailsScene {
         const backText = createText('BACK', {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: isMobile ? 18 : 22,
-            fill: '#00ff00',
+            fill: '#d8fbff',
             fontWeight: 'bold'
         });
         backText.anchor.set(0.5);
@@ -278,17 +447,21 @@ export class ShipDetailsScene {
                 backFocus.stroke({ color: 0xffef7e, width: 2, alpha: 0.88 });
             }
             backBg.clear();
-            backBg.rect(0, 0, buttonWidth, buttonHeight);
-            backBg.fill({ color: hovered ? 0x144455 : 0x333333 });
-            backBg.stroke({ color: hovered || backButton._focused ? 0xffffff : 0x00ff00, width: 2 });
+            drawAstraPanel(backBg, 0, 0, buttonWidth, buttonHeight, 5, { color: hovered ? 0x0b6f8f : 0x07334e, alpha: 0.92 }, { color: hovered || backButton._focused ? 0xffffff : accent, width: 2, alpha: 0.94 });
+            backBg.rect(10, 7, buttonWidth - 20, 2);
+            backBg.fill({ color: 0xd8a66b, alpha: 0.38 });
         };
         backButton.redraw(false);
         backButton.on('pointerover', () => {
             this.setButtonFocus(0);
+            playMenuFocusSfx(0.09);
             backButton.redraw(true);
         });
         backButton.on('pointerout', () => backButton.redraw(false));
-        backButton.on('pointerdown', () => this.goBack());
+        backButton.on('pointerdown', () => {
+            playMenuConfirmSfx(0.14);
+            this.goBack();
+        });
         this.container.addChild(backButton);
 
         // Start button
@@ -306,7 +479,7 @@ export class ShipDetailsScene {
         const startText = createText(locked ? 'LOCKED' : 'START GAME', {
             fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
             fontSize: isMobile ? 18 : 22,
-            fill: locked ? '#ffcc00' : '#000000',
+            fill: locked ? '#ffcc00' : '#081522',
             fontWeight: 'bold'
         });
         startText.anchor.set(0.5);
@@ -320,17 +493,21 @@ export class ShipDetailsScene {
                 startFocus.stroke({ color: 0xffef7e, width: 2, alpha: 0.88 });
             }
             startBg.clear();
-            startBg.rect(0, 0, buttonWidth, buttonHeight);
-            startBg.fill({ color: locked ? 0x2a2134 : (hovered ? 0x66ffff : 0x00ff00) });
-            startBg.stroke({ color: hovered || startButton._focused ? 0xffffff : 0xffffff, width: 2 });
+            drawAstraPanel(startBg, 0, 0, buttonWidth, buttonHeight, 5, { color: locked ? 0x2a2134 : (hovered ? 0xffef7e : 0xffd15c), alpha: 0.96 }, { color: hovered || startButton._focused ? 0xffffff : accent, width: 2, alpha: 0.95 });
+            startBg.rect(10, 7, buttonWidth - 20, 2);
+            startBg.fill({ color: locked ? 0xd8a66b : 0x00eaff, alpha: 0.42 });
         };
         startButton.redraw(false);
         startButton.on('pointerover', () => {
             this.setButtonFocus(1);
+            playMenuFocusSfx(0.09);
             startButton.redraw(true);
         });
         startButton.on('pointerout', () => startButton.redraw(false));
-        startButton.on('pointerdown', () => this.startGame());
+        startButton.on('pointerdown', () => {
+            playMenuConfirmSfx(0.18);
+            this.startGame();
+        });
         this.container.addChild(startButton);
 
         this.backButton = backButton;
@@ -341,7 +518,9 @@ export class ShipDetailsScene {
 
     setupInput() {
         this.keyHandler = (e) => {
-            if (e.key === 'Escape') {
+            if (this.launchModeOverlay) {
+                this.launchModeOverlay.handleKey(e);
+            } else if (e.key === 'Escape') {
                 this.goBack();
             } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
                 e.preventDefault();
@@ -361,14 +540,23 @@ export class ShipDetailsScene {
             button._focused = buttonIndex === next;
             button.redraw?.(false);
         });
+        if (next !== this.focusedButtonIndex) playMenuFocusSfx(0.08);
         this.focusedButtonIndex = next;
     }
 
-    update() {
+    update(delta = 1) {
+        updateMenuFx(this, delta);
         const nav = this.gamepadNavigator.update();
         if (!nav.connected || !nav.active) return;
+        if (this.launchModeOverlay) {
+            this.launchModeOverlay.handleGamepad(nav);
+            return;
+        }
         if (nav.pressed.left || nav.pressed.right) this.setButtonFocus(this.focusedButtonIndex === 0 ? 1 : 0);
-        if (nav.pressed.confirm) this.buttons[this.focusedButtonIndex]?.activate?.();
+        if (nav.pressed.confirm) {
+            playMenuConfirmSfx(0.16);
+            this.buttons[this.focusedButtonIndex]?.activate?.();
+        }
         if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.goBack();
     }
 
@@ -378,18 +566,56 @@ export class ShipDetailsScene {
     }
 
     startGame() {
-        if (!isShipUnlocked(this.spriteKey, this.unlockProgress)) {
-            return;
+        if (!isShipUnlocked(this.spriteKey, this.unlockProgress) || this.launchInProgress || this.launchModeOverlay) return;
+        this.launchModeOverlay = new HangarLaunchModeOverlay({
+            parent: this.container,
+            width: this.game.getWidth(),
+            height: this.game.getHeight(),
+            shipName: this.ship?.name,
+            onLaunch: (option) => this.startGameInMode(option),
+            onCancel: () => this.closeLaunchModeOverlay()
+        });
+        this.gamepadNavigator.suppressUntilReleased();
+    }
+
+    closeLaunchModeOverlay() {
+        this.launchModeOverlay?.destroy();
+        this.launchModeOverlay = null;
+        this.gamepadNavigator.suppressUntilReleased();
+    }
+
+    startGameInMode(option = { id: RUN_MODES.MAYHEM_TACTICAL }) {
+        if (!isShipUnlocked(this.spriteKey, this.unlockProgress) || this.launchInProgress) return;
+        const runMode = option.id || RUN_MODES.MAYHEM_TACTICAL;
+        const spriteKey = option.launchShipKey || this.spriteKey;
+        setSelectedShipKey(spriteKey);
+        try {
+            localStorage.setItem('burt.selectedShip.v1', this.spriteKey);
+            window.__novaSteamCloudDiagnostics?.sync?.();
+        } catch {
+            // Selection persistence is best-effort; launch remains authoritative.
         }
-        console.log('[ShipDetails] Starting game with ship:', this.spriteKey);
-        // Read from state to ensure we have the latest selection
-        this.game.startGame(this.spriteKey);
+        const launchOptions = {
+            runMode,
+            dailySignalContract: option.dailySignalContract || undefined,
+            scoutAnomalyId: option.scoutAnomalyId || undefined,
+            startSector: option.startSector || undefined
+        };
+        this.launchInProgress = true;
+        this.closeLaunchModeOverlay();
+        console.log(`[ShipDetails] Starting ${runMode} with ship:`, spriteKey);
+        Promise.resolve(this.game.startGame(spriteKey, launchOptions)).catch((error) => {
+            this.launchInProgress = false;
+            console.error('[ShipDetails] Failed to start selected ship:', error);
+        });
     }
 
     cleanup() {
+        this.closeLaunchModeOverlay();
         if (this.keyHandler) {
             window.removeEventListener('keydown', this.keyHandler);
         }
+        destroyMenuFx(this);
     }
 
     destroy() {

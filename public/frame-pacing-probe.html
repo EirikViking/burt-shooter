@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
+  <title>Nova Swarm Frame Pacing Probe</title>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #020611;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="probe"></canvas>
+  <script>
+    (() => {
+      const canvas = document.getElementById('probe');
+      const context = canvas.getContext('2d', { alpha: false, desynchronized: false });
+      const fixedStepMs = 1000 / 60;
+      const maxCatchUpSteps = 8;
+      let startedAt = performance.now();
+      let startedWallClock = Date.now();
+      const rafIntervals = [];
+      const rawDeltas = [];
+      const clampedDeltas = [];
+      const renderIntervals = [];
+      const updateWallIntervals = [];
+      const longTasks = [];
+      const gcPauses = [];
+      const focusEvents = [{ timestampMs: 0, focused: document.hasFocus() }];
+      const visibilityEvents = [{ timestampMs: 0, state: document.visibilityState }];
+      const state = {
+        simTimeMs: 0,
+        accumulatorMs: 0,
+        updates: 0,
+        renders: 0,
+        canvasSubmissions: 0,
+        skippedRenders: 0,
+        reusedMarkerFrames: 0,
+        markerChanges: 0,
+        catchUpFrames: 0,
+        droppedCatchUpMs: 0,
+        lastMarkerKey: null,
+        lastUpdateWallMs: null,
+        lastRenderMs: null,
+        lastRafMs: null,
+        running: true
+      };
+
+      function resize() {
+        const ratio = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        const width = Math.max(1, Math.round(innerWidth * ratio));
+        const height = Math.max(1, Math.round(innerHeight * ratio));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+      }
+
+      function percentile(sortedValues, percentileValue) {
+        if (!sortedValues.length) return null;
+        const position = (sortedValues.length - 1) * percentileValue;
+        const lower = Math.floor(position);
+        const upper = Math.ceil(position);
+        if (lower === upper) return sortedValues[lower];
+        const weight = position - lower;
+        return sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight;
+      }
+
+      function summarize(values) {
+        const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+        const round = value => value == null ? null : Number(value.toFixed(4));
+        return {
+          samples: sorted.length,
+          p50Ms: round(percentile(sorted, 0.5)),
+          p95Ms: round(percentile(sorted, 0.95)),
+          p99Ms: round(percentile(sorted, 0.99)),
+          maxMs: round(sorted.length ? sorted.at(-1) : null),
+          countsOverMs: {
+            '25': sorted.filter(value => value > 25).length,
+            '33.3': sorted.filter(value => value > (1000 / 30)).length,
+            '50': sorted.filter(value => value > 50).length,
+            '100': sorted.filter(value => value > 100).length
+          }
+        };
+      }
+
+      function update() {
+        state.simTimeMs += fixedStepMs;
+        state.updates += 1;
+        const now = performance.now();
+        if (state.lastUpdateWallMs != null) updateWallIntervals.push(now - state.lastUpdateWallMs);
+        state.lastUpdateWallMs = now;
+      }
+
+      function drawShip(x, y, size, fill, stroke) {
+        context.save();
+        context.translate(x, y);
+        context.beginPath();
+        context.moveTo(size, 0);
+        context.lineTo(-size * 0.8, -size * 0.65);
+        context.lineTo(-size * 0.35, 0);
+        context.lineTo(-size * 0.8, size * 0.65);
+        context.closePath();
+        context.fillStyle = fill;
+        context.fill();
+        context.lineWidth = Math.max(2, size * 0.1);
+        context.strokeStyle = stroke;
+        context.stroke();
+        context.restore();
+      }
+
+      function render(now) {
+        resize();
+        const width = canvas.width;
+        const height = canvas.height;
+        const ratio = canvas.width / Math.max(1, innerWidth);
+        const elapsedSeconds = (now - startedAt) / 1000;
+        const simSeconds = state.simTimeMs / 1000;
+        const markerX = ((simSeconds * 220 * ratio) % (width + 180 * ratio)) - 90 * ratio;
+        const markerY = height * 0.76 + Math.sin(simSeconds * 1.8) * height * 0.08;
+        const enemyX = width - (((simSeconds * 145 * ratio) + width * 0.2) % (width + 160 * ratio));
+        const enemyY = height * 0.31 + Math.cos(simSeconds * 1.35) * height * 0.1;
+        const markerKey = `${Math.round(markerX)}:${Math.round(markerY)}:${Math.round(enemyX)}:${Math.floor(elapsedSeconds * 60)}`;
+        if (state.lastMarkerKey === markerKey) state.reusedMarkerFrames += 1;
+        else state.markerChanges += 1;
+        state.lastMarkerKey = markerKey;
+
+        const gradient = context.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, '#020611');
+        gradient.addColorStop(0.55, '#07142b');
+        gradient.addColorStop(1, '#160829');
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, width, height);
+
+        context.globalAlpha = 0.42;
+        context.fillStyle = '#48e7ff';
+        for (let index = 0; index < 90; index += 1) {
+          const starX = (index * 7919 + simSeconds * (18 + (index % 5) * 7) * ratio) % width;
+          const starY = (index * 3571) % height;
+          const radius = (1 + (index % 3)) * ratio;
+          context.fillRect(starX, starY, radius, radius);
+        }
+        context.globalAlpha = 1;
+
+        const size = 34 * ratio;
+        drawShip(markerX, markerY, size, '#f8ff42', '#ffffff');
+        drawShip(enemyX, enemyY, size * 0.9, '#ff426f', '#ffb4c7');
+
+        context.fillStyle = '#57e5ff';
+        for (let index = 0; index < 8; index += 1) {
+          const projectileX = (markerX + (index + 1) * 130 * ratio + simSeconds * 420 * ratio) % (width + 40 * ratio);
+          const projectileY = markerY + Math.sin(simSeconds * 2 + index) * 50 * ratio;
+          context.fillRect(projectileX, projectileY, 24 * ratio, 5 * ratio);
+        }
+
+        // A broad alternating band makes every submitted diagnostic frame
+        // distinguishable after 1080p video compression and downscaling. This is
+        // test-only instrumentation, not a player-facing game effect.
+        const cadenceBandHeight = 28 * ratio;
+        const cadenceTileWidth = 80 * ratio;
+        const cadenceBandY = height - cadenceBandHeight;
+        for (let x = 0, tile = 0; x < width; x += cadenceTileWidth, tile += 1) {
+          context.fillStyle = (tile + state.renders) % 2 === 0 ? '#f8ff42' : '#12324f';
+          context.fillRect(x, cadenceBandY, cadenceTileWidth, cadenceBandHeight);
+        }
+
+        const timerWidth = Math.min(width * 0.72, 900 * ratio);
+        const timerX = (width - timerWidth) / 2;
+        const timerY = 55 * ratio;
+        context.fillStyle = 'rgba(1, 5, 18, 0.88)';
+        context.fillRect(timerX, timerY, timerWidth, 92 * ratio);
+        context.strokeStyle = '#48e7ff';
+        context.lineWidth = 3 * ratio;
+        context.strokeRect(timerX, timerY, timerWidth, 92 * ratio);
+        context.fillStyle = '#eefcff';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.font = `700 ${34 * ratio}px system-ui, sans-serif`;
+        context.fillText(`WALL ${elapsedSeconds.toFixed(3)} s`, width / 2, timerY + 34 * ratio);
+        context.font = `600 ${20 * ratio}px ui-monospace, monospace`;
+        context.fillStyle = '#8bf4ff';
+        context.fillText(`SIM ${simSeconds.toFixed(3)} s   FRAME ${state.renders}`, width / 2, timerY + 70 * ratio);
+
+        const tick = state.renders % 60;
+        const cellSize = Math.max(5, 9 * ratio);
+        for (let bit = 0; bit < 6; bit += 1) {
+          context.fillStyle = tick & (1 << bit) ? '#ffffff' : '#18334e';
+          context.fillRect(24 * ratio + bit * (cellSize + 4 * ratio), height - 30 * ratio, cellSize, cellSize);
+        }
+
+        if (state.lastRenderMs != null) renderIntervals.push(now - state.lastRenderMs);
+        state.lastRenderMs = now;
+        state.renders += 1;
+        state.canvasSubmissions += 1;
+      }
+
+      function frame(now) {
+        if (!state.running) return;
+        if (state.lastRafMs == null) state.lastRafMs = now;
+        const rawDelta = Math.max(0, now - state.lastRafMs);
+        state.lastRafMs = now;
+        if (state.renders) {
+          rafIntervals.push(rawDelta);
+          rawDeltas.push(rawDelta);
+        }
+        const clampedDelta = Math.min(rawDelta, 250);
+        clampedDeltas.push(clampedDelta);
+        state.accumulatorMs += clampedDelta;
+        let catchUpSteps = 0;
+        while (state.accumulatorMs >= fixedStepMs && catchUpSteps < maxCatchUpSteps) {
+          update();
+          state.accumulatorMs -= fixedStepMs;
+          catchUpSteps += 1;
+        }
+        if (catchUpSteps > 1) state.catchUpFrames += 1;
+        if (state.accumulatorMs >= fixedStepMs) {
+          state.droppedCatchUpMs += state.accumulatorMs;
+          state.accumulatorMs = state.accumulatorMs % fixedStepMs;
+        }
+        render(now);
+        requestAnimationFrame(frame);
+      }
+
+      function observeEntries(type, target) {
+        if (!PerformanceObserver.supportedEntryTypes?.includes(type)) return false;
+        try {
+          const observer = new PerformanceObserver(list => {
+            for (const entry of list.getEntries()) {
+              target.push({
+                startTimeMs: Number(entry.startTime.toFixed(4)),
+                durationMs: Number(entry.duration.toFixed(4)),
+                name: entry.name || type
+              });
+            }
+          });
+          observer.observe({ type, buffered: true });
+          return true;
+        } catch {
+          return false;
+        }
+      }
+
+      const longTaskAvailable = observeEntries('longtask', longTasks);
+      const gcObserverAvailable = observeEntries('gc', gcPauses);
+      addEventListener('focus', () => focusEvents.push({
+        timestampMs: Number((performance.now() - startedAt).toFixed(4)),
+        focused: true
+      }));
+      addEventListener('blur', () => focusEvents.push({
+        timestampMs: Number((performance.now() - startedAt).toFixed(4)),
+        focused: false
+      }));
+      document.addEventListener('visibilitychange', () => visibilityEvents.push({
+        timestampMs: Number((performance.now() - startedAt).toFixed(4)),
+        state: document.visibilityState
+      }));
+      addEventListener('resize', resize);
+
+      window.__novaFramePacingProbe = {
+        ready: true,
+        reset() {
+          startedAt = performance.now();
+          startedWallClock = Date.now();
+          rafIntervals.length = 0;
+          rawDeltas.length = 0;
+          clampedDeltas.length = 0;
+          renderIntervals.length = 0;
+          updateWallIntervals.length = 0;
+          longTasks.length = 0;
+          gcPauses.length = 0;
+          focusEvents.length = 0;
+          visibilityEvents.length = 0;
+          focusEvents.push({ timestampMs: 0, focused: document.hasFocus() });
+          visibilityEvents.push({ timestampMs: 0, state: document.visibilityState });
+          state.simTimeMs = 0;
+          state.accumulatorMs = 0;
+          state.updates = 0;
+          state.renders = 0;
+          state.canvasSubmissions = 0;
+          state.skippedRenders = 0;
+          state.reusedMarkerFrames = 0;
+          state.markerChanges = 0;
+          state.catchUpFrames = 0;
+          state.droppedCatchUpMs = 0;
+          state.lastMarkerKey = null;
+          state.lastUpdateWallMs = null;
+          state.lastRenderMs = null;
+          state.lastRafMs = null;
+        },
+        stop() {
+          state.running = false;
+        },
+        getReport() {
+          const endedAt = performance.now();
+          const elapsedMs = endedAt - startedAt;
+          const wallClockElapsedMs = Date.now() - startedWallClock;
+          const elapsedSeconds = elapsedMs / 1000;
+          return {
+            startedAtWallClock: new Date(startedWallClock).toISOString(),
+            elapsedMs: Number(elapsedMs.toFixed(4)),
+            wallClockElapsedMs,
+            wallClockDriftPercent: Number((((elapsedMs - wallClockElapsedMs) / Math.max(1, wallClockElapsedMs)) * 100).toFixed(6)),
+            fixedSimulationDriftPercent: Number((((state.simTimeMs - elapsedMs) / Math.max(1, elapsedMs)) * 100).toFixed(6)),
+            display: {
+              viewport: { width: innerWidth, height: innerHeight },
+              canvas: { width: canvas.width, height: canvas.height },
+              devicePixelRatio,
+              screen: { width: screen.width, height: screen.height, colorDepth: screen.colorDepth },
+              documentVisibility: document.visibilityState,
+              focused: document.hasFocus()
+            },
+            rates: {
+              requestAnimationFrameHz: Number((rafIntervals.length / elapsedSeconds).toFixed(4)),
+              fixedSimulationStepHz: Number((state.updates / elapsedSeconds).toFixed(4)),
+              renderInvocationHz: Number((state.renders / elapsedSeconds).toFixed(4)),
+              canvasSubmissionHz: Number((state.canvasSubmissions / elapsedSeconds).toFixed(4)),
+              diagnosticMarkerChangeHz: Number((state.markerChanges / elapsedSeconds).toFixed(4))
+            },
+            timing: {
+              requestAnimationFrame: summarize(rafIntervals),
+              rawDelta: summarize(rawDeltas),
+              clampedDelta: summarize(clampedDeltas),
+              fixedUpdateWallIntervals: summarize(updateWallIntervals),
+              renderInvocation: summarize(renderIntervals)
+            },
+            counters: {
+              fixedSimulationSteps: state.updates,
+              renderInvocations: state.renders,
+              canvasSubmissions: state.canvasSubmissions,
+              markerChanges: state.markerChanges,
+              reusedMarkerFrames: state.reusedMarkerFrames,
+              skippedRenders: state.skippedRenders,
+              catchUpFrames: state.catchUpFrames,
+              droppedCatchUpMs: Number(state.droppedCatchUpMs.toFixed(4))
+            },
+            scheduling: {
+              fixedStepMs,
+              maxCatchUpSteps,
+              backgroundThrottling: 'Electron BrowserWindow default (enabled); focus and visibility are recorded',
+              timeScale: 1
+            },
+            longTasks: {
+              observerAvailable: longTaskAvailable,
+              count: longTasks.length,
+              entries: longTasks
+            },
+            garbageCollection: {
+              observerAvailable: gcObserverAvailable,
+              count: gcPauses.length,
+              entries: gcPauses,
+              note: gcObserverAvailable ? null : 'Chromium did not expose PerformanceObserver gc entries'
+            },
+            gpuTiming: {
+              available: false,
+              reason: 'Canvas/WebGL GPU timer queries are not portable across this browser/Electron matrix; external fresh-frame capture is authoritative'
+            },
+            memory: performance.memory ? {
+              usedJSHeapSize: performance.memory.usedJSHeapSize,
+              totalJSHeapSize: performance.memory.totalJSHeapSize,
+              jsHeapSizeLimit: performance.memory.jsHeapSizeLimit
+            } : null,
+            focusEvents,
+            visibilityEvents
+          };
+        }
+      };
+
+      resize();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>

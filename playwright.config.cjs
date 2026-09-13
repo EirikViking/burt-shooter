@@ -20,7 +20,9 @@ module.exports = defineConfig({
       name: 'chromium',
       use: {
         launchOptions: {
-          args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+          args: process.env.PLAYWRIGHT_FORCE_SWIFTSHADER === '1'
+            ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+            : []
         }
       }
     },

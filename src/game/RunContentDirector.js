@@ -54,11 +54,14 @@ export class RunContentDirector {
       RunContentDirectorConfig.enabled !== false;
   }
 
-  startRun({ seed = this.seed } = {}) {
+  startRun({ seed = this.seed, runThemeId = null } = {}) {
     this.seed = seed;
     this.random = mulberry32(hashString(seed));
-    this.runTheme = this.pickRunTheme();
-    if (this.runTheme) {
+    const requestedTheme = runThemeId
+      ? RunContentDirectorConfig.runThemes.find((theme) => theme.id === runThemeId) || null
+      : null;
+    this.runTheme = requestedTheme || this.pickRunTheme();
+    if (this.runTheme && this.game?.isRankedRun?.()) {
       recordRunThemeSeen(this.runTheme.id, {
         name: this.runTheme.label,
         role: this.runTheme.role
@@ -69,8 +72,9 @@ export class RunContentDirector {
   }
 
   pickRunTheme() {
-    const state = readThreatDiscoveryState();
-    const stats = getDiscoveryStats(state);
+    const useDiscoveryHistory = this.game?.isRankedRun?.() !== false;
+    const state = useDiscoveryHistory ? readThreatDiscoveryState() : { items: {}, recentRunThemes: [] };
+    const stats = useDiscoveryHistory ? getDiscoveryStats(state) : { totalDiscovered: 0 };
     const themes = RunContentDirectorConfig.runThemes;
     const recentlySeen = new Set(safeArray(state.recentRunThemes).slice(-2));
     const weighted = themes.map((theme, index) => {
@@ -140,6 +144,7 @@ export class RunContentDirector {
     if (safeArray(pool.threatActions).includes(action.id)) {
       score *= RunContentDirectorConfig.runThemeSecondaryWeightMult;
     }
+    if (this.game?.isRankedRun?.() === false) return score;
     const state = readThreatDiscoveryState();
     const seen = Boolean(state.items?.attackPatterns?.[action.id]);
     if (!seen) score *= RunContentDirectorConfig.unseenWeightMult;

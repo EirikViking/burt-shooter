@@ -1,0 +1,352 @@
+{
+  "cinder": {
+    "url": "/audio/sfx/snake-broods/cinder.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "thorn": {
+    "url": "/audio/sfx/snake-broods/thorn.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "widow": {
+    "url": "/audio/sfx/snake-broods/widow.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "abyss": {
+    "url": "/audio/sfx/snake-broods/abyss.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "grave": {
+    "url": "/audio/sfx/snake-broods/grave.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "hammer": {
+    "url": "/audio/sfx/snake-broods/hammer.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "mantis": {
+    "url": "/audio/sfx/snake-broods/mantis.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "sunforge": {
+    "url": "/audio/sfx/snake-broods/sunforge.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "sawtooth": {
+    "url": "/audio/sfx/snake-broods/sawtooth.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "lamprey": {
+    "url": "/audio/sfx/snake-broods/lamprey.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "storm": {
+    "url": "/audio/sfx/snake-broods/storm.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "oracle": {
+    "url": "/audio/sfx/snake-broods/oracle.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "carrion": {
+    "url": "/audio/sfx/snake-broods/carrion.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  },
+  "eclipse": {
+    "url": "/audio/sfx/snake-broods/eclipse.mp3",
+    "cues": {
+      "hatch": {
+        "offset": 0,
+        "duration": 2.6
+      },
+      "chorus": {
+        "offset": 2.6,
+        "duration": 4.8
+      },
+      "attack": {
+        "offset": 7.4,
+        "duration": 1.1
+      },
+      "support": {
+        "offset": 8.5,
+        "duration": 1.6
+      },
+      "death": {
+        "offset": 10.1,
+        "duration": 1
+      }
+    }
+  }
+}

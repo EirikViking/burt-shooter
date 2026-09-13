@@ -1,15 +1,56 @@
+import { drawAstraPanel } from './AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { MUSIC_PACK_OPTIONS } from '../audio/SoundCatalog.js';
+import {
+  CHATTER_FREQUENCY_OPTIONS,
+  getChatterFrequencyLabel,
+  normalizeChatterFrequency
+} from '../audio/VoicePolicy.js';
 import {
   getAccessibilitySettings,
   setColorAssistEnabled,
+  setFlashIntensityScale,
+  setPlayerHitboxVisible,
   setPlayerFocusScale,
+  setReducedMotionEnabled,
   setScreenShakeScale
 } from '../config/AccessibilitySettings.js';
+import {
+  DEFAULT_WINDOW_SIZE_OPTIONS,
+  DISPLAY_MODES,
+  UI_SCALE_OPTIONS,
+  applyDisplaySettings,
+  getDisplayOptions,
+  getDisplaySettings,
+  getUiScaleLabel,
+  resetDisplaySettings
+} from '../config/DisplaySettings.js';
+import { getMenuSettings, saveMenuSettings } from '../config/MenuSettings.js';
+import { getControlSettings, saveControlSettings } from '../config/ControlSettings.js';
+import { migrateLegacyHighSectorPrototypeSettings } from '../config/HighSectorPrototypeSettings.js';
+import {
+  LATE_GAME_EXPERIMENT_LIFE_STOCKS,
+  LATE_GAME_EXPERIMENT_MATURE_LIVES,
+  LATE_GAME_EXPERIMENT_RULESETS,
+  LATE_GAME_EXPERIMENT_SCENARIOS,
+  LATE_GAME_EXPERIMENT_START_SECTORS,
+  createDefaultLateGameExperimentDraft,
+  getLateGameExperimentFixture,
+  getLateGameExperimentFixtures,
+  normalizeLateGameExperimentDraft
+} from '../game/LateGamePressureExperiment.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
+import {
+  KEYBOARD_ACTIONS,
+  formatKeyboardBinding,
+  getKeyboardBindings,
+  resetKeyboardBindings,
+  setKeyboardBinding
+} from '../input/KeyboardBindings.js';
 import {
   getLanguageOptions,
   getLanguagePreferenceMode,
@@ -17,7 +58,19 @@ import {
   setLanguagePreference,
   translateText
 } from '../i18n/index.js';
-import { grantSecretShipUnlock } from '../progression/HangarProgressState.js';
+import { ShipData } from '../config/ShipData.js';
+import {
+  CREDITS_ASCENDANT_EASTER_EGG_CHANCE,
+  CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+  CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID,
+  grantSecretShipUnlock,
+  readHangarProgressState,
+  rollCreditsAscendantEasterEgg
+} from '../progression/HangarProgressState.js';
+import { getDefaultShowPilotOrders } from '../progression/RunContracts.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from './MenuFxLayer.js';
+import { applyResponsiveLayout, getCurrentLayout } from './responsiveLayout.js';
+import { READABILITY } from './readabilityTokens.js';
 
 function percent(value) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
@@ -27,11 +80,13 @@ function fitTextToWidth(text, maxWidth, { minScale = 0.68 } = {}) {
   if (!text || !Number.isFinite(maxWidth) || maxWidth <= 0) return 1;
   text.scale.set(1);
   text.updateText?.(false);
+  text.onViewUpdate?.();
   const measuredWidth = text.width || 0;
   const scale = measuredWidth > maxWidth
     ? Math.max(minScale, maxWidth / measuredWidth)
     : 1;
   text.scale.set(scale);
+  text.onViewUpdate?.();
   return scale;
 }
 
@@ -45,6 +100,7 @@ function fitDisplayToBox(displayObject, maxWidth, maxHeight, { minScale = 0.72 }
     ? Math.min(1, Math.max(minScale, Math.min(maxWidth / measuredWidth, maxHeight / measuredHeight)))
     : 1;
   displayObject.scale.set(scale);
+  displayObject.onViewUpdate?.();
   return scale;
 }
 
@@ -65,23 +121,81 @@ function debugBounds(displayObject) {
   }
 }
 
+function getCreditsAscendantRandom() {
+  const override = typeof window !== 'undefined'
+    ? window.__novaCreditsAscendantEasterEggRandom
+    : globalThis.__novaCreditsAscendantEasterEggRandom;
+  return typeof override === 'function' ? override : Math.random;
+}
+
+function getCreditsRevealShip(shipId = 'nova_ship_07') {
+  const fallback = ShipData[6] || ShipData[0] || {};
+  const ship = ShipData.find(candidate => candidate.id === shipId) || fallback;
+  const textureIndex = Number.isInteger(ship.textureIndex)
+    ? ship.textureIndex
+    : Math.max(0, Number.parseInt(String(ship.spriteKey || '').replace(/\D/g, ''), 10) - 1);
+  return {
+    ship,
+    name: ship.name || 'QUASAR FAN',
+    asset: AssetManifest.generated.playerShips?.[textureIndex]
+  };
+}
+
+function getMusicPackOption(pack) {
+  return MUSIC_PACK_OPTIONS.find((option) => option.id === pack) || MUSIC_PACK_OPTIONS[0];
+}
+
 export class SettingsOverlay {
   constructor(game, {
     title = 'SETTINGS',
-    onClose = null
+    onClose = null,
+    allowExperimentLaunch = false,
+    onStartExperiment = null
   } = {}) {
     this.game = game;
     this.title = title;
     this.onClose = onClose;
+    this.allowExperimentLaunch = allowExperimentLaunch === true;
+    this.onStartExperiment = onStartExperiment;
+    this.experimentDraft = createDefaultLateGameExperimentDraft();
+    this.experimentChoiceButtons = {};
+    this.experimentLaunchButton = null;
+    this.experimentConfirmationPanel = null;
+    this.experimentConfirmationControls = [];
+    this.experimentConfirmationFocusedIndex = 0;
     this.container = new PIXI.Container();
     this.container.zIndex = 2000000;
     this.container.label = 'ui_settingsOverlay';
     this.container.sortableChildren = true;
+    this.menuFx = null;
     this.rows = [];
     this.draggingSlider = null;
     this.audioTestButtons = {};
     this.musicPackButton = null;
+    this.displayModeButton = null;
+    this.displaySizeButton = null;
+    this.uiScaleButton = null;
+    this.confirmExitButton = null;
+    this.pilotOrdersButton = null;
+    this.displayStatusText = null;
+    this.displayOptions = {
+      modes: DISPLAY_MODES.map((entry) => ({ ...entry, supported: true })),
+      sizes: DEFAULT_WINDOW_SIZE_OPTIONS
+    };
+    this.formCenterX = null;
+    this.formColumnWidth = null;
     this.footerButtons = {};
+    this.activePage = 'general';
+    this.pageButtons = {};
+    this.pageContainers = {};
+    this.controlsByPage = {};
+    this.globalControls = [];
+    this.controlRegistry = [];
+    this.sectionBoundsByPage = {};
+    this.retiredBuildChildren = [];
+    this.panelBounds = null;
+    this.sectionBounds = [];
+    this.prototypeInfoCard = null;
     this.languageButton = null;
     this.languageHint = null;
     this.creditsPanel = null;
@@ -96,6 +210,14 @@ export class SettingsOverlay {
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
     this.creditsUnlockReveal = null;
+    this.keyBindingsPanel = null;
+    this.keyBindingsControls = [];
+    this.keyBindingsFocusedIndex = 0;
+    this.keyBindingCaptureAction = null;
+    this.keyBindingCaptureHandler = null;
+    this.keyBindingsStatusText = null;
+    this.keyBindingsButtonMap = new Map();
+    this.keyBindingsPanelBounds = null;
     this.controls = [];
     this.focusedControlIndex = 0;
     this.gamepadNavigator = new GamepadNavigator();
@@ -103,16 +225,32 @@ export class SettingsOverlay {
     this.languageUnsubscribe = onLanguageChange(() => this.rebuild());
     this.keyHandler = null;
     this.build();
+    this.refreshDisplayOptions();
     this.setupKeyboardNavigation();
     this.setControlFocus(0);
   }
 
   build() {
     this.controls = [];
+    this.controlsByPage = {};
+    this.globalControls = [];
+    this.controlRegistry = [];
+    this.pageButtons = {};
+    this.pageContainers = {};
+    this.sectionBounds = [];
+    this.sectionBoundsByPage = {};
+    this.prototypeInfoCard = null;
     const width = this.game.getWidth();
     const height = this.game.getHeight();
+    const requestedUiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+    this.requestedUiScale = requestedUiScale;
+    const viewportScaleCap = Math.max(1, Math.min(2, width / 1500, height / 900));
+    this.uiScale = Math.min(requestedUiScale, viewportScaleCap);
     const settings = AudioManager.getSettings();
     const accessibility = getAccessibilitySettings();
+    const menuSettings = this.getMenuSettingsForOverlay();
+    const controlSettings = getControlSettings();
+    migrateLegacyHighSectorPrototypeSettings();
     this.container.eventMode = 'static';
     this.container.hitArea = new PIXI.Rectangle(0, 0, width, height);
 
@@ -121,22 +259,49 @@ export class SettingsOverlay {
     dim.fill({ color: 0x020713, alpha: 0.82 });
     dim.eventMode = 'static';
     this.container.addChild(dim);
+    installMenuFx(this, {
+      label: 'ui_menuFxSettings',
+      zIndex: 0,
+      accent: 0x7fffd8,
+      secondary: 0xd8a66b,
+      gold: 0xffef7e,
+      intensity: 0.6,
+      density: 0.68,
+      alpha: 0.42,
+      openVolume: 0.18
+    });
 
-    const isCompact = width < 620 || height < 820;
-    const panelWidth = Math.min(560, width * 0.82);
-    const panelHeight = Math.min(isCompact ? 790 : 730, height * (isCompact ? 0.98 : 0.97));
+    const isCompact = width < 760 || height < 680;
+    const twoColumn = width >= 900 && height >= 520;
+    const panelWidth = Math.min(width * (isCompact ? 0.96 : 0.9), twoColumn ? 1240 : 700);
+    // Short desktop layouts need the same vertical budget as compact layouts.
+    // The old 74% height left a large unused strip of screen while forcing the
+    // Experimental controls and helper copy into one another.
+    const panelHeight = Math.min(height * (isCompact ? 0.94 : 0.9), twoColumn ? 700 : 820);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
+    this.panelBounds = {
+      x: Math.round(panelX),
+      y: Math.round(panelY),
+      width: Math.round(panelWidth),
+      height: Math.round(panelHeight),
+      right: Math.round(panelX + panelWidth),
+      bottom: Math.round(panelY + panelHeight)
+    };
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x06111f, alpha: 0.96 });
-    panel.stroke({ color: 0x00ffff, width: 2, alpha: 0.95 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x03101f, alpha: 0.975 }, { color: 0x8cc5d0, width: 2, alpha: 0.95 });
+    panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 7);
+    panel.stroke({ color: 0xd8a66b, width: 1.1, alpha: 0.36 });
+    panel.rect(panelX + 26, panelY + 68, panelWidth - 52, 2);
+    panel.fill({ color: 0x37f5ff, alpha: 0.24 });
+    panel.rect(panelX + 26, panelY + panelHeight - 72, panelWidth - 52, 1);
+    panel.fill({ color: 0xffd15c, alpha: 0.22 });
     this.container.addChild(panel);
 
     const titleText = createText(this.title, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: isCompact ? 28 : 34,
+      fontSize: Math.round((isCompact ? 28 : 38) * this.uiScale),
       fontWeight: 'bold',
       fill: '#f6fbff',
       stroke: '#003344',
@@ -146,135 +311,826 @@ export class SettingsOverlay {
     titleText.position.set(width / 2, panelY + (isCompact ? 42 : 48));
     this.container.addChild(titleText);
 
-    const toggleGap = isCompact ? 38 : 42;
-    const testGap = isCompact ? 36 : 40;
-    const sliderGap = isCompact ? 38 : 42;
-    const footerButtonHeight = isCompact ? 32 : 38;
-    const stackedButtonWidth = Math.min(240, panelWidth - 56);
-    let y = panelY + (isCompact ? 84 : 100);
-    this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
-    y += toggleGap;
-    this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
-    y += toggleGap;
-    this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
-    y += testGap;
-    this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
-    y += testGap;
-    this.addAudioTestRow('TEST', y);
-    y += testGap;
-    this.addLanguageRow('LANGUAGE', y);
-    y += toggleGap;
-    this.addSliderRow('MASTER', 'master', settings.masterVolume, y);
-    y += sliderGap;
-    this.addSliderRow('MUSIC VOL', 'music', settings.musicVolume, y);
-    y += sliderGap;
-    this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, y);
-    y += sliderGap;
-    this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, y);
-    y += sliderGap;
-    this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, y, {
-      onChange: setScreenShakeScale
-    });
-    y += sliderGap;
-    this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, y, {
-      onChange: setPlayerFocusScale
-    });
-    y += toggleGap;
-    this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
-
+    const dense = height < 760;
+    const sectionGap = Math.round((dense ? 28 : 32) * this.uiScale);
+    const rowGap = Math.round((dense ? 42 : READABILITY.controls.settingsRowHeight) * this.uiScale);
+    const tighterGap = Math.round((dense ? 40 : 46) * this.uiScale);
+    const sliderGap = Math.round((dense ? 40 : 46) * this.uiScale);
+    const footerButtonHeight = isCompact ? 40 : READABILITY.controls.actionHeight;
+    const stackedButtonWidth = Math.min(240 * this.uiScale, panelWidth - 56);
     const footerY = panelY + panelHeight - (isCompact ? 26 : 38);
+    const tabsY = panelY + (isCompact ? 88 : 98);
+    this.addSettingsPageTabs(panelX + 28, tabsY, panelWidth - 56, isCompact ? 38 : 44);
+    const contentTop = tabsY + Math.round((isCompact ? 36 : 42) * this.uiScale);
+    const contentBottom = footerY - footerButtonHeight / 2 - Math.round((isCompact ? 20 : 26) * this.uiScale);
+    const columnPad = twoColumn ? 30 : 28;
+    const columnGap = twoColumn ? 26 : 0;
+    const columnWidth = twoColumn
+      ? (panelWidth - columnPad * 2 - columnGap) / 2
+      : panelWidth - columnPad * 2;
+    const leftX = panelX + columnPad;
+    const rightX = twoColumn ? leftX + columnWidth + columnGap : leftX;
+    const setFormColumn = (columnX) => {
+      this.formCenterX = columnX + columnWidth / 2;
+      this.formColumnWidth = columnWidth;
+    };
+
+    const columnHeight = Math.max(120, contentBottom - contentTop);
+    this.settingsContentBottom = contentBottom;
+    const addFrame = (x, frameWidth, accent, key) => {
+      this.drawSettingsSectionFrame(x, contentTop, frameWidth, columnHeight, accent);
+      this.sectionBounds.push({
+        key,
+        page: this.activePage,
+        x: Math.round(x),
+        y: Math.round(contentTop),
+        width: Math.round(frameWidth),
+        height: Math.round(columnHeight),
+        right: Math.round(x + frameWidth),
+        bottom: Math.round(contentTop + columnHeight)
+      });
+    };
+    const startY = contentTop + Math.round((dense ? 18 : 23) * this.uiScale);
+    const nextSectionGap = Math.round((dense ? 34 : 42) * this.uiScale);
+    const renderGameplayRows = (start) => {
+      let y = start;
+      this.addToggleRow('Confirm Exit', menuSettings.confirmExit, y, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
+        id: 'confirm_exit',
+        onButton: (button) => { this.confirmExitButton = button; }
+      });
+      y += rowGap;
+      this.addFireInputRow(controlSettings.fireInput, y);
+      y += tighterGap;
+      this.addToggleRow('Mouse Steering', controlSettings.mouseSteering, y, (enabled) => {
+        saveControlSettings({ ...getControlSettings(), mouseSteering: enabled });
+      }, { id: 'mouse_steering' });
+      y += tighterGap;
+      this.addKeyboardBindingsRow('KEYBOARD', y);
+      return y;
+    };
+    const renderAudioPlaybackRows = (start, { includeAudioTest = true } = {}) => {
+      let y = start;
+      this.addMenuAudioRow(y);
+      y += tighterGap;
+      this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
+      y += tighterGap;
+      this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
+      y += tighterGap;
+      this.addToggleRow('MENU VOICES', settings.menuVoiceEnabled, y, (enabled) => AudioManager.setMenuVoiceEnabled(enabled), { id: 'menu_voices' });
+      y += tighterGap;
+      this.addToggleRow('Boss Voices', settings.bossVoiceEnabled, y, (enabled) => AudioManager.setBossVoiceEnabled(enabled));
+      y += tighterGap;
+      this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
+      y += tighterGap;
+      const chatterRow = this.addChatterFrequencyRow('CHATTER RATE', settings.chatterFrequency, y);
+      // Flow from the rendered safety note rather than an assumed line count;
+      // accessibility scale and localized copy can make it wrap.
+      const chatterHelperHeight = Math.ceil(
+        chatterRow?._descriptionLaneHeight
+        || chatterRow?._description?.height
+        || 0
+      );
+      const chatterHelperTop = Math.ceil(chatterRow?._descriptionTopOffset || 0);
+      y += Math.max(
+        Math.round((dense ? 72 : 76) * this.uiScale),
+        chatterHelperTop + chatterHelperHeight + Math.round(28 * this.uiScale)
+      );
+      this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
+      if (includeAudioTest) {
+        y += tighterGap;
+        y = Math.min(
+          y + Math.round((dense ? 38 : 42) * this.uiScale),
+          contentBottom - Math.round(18 * this.uiScale)
+        );
+        this.addAudioTestRow('TEST', y);
+      }
+      return y;
+    };
+    const renderVolumeRows = (start) => {
+      let y = start;
+      this.addSliderRow('MASTER', 'master', settings.masterVolume, y);
+      y += sliderGap;
+      this.addSliderRow('MUSIC VOL', 'music', settings.musicVolume, y);
+      y += sliderGap;
+      this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, y);
+      y += sliderGap;
+      this.addSliderRow('UI VOL', 'ui', settings.uiVolume, y);
+      y += sliderGap;
+      this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, y);
+      return y;
+    };
+    const renderAccessibilitySliders = (start) => {
+      let y = start;
+      this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, y, { onChange: setScreenShakeScale });
+      y += sliderGap;
+      this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, y, { onChange: setPlayerFocusScale });
+      y += sliderGap;
+      this.addSliderRow('FLASH', 'flashIntensity', accessibility.flashIntensity, y, { onChange: setFlashIntensityScale });
+      return y;
+    };
+    const renderAccessibilityToggles = (start) => {
+      let y = start;
+      this.addToggleRow('HITBOX', accessibility.playerHitbox, y, setPlayerHitboxVisible, { id: 'player_hitbox' });
+      y += rowGap;
+      this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
+      y += rowGap;
+      this.addToggleRow('REDUCE MOTION', accessibility.reducedMotion, y, setReducedMotionEnabled, { id: 'reduced_motion' });
+      return y;
+    };
+
+    const renderPageContent = (pageId) => {
+      this.activePage = pageId;
+      this.sectionBounds = [];
+      addFrame(leftX, columnWidth, 0x37f5ff, 'primary');
+      if (twoColumn) addFrame(rightX, columnWidth, 0xd8a66b, 'secondary');
+
+    if (this.activePage === 'audio') {
+      setFormColumn(leftX);
+      this.addSectionLabel('PLAYBACK', startY);
+      let y = renderAudioPlaybackRows(startY + sectionGap, { includeAudioTest: !twoColumn });
+      if (!twoColumn) {
+        y += nextSectionGap;
+        this.addSectionLabel('VOLUME', y);
+        renderVolumeRows(y + sectionGap);
+      } else {
+        setFormColumn(rightX);
+        this.addSectionLabel('VOLUME', startY);
+        const volumeEndY = renderVolumeRows(startY + sectionGap);
+        const audioTestY = Math.min(
+          volumeEndY + rowGap + Math.round((dense ? 48 : 54) * this.uiScale),
+          contentBottom - Math.round(18 * this.uiScale)
+        );
+        this.addAudioTestRow('TEST', audioTestY);
+      }
+    } else if (this.activePage === 'accessibility') {
+      setFormColumn(leftX);
+      this.addSectionLabel('INTENSITY', startY);
+      let y = renderAccessibilitySliders(startY + sectionGap);
+      if (!twoColumn) {
+        y += nextSectionGap;
+        this.addSectionLabel('VISUAL ASSISTS', y);
+        renderAccessibilityToggles(y + sectionGap);
+      } else {
+        setFormColumn(rightX);
+        this.addSectionLabel('VISUAL ASSISTS', startY);
+        renderAccessibilityToggles(startY + sectionGap);
+      }
+    } else if (this.activePage === 'prototype') {
+      setFormColumn(leftX);
+      this.addSectionLabel('LATE-GAME PRESSURE TEST', startY);
+      // At the widest accessibility scale, keep the first control close enough
+      // to its section heading to preserve the action button's bottom inset.
+      let y = startY + Math.min(sectionGap, 35);
+      y = this.renderExperimentLauncher(y);
+      if (!twoColumn) {
+        const infoTop = y + Math.round(38 * this.uiScale);
+        this.addPrototypeInfoCard(infoTop, leftX, columnWidth, Math.max(140, contentBottom - infoTop - Math.round(8 * this.uiScale)));
+      } else {
+        // The explanation is the primary content of this column. Use the full
+        // framed height so it never has to shrink below the readability floor.
+        const prototypeInfoTop = contentTop + Math.round(4 * this.uiScale);
+        this.addPrototypeInfoCard(prototypeInfoTop, rightX, columnWidth, columnHeight - Math.round(8 * this.uiScale));
+      }
+    } else {
+      setFormColumn(leftX);
+      this.addSectionLabel('DISPLAY', startY);
+      let y = startY + sectionGap;
+      this.addDisplayModeRow('Display Mode', y);
+      y += rowGap;
+      this.addDisplaySizeRow('Window Size', y);
+      y += rowGap;
+      this.addUiScaleRow('UI Scale', y);
+      y += rowGap;
+      this.addDisplayResetRow('Safe Reset', y);
+      y += nextSectionGap;
+      this.addSectionLabel('LANGUAGE', y);
+      y += sectionGap;
+      this.addLanguageRow('LANGUAGE', y);
+      if (!twoColumn) {
+        y += nextSectionGap;
+        this.addSectionLabel('GAMEPLAY', y);
+        renderGameplayRows(y + sectionGap);
+      } else {
+        setFormColumn(rightX);
+        this.addSectionLabel('GAMEPLAY', startY);
+        renderGameplayRows(startY + sectionGap);
+      }
+    }
+    };
+
+    const pageIds = ['general', 'audio', 'accessibility', 'prototype'];
+    const requestedPage = pageIds.includes(this.activePage) ? this.activePage : 'general';
+    const overlayContainer = this.container;
+    for (const pageId of pageIds) {
+      const pageContainer = new PIXI.Container();
+      pageContainer.label = `ui_settingsPageContent_${pageId}`;
+      pageContainer.visible = pageId === requestedPage;
+      this.pageContainers[pageId] = pageContainer;
+      overlayContainer.addChild(pageContainer);
+      this.container = pageContainer;
+      renderPageContent(pageId);
+      this.sectionBoundsByPage[pageId] = [...this.sectionBounds];
+      this.formCenterX = null;
+      this.formColumnWidth = null;
+    }
+    this.container = overlayContainer;
+    this.activePage = requestedPage;
+    this.sectionBounds = this.sectionBoundsByPage[requestedPage] || [];
+
+    this.formCenterX = null;
+    this.formColumnWidth = null;
+
     if (panelWidth >= 500) {
       const footerButtonGap = isCompact ? 12 : 16;
       const availableFooterWidth = panelWidth - (isCompact ? 44 : 64);
-      const footerButtonWidth = Math.min(isCompact ? 154 : 168, Math.floor((availableFooterWidth - footerButtonGap * 2) / 3));
+      const footerButtonWidth = Math.min(isCompact ? 172 : 190, Math.floor((availableFooterWidth - footerButtonGap) / 2));
       const footerStep = footerButtonWidth + footerButtonGap;
-      this.addFooterButton('credits', 'CREDITS', width / 2 - footerStep, footerY, () => this.openCreditsPanel(), {
-        width: footerButtonWidth,
-        height: footerButtonHeight
+      this.addFooterButton('credits', 'CREDITS', width / 2 - footerStep / 2, footerY, () => this.openCreditsPanel(), {
+        width: footerButtonWidth / this.uiScale,
+        height: footerButtonHeight / this.uiScale
       });
-      this.addFooterButton('close', 'CLOSE', width / 2, footerY, () => this.close(), {
-        width: footerButtonWidth,
-        height: footerButtonHeight
-      });
-      this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2 + footerStep, footerY, () => this.toggleFullscreen(), {
-        width: footerButtonWidth,
-        height: footerButtonHeight
+      this.addFooterButton('close', 'CLOSE', width / 2 + footerStep / 2, footerY, () => this.close(), {
+        width: footerButtonWidth / this.uiScale,
+        height: footerButtonHeight / this.uiScale
       });
     } else {
       const stackGap = footerButtonHeight + 8;
-      this.addFooterButton('credits', 'CREDITS', width / 2, footerY - stackGap * 2, () => this.openCreditsPanel(), {
-        width: stackedButtonWidth,
-        height: footerButtonHeight
-      });
-      this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2, footerY - stackGap, () => this.toggleFullscreen(), {
-        width: stackedButtonWidth,
-        height: footerButtonHeight
+      this.addFooterButton('credits', 'CREDITS', width / 2, footerY - stackGap, () => this.openCreditsPanel(), {
+        width: stackedButtonWidth / this.uiScale,
+        height: footerButtonHeight / this.uiScale
       });
       this.addFooterButton('close', 'CLOSE', width / 2, footerY, () => this.close(), {
-        width: stackedButtonWidth,
-        height: footerButtonHeight
+        width: stackedButtonWidth / this.uiScale,
+        height: footerButtonHeight / this.uiScale
       });
     }
+    this.syncActivePageControls();
   }
 
-  addToggleRow(label, initialValue, y, onChange) {
-    const width = this.game.getWidth();
-    const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+  getDefaultShowPilotOrdersSetting() {
+    return getDefaultShowPilotOrders(readHangarProgressState());
+  }
 
-    const labelText = createText(label, {
+  getMenuSettingsForOverlay() {
+    return getMenuSettings({
+      defaultShowPilotOrders: this.getDefaultShowPilotOrdersSetting()
+    });
+  }
+
+  getFormCenterX() {
+    return Number.isFinite(this.formCenterX) ? this.formCenterX : this.game.getWidth() / 2;
+  }
+
+  getFormColumnWidth() {
+    return Number.isFinite(this.formColumnWidth) ? this.formColumnWidth : Math.min(560, this.game.getWidth() - 72);
+  }
+
+  getFormRowMetrics() {
+    const columnWidth = this.getFormColumnWidth();
+    const compactColumn = columnWidth < 500;
+    return {
+      compactColumn,
+      labelX: compactColumn ? -98 : -130,
+      labelWidth: compactColumn ? 96 : 120,
+      choiceX: compactColumn ? 50 : 34,
+      choiceWidth: compactColumn ? Math.min(205, Math.max(174, columnWidth * 0.52)) : 230,
+      sliderWidth: compactColumn
+        ? Math.min(190, Math.max(150, columnWidth - 228))
+        : Math.min(250, Math.max(178, columnWidth - 230))
+    };
+  }
+
+  addSettingsPageTabs(x, y, width, height) {
+    const pages = [
+      ['general', 'GENERAL'],
+      ['audio', 'AUDIO'],
+      ['accessibility', 'ACCESSIBILITY'],
+      ['prototype', 'EXPERIMENTAL']
+    ];
+    const gap = Math.max(6, Math.round(9 * this.uiScale));
+    const buttonWidth = Math.max(86, (width - gap * (pages.length - 1)) / pages.length);
+    const scale = Math.max(1, Number(this.uiScale) || 1);
+    pages.forEach(([pageId, label], index) => {
+      const centerX = x + buttonWidth / 2 + index * (buttonWidth + gap);
+      const button = this.createButton(label, centerX, y, () => {
+        if (this.activePage === pageId) return;
+        this.setActiveSettingsPage(pageId, { focusTab: true });
+      }, {
+        width: buttonWidth / scale,
+        height: height / scale
+      });
+      button.label = `ui_settingsPage_${pageId}`;
+      button._label.style.fill = this.activePage === pageId ? '#ffef7e' : '#b8eaff';
+      button._label.style.fontSize = Math.max(14, Math.round(16 * Math.min(1.15, scale)));
+      button._fitLabel?.();
+      this.pageButtons[pageId] = button;
+      this.container.addChild(button);
+      this.registerControl({
+        type: 'button',
+        id: `page_${pageId}`,
+        page: 'global',
+        button,
+        label
+      });
+    });
+  }
+
+  renderExperimentLauncher(startY) {
+    const availableHeight = Math.max(240, (this.settingsContentBottom || this.height) - startY);
+    const controlScale = Math.max(1, Math.min(2, Number(this.uiScale) || 1));
+    const choiceHalfHeight = Math.round(30 * controlScale) / 2;
+    const actionHalfHeight = Math.round(38 * controlScale) / 2;
+    // Keep ordinary rows comfortably separated without letting accessibility
+    // scale consume the finite panel height. Text remains full-sized; only the
+    // empty space is budgeted.
+    const rowGap = availableHeight < 380
+      ? 40
+      : Math.min(44, Math.max(42, Math.round((availableHeight < 320 ? 39 : 43) * controlScale)));
+    const helperToNextControlGap = 12;
+    const actionGap = 7;
+    let y = startY;
+    const draft = normalizeLateGameExperimentDraft(this.experimentDraft);
+    this.experimentDraft = draft;
+    const fixture = getLateGameExperimentFixture(draft.fixtureId);
+    const fullFixtureLabel = translateText(fixture?.label || '--');
+    const redundantRulesetPrefix = `${translateText('TACTICAL')} // `;
+    const fixtureChoiceLabel = draft.ruleset === LATE_GAME_EXPERIMENT_RULESETS.TACTICAL
+      && fullFixtureLabel.startsWith(redundantRulesetPrefix)
+      ? fullFixtureLabel.slice(redundantRulesetPrefix.length)
+      : fullFixtureLabel;
+    const scenarioOptions = [
+      { id: LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD, label: 'STANDARD TEST' },
+      { id: LATE_GAME_EXPERIMENT_SCENARIOS.ENDURANCE, label: 'ENDURANCE TEST' }
+    ];
+    const rulesetOptions = [
+      { id: LATE_GAME_EXPERIMENT_RULESETS.PURE, label: 'PURE' },
+      { id: LATE_GAME_EXPERIMENT_RULESETS.TACTICAL, label: 'TACTICAL' }
+    ];
+    const lifeOptions = [
+      { id: LATE_GAME_EXPERIMENT_LIFE_STOCKS.THREE, label: '3 LIVES' },
+      { id: LATE_GAME_EXPERIMENT_LIFE_STOCKS.MATURE, label: `${translateText('MATURE LIFE STOCK')} // ${LATE_GAME_EXPERIMENT_MATURE_LIVES}` }
+    ];
+    const cycle = (items, currentId, direction = 1) => {
+      const currentIndex = Math.max(0, items.findIndex((item) => item.id === currentId));
+      return items[(currentIndex + Math.sign(direction || 1) + items.length) % items.length];
+    };
+    const addExperimentChoice = (label, valueLabel, id, onCycle, description = null) => {
+      const row = this.addChoiceRow(label, translateText(valueLabel), y, onCycle, {
+        id: `experiment_${id}`,
+        buttonWidth: 230,
+        description,
+        onButton: (button) => { this.experimentChoiceButtons[id] = button; }
+      });
+      if (description) {
+        // Do not read PIXI text height during construction. Its texture may not
+        // exist yet, which previously produced a zero-height lane and visible
+        // collisions in the shipped overlay.
+        y += Math.max(
+          rowGap,
+          Math.ceil(row?._descriptionTopOffset || choiceHalfHeight)
+            + Math.ceil(row?._descriptionLaneHeight || 36)
+            + helperToNextControlGap
+            + choiceHalfHeight
+        );
+      } else {
+        y += rowGap;
+      }
+    };
+
+    addExperimentChoice('SCENARIO', scenarioOptions.find((item) => item.id === draft.scenario)?.label, 'scenario', (direction) => {
+      const next = cycle(scenarioOptions, draft.scenario, direction);
+      this.updateExperimentDraft({ scenario: next.id });
+    });
+    addExperimentChoice('RULESET', rulesetOptions.find((item) => item.id === draft.ruleset)?.label, 'ruleset', (direction) => {
+      const next = cycle(rulesetOptions, draft.ruleset, direction);
+      const nextFixture = getLateGameExperimentFixtures(next.id)[0];
+      this.updateExperimentDraft({ ruleset: next.id, fixtureId: nextFixture?.id });
+    });
+
+    const fixtures = getLateGameExperimentFixtures(draft.ruleset);
+    addExperimentChoice('FIXTURE', fixtureChoiceLabel, 'fixture', (direction) => {
+      const next = cycle(fixtures, draft.fixtureId, direction);
+      this.updateExperimentDraft({ fixtureId: next.id });
+    }, fixture?.description || null);
+
+    const sectorItems = LATE_GAME_EXPERIMENT_START_SECTORS.map((sector) => ({
+      id: sector,
+      label: translateText('SECTOR {sector}', { sector })
+    }));
+    addExperimentChoice('START', translateText('SECTOR {sector}', { sector: draft.startSector }), 'start_sector', (direction) => {
+      if (draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD) return;
+      const next = cycle(sectorItems, draft.startSector, direction);
+      this.updateExperimentDraft({ startSector: next.id });
+    }, draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD
+      ? 'STANDARD TEST STARTS AT SECTOR 75.'
+      : 'TEST PRESET // NOT A NATURAL SECTOR.');
+
+    addExperimentChoice('LIFE STOCK', lifeOptions.find((item) => item.id === draft.lifeStock)?.label, 'life_stock', (direction) => {
+      if (draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD) return;
+      const next = cycle(lifeOptions, draft.lifeStock, direction);
+      this.updateExperimentDraft({ lifeStock: next.id });
+    });
+
+    addExperimentChoice('PHASE PULSE', draft.phasePulseAvailable ? 'AVAILABLE' : 'UNAVAILABLE', 'phase_pulse', () => {
+      this.updateExperimentDraft({ phasePulseAvailable: !draft.phasePulseAvailable });
+    });
+
+    const actionLabel = this.allowExperimentLaunch
+      ? 'START EXPERIMENT'
+      : this.game?.lateGameExperiment?.active
+        ? 'TEST ACTIVE // RETURN TO MENU TO RECONFIGURE'
+        : 'AVAILABLE FROM MAIN MENU';
+    const actionY = y - rowGap + choiceHalfHeight + actionGap + actionHalfHeight;
+    const action = this.createButton(actionLabel, this.getFormCenterX(), actionY, () => {
+      if (this.allowExperimentLaunch) this.openExperimentConfirmation();
+    }, { width: 330, height: 38 });
+    action.label = 'ui_settings_experiment_launch';
+    if (!this.allowExperimentLaunch) {
+      action.alpha = 0.58;
+      action.cursor = 'default';
+    }
+    this.experimentLaunchButton = action;
+    this.container.addChild(action);
+    this.registerControl({
+      type: 'button',
+      id: 'experiment_launch',
+      button: action,
+      label: actionLabel
+    });
+    return actionY + actionHalfHeight;
+  }
+
+  updateExperimentDraft(patch = {}) {
+    this.experimentDraft = normalizeLateGameExperimentDraft({
+      ...this.experimentDraft,
+      ...(patch && typeof patch === 'object' ? patch : {})
+    });
+    this.rebuild();
+    return this.experimentDraft;
+  }
+
+  openExperimentConfirmation() {
+    if (!this.allowExperimentLaunch || typeof this.onStartExperiment !== 'function') return false;
+    this.closeExperimentConfirmation();
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const panelWidth = Math.min(760, width * 0.9);
+    const panelHeight = Math.min(520, height * 0.84);
+    const panelX = width / 2 - panelWidth / 2;
+    const panelY = height / 2 - panelHeight / 2;
+    const draft = normalizeLateGameExperimentDraft(this.experimentDraft);
+    const fixture = getLateGameExperimentFixture(draft.fixtureId);
+    const layer = new PIXI.Container();
+    layer.label = 'ui_experimentConfirmation';
+    layer.zIndex = 5000;
+    layer.eventMode = 'static';
+    layer.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x00030a, alpha: 0.9 });
+    dim.eventMode = 'static';
+    layer.addChild(dim);
+
+    const panel = new PIXI.Graphics();
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 10, { color: 0x061424, alpha: 0.99 }, { color: 0xd8a66b, width: 2, alpha: 0.92 });
+    panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 8);
+    panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.42 });
+    layer.addChild(panel);
+
+    const title = createText(translateText('EXPERIMENTAL LATE-GAME TEST'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 30,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, panelY + 52);
+    fitTextToWidth(title, panelWidth - 60, { minScale: 0.68 });
+    layer.addChild(title);
+
+    const bodyCopy = translateText('This is a temporary, unranked playground where the developer and experienced players test late-game pressure. It is not an official game mode. Rules, balance, and content may change or disappear. Test runs grant no rankings, achievements, progression, or awards.');
+    const body = createText(bodyCopy, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 18,
+      fontWeight: '600',
+      fill: '#d6f8ff',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 90,
+      lineHeight: 22
+    });
+    body.anchor.set(0.5, 0);
+    body.position.set(width / 2, panelY + 92);
+    layer.addChild(body);
+
+    const scenarioLabel = translateText(draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD ? 'STANDARD TEST' : 'ENDURANCE TEST');
+    const rulesetLabel = translateText(draft.ruleset === LATE_GAME_EXPERIMENT_RULESETS.PURE ? 'PURE' : 'TACTICAL');
+    const fixtureLabel = translateText(fixture?.label || '--');
+    const sectorLabel = translateText('SECTOR {sector}', { sector: draft.startSector });
+    const livesLabel = draft.lifeStock === LATE_GAME_EXPERIMENT_LIFE_STOCKS.MATURE
+      ? `${translateText('MATURE LIFE STOCK')} // ${LATE_GAME_EXPERIMENT_MATURE_LIVES} ${translateText('LIVES')}`
+      : translateText('3 LIVES');
+    const pulseLabel = translateText(draft.phasePulseAvailable ? 'PHASE PULSE AVAILABLE' : 'PHASE PULSE UNAVAILABLE');
+    const summary = [
+      `${scenarioLabel} // ${rulesetLabel}`,
+      `${fixtureLabel} // ${sectorLabel}`,
+      `${livesLabel} // ${pulseLabel}`
+    ].join('\n');
+    const summaryText = createText(summary, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 16,
+      fontWeight: '800',
+      fill: '#8df6ff',
+      align: 'center',
+      lineHeight: 23
+    });
+    summaryText.anchor.set(0.5);
+    summaryText.position.set(width / 2, panelY + 292);
+    fitTextToWidth(summaryText, panelWidth - 72, { minScale: 0.62 });
+    layer.addChild(summaryText);
+
+    const warning = createText(translateText('EXPERIMENTAL TEST // NO AWARDS'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 19,
+      fontWeight: '900',
+      fill: '#ff9f6e',
+      align: 'center'
+    });
+    warning.anchor.set(0.5);
+    warning.position.set(width / 2, panelY + 360);
+    fitTextToWidth(warning, panelWidth - 60, { minScale: 0.72 });
+    layer.addChild(warning);
+
+    const buttonY = panelY + panelHeight - 58;
+    const startButton = this.createButton('START EXPERIMENT', width / 2 - 150, buttonY, () => this.startAcknowledgedExperiment(), { width: 270, height: 42 });
+    const cancelButton = this.createButton('CANCEL', width / 2 + 150, buttonY, () => this.closeExperimentConfirmation(), { width: 230, height: 42 });
+    startButton.label = 'ui_experimentConfirmStart';
+    cancelButton.label = 'ui_experimentConfirmCancel';
+    layer.addChild(startButton, cancelButton);
+
+    this.experimentConfirmationPanel = layer;
+    this.experimentConfirmationControls = [startButton, cancelButton];
+    this.experimentConfirmationFocusedIndex = 0;
+    this.container.addChild(layer);
+    this.setExperimentConfirmationFocus(0);
+    return true;
+  }
+
+  setExperimentConfirmationFocus(index) {
+    const controls = this.experimentConfirmationControls || [];
+    if (!controls.length) return;
+    this.experimentConfirmationFocusedIndex = ((index % controls.length) + controls.length) % controls.length;
+    controls.forEach((button, controlIndex) => {
+      button._focused = controlIndex === this.experimentConfirmationFocusedIndex;
+      button._drawButton?.(false);
+    });
+  }
+
+  closeExperimentConfirmation() {
+    const panel = this.experimentConfirmationPanel;
+    if (!panel) return;
+    if (panel.parent) panel.parent.removeChild(panel);
+    panel.destroy({ children: true });
+    this.experimentConfirmationPanel = null;
+    this.experimentConfirmationControls = [];
+    this.experimentConfirmationFocusedIndex = 0;
+    const launchIndex = this.controls.findIndex((control) => control.id === 'experiment_launch');
+    if (launchIndex >= 0) this.setControlFocus(launchIndex);
+  }
+
+  startAcknowledgedExperiment() {
+    if (!this.allowExperimentLaunch || typeof this.onStartExperiment !== 'function') return false;
+    const request = {
+      ...normalizeLateGameExperimentDraft(this.experimentDraft),
+      acknowledged: true
+    };
+    this.onStartExperiment(request);
+    return true;
+  }
+
+  addPrototypeInfoCard(y, x, width, height) {
+    const compactInfo = height < 480;
+    const pad = compactInfo
+      ? Math.max(16, Math.round(20 * this.uiScale))
+      : Math.max(22, Math.round(30 * this.uiScale));
+    const textWidth = Math.max(180, width - pad * 2);
+    const cardX = x + 18;
+    const cardWidth = width - 36;
+    const card = new PIXI.Graphics();
+    drawAstraPanel(card, cardX, y, cardWidth, height, 8, { color: 0x07192a, alpha: 0.86 }, { color: 0xd8a66b, width: 1, alpha: 0.46 });
+    this.container.addChild(card);
+
+    const content = new PIXI.Container();
+    content.label = 'ui_settingsPrototypeInfoContent';
+    content.position.set(x + pad, y + Math.round((compactInfo ? 12 : 20) * this.uiScale));
+    this.container.addChild(content);
+
+    const blocks = [
+      { kind: 'heading', source: 'EXPERIMENTAL LATE-GAME TEST' },
+      {
+        source: 'This is a temporary, unranked playground where the developer and experienced players test late-game pressure.',
+        gapBefore: 10
+      },
+      {
+        source: 'It is not an official game mode. Rules, balance, and content may change or disappear.',
+        emphasis: true,
+        gapBefore: 5
+      },
+      {
+        source: 'Test runs grant no rankings, achievements, progression, Codex discoveries, unlocks, checkpoints, records, or awards.',
+        accent: true,
+        emphasis: true,
+        gapBefore: 12
+      },
+      { kind: 'heading', source: 'WHAT TO EXPECT', gapBefore: 17 },
+      {
+        source: 'Standard Test starts at Sector 75 with a fixed seed, pressure profile, three lives, and loadout. It ends after ten sectors with a test report.',
+        gapBefore: 10
+      },
+      {
+        source: 'Endurance Test supports deeper starting presets and either three lives or a mature life stock. It continues until death or retirement.',
+        gapBefore: 12
+      },
+      {
+        source: 'Pure uses the real Pure contract with zero Tactical augments. Tactical uses a clearly disclosed comparison fixture.',
+        emphasis: true,
+        gapBefore: 5
+      },
+      {
+        source: 'Every launch requires a fresh acknowledgement. Returning to the menu completely clears the test state.',
+        gapBefore: 10
+      },
+      {
+        source: 'Experimental content may contain bugs, performance problems, or balance issues. Feedback is very welcome.',
+        accent: true,
+        emphasis: true,
+        gapBefore: 12
+      }
+    ];
+    const scaleCap = Math.min(1.16, this.uiScale);
+    const gapScale = compactInfo ? 0.42 : 1;
+    let cursorY = 0;
+
+    blocks.forEach(({ kind = 'body', source, accent = false, emphasis = false, gapBefore = 0 }) => {
+      cursorY += Math.round(gapBefore * scaleCap * gapScale);
+      const heading = kind === 'heading';
+      const text = createText(translateText(source), {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: Math.round((heading ? 19 : 16) * scaleCap),
+        fontWeight: heading ? '900' : (emphasis ? '700' : '500'),
+        fill: heading ? '#ffef7e' : (accent ? '#ffc96e' : (emphasis ? '#e9fbff' : '#c9f4ff')),
+        lineHeight: Math.round((heading ? (compactInfo ? 21 : 24) : (compactInfo ? 18 : 22)) * scaleCap),
+        wordWrap: !heading,
+        wordWrapWidth: textWidth,
+        breakWords: !heading
+      });
+      text.position.set(0, cursorY);
+      if (heading) fitTextToWidth(text, textWidth, { minScale: 0.7 });
+      content.addChild(text);
+      cursorY += text.height;
+    });
+
+    const availableHeight = Math.max(80, height - Math.round((compactInfo ? 24 : 40) * this.uiScale));
+    const measuredWidth = Math.max(1, content.width);
+    const measuredHeight = Math.max(1, content.height);
+    const contentScale = Math.min(1, textWidth / measuredWidth, availableHeight / measuredHeight);
+    for (const child of content.children) {
+      const childScaleX = child.scale.x;
+      const childScaleY = child.scale.y;
+      child.position.y *= contentScale;
+      child.scale.set(childScaleX * contentScale, childScaleY * contentScale);
+    }
+    this.prototypeInfoCard = {
+      frameBounds: {
+        x: Math.round(cardX),
+        y: Math.round(y),
+        width: Math.round(cardWidth),
+        height: Math.round(height),
+        right: Math.round(cardX + cardWidth),
+        bottom: Math.round(y + height)
+      },
+      content,
+      scale: contentScale
+    };
+  }
+
+  drawSettingsSectionFrame(x, y, width, height, accent = 0x37f5ff) {
+    const frame = new PIXI.Graphics();
+    drawAstraPanel(frame, x, y, width, height, 8, { color: 0x041323, alpha: 0.9 }, { color: accent, width: 1.2, alpha: 0.42 });
+    frame.rect(x, y, 6, height);
+    frame.fill({ color: accent, alpha: 0.58 });
+    frame.rect(x + 18, y + 16, width - 36, 1);
+    frame.fill({ color: accent, alpha: 0.18 });
+    this.container.addChild(frame);
+    return frame;
+  }
+
+  addToggleRow(label, initialValue, y, onChange, { id = null, onButton = null } = {}) {
+    const row = new PIXI.Container();
+    row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
+
+    const labelText = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 18,
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
-    labelText.x = -82;
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
     let enabled = Boolean(initialValue);
-    const button = this.createButton(enabled ? 'ON' : 'OFF', 78, 0, () => {
+    const setToggleValue = (value) => {
+      enabled = Boolean(value);
+      const nextLabel = translateText(enabled ? 'ON' : 'OFF');
+      if (button._label.text !== nextLabel) button._label.text = nextLabel;
+      button._label.style.fill = enabled ? '#ffffff' : '#9fb5c2';
+      button._fitLabel?.();
+      return enabled;
+    };
+    const button = this.createButton(enabled ? 'ON' : 'OFF', metrics.choiceX, 0, () => {
       enabled = !enabled;
       onChange(enabled);
-      button._label.text = enabled ? 'ON' : 'OFF';
-      button._label.style.fill = enabled ? '#ffffff' : '#9fb5c2';
+      setToggleValue(enabled);
       AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
-    }, { width: 132, height: 34 });
-    button._label.style.fill = enabled ? '#ffffff' : '#9fb5c2';
+    }, { width: Math.min(154, metrics.choiceWidth), height: 30 });
+    button.setToggleValue = setToggleValue;
+    setToggleValue(enabled);
+    onButton?.(button);
     row.addChild(button);
     this.registerControl({
       type: 'button',
-      id: `toggle_${label.toLowerCase().replace(/\s+/g, '_')}`,
+      id: `toggle_${id || label.toLowerCase().replace(/\s+/g, '_')}`,
       button,
+      row,
+      labelText,
       label
     });
 
     this.container.addChild(row);
     this.rows.push(row);
+    return button;
   }
 
-  addAudioTestRow(label, y) {
-    const width = this.game.getWidth();
+  addKeyboardBindingsRow(label, y) {
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
-
-    const labelText = createText(label, {
+    row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
+    const labelText = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 16,
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
-    labelText.x = -154;
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
-    const sfxButton = this.createButton('SFX', -46, 0, () => this.playAudioTest('sfx'), { width: 96, height: 32 });
-    const voiceButton = this.createButton('VOICE', 78, 0, () => this.playAudioTest('voice'), { width: 116, height: 32 });
+    const button = this.createButton('REMAP', metrics.choiceX, 0, () => this.openKeyBindingsPanel(), {
+      width: metrics.compactColumn ? Math.min(178, metrics.choiceWidth) : 190,
+      height: 30
+    });
+    button.label = 'ui_settingsKeyboardBindings';
+    row.addChild(button);
+    this.container.addChild(row);
+    this.rows.push(row);
+    this.registerControl({
+      type: 'button',
+      id: 'keyboard_bindings',
+      button,
+      row,
+      labelText,
+      label
+    });
+  }
+
+  addAudioTestRow(label, y) {
+    const row = new PIXI.Container();
+    row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
+
+    const labelText = createText(translateText(label), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 16,
+      fill: '#9befff'
+    });
+    labelText.anchor.set(1, 0.5);
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
+    row.addChild(labelText);
+
+    const sfxButton = this.createButton('SFX', -46, 0, () => this.playAudioTest('sfx'), { width: 96, height: 30 });
+    const voiceButton = this.createButton('VOICE', 78, 0, () => this.playAudioTest('voice'), { width: 116, height: 30 });
     sfxButton.label = 'ui_settingsTestSfx';
     voiceButton.label = 'ui_settingsTestVoice';
     this.audioTestButtons.sfx = sfxButton;
     this.audioTestButtons.voice = voiceButton;
     row.addChild(sfxButton, voiceButton);
-    this.registerControl({ type: 'button', id: 'test_sfx', button: sfxButton, label: 'TEST SFX' });
-    this.registerControl({ type: 'button', id: 'test_voice', button: voiceButton, label: 'TEST VOICE' });
+    this.registerControl({ type: 'button', id: 'test_sfx', button: sfxButton, row, labelText, label: 'TEST SFX' });
+    this.registerControl({ type: 'button', id: 'test_voice', button: voiceButton, row, labelText, label: 'TEST VOICE' });
 
     this.container.addChild(row);
     this.rows.push(row);
@@ -289,17 +1145,18 @@ export class SettingsOverlay {
   }
 
   addLanguageRow(label, y) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
 
-    const labelText = createText(label, {
+    const labelText = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 16,
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
-    labelText.x = -154;
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
     const options = getLanguageOptions();
@@ -313,20 +1170,21 @@ export class SettingsOverlay {
       AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
     };
 
-    const button = this.createButton(selected().label, 18, 0, () => {
+    const button = this.createButton(selected().label, metrics.compactColumn ? 50 : 18, 0, () => {
       cycle(1).catch((error) => console.warn('[SettingsOverlay] Language change failed:', error));
-    }, { width: 170, height: 32 });
+    }, { width: 170, height: 30 });
     button.label = 'ui_settingsLanguage';
     this.languageButton = button;
     row.addChild(button);
 
     const hint = createText(selected().hint, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 12,
+      fontSize: 16,
       fill: '#ffc96e'
     });
     hint.anchor.set(0, 0.5);
-    hint.x = 116;
+    hint.x = metrics.compactColumn ? 150 : 116;
+    fitTextToWidth(hint, metrics.compactColumn ? 52 : 118, { minScale: 0.62 });
     this.languageHint = hint;
     row.addChild(hint);
 
@@ -337,6 +1195,8 @@ export class SettingsOverlay {
       type: 'choice',
       id: 'language',
       button,
+      row,
+      labelText,
       label,
       cycle: (direction) => cycle(direction).catch((error) => console.warn('[SettingsOverlay] Language cycle failed:', error))
     });
@@ -345,7 +1205,7 @@ export class SettingsOverlay {
   updateLanguageButton(option) {
     if (this.languageButton?._label && option?.label) {
       this.languageButton._label.text = option.label;
-      fitTextToWidth(this.languageButton._label, 132);
+      this.languageButton._fitLabel?.();
     }
     if (this.languageHint && option?.hint) {
       this.languageHint.text = option.hint;
@@ -353,46 +1213,107 @@ export class SettingsOverlay {
     }
   }
 
-  addMusicPackRow(label, initialPack, y) {
-    const width = this.game.getWidth();
-    const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+  addChatterFrequencyRow(label, initialValue, y) {
+    let selectedIndex = Math.max(0, CHATTER_FREQUENCY_OPTIONS.indexOf(normalizeChatterFrequency(initialValue)));
+    let buttonRef = null;
+    const updateButton = () => {
+      if (!buttonRef?._label) return;
+      buttonRef._label.text = translateText(getChatterFrequencyLabel(CHATTER_FREQUENCY_OPTIONS[selectedIndex]));
+      buttonRef._fitLabel?.();
+    };
+    return this.addChoiceRow(
+      label,
+      translateText(getChatterFrequencyLabel(CHATTER_FREQUENCY_OPTIONS[selectedIndex])),
+      y,
+      (direction = 1) => {
+        selectedIndex = ((selectedIndex + Math.sign(direction || 1)) % CHATTER_FREQUENCY_OPTIONS.length + CHATTER_FREQUENCY_OPTIONS.length) % CHATTER_FREQUENCY_OPTIONS.length;
+        AudioManager.setChatterFrequency(CHATTER_FREQUENCY_OPTIONS[selectedIndex]);
+        updateButton();
+        AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+      },
+      {
+        id: 'chatter_frequency',
+        buttonWidth: 190,
+        description: 'Only non-critical chatter is reduced. Boss warnings and mission updates always play.',
+        descriptionLines: 3,
+        onButton: (button) => {
+          buttonRef = button;
+        }
+      }
+    );
+  }
 
-    const labelText = createText(label, {
+  addMenuAudioRow(y) {
+    let buttonRef;
+    const value = () => translateText(AudioManager.menuAudioMode === 'music' ? 'MUSIC' : 'AMBIENCE');
+    return this.addChoiceRow('MENU AUDIO', value(), y, () => {
+      AudioManager.setMenuAudioMode(AudioManager.menuAudioMode === 'music' ? 'ambient' : 'music');
+      if (buttonRef?._label) { buttonRef._label.text = value(); buttonRef._fitLabel?.(); }
+    }, { id: 'menu_audio_mode', onButton: button => { buttonRef = button; } });
+  }
+
+  addMusicPackRow(label, initialPack, y) {
+    const row = new PIXI.Container();
+    row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
+
+    const labelText = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 16,
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
-    labelText.x = -154;
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
-    let pack = initialPack === 'generated' ? 'generated' : 'classic';
-    const button = this.createButton(pack === 'classic' ? 'CLASSIC' : 'NEW MIX', 18, 0, () => {
-      pack = pack === 'classic' ? 'generated' : 'classic';
-      const settings = AudioManager.setMusicPack(pack);
-      pack = settings.musicPack === 'generated' ? 'generated' : 'classic';
-      button._label.text = pack === 'classic' ? 'CLASSIC' : 'NEW MIX';
-      fitTextToWidth(button._label, 132);
-      AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
-    }, { width: 170, height: 32 });
+    let selectedIndex = Math.max(0, MUSIC_PACK_OPTIONS.findIndex((option) => option.id === initialPack));
+    const selected = () => MUSIC_PACK_OPTIONS[selectedIndex] || MUSIC_PACK_OPTIONS[0];
+    const buttonX = metrics.compactColumn ? 38 : 18;
+    const button = this.createButton(selected().label, buttonX, 0, () => cycleMusicPack(1), {
+      width: metrics.compactColumn ? 150 : 170,
+      height: 30
+    });
     button.label = 'ui_settingsMusicPack';
     this.musicPackButton = button;
-    fitTextToWidth(button._label, 132);
+    button._fitLabel?.();
     row.addChild(button);
-    this.registerControl({ type: 'button', id: 'music_pack', button, label: 'MUSIC SET' });
 
-    const hint = createText(pack === 'classic' ? 'DEFAULT' : 'OPTIONAL MIX', {
+    const hint = createText(translateText(selected().hint), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 12,
+      fontSize: 16,
       fill: '#ffc96e'
     });
     hint.anchor.set(0, 0.5);
-    hint.x = 116;
+    hint.x = button.x + button._buttonWidth / 2 + 12;
+    const hintWidth = Math.max(48, Math.min(118, this.getFormColumnWidth() / 2 - hint.x - 12));
+    fitTextToWidth(hint, hintWidth, { minScale: 0.62 });
     row.addChild(hint);
 
-    button.on('pointertap', () => {
-      hint.text = pack === 'classic' ? 'DEFAULT' : 'OPTIONAL MIX';
+    const updateDisplay = (pack) => {
+      const option = getMusicPackOption(pack);
+      selectedIndex = Math.max(0, MUSIC_PACK_OPTIONS.findIndex((entry) => entry.id === option.id));
+      button._label.text = translateText(option.label);
+      button._fitLabel?.();
+      hint.text = translateText(option.hint);
+      fitTextToWidth(hint, hintWidth, { minScale: 0.62 });
+    };
+    function cycleMusicPack(direction = 1) {
+      selectedIndex = ((selectedIndex + Math.sign(direction || 1)) % MUSIC_PACK_OPTIONS.length + MUSIC_PACK_OPTIONS.length) % MUSIC_PACK_OPTIONS.length;
+      const settings = AudioManager.setMusicPack(selected().id);
+      updateDisplay(settings.musicPack);
+      AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+    }
+    updateDisplay(initialPack);
+    this.registerControl({
+      type: 'choice',
+      id: 'music_pack',
+      button,
+      row,
+      labelText,
+      hintText: hint,
+      label: 'MUSIC SET',
+      cycle: cycleMusicPack
     });
 
     this.container.addChild(row);
@@ -400,30 +1321,31 @@ export class SettingsOverlay {
   }
 
   addSliderRow(label, kind, initialValue, y, { onChange = null } = {}) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
 
-    const labelText = createText(label, {
+    const labelText = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 16,
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
-    labelText.x = -154;
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
     row.addChild(labelText);
 
-    const trackWidth = 250;
+    const trackWidth = metrics.sliderWidth;
     const track = new PIXI.Graphics();
     const knob = new PIXI.Graphics();
     const focus = new PIXI.Graphics();
     const valueText = createText(percent(initialValue), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 15,
+      fontSize: 16,
       fill: '#ffffff'
     });
     valueText.anchor.set(0, 0.5);
-    valueText.x = 160;
+    valueText.x = trackWidth / 2 + 34;
     row.addChild(focus, track, knob, valueText);
     let sliderEntry = null;
 
@@ -442,7 +1364,7 @@ export class SettingsOverlay {
       knob.clear();
       knob.circle(-trackWidth / 2 + trackWidth * clamped, 0, 10);
       knob.fill({ color: 0xf6fbff, alpha: 1 });
-      knob.stroke({ color: 0x00ffff, width: 2 });
+      knob.stroke({ color: 0x8cc5d0, width: 2 });
       valueText.text = percent(clamped);
     };
 
@@ -493,6 +1415,7 @@ export class SettingsOverlay {
       type: 'slider',
       id: `slider_${kind}`,
       row,
+      labelText,
       label,
       value: Math.max(0, Math.min(1, Number(initialValue) || 0)),
       setValue: applyValue,
@@ -501,6 +1424,9 @@ export class SettingsOverlay {
   }
 
   createButton(label, x, y, onPress, { width = 240, height = 38 } = {}) {
+    const controlScale = Math.max(1, Math.min(2, Number(this.uiScale) || 1));
+    width = Math.round(width * controlScale);
+    height = Math.round(height * controlScale);
     const button = new PIXI.Container();
     button.eventMode = 'static';
     button.cursor = 'pointer';
@@ -510,7 +1436,7 @@ export class SettingsOverlay {
 
     const focus = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
-    button.addChild(focus, bg);
+    button.addChild(bg, focus);
 
     const text = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -519,31 +1445,302 @@ export class SettingsOverlay {
       fill: '#ffffff'
     });
     text.anchor.set(0.5);
-    fitTextToWidth(text, width - 18, { minScale: 0.72 });
     button.addChild(text);
     button._label = text;
+    button._buttonWidth = width;
+    button._buttonHeight = height;
+    button._fitLabel = () => this.fitSettingsButtonLabel(button);
+    button._fitLabel();
 
     const draw = (hovered = false) => {
       focus.clear();
       if (button._focused) {
-        focus.roundRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, 8);
-        focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
+        focus.roundRect(-width / 2 + 3, -height / 2 + 3, width - 6, height - 6, 5);
+        focus.fill({ color: 0xffef7e, alpha: 0.15 });
+        focus.stroke({ color: 0xffef7e, width: 3, alpha: 1 });
       }
       bg.clear();
-      bg.roundRect(-width / 2, -height / 2, width, height, 6);
-      bg.fill({ color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.95 : 0.84 });
-      bg.stroke({ color: hovered ? 0xffffff : 0x00ffff, width: hovered ? 2 : 1, alpha: 0.95 });
+      drawAstraPanel(bg, -width / 2, -height / 2, width, height, 6, { color: hovered ? 0x0b6f8f : 0x07334e, alpha: hovered ? 0.95 : 0.84 }, { color: hovered ? 0xffffff : 0x8cc5d0, width: hovered ? 2 : 1, alpha: 0.95 });
     };
     draw(false);
     button._drawButton = draw;
 
     button.on('pointerover', () => {
       this.setControlFocusByButton(button);
+      playMenuFocusSfx(0.09);
       draw(true);
     });
     button.on('pointerout', () => draw(false));
-    button.on('pointertap', onPress);
+    button.on('pointertap', () => {
+      playMenuConfirmSfx(0.14);
+      this.menuFx?.burst?.(button.parent ? button.parent.x + button.x : button.x, button.parent ? button.parent.y + button.y : button.y, {
+        color: 0x7fffd8,
+        radius: 72,
+        durationMs: 380
+      });
+      onPress?.();
+    });
     return button;
+  }
+
+  fitSettingsButtonLabel(button) {
+    const text = button?._label;
+    if (!text) return;
+    const width = Number(button._buttonWidth) || 120;
+    const height = Number(button._buttonHeight) || 30;
+    const requestedScale = Math.max(1, Number(this.requestedUiScale) || 1);
+    const controlScale = Math.max(1, Number(this.uiScale) || 1);
+    text.scale.set(1);
+    fitTextToWidth(text, width - 18, { minScale: 0.56 });
+    // Settings can shrink as a whole on short screens. Reserve padding in
+    // proportion to the requested UI scale before that final transform so the
+    // value text still clears the frame after fitting.
+    fitDisplayToBox(text, width - 18, height - Math.round(8 * Math.max(controlScale, requestedScale)), { minScale: 0.5 });
+  }
+
+  addSectionLabel(label, y) {
+    const text = createText(translateText(label), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 16,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      letterSpacing: 0
+    });
+    text.anchor.set(0.5);
+    text.position.set(this.getFormCenterX(), y);
+    fitTextToWidth(text, Math.min(420, this.getFormColumnWidth() - 52), { minScale: 0.74 });
+    this.container.addChild(text);
+  }
+
+  getAvailableDisplayModes() {
+    const current = getDisplaySettings().mode;
+    const options = Array.isArray(this.displayOptions?.modes) ? this.displayOptions.modes : [];
+    const supportedIds = options
+      .filter((entry) => entry?.supported !== false || entry?.id === current)
+      .map((entry) => entry.id);
+    const ids = supportedIds.length ? supportedIds : DISPLAY_MODES.map((entry) => entry.id);
+    return DISPLAY_MODES.filter((entry) => ids.includes(entry.id));
+  }
+
+  getWindowSizeOptions() {
+    const options = Array.isArray(this.displayOptions?.sizes) && this.displayOptions.sizes.length
+      ? this.displayOptions.sizes
+      : DEFAULT_WINDOW_SIZE_OPTIONS;
+    return options;
+  }
+
+  getModeLabel(mode) {
+    return translateText(DISPLAY_MODES.find((entry) => entry.id === mode)?.label || 'Windowed');
+  }
+
+  getSizeLabel(size) {
+    const clean = size || getDisplaySettings().windowSize;
+    const label = String(clean.label || '').trim();
+    const sizeText = `${Math.round(clean.width)} x ${Math.round(clean.height)}`;
+    if (label.startsWith('Native')) return translateText('Native {size}', { size: sizeText });
+    if (label.startsWith('Current')) return translateText('Current {size}', { size: sizeText });
+    return sizeText;
+  }
+
+  setDisplayStatus(message, vars = {}) {
+    if (!this.displayStatusText) return;
+    this.displayStatusText.text = translateText(message, vars);
+    fitTextToWidth(this.displayStatusText, Math.max(116, this.getFormColumnWidth() * 0.38), { minScale: 0.65 });
+  }
+
+  updateDisplayControls() {
+    const settings = getDisplaySettings();
+    if (this.displayModeButton?._label) {
+      this.displayModeButton._label.text = this.getModeLabel(settings.mode);
+      this.displayModeButton._fitLabel?.();
+    }
+    if (this.displaySizeButton?._label) {
+      this.displaySizeButton._label.text = this.getSizeLabel(settings.windowSize);
+      this.displaySizeButton._fitLabel?.();
+    }
+    if (this.uiScaleButton?._label) {
+      this.uiScaleButton._label.text = getUiScaleLabel(settings.uiScale);
+      this.uiScaleButton._fitLabel?.();
+    }
+  }
+
+  async refreshDisplayOptions() {
+    try {
+      this.displayOptions = await getDisplayOptions();
+      this.updateDisplayControls();
+    } catch (error) {
+      console.warn('[SettingsOverlay] Display options unavailable:', error);
+    }
+  }
+
+  async applyDisplayUpdate(settings, status = 'Display changes applied') {
+    const result = await applyDisplaySettings(settings);
+    applyResponsiveLayout(window.innerWidth, window.innerHeight);
+    this.updateDisplayControls();
+    this.setDisplayStatus(result?.ok ? status : 'Browser display fallback active');
+    AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+    return result;
+  }
+
+  addDisplayModeRow(label, y) {
+    const settings = getDisplaySettings();
+    this.addChoiceRow(label, this.getModeLabel(settings.mode), y, async (direction = 1) => {
+      const modes = this.getAvailableDisplayModes();
+      const currentIndex = Math.max(0, modes.findIndex((entry) => entry.id === getDisplaySettings().mode));
+      const next = modes[((currentIndex + Math.sign(direction || 1)) % modes.length + modes.length) % modes.length];
+      await this.applyDisplayUpdate({ ...getDisplaySettings(), mode: next.id });
+    }, {
+      id: 'display_mode',
+      buttonWidth: 222,
+      onButton: (button) => {
+        this.displayModeButton = button;
+      }
+    });
+  }
+
+  addDisplaySizeRow(label, y) {
+    const settings = getDisplaySettings();
+    this.addChoiceRow(label, this.getSizeLabel(settings.windowSize), y, async (direction = 1) => {
+      const sizes = this.getWindowSizeOptions();
+      const current = getDisplaySettings().windowSize;
+      const currentIndex = Math.max(0, sizes.findIndex((entry) => entry.width === current.width && entry.height === current.height));
+      const next = sizes[((currentIndex + Math.sign(direction || 1)) % sizes.length + sizes.length) % sizes.length];
+      await this.applyDisplayUpdate({ ...getDisplaySettings(), mode: 'windowed', windowSize: next }, 'Window size applied');
+    }, {
+      id: 'display_size',
+      buttonWidth: 222,
+      onButton: (button) => {
+        this.displaySizeButton = button;
+      }
+    });
+  }
+
+  addUiScaleRow(label, y) {
+    const settings = getDisplaySettings();
+    this.addChoiceRow(label, getUiScaleLabel(settings.uiScale), y, async (direction = 1) => {
+      const current = getDisplaySettings().uiScale;
+      const currentIndex = Math.max(0, UI_SCALE_OPTIONS.findIndex((entry) => entry === current));
+      const next = UI_SCALE_OPTIONS[((currentIndex + Math.sign(direction || 1)) % UI_SCALE_OPTIONS.length + UI_SCALE_OPTIONS.length) % UI_SCALE_OPTIONS.length];
+      await this.applyDisplayUpdate({ ...getDisplaySettings(), uiScale: next }, 'UI scale applied');
+      this.rebuild();
+    }, {
+      id: 'ui_scale',
+      buttonWidth: 222,
+      onButton: (button) => {
+        this.uiScaleButton = button;
+      }
+    });
+  }
+
+  addDisplayResetRow(label, y) {
+    const row = new PIXI.Container();
+    row.position.set(this.getFormCenterX(), y);
+
+    const buttonX = -Math.round(60 * this.uiScale);
+    const buttonWidth = 168;
+    const button = this.createButton(label, buttonX, 0, async () => {
+      const settings = resetDisplaySettings();
+      await this.applyDisplayUpdate(settings, 'Safe display reset applied');
+    }, { width: buttonWidth, height: 30 });
+    row.addChild(button);
+
+    const status = createText(translateText('Display changes apply immediately'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 16,
+      fill: '#ffc96e'
+    });
+    status.anchor.set(0, 0.5);
+    status.x = buttonX + (buttonWidth * this.uiScale) / 2 + 24;
+    this.displayStatusText = status;
+    fitTextToWidth(status, Math.max(116, this.getFormColumnWidth() * 0.38), { minScale: 0.65 });
+    row.addChild(status);
+
+    this.container.addChild(row);
+    this.rows.push(row);
+    this.registerControl({ type: 'button', id: 'display_reset', button, label });
+  }
+
+  addChoiceRow(label, valueLabel, y, onCycle, {
+    id,
+    buttonWidth = 190,
+    onButton = null,
+    description = null,
+    descriptionLines = 2
+  } = {}) {
+    const row = new PIXI.Container();
+    row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
+
+    const labelText = createText(translateText(label), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 16,
+      fill: '#9befff'
+    });
+    labelText.anchor.set(1, 0.5);
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.64 });
+    row.addChild(labelText);
+
+    const cycle = (direction = 1) => {
+      Promise.resolve(onCycle?.(direction)).catch((error) => console.warn('[SettingsOverlay] Choice update failed:', error));
+    };
+    const resolvedButtonWidth = metrics.compactColumn ? Math.min(buttonWidth, metrics.choiceWidth) : buttonWidth;
+    const button = this.createButton(valueLabel, metrics.choiceX, 0, () => cycle(1), { width: resolvedButtonWidth, height: 30 });
+    button.label = `ui_settings_${id}`;
+    row.addChild(button);
+    onButton?.(button);
+
+    if (description) {
+      const descriptionGap = 6;
+      const descriptionLineHeight = 18;
+      const descriptionLaneHeight = descriptionLineHeight * Math.max(1, Math.round(descriptionLines));
+      const hint = createText(translateText(description), {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: 15,
+        fill: '#ffc96e',
+        align: 'center',
+        wordWrap: true,
+        wordWrapWidth: Math.max(210, this.getFormColumnWidth() - 44),
+        lineHeight: descriptionLineHeight
+      });
+      hint.anchor.set(0.5, 0);
+      const descriptionTopOffset = button._buttonHeight / 2 + descriptionGap;
+      hint.position.set(0, descriptionTopOffset);
+      fitTextToWidth(hint, Math.max(210, this.getFormColumnWidth() - 44), { minScale: 0.45 });
+      row.addChild(hint);
+      row._description = hint;
+      row._descriptionTopOffset = descriptionTopOffset;
+      row._descriptionLaneHeight = descriptionLaneHeight;
+    }
+
+    this.container.addChild(row);
+    this.rows.push(row);
+    this.registerControl({
+      type: 'choice',
+      id,
+      button,
+      row,
+      labelText,
+      label,
+      cycle
+    });
+    return row;
+  }
+
+  addFireInputRow(initialMode, y) {
+    let mode = initialMode === 'toggle' ? 'toggle' : 'hold';
+    this.addChoiceRow('Fire Input', translateText(mode === 'toggle' ? 'TOGGLE' : 'HOLD'), y, () => {
+      mode = mode === 'hold' ? 'toggle' : 'hold';
+      saveControlSettings({ ...getControlSettings(), fireInput: mode });
+      if (this.fireInputButton?._label) {
+        this.fireInputButton._label.text = translateText(mode === 'toggle' ? 'TOGGLE' : 'HOLD');
+      }
+    }, {
+      id: 'fire_input',
+      onButton: (button) => {
+        this.fireInputButton = button;
+      }
+    });
   }
 
   addFooterButton(key, label, x, y, onPress, options) {
@@ -551,17 +1748,54 @@ export class SettingsOverlay {
     button.label = `ui_settingsFooter_${key}`;
     this.footerButtons[key] = button;
     this.container.addChild(button);
-    this.registerControl({ type: 'button', id: `footer_${key}`, button, label });
+    this.registerControl({ type: 'button', id: `footer_${key}`, page: 'global', button, label });
     return button;
   }
 
   registerControl(control) {
     const entry = {
       ...control,
+      page: control.page || this.activePage,
       focused: false
     };
+    this.controlRegistry.push(entry);
+    if (entry.page === 'global') {
+      this.globalControls.push(entry);
+    } else {
+      if (!this.controlsByPage[entry.page]) this.controlsByPage[entry.page] = [];
+      this.controlsByPage[entry.page].push(entry);
+    }
     this.controls.push(entry);
     return entry;
+  }
+
+  syncActivePageControls() {
+    const pageTabs = this.globalControls.filter((control) => String(control.id || '').startsWith('page_'));
+    const footer = this.globalControls.filter((control) => String(control.id || '').startsWith('footer_'));
+    const otherGlobal = this.globalControls.filter((control) => !pageTabs.includes(control) && !footer.includes(control));
+    this.controls = [
+      ...pageTabs,
+      ...(this.controlsByPage[this.activePage] || []),
+      ...otherGlobal,
+      ...footer
+    ];
+  }
+
+  setActiveSettingsPage(pageId, { focusTab = false } = {}) {
+    if (!this.pageContainers?.[pageId]) return false;
+    this.activePage = pageId;
+    Object.entries(this.pageContainers).forEach(([id, container]) => {
+      container.visible = id === pageId;
+    });
+    Object.entries(this.pageButtons).forEach(([id, button]) => {
+      if (button?._label) button._label.style.fill = id === pageId ? '#ffef7e' : '#b8eaff';
+    });
+    this.sectionBounds = this.sectionBoundsByPage?.[pageId] || [];
+    this.syncActivePageControls();
+    const targetId = focusTab ? `page_${pageId}` : this.getFocusedControl()?.id;
+    const nextIndex = Math.max(0, this.controls.findIndex((control) => control.id === targetId));
+    this.setControlFocus(nextIndex);
+    return true;
   }
 
   setControlFocusByButton(button) {
@@ -573,6 +1807,7 @@ export class SettingsOverlay {
     if (!this.controls.length) return;
     const count = this.controls.length;
     const next = ((index % count) + count) % count;
+    const changed = next !== this.focusedControlIndex;
     this.controls.forEach((control, controlIndex) => {
       control.focused = controlIndex === next;
       if (control.button) {
@@ -584,6 +1819,7 @@ export class SettingsOverlay {
       }
     });
     this.focusedControlIndex = next;
+    if (changed) playMenuFocusSfx(0.08);
   }
 
   getFocusedControl() {
@@ -617,16 +1853,261 @@ export class SettingsOverlay {
       return true;
     }
     if (control.type !== 'slider') {
-      this.moveControlFocus(direction > 0 ? 1 : -1);
-      return true;
+      return false;
     }
-    const step = control.id === 'slider_screenShake' || control.id === 'slider_playerFocus' ? 0.05 : 0.08;
+    const step = ['slider_screenShake', 'slider_playerFocus', 'slider_flashIntensity'].includes(control.id) ? 0.05 : 0.08;
     control.setValue?.((Number(control.value) || 0) + step * Math.sign(direction || 1));
     return true;
   }
 
+  openKeyBindingsPanel() {
+    if (this.keyBindingsPanel) return;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const isCompact = width < 820 || height < 700;
+    const panelWidth = Math.min(width * 0.92, isCompact ? 620 : 760);
+    const panelHeight = Math.min(height * 0.9, isCompact ? 640 : 700);
+    const panelX = width / 2 - panelWidth / 2;
+    const panelY = height / 2 - panelHeight / 2;
+    const overlay = new PIXI.Container();
+    overlay.zIndex = 1200;
+    overlay.label = 'ui_keyboardBindingsPanel';
+    overlay.eventMode = 'static';
+    overlay.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x00040b, alpha: 0.92 });
+    overlay.addChild(dim);
+
+    const panel = new PIXI.Graphics();
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x06111f, alpha: 0.99 }, { color: 0x37f5ff, width: 2, alpha: 0.98 });
+    panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 6);
+    panel.stroke({ color: 0xd8a66b, width: 1, alpha: 0.34 });
+    overlay.addChild(panel);
+
+    const title = createText(translateText('KEYBOARD CONTROLS'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: isCompact ? 24 : 32,
+      fontWeight: 'bold',
+      fill: '#f6fbff',
+      stroke: '#003344',
+      strokeThickness: 4,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, panelY + (isCompact ? 34 : 46));
+    fitTextToWidth(title, panelWidth - 44, { minScale: 0.64 });
+    overlay.addChild(title);
+
+    const hint = createText(translateText('SELECT AN ACTION, THEN PRESS A KEY'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: isCompact ? 12 : 15,
+      fontWeight: '700',
+      fill: '#ffc96e',
+      align: 'center'
+    });
+    hint.anchor.set(0.5);
+    hint.position.set(width / 2, title.y + (isCompact ? 24 : 32));
+    fitTextToWidth(hint, panelWidth - 54, { minScale: 0.62 });
+    overlay.addChild(hint);
+
+    const contentTop = panelY + (isCompact ? 106 : 122);
+    const rowGap = Math.min(isCompact ? 43 : 48, Math.max(36, (panelHeight - (isCompact ? 180 : 204)) / KEYBOARD_ACTIONS.length));
+    const rowLeft = panelX + (isCompact ? 42 : 64);
+    const bindingButtonWidth = isCompact ? 172 : 210;
+    const rowRightInset = isCompact ? 42 : 64;
+    const bindingButtonX = panelX + panelWidth - rowRightInset - bindingButtonWidth / 2;
+    const bindings = getKeyboardBindings();
+    this.keyBindingsControls = [];
+    this.keyBindingsButtonMap = new Map();
+    KEYBOARD_ACTIONS.forEach((action, index) => {
+      const y = contentTop + index * rowGap;
+      const label = createText(translateText(action.label), {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: isCompact ? 15 : 18,
+        fontWeight: '700',
+        fill: '#9befff'
+      });
+      label.anchor.set(0, 0.5);
+      label.position.set(rowLeft, y);
+      fitTextToWidth(label, panelWidth * 0.42, { minScale: 0.62 });
+      overlay.addChild(label);
+
+      const button = this.createButton(formatKeyboardBinding(bindings[action.id]), bindingButtonX, y, () => {
+        this.startKeyBindingCapture(action.id);
+      }, { width: bindingButtonWidth, height: 32 });
+      button.label = `ui_keyBinding_${action.id}`;
+      overlay.addChild(button);
+      this.keyBindingsControls.push(button);
+      this.keyBindingsButtonMap.set(action.id, button);
+    });
+
+    const status = createText(translateText('SELECT AN ACTION, THEN PRESS A KEY'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: isCompact ? 11 : 13,
+      fontWeight: '800',
+      fill: '#9cfbff',
+      align: 'center'
+    });
+    status.anchor.set(0.5);
+    status.position.set(width / 2, panelY + panelHeight - (isCompact ? 82 : 94));
+    fitTextToWidth(status, panelWidth - 48, { minScale: 0.62 });
+    overlay.addChild(status);
+    this.keyBindingsStatusText = status;
+
+    const footerY = panelY + panelHeight - (isCompact ? 34 : 42);
+    const footerGap = isCompact ? 12 : 16;
+    const footerWidth = isCompact ? 164 : 188;
+    const resetButton = this.createButton('RESET KEYBOARD', width / 2 - (footerWidth + footerGap) / 2, footerY, () => {
+      this.resetKeyBindings();
+    }, { width: footerWidth, height: isCompact ? 32 : 36 });
+    resetButton.label = 'ui_keyBindingsReset';
+    const backButton = this.createButton('BACK', width / 2 + (footerWidth + footerGap) / 2, footerY, () => {
+      this.closeKeyBindingsPanel();
+    }, { width: footerWidth, height: isCompact ? 32 : 36 });
+    backButton.label = 'ui_keyBindingsBack';
+    overlay.addChild(resetButton, backButton);
+    this.keyBindingsControls.push(resetButton, backButton);
+    this.keyBindingsPanel = overlay;
+    this.keyBindingsPanelBounds = { x: panelX, y: panelY, width: panelWidth, height: panelHeight };
+    this.keyBindingsFocusedIndex = 0;
+    this.setKeyBindingsFocus(0);
+    this.container.addChild(overlay);
+    AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+  }
+
+  setKeyBindingsFocus(index) {
+    if (!this.keyBindingsControls.length) return;
+    const count = this.keyBindingsControls.length;
+    const next = ((index % count) + count) % count;
+    this.keyBindingsControls.forEach((button, buttonIndex) => {
+      button._focused = buttonIndex === next;
+      button._drawButton?.(false);
+    });
+    this.keyBindingsFocusedIndex = next;
+  }
+
+  moveKeyBindingsFocus(delta) {
+    this.setKeyBindingsFocus(this.keyBindingsFocusedIndex + delta);
+    AudioManager.playSfx('thrusterFire', { volume: 0.06, minIntervalMs: 90 });
+  }
+
+  activateKeyBindingsFocus() {
+    this.keyBindingsControls[this.keyBindingsFocusedIndex]?.activate?.();
+  }
+
+  updateKeyBindingButton(actionId) {
+    const button = this.keyBindingsButtonMap.get(actionId);
+    if (!button?._label) return;
+    const bindings = getKeyboardBindings();
+    button._label.text = this.keyBindingCaptureAction === actionId
+      ? translateText('PRESS A KEY')
+      : formatKeyboardBinding(bindings[actionId]);
+    fitDisplayToBox(button._label, button.hitArea.width - 18, button.hitArea.height - 8, { minScale: 0.62 });
+  }
+
+  startKeyBindingCapture(actionId) {
+    this.cancelKeyBindingCapture();
+    this.keyBindingCaptureAction = actionId;
+    this.updateKeyBindingButton(actionId);
+    if (this.keyBindingsStatusText) {
+      this.keyBindingsStatusText.text = translateText('PRESS A KEY');
+      fitTextToWidth(this.keyBindingsStatusText, this.game.getWidth() * 0.7, { minScale: 0.62 });
+    }
+    this.keyBindingCaptureHandler = (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (event.code === 'Escape') {
+        this.cancelKeyBindingCapture();
+        return;
+      }
+      const token = event.code || event.key;
+      if (!token) return;
+      setKeyboardBinding(actionId, token);
+      this.keyBindingCaptureAction = null;
+      if (this.keyBindingCaptureHandler) {
+        window.removeEventListener('keydown', this.keyBindingCaptureHandler, true);
+        this.keyBindingCaptureHandler = null;
+      }
+      this.updateKeyBindingButton(actionId);
+      if (this.keyBindingsStatusText) {
+        this.keyBindingsStatusText.text = translateText('KEY BOUND');
+        fitTextToWidth(this.keyBindingsStatusText, this.game.getWidth() * 0.7, { minScale: 0.62 });
+      }
+      AudioManager.playSfx('ui_open', { volume: 0.2, minIntervalMs: 0 });
+    };
+    window.addEventListener('keydown', this.keyBindingCaptureHandler, true);
+  }
+
+  cancelKeyBindingCapture() {
+    if (this.keyBindingCaptureHandler) {
+      window.removeEventListener('keydown', this.keyBindingCaptureHandler, true);
+      this.keyBindingCaptureHandler = null;
+    }
+    const previous = this.keyBindingCaptureAction;
+    this.keyBindingCaptureAction = null;
+    if (previous) this.updateKeyBindingButton(previous);
+    if (this.keyBindingsStatusText) {
+      this.keyBindingsStatusText.text = translateText('SELECT AN ACTION, THEN PRESS A KEY');
+      fitTextToWidth(this.keyBindingsStatusText, this.game.getWidth() * 0.7, { minScale: 0.62 });
+    }
+  }
+
+  resetKeyBindings() {
+    this.cancelKeyBindingCapture();
+    resetKeyboardBindings();
+    KEYBOARD_ACTIONS.forEach((action) => this.updateKeyBindingButton(action.id));
+    if (this.keyBindingsStatusText) {
+      this.keyBindingsStatusText.text = translateText('DEFAULT KEYBOARD CONTROLS RESTORED');
+      fitTextToWidth(this.keyBindingsStatusText, this.game.getWidth() * 0.7, { minScale: 0.62 });
+    }
+    AudioManager.playSfx('powerup', { volume: 0.16, minIntervalMs: 0 });
+  }
+
+  closeKeyBindingsPanel() {
+    if (!this.keyBindingsPanel) return;
+    this.cancelKeyBindingCapture();
+    if (this.keyBindingsPanel.parent) this.keyBindingsPanel.parent.removeChild(this.keyBindingsPanel);
+    this.keyBindingsPanel.destroy({ children: true });
+    this.keyBindingsPanel = null;
+    this.keyBindingsPanelBounds = null;
+    this.keyBindingsControls = [];
+    this.keyBindingsFocusedIndex = 0;
+    this.keyBindingsStatusText = null;
+    this.keyBindingsButtonMap = new Map();
+  }
+
   setupKeyboardNavigation() {
     this.keyHandler = (event) => {
+      if (this.experimentConfirmationPanel) {
+        const key = event.key || event.code;
+        const handled = ['ArrowLeft', 'ArrowRight', 'Enter', ' ', 'Escape'].includes(key) || event.code === 'Space';
+        if (!handled) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (key === 'Escape') this.closeExperimentConfirmation();
+        else if (key === 'ArrowLeft') this.setExperimentConfirmationFocus(this.experimentConfirmationFocusedIndex - 1);
+        else if (key === 'ArrowRight') this.setExperimentConfirmationFocus(this.experimentConfirmationFocusedIndex + 1);
+        else this.experimentConfirmationControls[this.experimentConfirmationFocusedIndex]?.activate?.();
+        return;
+      }
+      if (this.keyBindingsPanel) {
+        if (this.keyBindingCaptureAction) return;
+        const key = event.key || event.code;
+        const handled = ['ArrowUp', 'ArrowDown', 'Enter', ' ', 'Escape'].includes(key) || event.code === 'Space';
+        if (!handled) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (key === 'Escape') {
+          this.closeKeyBindingsPanel();
+          return;
+        }
+        if (key === 'ArrowUp') this.moveKeyBindingsFocus(-1);
+        else if (key === 'ArrowDown') this.moveKeyBindingsFocus(1);
+        else this.activateKeyBindingsFocus();
+        return;
+      }
       const key = event.key || event.code;
       const handled = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' ', 'Escape'].includes(key) ||
         event.code === 'Space';
@@ -650,14 +2131,29 @@ export class SettingsOverlay {
 
   rebuild() {
     const focusedId = this.getFocusedControl()?.id || null;
+    this.closeExperimentConfirmation();
     this.closeCreditsPanel();
+    this.closeKeyBindingsPanel();
+    destroyMenuFx(this);
     const children = this.container.removeChildren();
-    children.forEach((child) => child?.destroy?.({ children: true }));
+    this.retiredBuildChildren.push(...children.filter((child) => child && !child.destroyed));
     this.rows = [];
     this.draggingSlider = null;
     this.audioTestButtons = {};
     this.musicPackButton = null;
+    this.displayModeButton = null;
+    this.displaySizeButton = null;
+    this.uiScaleButton = null;
+    this.confirmExitButton = null;
+    this.pilotOrdersButton = null;
     this.footerButtons = {};
+    this.pageButtons = {};
+    this.pageContainers = {};
+    this.panelBounds = null;
+    this.sectionBounds = [];
+    this.prototypeInfoCard = null;
+    this.experimentChoiceButtons = {};
+    this.experimentLaunchButton = null;
     this.languageButton = null;
     this.languageHint = null;
     this.creditsPanel = null;
@@ -671,14 +2167,51 @@ export class SettingsOverlay {
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
     this.creditsUnlockReveal = null;
+    this.keyBindingsPanel = null;
+    this.keyBindingsControls = [];
+    this.keyBindingsFocusedIndex = 0;
+    this.keyBindingCaptureAction = null;
+    this.keyBindingCaptureHandler = null;
+    this.keyBindingsStatusText = null;
+    this.keyBindingsButtonMap = new Map();
     this.build();
     const nextIndex = Math.max(0, this.controls.findIndex((control) => control.id === focusedId));
     this.setControlFocus(nextIndex);
   }
 
-  update() {
+  update(delta = 1) {
+    updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+
+    if (this.experimentConfirmationPanel) {
+      if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
+        this.closeExperimentConfirmation();
+        return;
+      }
+      if (nav.pressed.left || nav.pressed.up) {
+        this.setExperimentConfirmationFocus(this.experimentConfirmationFocusedIndex - 1);
+      }
+      if (nav.pressed.right || nav.pressed.down) {
+        this.setExperimentConfirmationFocus(this.experimentConfirmationFocusedIndex + 1);
+      }
+      if (nav.pressed.confirm) {
+        this.experimentConfirmationControls[this.experimentConfirmationFocusedIndex]?.activate?.();
+      }
+      return;
+    }
+
+    if (this.keyBindingsPanel) {
+      if (this.keyBindingCaptureAction) return;
+      if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
+        this.closeKeyBindingsPanel();
+        return;
+      }
+      if (nav.pressed.up || nav.pressed.left) this.moveKeyBindingsFocus(-1);
+      if (nav.pressed.down || nav.pressed.right) this.moveKeyBindingsFocus(1);
+      if (nav.pressed.confirm) this.activateKeyBindingsFocus();
+      return;
+    }
 
     if (this.creditsPanel) {
       if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
@@ -695,24 +2228,17 @@ export class SettingsOverlay {
       this.close();
       return;
     }
+    if (nav.pressed.lb || nav.pressed.rb) {
+      const pages = Object.keys(this.pageContainers);
+      const index = pages.indexOf(this.activePage);
+      this.setActiveSettingsPage(pages[(index + (nav.pressed.rb ? 1 : -1) + pages.length) % pages.length], { focusTab: true });
+      return;
+    }
     if (nav.pressed.up) this.moveControlFocus(-1);
     if (nav.pressed.down) this.moveControlFocus(1);
     if (nav.pressed.left) this.adjustFocusedControl(-1);
     if (nav.pressed.right) this.adjustFocusedControl(1);
     if (nav.pressed.confirm) this.activateFocusedControl();
-  }
-
-  toggleFullscreen() {
-    try {
-      if (document.fullscreenElement) {
-        document.exitFullscreen?.();
-      } else {
-        document.documentElement.requestFullscreen?.();
-      }
-      AudioManager.playSfx('ui_open', { volume: 0.2, minIntervalMs: 120 });
-    } catch (error) {
-      console.warn('[SettingsOverlay] Fullscreen toggle failed:', error);
-    }
   }
 
   openCreditsPanel() {
@@ -721,12 +2247,13 @@ export class SettingsOverlay {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const isCompact = width < 820 || height < 760;
+    const isTinyCredits = isCompact && height < 680;
     const panelWidth = Math.min(isCompact ? width * 0.92 : 1120, width * 0.88);
     const panelHeight = Math.min(isCompact ? height * 0.9 : 720, height * 0.88);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const margin = isCompact ? 22 : 42;
-    const headerHeight = isCompact ? 132 : 104;
+    const headerHeight = isCompact ? 132 : 122;
     const footerHeight = isCompact ? 70 : 82;
     const contentTop = panelY + headerHeight;
     const contentBottom = panelY + panelHeight - footerHeight;
@@ -770,9 +2297,7 @@ export class SettingsOverlay {
     this.creditsAnimatedNodes.push({ node: starfield, kind: 'drift', baseX: 0, baseY: 0, speed: 0.16 });
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x06111f, alpha: 0.985 });
-    panel.stroke({ color: 0xff55d9, width: 2, alpha: 0.98 });
+    drawAstraPanel(panel, panelX, panelY, panelWidth, panelHeight, 8, { color: 0x06111f, alpha: 0.985 }, { color: 0xd8a66b, width: 2, alpha: 0.98 });
     panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 6);
     panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.34 });
     panel.rect(panelX + 28, panelY + 24, panelWidth - 56, 2);
@@ -811,17 +2336,22 @@ export class SettingsOverlay {
     overlay.addChild(subtitle);
 
     const artRect = isCompact
-      ? { x: panelX + margin, y: contentTop, width: panelWidth - margin * 2, height: Math.min(150, contentHeight * 0.34) }
+      ? {
+          x: panelX + margin,
+          y: contentTop,
+          width: panelWidth - margin * 2,
+          height: Math.min(isTinyCredits ? 86 : 150, contentHeight * (isTinyCredits ? 0.27 : 0.34))
+        }
       : { x: panelX + margin, y: contentTop, width: Math.min(380, panelWidth * 0.36), height: contentHeight };
     const art = this.createCreditsSpectacle(artRect, isCompact);
     overlay.addChild(art);
 
     const bodyX = isCompact ? panelX + margin : artRect.x + artRect.width + 36;
-    const bodyY = isCompact ? artRect.y + artRect.height + 18 : contentTop + 2;
+    const bodyY = isCompact ? artRect.y + artRect.height + (isTinyCredits ? 14 : 18) : contentTop + 2;
     const bodyWidth = isCompact ? panelWidth - margin * 2 : panelX + panelWidth - margin - bodyX;
     const eggRowY = buttonY - (isCompact ? 92 : 96);
     const footerY = eggRowY - (isCompact ? 42 : 48);
-    const bodyHeight = Math.max(isCompact ? 130 : 178, footerY - bodyY - 18);
+    const bodyHeight = Math.max(isTinyCredits ? 92 : (isCompact ? 130 : 178), footerY - bodyY - (isTinyCredits ? 12 : 18));
     const bodyWash = new PIXI.Graphics();
     bodyWash.roundRect(
       bodyX - 16,
@@ -844,9 +2374,9 @@ export class SettingsOverlay {
     ].join('\n');
     const body = createText(creditsCopy, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: isCompact ? 11 : 16,
+      fontSize: isTinyCredits ? 9 : (isCompact ? 11 : 16),
       fill: '#c9f6ff',
-      lineHeight: isCompact ? 15 : 22,
+      lineHeight: isTinyCredits ? 12 : (isCompact ? 15 : 22),
       fontWeight: '700',
       wordWrap: true,
       wordWrapWidth: bodyWidth,
@@ -854,7 +2384,7 @@ export class SettingsOverlay {
     });
     body.anchor.set(0, 0);
     body.position.set(bodyX, bodyY);
-    fitDisplayToBox(body, bodyWidth, bodyHeight, { minScale: isCompact ? 0.78 : 0.86 });
+    fitDisplayToBox(body, bodyWidth, bodyHeight, { minScale: isTinyCredits ? 0.64 : (isCompact ? 0.78 : 0.86) });
     overlay.addChild(body);
 
     const footer = createText(translateText('No cabinets were harmed. One cabinet was promoted to lore compliance.'), {
@@ -966,10 +2496,10 @@ export class SettingsOverlay {
       glow.clear();
       face.clear();
       glow.circle(0, 0, radius + (highlighted ? 10 : 7));
-      glow.fill({ color: highlighted ? 0xff55d9 : 0x37f5ff, alpha: highlighted ? 0.18 : 0.1 });
+      glow.fill({ color: highlighted ? 0xd8a66b : 0x37f5ff, alpha: highlighted ? 0.18 : 0.1 });
       face.circle(0, 0, radius);
       face.fill({ color: highlighted ? 0x2a1744 : 0x201703, alpha: 0.94 });
-      face.stroke({ color: focused ? 0xffffff : highlighted ? 0xff55d9 : 0xffd15c, width: highlighted ? 3 : 2, alpha: 0.95 });
+      face.stroke({ color: focused ? 0xffffff : highlighted ? 0xd8a66b : 0xffd15c, width: highlighted ? 3 : 2, alpha: 0.95 });
       face.circle(0, 0, radius * 0.58);
       face.stroke({ color: 0x7fffd8, width: 1, alpha: 0.82 });
       face.moveTo(-radius * 0.45, 0);
@@ -1038,29 +2568,50 @@ export class SettingsOverlay {
     }
 
     const result = grantSecretShipUnlock('nova_ship_07', { source: 'credits_easter_egg' });
+    const ascendantRoll = rollCreditsAscendantEasterEgg({ random: getCreditsAscendantRandom() });
+    const revealResult = ascendantRoll.unlocked
+      ? ascendantRoll
+      : result.unlocked
+        ? result
+        : null;
     if (this.creditsEggStatusText) {
       this.creditsEggStatusText.text = translateText(
-        result.unlocked
+        ascendantRoll.unlocked
+          ? 'Ascendant signal answered: Eirik the Viking is ready in the hangar.'
+          : result.unlocked
           ? 'Cabinet Ghost waiver filed: Quasar Fan is ready in the hangar.'
           : 'Cabinet Ghost already signed this waiver. Quasar Fan remains suspiciously ready.'
       );
       this.creditsEggStatusText.style.fill = '#fff3a2';
     }
     coinButton._drawCoin?.(true);
-    this.showCreditsShipUnlockReveal(result);
+    if (revealResult) this.showCreditsShipUnlockReveal(revealResult);
     this.creditsDebugState = {
       ...(this.creditsDebugState || {}),
       easterEgg: {
         clicks: this.creditsCoinClicks,
         shipId: 'nova_ship_07',
         unlocked: Boolean(result.unlocked),
-        alreadyUnlocked: Boolean(result.alreadyUnlocked)
+        alreadyUnlocked: Boolean(result.alreadyUnlocked),
+        ascendant: {
+          shipId: CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID,
+          chance: CREDITS_ASCENDANT_EASTER_EGG_CHANCE,
+          maxAttempts: CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+          attempted: Boolean(ascendantRoll.attempted),
+          attempts: ascendantRoll.attempts,
+          attemptsRemaining: ascendantRoll.attemptsRemaining,
+          success: Boolean(ascendantRoll.success),
+          unlocked: Boolean(ascendantRoll.unlocked),
+          alreadyUnlocked: Boolean(ascendantRoll.alreadyUnlocked),
+          exhausted: Boolean(ascendantRoll.exhausted)
+        }
       }
     };
   }
 
   showCreditsShipUnlockReveal(result = {}) {
-    if (!this.creditsPanel) return;
+    if (!this.creditsPanel || !result?.unlocked) return false;
+    const revealShip = getCreditsRevealShip(result.shipId);
     if (this.creditsRevealTicker) {
       this.game.app.ticker.remove(this.creditsRevealTicker);
       this.creditsRevealTicker = null;
@@ -1081,11 +2632,9 @@ export class SettingsOverlay {
     const maxW = Math.min(compact ? width * 0.9 : 760, width - 44);
     const maxH = Math.min(compact ? height * 0.62 : 420, height - 128);
     const bg = new PIXI.Graphics();
-    bg.roundRect(-maxW / 2, -maxH / 2, maxW, maxH, 10);
-    bg.fill({ color: 0x020711, alpha: 0.96 });
-    bg.stroke({ color: 0xffef7e, width: 3, alpha: 0.98 });
+    drawAstraPanel(bg, -maxW / 2, -maxH / 2, maxW, maxH, 10, { color: 0x020711, alpha: 0.96 }, { color: 0xffef7e, width: 3, alpha: 0.98 });
     bg.roundRect(-maxW / 2 + 10, -maxH / 2 + 10, maxW - 20, maxH - 20, 8);
-    bg.stroke({ color: 0xff55d9, width: 2, alpha: 0.7 });
+    bg.stroke({ color: 0xd8a66b, width: 2, alpha: 0.7 });
     reveal.addChild(bg);
 
     const rays = new PIXI.Graphics();
@@ -1135,7 +2684,7 @@ export class SettingsOverlay {
     fitDisplayToBox(subtitle, maxW - 56, compact ? 34 : 44, { minScale: 0.62 });
     reveal.addChild(subtitle);
 
-    const shipName = createText(translateText('QUASAR FAN'), {
+    const shipName = createText(revealShip.name, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 28 : 44,
       fontWeight: '900',
@@ -1153,11 +2702,11 @@ export class SettingsOverlay {
     shipRing.circle(0, maxH * 0.14, compact ? 54 : 72);
     shipRing.stroke({ color: 0x37f5ff, width: 3, alpha: 0.7 });
     shipRing.circle(0, maxH * 0.14, compact ? 72 : 96);
-    shipRing.stroke({ color: 0xff55d9, width: 2, alpha: 0.42 });
+    shipRing.stroke({ color: 0xd8a66b, width: 2, alpha: 0.42 });
     reveal.addChild(shipRing);
     this.creditsAnimatedNodes.push({ node: shipRing, kind: 'breathe', baseScale: 1, speed: 3.1 });
 
-    const shipSrc = AssetManifest.generated.playerShips?.[6];
+    const shipSrc = revealShip.asset;
     if (shipSrc) {
       PIXI.Assets.load(shipSrc)
         .then((texture) => {
@@ -1185,9 +2734,7 @@ export class SettingsOverlay {
     cta.position.set(0, maxH / 2 - (compact ? 34 : 42));
     const ctaBg = new PIXI.Graphics();
     const ctaW = Math.min(maxW - 72, Math.max(compact ? 190 : 260, cta.width + 72));
-    ctaBg.roundRect(-ctaW / 2, cta.y - (compact ? 18 : 22), ctaW, compact ? 36 : 44, 8);
-    ctaBg.fill({ color: 0xffef7e, alpha: 0.96 });
-    ctaBg.stroke({ color: 0xffffff, width: 2, alpha: 0.75 });
+    drawAstraPanel(ctaBg, -ctaW / 2, cta.y - (compact ? 18 : 22), ctaW, compact ? 36 : 44, 8, { color: 0xffef7e, alpha: 0.96 }, { color: 0xffffff, width: 2, alpha: 0.75 });
     reveal.addChild(ctaBg, cta);
 
     this.creditsPanel.addChild(reveal);
@@ -1205,6 +2752,18 @@ export class SettingsOverlay {
 
     AudioManager.playSfx('achievement', { force: true, volume: 1.0, minIntervalMs: 0 });
     AudioManager.playSfx('boss_reveal_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
+    if (result.shipId === CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID && result.unlocked) {
+      AudioManager.playVoice('mission_control_viking_legend_unlocked', {
+        force: true,
+        stopOtherVoices: true,
+        exclusiveGroup: 'announcer',
+        cooldownMs: 8000,
+        eventCooldownMs: 0,
+        duckMs: 4300,
+        duckFactor: 0.26,
+        volume: 1.04
+      });
+    }
 
     let elapsed = 0;
     const ticker = (delta) => {
@@ -1230,6 +2789,7 @@ export class SettingsOverlay {
     };
     this.creditsRevealTicker = ticker;
     this.game.app.ticker.add(ticker);
+    return true;
   }
 
   startCreditsAnimation() {
@@ -1271,14 +2831,12 @@ export class SettingsOverlay {
     art.addChild(this.createCreditsImageLayer({ x: 0, y: 0, width, height, alpha: 0.95, focusX: 0.18 }));
 
     const frame = new PIXI.Graphics();
-    frame.roundRect(0, 0, width, height, 8);
-    frame.fill({ color: 0x020713, alpha: 0.08 });
-    frame.stroke({ color: 0x37f5ff, width: 2, alpha: 0.88 });
+    drawAstraPanel(frame, 0, 0, width, height, 8, { color: 0x020713, alpha: 0.08 }, { color: 0x37f5ff, width: 2, alpha: 0.88 });
     for (let i = 0; i < 10; i += 1) {
       const px = (i * 47) % Math.max(1, width);
       const py = (i * 29) % Math.max(1, height);
       frame.circle(px, py, isCompact ? 18 + (i % 3) * 8 : 26 + (i % 4) * 11);
-      frame.fill({ color: i % 2 ? 0xff55d9 : 0x37f5ff, alpha: 0.035 + (i % 3) * 0.018 });
+      frame.fill({ color: i % 2 ? 0xd8a66b : 0x37f5ff, alpha: 0.035 + (i % 3) * 0.018 });
     }
     frame.rect(0, height * 0.72, width, height * 0.28);
     frame.fill({ color: 0x000000, alpha: 0.22 });
@@ -1288,7 +2846,7 @@ export class SettingsOverlay {
     sweep.rect(8, 0, width - 16, Math.max(6, height * 0.035));
     sweep.fill({ color: 0x7fffd8, alpha: 0.16 });
     sweep.rect(8, Math.max(8, height * 0.035), width - 16, 2);
-    sweep.fill({ color: 0xff55d9, alpha: 0.34 });
+    sweep.fill({ color: 0xd8a66b, alpha: 0.34 });
     art.addChild(sweep);
     this.creditsAnimatedNodes.push({ node: sweep, kind: 'scanY', baseY: 0, maxY: Math.max(12, height - 18), speed: isCompact ? 0.38 : 0.3 });
 
@@ -1303,7 +2861,7 @@ export class SettingsOverlay {
       holoRing.moveTo(Math.cos(angle) * 10, Math.sin(angle) * 10);
       holoRing.lineTo(Math.cos(angle) * Math.min(width, height) * 0.2, Math.sin(angle) * Math.min(width, height) * 0.2);
     }
-    holoRing.stroke({ color: 0xff55d9, width: 1, alpha: 0.16 });
+    holoRing.stroke({ color: 0xd8a66b, width: 1, alpha: 0.16 });
     art.addChild(holoRing);
     this.creditsAnimatedNodes.push({ node: holoRing, kind: 'spin', speed: 0.18 });
     return art;
@@ -1313,14 +2871,12 @@ export class SettingsOverlay {
     const cabinetY = height * (isCompact ? 0.28 : 0.54);
     const cabinetW = width * (isCompact ? 0.18 : 0.28);
     const cabinetH = height * (isCompact ? 0.46 : 0.48);
-    cabinet.roundRect(cabinetX, cabinetY, cabinetW, cabinetH, 7);
-    cabinet.fill({ color: 0x10243b, alpha: 0.96 });
-    cabinet.stroke({ color: 0xffd15c, width: 2, alpha: 0.92 });
+    drawAstraPanel(cabinet, cabinetX, cabinetY, cabinetW, cabinetH, 7, { color: 0x10243b, alpha: 0.96 }, { color: 0xffd15c, width: 2, alpha: 0.92 });
     cabinet.rect(cabinetX + cabinetW * 0.17, cabinetY + cabinetH * 0.13, cabinetW * 0.66, cabinetH * 0.32);
     cabinet.fill({ color: 0x05111f, alpha: 1 });
     cabinet.stroke({ color: 0x7fffd8, width: 1, alpha: 0.82 });
     cabinet.circle(cabinetX + cabinetW * 0.31, cabinetY + cabinetH * 0.67, Math.max(4, cabinetW * 0.06));
-    cabinet.fill({ color: 0xff55d9, alpha: 0.95 });
+    cabinet.fill({ color: 0xd8a66b, alpha: 0.95 });
     cabinet.circle(cabinetX + cabinetW * 0.5, cabinetY + cabinetH * 0.67, Math.max(4, cabinetW * 0.06));
     cabinet.fill({ color: 0x37f5ff, alpha: 0.95 });
     cabinet.circle(cabinetX + cabinetW * 0.69, cabinetY + cabinetH * 0.67, Math.max(4, cabinetW * 0.06));
@@ -1334,11 +2890,11 @@ export class SettingsOverlay {
     const bossR = Math.min(width, height) * (isCompact ? 0.13 : 0.18);
     boss.circle(bossX, bossY, bossR);
     boss.fill({ color: 0x270b3d, alpha: 0.96 });
-    boss.stroke({ color: 0xff55d9, width: 3, alpha: 0.95 });
+    boss.stroke({ color: 0xd8a66b, width: 3, alpha: 0.95 });
     boss.circle(bossX, bossY, bossR * 0.38);
     boss.fill({ color: 0xf6fbff, alpha: 0.95 });
     boss.circle(bossX, bossY, bossR * 0.18);
-    boss.fill({ color: 0xff55d9, alpha: 1 });
+    boss.fill({ color: 0xd8a66b, alpha: 1 });
     for (let i = 0; i < 12; i += 1) {
       const angle = (Math.PI * 2 * i) / 12;
       boss.moveTo(bossX + Math.cos(angle) * bossR * 1.06, bossY + Math.sin(angle) * bossR * 1.06);
@@ -1451,21 +3007,100 @@ export class SettingsOverlay {
   }
 
   getDebugState() {
+    const displaySettings = getDisplaySettings();
+    const controlSettings = getControlSettings();
     return {
+      activePage: this.activePage,
+      panelBounds: this.panelBounds,
+      sectionBounds: this.sectionBounds,
+      pages: Object.fromEntries(Object.entries(this.pageButtons).map(([key, button]) => [key, {
+        active: key === this.activePage,
+        bounds: debugBounds(button),
+        labelBounds: debugBounds(button?._label)
+      }])),
+      visibleControls: this.controls.map((control) => ({
+        id: control.id,
+        type: control.type,
+        page: control.page,
+        label: translateText(control.label || ''),
+        bounds: debugBounds(control.button || control.row),
+        rowBounds: debugBounds(control.row),
+        labelBounds: debugBounds(control.labelText),
+        valueLabelBounds: debugBounds(control.button?._label),
+        hintBounds: debugBounds(control.hintText),
+        descriptionBounds: debugBounds(control.row?._description)
+      })),
+      prototype: {
+        enabled: false,
+        quickStart: false,
+        oneRunOnly: true,
+        allowLaunch: this.allowExperimentLaunch,
+        draft: { ...this.experimentDraft },
+        activeRun: this.game?.lateGameExperiment?.active === true,
+        launchButton: debugBounds(this.experimentLaunchButton),
+        confirmationOpen: Boolean(this.experimentConfirmationPanel),
+        confirmationBounds: debugBounds(this.experimentConfirmationPanel),
+        infoCard: this.prototypeInfoCard ? {
+          frameBounds: this.prototypeInfoCard.frameBounds,
+          contentBounds: debugBounds(this.prototypeInfoCard.content),
+          scale: Number(this.prototypeInfoCard.scale.toFixed(3))
+        } : null
+      },
+      display: {
+        mode: displaySettings.mode,
+        windowSize: displaySettings.windowSize,
+        uiScale: displaySettings.uiScale,
+        uiScaleLabel: this.uiScaleButton?._label?.text || getUiScaleLabel(displaySettings.uiScale),
+        confirmExit: this.getMenuSettingsForOverlay().confirmExit,
+        confirmExitLabel: this.confirmExitButton?._label?.text || (this.getMenuSettingsForOverlay().confirmExit ? 'ON' : 'OFF'),
+        showPilotOrders: this.getMenuSettingsForOverlay().showPilotOrders,
+        showPilotOrdersLabel: this.pilotOrdersButton?._label?.text || (this.getMenuSettingsForOverlay().showPilotOrders ? 'ON' : 'OFF'),
+        modeLabel: this.displayModeButton?._label?.text || null,
+        sizeLabel: this.displaySizeButton?._label?.text || null,
+        status: this.displayStatusText?.text || null,
+        options: {
+          modes: this.getAvailableDisplayModes().map((entry) => entry.id),
+          sizes: this.getWindowSizeOptions().map((entry) => ({
+            width: entry.width,
+            height: entry.height,
+            label: entry.label || null
+          }))
+        }
+      },
       musicPack: {
         value: AudioManager.getSettings().musicPack,
         button: debugBounds(this.musicPackButton),
         label: this.musicPackButton?._label?.text || null
       },
+      controls: {
+        ...controlSettings,
+        fireInputLabel: this.fireInputButton?._label?.text || translateText(controlSettings.fireInput === 'toggle' ? 'TOGGLE' : 'HOLD')
+      },
       footer: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button)])),
+      footerLabels: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button?._label)])),
       credits: this.creditsDebugState,
       creditsFocus: this.creditsControls[this.creditsFocusedIndex]?.label || null,
-      focus: this.getFocusedControl()?.id || null
+      keyboardBindings: {
+        panel: Boolean(this.keyBindingsPanel),
+        panelBounds: this.keyBindingsPanelBounds,
+        controls: this.keyBindingsControls.map((button) => ({
+          label: button.label || null,
+          bounds: debugBounds(button)
+        })),
+        focus: this.keyBindingsControls[this.keyBindingsFocusedIndex]?.label || null,
+        pendingAction: this.keyBindingCaptureAction || null,
+        bindings: getKeyboardBindings()
+      },
+      focus: this.getFocusedControl()?.id || null,
+      menuFx: this.menuFx?.getDebugState?.() || null
     };
   }
 
   close() {
+    this.closeExperimentConfirmation();
+    this.closeKeyBindingsPanel();
     this.closeCreditsPanel();
+    destroyMenuFx(this);
     if (this.languageUnsubscribe) {
       this.languageUnsubscribe();
       this.languageUnsubscribe = null;
@@ -1478,6 +3113,10 @@ export class SettingsOverlay {
       this.container.parent.removeChild(this.container);
     }
     this.container.destroy({ children: true });
+    this.retiredBuildChildren.forEach((child) => {
+      if (child && !child.destroyed) child.destroy?.({ children: true });
+    });
+    this.retiredBuildChildren = [];
     this.onClose?.();
   }
 }

@@ -4,6 +4,7 @@
  */
 
 import * as PIXI from 'pixi.js';
+import {drawEnergySurface,energyClock} from '../effects/AstraEnergyMaterial.js';
 
 /**
  * Applies visual enhancements to an enemy sprite based on model/type
@@ -198,8 +199,7 @@ function getEnemyEnhancementProfile(model, color) {
 function createGlowEffect(config) {
   const glow = new PIXI.Graphics();
   glow.label = 'enemyGlow';
-  glow.circle(0, 0, config.radius);
-  glow.fill({ color: config.color, alpha: config.alpha });
+  drawEnergySurface(glow,{kind:'corona',width:config.radius*2,height:config.radius*2,color:config.color,alpha:config.alpha*.65});
   glow.enhancementConfig = config;
   return glow;
 }
@@ -243,7 +243,7 @@ function createParticleEmitter(config) {
 }
 
 function animateEnemyEnhancements(enhancements, profile) {
-  const now = Date.now();
+  const now = energyClock()*1000;
 
   enhancements.forEach(enhancement => {
     const config = enhancement.enhancementConfig;
@@ -262,16 +262,13 @@ function animateEnemyEnhancements(enhancements, profile) {
       const pulse = Math.sin(now * 0.005 + enhancement.y * 0.1) * 0.5 + 0.5;
       const length = config.length;
 
-      enhancement.moveTo(0, 0);
-      enhancement.lineTo(0, length);
-      enhancement.stroke({ color: config.color, width: config.width, alpha: pulse * 0.7 });
+      drawEnergySurface(enhancement,{kind:'rift',y:length*.5,width:config.width*3,height:length*1.3,color:config.color,alpha:.25+pulse*.4});
     }
 
     if (enhancement.label === 'weaponGlow') {
       enhancement.clear();
       const pulse = Math.sin(now * 0.006) * 0.5 + 0.5;
-      enhancement.circle(0, 0, config.size);
-      enhancement.fill({ color: config.color, alpha: (0.5 + pulse * 0.5) });
+      drawEnergySurface(enhancement,{kind:'corona',width:config.size*3,height:config.size*3,color:config.color,alpha:.4+pulse*.3});
     }
 
     if (enhancement.label === 'dangerIndicator') {

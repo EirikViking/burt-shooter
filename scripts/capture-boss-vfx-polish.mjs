@@ -8,6 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4384));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.BOSS_VFX_OUTPUT_DIR || path.join('test-results', 'boss-vfx-polish', timestamp()));
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -81,6 +82,7 @@ async function openBoss(page, level) {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
     startAtBoss: '1',
     startLevel: String(level)
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -163,11 +165,30 @@ async function stage(page, scenario) {
 
     if (scenarioName === 'beam-hazard') {
       boss.phase = 3;
-      player.x = boss.x;
-      player.y = game.getHeight() * 0.78;
-      boss.startSignatureTelegraph?.('lance', player.x, player.y);
-      if (boss.telegraph) boss.telegraph.start -= boss.telegraph.duration + 20;
-      boss.update?.(2, player.x, player.y);
+      player.x = game.getWidth() * 0.18;
+      player.y = game.getHeight() * 0.84;
+      boss.telegraph = null;
+      boss.regularTelegraph = null;
+      boss.delayedSignature = null;
+      boss.signatureCooldown = 999999;
+      boss.shootCooldown = 999999;
+      boss.clearTelegraphVisual?.();
+      boss.clearRegularAttackTelegraphVisual?.();
+      play.bossHazards = [];
+      play.registerBossHazardFromBoss?.(boss, 'signature', {
+        type: 'lance',
+        attack: 'sniper',
+        playerX: boss.x,
+        playerY: game.getHeight() * 0.88,
+        sourceX: boss.x,
+        sourceY: boss.y + 18
+      });
+      const hazard = play.bossHazards?.[0];
+      if (hazard) {
+        hazard.durationMs = Math.max(hazard.durationMs || 0, 1600);
+        hazard.startedAt = Date.now() - Math.round(hazard.durationMs * 0.36);
+        hazard.armingMs = 999999;
+      }
       play.updateBossHazards?.(2);
     }
   }, scenario);

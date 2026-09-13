@@ -5,6 +5,19 @@ import {
   getRunElapsedSeconds,
   getRunPacingDebugState
 } from '../config/RunPacingConfig.js';
+import {
+  getNormalWaveDifficultyLevel,
+  getNormalWaveDangerMoment as getNormalWaveDangerMomentForLevel,
+  getNormalWavePressureTuning as getNormalWavePressureTuningForLevel
+} from '../config/BalanceConfig.js';
+import { RUN_MODES, getRunModeProfile } from './RunMode.js';
+
+const OVERRUN_OPENING_TEMPO_FLOOR = Object.freeze({
+  untilSeconds: 300,
+  fireChanceMult: 1.15,
+  projectileSpeedMult: 1.06,
+  enemySpeedMult: 1.04
+});
 
 function finite(value, fallback = 1) {
   const number = Number(value);
@@ -30,31 +43,78 @@ export class RunPressureDirector {
   }
 
   getMultipliers() {
+    const profileMultipliers = this.getRunModeProfile().pressureMultipliers || {};
     if (!this.enabled) {
       return {
-        fireChanceMult: 1,
-        projectileSpeedMult: 1,
-        enemySpeedMult: 1,
-        eliteChanceMult: 1,
-        specialThreatMult: 1,
-        sustainMult: 1,
-        scoreMult: 1,
-        contentRarityMult: 1
+        fireChanceMult: finite(profileMultipliers.fireChanceMult),
+        projectileSpeedMult: finite(profileMultipliers.projectileSpeedMult),
+        enemySpeedMult: finite(profileMultipliers.enemySpeedMult),
+        eliteChanceMult: finite(profileMultipliers.eliteChanceMult),
+        specialThreatMult: finite(profileMultipliers.specialThreatMult),
+        sustainMult: finite(profileMultipliers.sustainMult),
+        scoreMult: finite(profileMultipliers.scoreMult),
+        contentRarityMult: finite(profileMultipliers.contentRarityMult)
       };
     }
-    return getPressureMultipliers(this.getElapsedSeconds());
+    const elapsedSeconds = this.getElapsedSeconds();
+    const runtime = getPressureMultipliers(elapsedSeconds);
+    const combined = Object.fromEntries(
+      Object.entries(runtime).map(([key, value]) => [
+        key,
+        Number((finite(value) * finite(profileMultipliers[key])).toFixed(4))
+      ])
+    );
+    if (this.isOverrunOpeningTempoFloorActive(elapsedSeconds)) {
+      combined.fireChanceMult = Math.max(combined.fireChanceMult, OVERRUN_OPENING_TEMPO_FLOOR.fireChanceMult);
+      combined.projectileSpeedMult = Math.max(combined.projectileSpeedMult, OVERRUN_OPENING_TEMPO_FLOOR.projectileSpeedMult);
+      combined.enemySpeedMult = Math.max(combined.enemySpeedMult, OVERRUN_OPENING_TEMPO_FLOOR.enemySpeedMult);
+    }
+    return combined;
   }
 
-  scaleEnemyFireChance(chance) {
-    return finite(chance, 0) * finite(this.getMultipliers().fireChanceMult);
+  isOverrunOpeningTempoFloorActive(elapsedSeconds = this.getElapsedSeconds()) {
+    if (this.game?.lateGameExperiment?.active === true) return false;
+    const runMode = this.game?.runMode;
+    return (
+      runMode === RUN_MODES.OVERRUN_PURE ||
+      runMode === RUN_MODES.OVERRUN_TACTICAL
+    ) && elapsedSeconds < OVERRUN_OPENING_TEMPO_FLOOR.untilSeconds;
   }
 
-  scaleProjectileSpeed(speed) {
-    return finite(speed, 0) * finite(this.getMultipliers().projectileSpeedMult);
+  getRunModeProfile() {
+    return this.game?.getRunModeProfile?.() || getRunModeProfile(this.game?.runMode);
   }
 
-  scaleEnemySpeed(speed) {
-    return finite(speed, 0) * finite(this.getMultipliers().enemySpeedMult);
+  getNormalWaveDifficultyLevel(level = this.game?.level || 1) {
+    const base = getNormalWaveDifficultyLevel(level);
+    const delta = Math.floor(Number(this.getRunModeProfile().normalWaveDifficultyLevelOffsetDelta) || 0);
+    return Math.max(1, base + delta);
+  }
+
+  getNormalWavePressureTuning(level = this.getNormalWaveDifficultyLevel(this.game?.level || 1)) {
+    return getNormalWavePressureTuningForLevel(level);
+  }
+
+  getNormalWaveDangerMoment(level = this.getNormalWaveDifficultyLevel(this.game?.level || 1), waveIndex = 0, waveCount = 0) {
+    return getNormalWaveDangerMomentForLevel(level, waveIndex, waveCount);
+  }
+
+  scaleEnemyFireChance(chance, level) {
+    return finite(chance, 0) *
+      finite(this.getMultipliers().fireChanceMult) *
+      finite(this.getNormalWavePressureTuning(level).fireChanceMult);
+  }
+
+  scaleProjectileSpeed(speed, level) {
+    return finite(speed, 0) *
+      finite(this.getMultipliers().projectileSpeedMult) *
+      finite(this.getNormalWavePressureTuning(level).projectileSpeedMult);
+  }
+
+  scaleEnemySpeed(speed, level) {
+    return finite(speed, 0) *
+      finite(this.getMultipliers().enemySpeedMult) *
+      finite(this.getNormalWavePressureTuning(level).enemySpeedMult);
   }
 
   scaleEliteChance(chance) {
@@ -82,7 +142,12 @@ export class RunPressureDirector {
   }
 
   getDebugState() {
-    this.lastDebugState = getRunPacingDebugState(this.game);
+    const elapsedSeconds = this.getElapsedSeconds();
+    this.lastDebugState = {
+      ...getRunPacingDebugState(this.game),
+      pressureMultipliers: this.getMultipliers(),
+      overrunOpeningTempoFloorActive: this.isOverrunOpeningTempoFloorActive(elapsedSeconds)
+    };
     return this.lastDebugState;
   }
 }

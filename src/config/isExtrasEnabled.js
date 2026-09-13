@@ -1,5 +1,34 @@
 import * as FeatureFlags from './FeatureFlags.js';
 
+const runtimeSwitchCache = new Map();
+const RUNTIME_SWITCH_KEYS = Object.freeze([
+    'bs_disable_extras',
+    'bs_safe_mode',
+    'bs_disable_hijacker',
+    'bs_disable_weapon_fx',
+    'bs_disable_enemy_skins'
+]);
+
+function isActiveGameplayRuntime() {
+    try {
+        return typeof window !== 'undefined' && window.__game?.currentSceneName === 'play';
+    } catch {
+        return false;
+    }
+}
+
+function readRuntimeSwitch(key) {
+    if (isActiveGameplayRuntime() && runtimeSwitchCache.has(key)) return runtimeSwitchCache.get(key);
+    let enabled = false;
+    try {
+        enabled = typeof localStorage !== 'undefined' && localStorage.getItem(key) === '1';
+    } catch {
+        enabled = false;
+    }
+    runtimeSwitchCache.set(key, enabled);
+    return enabled;
+}
+
 /**
  * Check if asset upgrade extras are enabled
  * Respects both feature flags and runtime kill switch
@@ -8,7 +37,7 @@ import * as FeatureFlags from './FeatureFlags.js';
  */
 export function isExtrasEnabled(scope = 'all') {
     // Runtime kill switch - overrides everything
-    if (typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_extras") === "1") {
+    if (readRuntimeSwitch('bs_disable_extras')) {
         return false;
     }
 
@@ -38,7 +67,7 @@ export function isExtrasEnabled(scope = 'all') {
  * @returns {boolean} true if safe mode is active
  */
 function isSafeModeActive() {
-    return typeof localStorage !== 'undefined' && localStorage.getItem("bs_safe_mode") === "1";
+    return readRuntimeSwitch('bs_safe_mode');
 }
 
 /**
@@ -53,7 +82,7 @@ export function isHijackerEnabled() {
     }
 
     // Specific kill switch
-    if (typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_hijacker") === "1") {
+    if (readRuntimeSwitch('bs_disable_hijacker')) {
         return false;
     }
 
@@ -73,7 +102,7 @@ export function isEnemyWeaponFxEnabled() {
     }
 
     // Specific kill switch
-    if (typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_weapon_fx") === "1") {
+    if (isWeaponFxKillSwitchActive()) {
         return false;
     }
 
@@ -93,10 +122,23 @@ export function isEnemySkinVarietyEnabled() {
     }
 
     // Specific kill switch
-    if (typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_enemy_skins") === "1") {
+    if (readRuntimeSwitch('bs_disable_enemy_skins')) {
         return false;
     }
 
     // Feature flag
     return FeatureFlags.ENABLE_ENEMY_SKIN_VARIETY;
+}
+
+export function isWeaponFxKillSwitchActive() {
+    return readRuntimeSwitch('bs_disable_weapon_fx');
+}
+
+export function invalidateRuntimeFeatureSwitchCache() {
+    runtimeSwitchCache.clear();
+}
+
+export function warmRuntimeFeatureSwitchCache() {
+    for (const key of RUNTIME_SWITCH_KEYS) readRuntimeSwitch(key);
+    return Object.fromEntries(RUNTIME_SWITCH_KEYS.map((key) => [key, runtimeSwitchCache.get(key) === true]));
 }

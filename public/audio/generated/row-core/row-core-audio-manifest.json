@@ -1,0 +1,156 @@
+{
+  "feature": "ROW CORE",
+  "generatedAt": "2026-06-26T11:34:42.668Z",
+  "legalNote": "Original generated development assets. No real stadium, team, player, broadcast, fan-group, song, football organization, or tournament source was used.",
+  "outputFormat": "mp3_44100_128",
+  "voice": {
+    "defaultName": "Misfit Galaxy Male - Boss Agony",
+    "voiceId": "YO6HUzlgJ0HQvmYejW5c",
+    "modelId": "eleven_v3"
+  },
+  "sfx": {
+    "modelId": "eleven_text_to_sound_v2"
+  },
+  "files": [
+    {
+      "filename": "nova_row_core_pickup.mp3",
+      "path": "public/audio/sfx/nova-swarm/nova_row_core_pickup.mp3",
+      "kind": "sound-generation",
+      "endpoint": "sound-generation",
+      "promptText": "Original retro arcade powerup pickup, Nordic sci-fi energy, bright synth sparkle, tiny crowd swell, no music melody, no real chant, 0.9 seconds.",
+      "durationTargetSeconds": 0.9,
+      "model_id": "eleven_text_to_sound_v2",
+      "skipped": false
+    },
+    {
+      "filename": "nova_row_core_horn.mp3",
+      "path": "public/audio/sfx/nova-swarm/nova_row_core_horn.mp3",
+      "kind": "sound-generation",
+      "endpoint": "sound-generation",
+      "promptText": "Original deep sci-fi longship horn blast for an arcade shooter powerup, cinematic but short, metallic space resonance, no melody from any song, 1.4 seconds.",
+      "durationTargetSeconds": 1.4,
+      "model_id": "eleven_text_to_sound_v2",
+      "skipped": false
+    },
+    {
+      "filename": "nova_row_core_drum.mp3",
+      "path": "public/audio/sfx/nova-swarm/nova_row_core_drum.mp3",
+      "kind": "sound-generation",
+      "endpoint": "sound-generation",
+      "promptText": "Two huge arcade war drum hits with stadium-sized reverb and synthetic low-end impact, original sound effect, no crowd recording, 0.8 seconds.",
+      "durationTargetSeconds": 0.8,
+      "model_id": "eleven_text_to_sound_v2",
+      "skipped": false
+    },
+    {
+      "filename": "nova_row_core_ro_01.mp3",
+      "path": "public/audio/sfx/nova-swarm/nova_row_core_ro_01.mp3",
+      "kind": "sound-generation",
+      "endpoint": "sound-generation",
+      "promptText": "A fictional arcade crowd chanting one short syllable 'RO!' in a sci-fi arena, layered original voices, punchy and clean, no real stadium recording, no song, 0.7 seconds.",
+      "durationTargetSeconds": 0.7,
+      "model_id": "eleven_text_to_sound_v2",
+      "skipped": false
+    },
+    {
+      "filename": "nova_row_core_ro_02.mp3",
+      "path": "public/audio/sfx/nova-swarm/nova_row_core_ro_02.mp3",
+      "kind": "sound-generation",
+      "endpoint": "sound-generation",
+      "promptText": "A synthetic space-crowd shout 'RO!' with heroic arcade energy, slightly different pitch and timing, original generated chant, no real crowd sample, 0.7 seconds.",
+      "durationTargetSeconds": 0.7,
+      "model_id": "eleven_text_to_sound_v2",
+      "skipped": false
+    },
+    {
+      "filename": "nova_row_core_ro_03.mp3",
+      "path": "public/audio/sfx/nova-swarm/nova_row_core_ro_03.mp3",
+      "kind": "sound-generation",
+      "endpoint": "sound-generation",
+      "promptText": "A tight group chant shouting 'RO!' like a futuristic arcade crew, compressed, rhythmic, original voices, no stadium sample, 0.7 seconds.",
+      "durationTargetSeconds": 0.7,
+      "model_id": "eleven_text_to_sound_v2",
+      "skipped": false
+    },
+    {
+      "filename": "nova_row_core_ro_big.mp3",
+      "path": "public/audio/sfx/nova-swarm/nova_row_core_ro_big.mp3",
+      "kind": "sound-generation",
+      "endpoint": "sound-generation",
+      "promptText": "A massive final sci-fi arena crowd shout 'ROOO!' with thunderous arcade impact and short tail, original generated voices, no real stadium audio, 1.2 seconds.",
+      "durationTargetSeconds": 1.2,
+      "model_id": "eleven_text_to_sound_v2",
+      "skipped": false
+    },
+    {
+      "filename": "nova_row_core_wave.mp3",
+      "path": "public/audio/sfx/nova-swarm/nova_row_core_wave.mp3",
+      "kind": "sound-generation",
+      "endpoint": "sound-generation",
+      "promptText": "Neon energy wave sweeping outward, arcade shield pulse, laser wind, rhythmic whoosh, original game sound effect, 0.6 seconds.",
+      "durationTargetSeconds": 0.6,
+      "model_id": "eleven_text_to_sound_v2",
+      "skipped": false
+    },
+    {
+      "filename": "nova_row_core_perfect.mp3",
+      "path": "public/audio/sfx/nova-swarm/nova_row_core_perfect.mp3",
+      "kind": "sound-generation",
+      "endpoint": "sound-generation",
+      "promptText": "Triumphant retro arcade fanfare sting for perfect timing, Nordic sci-fi flavor, bright synth brass, no recognizable melody, 1.5 seconds.",
+      "durationTargetSeconds": 1.5,
+      "model_id": "eleven_text_to_sound_v2",
+      "skipped": false
+    },
+    {
+      "filename": "mission_control_row_core_01.mp3",
+      "path": "public/audio/voice/mission-control/mission_control_row_core_01.mp3",
+      "kind": "tts",
+      "endpoint": "text-to-speech",
+      "promptText": "Longship protocol online.",
+      "durationTargetSeconds": null,
+      "model_id": "eleven_v3",
+      "skipped": false
+    },
+    {
+      "filename": "mission_control_row_core_02.mp3",
+      "path": "public/audio/voice/mission-control/mission_control_row_core_02.mp3",
+      "kind": "tts",
+      "endpoint": "text-to-speech",
+      "promptText": "Oars out. Lasers in.",
+      "durationTargetSeconds": null,
+      "model_id": "eleven_v3",
+      "skipped": false
+    },
+    {
+      "filename": "mission_control_row_core_03.mp3",
+      "path": "public/audio/voice/mission-control/mission_control_row_core_03.mp3",
+      "kind": "tts",
+      "endpoint": "text-to-speech",
+      "promptText": "The swarm rows with you.",
+      "durationTargetSeconds": null,
+      "model_id": "eleven_v3",
+      "skipped": false
+    },
+    {
+      "filename": "mission_control_row_core_04.mp3",
+      "path": "public/audio/voice/mission-control/mission_control_row_core_04.mp3",
+      "kind": "tts",
+      "endpoint": "text-to-speech",
+      "promptText": "Row the void.",
+      "durationTargetSeconds": null,
+      "model_id": "eleven_v3",
+      "skipped": false
+    },
+    {
+      "filename": "mission_control_row_core_05.mp3",
+      "path": "public/audio/voice/mission-control/mission_control_row_core_05.mp3",
+      "kind": "tts",
+      "endpoint": "text-to-speech",
+      "promptText": "Brace for the ro.",
+      "durationTargetSeconds": null,
+      "model_id": "eleven_v3",
+      "skipped": false
+    }
+  ]
+}

@@ -1,10 +1,11 @@
 export const SCORE_NORMALIZATION_FACTOR = 0.1;
+export const SCORE_REWARD_MULTIPLIER = 1.265;
 export const SCORE_NORMALIZATION_ROUNDING = 'Math.round';
 
 export function normalizeScoreDelta(points, multiplier = 1) {
   const base = Number(points) || 0;
   const mult = Number(multiplier) || 1;
-  return Math.max(0, Math.round(base * mult * SCORE_NORMALIZATION_FACTOR));
+  return Math.max(0, Math.round(base * mult * SCORE_NORMALIZATION_FACTOR * SCORE_REWARD_MULTIPLIER));
 }
 
 export function normalizeLegacyScoreForReset(score) {

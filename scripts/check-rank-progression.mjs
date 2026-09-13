@@ -1,4 +1,5 @@
 import { ACHIEVEMENTS, getRankAchievementId } from '../src/achievements/AchievementCatalog.js';
+import { RunPacingConfig } from '../src/config/RunPacingConfig.js';
 import {
   NUM_RANKS,
   getPilotRankProgress,
@@ -10,6 +11,8 @@ import {
   HANGAR_PROGRESS_KEY,
   LEGACY_UNLOCK_PROGRESS_KEY,
   applyRunProgression,
+  calculatePilotXpForRun,
+  previewRunProgression,
   readHangarProgressState
 } from '../src/progression/HangarProgressState.js';
 
@@ -36,9 +39,37 @@ for (let rank = 1; rank < NUM_RANKS; rank += 1) {
   if (!ACHIEVEMENTS.some((entry) => entry.id === id)) fail(`achievement catalog missing ${id}`);
   if (!getRankTitle(rank)) fail(`rank ${rank} missing readable title`);
 }
+const meteorNotaryRankIndex = 23;
+if (getRankTitle(meteorNotaryRankIndex) !== 'Meteor Notary') fail('Meteor Notary must remain internal rank index 23');
+if (getRankAchievementId(meteorNotaryRankIndex) !== 'ACH_RANK_23') fail('Meteor Notary Steam API id must remain ACH_RANK_23');
 if (ACHIEVEMENTS.length >= 100) fail(`achievement catalog must stay below Steam's 100 achievement limit, got ${ACHIEVEMENTS.length}`);
 
 const before = readHangarProgressState();
+const normalRunXp = calculatePilotXpForRun({ score: 8400000, startSector: 1, sectorReached: 50 });
+const enduranceRunXp = calculatePilotXpForRun({ score: 46140000, startSector: 1, sectorReached: 130 });
+const shiftedEnduranceXp = calculatePilotXpForRun({ score: 46140000, startSector: 51, sectorReached: 180 });
+if (normalRunXp !== Math.floor(8400000 / RunPacingConfig.pilotXp.scoreDivisor) + 49 * RunPacingConfig.pilotXp.sectorReachedBase) {
+  fail('endurance bonus must not alter runs before 50 sectors cleared');
+}
+if (enduranceRunXp < 160000) fail(`130-sector endurance run should clear the reported late-rank gap, got ${enduranceRunXp}`);
+if (shiftedEnduranceXp !== enduranceRunXp) fail('endurance bonus must use sectors actually cleared, not absolute starting sector');
+const previewBeforeRaw = fakeStorage.get(HANGAR_PROGRESS_KEY);
+const preview = previewRunProgression({
+  score: 250000,
+  sectorReached: 10,
+  levelReached: 10,
+  runElapsedSeconds: 1500,
+  bossesKilled: 10,
+  wavesCleared: 60,
+  codexDiscoveries: 12,
+  totalCodexDiscoveries: 12,
+  runCleared: true,
+  livesRemaining: 2
+}, before);
+if (fakeStorage.get(HANGAR_PROGRESS_KEY) !== previewBeforeRaw) fail('live rank preview must not write saved pilot progress');
+if (preview.next.pilotRank <= before.pilotRank) fail('live rank preview should expose in-run rank gains');
+if (!Array.isArray(preview.newRanksThisRun) || preview.newRanksThisRun.length === 0) fail('live rank preview should list new ranks');
+
 const result = applyRunProgression({
   score: 250000,
   sectorReached: 10,

@@ -1,9 +1,13 @@
-import { getRankFromLevel } from '../shared/RankPolicy.js';
+import { MAX_RANK_INDEX, getRankFromLevel, normalizePilotXpExact } from '../shared/RankPolicy.js';
+import {
+  estimateLeaderboardLevelFromScore,
+  readLeaderboardLevel,
+  sanitizePilotName
+} from '../leaderboard/LeaderboardTypes.js';
 
 export const LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
-export const LOCAL_LEADERBOARD_LIMIT = 20;
+export const LOCAL_LEADERBOARD_LIMIT = 40;
 const LOCAL_LEADERBOARD_STORAGE_LIMIT = 100;
-const LOCAL_PILOT_NAME_MAX_LENGTH = 14;
 
 export const PRE_RELEASE_SEED_SCORES = [
   { name: 'NOVAROOK', score: 500, level: 2 },
@@ -27,11 +31,7 @@ function storageAvailable() {
 }
 
 export function sanitizeLocalPilotName(rawName, fallbackSeed = 0) {
-  const cleaned = String(rawName || '')
-    .toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, '')
-    .trim()
-    .slice(0, LOCAL_PILOT_NAME_MAX_LENGTH);
+  const cleaned = sanitizePilotName(rawName);
   if (cleaned) return cleaned;
   const seed = Math.abs(Number(fallbackSeed) || 0).toString().slice(-2).padStart(2, '0');
   return `PILOT${seed}`;
@@ -40,9 +40,9 @@ export function sanitizeLocalPilotName(rawName, fallbackSeed = 0) {
 function normalizeEntry(raw, fallbackIndex = 0) {
   if (!raw || typeof raw !== 'object') return null;
   const score = Math.max(0, Math.floor(Number(raw.score) || 0));
-  const level = Math.max(1, Math.floor(Number(raw.level) || 1));
+  const level = readLeaderboardLevel(raw, estimateLeaderboardLevelFromScore(score));
   const rawRankIndex = Number(raw.rankIndex ?? raw.rank_index);
-  const rankIndex = Math.max(0, Math.min(19, Number.isFinite(rawRankIndex)
+  const rankIndex = Math.max(0, Math.min(MAX_RANK_INDEX, Number.isFinite(rawRankIndex)
     ? Math.floor(rawRankIndex)
     : getRankFromLevel(level)));
   const timestamp = String(raw.timestamp || raw.created_at || new Date(0).toISOString());
@@ -50,8 +50,12 @@ function normalizeEntry(raw, fallbackIndex = 0) {
     name: sanitizeLocalPilotName(raw.name, fallbackIndex),
     score,
     level,
+    levelReached: level,
     rankIndex,
     rank_index: rankIndex,
+    careerRankExact: raw.careerRankExact == null
+      ? null
+      : normalizePilotXpExact(raw.careerRankExact, String(rankIndex + 1)),
     shipId: raw.shipId ?? raw.ship_id ?? null,
     shipName: raw.shipName ?? raw.ship_name ?? null,
     runTimeSeconds: raw.runTimeSeconds ?? raw.runtimeSeconds ?? null,
@@ -129,8 +133,9 @@ export const LocalLeaderboard = {
     const savedEntry = normalizeEntry({
       name: entry.name,
       score,
-      level: entry.level,
-      rankIndex: entry.rankIndex ?? entry.rank_index ?? getRankFromLevel(entry.level),
+      level: readLeaderboardLevel(entry, estimateLeaderboardLevelFromScore(score)),
+      rankIndex: entry.rankIndex ?? entry.rank_index ?? getRankFromLevel(readLeaderboardLevel(entry, estimateLeaderboardLevelFromScore(score))),
+      careerRankExact: entry.careerRankExact,
       shipId: entry.shipId,
       shipName: entry.shipName,
       runTimeSeconds: entry.runTimeSeconds,

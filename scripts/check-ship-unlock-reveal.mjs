@@ -14,6 +14,24 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function contains(outer, inner, pad = 0) {
+  if (!outer || !inner) return false;
+  return inner.x >= outer.x - pad
+    && inner.y >= outer.y - pad
+    && inner.x + inner.width <= outer.x + outer.width + pad
+    && inner.y + inner.height <= outer.y + outer.height + pad;
+}
+
+function overlaps(a, b, pad = 0) {
+  if (!a || !b) return false;
+  return !(
+    a.x + a.width + pad <= b.x
+    || b.x + b.width + pad <= a.x
+    || a.y + a.height + pad <= b.y
+    || b.y + b.height + pad <= a.y
+  );
+}
+
 async function isPortAvailable(candidatePort) {
   return new Promise((resolve) => {
     const server = createServer();
@@ -73,8 +91,27 @@ function findChrome() {
   return candidates.find((candidate) => fs.existsSync(candidate));
 }
 
-async function preparePage(browser, bestLevel) {
-  const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+function baseHangarProgress(overrides = {}) {
+  return {
+    version: 1,
+    unlockTuningVersion: 3,
+    pilotXp: 0,
+    pilotRank: 0,
+    totalRuns: 0,
+    bestScore: 0,
+    bestSector: 1,
+    bestLevel: 1,
+    totalBossesDefeated: 0,
+    totalWavesCleared: 0,
+    totalCodexDiscoveries: 0,
+    noHitWaves: 0,
+    unlockedShipIds: ['nova_ship_01'],
+    ...overrides
+  };
+}
+
+async function preparePage(browser, scenario) {
+  const page = await browser.newPage({ viewport: scenario.viewport || { width: 1366, height: 768 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.route('**/api/highscores', async (route) => {
@@ -84,50 +121,213 @@ async function preparePage(browser, bestLevel) {
     }
     await route.fulfill({ status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([]) });
   });
-  await page.addInitScript((level) => {
-    localStorage.removeItem('nova.hangarProgress.v1');
-    localStorage.removeItem('nova.threatDiscovery.v1');
-    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 0, bestRank: 0, bestLevel: level }));
-  }, bestLevel);
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
+  await page.evaluate((progress) => {
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(progress));
+    localStorage.removeItem('burt.shipUnlockProgress.v1');
+    localStorage.removeItem('nova.threatDiscovery.v1');
+    if (window.__game) {
+      window.__game.hangarProgressAtRunStart = progress;
+      window.__game.liveRankBaseProgress = progress;
+    }
+  }, scenario.previousProgress);
   return { page, pageErrors };
 }
 
-async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000) {
-  await page.evaluate(({ level, score }) => {
+async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000, runStats = {}) {
+  await page.evaluate(({ level, score, runStats }) => {
     const game = window.__game;
+    const play = game.scenes?.play;
+    if (play) {
+      if (runStats.bossKills !== undefined) play.bossKills = runStats.bossKills;
+      if (runStats.wavesCleared !== undefined) play.wavesCleared = runStats.wavesCleared;
+    }
     game.score = score;
     game.level = level;
-    game.rankIndex = Math.max(0, level - 1);
+    game.rankIndex = runStats.rankIndex !== undefined
+      ? Math.max(0, Number(runStats.rankIndex) || 0)
+      : Math.max(0, level - 1);
     game.gameOver();
-  }, { level: finalLevel, score: finalScore });
+  }, { level: finalLevel, score: finalScore, runStats });
+  try {
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'gameOver' && state.gameOver?.shipUnlocks?.visible === true;
+    }, null, { timeout: 20000 });
+  } catch (error) {
+    const state = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+    const diagnostic = await page.evaluate(() => ({
+      localHangarProgress: JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || 'null'),
+      runProgressionResult: window.__game?.runProgressionResult || null,
+      sceneUnlocks: window.__game?.scenes?.gameOver?.newlyUnlockedShips?.map?.(ship => ({
+        id: ship.id,
+        baseId: ship.baseId,
+        spriteKey: ship.spriteKey,
+        name: ship.name
+      })) || null
+    }));
+    throw new Error(`unlock reveal did not become visible: ${error.message}\n${JSON.stringify({
+      scene: state.scene,
+      shipUnlocks: state.gameOver?.shipUnlocks || null,
+      unlockSummary: state.gameOver?.unlockSummary || null,
+      diagnostic
+    }, null, 2)}`);
+  }
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'gameOver' && state.gameOver?.shipUnlocks?.visible === true;
-  }, null, { timeout: 20000 });
-  await page.waitForTimeout(1000);
+    return state.scene === 'gameOver' && state.gameOver?.shipUnlocks?.voicePlayed === true;
+  }, null, { timeout: 7000 });
   return page.evaluate(() => JSON.parse(window.render_game_to_text()));
 }
 
+async function applyLiveProgress(page, progress = null) {
+  if (!progress) return;
+  await page.evaluate(({ level, scoreAward }) => {
+    const game = window.__game;
+    if (!game) return;
+    game.level = Math.max(1, Number(level) || Number(game.level) || 1);
+    if ((Number(scoreAward) || 0) > 0) game.addScore(Number(scoreAward) || 0, 'baseScore');
+  }, progress);
+}
+
+async function enterRunbackStage(page) {
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    scene?.enterRunbackStage?.('ship_unlock_reveal_check');
+    scene?.layoutScreen?.();
+  });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'gameOver'
+      && state.gameOver?.shipUnlocks?.state === 'runback'
+      && state.gameOver?.shipUnlocks?.visible === true;
+  }, null, { timeout: 10000 });
+  await page.waitForTimeout(750);
+  return page.evaluate(() => JSON.parse(window.render_game_to_text()));
+}
+
+async function openHangarAndAssertPresentation(page, scenario) {
+  await page.evaluate(async () => {
+    await window.__game?.showShipSelect?.();
+  });
+  try {
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'shipSelect' && state.shipSelect?.unlockPresentation?.visible === true;
+    }, null, { timeout: 15000 });
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      localHangarProgress: JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || 'null'),
+      runProgressionResult: window.__game?.runProgressionResult || null,
+      pending: window.__game?.currentScene?.pendingHangarUnlockShips?.map?.(ship => ({
+        id: ship.id,
+        baseId: ship.baseId,
+        spriteKey: ship.spriteKey,
+        name: ship.name
+      })) || null
+    }));
+    throw new Error(`${scenario.name}: hangar unlock presentation did not appear: ${error.message}\n${JSON.stringify(diagnostic, null, 2)}`);
+  }
+  await page.waitForTimeout(750);
+  const state = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const reveal = state.shipSelect?.unlockPresentation || {};
+  assert(reveal.visible === true, `${scenario.name}: hangar presentation was not visible`);
+  assert(reveal.animated === true, `${scenario.name}: hangar presentation did not animate`);
+  assert(reveal.count === scenario.expectedCount, `${scenario.name}: hangar expected ${scenario.expectedCount} unlock(s), got ${reveal.count}`);
+  assert(reveal.selectedUnlockFocused === true, `${scenario.name}: hangar did not focus the newly unlocked ship`);
+  assert(reveal.displayedNames?.length === Math.min(scenario.expectedCount, 5), `${scenario.name}: hangar displayed an unexpected name count`);
+  assert(reveal.hiddenNameCount === Math.max(0, scenario.expectedCount - 5), `${scenario.name}: hangar hidden name count was incorrect`);
+  for (const [key, bounds] of Object.entries(reveal.textBounds || {})) {
+    assert(contains(reveal.panelBounds, bounds, 6), `${scenario.name}: hangar ${key} text escaped the panel`);
+  }
+  assert(!overlaps(reveal.textBounds?.names, reveal.textBounds?.role, 2), `${scenario.name}: hangar names overlap the role line`);
+  assert(!overlaps(reveal.textBounds?.role, reveal.textBounds?.hint, 2), `${scenario.name}: hangar role overlaps the continue hint`);
+  await page.screenshot({ path: path.join(outputDir, `${scenario.name}-hangar-presentation.png`), fullPage: true });
+  return reveal;
+}
+
+async function runObservedTenUnlockHangarScenario(browser) {
+  const scenario = {
+    name: 'sector-12-observed-10-unlock-layout',
+    expectedCount: 10
+  };
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  const unlockedShipIds = Array.from({ length: 10 }, (_, index) => `nova_ship_${String(index + 1).padStart(2, '0')}`);
+  await page.addInitScript((progress) => {
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(progress));
+    localStorage.removeItem('burt.shipUnlockProgress.v1');
+  }, baseHangarProgress({
+    pilotXp: 8829,
+    pilotRank: 5,
+    totalRuns: 1,
+    bestScore: 146599,
+    bestSector: 12,
+    bestLevel: 12,
+    totalBossesDefeated: 11,
+    totalWavesCleared: 63,
+    totalCodexDiscoveries: 80,
+    unlockedShipIds,
+    lastNewlyUnlockedShipIds: unlockedShipIds
+  }));
+  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
+  const reveal = await openHangarAndAssertPresentation(page, scenario);
+  assert(pageErrors.length === 0, `${scenario.name}: page errors: ${pageErrors.join('; ')}`);
+  await page.close();
+  return {
+    scenario: scenario.name,
+    count: reveal.count,
+    displayedNames: reveal.displayedNames,
+    hiddenNameCount: reveal.hiddenNameCount
+  };
+}
+
 async function runScenario(browser, scenario) {
-  const { page, pageErrors } = await preparePage(browser, scenario.bestLevel);
-  const state = await forceGameOver(page, scenario.finalLevel, scenario.finalScore);
+  const { page, pageErrors } = await preparePage(browser, scenario);
+  await applyLiveProgress(page, scenario.liveProgress);
+  const state = await forceGameOver(page, scenario.finalLevel, scenario.finalScore, scenario.runStats);
   const unlocks = state.gameOver?.shipUnlocks || {};
+  const expectedSpriteCount = Math.min(scenario.expectedCount, 4);
   assert(unlocks.count === scenario.expectedCount, `${scenario.name}: expected ${scenario.expectedCount} unlock(s), got ${unlocks.count}`);
   assert(unlocks.visible === true, `${scenario.name}: unlock reveal was not visible`);
+  assert(unlocks.animated === true, `${scenario.name}: unlock reveal did not report animation`);
+  assert(unlocks.spriteCount === expectedSpriteCount, `${scenario.name}: expected ${expectedSpriteCount} ship sprite(s), got ${unlocks.spriteCount}`);
+  assert(unlocks.layout?.spriteSize >= 60, `${scenario.name}: ship sprites are too small: ${JSON.stringify(unlocks.layout)}`);
+  assert(unlocks.layout?.height >= 88, `${scenario.name}: reveal frame is too short: ${JSON.stringify(unlocks.layout)}`);
+  assert(unlocks.bounds?.height >= 88, `${scenario.name}: reveal bounds are too small: ${JSON.stringify(unlocks.bounds)}`);
   assert(unlocks.voiceKey === scenario.expectedVoiceKey, `${scenario.name}: expected voice ${scenario.expectedVoiceKey}, got ${unlocks.voiceKey}`);
   assert(unlocks.voicePlayed === true, `${scenario.name}: unlock voice did not trigger`);
-  assert(String(state.gameOver?.unlockSummary || '').includes(scenario.expectedSummary), `${scenario.name}: unexpected summary ${state.gameOver?.unlockSummary}`);
-  assert(String(state.gameOver?.unlockSummary || '').includes('VISIT THE HANGAR'), `${scenario.name}: hangar CTA missing`);
+  const unlockSummary = String(state.gameOver?.unlockSummary || '');
+  assert(unlockSummary.includes(scenario.expectedSummary), `${scenario.name}: unexpected summary ${state.gameOver?.unlockSummary}`);
+  assert(
+    unlockSummary.includes('VISIT THE HANGAR') || unlockSummary.includes('Reason:'),
+    `${scenario.name}: unlock follow-up missing`
+  );
   assert(pageErrors.length === 0, `${scenario.name}: page errors: ${pageErrors.join('; ')}`);
   await page.screenshot({ path: path.join(outputDir, `${scenario.name}.png`), fullPage: true });
+  const runbackState = await enterRunbackStage(page);
+  const runbackUnlocks = runbackState.gameOver?.shipUnlocks || {};
+  assert(runbackUnlocks.state === 'runback', `${scenario.name}: expected runback state, got ${runbackUnlocks.state}`);
+  assert(runbackUnlocks.visible === true, `${scenario.name}: unlock reveal was hidden on runback screen`);
+  assert(runbackUnlocks.count === scenario.expectedCount, `${scenario.name}: runback unlock count changed to ${runbackUnlocks.count}`);
+  assert(runbackUnlocks.spriteCount === expectedSpriteCount, `${scenario.name}: runback expected ${expectedSpriteCount} sprite(s), got ${runbackUnlocks.spriteCount}`);
+  assert(runbackUnlocks.layout?.spriteSize >= 60, `${scenario.name}: runback ship sprites are too small: ${JSON.stringify(runbackUnlocks.layout)}`);
+  assert(runbackUnlocks.bounds?.height >= 88, `${scenario.name}: runback reveal bounds are too small: ${JSON.stringify(runbackUnlocks.bounds)}`);
+  await page.screenshot({ path: path.join(outputDir, `${scenario.name}-runback.png`), fullPage: true });
+  if (scenario.expectHangarPresentation) {
+    await openHangarAndAssertPresentation(page, scenario);
+  }
   await page.close();
   return {
     scenario: scenario.name,
     count: unlocks.count,
     names: unlocks.names,
-    voiceKey: unlocks.voiceKey
+    voiceKey: unlocks.voiceKey,
+    spriteCount: unlocks.spriteCount,
+    runbackVisible: runbackUnlocks.visible
   };
 }
 
@@ -142,21 +342,61 @@ const browser = await chromium.launch({
 try {
   const results = [];
   results.push(await runScenario(browser, {
-    name: 'single',
-    bestLevel: 4,
-    finalLevel: 4,
-    finalScore: 25000,
+    name: 'live-progress-preserved',
+    previousProgress: baseHangarProgress(),
+    liveProgress: {
+      level: 2,
+      scoreAward: 10000
+    },
+    finalLevel: 2,
+    finalScore: 10000,
     expectedCount: 1,
     expectedVoiceKey: 'mission_control_ship_unlocked',
-    expectedSummary: 'NEW SHIP UNLOCKED'
+    expectedSummary: 'SHIP UNLOCKED',
+    expectHangarPresentation: true
+  }));
+  results.push(await runScenario(browser, {
+    name: 'single',
+    previousProgress: baseHangarProgress({
+      totalRuns: 1,
+      bestSector: 3,
+      bestLevel: 3,
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_02']
+    }),
+    finalLevel: 4,
+    finalScore: 25000,
+    runStats: {
+      bossKills: 1
+    },
+    expectedCount: 1,
+    expectedVoiceKey: 'mission_control_ship_unlocked',
+    expectedSummary: 'SHIP UNLOCKED'
   }));
   results.push(await runScenario(browser, {
     name: 'several',
-    bestLevel: 1,
+    previousProgress: baseHangarProgress(),
     finalLevel: 5,
-    expectedCount: 4,
+    runStats: {
+      bossKills: 1,
+      wavesCleared: 24
+    },
+    expectedCount: 2,
     expectedVoiceKey: 'mission_control_ships_unlocked',
-    expectedSummary: 'NEW SHIPS UNLOCKED'
+    expectedSummary: 'SHIPS UNLOCKED'
+  }));
+  results.push(await runObservedTenUnlockHangarScenario(browser));
+  results.push(await runScenario(browser, {
+    name: 'eirik',
+    previousProgress: baseHangarProgress({
+      bestSector: 49,
+      bestLevel: 49,
+      unlockedShipIds: Array.from({ length: 29 }, (_, index) => `nova_ship_${String(index + 1).padStart(2, '0')}`)
+    }),
+    finalLevel: 50,
+    finalScore: 250000,
+    expectedCount: 1,
+    expectedVoiceKey: 'mission_control_viking_legend_unlocked',
+    expectedSummary: 'EIRIK THE VIKING'
   }));
   console.log(`[ship-unlock-reveal] PASS ${JSON.stringify(results)}`);
 } finally {

@@ -22,7 +22,12 @@ const SHIP_VARIANT_SETS = [
   ['Signal', 0xfff7a8, 0x2affea, 'SIG'],
   ['Nova', 0xff8cff, 0x6cf6ff, 'NVA'],
   ['Chrome', 0xdce7ff, 0xff5efc, 'CHR'],
-  ['Hazard', 0xffcc00, 0x111111, 'HZD']
+  ['Hazard', 0xffcc00, 0x111111, 'HZD'],
+  ['Aegis', 0x7fffd8, 0x2deeff, 'AGS'],
+  ['Railbreaker', 0xfff0a6, 0xff3355, 'RLB'],
+  ['Sovereign', 0xa8ff60, 0x37f5ff, 'DRN'],
+  ['Seraph', 0xf4d7ff, 0x8b5cff, 'SRP'],
+  ['Singularity', 0xffef7e, 0xff55d9, 'EIR']
 ];
 
 export const SHIP_VISUAL_VARIANTS = SHIP_VARIANT_SETS.map(([name, tint, accent, code], index) => ({
@@ -39,10 +44,14 @@ export const SHIP_VISUAL_VARIANTS = SHIP_VARIANT_SETS.map(([name, tint, accent, 
 const SHIP_TRAIT_PROFILES = {
   ion: {
     label: 'ION DASH',
-    description: 'Quicker bolts and crisp handling.',
-    speedMult: 1.04,
+    description: 'Quicker bolts, crisp handling, and a forgiving dodge pulse.',
+    speedMult: 1.05,
     bulletSpeedMult: 1.12,
-    fireRateMult: 0.98
+    fireRateMult: 0.96,
+    combatOverrides: {
+      dodgePulseRadius: 54,
+      nearMissScoreMult: 1.16
+    }
   },
   solar: {
     label: 'SOLAR HAMMER',
@@ -60,17 +69,31 @@ const SHIP_TRAIT_PROFILES = {
   },
   mint: {
     label: 'MINT BOOST',
-    description: 'High-speed dodging with lighter damage.',
+    description: 'High-speed near-miss skating with a larger dodge pulse and lighter damage.',
     speedMult: 1.14,
     damageMult: 0.9,
-    bulletSpeedMult: 1.05
+    bulletSpeedMult: 1.05,
+    combatOverrides: {
+      bonusShotEvery: 0,
+      bonusShotDamageMult: 0,
+      wingShotEvery: 0,
+      wingShotDamageMult: 0,
+      wingShotAngle: 0,
+      dodgePulseRadius: 84,
+      nearMissScoreMult: 1.38
+    }
   },
   crimson: {
     label: 'CRIMSON BITE',
-    description: 'Close-range punch, wider hull.',
+    description: 'Close-range punch, wider hull, and heavier critical bites.',
     damageMult: 1.12,
     fireRateMult: 1.04,
-    hitboxMult: 1.06
+    hitboxMult: 1.06,
+    combatOverrides: {
+      projectileRadiusMult: 1.14,
+      critEvery: 4,
+      critDamageMult: 1.5
+    }
   },
   quartz: {
     label: 'QUARTZ NEEDLE',
@@ -175,17 +198,29 @@ const SHIP_TRAIT_PROFILES = {
   },
   vector: {
     label: 'VECTOR LINE',
-    description: 'Straight precision and fast projectiles.',
+    description: 'Straight precision, smaller projectiles, and piercing rail lines.',
     bulletSpeedMult: 1.18,
     spreadDelta: -0.045,
-    damageMult: 1.02
+    damageMult: 1.02,
+    combatOverrides: {
+      projectileRadiusMult: 0.9,
+      pierceEvery: 4,
+      pierceDamageMult: 0.76
+    }
   },
   signal: {
     label: 'SIGNAL PING',
-    description: 'Quick reload and nimble drift.',
+    description: 'Quick reload, nimble drift, and an extra ping shot every fifth shot.',
     fireRateMult: 0.9,
     speedMult: 1.06,
-    damageMult: 0.92
+    damageMult: 0.92,
+    combatOverrides: {
+      bonusShotEvery: 5,
+      bonusShotDamageMult: 0.46,
+      wingShotEvery: 0,
+      wingShotDamageMult: 0,
+      wingShotAngle: 0
+    }
   },
   nova: {
     label: 'NOVA OVERDRIVE',
@@ -209,6 +244,81 @@ const SHIP_TRAIT_PROFILES = {
     speedMult: 0.94,
     hitboxMult: 1.1,
     spreadDelta: 0.02
+  },
+  aegis: {
+    label: 'AEGIS COMET',
+    description: 'Recovery-tuned dodge pulse with stronger main shots and slower movement.',
+    speedMult: 0.94,
+    fireRateMult: 0.94,
+    damageMult: 1,
+    bulletSpeedMult: 1.05,
+    hitboxMult: 0.88,
+    spreadDelta: 0.02
+  },
+  railbreaker: {
+    label: 'RAILBREAKER',
+    description: 'Heavy rail damage and piercing lines with slower movement.',
+    speedMult: 0.92,
+    fireRateMult: 1.13,
+    damageMult: 1,
+    bulletSpeedMult: 1.2,
+    spreadDelta: -0.04,
+    hitboxMult: 1.04,
+    combatOverrides: {
+      pierceEvery: 8,
+      critEvery: 0,
+      critDamageMult: 0
+    }
+  },
+  sovereign: {
+    label: 'DRONE SOVEREIGN',
+    description: 'Fast wing volleys and bonus shots for high-density swarm clear.',
+    speedMult: 1.02,
+    fireRateMult: 0.88,
+    damageMult: 1,
+    bulletSpeedMult: 1.04,
+    spreadDelta: 0.055,
+    combatOverrides: {
+      bonusShotEvery: 8,
+      bonusShotDamageMult: 0.35,
+      wingShotEvery: 8,
+      wingShotDamageMult: 0.36
+    }
+  },
+  seraph: {
+    label: 'PHASE SERAPH',
+    description: 'Fast phase movement, smaller hitbox, dodge pulse, and near-miss rewards.',
+    speedMult: 1.12,
+    fireRateMult: 0.88,
+    damageMult: 1,
+    bulletSpeedMult: 1.1,
+    hitboxMult: 0.82,
+    spreadDelta: 0.025,
+    combatOverrides: {
+      bonusShotEvery: 0,
+      bonusShotDamageMult: 0,
+      wingShotEvery: 0,
+      wingShotDamageMult: 0,
+      wingShotAngle: 0
+    }
+  },
+  singularity: {
+    label: 'EIRIK THE VIKING',
+    description: 'Endgame Viking overdrive pressure with stronger main shots, wider control, and a larger hitbox.',
+    speedMult: 1.03,
+    fireRateMult: 0.86,
+    damageMult: 1,
+    bulletSpeedMult: 1.12,
+    hitboxMult: 1.04,
+    spreadDelta: 0.055,
+    combatOverrides: {
+      bonusShotEvery: 8,
+      bonusShotDamageMult: 0.35,
+      wingShotEvery: 8,
+      wingShotDamageMult: 0.36,
+      critEvery: 0,
+      critDamageMult: 0
+    }
   }
 };
 
@@ -326,7 +436,7 @@ function buildTraitCombatEffects(traitProfile) {
     ? Math.round(clampNumber(44 + agileScore * 280, 48, 96))
     : 0;
 
-  return {
+  const combat = {
     projectileRadiusMult,
     dodgeCooldownMult,
     dodgeDurationMult: roundStat(clampNumber(1 + Math.max(0, speedMult - 1) * 0.55 + Math.max(0, 1 - hitboxMult) * 0.45, 1, 1.18), 2),
@@ -342,6 +452,10 @@ function buildTraitCombatEffects(traitProfile) {
     dodgePulseRadius,
     nearMissScoreMult: roundStat(clampNumber(1 + agileScore * 2.4 - Math.max(0, hitboxMult - 1) * 1.2, 0.85, 1.75), 2)
   };
+
+  return traitProfile.combatOverrides
+    ? { ...combat, ...traitProfile.combatOverrides }
+    : combat;
 }
 
 function applyShipTrait(base, variant) {
@@ -432,6 +546,17 @@ export function buildSelectableShipVariants(baseShips) {
         description: `${tuned.trait.label}: ${tuned.trait.description} ${base.description}`,
         loreShort: `${base.loreShort}-${variant.slug}`,
         loreLong: `${base.loreLong} This hull ships with the ${variant.name.toLowerCase()} combat profile: ${tuned.trait.description.toLowerCase()}`,
+        tier: base.tier,
+        powerClass: base.powerClass,
+        unlockLevel: base.unlockLevel,
+        powerRating: base.powerRating,
+        intendedSectorBand: base.intendedSectorBand,
+        difficulty: base.difficulty,
+        role: base.role,
+        fantasy: base.fantasy,
+        weakness: base.weakness,
+        recommendedBuildTags: Array.isArray(base.recommendedBuildTags) ? [...base.recommendedBuildTags] : [],
+        art: base.art ? { ...base.art } : null,
         stats: tuned.stats,
         weapon: tuned.weapon,
         visuals: {
@@ -461,6 +586,17 @@ export function buildSelectableShipVariants(baseShips) {
       description: `${tuned.trait.label}: ${tuned.trait.description} ${base.description}`,
       loreShort: `${base.loreShort}-${variant.slug}`,
       loreLong: `${base.loreLong} The ${variant.name.toLowerCase()} cabinet trim changes the actual flight profile: ${tuned.trait.description.toLowerCase()}`,
+      tier: base.tier,
+      powerClass: base.powerClass,
+      unlockLevel: base.unlockLevel,
+      powerRating: base.powerRating,
+      intendedSectorBand: base.intendedSectorBand,
+      difficulty: base.difficulty,
+      role: base.role,
+      fantasy: base.fantasy,
+      weakness: base.weakness,
+      recommendedBuildTags: Array.isArray(base.recommendedBuildTags) ? [...base.recommendedBuildTags] : [],
+      art: base.art ? { ...base.art } : null,
       stats: tuned.stats,
       weapon: tuned.weapon,
       visuals: {

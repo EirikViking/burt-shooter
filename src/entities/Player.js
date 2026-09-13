@@ -1,47 +1,78 @@
+import {drawEnergySurface,drawEnergyArc,drawEnergyLink,energyClock} from '../effects/AstraEnergyMaterial.js';
+import {drawEnergyShell} from '../effects/AstraEnergyMaterial.js';
 import * as PIXI from 'pixi.js';
+import { updateRelicHullDetail } from '../effects/RelicHullDetail.js';
+import { createAstraEnginePlume } from '../effects/AstraEnginePlume.js';
 import { Bullet } from './Bullet.js';
+import { computeSupportDroneTextureScale } from './SupportDroneVisual.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { ShipRegistry } from '../utils/ShipRegistry.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { enhanceShipVisuals } from '../utils/ShipVisualEnhancer.js';
 import { createText } from '../utils/pixiText.js';
-import { getPlayerFocusScale } from '../config/AccessibilitySettings.js';
+import { translateText } from '../i18n/index.js';
+import { getAccessibilitySettings, getPlayerFocusScale, getPlayerHitboxVisible } from '../config/AccessibilitySettings.js';
 import { getDefaultShipKey, getShipMetadata } from '../config/ShipMetadata.js';
 import { ShipData } from '../config/ShipData.js';
+import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import {
   TRACTOR_DEBUFF_IMMUNITY_MS,
   pickTractorDebuff
 } from '../config/TractorDebuffs.js';
+import {
+  BASE_POWERUP_TYPES,
+  arePowerupsCompatible,
+  getPowerupDurationMode,
+  getPowerupMeta
+} from '../config/PowerupCatalog.js';
+import {
+  buildTacticalDraftModifiers,
+  getActiveTacticalAugmentIds,
+  getActiveTacticalFusionProtocols,
+  getTacticalDraftAugment,
+  summarizeTacticalDraftPicks
+} from '../config/TacticalDraft.js';
+import {
+  SHIP_THREAT_RESPONSE_TARGETS,
+  getHybridDraftMovementMultiplier
+} from '../config/ShipThreatResponse.js';
+import { POINT_DEFENSE_RADIUS } from '../game/ProjectileDefenseRules.js';
+import { BOMB_ARMING_MS, findBombCommitTarget } from '../game/BombTargetingRules.js';
+import {
+  stampProjectilePierceProvenance
+} from '../game/ExperimentalProjectileContracts.js';
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
-const GENERATED_SHIP_VISUAL_CENTER_OFFSETS = [
-  { x: 24.5, y: 40.9 },
-  { x: -0.4, y: 18.6 },
-  { x: -0.7, y: 16.9 },
-  { x: -0.6, y: 14.9 },
-  { x: -0.4, y: 16.6 },
-  { x: -0.5, y: 29.4 },
-  { x: -0.8, y: 26.8 },
-  { x: -1.2, y: 24.0 },
-  { x: -0.7, y: 24.4 },
-  { x: -0.6, y: 29.4 },
-  { x: 0.0, y: -15.5 },
-  { x: -1.0, y: -13.9 },
-  { x: -0.3, y: -16.8 },
-  { x: -0.4, y: -10.7 },
-  { x: -0.2, y: -11.3 },
-  { x: -0.5, y: -16.7 },
-  { x: -0.7, y: -16.4 },
-  { x: -1.5, y: -7.8 },
-  { x: -0.3, y: -14.1 },
-  { x: -0.8, y: -5.3 },
-  { x: 7.8, y: -34.6 },
-  { x: -0.6, y: 0.3 },
-  { x: -0.9, y: -0.4 },
-  { x: -1.6, y: -9.8 },
-  { x: -0.5, y: 0.9 }
-];
+// The current generated ship PNG exports are already centered in their 256px
+// transparent frames. Keep runtime centering neutral so the focus ring,
+// hitbox, bullet origin, and ship art all share the same logical center.
+const GENERATED_SHIP_VISUAL_CENTER_OFFSETS = Array.from(
+  { length: ShipData.length },
+  () => Object.freeze({ x: 0, y: 0 })
+);
+const BASE_POWERUP_TYPE_SET = new Set(BASE_POWERUP_TYPES);
+const FOCUS_DRIFT_SPEED_MULTIPLIER = 0.48;
+const SHIELD_SPENT_FEEDBACK_MS = 2400;
+const BOMB_SPENT_FEEDBACK_MS = 2400;
+export const MAX_BANKED_BOMB_SHOTS = 9;
+export const MAX_BANKED_ORBITAL_CHARGES = 10;
+const SHIP_CONTAINER_BASE_SCALE = 1;
+const SHIP_CONTAINER_MIN_SAFE_SCALE = 0.58;
+const SHIP_CONTAINER_MAX_SAFE_SCALE = 1.4;
+const RANK_UP_SHIP_PULSE_SCALE = 1.18;
+// Keep the combat hull readable without allowing a presentation pulse or a
+// stale runtime scale to turn a playable ship into a screen-filling prop.
+const SHIP_RENDER_MAX_WIDTH_MULTIPLIER = 1.32;
+const SHIP_RENDER_MIN_CAP_WIDTH = 74;
+const SHIP_RENDER_MAX_CAP_WIDTH = 108;
+const SHIP_RENDER_MAX_HEIGHT_MULTIPLIER = 1.82;
+const SHIP_RENDER_MAX_CAP_HEIGHT = 156;
+const MAX_DUPLICATE_DURATION_STACKS = 2;
+
+function createEmptyPowerupSlot() {
+  return { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock', effect: null };
+}
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
@@ -62,6 +93,7 @@ export class Player {
       stats: { ...(selectedMetadata.stats || {}) },
       weapon: { ...(selectedMetadata.weapon || {}) },
       visuals: { ...(selectedMetadata.visuals || {}) },
+      art: selectedMetadata.art ? { ...selectedMetadata.art } : null,
       hitbox: { ...(selectedMetadata.hitbox || { radius: 12 }) },
       trait: selectedMetadata.trait ? { ...selectedMetadata.trait } : null
     } : (ShipRegistry[shipId] || ShipRegistry.rank_ship_0);
@@ -82,6 +114,7 @@ export class Player {
     this.active = true;
     this.invulnerable = true; // Invulnerable on spawn
     this.invulnerableTime = 2000; // 2s spawn protection
+    this.invulnerabilityVisualDurationMs = 2000;
     this.rankIndex = null;
 
     // Shooting
@@ -105,6 +138,12 @@ export class Player {
     this.isDodging = false;
     this.dodgeDuration = 0;
     this.dodgeDurationMax = Math.round(333 * (this.traitCombat.dodgeDurationMult || 1));
+    this.dodgeSequence = 0;
+    this.dodgeInputWasPressed = false;
+    this.pendingDodgeExitPulseToken = 0;
+    this.resolvedDodgeExitPulseToken = 0;
+    this.lastDodgeExitPulse = null;
+    this.experimentalPulseReadyAt = 0;
 
     // Tractor Beam Removed
 
@@ -119,16 +158,65 @@ export class Player {
     this.flashDuration = 0;
 
     // Powerups
-    this.activePowerup = { type: null, expiresAt: 0 };
+    this.activePowerup = createEmptyPowerupSlot();
+    this.secondaryPowerup = createEmptyPowerupSlot();
+    this.doubleShotShotFloor = 0;
+    this.powerupEffect = null;
+    this.powerupMovementBoostMult = 1;
+    this.powerupDodgeDelayMult = 1;
+    this.runAugmentIds = [];
+    this.consumedRunAugmentIds = [];
+    this.runAugmentModifiers = buildTacticalDraftModifiers();
+    this.runAugmentGrazeShieldSector = 0;
+    this.runAugmentGrazeCount = 0;
+    this.lastRunAugmentSectorStart = null;
+    this.lastTacticalFusionEvent = null;
+    this.tacticalFusionStats = {
+      riftShardsFired: 0,
+      constellationVolleys: 0,
+      aegisPurges: 0,
+      skyVerdicts: 0
+    };
+    this.skyVerdictEmergencyState = 'unavailable';
+    this.skyVerdictEmergencySector = 0;
+    this.scoreMultiplierType = null;
+    this.bombMaxShots = 3;
+    this.bombBlastRadius = 150;
+    this.bombDamageMult = 5;
+    this.bombColor = 0xffaa00;
+    this.droneCount = 2;
+    this.droneColor = 0x66ccff;
     this.rankBoost = { type: null, expiresAt: 0 };
     this.rankBoostPulse = 0;
     this.rankBoostExtraShots = 0;
     this.rankBoostBulletFx = false;
+    this.rankUpScalePulseToken = 0;
+    this.lastShipContainerScaleRepair = null;
     this.currentModel = 1;
     this.focusRing = null;
+    this.hitboxReticle = null;
+    this.dodgeCooldownRing = null;
+    this.dodgeRing = null;
+    this.dodgeText = null;
+    this.ghostTimerLayer = null;
+    this.ghostTimerText = null;
+    this.dodgeFlashMs = 0;
+    this.dodgeReadyFlashMs = 0;
+    this.focusDriftActive = false;
+    this.focusRequested = false;
+    this.focusMovementActive = false;
     this.focusPulse = 0;
+    this.hitboxPulseUntil = 0;
+    this.hitboxPulseReason = null;
+    this.nearMissVisualUntil = 0;
+    this.nearMissVisualStartedAt = 0;
+    this.nearMissVisualDurationMs = 0;
+    this.nearMissVisualStreak = 0;
+    this.nearMissSourceAngle = null;
+    this.nearMissSourceUntil = 0;
     this.damageOverlay = null;
     this.boostAura = null;
+    this.baseBoostAuraColor = 0x66ffff;
     this.rankBoostText = null;
     this.bulletPierce = false;
     this.scoreMultiplier = 1;
@@ -138,8 +226,8 @@ export class Player {
     this.synergyState = { type: null, expiresAt: 0, label: '' };
     this.magnetActive = false;
     this.magnetExpiresAt = 0;
-    this.magnetRadius = 140;
-    this.magnetStrength = 0.08;
+    this.magnetRadius = 180;
+    this.magnetStrength = 0.14;
     this.dronesActive = false;
     this.dronesExpiresAt = 0;
     this.drones = [];
@@ -151,28 +239,67 @@ export class Player {
     this.statusVfxPulse = 0;
     this.statusDriftVelocity = { x: 0, y: 0 };
     this.statusEffectLayer = null;
+    this.engineVfxLayer = null;
+    this.engineVfxIntensity = 0;
 
     // New Powerups
     this.chainLightningActive = false;
     this.chainLightningMaxChains = 3;
     this.orbitalStrikeActive = false;
     this.orbitalStrikeCharges = 0;
+    this.orbitalStrikeMaxCharges = 5;
+    this.tacticalOrbitalStrikeCharges = 0;
     this.orbitalStrikeCooldown = 0;
+    this.orbitalStrikePowerupType = null;
     this.vampireActive = false;
     this.vampireKillCount = 0;
+    this.vampirePowerupType = null;
 
     // Shield State
     this.shieldActive = false;
     this.shieldExpiresAt = 0;
+    this.shieldSpentUntil = 0;
+    this.shieldSource = null;
     this.shieldSprite = null;
 
     // Point Defense State
     this.pointDefenseActive = false;
     this.pointDefenseExpiresAt = 0;
+    this.pointDefenseSource = null;
+    this.tacticalPointDefenseExpiresAt = 0;
     this.pointDefenseRing = null;
+    this.pointDefenseStartedAt = 0;
+    this.pointDefenseDurationMs = 0;
+    this.pointDefenseInterceptCount = 0;
+    this.lastPointDefenseIntercept = null;
+    this.pointDefensePulseUntil = 0;
+    this.pointDefenseExpiryVisualUntil = 0;
+
+    // Row Core instant ritual state.
+    this.rowCoreActive = false;
+    this.rowCoreStartedAt = 0;
+    this.rowCorePulseStats = [];
+    this.rowCoreTimeouts = [];
+    this.rowCoreVisualTickers = [];
+    this.rowCoreStats = {
+      uses: 0,
+      ignored: 0,
+      perfects: 0,
+      bulletsCleared: 0,
+      enemiesHit: 0,
+      kills: 0,
+      bestBulletsCleared: 0
+    };
 
     // Bomb State
     this.bombShotsLeft = 0;
+    this.tacticalBombShotsLeft = 0;
+    this.bombSpentUntil = 0;
+    this.bombArmedAt = 0;
+    this.bombTriggerQueued = false;
+    this.lastBombTriggerIntent = null;
+    this.lastBombCommitState = null;
+    this.bombPowerupType = null;
     this.bombIndicator = null;
 
     // Touch input (set externally by PlayScene)
@@ -188,10 +315,137 @@ export class Player {
     return this.shootCooldown <= 0 && !this.hasStatusEffect?.('weapon_jam');
   }
 
+  getPlayScene() {
+    return this.game?.scenes?.play || null;
+  }
+
+  getGameplayClockMs() {
+    const playScene = this.getPlayScene();
+    const gameTimeSeconds = Number(playScene?.gameTime);
+    if (Number.isFinite(gameTimeSeconds)) return Math.max(0, gameTimeSeconds * 1000);
+    return Date.now();
+  }
+
+  isGameplayClockAdvancing() {
+    const playScene = this.getPlayScene();
+    if (typeof playScene?.isGameplayClockAdvancing === 'function') {
+      return playScene.isGameplayClockAdvancing();
+    }
+    return true;
+  }
+
+  getGameplayTimedDeltaMs(delta = 0) {
+    if (!this.isGameplayClockAdvancing()) return 0;
+    return Math.max(0, Number(delta) || 0) * 16.67;
+  }
+
+  getBombCommitState(now = this.getGameplayClockMs()) {
+    if (this.bombShotsLeft <= 0) {
+      return { ready: false, reason: 'empty', target: null, clusterCount: 0 };
+    }
+    const playScene = this.getPlayScene();
+    const enemyState = playScene?.enemyManager?.state || '';
+    const hijacker = playScene?.enemyManager?.hijacker || null;
+    const visibleHijackerPressure = Boolean(
+      enemyState === 'WAVE_BRIEFING'
+      && hijacker
+      && hijacker.active !== false
+      && hijacker.destroyed !== true
+      && hijacker.waitingForEntry !== true
+      && hijacker.sprite?.visible !== false
+      && hijacker.sprite?.renderable !== false
+      && (!Number.isFinite(Number(hijacker.sprite?.alpha)) || Number(hijacker.sprite.alpha) > 0)
+    );
+    const activeCombatState = enemyState === 'WAVE_ACTIVE'
+      || enemyState === 'BOSS_ACTIVE'
+      || visibleHijackerPressure;
+    if (!this.isGameplayClockAdvancing() || !activeCombatState) {
+      return {
+        ready: false,
+        reason: 'combat_unavailable',
+        target: null,
+        clusterCount: 0,
+        triggerQueued: Boolean(this.bombTriggerQueued)
+      };
+    }
+    if (now < this.bombArmedAt) {
+      return {
+        ready: false,
+        reason: 'arming',
+        target: null,
+        clusterCount: 0,
+        remainingArmingMs: Math.max(0, this.bombArmedAt - now),
+        triggerQueued: Boolean(this.bombTriggerQueued)
+      };
+    }
+
+    const match = findBombCommitTarget({
+      player: this,
+      enemies: playScene?.enemyManager?.enemies || [],
+      boss: playScene?.enemyManager?.boss || null,
+      hijacker,
+      blastRadius: this.bombBlastRadius,
+      shotDamage: this.bulletDamage * this.bombDamageMult,
+      viewportWidth: this.game?.getWidth?.(),
+      viewportHeight: this.game?.getHeight?.(),
+      nowMs: Date.now()
+    });
+    const boss = playScene?.enemyManager?.boss || null;
+    const bossOpening = Boolean(
+      enemyState === 'BOSS_ACTIVE'
+      && boss
+      && boss.active !== false
+      && boss.destroyed !== true
+      && (boss.invulnerable === true
+        || (Number.isFinite(Number(boss.invulnerableUntilMs)) && Date.now() < Number(boss.invulnerableUntilMs)))
+    );
+    return {
+      ...match,
+      ready: Boolean(match.target),
+      reason: match.target
+        ? match.reason
+        : bossOpening
+          ? 'boss_opening'
+          : visibleHijackerPressure
+            ? 'tractor_briefing_no_target'
+            : match.reason,
+      triggerQueued: Boolean(this.bombTriggerQueued)
+    };
+  }
+
+  queueBombTriggerIntent(now = this.getGameplayClockMs()) {
+    const state = this.getBombCommitState(now);
+    const queued = this.bombShotsLeft > 0 && (state.ready || state.reason === 'boss_opening');
+    this.bombTriggerQueued = queued;
+    this.lastBombCommitState = state;
+    this.lastBombTriggerIntent = {
+      at: now,
+      queued,
+      reason: state.reason,
+      targetKind: state.target?.kind || null,
+      clusterCount: state.clusterCount || 0
+    };
+    return queued;
+  }
+
+  armBombTargetingWindow(now = this.getGameplayClockMs()) {
+    this.bombArmedAt = now + BOMB_ARMING_MS;
+    this.bombTriggerQueued = false;
+    this.lastBombCommitState = {
+      ready: false,
+      reason: 'arming',
+      target: null,
+      clusterCount: 0,
+      remainingArmingMs: BOMB_ARMING_MS
+    };
+    return this.bombArmedAt;
+  }
+
   createSprite() {
     this.sprite = new PIXI.Container();
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+    this.sprite.scale.set(SHIP_CONTAINER_BASE_SCALE);
     this.sprite.alpha = 0; // Start invisible for fade-in
 
     this.rebuildShipSprite('init');
@@ -202,6 +456,97 @@ export class Player {
     const targetWidth = Math.max(52, Math.min(screenWidth * 0.06, 78)) * 0.95;
     this.radius = Math.max(8, Math.round(this.baseHitboxRadius * 0.9));
     return targetWidth;
+  }
+
+  getShipVisualWidthCap(targetWidth = null) {
+    const resolvedTarget = Number(targetWidth)
+      || Number(this.targetShipWidthPx)
+      || Number(this.baseShipWidth)
+      || this.computeBaselineShipWidth();
+    return Math.max(
+      SHIP_RENDER_MIN_CAP_WIDTH,
+      Math.min(SHIP_RENDER_MAX_CAP_WIDTH, resolvedTarget * SHIP_RENDER_MAX_WIDTH_MULTIPLIER)
+    );
+  }
+
+  getShipVisualHeightCap(targetWidth = null) {
+    const resolvedTarget = Number(targetWidth)
+      || Number(this.targetShipWidthPx)
+      || Number(this.baseShipWidth)
+      || this.computeBaselineShipWidth();
+    return Math.min(
+      SHIP_RENDER_MAX_CAP_HEIGHT,
+      Math.max(112, resolvedTarget * SHIP_RENDER_MAX_HEIGHT_MULTIPLIER)
+    );
+  }
+
+  computeShipTextureScale(texture) {
+    const targetWidth = this.targetShipWidthPx || this.baseShipWidth || this.computeBaselineShipWidth();
+    const textureWidth = Math.max(1, Number(texture?.width) || 1);
+    const textureHeight = Math.max(1, Number(texture?.height) || 1);
+    const widthScale = targetWidth / textureWidth;
+    const heightScale = (targetWidth * 1.34) / textureHeight;
+    const visualWidthCap = this.getShipVisualWidthCap(targetWidth);
+    const visualHeightCap = this.getShipVisualHeightCap(targetWidth);
+    return Math.min(widthScale, heightScale, visualWidthCap / textureWidth, visualHeightCap / textureHeight);
+  }
+
+  normalizeShipContainerScale(reason = 'runtime') {
+    if (!this.sprite?.scale) return false;
+    const currentScaleX = Number(this.sprite.scale.x);
+    const currentScaleY = Number(this.sprite.scale.y);
+    const unsafe = !Number.isFinite(currentScaleX) || !Number.isFinite(currentScaleY)
+      || currentScaleX < SHIP_CONTAINER_MIN_SAFE_SCALE || currentScaleX > SHIP_CONTAINER_MAX_SAFE_SCALE
+      || currentScaleY < SHIP_CONTAINER_MIN_SAFE_SCALE || currentScaleY > SHIP_CONTAINER_MAX_SAFE_SCALE;
+    if (!unsafe) return false;
+    this.sprite.scale.set(SHIP_CONTAINER_BASE_SCALE);
+    this.rankUpScalePulseToken += 1;
+    this.lastShipContainerScaleRepair = {
+      reason,
+      repairedAt: Date.now(),
+      previousScaleX: currentScaleX,
+      previousScaleY: currentScaleY,
+      repairedScale: SHIP_CONTAINER_BASE_SCALE
+    };
+    return true;
+  }
+
+  normalizeShipSpriteScale(reason = 'runtime') {
+    if (!(this.shipSprite instanceof PIXI.Sprite) || !GameAssets.isValidTexture(this.shipSprite.texture)) return false;
+    const textureWidth = Math.max(1, Number(this.shipSprite.texture?.width) || 1);
+    const textureHeight = Math.max(1, Number(this.shipSprite.texture?.height) || 1);
+    const expectedScale = this.computeShipTextureScale(this.shipSprite.texture);
+    const visualWidthCap = this.getShipVisualWidthCap();
+    const visualHeightCap = this.getShipVisualHeightCap();
+    const safeScale = Math.min(expectedScale, visualWidthCap / textureWidth, visualHeightCap / textureHeight);
+    const currentScaleX = Number(this.shipSprite.scale?.x);
+    const currentScaleY = Number(this.shipSprite.scale?.y);
+    const scaleRatioX = currentScaleX / expectedScale;
+    const scaleRatioY = currentScaleY / expectedScale;
+    const renderedWidth = textureWidth * Math.abs(currentScaleX || 0);
+    const renderedHeight = textureHeight * Math.abs(currentScaleY || 0);
+    const unsafe = !Number.isFinite(currentScaleX) || !Number.isFinite(currentScaleY)
+      || scaleRatioX < 0.58 || scaleRatioX > 1.65
+      || scaleRatioY < 0.58 || scaleRatioY > 1.65
+      || renderedWidth > visualWidthCap * 1.02
+      || renderedHeight > visualHeightCap * 1.02;
+    if (!unsafe) return false;
+    this.shipSprite.scale.set(safeScale);
+    this.baseScale = safeScale;
+    this.applyShipVisualCentering(this.shipSprite, this.selectedShipTextureIndex);
+    this.lastShipScaleRepair = {
+      reason,
+      repairedAt: Date.now(),
+      expectedScale,
+      safeScale,
+      visualWidthCap,
+      visualHeightCap,
+      previousScaleX: currentScaleX,
+      previousScaleY: currentScaleY,
+      renderedWidth: this.shipSprite.width,
+      renderedHeight: this.shipSprite.height
+    };
+    return true;
   }
 
   buildDefaultShipSprite() {
@@ -219,12 +564,11 @@ export class Player {
 
     const sprite = new PIXI.Sprite(texture);
     sprite.anchor.set(0.5);
-    if (Number.isFinite(this.visualVariant?.tint)) {
+    if (Number.isFinite(this.visualVariant?.tint) && this.config?.art?.temporaryFallback !== false) {
       sprite.tint = this.visualVariant.tint;
     }
 
-    const targetWidth = this.baseShipWidth || this.computeBaselineShipWidth();
-    const scale = texture.width > 0 ? targetWidth / texture.width : 1;
+    const scale = this.computeShipTextureScale(texture);
     sprite.scale.set(scale);
     this.baseScale = Number.isFinite(scale) ? scale : 1;
     this.applyShipVisualCentering(sprite, this.selectedShipTextureIndex);
@@ -253,10 +597,8 @@ export class Player {
 
     const glow = new PIXI.Graphics();
     const radius = Math.max(34, (this.baseShipWidth || 60) * 0.7);
-    glow.circle(0, 0, radius);
-    glow.fill({ color: variant.accent || variant.glow || 0x66ffff, alpha: 0.12 });
-    glow.circle(0, 0, radius * 0.55);
-    glow.stroke({ color: variant.glow || variant.accent || 0xffffff, width: 2, alpha: 0.28 });
+    drawEnergySurface(glow,{kind:'corona',width:radius*1.7,height:radius*2,color:variant.accent||variant.glow||0x66ffff,alpha:.09});
+    drawEnergyShell(glow, 0, 0, radius * 0.55, { color: variant.glow || variant.accent || 0xffffff, width: 2, alpha: 0.28 });
     glow.label = 'shipVariantGlow';
     return glow;
   }
@@ -276,6 +618,29 @@ export class Player {
       this.sprite.addChildAt(this.focusRing, 0);
     }
 
+    if (!this.engineVfxLayer) {
+      this.engineVfxLayer = new PIXI.Container();
+      this.engineVfxLayer.graphics = new PIXI.Graphics();
+      this.engineVfxLayer.addChild(this.engineVfxLayer.graphics);
+      this.engineVfxLayer.label = 'playerEngineThrusterReadability';
+      this.engineVfxLayer.visible = false;
+    }
+    if (this.engineVfxLayer.parent !== this.sprite) {
+      if (this.engineVfxLayer.parent) this.engineVfxLayer.parent.removeChild(this.engineVfxLayer);
+      this.sprite.addChildAt(this.engineVfxLayer, Math.min(1, this.sprite.children.length));
+    }
+
+    if (!this.hitboxReticle) {
+      this.hitboxReticle = new PIXI.Graphics();
+      this.hitboxReticle.label = 'playerHitboxReticle';
+      this.hitboxReticle.visible = false;
+    }
+
+    if (this.hitboxReticle.parent !== this.sprite) {
+      if (this.hitboxReticle.parent) this.hitboxReticle.parent.removeChild(this.hitboxReticle);
+      this.sprite.addChild(this.hitboxReticle);
+    }
+
     if (!this.damageOverlay) {
       this.damageOverlay = new PIXI.Sprite();
       this.damageOverlay.anchor.set(0.5);
@@ -285,13 +650,73 @@ export class Player {
       this.sprite.addChild(this.damageOverlay);
     }
 
+    if (!this.dodgeCooldownRing) {
+      this.dodgeCooldownRing = new PIXI.Graphics();
+      this.dodgeCooldownRing.label = 'playerDodgeCooldownRing';
+      this.dodgeCooldownRing.visible = false;
+      this.sprite.addChild(this.dodgeCooldownRing);
+    } else if (!this.dodgeCooldownRing.parent) {
+      this.sprite.addChild(this.dodgeCooldownRing);
+    }
+
+    if (!this.dodgeRing) {
+      this.dodgeRing = new PIXI.Graphics();
+      this.dodgeRing.label = 'playerDodgeRing';
+      this.dodgeRing.visible = false;
+      this.sprite.addChild(this.dodgeRing);
+    } else if (!this.dodgeRing.parent) {
+      this.sprite.addChild(this.dodgeRing);
+    }
+
+    if (!this.dodgeText) {
+      this.dodgeText = createText(translateText('PHASE'), {
+        fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
+        fontSize: 13,
+        fill: '#ffffff',
+        stroke: '#00131b',
+        strokeThickness: 3,
+        fontWeight: '900',
+        align: 'center'
+      });
+      this.dodgeText.anchor.set(0.5);
+      this.dodgeText.y = -58;
+      this.dodgeText.visible = false;
+      this.sprite.addChild(this.dodgeText);
+    } else if (!this.dodgeText.parent) {
+      this.sprite.addChild(this.dodgeText);
+    }
+
+    if (!this.ghostTimerLayer) {
+      this.ghostTimerLayer = new PIXI.Graphics();
+      this.ghostTimerLayer.label = 'playerGhostTimerArc';
+      this.ghostTimerLayer.visible = false;
+      this.sprite.addChild(this.ghostTimerLayer);
+    } else if (!this.ghostTimerLayer.parent) {
+      this.sprite.addChild(this.ghostTimerLayer);
+    }
+
+    if (!this.ghostTimerText) {
+      this.ghostTimerText = createText('', {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: 11,
+        fill: '#efe7ff',
+        stroke: '#080316',
+        strokeThickness: 3,
+        fontWeight: '900',
+        align: 'center'
+      });
+      this.ghostTimerText.anchor.set(0.5);
+      this.ghostTimerText.visible = false;
+      this.sprite.addChild(this.ghostTimerText);
+    } else if (!this.ghostTimerText.parent) {
+      this.sprite.addChild(this.ghostTimerText);
+    }
+
     if (!this.shieldSprite) {
       this.shieldSprite = new PIXI.Container();
 
       const sGfx = new PIXI.Graphics();
-      sGfx.circle(0, 0, 50);
-      sGfx.stroke({ width: 4, color: 0x00ffff, alpha: 0.8 });
-      sGfx.fill({ color: 0x00ffff, alpha: 0.1 });
+      drawEnergySurface(sGfx,{kind:'membrane',width:100,height:100,color:0x64e9ff,alpha:.48});
       this.shieldSprite.addChild(sGfx);
       this.shieldSprite.visible = false;
       this.sprite.addChild(this.shieldSprite);
@@ -301,11 +726,9 @@ export class Player {
 
     if (!this.boostAura) {
       this.boostAura = new PIXI.Graphics();
-      const radius = Math.max(46, (this.baseShipWidth || 60) * 0.95);
-      this.boostAura.circle(0, 0, radius);
-      this.boostAura.stroke({ width: 4, color: 0x66ffff, alpha: 0.95 });
       this.boostAura.alpha = 0.95;
       this.boostAura.visible = false;
+      this.drawRankBoostAura(this.rankBoost?.type);
       this.sprite.addChild(this.boostAura);
     } else if (!this.boostAura.parent) {
       this.sprite.addChild(this.boostAura);
@@ -337,16 +760,287 @@ export class Player {
   }
 
   setCosmetics({ auraColor, muzzleColor } = {}) {
-    if (Number.isFinite(auraColor) && this.boostAura) {
-      this.boostAura.clear();
-      const radius = Math.max(46, (this.baseShipWidth || 60) * 0.95);
-      this.boostAura.circle(0, 0, radius);
-      this.boostAura.stroke({ width: 4, color: auraColor, alpha: 0.95 });
+    if (Number.isFinite(auraColor)) {
+      this.baseBoostAuraColor = auraColor;
+      this.drawRankBoostAura(this.rankBoost?.type);
     }
     if (Number.isFinite(muzzleColor)) {
       this.muzzleFlashColor = muzzleColor;
       this.baseMuzzleFlashColor = muzzleColor;
     }
+  }
+
+  drawRankBoostAura(type = null) {
+    if (!this.boostAura) return;
+    const radius = Math.max(46, (this.baseShipWidth || 60) * 0.95);
+    const palette = {
+      fire_rate: { color: 0xffef7e, alt: 0x66f7ff, ticks: 12 },
+      speed: { color: 0x66f7ff, alt: 0xffef7e, ticks: 6 },
+      damage: { color: 0xff6677, alt: 0xffef7e, ticks: 8 }
+    };
+    const style = palette[type] || { color: this.baseBoostAuraColor || 0x66ffff, alt: 0xffffff, ticks: 4 };
+    const inner = radius * 0.68;
+    const outer = radius + 10;
+
+    this.boostAura.clear();
+    drawEnergyShell(this.boostAura, 0, 0, radius, { width: 4, color: style.color, alpha: 0.95 });
+    drawEnergyShell(this.boostAura, 0, 0, radius * 0.58, { width: 1.4, color: style.alt, alpha: 0.48 });
+
+    for (let i = 0; i < style.ticks; i++) {
+      const angle = (Math.PI * 2 * i) / style.ticks;
+      this.boostAura.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      this.boostAura.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    this.boostAura.stroke({ width: type === 'damage' ? 3 : 2, color: style.alt, alpha: 0.75 });
+
+    if (type === 'speed') {
+      for (const side of [-1, 1]) {
+        const y = radius * 0.28 * side;
+        this.boostAura.moveTo(-radius * 0.62, y - 7 * side);
+        this.boostAura.lineTo(-radius * 0.26, y);
+        this.boostAura.lineTo(-radius * 0.62, y + 7 * side);
+        this.boostAura.moveTo(radius * 0.26, y - 7 * side);
+        this.boostAura.lineTo(radius * 0.62, y);
+        this.boostAura.lineTo(radius * 0.26, y + 7 * side);
+      }
+      this.boostAura.stroke({ width: 2.4, color: style.color, alpha: 0.82 });
+    } else if (type === 'damage') {
+      const spike = radius + 18;
+      this.boostAura.moveTo(0, -spike);
+      this.boostAura.lineTo(8, -radius - 4);
+      this.boostAura.lineTo(0, -radius + 6);
+      this.boostAura.lineTo(-8, -radius - 4);
+      this.boostAura.moveTo(0, spike);
+      this.boostAura.lineTo(8, radius + 4);
+      this.boostAura.lineTo(0, radius - 6);
+      this.boostAura.lineTo(-8, radius + 4);
+      this.boostAura.stroke({ width: 2.6, color: style.alt, alpha: 0.78 });
+    } else if (type === 'fire_rate') {
+      for (let i = 0; i < 4; i++) {
+        const angle = (Math.PI / 2) * i + Math.PI / 4;
+        this.boostAura.circle(Math.cos(angle) * radius * 0.82, Math.sin(angle) * radius * 0.82, 3.4);
+      }
+      this.boostAura.fill({ color: style.alt, alpha: 0.82 });
+    }
+
+    this.boostAura._debugRankBoostAura = {
+      type: type || 'default',
+      radius,
+      color: style.color,
+      alt: style.alt,
+      ticks: style.ticks
+    };
+  }
+
+  updateEngineVfx(dx = 0, dy = 0, deltaSeconds = 1 / 60) {
+    const container = this.engineVfxLayer;
+    if (!container) return;
+    const layer = container.graphics;
+    if (!container.astraPlumes) {
+      container.astraPlumes = Array.from({ length: 3 }, () => {
+        const plume = createAstraEnginePlume();
+        container.addChild(plume);
+        return plume;
+      });
+    }
+    const moveIntent = Math.max(0, Math.min(1, Math.hypot(Number(dx) || 0, Number(dy) || 0)));
+    const firingBoost = this.inputManager?.isFiring?.() ? 0.28 : 0;
+    const dodgeBoost = this.isDodging ? 0.42 : 0;
+    const targetIntensity = Math.max(moveIntent, firingBoost, dodgeBoost);
+    const lerp = Math.max(0.08, Math.min(0.35, deltaSeconds * 12));
+    this.engineVfxIntensity += (targetIntensity - this.engineVfxIntensity) * lerp;
+    const intensity = Math.max(0, Math.min(1, this.engineVfxIntensity));
+    layer.clear();
+    if (!this.active || intensity <= 0.03) {
+      container.visible = false;
+      container.__debugEngineVfx = {
+        visible: false,
+        intensity: Number(intensity.toFixed(3)),
+        plumeCount: 0,
+        sideJets: false,
+        bankRibbonCount: 0,
+        noseLanceCount: 0,
+        afterburnerBeadCount: 0,
+        heatPipCount: 0,
+        dodgeCrescentCount: 0,
+        driftSkidCount: 0
+      };
+      return;
+    }
+
+    const now = Date.now();
+    const pulse = 0.5 + Math.sin(now * 0.026) * 0.5;
+    const width = Math.max(48, Number(this.baseShipWidth) || 62);
+    const exhaustY = width * 0.43;
+    const spread = width * 0.16;
+    const lean = Math.max(-1, Math.min(1, Number(dx) || 0));
+    const vertical = Math.max(-1, Math.min(1, Number(dy) || 0));
+    const coreColor = this.visualVariant?.accent || this.baseMuzzleFlashColor || 0x66ffff;
+    const hotColor = this.visualVariant?.glow || 0xffffff;
+    const plumeLength = width * (0.16 + intensity * 0.2 + Math.max(0, -vertical) * 0.06);
+    const alpha = 0.2 + intensity * 0.46;
+    let plumeCount = 0;
+    let sideFeatherCount = 0;
+    let velocityWakeCount = 0;
+    let bankRibbonCount = 0;
+    let noseLanceCount = 0;
+    let afterburnerBeadCount = 0;
+    let heatPipCount = 0;
+    let dodgeCrescentCount = 0;
+    let driftSkidCount = 0;
+
+    for (let i = 0; i < 3; i += 1) {
+      const offset = (i - 1) * spread;
+      const length = plumeLength * (i === 1 ? 1.12 : 0.86) * (0.86 + pulse * 0.22);
+      const x = offset - lean * (i === 1 ? 3 : 5);
+      const plume = container.astraPlumes[i];
+      plume.position.set(x, exhaustY - 1);
+      plume.width = i === 1 ? 10 : 12;
+      plume.height = length * 1.8;
+      plume.rotation = -lean * 0.12;
+      plume.alpha = 0.34 + intensity * 0.55;
+      layer.moveTo(x - 4.5, exhaustY - 1);
+      layer.lineTo(x + lean * 10, exhaustY + length);
+      layer.lineTo(x + 4.5, exhaustY - 1);
+      layer.closePath();
+      layer.fill({ color: coreColor, alpha: alpha * (i === 1 ? 0.74 : 0.48) });
+      layer.circle(x + lean * 5, exhaustY + length * 0.58, 2.2 + intensity * 2.2);
+      layer.fill({ color: hotColor, alpha: 0.18 + intensity * 0.24 });
+      plumeCount += 1;
+    }
+
+    const beadLanes = intensity > 0.12 ? 4 : 0;
+    for (let i = 0; i < beadLanes; i += 1) {
+      const offset = (i - 1.5) * spread * 0.72 - lean * (1.5 + i);
+      const beadY = exhaustY + plumeLength * (0.45 + i * 0.18) + pulse * 5;
+      layer.circle(offset, beadY, Math.max(1.3, 2.2 + intensity * 1.3 - i * 0.22));
+      afterburnerBeadCount += 1;
+    }
+    if (afterburnerBeadCount > 0) {
+      layer.fill({ color: coreColor, alpha: 0.14 + intensity * 0.2 });
+    }
+
+    for (let i = 0; i < 4; i += 1) {
+      const angle = -Math.PI * 0.9 + i * (Math.PI * 0.6 / 3) + lean * 0.12;
+      const pipRadius = width * (0.28 + (i % 2) * 0.045);
+      const x = Math.cos(angle) * pipRadius;
+      const y = exhaustY * 0.48 + Math.sin(angle) * pipRadius * 0.44;
+      layer.circle(x, y, 1.5 + intensity * 1.25 + (i === 1 ? pulse * 0.7 : 0));
+      heatPipCount += 1;
+    }
+    layer.fill({ color: hotColor, alpha: 0.13 + intensity * 0.16 });
+
+    if (firingBoost > 0.01) {
+      const noseY = -width * 0.52;
+      const lance = width * (0.18 + intensity * 0.2);
+      const half = 3.8 + pulse * 1.2;
+      layer.moveTo(-half, noseY + 8);
+      layer.lineTo(0, noseY - lance);
+      layer.lineTo(half, noseY + 8);
+      layer.stroke({ color: hotColor, width: 1.55 + intensity * 0.9, alpha: 0.24 + intensity * 0.24 });
+      layer.circle(0, noseY - lance * 0.72, 2.2 + intensity * 1.1);
+      layer.fill({ color: coreColor, alpha: 0.26 + intensity * 0.22 });
+      noseLanceCount = 1;
+    }
+
+    const sideJets = Math.abs(lean) > 0.12 || this.isDodging;
+    if (sideJets) {
+      const side = lean >= 0 ? -1 : 1;
+      const jetX = side * width * 0.34;
+      const jetY = exhaustY * 0.45;
+      layer.moveTo(jetX, jetY - 4);
+      layer.lineTo(jetX + side * (10 + intensity * 8), jetY + 1);
+      layer.lineTo(jetX, jetY + 6);
+      layer.stroke({ color: hotColor, width: 2.4, alpha: 0.3 + intensity * 0.34 });
+      layer.circle(jetX + side * (12 + intensity * 7), jetY + 1, 2 + intensity * 1.8);
+      layer.fill({ color: coreColor, alpha: 0.28 + intensity * 0.28 });
+      for (let i = 0; i < 3; i += 1) {
+        const offset = (i - 1) * 5.4;
+        const startX = jetX - side * (2 + i * 0.8);
+        const startY = jetY + offset;
+        const endX = jetX + side * (15 + intensity * 12 + i * 3);
+        const endY = jetY + offset * 0.36 + pulse * (i - 1) * 1.5;
+        layer.moveTo(startX, startY);
+        layer.lineTo(endX, endY);
+        sideFeatherCount += 1;
+      }
+      layer.stroke({ color: coreColor, width: 1.2 + intensity * 0.8, alpha: 0.2 + intensity * 0.26 });
+
+      for (let i = 0; i < 2; i += 1) {
+        const ribbonY = -width * 0.08 + i * width * 0.18;
+        const startX = side * width * (0.18 + i * 0.08);
+        const midX = side * width * (0.36 + intensity * 0.08);
+        const endX = side * width * (0.55 + intensity * 0.12);
+        layer.moveTo(startX, ribbonY);
+        layer.lineTo(midX, ribbonY - side * lean * width * 0.08 + pulse * 2);
+        layer.lineTo(endX, ribbonY + side * lean * width * 0.12);
+        bankRibbonCount += 1;
+      }
+      layer.stroke({ color: hotColor, width: 1.25 + intensity * 0.45, alpha: 0.12 + intensity * 0.19 });
+    }
+
+    if (moveIntent > 0.28) {
+      const length = Math.max(0.001, Math.hypot(dx, dy));
+      const wakeX = -(Number(dx) || 0) / length;
+      const wakeY = -(Number(dy) || 0) / length;
+      const tangentX = -wakeY;
+      const tangentY = wakeX;
+      const originY = width * 0.08;
+      for (let i = 0; i < 3; i += 1) {
+        const lane = i - 1;
+        const startX = tangentX * lane * width * 0.12;
+        const startY = originY + tangentY * lane * width * 0.12;
+        const trail = width * (0.2 + intensity * 0.18 + i * 0.035);
+        layer.moveTo(startX, startY);
+        layer.lineTo(
+          startX + wakeX * trail + tangentX * lane * 2.5,
+          startY + wakeY * trail + tangentY * lane * 2.5
+        );
+        velocityWakeCount += 1;
+      }
+      layer.stroke({ color: hotColor, width: 0.95 + intensity * 0.65, alpha: 0.12 + intensity * 0.2 });
+
+      for (let i = 0; i < 2; i += 1) {
+        const lane = i === 0 ? -1 : 1;
+        const startX = tangentX * lane * width * 0.2 + wakeX * width * 0.04;
+        const startY = originY + tangentY * lane * width * 0.2 + wakeY * width * 0.04;
+        const endX = startX + wakeX * width * (0.28 + intensity * 0.24);
+        const endY = startY + wakeY * width * (0.28 + intensity * 0.24);
+        layer.moveTo(startX - tangentX * lane * 3, startY - tangentY * lane * 3);
+        layer.lineTo(endX, endY);
+        layer.lineTo(startX + tangentX * lane * 3, startY + tangentY * lane * 3);
+        driftSkidCount += 1;
+      }
+      layer.stroke({ color: coreColor, width: 1.1 + intensity * 0.5, alpha: 0.11 + intensity * 0.16 });
+    }
+
+    if (this.isDodging) {
+      const crescentRadius = width * (0.54 + intensity * 0.08);
+      const side = lean >= 0 ? -1 : 1;
+      layer.arc(0, width * 0.03, crescentRadius, side > 0 ? -0.92 : Math.PI + 0.92, side > 0 ? 0.92 : Math.PI - 0.92);
+      layer.stroke({ color: hotColor, width: 2.6, alpha: 0.3 + intensity * 0.28 });
+      layer.arc(0, width * 0.03, crescentRadius + 7, side > 0 ? -0.6 : Math.PI + 0.6, side > 0 ? 0.6 : Math.PI - 0.6);
+      layer.stroke({ color: coreColor, width: 1.5, alpha: 0.22 + intensity * 0.2 });
+      dodgeCrescentCount = 2;
+    }
+
+    container.visible = true;
+    container.__debugEngineVfx = {
+      visible: true,
+      intensity: Number(intensity.toFixed(3)),
+      moveIntent: Number(moveIntent.toFixed(3)),
+      firingBoost: Number(firingBoost.toFixed(3)),
+      plumeCount,
+      sideJets,
+      sideFeatherCount,
+      velocityWakeCount,
+      bankRibbonCount,
+      noseLanceCount,
+      afterburnerBeadCount,
+      heatPipCount,
+      dodgeCrescentCount,
+      driftSkidCount
+    };
   }
 
   updateFocusRing(deltaSeconds) {
@@ -359,31 +1053,273 @@ export class Player {
 
     this.focusPulse += deltaSeconds;
     const lowLife = Number.isFinite(this.game?.lives) && this.game.lives <= 1;
-    const dangerBoost = lowLife || this.invulnerable || this.isDodging ? 1.22 : 1;
+    const dangerBoost = lowLife || this.invulnerable || this.isDodging || this.focusDriftActive ? 1.22 : 1;
     const pulse = (Math.sin(this.focusPulse * 5) + 1) / 2;
     const shipWidth = this.baseShipWidth || 64;
     const radius = Math.max(34, shipWidth * (0.62 + focusScale * 0.22)) * dangerBoost;
-    const alpha = Math.min(0.86, 0.18 + focusScale * 0.46 + (lowLife ? 0.12 : 0));
+    const alpha = Math.min(0.9, 0.18 + focusScale * 0.46 + (lowLife ? 0.12 : 0) + (this.focusDriftActive ? 0.1 : 0));
     const tick = Math.max(8, radius * 0.18);
     const tickInset = radius + 4;
     const tickOutset = radius + tick;
-    const color = lowLife ? 0xff55d9 : 0x66f7ff;
+    const color = lowLife ? 0xff55d9 : this.focusDriftActive ? 0xffef7e : 0x66f7ff;
 
     this.focusRing.clear();
-    this.focusRing.circle(0, 0, radius + pulse * 2);
-    this.focusRing.stroke({ color, width: 2 + focusScale * 1.2, alpha });
-    this.focusRing.circle(0, 0, radius * 0.62);
-    this.focusRing.stroke({ color: 0xffffff, width: 1, alpha: alpha * 0.38 });
-    this.focusRing.moveTo(-tickOutset, 0);
-    this.focusRing.lineTo(-tickInset, 0);
-    this.focusRing.moveTo(tickInset, 0);
-    this.focusRing.lineTo(tickOutset, 0);
-    this.focusRing.moveTo(0, -tickOutset);
-    this.focusRing.lineTo(0, -tickInset);
-    this.focusRing.moveTo(0, tickInset);
-    this.focusRing.lineTo(0, tickOutset);
-    this.focusRing.stroke({ color, width: 2, alpha: alpha * 0.82 });
+    if (this.game?.level >= 1 && this.game.level <= 3 && !this.isDodging && !this.invulnerable) {
+      // Early sectors do not need permanent brackets around the player hull.
+      this.focusRing.visible = false;
+      return;
+    }
+    drawEnergySurface(this.focusRing,{kind:'membrane',width:radius*2,height:radius*1.75,color,alpha:alpha*.28});
     this.focusRing.visible = true;
+  }
+
+  pulseHitboxReticle(reason = 'feedback', durationMs = 900) {
+    const duration = Math.max(120, Math.min(2200, Number(durationMs) || 900));
+    this.hitboxPulseUntil = Math.max(this.hitboxPulseUntil || 0, Date.now() + duration);
+    this.hitboxPulseReason = reason;
+  }
+
+  markNearMissStreakVisual(streak = 1, durationMs = 2200, source = null) {
+    const count = Math.max(1, Math.round(Number(streak) || 1));
+    const duration = Math.max(500, Math.min(2600, Number(durationMs) || 2200));
+    const now = Date.now();
+    this.nearMissVisualStreak = count;
+    this.nearMissVisualStartedAt = now;
+    this.nearMissVisualDurationMs = duration;
+    this.nearMissVisualUntil = now + duration;
+    const sourceX = Number(source?.sourceX ?? source?.x);
+    const sourceY = Number(source?.sourceY ?? source?.y);
+    if (Number.isFinite(sourceX) && Number.isFinite(sourceY)) {
+      this.nearMissSourceAngle = Math.atan2(sourceY - this.y, sourceX - this.x);
+      this.nearMissSourceUntil = now + Math.min(900, duration);
+    }
+    this.pulseHitboxReticle(count >= 3 ? 'near_miss_streak' : 'near_miss', Math.min(1250, duration));
+  }
+
+  updateHitboxReticle(deltaSeconds) {
+    if (!this.hitboxReticle) return;
+    const now = Date.now();
+    const settingEnabled = getPlayerHitboxVisible();
+    const pulsing = now < (this.hitboxPulseUntil || 0);
+    const nearMissRemainingMs = Math.max(0, Math.round((this.nearMissVisualUntil || 0) - now));
+    const nearMissActive = nearMissRemainingMs > 0 && (Number(this.nearMissVisualStreak) || 0) > 0;
+    const invulnerabilityRemainingMs = Math.max(0, Math.round(Number(this.invulnerableTime) || 0));
+    const invulnerabilityActive = Boolean(this.invulnerable && !this.isDodging && invulnerabilityRemainingMs > 0);
+    const grazeApproaching = now < (this.grazeApproachUntil || 0);
+    const contextual = this.focusDriftActive || this.isDodging || this.invulnerable || pulsing || nearMissActive || grazeApproaching;
+    if (!settingEnabled && !contextual) {
+      this.hitboxReticle.visible = false;
+      this.hitboxReticle.__debugNearMissStreak = { active: false, streak: 0, filledPips: 0, windowProgress: 0 };
+      this.hitboxReticle.__debugInvulnerabilityWindow = { active: false, remainingMs: 0, progress: 0, ticks: 0 };
+      return;
+    }
+
+    const radius = Math.max(5, Number(this.radius || this.baseHitboxRadius || 10));
+    const pulse = (Math.sin((this.focusPulse + deltaSeconds) * 8) + 1) / 2;
+    const phaseColor = this.focusDriftActive ? 0xffef7e : this.isDodging || this.invulnerable ? 0x7fffd8 : 0x66f7ff;
+    const nearMissStreak = Math.max(0, Math.round(Number(this.nearMissVisualStreak) || 0));
+    const nearMissColor = nearMissStreak >= 5 ? 0xff66ff : nearMissStreak >= 3 ? 0xffcc00 : 0x9afcff;
+    const color = nearMissActive ? nearMissColor : pulsing && !this.focusDriftActive ? 0xff66ff : phaseColor;
+    const alpha = Math.min(0.95, (settingEnabled ? 0.58 : 0.7) + (nearMissActive ? 0.12 : 0));
+    const strokeWidth = settingEnabled ? 1.5 : 2;
+    const ringRadius = radius;
+    const tickInner = ringRadius + 2;
+    const tickOuter = ringRadius + 7;
+
+    this.hitboxReticle.clear();
+    this.hitboxReticle.circle(0, 0, ringRadius);
+    this.hitboxReticle.stroke({ color: 0x030912, width: strokeWidth + 3, alpha: .95 });
+    this.hitboxReticle.circle(0, 0, ringRadius);
+    this.hitboxReticle.stroke({ color, width: strokeWidth, alpha: Math.max(.85, alpha) });
+    this.hitboxReticle.circle(0, 0, 3.8);
+    this.hitboxReticle.fill({ color: 0x030912, alpha: .95 });
+    this.hitboxReticle.circle(0, 0, 2.4);
+    this.hitboxReticle.fill({ color: 0xffffff, alpha: Math.min(0.72, alpha + 0.12) });
+    this.hitboxReticle.moveTo(-tickOuter, 0);
+    this.hitboxReticle.lineTo(-tickInner, 0);
+    this.hitboxReticle.moveTo(tickInner, 0);
+    this.hitboxReticle.lineTo(tickOuter, 0);
+    this.hitboxReticle.moveTo(0, -tickOuter);
+    this.hitboxReticle.lineTo(0, -tickInner);
+    this.hitboxReticle.moveTo(0, tickInner);
+    this.hitboxReticle.lineTo(0, tickOuter);
+    this.hitboxReticle.stroke({ color, width: strokeWidth, alpha: alpha * 0.92 });
+
+    let filledPips = 0;
+    let windowProgress = 0;
+    let surgeReady = false;
+    let surgeSpikeCount = 0;
+    let sourceGlintCount = 0;
+    let sourceAngle = null;
+    if (nearMissActive) {
+      const pipTotal = 5;
+      filledPips = Math.min(pipTotal, ((nearMissStreak - 1) % pipTotal) + 1);
+      surgeReady = nearMissStreak >= 5 && nearMissStreak % 5 === 0;
+      windowProgress = this.nearMissVisualDurationMs > 0
+        ? Math.max(0, Math.min(1, nearMissRemainingMs / this.nearMissVisualDurationMs))
+        : 0;
+      const pipRadius = ringRadius + 15;
+      const arcRadius = pipRadius + 8;
+      const arcStart = -Math.PI * 0.84;
+      const arcSweep = Math.PI * 0.68;
+      this.hitboxReticle.arc(0, 0, arcRadius, arcStart, arcStart + arcSweep * windowProgress);
+      this.hitboxReticle.stroke({ color: nearMissColor, width: 2.4, alpha: 0.2 + windowProgress * 0.46 });
+      for (let i = 0; i < pipTotal; i += 1) {
+        const angle = -Math.PI * 0.78 + i * (Math.PI * 0.14);
+        const x = Math.cos(angle) * pipRadius;
+        const y = Math.sin(angle) * pipRadius;
+        const activePip = i < filledPips;
+        const pipSize = activePip ? (surgeReady ? 3.4 : 2.9) : 2.1;
+        this.hitboxReticle.circle(x, y, pipSize);
+        this.hitboxReticle.fill({
+          color: activePip ? nearMissColor : 0x12384a,
+          alpha: activePip ? (surgeReady ? 0.9 : 0.72) : 0.32
+        });
+        this.hitboxReticle.circle(x, y, pipSize + 2.2);
+        this.hitboxReticle.stroke({ color: activePip ? 0xffffff : nearMissColor, width: 0.8, alpha: activePip ? 0.44 : 0.18 });
+      }
+      if (surgeReady) {
+        this.hitboxReticle.circle(0, 0, arcRadius + 4 + pulse * 3);
+        this.hitboxReticle.stroke({ color: nearMissColor, width: 1.6, alpha: 0.18 + pulse * 0.18 });
+        const spikeRadius = arcRadius + 12 + pulse * 4;
+        for (let i = 0; i < pipTotal; i += 1) {
+          const angle = -Math.PI / 2 + i * (Math.PI * 2 / pipTotal) + pulse * 0.08;
+          const tx = Math.cos(angle);
+          const ty = Math.sin(angle);
+          const sx = -Math.sin(angle);
+          const sy = Math.cos(angle);
+          const baseX = tx * spikeRadius;
+          const baseY = ty * spikeRadius;
+          const tipX = tx * (spikeRadius + 14);
+          const tipY = ty * (spikeRadius + 14);
+          this.hitboxReticle.moveTo(baseX - sx * 5, baseY - sy * 5);
+          this.hitboxReticle.lineTo(tipX, tipY);
+          this.hitboxReticle.lineTo(baseX + sx * 5, baseY + sy * 5);
+          surgeSpikeCount += 1;
+        }
+        this.hitboxReticle.stroke({ color: 0xffffff, width: 1.45, alpha: 0.2 + pulse * 0.28 });
+      }
+
+      const sourceStillFresh = now < (this.nearMissSourceUntil || 0) && Number.isFinite(this.nearMissSourceAngle);
+      if (sourceStillFresh) {
+        sourceAngle = this.nearMissSourceAngle;
+        const nx = Math.cos(sourceAngle);
+        const ny = Math.sin(sourceAngle);
+        const tx = -ny;
+        const ty = nx;
+        const glintProgress = Math.max(0, Math.min(1, ((this.nearMissSourceUntil || 0) - now) / Math.max(1, Math.min(900, this.nearMissVisualDurationMs || 900))));
+        const glintRadius = ringRadius + 25 + pulse * 4;
+        const wing = 5.5 + pulse * 2;
+        const baseX = nx * glintRadius;
+        const baseY = ny * glintRadius;
+        const tipX = nx * (glintRadius + 16);
+        const tipY = ny * (glintRadius + 16);
+        this.hitboxReticle.circle(baseX, baseY, 5.5 + pulse * 2.8);
+        this.hitboxReticle.stroke({ color: nearMissColor, width: 1.2, alpha: 0.22 + glintProgress * 0.34 });
+        this.hitboxReticle.moveTo(baseX - tx * wing, baseY - ty * wing);
+        this.hitboxReticle.lineTo(tipX, tipY);
+        this.hitboxReticle.lineTo(baseX + tx * wing, baseY + ty * wing);
+        this.hitboxReticle.stroke({ color: 0xffffff, width: 1.8, alpha: 0.32 + glintProgress * 0.34 });
+        for (let i = 0; i < 2; i += 1) {
+          this.hitboxReticle.circle(
+            nx * (glintRadius - 10 - i * 6),
+            ny * (glintRadius - 10 - i * 6),
+            2.1 + pulse * 0.9
+          );
+        }
+        this.hitboxReticle.fill({ color: nearMissColor, alpha: 0.28 + glintProgress * 0.22 });
+        sourceGlintCount = 1;
+      }
+    }
+    let invulnerabilityProgress = 0;
+    let invulnerabilityTicks = 0;
+    let invulnerabilityExpiring = false;
+    let invulnerabilityBracketCount = 0;
+    let invulnerabilityCountdownBeads = 0;
+    if (invulnerabilityActive) {
+      const visualDuration = Math.max(1, Number(this.invulnerabilityVisualDurationMs) || invulnerabilityRemainingMs || 1);
+      invulnerabilityProgress = Math.max(0, Math.min(1, invulnerabilityRemainingMs / visualDuration));
+      invulnerabilityTicks = 6;
+      invulnerabilityExpiring = invulnerabilityProgress <= 0.35;
+      const invulnColor = invulnerabilityExpiring ? 0xffef7e : 0x7fffd8;
+      const invulnRadius = ringRadius + 34;
+      const arcStart = Math.PI * 0.18;
+      const arcSweep = Math.PI * 0.64;
+      this.hitboxReticle.circle(0, 0, invulnRadius - 13);
+      this.hitboxReticle.fill({ color: invulnColor, alpha: invulnerabilityExpiring ? 0.045 + pulse * 0.025 : 0.035 });
+      drawEnergySurface(this.hitboxReticle,{kind:'membrane',width:(invulnRadius-10)*2,height:(invulnRadius-10)*2,color:invulnColor,alpha:invulnerabilityExpiring?.28:.18});
+      this.hitboxReticle.arc(0, 0, invulnRadius, arcStart, arcStart + arcSweep);
+      this.hitboxReticle.stroke({ color: 0xffffff, width: 1.2, alpha: 0.12 });
+      this.hitboxReticle.arc(0, 0, invulnRadius, arcStart, arcStart + arcSweep * invulnerabilityProgress);
+      this.hitboxReticle.stroke({
+        color: invulnColor,
+        width: invulnerabilityExpiring ? 3.8 : 2.6,
+        alpha: invulnerabilityExpiring ? 0.76 + pulse * 0.18 : 0.5
+      });
+      for (let i = 0; i < invulnerabilityTicks; i += 1) {
+        const ratio = invulnerabilityTicks <= 1 ? 0 : i / (invulnerabilityTicks - 1);
+        const angle = arcStart + arcSweep * ratio;
+        const filled = ratio <= invulnerabilityProgress + 0.001;
+        const inner = invulnRadius - (filled ? 7 : 4);
+        const outer = invulnRadius + (filled ? 10 : 5);
+        this.hitboxReticle.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        this.hitboxReticle.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        this.hitboxReticle.circle(Math.cos(angle) * (outer + 5), Math.sin(angle) * (outer + 5), filled ? 3.4 : 2.2);
+        this.hitboxReticle.fill({
+          color: filled ? invulnColor : 0x12384a,
+          alpha: filled ? (invulnerabilityExpiring ? 0.86 : 0.62) : 0.3
+        });
+      }
+      this.hitboxReticle.stroke({
+        color: invulnColor,
+        width: invulnerabilityExpiring ? 2.2 : 1.5,
+        alpha: invulnerabilityExpiring ? 0.72 : 0.38
+      });
+      if (invulnerabilityExpiring) {
+        const endAngle = arcStart + arcSweep * invulnerabilityProgress;
+        for (let i = 0; i < 3; i += 1) {
+          const beadAngle = endAngle - i * 0.055;
+          const beadRadius = invulnRadius + 16 + i * 3;
+          this.hitboxReticle.circle(Math.cos(beadAngle) * beadRadius, Math.sin(beadAngle) * beadRadius, 2.6 + pulse * 1.4);
+          this.hitboxReticle.fill({ color: i === 0 ? 0xffffff : invulnColor, alpha: 0.46 + pulse * 0.22 - i * 0.08 });
+          invulnerabilityCountdownBeads += 1;
+        }
+      }
+    }
+    this.hitboxReticle.visible = true;
+    this.hitboxReticle.__debugNearMissStreak = {
+      active: nearMissActive,
+      streak: nearMissActive ? nearMissStreak : 0,
+      filledPips,
+      windowProgress: Number(windowProgress.toFixed(3)),
+      surgeReady,
+      surgeSpikeCount,
+      sourceGlintCount,
+      sourceAngle: Number.isFinite(sourceAngle) ? Number(sourceAngle.toFixed(3)) : null
+    };
+    this.hitboxReticle.__debugInvulnerabilityWindow = {
+      active: invulnerabilityActive,
+      remainingMs: invulnerabilityActive ? invulnerabilityRemainingMs : 0,
+      progress: Number(invulnerabilityProgress.toFixed(3)),
+      ticks: invulnerabilityActive ? invulnerabilityTicks : 0,
+      expiring: invulnerabilityExpiring,
+      bracketCount: invulnerabilityActive ? invulnerabilityBracketCount : 0,
+      countdownBeads: invulnerabilityActive ? invulnerabilityCountdownBeads : 0
+    };
+  }
+
+  getHitboxReticleDebugState() {
+    return {
+      visible: Boolean(this.hitboxReticle?.visible),
+      settingEnabled: getPlayerHitboxVisible(),
+      radius: Math.round(Number(this.radius || this.baseHitboxRadius || 0)),
+      focusDriftActive: Boolean(this.focusDriftActive),
+      phasing: Boolean(this.isDodging || this.invulnerable || this.isGhostActive?.()),
+      pulseMs: Math.max(0, Math.round((this.hitboxPulseUntil || 0) - Date.now())),
+      pulseReason: this.hitboxPulseReason || null,
+      nearMiss: this.hitboxReticle?.__debugNearMissStreak || { active: false, streak: 0, filledPips: 0, windowProgress: 0 },
+      invulnerability: this.hitboxReticle?.__debugInvulnerabilityWindow || { active: false, remainingMs: 0, progress: 0, ticks: 0 }
+    };
   }
 
   getAvailableRankShipIndices() {
@@ -446,7 +1382,7 @@ export class Player {
       || (typeof this.selectedShipSpriteKey === 'string' && this.selectedShipSpriteKey.includes('::')
         ? this.selectedShipSpriteKey.split('::').pop()
         : null);
-    const baseShip = ShipData[index];
+    const baseShip = ShipData.find(ship => Number(ship.textureIndex) === Number(index)) || ShipData[index];
     if (baseShip) {
       const metadata = getShipMetadata(baseShip.spriteKey) || (slug ? getShipMetadata(`${baseShip.spriteKey}::${slug}`) : null);
       if (metadata) {
@@ -458,6 +1394,7 @@ export class Player {
           stats: { ...(metadata.stats || {}) },
           weapon: { ...(metadata.weapon || {}) },
           visuals: { ...(metadata.visuals || {}) },
+          art: metadata.art ? { ...metadata.art } : null,
           hitbox: { ...(metadata.hitbox || { radius: 12 }) },
           trait: metadata.trait ? { ...metadata.trait } : null,
           spriteKey: metadata.spriteKey
@@ -512,8 +1449,7 @@ export class Player {
       this.weaponSfxKey = this.weaponProfile.shootSfx;
       this.selectedShipSpriteKey = newConfig.spriteKey || this.selectedShipSpriteKey;
       this.selectedShipTextureIndex = index;
-      this.activePowerup.type = null; // Clear powerups on ship swap to avoid stuck states? No, keep powerups.
-      this.recalculateStats();
+      this.resetPowerups();
     }
 
     const shipPath = GameAssets.getRankShipPath(index);
@@ -532,9 +1468,8 @@ export class Player {
       this.targetShipWidthPx = this.computeBaselineShipWidth();
     }
     const targetWidth = this.targetShipWidthPx;
-
     const texWidth = texture.width || 1;
-    const scale = targetWidth / texWidth;
+    const scale = this.computeShipTextureScale(texture);
     this.shipSprite.scale.set(scale);
     this.baseScale = Number.isFinite(scale) ? scale : 1;
     this.applyShipVisualCentering(this.shipSprite, index);
@@ -569,7 +1504,7 @@ export class Player {
 
     if (this.shipSprite && this.baseScale) {
       // Pulse relative to baseScale, not 1
-      const pulseScale = this.baseScale * 1.5; // Bigger pulse for visibility
+      const pulseScale = this.baseScale * RANK_UP_SHIP_PULSE_SCALE;
       this.shipSprite.scale.set(pulseScale);
       this.applyShipVisualCentering(this.shipSprite, index);
       setTimeout(() => {
@@ -733,6 +1668,19 @@ export class Player {
     );
   }
 
+  pulseRankUpShipScale() {
+    if (!this.sprite) return false;
+    const pulseContainer = this.sprite;
+    const pulseToken = ++this.rankUpScalePulseToken;
+    pulseContainer.scale.set(RANK_UP_SHIP_PULSE_SCALE);
+    setTimeout(() => {
+      if (this.sprite === pulseContainer && this.rankUpScalePulseToken === pulseToken) {
+        pulseContainer.scale.set(SHIP_CONTAINER_BASE_SCALE);
+      }
+    }, 300);
+    return true;
+  }
+
   animateRankUp(newRank) {
     console.log('[RankUp] applying visual evolution');
 
@@ -744,15 +1692,10 @@ export class Player {
       }, 200);
     }
 
-    // 2. Scale Pulse (Pop up and down) - Container scale
-    if (this.sprite) {
-      const startScaleX = this.sprite.scale.x;
-      const startScaleY = this.sprite.scale.y;
-      this.sprite.scale.set(startScaleX * 1.3, startScaleY * 1.3);
-      setTimeout(() => {
-        if (this.sprite) this.sprite.scale.set(startScaleX, startScaleY);
-      }, 300);
-    }
+    // 2. Scale pulse from a fixed baseline. Rapid catch-up rank events can
+    // overlap, so never multiply the current container scale or allow an old
+    // timer to restore a stale enlarged value.
+    this.pulseRankUpShipScale();
 
     // 3. Swap Sprite PRE-LOG
     if (this.shipSprite && this.shipSprite.texture) {
@@ -785,14 +1728,28 @@ export class Player {
   update(delta) {
     if (!this.active) return;
     if (!this.sprite) return; // Guard: Sprite might be missing/destroyed during update
+    this.normalizeShipContainerScale('update');
+    this.normalizeShipSpriteScale('update');
 
-    const now = Date.now();
+    const visualNow = Date.now();
+    const now = this.getGameplayClockMs();
     const dt = delta * 16.67;
+    const timedDt = this.getGameplayTimedDeltaMs(delta);
     const deltaSeconds = dt / 1000;
 
+    this.updateActivePowerupDuration(now, timedDt);
+    if (this.secondaryPowerup.type && !this.hasUnspentChargePowerup(this.secondaryPowerup) && this.getSecondaryPowerupRemainingMs(now) <= 0) {
+      this.expireSecondaryPowerup();
+    }
+
     // Powerup Expiry
-    if (this.activePowerup.type && now > this.activePowerup.expiresAt) {
-      this.resetPowerups();
+    if (this.activePowerup.type && !this.hasUnspentChargePowerup() && this.getActivePowerupRemainingMs(now) <= 0) {
+      const pointDefenseExpired = this.pointDefenseActive && Boolean(this.getCurrentPowerupEffect()?.pointDefense);
+      const promoted = this.promoteSecondaryPowerup(now);
+      if (!promoted) this.resetPowerups();
+      if (pointDefenseExpired && !this.pointDefenseActive) {
+        this.deactivatePointDefense({ expired: true });
+      }
     }
     if (this.rankBoost.type && now > this.rankBoost.expiresAt) {
       this.clearRankBoost();
@@ -808,9 +1765,11 @@ export class Player {
     }
     if (this.scoreMultiplier > 1 && now > this.scoreBoostExpiresAt) {
       this.scoreMultiplier = 1;
+      this.scoreMultiplierType = null;
       this.scoreBoostExpiresAt = 0;
     }
-    this.updateStatusEffects(now, deltaSeconds);
+    this.updateStatusEffects(now, timedDt / 1000);
+    this.updateGhostTimerVisual(now, visualNow);
 
     // Shield Logic
     if (this.shieldActive) {
@@ -822,11 +1781,11 @@ export class Player {
         // Visuals
         if (this.shieldSprite) {
           this.shieldSprite.visible = true;
-          this.shieldSprite.scale.set(1 + Math.sin(now * 0.005) * (shieldSuppressed ? 0.16 : 0.05));
+          this.shieldSprite.scale.set(1 + Math.sin(visualNow * 0.005) * (shieldSuppressed ? 0.16 : 0.05));
           this.shieldSprite.rotation += deltaSeconds * 0.5;
           this.shieldSprite.alpha = shieldSuppressed
-            ? 0.16 + Math.max(0, Math.sin(now * 0.04)) * 0.24
-            : 0.8 + Math.sin(now * 0.01) * 0.2;
+            ? 0.16 + Math.max(0, Math.sin(visualNow * 0.04)) * 0.24
+            : 0.8 + Math.sin(visualNow * 0.01) * 0.2;
         }
       }
     } else {
@@ -837,25 +1796,87 @@ export class Player {
     if (this.pointDefenseActive) {
       // Check expiry
       if (now > this.pointDefenseExpiresAt) {
-        this.deactivatePointDefense();
+        this.deactivatePointDefense({ expired: true });
+        if (now > this.tacticalPointDefenseExpiresAt) this.tacticalPointDefenseExpiresAt = 0;
       } else {
-        // Animate ring
         if (this.pointDefenseRing) {
           const pointDefenseSuppressed = this.isPowerupSuppressed();
           this.pointDefenseRing.clear();
-          const radius = 35 + Math.sin(now * 0.008) * 5;
-          this.pointDefenseRing.circle(0, 0, radius);
-          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 2, alpha: pointDefenseSuppressed ? 0.18 : 0.6 + Math.sin(now * 0.01) * 0.2 });
+          const remainingMs = Math.max(0, this.pointDefenseExpiresAt - now);
+          const durationMs = Math.max(1, this.pointDefenseDurationMs || remainingMs);
+          const remainingRatio = Math.max(0, Math.min(1, remainingMs / durationMs));
+          const impactPulse = Math.max(0, Math.min(1, (this.pointDefensePulseUntil - visualNow) / 220));
+          const radius = POINT_DEFENSE_RADIUS + Math.sin(visualNow * 0.008) * 3 + impactPulse * 6;
+          const alphaScale = pointDefenseSuppressed ? 0.24 : 1;
+          drawEnergySurface(this.pointDefenseRing,{kind:'membrane',width:radius*2,height:radius*2,color:impactPulse>0?0xffffff:0x65dcff,alpha:(.24+impactPulse*.36)*alphaScale});
 
-          // Inner ring
-          const innerRadius = radius - 8;
-          this.pointDefenseRing.circle(0, 0, innerRadius);
-          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 1, alpha: pointDefenseSuppressed ? 0.1 : 0.4 });
+          const countdownRadius = radius + 8;
+          if (remainingRatio > 0.002) {
+            this.pointDefenseRing.arc(
+              0,
+              0,
+              countdownRadius,
+              -Math.PI / 2,
+              -Math.PI / 2 + Math.PI * 2 * remainingRatio
+            );
+            this.pointDefenseRing.stroke({
+              color: remainingRatio <= 0.25 ? 0xffd166 : 0x7df9ff,
+              width: remainingRatio <= 0.25 ? 3.4 : 2.3,
+              alpha: (0.58 + Math.sin(visualNow * 0.018) * 0.12) * alphaScale
+            });
+          }
+
+          const interceptAge = now - (Number(this.lastPointDefenseIntercept?.at) || -10000);
+          if (interceptAge >= 0 && interceptAge < 460) {
+            const cueProgress = 1 - interceptAge / 460;
+            const angle = Number(this.lastPointDefenseIntercept?.angle) || 0;
+            const cueRadius = radius * (0.7 + cueProgress * 0.14);
+            this.pointDefenseRing.moveTo(Math.cos(angle) * radius * 0.28, Math.sin(angle) * radius * 0.28);
+            this.pointDefenseRing.lineTo(Math.cos(angle) * cueRadius, Math.sin(angle) * cueRadius);
+            this.pointDefenseRing.stroke({ color: 0xffffff, width: 2.2, alpha: cueProgress * 0.78 * alphaScale });
+            const cueX = Math.cos(angle) * cueRadius;
+            const cueY = Math.sin(angle) * cueRadius;
+            const diamond = 4 + cueProgress * 3;
+            this.pointDefenseRing.poly([
+              cueX, cueY - diamond,
+              cueX + diamond, cueY,
+              cueX, cueY + diamond,
+              cueX - diamond, cueY
+            ]);
+            this.pointDefenseRing.stroke({ color: 0x7df9ff, width: 1.5, alpha: cueProgress * alphaScale });
+          }
+          this.pointDefenseRing.__debugPointDefense = {
+            visible: true,
+            active: true,
+            suppressed: pointDefenseSuppressed,
+            radius: POINT_DEFENSE_RADIUS,
+            remainingMs: Math.round(remainingMs),
+            remainingRatio: Number(remainingRatio.toFixed(3)),
+            interceptTotal: this.pointDefenseInterceptCount,
+            lastIntercept: this.lastPointDefenseIntercept ? { ...this.lastPointDefenseIntercept } : null
+          };
         }
       }
     } else {
-      if (this.pointDefenseRing) this.pointDefenseRing.visible = false;
+      if (this.pointDefenseRing && visualNow < this.pointDefenseExpiryVisualUntil) {
+        const remaining = Math.max(0, this.pointDefenseExpiryVisualUntil - visualNow);
+        const progress = remaining / 260;
+        this.pointDefenseRing.visible = true;
+        this.pointDefenseRing.clear();
+        this.pointDefenseRing.circle(0, 0, POINT_DEFENSE_RADIUS * (0.82 + progress * 0.18));
+        this.pointDefenseRing.stroke({ color: 0x7df9ff, width: 2 + progress * 2, alpha: progress * 0.58 });
+        this.pointDefenseRing.__debugPointDefense = {
+          visible: true,
+          active: false,
+          expiring: true,
+          remainingVisualMs: Math.round(remaining)
+        };
+      } else if (this.pointDefenseRing) {
+        this.pointDefenseRing.visible = false;
+        this.pointDefenseRing.__debugPointDefense = { visible: false, active: false };
+      }
     }
+    if (this.bombShotsLeft > 0) this.updateBombIndicator();
 
     // Spawn Fade-In
     if (this.sprite.alpha < 1 && !this.isDodging && !this.isGhostActive()) {
@@ -885,19 +1906,34 @@ export class Player {
       this.shipSprite.tint = 0xffffff;
     }
 
-    // Input & Movement - merge keyboard and touch
+    // Input & Movement - the latest intentional device owns steering.
     let dx = 0;
     let dy = 0;
 
-    // Keyboard input
-    if (this.inputManager.isKeyPressed('ArrowLeft') || this.inputManager.isKeyPressed('KeyA')) dx -= 1;
-    if (this.inputManager.isKeyPressed('ArrowRight') || this.inputManager.isKeyPressed('KeyD')) dx += 1;
-    if (this.inputManager.isKeyPressed('ArrowUp') || this.inputManager.isKeyPressed('KeyW')) dy -= 1;
-    if (this.inputManager.isKeyPressed('ArrowDown') || this.inputManager.isKeyPressed('KeyS')) dy += 1;
+    const keyboardX = (this.inputManager.isActionPressed('moveRight', { includeGamepad: false }) ? 1 : 0)
+      - (this.inputManager.isActionPressed('moveLeft', { includeGamepad: false }) ? 1 : 0);
+    const keyboardY = (this.inputManager.isActionPressed('moveDown', { includeGamepad: false }) ? 1 : 0)
+      - (this.inputManager.isActionPressed('moveUp', { includeGamepad: false }) ? 1 : 0);
+    const gamepadMove = this.inputManager.getGamepadMovement?.() || { moveX: 0, moveY: 0 };
+    const touchX = Number(this.touchInput?.moveX) || 0;
+    const touchY = Number(this.touchInput?.moveY) || 0;
+    const hasKeyboardMovement = Math.abs(keyboardX) + Math.abs(keyboardY) > 0.05;
+    const hasGamepadMovement = Math.abs(gamepadMove.moveX) + Math.abs(gamepadMove.moveY) > 0.15;
+    const hasTouchMovement = Math.abs(touchX) + Math.abs(touchY) > 0.05;
 
-    // Touch input (additive, clamped later)
-    dx += this.touchInput.moveX;
-    dy += this.touchInput.moveY;
+    if (hasKeyboardMovement || hasGamepadMovement || hasTouchMovement) {
+      dx = keyboardX + gamepadMove.moveX + touchX;
+      dy = keyboardY + gamepadMove.moveY + touchY;
+      this.inputManager.noteNonMouseMovement?.(
+        hasKeyboardMovement ? 'keyboard' : hasGamepadMovement ? 'gamepad' : 'touch'
+      );
+    } else {
+      const mouseIntent = this.inputManager.getMouseSteeringIntent?.(this.x, this.y, 9);
+      if (mouseIntent?.active) {
+        dx = mouseIntent.moveX;
+        dy = mouseIntent.moveY;
+      }
+    }
 
     // Clamp to -1..1 range
     dx = Math.max(-1, Math.min(1, dx));
@@ -913,10 +1949,16 @@ export class Player {
     }
 
     // Apply Speed. Tractor debuffs never invert controls; drift only adds mild inertia.
-    const vectorBoostActive = this.activePowerup.type === 'vector_boost' && !this.isPowerupSuppressed();
     const engineDrag = this.getStatusEffect('engine_drag');
     const controlDrift = this.getStatusEffect('control_drift');
-    const speedMultiplier = (vectorBoostActive ? 1.5 : 1) * (engineDrag?.movementSpeedMult || 1);
+    const focusDriftRequested = Boolean(this.inputManager?.isKeyPressed?.('focus'));
+    this.focusRequested = focusDriftRequested;
+    this.focusDriftActive = focusDriftRequested;
+    this.focusMovementActive = focusDriftRequested && !this.isDodging;
+    const focusDriftMultiplier = this.focusMovementActive
+      ? Math.min(0.82, FOCUS_DRIFT_SPEED_MULTIPLIER * (Number(this.runAugmentModifiers?.focusSpeedMult) || 1))
+      : 1;
+    const speedMultiplier = this.getPowerupMovementMultiplier() * (engineDrag?.movementSpeedMult || 1) * focusDriftMultiplier;
     const targetMoveX = dx * this.speed * speedMultiplier;
     const targetMoveY = dy * this.speed * speedMultiplier;
     if (controlDrift) {
@@ -972,32 +2014,41 @@ export class Player {
         }
       }
     }
+    updateRelicHullDetail(this);
+    this.updateEngineVfx(dx, dy, deltaSeconds);
     this.updateFocusRing(deltaSeconds);
     this.updateStatusEffectVisuals(deltaSeconds);
 
     // Dodge Logic
-    if (this.inputManager.isKeyPressed('ShiftLeft') && this.dodgeCooldown <= 0 && !this.isDodging) {
+    const dodgeInputPressed = this.inputManager.isKeyPressed('ShiftLeft') || this.inputManager.isKeyPressed('ShiftRight');
+    if (this.consumeDodgeInputEdge(dodgeInputPressed) && this.dodgeCooldown <= 0 && !this.isDodging) {
       this.startDodge();
     }
 
     if (this.isDodging) {
       this.dodgeDuration -= dt;
-      this.sprite.alpha = 0.3; // Visually indicate dodge
+      this.invulnerableTime = Math.max(0, (Number(this.invulnerableTime) || 0) - timedDt);
+      this.sprite.alpha = 0.42; // Visually indicate dodge without making the ship vanish.
+      this.updateDodgeVisual(dt);
       if (this.dodgeDuration <= 0) {
-        this.isDodging = false;
-        this.invulnerable = false;
-        if (!this.isGhostActive()) this.sprite.alpha = 1;
+        this.finishDodge('duration');
       }
     } else {
       // Invulnerable blinking
       // Invulnerable blinking (Strobe effect: 150ms interval)
       if (this.invulnerable) {
-        this.invulnerableTime -= dt;
+        this.invulnerableTime -= timedDt;
 
-        // Strobe logic: Toggle between 1.0 and 0.25 every 150ms
-        const period = 150;
-        const phase = Math.floor(Date.now() / period) % 2;
-        this.sprite.alpha = phase === 0 ? 1.0 : 0.25;
+        if (this.isGhostActive()) {
+          // Ghost opacity is itself the invulnerability cue; do not let the
+          // ordinary damage strobe intermittently make the ship fully opaque.
+          this.sprite.alpha = 0.4;
+        } else {
+          // Strobe logic: Toggle between 1.0 and 0.25 every 150ms
+          const period = 150;
+          const phase = Math.floor(Date.now() / period) % 2;
+          this.sprite.alpha = phase === 0 ? 1.0 : 0.25;
+        }
 
         if (this.invulnerableTime <= 0) {
           this.invulnerable = false;
@@ -1005,10 +2056,21 @@ export class Player {
         }
       }
     }
+    this.updateHitboxReticle(deltaSeconds);
 
     // Cooldowns
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
-    if (this.dodgeCooldown > 0) this.dodgeCooldown -= dt;
+    const previousDodgeCooldown = Math.max(0, Number(this.dodgeCooldown) || 0);
+    if (this.dodgeCooldown > 0) {
+      const moving = Math.abs(dx) + Math.abs(dy) > 0.1;
+      const movingRecovery = moving ? (Number(this.runAugmentModifiers?.movingDodgeRecoveryMult) || 1) : 1;
+      const lowLifeRecovery = this.game?.lives <= 1 ? (Number(this.runAugmentModifiers?.lowLifeDodgeRecoveryMult) || 1) : 1;
+      this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt * movingRecovery * lowLifeRecovery);
+    }
+    if (previousDodgeCooldown > 0 && this.dodgeCooldown <= 0 && !this.isDodging) {
+      this.dodgeReadyFlashMs = 650;
+    }
+    this.updateDodgeCooldownVisual(dt);
 
     if (this.rankBoost.type && this.boostAura) {
       this.rankBoostPulse += deltaSeconds;
@@ -1030,19 +2092,104 @@ export class Player {
 
   // --- Actions ---
 
-  createMuzzleFlash() {
+  consumeDodgeInputEdge(pressed) {
+    const down = Boolean(pressed);
+    const justPressed = down && !this.dodgeInputWasPressed;
+    this.dodgeInputWasPressed = down;
+    return justPressed;
+  }
+
+  resetTransientInputState({ preserveMovement = false } = {}) {
+    if (!preserveMovement) this.touchInput = { moveX: 0, moveY: 0 };
+    this.dodgeInputWasPressed = false;
+  }
+
+  createMuzzleFlash(options = {}) {
     if (!this.sprite) return;
-    const color = Number.isFinite(this.muzzleFlashColor) ? this.muzzleFlashColor : 0xffffff;
+    const offsets = Array.isArray(options.offsets) && options.offsets.length ? options.offsets : [0];
+    const spreadAngles = Array.isArray(options.spreadAngles) && options.spreadAngles.length ? options.spreadAngles : offsets.map(() => 0);
+    const volleyCount = Math.max(1, Math.min(9, Math.max(offsets.length, spreadAngles.length)));
+    const color = Number.isFinite(options.color) ? options.color : (Number.isFinite(this.muzzleFlashColor) ? this.muzzleFlashColor : 0xffffff);
+    const accent = this.visualVariant?.glow || this.visualVariant?.accent || 0xffffff;
+    const bomb = Boolean(options.bomb);
     const flash = new PIXI.Graphics();
-    flash.circle(0, -15, 6);
-    flash.fill({ color, alpha: 0.8 });
+    flash.label = 'playerMuzzleFlashIntent';
+    flash.__novaPlayerMuzzleFlashIntent = true;
+    // Bomb fire must remain unmistakable without producing an additive white
+    // flash over the ship. The orange launch glyph carries the signal instead.
+    flash.blendMode = bomb ? 'normal' : 'add';
+    flash.zIndex = 12;
+
+    const noseY = -22;
+    const length = bomb ? 30 : 24 + Math.min(4, volleyCount - 1) * 4;
+    let laneCount = 0;
+    for (let i = 0; i < volleyCount; i += 1) {
+      const offsetX = Number(offsets[i] ?? offsets[offsets.length - 1] ?? 0) || 0;
+      const angle = Number(spreadAngles[i] ?? 0) || 0;
+      const dx = Math.sin(angle);
+      const dy = -Math.cos(angle);
+      const tipX = offsetX + dx * length;
+      const tipY = noseY + dy * length;
+      const sideX = Math.cos(angle) * (bomb ? 5.5 : 4.5);
+      const sideY = Math.sin(angle) * (bomb ? 5.5 : 4.5);
+      flash.moveTo(offsetX - sideX, noseY - sideY);
+      flash.lineTo(tipX, tipY);
+      flash.lineTo(offsetX + sideX, noseY + sideY);
+      flash.closePath();
+      flash.fill({ color, alpha: bomb ? 0.2 : 0.24 });
+      flash.moveTo(offsetX, noseY + 2);
+      flash.lineTo(tipX, tipY - 2);
+      laneCount += 1;
+    }
+    flash.stroke({ color: accent, width: bomb ? 2 : 1.8, alpha: bomb ? 0.4 : 0.44 });
+
+    const minOffset = Math.min(...offsets);
+    const maxOffset = Math.max(...offsets);
+    if (volleyCount > 1) {
+      flash.moveTo(minOffset - 8, noseY + 7);
+      flash.lineTo(maxOffset + 8, noseY + 7);
+      flash.moveTo(minOffset - 8, noseY + 7);
+      flash.lineTo(minOffset - 3, noseY + 13);
+      flash.moveTo(maxOffset + 8, noseY + 7);
+      flash.lineTo(maxOffset + 3, noseY + 13);
+      flash.stroke({ color, width: 1.5, alpha: 0.46 });
+    }
+
+    if (bomb) {
+      flash.poly([0, noseY - 34, 8, noseY - 26, 0, noseY - 18, -8, noseY - 26]);
+      flash.stroke({ color: 0xffef7e, width: 1.8, alpha: 0.48 });
+      flash.circle(0, noseY - 26, 4.5);
+      flash.fill({ color: 0xffef7e, alpha: 0.16 });
+    } else {
+      flash.circle(0, noseY - 12, 6.5 + Math.min(4, volleyCount));
+      flash.fill({ color: 0xffffff, alpha: 0.2 });
+      flash.circle(0, noseY - 12, 3.5 + Math.min(3, volleyCount * 0.5));
+      flash.fill({ color, alpha: 0.52 });
+    }
+
+    flash.__debugMuzzleFlashIntent = {
+      visible: true,
+      volleyCount,
+      laneCount,
+      bomb,
+      bracketVisible: volleyCount > 1,
+      visualProfile: bomb ? 'bounded_bomb_launch' : 'standard_volley',
+      maxAlpha: bomb ? 0.48 : 0.52,
+      blendMode: bomb ? 'normal' : 'add',
+      minOffset,
+      maxOffset,
+      color
+    };
+    this.lastMuzzleFlashDebug = flash.__debugMuzzleFlashIntent;
+    const durationMs = Math.max(40, Math.min(700, Number(options.durationMs) || (bomb ? 110 : 115)));
+    flash.__debugMuzzleFlashIntent.durationMs = durationMs;
     this.sprite.addChild(flash);
     setTimeout(() => {
       if (flash.parent) flash.parent.removeChild(flash);
-    }, 80);
+    }, durationMs);
   }
 
-  applyTraitProjectileEffects(bullet, shotCounter, { bonus = false } = {}) {
+  applyTraitProjectileEffects(bullet, shotCounter, { bonus = false, drone = false } = {}) {
     if (!bullet) return bullet;
     const combat = this.traitCombat || {};
     bullet.traitSlug = this.shipTrait?.slug || null;
@@ -1090,6 +2237,26 @@ export class Player {
       if (bullet.core) bullet.core.tint = this.visualVariant?.accent || 0x66ffff;
     }
 
+    if (this.focusDriftActive) {
+      bullet.damage = Math.max(0.5, bullet.damage * (Number(this.runAugmentModifiers?.focusDamageMult) || 1));
+    }
+    if (drone) {
+      bullet.damage = Math.max(0.5, bullet.damage * (Number(this.runAugmentModifiers?.droneDamageMult) || 1));
+      bullet.isTacticalDroneShot = true;
+    }
+
+    const temporaryPowerupPierce = !this.isPowerupSuppressed()
+      && this.getPowerupSlots().some((slot) => this.getPowerupSlotEffect(slot)?.pierce === true);
+    const permanentTacticalPierce = getActiveTacticalAugmentIds(
+      this.runAugmentIds || [],
+      this.consumedRunAugmentIds || []
+    ).includes('pierce');
+    stampProjectilePierceProvenance(bullet, {
+      temporaryPowerupPierce,
+      shipTraitPierce: bullet.isTraitPiercingShot === true,
+      permanentTacticalPierce
+    }, this.game);
+    bullet.refreshPlayerProjectileIntentMarkers?.();
     return bullet;
   }
 
@@ -1099,41 +2266,72 @@ export class Player {
     const bullets = [];
     this.traitShotCounter += 1;
     const shotCounter = this.traitShotCounter;
+    const pType = this.activePowerup.type;
+    const annotatePowerupBullet = (bullet) => {
+      if (!bullet || !pType) return;
+      bullet.powerupType = pType;
+      if (pType === 'plasma_lance') bullet.isPlasmaLance = true;
+    };
 
     // Check if firing bomb
-    if (this.bombShotsLeft > 0) {
+    const bombCommitState = this.getBombCommitState();
+    this.lastBombCommitState = bombCommitState;
+    const shouldFireBomb = this.bombShotsLeft > 0 && this.bombTriggerQueued && bombCommitState.ready;
+    const keepBossOpeningBuffer = this.bombTriggerQueued && bombCommitState.reason === 'boss_opening';
+    if (!keepBossOpeningBuffer) this.bombTriggerQueued = false;
+    if (shouldFireBomb) {
+      const launchX = this.x;
+      const launchY = this.y - 20;
+      const targetX = Number(bombCommitState.target?.x);
+      const targetY = Number(bombCommitState.target?.y);
+      const bombSpeed = Math.max(0.1, this.bulletSpeed * 0.4);
+      const targetDx = Number.isFinite(targetX) ? targetX - launchX : 0;
+      const targetDy = Number.isFinite(targetY) ? targetY - launchY : -1;
+      const targetDistance = Math.max(0.001, Math.hypot(targetDx, targetDy));
       const bomb = new Bullet(
-        this.x,
-        this.y - 20,
-        0, // Straight up
-        this.bulletSpeed * 0.4, // 40% slower
-        this.bulletDamage * 5, // More damage
-        0xffaa00,
+        launchX,
+        launchY,
+        targetDx / targetDistance * bombSpeed,
+        targetDy / targetDistance * bombSpeed,
+        this.bulletDamage * this.bombDamageMult,
+        this.bombColor,
         true,
         { color: 'Orange', index: 3 }
       );
       bomb.isBomb = true;
-      bomb.blastRadius = 150; // Blast radius
+      bomb.blastRadius = this.bombBlastRadius;
       bomb.radius = 11;
       bomb.trailLength = Math.max(bomb.trailLength || 0, 42);
       bomb.pulseRate = Math.max(bomb.pulseRate || 0, 0.82);
-      bomb.haloColor = 0xffaa00;
+      bomb.haloColor = this.bombColor;
+      bomb.commitReason = bombCommitState.reason;
+      bomb.commitClusterCount = bombCommitState.clusterCount || 0;
+      bomb.bombTarget = bombCommitState.target;
+      bomb.bombTargetX = Number.isFinite(targetX) ? targetX : launchX;
+      bomb.bombTargetY = Number.isFinite(targetY) ? targetY : 0;
+      bomb.bombTargetRadius = Math.max(0, Number(bombCommitState.target?.radius) || 0);
+      bomb.bombGuidanceSpeed = bombSpeed;
+      annotatePowerupBullet(bomb);
       this.applyTraitProjectileEffects(bomb, shotCounter);
       bullets.push(bomb);
 
       this.bombShotsLeft--;
+      if (this.tacticalBombShotsLeft > 0) this.tacticalBombShotsLeft--;
       this.updateBombIndicator();
       if (this.bombShotsLeft <= 0) {
-        this.deactivateBomb();
+        this.deactivateBomb({ spentFeedback: true });
       }
 
       AudioManager.playSfx(this.weaponSfxKey, { volume: 0.8, force: false });
-      this.createMuzzleFlash();
+      this.createMuzzleFlash({ bomb: true, offsets: [0], spreadAngles: [0], color: this.bombColor });
       return bullets;
     }
 
     const scramble = this.getStatusEffect('target_scramble');
-    const spread = (this.weaponProfile?.spread ?? 0.15) * (scramble?.shotSpreadMult || 1);
+    const focusSpreadMult = this.focusDriftActive
+      ? this.getAdaptiveFocusSpreadMultiplier()
+      : 1;
+    const spread = (this.weaponProfile?.spread ?? 0.15) * (scramble?.shotSpreadMult || 1) * focusSpreadMult;
     const jitterRange = scramble?.shotJitter || 0;
     const totalShots = Math.max(1, this.multiShot + this.rankBoostExtraShots);
     const spreadAngles = totalShots > 1 ?
@@ -1151,7 +2349,6 @@ export class Player {
 
     // Visuals based on powerup
     let vConfig = { color: 'Blue', index: 1 };
-    const pType = this.activePowerup.type;
 
     if (pType === 'rapid_cabinet') vConfig = { color: 'Red', index: 1 };
     else if (pType === 'triple_beam') vConfig = { color: 'Green', index: 13 };
@@ -1174,17 +2371,12 @@ export class Player {
       const bulletColor = this.visualVariant?.accent || 0x00ffff;
       const bullet = new Bullet(this.x + offsetX, spawnY, vx, vy, this.bulletDamage, bulletColor, true, vConfig);
       if (this.bulletPierce) bullet.piercing = true;
+      annotatePowerupBullet(bullet);
       this.applyTraitProjectileEffects(bullet, shotCounter);
       bullets.push(bullet);
 
-      const flash = new PIXI.Graphics();
-      flash.circle(offsetX, -15, 6);
-      flash.fill({ color: this.muzzleFlashColor, alpha: 0.8 });
-      this.sprite.addChild(flash);
-      setTimeout(() => {
-        if (flash.parent) this.sprite.removeChild(flash);
-      }, 80);
     });
+    this.createMuzzleFlash({ offsets, spreadAngles, color: this.muzzleFlashColor });
 
     const wingEvery = Number(this.traitCombat?.wingShotEvery || 0);
     if (wingEvery > 0 && shotCounter % wingEvery === 0) {
@@ -1204,13 +2396,16 @@ export class Player {
           { color: 'Green', index: 13 }
         );
         wing.isTraitWingShot = true;
+        annotatePowerupBullet(wing);
         this.applyTraitProjectileEffects(wing, shotCounter);
         bullets.push(wing);
       });
     }
 
     if (this.dronesActive && this.drones.length) {
-      this.drones.forEach((drone) => {
+      const constellationVolley = Boolean(this.runAugmentModifiers?.droneConstellation) && shotCounter % 4 === 0;
+      this.drones.forEach((drone, droneIndex) => {
+        drone.visualRecoil = 1;
         // Convert drone local position to world position
         const worldX = this.x + drone.x;
         const worldY = this.y + drone.y - 10;
@@ -1226,9 +2421,69 @@ export class Player {
           true,
           { color: 'Blue', index: 7 } // Cyan-ish bullet
         );
-        this.applyTraitProjectileEffects(bullet, shotCounter, { bonus: true });
+        annotatePowerupBullet(bullet);
+        this.applyTraitProjectileEffects(bullet, shotCounter, { bonus: true, drone: true });
         bullets.push(bullet);
+
+        if (constellationVolley) {
+          const droneCount = Math.max(1, this.drones.length);
+          const slot = droneIndex - (droneCount - 1) / 2;
+          const inward = slot === 0 ? 1 : -Math.sign(slot);
+          const launchProfiles = droneCount === 1
+            ? [-1, 1].map((side) => {
+                const originX = worldX + side * 20;
+                const originY = worldY + 2;
+                const targetX = this.x;
+                const targetY = worldY - 190;
+                const aimX = targetX - originX;
+                const aimY = targetY - originY;
+                const aimLength = Math.max(1, Math.hypot(aimX, aimY));
+                return {
+                  originX,
+                  originY,
+                  velocityX: (aimX / aimLength) * this.bulletSpeed * 1.05,
+                  velocityY: (aimY / aimLength) * this.bulletSpeed * 1.05,
+                  originKind: 'mirrored_echo'
+                };
+              })
+            : [{
+                originX: worldX,
+                originY: worldY,
+                velocityX: Math.sin(inward * (0.2 + Math.abs(slot) * 0.035)) * this.bulletSpeed * 1.05,
+                velocityY: -Math.cos(inward * (0.2 + Math.abs(slot) * 0.035)) * this.bulletSpeed * 1.05,
+                originKind: 'drone'
+              }];
+          launchProfiles.forEach((launch, angleIndex) => {
+            const fusionShot = new Bullet(
+              launch.originX,
+              launch.originY,
+              launch.velocityX,
+              launch.velocityY,
+              Math.max(0.7, this.bulletDamage * 0.56),
+              angleIndex % 2 === 0 ? 0xff62dc : 0x62efff,
+              true,
+              { color: angleIndex % 2 === 0 ? 'Red' : 'Blue', index: angleIndex % 2 === 0 ? 15 : 8 }
+            );
+            fusionShot.isTacticalFusionShot = true;
+            fusionShot.tacticalFusionId = 'drone_constellation';
+            fusionShot.tacticalFusionOriginKind = launch.originKind;
+            fusionShot.trailLength = 42;
+            fusionShot.pulseRate = 0.9;
+            this.applyTraitProjectileEffects(fusionShot, shotCounter, { bonus: true, drone: true });
+            bullets.push(fusionShot);
+          });
+        }
       });
+      if (constellationVolley) {
+        this.tacticalFusionStats.constellationVolleys += 1;
+        this.lastTacticalFusionEvent = {
+          id: 'drone_constellation',
+          at: Date.now(),
+          volley: this.tacticalFusionStats.constellationVolleys,
+          projectileCount: bullets.filter((bullet) => bullet?.tacticalFusionId === 'drone_constellation').length
+        };
+        AudioManager.playSfx('chain_lightning_arc', { volume: 0.26, minIntervalMs: 320 });
+      }
     }
 
     const bonusEvery = Number(this.traitCombat?.bonusShotEvery || 0);
@@ -1244,70 +2499,102 @@ export class Player {
         true,
         { color: 'Green', index: 7 }
       );
+      annotatePowerupBullet(bonus);
       this.applyTraitProjectileEffects(bonus, shotCounter, { bonus: true });
       bullets.push(bonus);
     }
 
+    if (this.runAugmentModifiers?.phaseReload && this.phaseReactorVolleyUntil > this.getGameplayClockMs()) {
+      this.phaseReactorVolleyUntil = 0;
+      for (const bullet of bullets) {
+        bullet.damage *= 1.5;
+        bullet.isPhaseReactorVolley = true;
+        bullet.haloColor = 0xd86bff;
+        bullet.trailLength = Math.max(28, bullet.trailLength || 0);
+      }
+      this.pulseHitboxReticle('phase_reactor_volley', 350);
+    }
     return bullets;
   }
 
-  createDrones() {
-    this.clearDrones();
-    const texture = this.shipSprite?.texture;
+  getAdaptiveFocusSpreadMultiplier() {
+    const configuredFloor = Math.max(0.55, Math.min(1, Number(this.runAugmentModifiers?.focusSpreadMult) || 1));
+    if (configuredFloor >= 0.999) return 1;
+    const baseSpread = Math.max(0, Number(this.weaponProfile?.spread) || 0);
+    const shotCount = Math.max(1, Number(this.multiShot) || Number(this.weaponProfile?.bullets) || 1);
+    const spreadPressure = Math.max(0, Math.min(1, (baseSpread - 0.06) / 0.34));
+    const lanePressure = Math.max(0, Math.min(1, (shotCount - 1) / 5));
+    const adaptive = 0.86 - (spreadPressure * 0.15 + lanePressure * 0.11);
+    return Math.max(configuredFloor, Math.min(0.86, adaptive));
+  }
 
-    for (let i = 0; i < 2; i++) {
+  createDrones(count = this.droneCount, color = this.droneColor) {
+    this.clearDrones();
+    const fallbackTexture = GameAssets.getBonusDroneTexture(8) || this.shipSprite?.texture;
+    const safeCount = Math.max(1, Math.min(4, Math.round(Number(count) || 2)));
+    const safeColor = Number.isFinite(color) ? color : 0x66ccff;
+
+    for (let i = 0; i < safeCount; i++) {
       // Create a container for each drone (sprite + glow effect)
       const droneContainer = new PIXI.Container();
 
-      // Add glow ring for visibility
+      // Compact drive wakes distinguish wingmen without repeating the player's hull.
       const glow = new PIXI.Graphics();
-      glow.circle(0, 0, 16);
-      glow.fill({ color: 0x66ccff, alpha: 0.3 });
-      glow.circle(0, 0, 12);
-      glow.stroke({ color: 0x00ffff, width: 2, alpha: 0.8 });
+      glow.moveTo(-6, 9).lineTo(-4, 22).lineTo(-1, 10).fill({ color: safeColor, alpha: 0.55 });
+      glow.moveTo(6, 9).lineTo(4, 22).lineTo(1, 10).fill({ color: safeColor, alpha: 0.55 });
       droneContainer.addChild(glow);
 
       // Add the ship sprite
+      const texture = GameAssets.getBonusDroneTexture(8 + i % 4) || fallbackTexture;
       if (texture && GameAssets.isValidTexture(texture)) {
         const droneSprite = new PIXI.Sprite(texture);
         droneSprite.anchor.set(0.5);
-        droneSprite.scale.set(0.45); // Larger than before (was 0.35)
-        droneSprite.tint = 0x66ccff; // Cyan tint
+        droneSprite.scale.set(computeSupportDroneTextureScale(texture));
+        droneSprite.tint = 0xffffff;
         droneContainer.addChild(droneSprite);
+        droneContainer.visualHull = droneSprite;
       } else {
         // Fallback graphics
         const fallback = new PIXI.Graphics();
         fallback.circle(0, 0, 8);
-        fallback.fill({ color: 0x66ccff, alpha: 1 });
+        fallback.fill({ color: safeColor, alpha: 1 });
         droneContainer.addChild(fallback);
       }
 
       // Ensure visibility
       droneContainer.visible = true;
-      droneContainer.alpha = 1;
+      droneContainer.alpha = 0.9;
 
-      // Add to player sprite container
-      this.sprite.addChild(droneContainer);
+      // Wingmen draw above the hull, with their formation kept outside the hitbox.
+      const shipIndex = this.shipSprite?.parent === this.sprite
+        ? this.sprite.getChildIndex(this.shipSprite)
+        : 0;
+      this.sprite.addChildAt(droneContainer, Math.min(this.sprite.children.length, shipIndex + 1));
       this.drones.push(droneContainer);
     }
 
     this.dronesActive = true;
-    console.log('[Player] Drones created: count=2 texture=' + (texture ? 'yes' : 'fallback'));
+    console.log('[Player] Drones created: count=' + safeCount + ' texture=' + (fallbackTexture ? 'yes' : 'fallback'));
     console.log('[Player] Drone containers added to sprite, alpha=' + this.sprite.alpha);
   }
 
   updateDrones(deltaSeconds) {
     if (!this.dronesActive || this.drones.length === 0) return;
     const t = Date.now() * 0.002;
-    const offset = 32; // Increased from 28 for better visibility
+    const wingOffset = Math.max(48, (this.shipSprite?.width || 64) * 0.5 + 23);
+    const count = Math.max(1, this.drones.length);
 
     this.drones.forEach((drone, i) => {
-      const side = i === 0 ? -1 : 1;
-      drone.x = side * (offset + Math.sin(t + i) * 8);
-      drone.y = 10 + Math.cos(t + i) * 6;
+      const side = i % 2 === 0 ? -1 : 1;
+      const rank = Math.floor(i / 2);
+      const slot = side * (rank + 1);
+      drone.x = side * (wingOffset + rank * 27) + Math.sin(t + i) * 4;
+      drone.y = 12 + rank * 29 + Math.cos(t + i) * 4;
 
       // Rotate drone sprite slightly
-      if (drone.rotation !== undefined) drone.rotation = side * 0.1;
+      if (drone.rotation !== undefined) drone.rotation = slot * 0.08;
+      drone.visualRecoil = Math.max(0, (drone.visualRecoil || 0) - deltaSeconds * 8);
+      if (drone.visualHull) drone.visualHull.y = drone.visualRecoil * 2.5;
 
       // Pulse the glow effect for visibility
       if (drone.children && drone.children[0]) {
@@ -1328,30 +2615,34 @@ export class Player {
     this.drones = [];
   }
 
-  triggerShockwave() {
+  triggerShockwave(options = {}) {
     console.log('[Shockwave] Triggered!');
     const playScene = this.game?.scenes?.play;
-    if (!playScene) return;
+    if (!playScene) return { clearedBullets: 0, hitCount: 0 };
+    const shockwaveRadius = Number(options.radius ?? options.shockwaveRadius ?? 250);
+    const shockwaveDamage = Number(options.damage ?? options.shockwaveDamage ?? 5);
+    const shockwaveColor = Number.isFinite(options.color ?? options.shockwaveColor)
+      ? Number(options.color ?? options.shockwaveColor)
+      : 0xffaa00;
+    const scorePerBullet = Math.max(0, Number(options.scorePerBullet || 0));
+    const scoreBulletCap = Math.max(0, Number(options.scoreBulletCap || 0));
+    let clearedBullets = 0;
+    let hitCount = 0;
 
     // Clear all enemy bullets
     if (playScene.bulletManager) {
-      const cleared = playScene.bulletManager.enemyBullets.length;
-      playScene.bulletManager.enemyBullets.forEach(b => {
-        b.active = false;
-        if (b.sprite && b.sprite.parent) {
-          b.sprite.parent.removeChild(b.sprite);
-        }
-      });
-      playScene.bulletManager.enemyBullets = [];
+      const cleared = playScene.bulletManager.clearEnemyBullets?.('shockwave')
+        ?? playScene.bulletManager.enemyBullets.length;
+      clearedBullets = cleared;
       console.log(`[Shockwave] Cleared ${cleared} enemy bullets`);
+      if (scorePerBullet > 0 && cleared > 0) {
+        const paidBullets = scoreBulletCap > 0 ? Math.min(cleared, scoreBulletCap) : cleared;
+        this.game?.addScore?.(Math.round(paidBullets * scorePerBullet), 'pulse_refund');
+      }
     }
 
     // Damage nearby enemies
     if (playScene.enemyManager && playScene.enemyManager.enemies) {
-      const shockwaveRadius = 250;
-      const shockwaveDamage = 5;
-      let hitCount = 0;
-
       playScene.enemyManager.enemies.forEach(enemy => {
         if (!enemy.active) return;
         const dx = enemy.x - this.x;
@@ -1359,49 +2650,360 @@ export class Player {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < shockwaveRadius) {
-          enemy.takeDamage(shockwaveDamage);
+          if (typeof playScene.applyCombatDamage === 'function') {
+            playScene.applyCombatDamage(enemy, shockwaveDamage, 'shockwave');
+          } else {
+            enemy.takeDamage(shockwaveDamage);
+          }
           hitCount++;
           // Visual feedback
           if (playScene.particleManager) {
-            playScene.particleManager.createExplosion(enemy.x, enemy.y, 0xffaa00, 8);
+            playScene.particleManager.createExplosion(enemy.x, enemy.y, shockwaveColor, 8);
           }
         }
       });
       console.log(`[Shockwave] Hit ${hitCount} enemies`);
     }
 
-    // Visual effect - expanding ring
-    if (playScene.gameContainer) {
-      const ring = new PIXI.Graphics();
-      let radius = 0;
-      const maxRadius = 250;
-      const duration = 500;
-      const startTime = Date.now();
-
-      const animateRing = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(1, elapsed / duration);
-        radius = maxRadius * progress;
-        const alpha = 1 - progress;
-
-        ring.clear();
-        ring.circle(this.x, this.y, radius);
-        ring.stroke({ color: 0xffaa00, width: 4, alpha: alpha * 0.8 });
-        ring.fill({ color: 0xffaa00, alpha: alpha * 0.2 });
-
-        if (progress < 1) {
-          requestAnimationFrame(animateRing);
-        } else {
-          if (ring.parent) ring.parent.removeChild(ring);
-        }
-      };
-
-      playScene.gameContainer.addChild(ring);
-      animateRing();
-    }
+    playScene.triggerShockwave?.(this.x, this.y, shockwaveColor);
+    playScene.particleManager?.createEnergyBloom?.(this.x, this.y, 1.45, {
+      size: Math.min(280, shockwaveRadius * 0.9),
+      alpha: 0.52,
+      aspect: 1.2
+    });
 
     // Sound effect
     AudioManager.playSfx('explosionCrunch', { force: true, volume: 1.0 });
+    return { clearedBullets, hitCount };
+  }
+
+  getRowCoreConfig() {
+    return Object.freeze({
+      durationMs: 4200,
+      pulses: [0, 700, 1400, 2100, 2800, 3500],
+      normalRadius: 210,
+      finalRadius: 285,
+      normalDamage: 2,
+      finalDamage: 4,
+      scorePerBullet: 35,
+      scorePerEnemyHit: 75,
+      overlapScore: 500,
+      perfectScore: 1000
+    });
+  }
+
+  clearRowCoreTimers() {
+    for (const timeoutId of this.rowCoreTimeouts || []) {
+      clearTimeout(timeoutId);
+    }
+    this.rowCoreTimeouts = [];
+  }
+
+  triggerRowCore() {
+    const config = this.getRowCoreConfig();
+    const playScene = this.game?.scenes?.play;
+
+    if (this.rowCoreActive) {
+      const appliedScore = this.game?.addScore?.(config.overlapScore, 'row_core_overlap') ?? config.overlapScore;
+      this.rowCoreStats.ignored += 1;
+      playScene?.enqueueToast?.(translateText('ROW CORE ALREADY CHARGED +500'), {
+        fontSize: 18,
+        fill: '#ff6688',
+        stroke: '#110003',
+        strokeThickness: 3,
+        slot: 'top',
+        type: 'powerup',
+        priority: 7,
+        duration: 1100
+      });
+      playScene?.scorePopupManager?.addScorePopup?.(this.x, this.y - 38, appliedScore, {
+        prefix: translateText('BONUS'),
+        color: '#ff6688'
+      });
+      AudioManager.playSfx('row_core_drum', { force: true, volume: 0.62, minIntervalMs: 0 });
+      return { started: false, alreadyActive: true, bonus: appliedScore };
+    }
+
+    this.rowCoreActive = true;
+    this.rowCoreStartedAt = this.getGameplayClockMs();
+    this.rowCorePulseStats = [];
+    this.clearRowCoreTimers();
+    this.rowCoreStats.uses += 1;
+
+    playScene?.enqueueToast?.(translateText('LONGSHIP PROTOCOL'), {
+      fontSize: this.game?.getWidth?.() < 620 ? 20 : 28,
+      fill: '#ff6688',
+      stroke: '#070009',
+      strokeThickness: 5,
+      slot: 'center',
+      type: 'powerup',
+      priority: 8,
+      duration: 1350,
+      y: (this.game?.getHeight?.() || 720) * 0.36,
+      maxWidth: (this.game?.getWidth?.() || 960) * 0.7
+    });
+    if (playScene?.enemyManager?.boss?.active) {
+      playScene.showBossCombatNotice?.('boss_row_core', translateText('THE BOSS HEARS THE OARS'));
+    }
+
+    // This is a premixed horn, drums, and three clearly spaced "RO" shouts.
+    // Keep it singular: any pickup sting or mission-control line would mask
+    // the recognizable opening and made the celebration appear broken.
+    AudioManager.playSfx('row_core_viking_row', { force: true, volume: 1, minIntervalMs: 0 });
+
+    config.pulses.forEach((delayMs, index) => {
+      const timeoutId = setTimeout(() => {
+        this.rowCoreTimeouts = (this.rowCoreTimeouts || []).filter(id => id !== timeoutId);
+        this.pulseRowCore(playScene || this.game?.scenes?.play, index, config.pulses.length);
+      }, delayMs);
+      this.rowCoreTimeouts.push(timeoutId);
+    });
+
+    const finalDelay = config.pulses[config.pulses.length - 1] + 720;
+    const cleanupId = setTimeout(() => {
+      this.rowCoreTimeouts = (this.rowCoreTimeouts || []).filter(id => id !== cleanupId);
+      this.endRowCoreSequence(playScene || this.game?.scenes?.play);
+    }, finalDelay);
+    this.rowCoreTimeouts.push(cleanupId);
+
+    return { started: true, pulses: config.pulses.length };
+  }
+
+  pulseRowCore(playScene = this.game?.scenes?.play, index = 0, total = 6) {
+    const config = this.getRowCoreConfig();
+    const finalPulse = index >= total - 1;
+    const radius = finalPulse ? config.finalRadius : config.normalRadius;
+    const damage = finalPulse ? config.finalDamage : config.normalDamage;
+    const pulseColor = finalPulse ? 0xffffff : (index % 2 === 0 ? 0xff2244 : 0x22ccff);
+    let bulletsCleared = 0;
+    let enemiesHit = 0;
+    let kills = 0;
+
+    if (playScene?.bulletManager && Array.isArray(playScene.bulletManager.enemyBullets)) {
+      for (const bullet of playScene.bulletManager.enemyBullets) {
+        if (!bullet?.active) continue;
+        const distance = Math.hypot((bullet.x || 0) - this.x, (bullet.y || 0) - this.y);
+        if (distance <= radius) {
+          playScene.bulletManager.deactivateBullet?.(bullet, 'row_core_pulse');
+          bulletsCleared += 1;
+          playScene.particleManager?.createHitSpark?.(bullet.x, bullet.y, pulseColor, finalPulse ? 1.25 : 0.85);
+        }
+      }
+      playScene.bulletManager.pruneInactiveBullets?.('enemy', 'row_core_pulse');
+    }
+
+    const enemyTargets = Array.isArray(playScene?.enemyManager?.enemies)
+      ? [...playScene.enemyManager.enemies]
+      : [];
+    const hijacker = playScene?.enemyManager?.hijacker;
+    if (hijacker?.active && !enemyTargets.includes(hijacker)) enemyTargets.push(hijacker);
+
+    const width = Number(this.game?.getWidth?.()) || Number(playScene?.game?.getWidth?.()) || 960;
+    const height = Number(this.game?.getHeight?.()) || Number(playScene?.game?.getHeight?.()) || 720;
+    const pushStrength = finalPulse ? 58 : 36;
+
+    for (const enemy of enemyTargets) {
+      if (!enemy?.active || enemy.kind === 'boss') continue;
+      const dx = (enemy.x || 0) - this.x;
+      const dy = (enemy.y || 0) - this.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance > radius) continue;
+
+      enemiesHit += 1;
+      const safeDistance = Math.max(1, distance);
+      const pushX = (dx / safeDistance) * pushStrength;
+      const pushY = (dy / safeDistance) * pushStrength - (finalPulse ? 18 : 10);
+      enemy.x = Math.max(20, Math.min(width - 20, (enemy.x || 0) + pushX));
+      enemy.y = Math.max(42, Math.min(height - 96, (enemy.y || 0) + pushY));
+      if (enemy.sprite) {
+        enemy.sprite.x = enemy.x;
+        enemy.sprite.y = enemy.y;
+      }
+
+      let destroyed = false;
+      try {
+        destroyed = typeof playScene?.applyCombatDamage === 'function'
+          ? playScene.applyCombatDamage(enemy, damage, 'row_core')
+          : (typeof enemy.takeDamage === 'function' ? enemy.takeDamage(damage) : false);
+      } catch (error) {
+        console.warn('[RowCore] enemy damage failed', error);
+      }
+      playScene.particleManager?.createHitSpark?.(enemy.x, enemy.y, pulseColor, finalPulse ? 1.35 : 0.9);
+      if (destroyed || enemy.active === false || enemy.health <= 0) {
+        kills += 1;
+        playScene.onEnemyKilled?.(enemy);
+        playScene.playEnemyDeathFeedback?.(enemy, { color: pulseColor, intensity: finalPulse ? 0.9 : 0.62, volume: 0.38 });
+        playScene.enemyManager?.removeEnemySprite?.(enemy, 'row_core');
+      }
+    }
+
+    const score = bulletsCleared * config.scorePerBullet + enemiesHit * config.scorePerEnemyHit;
+    const appliedScore = score > 0 ? (this.game?.addScore?.(score, 'row_core') ?? score) : 0;
+    if (appliedScore > 0) {
+      playScene?.scorePopupManager?.addScorePopup?.(this.x, this.y - (finalPulse ? 52 : 34), appliedScore, {
+        prefix: 'ROW',
+        color: finalPulse ? '#ffffff' : '#ff6688'
+      });
+    }
+
+    const stats = {
+      index,
+      finalPulse,
+      radius,
+      damage,
+      bulletsCleared,
+      enemiesHit,
+      kills,
+      score: appliedScore,
+      useful: bulletsCleared > 0 || enemiesHit > 0
+    };
+    this.rowCorePulseStats[index] = stats;
+    this.rowCoreStats.bulletsCleared += bulletsCleared;
+    this.rowCoreStats.enemiesHit += enemiesHit;
+    this.rowCoreStats.kills += kills;
+
+    AudioManager.playSfx('row_core_wave', {
+      volume: finalPulse ? 0.72 : 0.52,
+      minIntervalMs: 0
+    });
+
+    const shakeScale = Math.max(0, Number(getAccessibilitySettings().screenShake) || 0);
+    if (shakeScale > 0) {
+      playScene?.screenShake?.shake?.((finalPulse ? 9 : 4) * shakeScale, (finalPulse ? 18 : 10) * shakeScale);
+    }
+    this.createRowCoreWave(playScene, radius, index, { finalPulse, color: pulseColor });
+
+    return stats;
+  }
+
+  createRowCoreWave(playScene = this.game?.scenes?.play, radius = 210, index = 0, options = {}) {
+    const container = playScene?.gameContainer || playScene?.container || playScene?.uiOverlay;
+    if (!container) return null;
+
+    const finalPulse = Boolean(options.finalPulse);
+    const color = Number.isFinite(options.color) ? options.color : (finalPulse ? 0xffffff : 0xff2244);
+    const accent = finalPulse ? 0xff2244 : 0x22ccff;
+    const visual = new PIXI.Container();
+    visual.label = `row_core_wave_${index}`;
+    visual.x = this.x;
+    visual.y = this.y;
+    visual.blendMode = 'add';
+
+    const ring = new PIXI.Graphics();
+    const oars = new PIXI.Graphics();
+    const sparks = new PIXI.Graphics();
+    visual.addChild(ring, oars, sparks);
+
+    const chantText = createText('RO!', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: finalPulse ? 38 : 28,
+      fill: finalPulse ? '#ffffff' : '#ff6688',
+      stroke: '#090012',
+      strokeThickness: finalPulse ? 5 : 4,
+      fontWeight: '900'
+    });
+    chantText.anchor.set(0.5);
+    chantText.y = finalPulse ? -60 : -48;
+    chantText.blendMode = 'add';
+    visual.addChild(chantText);
+
+    container.addChild(visual);
+    const duration = finalPulse ? 520 : 420;
+    let elapsed = 0;
+    const ticker = (delta) => {
+      const deltaMs = (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+      elapsed += deltaMs;
+      const t = Math.min(1, elapsed / duration);
+      const easeOut = 1 - Math.pow(1 - t, 2);
+      const currentRadius = 22 + (radius - 22) * easeOut;
+      const alpha = Math.max(0, 1 - t);
+      ring.clear();
+      drawEnergyShell(ring, 0, 0, currentRadius, { color, width: finalPulse ? 6 : 4, alpha: 0.82 * alpha });
+      drawEnergyShell(ring, 0, 0, currentRadius * 0.72, { color: accent, width: finalPulse ? 3 : 2, alpha: 0.5 * alpha });
+
+      oars.clear();
+      const sweep = 44 + 42 * easeOut;
+      const strokeWidth = finalPulse ? 8 : 5;
+      for (const side of [-1, 1]) {
+        const x1 = side * (24 + sweep * 0.36);
+        const x2 = side * (72 + sweep);
+        oars.moveTo(x1, -18 - sweep * 0.12);
+        oars.lineTo(x2, 28 + sweep * 0.24);
+        oars.stroke({ color: side < 0 ? accent : color, width: strokeWidth, alpha: 0.78 * alpha });
+        oars.moveTo(x1 * 0.72, 20 + sweep * 0.06);
+        oars.lineTo(x2 * 0.84, -30 - sweep * 0.12);
+        oars.stroke({ color: 0xffffff, width: Math.max(2, strokeWidth * 0.45), alpha: 0.46 * alpha });
+      }
+
+      sparks.clear();
+      const sparkCount = finalPulse ? 18 : 10;
+      for (let i = 0; i < sparkCount; i += 1) {
+        const angle = (Math.PI * 2 * i) / sparkCount + index * 0.36;
+        const inner = currentRadius * 0.42;
+        const outer = currentRadius * (0.75 + (i % 3) * 0.08);
+        sparks.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        sparks.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        sparks.stroke({ color: i % 2 ? accent : color, width: finalPulse ? 2.4 : 1.6, alpha: 0.34 * alpha });
+      }
+
+      chantText.alpha = alpha;
+      chantText.y = (finalPulse ? -60 : -48) - t * 24;
+      chantText.scale.set(1 + t * (finalPulse ? 0.42 : 0.25));
+      visual.alpha = Math.max(0, alpha);
+
+      if (t >= 1 || (this.game?.currentScene && this.game.currentScene !== playScene)) {
+        playScene?.game?.app?.ticker?.remove?.(ticker);
+        this.rowCoreVisualTickers = (this.rowCoreVisualTickers || []).filter(entry => entry !== ticker);
+        if (visual.parent) visual.parent.removeChild(visual);
+        visual.destroy?.({ children: true });
+      }
+    };
+
+    if (playScene?.game?.app?.ticker?.add) {
+      playScene.game.app.ticker.add(ticker);
+      this.rowCoreVisualTickers.push(ticker);
+    } else {
+      setTimeout(() => {
+        if (visual.parent) visual.parent.removeChild(visual);
+        visual.destroy?.({ children: true });
+      }, duration);
+    }
+
+    return visual;
+  }
+
+  endRowCoreSequence(playScene = this.game?.scenes?.play) {
+    const config = this.getRowCoreConfig();
+    this.clearRowCoreTimers();
+    const pulseStats = Array.from({ length: config.pulses.length }, (_, index) => this.rowCorePulseStats[index] || null);
+    const allUseful = pulseStats.length === config.pulses.length && pulseStats.every(stats => stats?.useful);
+    const bulletsCleared = pulseStats.reduce((sum, stats) => sum + (Number(stats?.bulletsCleared) || 0), 0);
+    this.rowCoreStats.bestBulletsCleared = Math.max(this.rowCoreStats.bestBulletsCleared || 0, bulletsCleared);
+
+    if (allUseful) {
+      const appliedScore = this.game?.addScore?.(config.perfectScore, 'row_core_perfect') ?? config.perfectScore;
+      this.rowCoreStats.perfects += 1;
+      playScene?.enqueueToast?.(translateText('PERFECT ROW +1000'), {
+        fontSize: this.game?.getWidth?.() < 620 ? 18 : 24,
+        fill: '#ffffff',
+        stroke: '#140006',
+        strokeThickness: 4,
+        slot: 'top',
+        type: 'powerup',
+        priority: 8,
+        duration: 1550
+      });
+      playScene?.scorePopupManager?.addScorePopup?.(this.x, this.y - 54, appliedScore, {
+        prefix: translateText('BONUS'),
+        color: '#ffffff'
+      });
+      playScene?.showBossCombatNotice?.('boss_row_core_perfect', translateText('PERFECT ROW. ANNOYINGLY HEROIC.'));
+      AudioManager.playSfx('row_core_perfect', { force: true, volume: 0.9, minIntervalMs: 0 });
+    }
+
+    this.rowCoreActive = false;
+    this.rowCoreStartedAt = 0;
+    return { allUseful, bulletsCleared, pulseStats };
   }
 
   getStatSnapshot() {
@@ -1427,6 +3029,7 @@ export class Player {
       return remaining === cadence ? cadence : remaining;
     };
 
+    const experimentalPulse = this.getExperimentalPulseState();
     return {
       slug: this.shipTrait?.slug || null,
       label: this.shipTrait?.label || null,
@@ -1442,7 +3045,29 @@ export class Player {
       nextCritShotIn: countdown(combat.critEvery),
       dodgePulseRadius: Number(combat.dodgePulseRadius || 0),
       nearMissScoreMult: Number(combat.nearMissScoreMult || 1),
-      projectileRadiusMult: Number(combat.projectileRadiusMult || 1)
+      projectileRadiusMult: Number(combat.projectileRadiusMult || 1),
+      experimentalPulse
+    };
+  }
+
+  getExperimentalPulseState(now = this.getGameplayClockMs()) {
+    const experiment = this.game?.lateGameExperiment;
+    if (experiment?.active !== true) return null;
+    const config = experiment.phasePulse || {
+      available: experiment.phasePulseAvailable !== false,
+      maxRadius: 72,
+      rechargeMs: 2000
+    };
+    const rechargeMs = Math.max(0, Number(config.rechargeMs) || 0);
+    const remainingMs = config.available === false
+      ? 0
+      : Math.max(0, (Number(this.experimentalPulseReadyAt) || 0) - now);
+    return {
+      available: config.available !== false,
+      maxRadius: Math.max(1, Number(config.maxRadius) || 72),
+      rechargeMs,
+      remainingMs,
+      ready: config.available !== false && remainingMs <= 0
     };
   }
 
@@ -1456,7 +3081,7 @@ export class Player {
   }
 
   getActiveStatusEffects() {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     return [...(this.statusEffects?.values?.() || [])]
       .filter((effect) => effect && effect.expiresAt > now)
       .map((effect) => ({
@@ -1473,7 +3098,7 @@ export class Player {
   }
 
   getTractorDebuffState() {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     return {
       immune: now < this.tractorDebuffImmunityUntil,
       immunityRemainingMs: Math.max(0, this.tractorDebuffImmunityUntil - now),
@@ -1486,8 +3111,144 @@ export class Player {
     return this.hasStatusEffect('powerup_nullification');
   }
 
+  getPowerupSlotEffect(slot) {
+    if (!slot?.type) return null;
+    return slot.effect || getPowerupMeta(slot.type)?.effect || null;
+  }
+
+  getPowerupSlots() {
+    return [this.activePowerup, this.secondaryPowerup].filter((slot) => slot?.type);
+  }
+
+  getPowerupEffectEntry(predicate) {
+    if (typeof predicate !== 'function') return null;
+    for (const slot of this.getPowerupSlots()) {
+      const effect = this.getPowerupSlotEffect(slot) || {};
+      if (predicate(effect, slot)) return { slot, effect };
+    }
+    return null;
+  }
+
+  getCurrentPowerupEffect() {
+    return this.powerupEffect || this.getPowerupSlotEffect(this.activePowerup);
+  }
+
+  getPowerupMovementMultiplier() {
+    if (this.isPowerupSuppressed()) return 1;
+    const effect = this.getPowerupEffectEntry((candidate) => Number.isFinite(Number(candidate.movementBoostMult)))?.effect || {};
+    return Math.max(0.1, Number(effect.movementBoostMult || 1));
+  }
+
+  isSlowTimeActive() {
+    if (this.isPowerupSuppressed()) return false;
+    return Boolean(this.getPowerupEffectEntry((effect) => effect.slowTime === true));
+  }
+
+  getSlowTimeScale(effectKey, fallback = 0.35) {
+    if (!this.isSlowTimeActive()) return 1;
+    const effect = this.getPowerupEffectEntry((candidate) => candidate.slowTime === true)?.effect || {};
+    const value = Number(effect[effectKey]);
+    if (!Number.isFinite(value)) return fallback;
+    return Math.max(0.05, Math.min(1, value));
+  }
+
+  getSlowTimeEnemyScale() {
+    return this.getSlowTimeScale('enemyTimeScale', 0.33);
+  }
+
+  getSlowTimeEnemyBulletScale() {
+    return this.getSlowTimeScale('enemyBulletScale', 0.35);
+  }
+
+  getSlowTimeHazardScale() {
+    return this.getSlowTimeScale('hazardTimeScale', 0.35);
+  }
+
   isGhostActive() {
-    return this.activePowerup?.type === 'ghost' && !this.isPowerupSuppressed();
+    return !this.isPowerupSuppressed() && Boolean(this.getPowerupEffectEntry((effect) => effect.ghost === true));
+  }
+
+  updateGhostTimerVisual(now = this.getGameplayClockMs(), visualNow = Date.now()) {
+    const layer = this.ghostTimerLayer;
+    const text = this.ghostTimerText;
+    if (!layer || !text) return null;
+    const ghostEntry = this.isGhostActive()
+      ? this.getPowerupEffectEntry((effect) => effect.ghost === true)
+      : null;
+    const remainingMs = ghostEntry ? this.getPowerupSlotRemainingMs(ghostEntry.slot, now) : 0;
+    if (remainingMs <= 0) {
+      layer.clear();
+      layer.visible = false;
+      text.visible = false;
+      layer.__debugGhostTimer = {
+        visible: false,
+        remainingMs: 0,
+        reducedMotion: Boolean(layer.__debugGhostTimer?.reducedMotion)
+      };
+      return layer.__debugGhostTimer;
+    }
+
+    const accessibility = getAccessibilitySettings();
+    const reducedMotion = Boolean(accessibility.prefersReducedMotion);
+    const compact = Number(this.game?.getWidth?.()) < 720;
+    const durationMs = Math.max(1, Number(ghostEntry?.effect?.durationMs) || remainingMs);
+    const progress = Math.max(0, Math.min(1, remainingMs / durationMs));
+    const radius = compact ? 30 : 35;
+    const startAngle = Math.PI * 0.16;
+    const span = Math.PI * 0.68;
+    const endAngle = startAngle + span;
+    const progressEnd = startAngle + span * progress;
+    const pulse = reducedMotion ? 0 : (Math.sin(visualNow * 0.008) * 0.5 + 0.5);
+
+    layer.clear();
+    layer.arc(0, 0, radius, startAngle, endAngle);
+    layer.stroke({ color: 0x25163c, width: 4, alpha: 0.58 });
+    layer.arc(0, 0, radius, startAngle, progressEnd);
+    layer.stroke({ color: 0xc89bff, width: 3.2, alpha: 0.7 + pulse * 0.12 });
+    for (let index = 0; index <= 6; index += 1) {
+      const angle = startAngle + span * (index / 6);
+      const inner = radius - 4;
+      const outer = radius + 3;
+      layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    layer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.32 });
+    if (!reducedMotion) {
+      const beadAngle = progressEnd;
+      layer.circle(Math.cos(beadAngle) * radius, Math.sin(beadAngle) * radius, 2.5 + pulse * 0.6);
+      layer.fill({ color: 0xffffff, alpha: 0.72 });
+    }
+    layer.visible = true;
+
+    const seconds = (remainingMs / 1000).toFixed(1);
+    text.text = translateText('GHOST {seconds}s', { seconds });
+    text.position.set(0, radius + (compact ? 8 : 9));
+    text.style.fontSize = compact ? 10 : 11;
+    text.visible = true;
+    text.alpha = 0.82;
+
+    layer.__debugGhostTimer = {
+      visible: true,
+      remainingMs: Math.round(remainingMs),
+      durationMs: Math.round(durationMs),
+      progress: Number(progress.toFixed(4)),
+      seconds,
+      radius,
+      arcSpanRadians: Number(span.toFixed(3)),
+      attachedToPlayer: layer.parent === this.sprite && text.parent === this.sprite,
+      reducedMotion,
+      animatedBead: !reducedMotion,
+      dominantFullRing: false
+    };
+    return layer.__debugGhostTimer;
+  }
+
+  getGhostTimerDebugState() {
+    return this.ghostTimerLayer?.__debugGhostTimer || {
+      visible: false,
+      remainingMs: 0,
+      reducedMotion: Boolean(this.ghostTimerLayer?.__debugGhostTimer?.reducedMotion)
+    };
   }
 
   isDefenseSuppressed() {
@@ -1495,7 +3256,7 @@ export class Player {
   }
 
   applyTractorDebuff({ source = 'tractor', x = this.x, y = this.y, random = Math.random } = {}) {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     if (now < this.tractorDebuffImmunityUntil) {
       return {
         applied: false,
@@ -1551,7 +3312,7 @@ export class Player {
     return { applied: true, effect };
   }
 
-  updateStatusEffects(now = Date.now(), deltaSeconds = 1 / 60) {
+  updateStatusEffects(now = this.getGameplayClockMs(), deltaSeconds = 1 / 60) {
     if (!this.statusEffects?.size) return;
     let expired = false;
     this.statusEffects.forEach((effect, id) => {
@@ -1595,10 +3356,8 @@ export class Player {
     if (!container) return;
 
     const ring = new PIXI.Graphics();
-    ring.circle(this.x, this.y, Math.max(26, this.radius * 2.2));
-    ring.stroke({ color, width: 4, alpha: 0.72 });
-    ring.circle(this.x, this.y, Math.max(14, this.radius * 1.25));
-    ring.stroke({ color: 0xffffff, width: 2, alpha: 0.4 });
+    drawEnergyShell(ring, this.x, this.y, Math.max(26, this.radius * 2.2), { color, width: 4, alpha: 0.72 });
+    drawEnergyShell(ring, this.x, this.y, Math.max(14, this.radius * 1.25), { color: 0xffffff, width: 2, alpha: 0.4 });
     ring.blendMode = 'add';
     container.addChild(ring);
     const start = Date.now();
@@ -1608,10 +3367,8 @@ export class Player {
       const t = Math.min(1, (Date.now() - start) / duration);
       const alpha = (1 - t) * 0.74;
       ring.clear();
-      ring.circle(this.x, this.y, baseRadius + t * 78);
-      ring.stroke({ color, width: 5, alpha });
-      ring.circle(this.x, this.y, baseRadius * 0.58 + t * 38);
-      ring.stroke({ color: 0xffffff, width: 2, alpha: alpha * 0.65 });
+      drawEnergyShell(ring, this.x, this.y, baseRadius + t * 78, { color, width: 5, alpha });
+      drawEnergyShell(ring, this.x, this.y, baseRadius * 0.58 + t * 38, { color: 0xffffff, width: 2, alpha: alpha * 0.65 });
       if (t >= 1) {
         playScene?.game?.app?.ticker?.remove(animate);
         if (ring.parent) ring.parent.removeChild(ring);
@@ -1630,7 +3387,7 @@ export class Player {
       return;
     }
 
-    const now = Date.now();
+    const now = energyClock()*1000;
     const layer = this.statusEffectLayer;
     const primary = activeEffects[0];
     const color = primary.color || 0xff66ff;
@@ -1639,10 +3396,8 @@ export class Player {
 
     layer.clear();
     layer.visible = true;
-    layer.circle(0, 0, radius);
-    layer.stroke({ color, width: 3.2, alpha: 0.68 });
-    layer.circle(0, 0, radius * 0.72);
-    layer.stroke({ color: 0xffffff, width: 1.8, alpha: 0.24 + this.statusVfxPulse * 0.26 });
+    drawEnergyShell(layer, 0, 0, radius, { color, width: 3.2, alpha: 0.68 });
+    drawEnergyShell(layer, 0, 0, radius * 0.72, { color: 0xffffff, width: 1.8, alpha: 0.24 + this.statusVfxPulse * 0.26 });
 
     activeEffects.slice(0, 3).forEach((effect, index) => {
       const phase = now * 0.004 + index * 2.1;
@@ -1676,40 +3431,229 @@ export class Player {
   }
 
   getPowerupLabel(type) {
-    const labels = {
-      triple_beam: 'TRIPLE BEAM',
-      vector_boost: 'VECTOR BOOST',
-      rapid_cabinet: 'RAPID CABINET',
-      overdrive_core: 'OVERDRIVE CORE',
-      slow_time: 'SLOW TIME',
-      ghost: 'GHOST',
-      shield: 'SHIELD',
-      rapid_fire: 'RAPID FIRE',
-      double_shot: 'DOUBLE SHOT',
-      damage_up: 'DAMAGE UP',
-      speed_up: 'SPEED UP',
-      pierce: 'PIERCE',
-      score_x2: 'SCORE x2',
-      magnet: 'MAGNET: PICKUPS',
-      drones: 'DRONES',
-      shockwave: 'SHOCKWAVE',
-      point_defense: 'POINT DEFENSE',
-      bomb: 'BOMB',
-      chain_lightning: 'CHAIN LIGHTNING',
-      orbital_strike: 'ORBITAL STRIKE',
-      vampire: 'VAMPIRE DRAIN'
-    };
-    return labels[type] || String(type || '').toUpperCase();
+    return getPowerupMeta(type)?.name || String(type || '').replace(/_/g, ' ').toUpperCase();
+  }
+
+  getPowerupSlotRemainingMs(slot, now = this.getGameplayClockMs()) {
+    if (!slot?.type) return 0;
+    if (slot.durationMode === 'while_firing') {
+      return Math.max(0, Number(slot.remainingMs) || 0);
+    }
+    return Math.max(0, (Number(slot.expiresAt) || 0) - now);
+  }
+
+  getActivePowerupRemainingMs(now = this.getGameplayClockMs()) {
+    return this.getPowerupSlotRemainingMs(this.activePowerup, now);
+  }
+
+  getSecondaryPowerupRemainingMs(now = this.getGameplayClockMs()) {
+    return this.getPowerupSlotRemainingMs(this.secondaryPowerup, now);
+  }
+
+  setPowerupSlotDuration(slot, type, durationMs, now = this.getGameplayClockMs()) {
+    if (!slot) return 0;
+    const safeDuration = Math.max(0, Number(durationMs) || 0);
+    slot.durationMode = getPowerupDurationMode(type);
+    slot.remainingMs = safeDuration;
+    slot.expiresAt = now + safeDuration;
+    return slot.expiresAt;
+  }
+
+  setActivePowerupDuration(type, durationMs, now = this.getGameplayClockMs()) {
+    return this.setPowerupSlotDuration(this.activePowerup, type, durationMs, now);
+  }
+
+  stackPowerupSlotDuration(slot, type, durationMs, now = this.getGameplayClockMs()) {
+    const pickupDuration = Math.max(0, Number(durationMs) || 0);
+    const currentRemaining = this.getPowerupSlotRemainingMs(slot, now);
+    const cap = pickupDuration * MAX_DUPLICATE_DURATION_STACKS;
+    const stackedRemaining = Math.max(currentRemaining, Math.min(cap, currentRemaining + pickupDuration));
+    this.setPowerupSlotDuration(slot, type, stackedRemaining, now);
+    return stackedRemaining;
+  }
+
+  isWeaponPowerupDrainActive() {
+    if (this.activePowerup?.durationMode !== 'while_firing') return false;
+    if (this.isPowerupSuppressed()) return false;
+    return Boolean(this.inputManager?.isFiring?.());
+  }
+
+  updateActivePowerupDuration(now = this.getGameplayClockMs(), dt = 0) {
+    if (this.secondaryPowerup?.type) {
+      if (this.secondaryPowerup.durationMode === 'while_firing') {
+        const drainMs = this.isPowerupSuppressed() || !this.inputManager?.isFiring?.()
+          ? 0
+          : Math.max(0, Number(dt) || 0);
+        this.secondaryPowerup.remainingMs = Math.max(0, (Number(this.secondaryPowerup.remainingMs) || 0) - drainMs);
+        this.secondaryPowerup.expiresAt = now + this.secondaryPowerup.remainingMs;
+      } else {
+        this.secondaryPowerup.remainingMs = Math.max(0, (Number(this.secondaryPowerup.expiresAt) || 0) - now);
+      }
+    }
+    if (!this.activePowerup?.type) return;
+    if (this.activePowerup.durationMode !== 'while_firing') {
+      this.activePowerup.remainingMs = Math.max(0, (Number(this.activePowerup.expiresAt) || 0) - now);
+      return;
+    }
+
+    const previousRemaining = Number.isFinite(Number(this.activePowerup.remainingMs))
+      ? Number(this.activePowerup.remainingMs)
+      : Math.max(0, (Number(this.activePowerup.expiresAt) || 0) - now);
+    const drainMs = this.isWeaponPowerupDrainActive()
+      ? Math.max(0, Number(dt) || 0)
+      : 0;
+    const remainingMs = Math.max(0, previousRemaining - drainMs);
+    this.activePowerup.remainingMs = remainingMs;
+    this.activePowerup.expiresAt = now + remainingMs;
+  }
+
+  syncPowerupRuntimeState(now = this.getGameplayClockMs()) {
+    const entries = this.getPowerupSlots().map((slot) => ({ slot, effect: this.getPowerupSlotEffect(slot) || {} }));
+    const scoreEntries = entries.filter(({ effect }) => Number.isFinite(Number(effect.scoreMultiplier)));
+    if (scoreEntries.length) {
+      scoreEntries.sort((a, b) => Number(b.effect.scoreMultiplier) - Number(a.effect.scoreMultiplier));
+      const selected = scoreEntries[0];
+      this.scoreMultiplier = Math.max(1, Number(selected.effect.scoreMultiplier) || 1);
+      this.scoreMultiplierType = selected.slot.type;
+      this.scoreBoostExpiresAt = Number(selected.slot.expiresAt) || (now + this.getPowerupSlotRemainingMs(selected.slot, now));
+    } else {
+      this.scoreMultiplier = 1;
+      this.scoreMultiplierType = null;
+      this.scoreBoostExpiresAt = 0;
+    }
+
+    const tacticalMagnetActive = Number(this.runAugmentModifiers?.magnetRadiusBonus || 0) > 0;
+    const magnetEntries = entries.filter(({ effect }) => Number.isFinite(Number(effect.magnetRadius)));
+    if (tacticalMagnetActive) {
+      this.magnetActive = true;
+      this.magnetExpiresAt = Number.MAX_SAFE_INTEGER;
+    } else if (magnetEntries.length) {
+      this.magnetActive = true;
+      this.magnetExpiresAt = Math.max(...magnetEntries.map(({ slot }) => Number(slot.expiresAt) || 0));
+    } else {
+      this.magnetActive = false;
+      this.magnetExpiresAt = 0;
+    }
+
+    const tacticalDronesActive = Number(this.runAugmentModifiers?.droneCount || 0) > 0;
+    const droneEntries = entries.filter(({ effect }) => Number.isFinite(Number(effect.droneCount)));
+    if (tacticalDronesActive) {
+      this.dronesActive = true;
+      this.dronesExpiresAt = Number.MAX_SAFE_INTEGER;
+    } else if (droneEntries.length) {
+      this.dronesActive = true;
+      this.dronesExpiresAt = Math.max(...droneEntries.map(({ slot }) => Number(slot.expiresAt) || 0));
+    } else if (this.dronesActive || this.drones?.length) {
+      this.clearDrones();
+      this.dronesExpiresAt = 0;
+    }
+
+    const tacticalChainMax = Math.max(0, Math.round(Number(this.runAugmentModifiers?.chainMax) || 0));
+    const timedChainMax = Math.max(0, ...entries.map(({ effect }) => Math.round(Number(effect.chainMax) || 0)));
+    this.chainLightningActive = tacticalChainMax > 0 || timedChainMax > 0;
+    this.chainLightningMaxChains = Math.max(3, tacticalChainMax, timedChainMax);
+
+    const vampireEntry = entries.find(({ effect }) => effect.vampire === true);
+    this.vampireActive = Boolean(vampireEntry);
+    this.vampirePowerupType = vampireEntry?.slot?.type || null;
+    if (!vampireEntry) this.vampireKillCount = 0;
+
+    const ghostActive = !this.isPowerupSuppressed() && entries.some(({ effect }) => effect.ghost === true);
+    if (this.sprite && !this.isDodging && !this.invulnerable) {
+      this.sprite.alpha = ghostActive ? 0.4 : 1;
+    }
+  }
+
+  clearPowerupRuntimeForSlot(slot, preservedSlots = []) {
+    if (!slot?.type) return;
+    const type = slot.type;
+    const effect = this.getPowerupSlotEffect(slot) || {};
+    const preservedEffects = preservedSlots.map((candidate) => this.getPowerupSlotEffect(candidate) || {});
+    const preservedHas = (key) => preservedEffects.some((candidate) => candidate[key] === true || Number.isFinite(Number(candidate[key])));
+
+    if (effect.pointDefense && this.pointDefenseSource === type && !preservedHas('pointDefense')) {
+      this.deactivatePointDefense();
+    }
+    if (effect.bombShots && this.bombPowerupType === type && !preservedHas('bombShots')) {
+      this.bombShotsLeft = 0;
+      this.bombArmedAt = 0;
+      this.bombTriggerQueued = false;
+      this.lastBombCommitState = null;
+      this.bombPowerupType = null;
+      if (this.bombIndicator) this.bombIndicator.visible = false;
+    }
+    if (effect.orbitalCharges && this.orbitalStrikePowerupType === type && !preservedHas('orbitalCharges')) {
+      this.orbitalStrikeActive = false;
+      this.orbitalStrikeCharges = 0;
+      this.orbitalStrikeMaxCharges = 5;
+      this.orbitalStrikePowerupType = null;
+    }
+    if (effect.vampire && this.vampirePowerupType === type && !preservedHas('vampire')) {
+      this.vampireActive = false;
+      this.vampireKillCount = 0;
+      this.vampirePowerupType = null;
+    }
+  }
+
+  preparePowerupSlotsFor(type) {
+    const existing = this.getPowerupSlots().map((slot) => ({
+      ...slot,
+      effect: this.getPowerupSlotEffect(slot)
+    }));
+    const preserved = existing.find((slot) => arePowerupsCompatible(slot.type, type)) || null;
+    const preservedSlots = preserved ? [preserved] : [];
+    existing.filter((slot) => slot !== preserved).forEach((slot) => {
+      this.clearPowerupRuntimeForSlot(slot, preservedSlots);
+    });
+    this.activePowerup = createEmptyPowerupSlot();
+    this.secondaryPowerup = preserved ? { ...preserved } : createEmptyPowerupSlot();
+    this.powerupEffect = null;
+    return preserved;
+  }
+
+  expireSecondaryPowerup() {
+    const expired = { ...this.secondaryPowerup, effect: this.getPowerupSlotEffect(this.secondaryPowerup) };
+    const expiredType = expired.type || null;
+    this.secondaryPowerup = createEmptyPowerupSlot();
+    this.clearPowerupRuntimeForSlot(expired, this.activePowerup?.type ? [this.activePowerup] : []);
+    this.recalculateStats();
+    this.syncPowerupRuntimeState();
+    return expiredType;
+  }
+
+  promoteSecondaryPowerup(now = this.getGameplayClockMs()) {
+    if (!this.secondaryPowerup?.type) return false;
+    const expired = { ...this.activePowerup, effect: this.getPowerupSlotEffect(this.activePowerup) };
+    const promoted = { ...this.secondaryPowerup, effect: this.getPowerupSlotEffect(this.secondaryPowerup) };
+    const remainingMs = this.getSecondaryPowerupRemainingMs(now);
+    this.clearPowerupRuntimeForSlot(expired, [promoted]);
+    this.activePowerup = promoted;
+    this.secondaryPowerup = createEmptyPowerupSlot();
+    this.powerupEffect = promoted.effect || null;
+    this.activePowerup.durationMode = promoted.durationMode || getPowerupDurationMode(promoted.type);
+    this.activePowerup.remainingMs = remainingMs;
+    this.activePowerup.expiresAt = now + remainingMs;
+    this.recalculateStats();
+    this.syncPowerupRuntimeState(now);
+    return true;
+  }
+
+  hasUnspentChargePowerup(slot = this.activePowerup) {
+    const effect = this.getPowerupSlotEffect(slot) || {};
+    return effect.charges === true && Boolean(effect.bombShots) && this.bombShotsLeft > 0;
   }
 
   getActivePowerupStates() {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     const states = [];
     const seen = new Set();
+    const activeEffect = this.getCurrentPowerupEffect() || {};
+    const slotEffects = this.getPowerupSlots().map((slot) => this.getPowerupSlotEffect(slot) || {});
+    const hasSlotEffect = (predicate) => slotEffects.some((effect) => predicate(effect));
     const addTimedState = (type, expiresAt, extra = {}) => {
       if (!type || seen.has(type)) return;
       const remainingMs = Math.max(0, (Number(expiresAt) || 0) - now);
-      if (remainingMs <= 0 && !extra.charges) return;
+      if (remainingMs <= 0 && !extra.charges && !extra.spent) return;
       seen.add(type);
       states.push({
         type,
@@ -1718,18 +3662,40 @@ export class Player {
         ...extra
       });
     };
-    const getPrimaryStateDetail = (type) => {
+    const getStateDetail = (type, effect = {}) => {
+      if (effect.charges === true && effect.bombShots) {
+        return {
+          charges: Math.max(0, this.bombShotsLeft || 0),
+          maxCharges: this.bombMaxShots || Math.max(1, Math.round(Number(effect.bombShots) || 3)),
+          detail: this.getBombHudDetail(now)
+        };
+      }
+      if (effect.orbitalCharges) {
+        return {
+          charges: Math.max(0, this.orbitalStrikeCharges || 0),
+          maxCharges: Math.max(1, this.orbitalStrikeMaxCharges || Number(effect.orbitalCharges) || 1),
+          detail: `${Math.max(0, this.orbitalStrikeCharges || 0)} STRIKES`
+        };
+      }
+      if (effect.vampire) {
+        return { detail: `${Math.max(0, this.vampireKillCount || 0)} KILLS` };
+      }
+      if (effect.pointDefense) {
+        return { detail: 'AUTO-INTERCEPTS' };
+      }
       switch (type) {
         case 'bomb':
           return {
             charges: Math.max(0, this.bombShotsLeft || 0),
-            maxCharges: 3,
-            detail: `${Math.max(0, this.bombShotsLeft || 0)} SHOTS`
+            maxCharges: this.bombMaxShots || 3,
+            detail: this.getBombHudDetail(now)
           };
+        case 'point_defense':
+          return { label: 'P-DEF', detail: 'AUTO-INTERCEPTS' };
         case 'orbital_strike':
           return {
             charges: Math.max(0, this.orbitalStrikeCharges || 0),
-            maxCharges: 5,
+            maxCharges: Math.max(1, this.orbitalStrikeMaxCharges || 5),
             detail: `${Math.max(0, this.orbitalStrikeCharges || 0)} STRIKES`
           };
         case 'vampire':
@@ -1741,52 +3707,106 @@ export class Player {
       }
     };
 
+    const powerupSlotIsEmptyBomb = (slot) => (
+      this.bombShotsLeft <= 0
+      && (
+        slot?.type === 'bomb'
+        || this.getPowerupSlotEffect(slot)?.bombShots
+      )
+    );
+
     if (this.activePowerup?.type) {
-      addTimedState(this.activePowerup.type, this.activePowerup.expiresAt, getPrimaryStateDetail(this.activePowerup.type));
+      const powerupType = this.activePowerup.type;
+      if (!powerupSlotIsEmptyBomb(this.activePowerup)) {
+        addTimedState(powerupType, now + this.getActivePowerupRemainingMs(now), {
+          durationMode: this.activePowerup.durationMode || 'wall_clock',
+          ...getStateDetail(powerupType, activeEffect)
+        });
+      }
+    }
+    if (this.secondaryPowerup?.type) {
+      const secondaryEffect = this.getPowerupSlotEffect(this.secondaryPowerup) || {};
+      if (!powerupSlotIsEmptyBomb(this.secondaryPowerup)) {
+        addTimedState(this.secondaryPowerup.type, now + this.getSecondaryPowerupRemainingMs(now), {
+          durationMode: this.secondaryPowerup.durationMode || 'wall_clock',
+          compatible: true,
+          ...getStateDetail(this.secondaryPowerup.type, secondaryEffect)
+        });
+      }
     }
 
-    if (this.shieldActive) {
-      addTimedState('shield', this.shieldExpiresAt);
-    }
-
-    if (this.scoreMultiplier > 1) {
-      addTimedState('score_x2', this.scoreBoostExpiresAt);
-    }
-
-    if (this.magnetActive) {
-      addTimedState('magnet', this.magnetExpiresAt);
-    }
-
-    if (this.dronesActive) {
-      addTimedState('drones', this.dronesExpiresAt);
-    }
-
-    if (this.pointDefenseActive) {
-      addTimedState('point_defense', this.pointDefenseExpiresAt);
-    }
-
-    if (this.bombShotsLeft > 0) {
-      addTimedState('bomb', 0, {
-        remainingMs: 0,
-        charges: this.bombShotsLeft,
-        maxCharges: 3,
-        detail: `${this.bombShotsLeft} SHOTS`
+    if (this.rowCoreActive) {
+      const config = this.getRowCoreConfig();
+      const elapsed = now - (Number(this.rowCoreStartedAt) || now);
+      addTimedState('row_core', now + Math.max(0, config.durationMs - elapsed), {
+        detail: 'LONGSHIP'
       });
     }
 
-    if (this.chainLightningActive) {
+    if (this.shieldActive && !hasSlotEffect((effect) => effect.shield === true)) {
+      addTimedState('shield', this.shieldExpiresAt);
+    } else if (!this.shieldActive && this.shieldSpentUntil > now) {
+      addTimedState('shield', now, {
+        remainingMs: 0,
+        detail: 'EMPTY',
+        spent: true,
+        color: 0xff6677
+      });
+    }
+
+    if (this.scoreMultiplier > 1) {
+      addTimedState(this.scoreMultiplierType || 'score_x2', this.scoreBoostExpiresAt);
+    }
+
+    const tacticalMagnetActive = Number(this.runAugmentModifiers?.magnetRadiusBonus || 0) > 0;
+    if (this.magnetActive && !hasSlotEffect((effect) => Number.isFinite(Number(effect.magnetRadius))) && !tacticalMagnetActive) {
+      addTimedState('magnet', this.magnetExpiresAt);
+    }
+
+    const tacticalDronesActive = Number(this.runAugmentModifiers?.droneCount || 0) > 0;
+    if (this.dronesActive && !hasSlotEffect((effect) => Number.isFinite(Number(effect.droneCount))) && !tacticalDronesActive) {
+      addTimedState('drones', this.dronesExpiresAt);
+    }
+
+    if (this.pointDefenseActive && !hasSlotEffect((effect) => effect.pointDefense === true)) {
+      addTimedState('point_defense', this.pointDefenseExpiresAt, {
+        label: 'P-DEF',
+        detail: 'AUTO-INTERCEPTS'
+      });
+    }
+
+    if (this.bombShotsLeft > 0 && !hasSlotEffect((effect) => Number.isFinite(Number(effect.bombShots)))) {
+      addTimedState('bomb', 0, {
+        remainingMs: 0,
+        charges: this.bombShotsLeft,
+        maxCharges: this.bombMaxShots || 3,
+        detail: this.getBombHudDetail(now)
+      });
+    } else if (this.bombShotsLeft <= 0 && this.bombSpentUntil > now) {
+      addTimedState('bomb', now, {
+        remainingMs: 0,
+        charges: 0,
+        maxCharges: this.bombMaxShots || 3,
+        detail: 'EMPTY',
+        spent: true,
+        color: 0xff6677
+      });
+    }
+
+    const tacticalChainActive = Number(this.runAugmentModifiers?.chainMax || 0) > 0;
+    if (this.chainLightningActive && !hasSlotEffect((effect) => Number.isFinite(Number(effect.chainMax))) && !tacticalChainActive) {
       addTimedState('chain_lightning', this.activePowerup?.type === 'chain_lightning' ? this.activePowerup.expiresAt : 0);
     }
 
-    if (this.orbitalStrikeActive) {
+    if (this.orbitalStrikeActive && !hasSlotEffect((effect) => Number.isFinite(Number(effect.orbitalCharges)))) {
       addTimedState('orbital_strike', this.activePowerup?.type === 'orbital_strike' ? this.activePowerup.expiresAt : 0, {
         charges: this.orbitalStrikeCharges,
-        maxCharges: 5,
+        maxCharges: Math.max(1, this.orbitalStrikeMaxCharges || 5),
         detail: `${Math.max(0, this.orbitalStrikeCharges || 0)} STRIKES`
       });
     }
 
-    if (this.vampireActive) {
+    if (this.vampireActive && !hasSlotEffect((effect) => effect.vampire === true)) {
       addTimedState('vampire', this.activePowerup?.type === 'vampire' ? this.activePowerup.expiresAt : 0, {
         detail: `${Math.max(0, this.vampireKillCount || 0)} KILLS`
       });
@@ -1837,11 +3857,239 @@ export class Player {
   }
 
   startDodge() {
+    if (this.isDodging) return false;
+    const token = (Number(this.dodgeSequence) || 0) + 1;
+    this.dodgeSequence = token;
+    this.pendingDodgeExitPulseToken = token;
     this.isDodging = true;
     this.invulnerable = true;
     this.dodgeDuration = this.dodgeDurationMax;
     this.dodgeCooldown = this.dodgeDelay;
-    this.triggerTraitDodgePulse();
+    this.dodgeFlashMs = this.dodgeDurationMax;
+    this.dodgeReadyFlashMs = 0;
+    if (this.runAugmentModifiers?.phaseReload) {
+      this.shootCooldown = 0;
+      this.phaseReactorVolleyUntil = this.getGameplayClockMs() + 1800;
+    }
+    AudioManager.playSfx('ghost_phase_shift', { volume: 0.46, minIntervalMs: 160 });
+    this.updateDodgeVisual(0);
+    return true;
+  }
+
+  finishDodge(reason = 'duration') {
+    if (!this.isDodging) return false;
+    const token = this.pendingDodgeExitPulseToken;
+    this.isDodging = false;
+    this.dodgeDuration = 0;
+    this.invulnerable = this.invulnerableTime > 0;
+    this.clearDodgeVisual();
+    if (!this.isGhostActive() && this.sprite) this.sprite.alpha = 1;
+    if (reason === 'duration') this.resolveDodgeExitPulse(token);
+    else {
+      this.phaseReactorVolleyUntil = 0;
+      this.cancelDodgeExitPulse(reason);
+    }
+    return true;
+  }
+
+  cancelDodgeExitPulse(reason = 'cancelled', { endDodge = false } = {}) {
+    this.phaseReactorVolleyUntil = 0;
+    const token = this.pendingDodgeExitPulseToken;
+    this.pendingDodgeExitPulseToken = 0;
+    if (endDodge) {
+      this.isDodging = false;
+      this.dodgeDuration = 0;
+      this.clearDodgeVisual();
+      if (!this.isGhostActive() && this.sprite) this.sprite.alpha = 1;
+    }
+    if (token > 0) {
+      this.lastDodgeExitPulse = {
+        token,
+        reason,
+        discardedReason: reason,
+        cancelled: true,
+        cleared: 0,
+        phaseCleared: 0,
+        clearedByRadius: { trait: 0, phase: 0, combinedBonus: 0 },
+        riftEligible: 0,
+        riftCap: 5,
+        shards: 0,
+        shardsCreated: 0,
+        targets: [],
+        hits: []
+      };
+    }
+    return token > 0;
+  }
+
+  resolveDodgeExitPulse(token = this.pendingDodgeExitPulseToken) {
+    const normalizedToken = Math.max(0, Math.floor(Number(token) || 0));
+    if (
+      normalizedToken <= 0
+      || normalizedToken !== this.pendingDodgeExitPulseToken
+      || normalizedToken === this.resolvedDodgeExitPulseToken
+    ) return false;
+    this.pendingDodgeExitPulseToken = 0;
+    this.resolvedDodgeExitPulseToken = normalizedToken;
+    this.triggerTraitDodgePulse({ token: normalizedToken });
+    return true;
+  }
+
+  updateDodgeVisual(dt = 0) {
+    if (!this.dodgeRing && !this.dodgeText) return;
+    this.dodgeFlashMs = Math.max(0, (this.dodgeFlashMs || 0) - Math.max(0, Number(dt) || 0));
+    const duration = Math.max(1, this.dodgeDurationMax || 1);
+    const progress = 1 - Math.max(0, Math.min(1, (this.dodgeDuration || 0) / duration));
+    const color = this.visualVariant?.accent || 0xff55d9;
+    const pulse = Math.sin(energyClock() * 1000 * 0.04) * 0.5 + 0.5;
+    let phaseGateBracketCount = 0;
+    let phaseLaneStreakCount = 0;
+    if (this.dodgeRing) {
+      const radius = Math.max(42, (this.baseShipWidth || 64) * (0.72 + progress * 0.36));
+      this.dodgeRing.clear();
+      drawEnergySurface(this.dodgeRing,{kind:'pressure',width:radius*2.1,height:radius*1.75,color,alpha:.48*(1-progress*.7)});
+      for(const side of [-1,1]) {
+        drawEnergySurface(this.dodgeRing,{kind:'rift',x:side*radius*.58,y:radius*.12,width:radius*.5,height:radius*1.65,color,alpha:.42*(1-progress*.6),angle:side*.14});
+        phaseLaneStreakCount++;
+      }
+      this.dodgeRing.visible = true;
+      this.dodgeRing.__debugPhaseActive = {
+        visible: true,
+        progress: Number(progress.toFixed(3)),
+        phaseGateBracketCount,
+        phaseLaneStreakCount
+      };
+    }
+    if (this.dodgeText) {
+      this.dodgeText.visible = true;
+      this.dodgeText.alpha = 0.86 * (1 - progress * 0.35);
+      this.dodgeText.scale.set(1 + pulse * 0.08);
+    }
+  }
+
+  updateDodgeCooldownVisual(dt = 0) {
+    if (!this.dodgeCooldownRing) return;
+    const ring = this.dodgeCooldownRing;
+    const elapsedMs = Math.max(0, Number(dt) || 0);
+    const remainingMs = Math.max(0, Number(this.dodgeCooldown) || 0);
+    const delayMs = Math.max(1, Number(this.dodgeDelay) || 1);
+    const readyFlashMs = Math.max(0, (this.dodgeReadyFlashMs || 0) - elapsedMs);
+    this.dodgeReadyFlashMs = readyFlashMs;
+    const readyFlashProgress = Math.max(0, Math.min(1, readyFlashMs / 650));
+
+    ring.clear();
+
+    if (this.isDodging) {
+      ring.visible = false;
+      ring.__debugPhaseCooldown = {
+        visible: false,
+        activePhase: true,
+        remainingMs,
+        readyProgress: 0,
+        readyFlashProgress
+      };
+      return;
+    }
+
+    const coolingDown = remainingMs > 0;
+    const readyFlashing = readyFlashProgress > 0;
+    if (!coolingDown && !readyFlashing) {
+      ring.visible = false;
+      ring.__debugPhaseCooldown = {
+        visible: false,
+        activePhase: false,
+        remainingMs: 0,
+        readyProgress: 1,
+        readyFlashProgress: 0
+      };
+      return;
+    }
+
+    const radius = Math.max(44, (this.baseShipWidth || 64) * 0.74);
+    const accent = this.visualVariant?.accent || 0xff55d9;
+    const readyColor = 0x7fffd8;
+    const pulse = Math.sin(Date.now() * 0.018) * 0.5 + 0.5;
+    const readyProgress = coolingDown
+      ? Math.max(0.02, Math.min(0.985, 1 - (remainingMs / delayMs)))
+      : 1;
+    let cooldownBeadCount = 0;
+    let progressHeadVisible = false;
+
+    ring.circle(0, 0, radius);
+    ring.stroke({ color: 0x063442, width: 4.5, alpha: 0.48 });
+
+    if (coolingDown) {
+      const start = -Math.PI / 2;
+      const end = start + (Math.PI * 2 * readyProgress);
+      ring.arc(0, 0, radius, start, end);
+      ring.stroke({ color: accent, width: 5.5, alpha: 0.36 + readyProgress * 0.34 });
+      const arcSpan = Math.max(0.01, Math.PI * 2 * readyProgress);
+      const beadCount = readyProgress > 0.78 ? 5 : readyProgress > 0.42 ? 4 : 3;
+      for (let i = 1; i <= beadCount; i += 1) {
+        const beadT = i / (beadCount + 1);
+        const beadAngle = start + arcSpan * beadT;
+        const beadRadius = 2.2 + beadT * 1.1;
+        ring.circle(Math.cos(beadAngle) * radius, Math.sin(beadAngle) * radius, beadRadius);
+        ring.fill({ color: i === beadCount ? 0xffffff : accent, alpha: 0.18 + readyProgress * 0.28 + beadT * 0.08 });
+        cooldownBeadCount += 1;
+      }
+      const headX = Math.cos(end) * radius;
+      const headY = Math.sin(end) * radius;
+      ring.circle(headX, headY, 4.6);
+      ring.fill({ color: 0xffffff, alpha: 0.2 + readyProgress * 0.42 });
+      progressHeadVisible = true;
+      for (let i = 0; i < 4; i += 1) {
+        const angle = start + (Math.PI * 0.5 * i);
+        const inner = radius - 6;
+        const outer = radius + 7;
+        ring.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        ring.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      }
+      ring.stroke({ color: 0x9afcff, width: 1.8, alpha: 0.28 });
+    }
+
+    if (readyFlashing) {
+      const flashRadius = radius + 3 + pulse * 5;
+      ring.circle(0, 0, flashRadius);
+      ring.stroke({ color: readyColor, width: 3.8, alpha: 0.24 + readyFlashProgress * 0.46 });
+      for (let i = 0; i < 6; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI / 3) + pulse * 0.08;
+        const inner = flashRadius + 5;
+        const outer = flashRadius + 13;
+        ring.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        ring.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      }
+      ring.stroke({ color: 0xffffff, width: 1.6, alpha: 0.16 + readyFlashProgress * 0.28 });
+    }
+
+    ring.visible = true;
+    ring.__debugPhaseCooldown = {
+      visible: true,
+      activePhase: false,
+      remainingMs,
+      delayMs,
+      readyProgress,
+      readyFlashProgress,
+      coolingDown,
+      readyFlashing,
+      cooldownBeadCount,
+      progressHeadVisible,
+      radius
+    };
+  }
+
+  clearDodgeVisual() {
+    if (this.dodgeRing) {
+      this.dodgeRing.clear();
+      this.dodgeRing.visible = false;
+      this.dodgeRing.__debugPhaseActive = { visible: false, phaseGateBracketCount: 0, phaseLaneStreakCount: 0 };
+    }
+    if (this.dodgeText) {
+      this.dodgeText.visible = false;
+      this.dodgeText.alpha = 1;
+      this.dodgeText.scale.set(1);
+    }
+    this.dodgeFlashMs = 0;
   }
 
   grantInvulnerability(ms, reason = 'generic') {
@@ -1849,46 +4097,282 @@ export class Player {
     if (duration <= 0) return this.invulnerableTime || 0;
     this.invulnerable = true;
     this.invulnerableTime = Math.max(this.invulnerableTime || 0, duration);
+    this.invulnerabilityVisualDurationMs = Math.max(duration, this.invulnerableTime || duration);
     this.lastInvulnerabilityReason = reason;
     return this.invulnerableTime;
   }
 
-  triggerTraitDodgePulse() {
-    const radius = Number(this.traitCombat?.dodgePulseRadius || 0);
+  showExperimentalDodgePulseRing(radius) {
+    if (!this.sprite?.addChild || !Number.isFinite(radius) || radius <= 0) return null;
+    const ring = new PIXI.Graphics();
+    const color = this.visualVariant?.accent || 0x66ffff;
+    ring.label = 'experimentalDodgeExitPulseRing';
+    drawEnergyShell(ring, 0, 0, radius, { color, width: 3, alpha: 0.9 });
+    drawEnergyShell(ring, 0, 0, Math.max(4, radius - 4), { color: 0xffffff, width: 1, alpha: 0.34 });
+    ring.__debugExperimentalPulse = { radius, visible: true };
+    this.sprite.addChild(ring);
+    setTimeout(() => {
+      if (ring.parent) ring.parent.removeChild(ring);
+      ring.destroy?.();
+    }, 240);
+    return ring;
+  }
+
+  triggerTraitDodgePulse({ token = this.resolvedDodgeExitPulseToken } = {}) {
+    const traitRadius = Math.max(0, Number(this.traitCombat?.dodgePulseRadius) || 0);
+    const phaseRadius = Math.max(0, Number(this.runAugmentModifiers?.phaseClearRadius) || 0);
+    const experiment = this.game?.lateGameExperiment?.active === true
+      ? this.game.lateGameExperiment
+      : null;
+    const experimentalPulse = experiment ? this.getExperimentalPulseState() : null;
+    const now = this.getGameplayClockMs();
+    const rechargeRemainingMs = experimentalPulse
+      ? Math.max(0, (Number(this.experimentalPulseReadyAt) || 0) - now)
+      : 0;
+    const combinesTraitAndPhase = traitRadius > 0 && phaseRadius > 0;
+    const combinedRadiusBonus = !experiment && combinesTraitAndPhase
+      ? Math.max(8, Math.min(14, Math.round(Math.min(traitRadius, phaseRadius) * 0.2)))
+      : 0;
+    const radiusCap = experimentalPulse?.maxRadius || 112;
+    const radius = Math.min(radiusCap, Math.max(traitRadius, phaseRadius) + combinedRadiusBonus);
+    const phaseContributionRadius = phaseRadius > 0
+      ? Math.min(radius, phaseRadius + combinedRadiusBonus)
+      : 0;
     const playScene = this.game?.scenes?.play;
-    if (!Number.isFinite(radius) || radius <= 0 || !playScene?.bulletManager?.enemyBullets) return;
+    const unavailableReason = experimentalPulse?.available === false
+      ? 'experiment_pulse_unavailable'
+      : rechargeRemainingMs > 0
+        ? 'experiment_pulse_recharging'
+        : (!Number.isFinite(radius) || radius <= 0 || !playScene?.bulletManager?.enemyBullets)
+          ? 'no_pulse_source'
+          : null;
+    if (unavailableReason) {
+      const metrics = experiment?.metrics;
+      if (metrics && unavailableReason === 'experiment_pulse_recharging') {
+        metrics.pulseRechargeBlocks = Math.max(0, Number(metrics.pulseRechargeBlocks) || 0) + 1;
+      }
+      if (metrics && unavailableReason === 'experiment_pulse_unavailable') {
+        metrics.pulseUnavailableDodges = Math.max(0, Number(metrics.pulseUnavailableDodges) || 0) + 1;
+      }
+      this.lastDodgeExitPulse = {
+        token,
+        reason: unavailableReason,
+        cancelled: false,
+        traitRadius,
+        phaseRadius,
+        combinedRadiusBonus,
+        radius: 0,
+        configuredRadius: radius,
+        rechargeRemainingMs,
+        cleared: 0,
+        phaseCleared: 0,
+        clearedByRadius: { trait: 0, phase: 0, combinedBonus: 0 },
+        riftEligible: 0,
+        riftCap: 5,
+        shards: 0,
+        shardsCreated: 0,
+        targets: [],
+        hits: [],
+        discardedReason: unavailableReason,
+        clearAudioEvents: 0,
+        fusionAudioEvents: 0
+      };
+      return this.lastDodgeExitPulse;
+    }
+
+    if (experimentalPulse) {
+      this.experimentalPulseReadyAt = now + experimentalPulse.rechargeMs;
+      const metrics = experiment?.metrics;
+      if (metrics) metrics.pulseActivations = Math.max(0, Number(metrics.pulseActivations) || 0) + 1;
+      this.showExperimentalDodgePulseRing(radius);
+    }
 
     let cleared = 0;
+    let phaseCleared = 0;
+    const clearedByRadius = { trait: 0, phase: 0, combinedBonus: 0 };
+    const phaseClearedPositions = [];
+    const clearReason = combinesTraitAndPhase
+      ? 'combined_dodge_exit_pulse'
+      : phaseRadius > 0
+        ? 'phase_wake_exit'
+        : 'trait_dodge_exit_pulse';
     playScene.bulletManager.enemyBullets.forEach((bullet) => {
       if (!bullet?.active) return;
       const dist = Math.hypot((bullet.x || 0) - this.x, (bullet.y || 0) - this.y);
       if (dist > radius) return;
-      bullet.active = false;
+      playScene.bulletManager.deactivateBullet?.(bullet, clearReason);
       cleared += 1;
-      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      // Rift converts the actual dodge clear, including innate ship pulses.
+      if (phaseClearedPositions.length < 5) {
+        phaseClearedPositions.push({ x: Number(bullet.x) || this.x, y: Number(bullet.y) || this.y });
+      }
+      if (traitRadius > 0 && dist <= traitRadius) clearedByRadius.trait += 1;
+      if (phaseContributionRadius > 0 && dist <= phaseContributionRadius) {
+        phaseCleared += 1;
+        clearedByRadius.phase += 1;
+      }
+      if (combinedRadiusBonus > 0 && dist > Math.max(traitRadius, phaseRadius)) {
+        clearedByRadius.combinedBonus += 1;
+      }
       if (playScene.particleManager) {
         playScene.particleManager.createHitSpark(bullet.x, bullet.y, this.visualVariant?.accent || 0x66ffff);
       }
     });
 
+    const riftCap = 5;
+    const riftEligible = cleared;
+    let shardsCreated = 0;
+    let shardAddRejected = 0;
+    const riftTargets = [];
+    const riftHits = [];
     if (cleared > 0) {
-      playScene.bulletManager.enemyBullets = playScene.bulletManager.enemyBullets.filter(bullet => bullet?.active !== false);
+      playScene.bulletManager.pruneInactiveBullets?.('enemy', clearReason);
       AudioManager.playSfx('forceField', { force: false, volume: 0.35 });
       if (playScene.enqueueToast) {
-        playScene.enqueueToast(`DODGE PULSE x${cleared}`, { fontSize: 16, fill: '#66ffff', slot: 'top', type: 'trait', duration: 800 });
+        playScene.enqueueToast(translateText('DODGE PULSE ×{count}', { count: cleared }), { fontSize: 16, fill: '#66ffff', slot: 'top', type: 'trait', duration: 800 });
+      }
+      if (this.runAugmentModifiers?.riftReprisal && phaseClearedPositions.length > 0) {
+        const shardCount = Math.min(riftCap, phaseClearedPositions.length);
+        const targetPool = [
+          ...(Array.isArray(playScene.enemyManager?.enemies) ? playScene.enemyManager.enemies : []),
+          playScene.enemyManager?.hijacker,
+          playScene.enemyManager?.boss
+        ].filter((target, index, list) => target?.active && list.indexOf(target) === index);
+        phaseClearedPositions.forEach((position, index) => {
+          const nearestTargets = targetPool
+            .slice()
+            .sort((a, b) => Math.hypot((a.x || 0) - position.x, (a.y || 0) - position.y)
+              - Math.hypot((b.x || 0) - position.x, (b.y || 0) - position.y));
+          const target = nearestTargets.length ? nearestTargets[index % Math.min(3, nearestTargets.length)] : null;
+          const targetId = target
+            ? String(target.id || target.type || target.kind || target.name || `target-${index + 1}`)
+            : null;
+          const spread = shardCount <= 1 ? 0 : (index - (shardCount - 1) / 2) * 0.075;
+          const speed = this.bulletSpeed * 1.36;
+          const targetDx = target ? (Number(target.x) || 0) - position.x : Math.sin(spread) * speed;
+          const targetDy = target ? (Number(target.y) || 0) - position.y : -Math.cos(spread) * speed;
+          const targetDistance = Math.max(0.001, Math.hypot(targetDx, targetDy));
+          const velocityX = target ? (targetDx / targetDistance) * speed : targetDx;
+          const velocityY = target ? (targetDy / targetDistance) * speed : targetDy;
+          const shard = new Bullet(
+            position.x,
+            position.y,
+            velocityX,
+            velocityY,
+            Math.max(this.bulletDamage * 1.25, 2 + Math.max(0, Math.min(200, Number(this.game?.level) || 1) - 1) * 0.3),
+            index % 2 === 0 ? 0xd86bff : 0x66ffff,
+            true,
+            { color: index % 2 === 0 ? 'Red' : 'Blue', index: index % 2 === 0 ? 15 : 8 }
+          );
+          shard.radius = 6;
+          shard.isTacticalFusionShot = true;
+          shard.isTacticalRiftShard = true;
+          shard.tacticalFusionId = 'rift_reprisal';
+          shard.riftPulseToken = token;
+          shard.riftShardIndex = index;
+          shard.riftTargetId = targetId;
+          shard.trailLength = 72;
+          shard.pulseRate = 1.35;
+          if (playScene.bulletManager.addPlayerBullet(shard)) {
+            playScene.recordCombatVolley?.([shard]);
+            shardsCreated += 1;
+            riftTargets.push({
+              shardIndex: index,
+              targetId,
+              sourceX: Math.round(position.x),
+              sourceY: Math.round(position.y),
+              targetX: target ? Math.round(Number(target.x) || 0) : null,
+              targetY: target ? Math.round(Number(target.y) || 0) : null,
+              velocityX: Number(velocityX.toFixed(3)),
+              velocityY: Number(velocityY.toFixed(3))
+            });
+          } else {
+            shardAddRejected += 1;
+          }
+        });
+        this.tacticalFusionStats.riftShardsFired += shardsCreated;
+        this.lastTacticalFusionEvent = {
+          id: 'rift_reprisal',
+          at: Date.now(),
+          token,
+          cleared,
+          phaseCleared,
+          riftEligible,
+          riftCap,
+          projectileCount: shardsCreated,
+          totalProjectiles: this.tacticalFusionStats.riftShardsFired,
+          targets: riftTargets,
+          hits: riftHits
+        };
+        AudioManager.playSfx('tactical_phase_reactor', { force: true, volume: 0.5, minIntervalMs: 180 });
+        playScene.enqueueToast?.(`${translateText('RIFT REPRISAL')} ×${shardsCreated}`, {
+          fontSize: 15,
+          fill: '#d86bff',
+          slot: 'corner',
+          type: 'fusion',
+          priority: 3,
+          duration: 850
+        });
       }
     }
 
-    if (playScene.gameContainer) {
-      const ring = new PIXI.Graphics();
-      const color = this.visualVariant?.accent || 0x66ffff;
-      ring.circle(this.x, this.y, radius);
-      ring.stroke({ color, width: 3, alpha: 0.74 });
-      playScene.gameContainer.addChild(ring);
-      setTimeout(() => {
-        if (ring.parent) ring.parent.removeChild(ring);
-      }, 130);
+    const pulseColor = this.visualVariant?.accent || 0x66ffff;
+    playScene.triggerShockwave?.(this.x, this.y, pulseColor);
+    playScene.particleManager?.createEnergyBloom?.(this.x, this.y, 0.72, {
+      size: Math.max(92, radius * 1.45),
+      lifetime: 28,
+      alpha: 0.38,
+      aspect: 1.28
+    });
+    playScene.particleManager?.createRadialBurst?.(this.x, this.y, pulseColor, {
+      count: Math.min(22, 8 + cleared * 2),
+      intensity: 0.72,
+      minSpeed: 1.2,
+      maxSpeed: 4.8,
+      size: 2.1,
+      lifetime: 34,
+      alternateColor: this.runAugmentModifiers?.riftReprisal ? 0xd86bff : 0xffffff,
+      upwardBias: 0
+    });
+    const discardedReason = !this.runAugmentModifiers?.riftReprisal
+      ? 'rift_not_owned'
+      : riftEligible <= 0
+        ? 'no_phase_clears'
+        : shardAddRejected > 0
+          ? 'bullet_manager_rejected'
+          : riftEligible > riftCap
+            ? 'rift_cap'
+            : null;
+    if (experiment?.metrics) {
+      experiment.metrics.pulseClears = Math.max(0, Number(experiment.metrics.pulseClears) || 0) + cleared;
     }
+    this.lastDodgeExitPulse = {
+      token,
+      reason: clearReason,
+      cancelled: false,
+      traitRadius,
+      phaseRadius,
+      phaseContributionRadius,
+      combinedRadiusBonus,
+      radius,
+      rechargeMs: experimentalPulse?.rechargeMs || 0,
+      nextReadyAt: experimentalPulse ? this.experimentalPulseReadyAt : 0,
+      cleared,
+      phaseCleared,
+      clearedByRadius,
+      riftEligible,
+      riftCap,
+      shards: shardsCreated,
+      shardsCreated,
+      shardAddRejected,
+      discardedCount: Math.max(0, riftEligible - shardsCreated),
+      discardedReason,
+      targets: riftTargets,
+      hits: riftHits,
+      clearAudioEvents: cleared > 0 ? 1 : 0,
+      fusionAudioEvents: shardsCreated > 0 ? 1 : 0
+    };
+    return this.lastDodgeExitPulse;
   }
 
   takeDamage() {
@@ -1899,19 +4383,14 @@ export class Player {
     }
 
     if (this.shieldActive && !this.isDefenseSuppressed()) {
-      this.deactivateShield();
-      // Play Break Sound
-      if (this.game && this.game.scenes && this.game.scenes.play) {
-        // Direct access if possible, or assume generic hit sound
-        // AudioManager.playSfx('shield_break');
-      }
-      // Flash effect even for shield break
-      this.triggerFlash(0xff6666, 200);
+      this.deactivateShield({ spentFeedback: true });
+      this.triggerShieldBreakFeedback();
+      if (this.runAugmentModifiers?.aegisReactor) this.triggerAegisReactor();
       return false; // DAMAGE ABSORBED
     }
 
     if (this.invulnerable) return false;
-    this.grantInvulnerability(2000, 'damage');
+    this.grantInvulnerability(2000 + (Number(this.runAugmentModifiers?.hitInvulnerabilityBonusMs) || 0), 'damage');
 
     // Trigger damage flash effect
     this.triggerFlash(0xff0000, 300);
@@ -1930,35 +4409,150 @@ export class Player {
     this.flashColor = color;
   }
 
-  activateShield() {
+  activateShield(durationMs = 15000, options = {}) {
     this.shieldActive = true;
-    this.shieldExpiresAt = Date.now() + 15000; // 15 Seconds
+    this.shieldExpiresAt = this.getGameplayClockMs() + Math.max(1000, Number(durationMs) || 15000);
+    this.shieldSpentUntil = 0;
+    this.shieldSource = options.source || 'independent';
     if (this.shieldSprite) this.shieldSprite.visible = true;
     // CRITICAL: Ensure player remains visible after shield activation
     this.ensureRenderable('activateShield');
   }
 
-  deactivateShield() {
+  deactivateShield(options = {}) {
     this.shieldActive = false;
+    this.shieldExpiresAt = 0;
+    this.shieldSource = null;
+    if (options.spentFeedback) {
+      this.shieldSpentUntil = this.getGameplayClockMs() + SHIELD_SPENT_FEEDBACK_MS;
+    }
     if (this.shieldSprite) this.shieldSprite.visible = false;
     // CRITICAL: Ensure player remains visible after shield breaks
     this.ensureRenderable('deactivateShield');
   }
 
+  triggerShieldBreakFeedback() {
+    const playScene = this.game?.scenes?.play;
+    AudioManager.playSfx('forceField', { force: true, volume: 0.72, minIntervalMs: 80 });
+    this.triggerFlash(0x66ffff, 260);
+    playScene?.screenShake?.shake?.(5, 14);
+    playScene?.particleManager?.createHitSpark?.(this.x, this.y, 0x66ffff, 1.45);
+    playScene?.particleManager?.createHitSpark?.(this.x, this.y - 18, 0xffffff, 0.9);
+  }
+
+  triggerAegisReactor() {
+    const playScene = this.game?.scenes?.play;
+    const bullets = playScene?.bulletManager?.enemyBullets;
+    if (!Array.isArray(bullets)) return { cleared: 0, durationMs: 0 };
+    const radius = Math.max(POINT_DEFENSE_RADIUS + 54, 170);
+    const durationMs = 2400;
+    let cleared = 0;
+    bullets.forEach((bullet) => {
+      if (!bullet?.active || cleared >= 18) return;
+      if (Math.hypot((Number(bullet.x) || 0) - this.x, (Number(bullet.y) || 0) - this.y) > radius) return;
+      playScene.bulletManager.deactivateBullet?.(bullet, 'aegis_reactor');
+      cleared += 1;
+      playScene.particleManager?.createHitSpark?.(bullet.x, bullet.y, cleared % 2 ? 0x74ffd4 : 0xffffff);
+    });
+    playScene.bulletManager.pruneInactiveBullets?.('enemy', 'aegis_reactor');
+    this.activatePointDefense(durationMs, { extend: true, playSfx: false, source: 'aegis_reactor' });
+
+    const ring = new PIXI.Graphics();
+    drawEnergyShell(ring, this.x, this.y, radius, { color: 0x74ffd4, width: 5, alpha: 0.86 });
+    drawEnergyShell(ring, this.x, this.y, radius - 18, { color: 0xffffff, width: 2, alpha: 0.48 });
+    ring.blendMode = 'add';
+    playScene.gameContainer?.addChild?.(ring);
+    setTimeout(() => {
+      if (ring.parent) ring.parent.removeChild(ring);
+      ring.destroy?.();
+    }, 220);
+
+    this.tacticalFusionStats.aegisPurges += 1;
+    this.lastTacticalFusionEvent = {
+      id: 'aegis_reactor',
+      at: Date.now(),
+      cleared,
+      radius,
+      durationMs,
+      purge: this.tacticalFusionStats.aegisPurges
+    };
+    AudioManager.playSfx('tactical_point_defense', { force: true, volume: 0.62, minIntervalMs: 180 });
+    return { cleared, durationMs };
+  }
+
   createPointDefenseRing() {
-    // Create a pulsing ring effect around the player
     if (!this.pointDefenseRing) {
       this.pointDefenseRing = new PIXI.Graphics();
+      this.pointDefenseRing.blendMode = 'add';
       this.sprite.addChild(this.pointDefenseRing);
     }
     this.pointDefenseRing.visible = true;
   }
 
-  deactivatePointDefense() {
+  activatePointDefense(durationMs = 10000, options = {}) {
+    const now = Number.isFinite(Number(options.now)) ? Number(options.now) : this.getGameplayClockMs();
+    const requestedExpiry = Number.isFinite(Number(options.expiresAt))
+      ? Number(options.expiresAt)
+      : now + Math.max(0, Number(durationMs) || 0);
+    const expiresAt = options.extend
+      ? Math.max(Number(this.pointDefenseExpiresAt) || 0, requestedExpiry)
+      : requestedExpiry;
+    const wasActive = this.pointDefenseActive;
+    this.pointDefenseActive = true;
+    this.pointDefenseSource = options.source || 'independent';
+    this.pointDefenseStartedAt = wasActive && options.extend
+      ? Math.min(Number(this.pointDefenseStartedAt) || now, now)
+      : now;
+    this.pointDefenseExpiresAt = expiresAt;
+    this.pointDefenseDurationMs = Math.max(
+      1,
+      expiresAt - this.pointDefenseStartedAt,
+      Number(durationMs) || 0
+    );
+    this.pointDefenseExpiryVisualUntil = 0;
+    this.pointDefensePulseUntil = Date.now() + 320;
+    this.createPointDefenseRing();
+    if (options.playSfx !== false) {
+      AudioManager.playSfx('forceField', {
+        force: true,
+        volume: options.volume ?? 0.72,
+        minIntervalMs: 90
+      });
+    }
+    return this.pointDefenseExpiresAt;
+  }
+
+  notePointDefenseIntercept({ x = this.x, y = this.y, count = 1 } = {}) {
+    const safeCount = Math.max(1, Math.round(Number(count) || 1));
+    this.pointDefenseInterceptCount = Math.max(0, Number(this.pointDefenseInterceptCount) || 0) + safeCount;
+    this.pointDefensePulseUntil = Date.now() + 220;
+    this.lastPointDefenseIntercept = {
+      at: this.getGameplayClockMs(),
+      count: safeCount,
+      total: this.pointDefenseInterceptCount,
+      angle: Math.atan2((Number(y) || this.y) - this.y, (Number(x) || this.x) - this.x)
+    };
+    return this.lastPointDefenseIntercept;
+  }
+
+  deactivatePointDefense(options = {}) {
     this.pointDefenseActive = false;
     this.pointDefenseExpiresAt = 0;
+    this.pointDefenseSource = null;
+    this.pointDefenseStartedAt = 0;
+    this.pointDefenseDurationMs = 0;
+    if (options.expired) {
+      this.pointDefenseExpiryVisualUntil = Date.now() + 260;
+      AudioManager.playSfx('tactical_point_defense', {
+        volume: 0.22,
+        playbackRate: 0.78,
+        minIntervalMs: 140
+      });
+    } else {
+      this.pointDefenseExpiryVisualUntil = 0;
+    }
     if (this.pointDefenseRing) {
-      this.pointDefenseRing.visible = false;
+      this.pointDefenseRing.visible = Boolean(options.expired);
     }
   }
 
@@ -1973,123 +4567,713 @@ export class Player {
   }
 
   updateBombIndicator() {
-    if (!this.bombIndicator || this.bombShotsLeft <= 0) return;
+    if (!this.bombIndicator || this.bombShotsLeft <= 0) {
+      if (this.bombIndicator) {
+        this.bombIndicator.clear();
+        this.bombIndicator.__debugBombIndicator = { visible: false, activeSlots: 0, totalSlots: 0, spentSlots: 0 };
+      }
+      return;
+    }
 
     this.bombIndicator.clear();
-    const size = 8;
+    const visualNow = Date.now();
+    const commitState = this.getBombCommitState(this.getGameplayClockMs());
+    const pulse = 0.5 + Math.sin(visualNow * 0.026) * 0.5;
+    const totalSlots = Math.max(1, Math.min(6, Math.round(Number(this.bombMaxShots || this.bombShotsLeft) || 3)));
+    const activeSlots = Math.max(0, Math.min(totalSlots, Math.round(Number(this.bombShotsLeft) || 0)));
+    const spentSlots = Math.max(0, totalSlots - activeSlots);
+    const size = 7.5;
     const spacing = 12;
-    const startX = -(this.bombShotsLeft - 1) * spacing / 2;
+    const startX = -(totalSlots - 1) * spacing / 2;
+    const y = -35;
+    const railX = startX - spacing * 0.55;
+    const railWidth = Math.max(spacing, (totalSlots - 1) * spacing + spacing * 1.1);
 
-    for (let i = 0; i < this.bombShotsLeft; i++) {
-      this.bombIndicator.circle(startX + i * spacing, -35, size);
-      this.bombIndicator.fill({ color: 0xff3300, alpha: 0.9 });
-      this.bombIndicator.circle(startX + i * spacing, -35, size - 2);
-      this.bombIndicator.stroke({ color: 0xffff00, width: 2, alpha: 0.7 });
+    this.bombIndicator.roundRect(railX, y - 10, railWidth, 20, 10);
+    this.bombIndicator.fill({ color: 0x1a0804, alpha: 0.58 });
+    this.bombIndicator.roundRect(railX + 2, y + 8, Math.max(4, railWidth - 4), 3, 2);
+    this.bombIndicator.fill({ color: 0xffaa00, alpha: 0.18 + pulse * 0.1 });
+
+    let nextHighlightVisible = false;
+    for (let i = 0; i < totalSlots; i++) {
+      const x = startX + i * spacing;
+      const active = i < activeSlots;
+      const isNext = active && i === activeSlots - 1;
+      const fillColor = active ? (this.bombColor || 0xffaa00) : 0x32140d;
+      const rimColor = active ? (commitState.ready ? 0x9dffef : 0xffff66) : 0xff6844;
+      const alpha = active ? (commitState.ready ? 0.86 + pulse * 0.1 : 0.66 + pulse * 0.13) : 0.28;
+      this.bombIndicator.circle(x, y, active ? size : size - 1.5);
+      this.bombIndicator.fill({ color: fillColor, alpha });
+      this.bombIndicator.circle(x, y, size + (isNext ? 3 + pulse * 1.8 : 1.8));
+      this.bombIndicator.stroke({ color: rimColor, width: isNext ? 2.1 : 1.2, alpha: isNext ? 0.78 + pulse * 0.18 : active ? 0.48 : 0.36 });
+      if (!active) {
+        this.bombIndicator.moveTo(x - 4, y - 4);
+        this.bombIndicator.lineTo(x + 4, y + 4);
+        this.bombIndicator.stroke({ color: 0xff6844, width: 1.1, alpha: 0.34 });
+      }
+      if (isNext) {
+        nextHighlightVisible = true;
+        this.bombIndicator.moveTo(x - 5, y + 12);
+        this.bombIndicator.lineTo(x, y + 17 + pulse * 2);
+        this.bombIndicator.lineTo(x + 5, y + 12);
+        this.bombIndicator.stroke({ color: 0xffff66, width: 1.4, alpha: 0.62 + pulse * 0.22 });
+      }
     }
+    this.bombIndicator.__debugBombIndicator = {
+      visible: true,
+      activeSlots,
+      totalSlots,
+      spentSlots,
+      railVisible: true,
+      nextHighlightVisible,
+      commitReady: commitState.ready,
+      commitReason: commitState.reason,
+      commitClusterCount: commitState.clusterCount || 0,
+      triggerQueued: Boolean(this.bombTriggerQueued),
+      lastTriggerIntent: this.lastBombTriggerIntent ? { ...this.lastBombTriggerIntent } : null
+    };
   }
 
-  deactivateBomb() {
+  getBombHudDetail(now = this.getGameplayClockMs()) {
+    const state = this.getBombCommitState(now);
+    if (state.reason === 'combat_unavailable') return 'BANKED // COMBAT PAUSED';
+    if (state.reason === 'arming') return 'BANKED // ARMING';
+    if (this.bombTriggerQueued) return 'TRIGGER QUEUED';
+    if (state.ready) return 'TAP FIRE // TARGET LOCKED';
+    return 'BANKED // AIM AT BOSS / CLUSTER';
+  }
+
+  deactivateBomb(options = {}) {
     this.bombShotsLeft = 0;
+    this.bombArmedAt = 0;
+    this.bombTriggerQueued = false;
+    this.lastBombCommitState = null;
+    this.bombPowerupType = null;
+    if (options.spentFeedback) {
+      this.bombSpentUntil = this.getGameplayClockMs() + BOMB_SPENT_FEEDBACK_MS;
+    }
     if (this.bombIndicator) {
       this.bombIndicator.visible = false;
+    }
+    if (!options.preserveSlots) {
+      const activeIsBomb = this.activePowerup?.type === 'bomb' || this.getPowerupSlotEffect(this.activePowerup)?.bombShots;
+      const secondaryIsBomb = this.secondaryPowerup?.type === 'bomb' || this.getPowerupSlotEffect(this.secondaryPowerup)?.bombShots;
+      if (activeIsBomb) this.activePowerup = createEmptyPowerupSlot();
+      if (secondaryIsBomb) this.secondaryPowerup = createEmptyPowerupSlot();
+      if (!this.activePowerup.type && this.secondaryPowerup.type) {
+        this.activePowerup = { ...this.secondaryPowerup };
+        this.secondaryPowerup = createEmptyPowerupSlot();
+      }
+      this.powerupEffect = this.getPowerupSlotEffect(this.activePowerup);
+      this.recalculateStats();
+      this.syncPowerupRuntimeState();
     }
   }
 
   // --- Powerups ---
 
+  applyRunAugment(id) {
+    const augment = getTacticalDraftAugment(id);
+    if (!augment) return { applied: false, reason: 'unknown_augment', id };
+    const currentStacks = this.runAugmentIds.filter((candidate) => candidate === id).length;
+    if (currentStacks >= augment.maxStacks) {
+      return { applied: false, reason: 'stack_cap', id, stacks: currentStacks };
+    }
+    const previousFusionIds = new Set(getActiveTacticalFusionProtocols(
+      getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds)
+    ).map((fusion) => fusion.id));
+    this.runAugmentIds.push(id);
+    if (augment.consumedOnApply && !this.consumedRunAugmentIds.includes(id)) this.consumedRunAugmentIds.push(id);
+    const activeIds = getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds);
+    this.runAugmentModifiers = buildTacticalDraftModifiers(activeIds);
+    if (augment.immediate?.repairLives) {
+      this.repairFromPowerup({ repairLives: augment.immediate.repairLives }, `tactical_draft_${id}`);
+    }
+    this.recalculateStats();
+    this.game?.refreshThreatResponse?.(activeIds.length);
+    const activeFusions = getActiveTacticalFusionProtocols(activeIds);
+    const newFusions = activeFusions.filter((fusion) => !previousFusionIds.has(fusion.id));
+    return {
+      applied: true,
+      id,
+      stacks: currentStacks + 1,
+      consumed: augment.consumedOnApply === true,
+      selectedIds: this.runAugmentIds.slice(),
+      labels: summarizeTacticalDraftPicks(this.runAugmentIds),
+      fusionIds: activeFusions.map((fusion) => fusion.id),
+      newFusionIds: newFusions.map((fusion) => fusion.id),
+      newFusions,
+      modifiers: this.runAugmentModifiers
+    };
+  }
+
+  getRunAugmentStatPreview(id) {
+    const augment = getTacticalDraftAugment(id);
+    const metricIds = Array.isArray(augment?.previewMetrics) && augment.previewMetrics.length
+      ? augment.previewMetrics.map((metric) => String(metric || '')).filter(Boolean)
+      : [String(augment?.previewMetric || '')].filter(Boolean);
+    if (!augment || !metricIds.length || augment.consumedOnApply) {
+      return { kind: 'contextual', metric: null, before: null, after: null, overlapSuppressed: false };
+    }
+
+    const snapshotKeys = [
+      'speed', 'bulletDamage', 'shootDelay', 'bulletSpeed', 'dodgeDelay', 'dodgeDurationMax',
+      'multiShot', 'bulletPierce', 'rankBoostExtraShots', 'rankBoostBulletFx', 'magnetActive',
+      'magnetExpiresAt', 'magnetRadius', 'magnetStrength', 'dronesActive', 'dronesExpiresAt',
+      'droneCount', 'droneColor', 'chainLightningActive', 'chainLightningMaxChains', 'muzzleFlashColor'
+    ];
+    const snapshot = Object.fromEntries(snapshotKeys.map((key) => [key, this[key]]));
+    const selectedIds = this.runAugmentIds.slice();
+    const consumedIds = this.consumedRunAugmentIds.slice();
+    const modifiers = this.runAugmentModifiers;
+    const readMetric = (metric) => {
+      switch (metric) {
+        case 'damage': return Number(this.bulletDamage) || 0;
+        case 'directDps': return (
+          (Number(this.bulletDamage) || 0)
+          * Math.max(1, Math.round(Number(this.multiShot) || 1))
+          * 1000
+        ) / Math.max(1, Number(this.shootDelay) || 1);
+        case 'fireDelay': return Number(this.shootDelay) || 0;
+        case 'bulletSpeed': return Number(this.bulletSpeed) || 0;
+        case 'shots': return Math.max(1, Math.round(Number(this.multiShot) || 1));
+        case 'piercing': return Boolean(this.bulletPierce);
+        case 'chainReach': return Math.max(0, Math.round(Number(this.chainLightningMaxChains) || 0));
+        case 'movement': return Number(this.speed) || 0;
+        case 'dodgeCooldown': return Math.max(0, Math.round(Number(this.dodgeDelay) || 0));
+        case 'dodgeDuration': return Math.max(0, Math.round(Number(this.dodgeDurationMax) || 0));
+        case 'pickupRange': return this.magnetActive ? Math.max(0, Math.round(Number(this.magnetRadius) || 0)) : 0;
+        case 'supportDrones': return this.dronesActive ? Math.max(0, Math.round(Number(this.droneCount) || 0)) : 0;
+        default: return null;
+      }
+    };
+
+    let beforeMetrics = [];
+    let afterMetrics = [];
+    let projectedFusionIds = [];
+    let overlapSuppressed = false;
+    try {
+      this.runAugmentIds = selectedIds.slice();
+      this.consumedRunAugmentIds = consumedIds.slice();
+      this.recalculateStats({ preview: true });
+      beforeMetrics = metricIds.map((metric) => ({ metric, value: readMetric(metric) }));
+      this.runAugmentIds.push(id);
+      this.recalculateStats({ preview: true });
+      afterMetrics = metricIds.map((metric) => ({ metric, value: readMetric(metric) }));
+      projectedFusionIds = this.runAugmentModifiers?.fusionIds?.slice?.() || [];
+      overlapSuppressed = Array.isArray(this.runAugmentModifiers?.overlapSuppressedIds)
+        ? this.runAugmentModifiers.overlapSuppressedIds.includes(id)
+        : this.runAugmentModifiers?.overlapSuppressedId === id;
+    } finally {
+      this.runAugmentIds = selectedIds;
+      this.consumedRunAugmentIds = consumedIds;
+      for (const [key, value] of Object.entries(snapshot)) this[key] = value;
+      this.runAugmentModifiers = modifiers;
+    }
+
+    if (overlapSuppressed) {
+      return { kind: 'contextual', metric: null, before: null, after: null, overlapSuppressed };
+    }
+    const metrics = metricIds.map((metric, index) => ({
+      metric,
+      before: beforeMetrics[index]?.value ?? null,
+      after: afterMetrics[index]?.value ?? null
+    }));
+    const primary = metrics[0];
+    const capped = metrics.every(({ before, after }) => (
+      typeof before === 'number' && typeof after === 'number'
+        ? Math.abs(before - after) < 0.000001
+        : before === after
+    ));
+    return {
+      kind: 'stat',
+      metric: primary.metric,
+      before: primary.before,
+      after: primary.after,
+      metrics,
+      capped,
+      projectedFusionIds,
+      overlapSuppressed: false
+    };
+  }
+
+  applyRunAugmentModifiers({ preview = false } = {}) {
+    const activeIds = getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds);
+    const modifiers = buildTacticalDraftModifiers(activeIds, {
+      activePowerupType: this.activePowerup?.type || null,
+      activePowerupTypes: this.getPowerupSlots().map((slot) => slot.type),
+      permanentPierceDamageMultOverride: this.game?.lateGameExperiment?.active === true
+        && this.game.lateGameExperiment.permanentPierceContract === 'bounded'
+        ? 1
+        : null
+    });
+    this.runAugmentModifiers = modifiers;
+    const directOutputBefore = (this.bulletDamage * Math.max(1, this.multiShot)) / Math.max(1, this.shootDelay);
+    this.bulletDamage = Math.max(0.65, this.bulletDamage * modifiers.damageMult);
+    if (modifiers.fireDelayMult !== 1) {
+      const projectedDelay = Math.max(55, this.shootDelay * modifiers.fireDelayMult);
+      this.shootDelay = modifiers.fireDelayMult < 1
+        ? Math.min(this.shootDelay, projectedDelay)
+        : projectedDelay;
+    }
+    const movementMultiplier = getHybridDraftMovementMultiplier(this.stats?.speed, modifiers.speedMult);
+    this.speed = Math.max(1.5, this.speed * movementMultiplier);
+    this.bulletSpeed = Math.max(2.5, this.bulletSpeed * modifiers.bulletSpeedMult);
+    this.dodgeDelay = Math.round(Math.max(450, this.dodgeDelay * modifiers.dodgeDelayMult));
+    this.dodgeDurationMax = Math.round(Math.max(240, this.dodgeDurationMax * modifiers.dodgeDurationMult));
+    this.multiShot = Math.max(1, Math.min(8, this.multiShot + Math.round(modifiers.shotBonus || 0)));
+    if (this.getPowerupSlots().some((slot) => slot.type === 'double_shot') && !this.isPowerupSuppressed()) {
+      this.multiShot = Math.min(8, Math.max(
+        this.multiShot,
+        Math.max(1, Number(this.doubleShotShotFloor) || 1)
+      ));
+    }
+    const directOutputAfter = (this.bulletDamage * Math.max(1, this.multiShot)) / Math.max(1, this.shootDelay);
+    const directOutputCap = directOutputBefore * SHIP_THREAT_RESPONSE_TARGETS.maxDirectDraftOutputMult;
+    if (directOutputAfter > directOutputCap && directOutputAfter > 0) {
+      this.bulletDamage = Math.max(0.65, this.bulletDamage * (directOutputCap / directOutputAfter));
+    }
+    this.bulletPierce = Boolean(this.bulletPierce || modifiers.pierce);
+    if (modifiers.magnetRadiusBonus > 0) {
+      this.magnetActive = true;
+      this.magnetExpiresAt = Number.MAX_SAFE_INTEGER;
+      this.magnetRadius = Math.max(this.magnetRadius, 180 + modifiers.magnetRadiusBonus);
+      this.magnetStrength = Math.max(this.magnetStrength, 0.14 + modifiers.magnetStrengthBonus);
+    }
+    if (modifiers.droneCount > 0) {
+      this.dronesActive = true;
+      this.dronesExpiresAt = Number.MAX_SAFE_INTEGER;
+      this.droneCount = Math.max(1, Math.min(2, Math.round(modifiers.droneCount)));
+      if (!preview && !this.drones.length && this.sprite) this.createDrones(this.droneCount, 0x66ccff);
+    }
+    if (modifiers.chainMax > 0) {
+      this.chainLightningActive = true;
+      this.chainLightningMaxChains = Math.max(this.chainLightningMaxChains || 0, Math.min(2, Math.round(modifiers.chainMax)));
+    }
+  }
+
+  applyRunAugmentSectorStartEffects(sector = 1) {
+    const effects = this.runAugmentModifiers?.sectorStart || {};
+    const triggered = [];
+    this.runAugmentGrazeCount = 0;
+    this.skyVerdictEmergencySector = Math.max(1, Math.floor(Number(sector) || 1));
+    this.skyVerdictEmergencyState = this.runAugmentModifiers?.skyVerdict ? 'ready' : 'unavailable';
+    if ((Number(this.runAugmentModifiers?.lowLifeSectorShieldMs) || 0) > 0 && this.game?.lives <= 1 && !this.shieldActive) {
+      this.activateShield(this.runAugmentModifiers.lowLifeSectorShieldMs);
+      triggered.push('emergency_bulkhead');
+    }
+    if (effects.shield && !this.shieldActive) {
+      this.activateShield(12000);
+      triggered.push('shield');
+    }
+    if (effects.invulnerabilityMs > 0) {
+      this.grantInvulnerability(Math.min(2400, effects.invulnerabilityMs), 'tactical_draft');
+      triggered.push('invulnerability');
+    }
+    if (effects.pointDefenseMs > 0) {
+      this.tacticalPointDefenseExpiresAt = this.getGameplayClockMs() + Math.min(9000, effects.pointDefenseMs);
+      this.activatePointDefense(0, {
+        expiresAt: this.tacticalPointDefenseExpiresAt,
+        playSfx: true,
+        source: 'tactical_sector_start'
+      });
+      triggered.push('point_defense');
+    }
+    if (effects.bombShots > 0) {
+      const sectorFloor = Math.min(MAX_BANKED_BOMB_SHOTS, Math.max(1, Math.round(effects.bombShots)));
+      this.bombShotsLeft = Math.min(MAX_BANKED_BOMB_SHOTS, Math.max(this.bombShotsLeft || 0, sectorFloor));
+      this.tacticalBombShotsLeft = this.bombShotsLeft;
+      this.bombMaxShots = Math.max(this.bombMaxShots || 3, this.bombShotsLeft);
+      this.bombSpentUntil = 0;
+      this.armBombTargetingWindow();
+      this.createBombIndicator();
+      triggered.push('bomb');
+    }
+    if (effects.orbitalCharges > 0) {
+      this.orbitalStrikeActive = true;
+      const sectorFloor = Math.min(MAX_BANKED_ORBITAL_CHARGES, Math.max(1, Math.round(effects.orbitalCharges)));
+      this.orbitalStrikeCharges = Math.min(MAX_BANKED_ORBITAL_CHARGES,
+        Math.max(this.orbitalStrikeCharges || 0, sectorFloor));
+      this.tacticalOrbitalStrikeCharges = this.orbitalStrikeCharges;
+      this.orbitalStrikeMaxCharges = Math.max(5, this.orbitalStrikeCharges);
+      this.orbitalStrikeCooldown = 0;
+      triggered.push('orbital_strike');
+    }
+    this.lastRunAugmentSectorStart = {
+      sector: Math.max(1, Math.floor(Number(sector) || 1)),
+      triggered,
+      selectedIds: this.runAugmentIds.slice()
+    };
+    return this.lastRunAugmentSectorStart;
+  }
+
+  getRunAugmentDebugState() {
+    return {
+      selectedIds: this.runAugmentIds.slice(),
+      activeIds: getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds),
+      consumedIds: this.consumedRunAugmentIds.slice(),
+      labels: summarizeTacticalDraftPicks(this.runAugmentIds),
+      fusionIds: getActiveTacticalFusionProtocols(
+        getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds)
+      ).map((fusion) => fusion.id),
+      lastFusionEvent: this.lastTacticalFusionEvent,
+      fusionStats: { ...this.tacticalFusionStats },
+      skyVerdictEmergency: {
+        state: this.skyVerdictEmergencyState,
+        sector: this.skyVerdictEmergencySector
+      },
+      modifiers: this.runAugmentModifiers,
+      overlapSuppressedId: this.runAugmentModifiers?.overlapSuppressedId || null,
+      overlapSuppressedIds: this.runAugmentModifiers?.overlapSuppressedIds?.slice?.() || [],
+      lastSectorStart: this.lastRunAugmentSectorStart
+    };
+  }
+
+  repairFromPowerup(effect = {}, type = 'powerup') {
+    const repairLives = Math.max(0, Math.round(Number(effect.repairLives || 0)));
+    if (repairLives <= 0 || !this.game) return 0;
+    const configuredMaxLives = Number(this.game.balanceConfig?.survival?.maxLives)
+      || Number(this.game.maxLives)
+      || MAX_PLAYER_LIVES;
+    const maxLives = Number.isFinite(configuredMaxLives)
+      ? Math.max(1, configuredMaxLives)
+      : Number.POSITIVE_INFINITY;
+    let repaired = 0;
+    for (let i = 0; i < repairLives && this.game.lives < maxLives; i += 1) {
+      this.game.gainLife?.();
+      repaired += 1;
+    }
+    if (repaired <= 0 && Number(effect.scoreBonusAtMax || 0) > 0) {
+      this.game.addScore?.(Math.round(effect.scoreBonusAtMax), type);
+    }
+    return repaired;
+  }
+
+  recordRunAugmentNearMiss(sector = 1) {
+    const threshold = Math.max(0, Math.round(Number(this.runAugmentModifiers?.grazeShieldThreshold) || 0));
+    const safeSector = Math.max(1, Math.floor(Number(sector) || 1));
+    if (threshold <= 0 || this.runAugmentGrazeShieldSector === safeSector) {
+      return { granted: false, count: this.runAugmentGrazeCount, threshold };
+    }
+    this.runAugmentGrazeCount += 1;
+    if (this.runAugmentGrazeCount < threshold) {
+      return { granted: false, count: this.runAugmentGrazeCount, threshold };
+    }
+    this.runAugmentGrazeShieldSector = safeSector;
+    this.activateShield(12000);
+    return { granted: true, count: this.runAugmentGrazeCount, threshold };
+  }
+
+  applyCatalogPowerupEffect(type, effect = {}, now = this.getGameplayClockMs(), { preserveSlots = false } = {}) {
+    const durationMs = Math.max(0, Number(effect.durationMs || 0));
+    const expiresAt = durationMs > 0 ? now + durationMs : this.activePowerup.expiresAt;
+
+    if (effect.ghost && this.sprite) {
+      this.sprite.alpha = 0.4;
+    }
+
+    if (effect.invulnMs) {
+      this.grantInvulnerability(effect.invulnMs, type);
+    }
+
+    if (effect.repairLives) {
+      this.repairFromPowerup(effect, type);
+    }
+
+    if (effect.shield) {
+      this.activateShield(effect.shieldDurationMs || durationMs || 15000, { source: type });
+    }
+
+    if (effect.pointDefense) {
+      this.activatePointDefense(durationMs || 10000, {
+        now,
+        playSfx: true,
+        volume: 0.8,
+        source: type
+      });
+    }
+
+    if (effect.bombShots) {
+      this.bombMaxShots = Math.max(1, Math.round(Number(effect.bombShots) || 3));
+      this.bombShotsLeft = this.bombMaxShots;
+      this.bombSpentUntil = 0;
+      this.bombBlastRadius = Math.max(40, Number(effect.bombBlastRadius || 150));
+      this.bombDamageMult = Math.max(1, Number(effect.bombDamageMult || 5));
+      this.bombColor = Number.isFinite(effect.bombColor) ? effect.bombColor : (getPowerupMeta(type)?.color || 0xffaa00);
+      this.bombPowerupType = type;
+      this.armBombTargetingWindow(now);
+      this.createBombIndicator();
+      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+    }
+
+    if (effect.scoreMultiplier) {
+      this.scoreMultiplier = Math.max(this.scoreMultiplier || 1, Number(effect.scoreMultiplier) || 1);
+      this.scoreMultiplierType = type;
+      this.scoreBoostExpiresAt = expiresAt || now + 10000;
+    }
+
+    if (effect.magnetRadius) {
+      this.magnetActive = true;
+      this.magnetExpiresAt = expiresAt || now + 8000;
+      this.magnetRadius = Math.max(80, Number(effect.magnetRadius) || 140);
+      this.magnetStrength = Math.max(0.02, Number(effect.magnetStrength || 0.08));
+    }
+
+    if (effect.droneCount) {
+      this.dronesActive = true;
+      this.dronesExpiresAt = expiresAt || now + 8000;
+      this.droneCount = Math.max(1, Math.min(4, Math.round(Number(effect.droneCount) || 2)));
+      this.droneColor = Number.isFinite(effect.droneColor) ? effect.droneColor : 0x66ccff;
+      this.createDrones(this.droneCount, this.droneColor);
+    }
+
+    if (effect.chainMax) {
+      this.chainLightningActive = true;
+      this.chainLightningMaxChains = Math.max(1, Math.round(Number(effect.chainMax) || 3));
+    }
+
+    if (effect.orbitalCharges) {
+      this.orbitalStrikeActive = true;
+      this.orbitalStrikePowerupType = type;
+      this.orbitalStrikeCharges = Math.max(1, Math.round(Number(effect.orbitalCharges) || 5));
+      this.orbitalStrikeMaxCharges = Math.max(1, this.orbitalStrikeCharges);
+      this.orbitalStrikeCooldown = 0;
+    }
+
+    if (effect.vampire) {
+      this.vampireActive = true;
+      this.vampirePowerupType = type;
+      this.vampireKillCount = 0;
+    }
+
+    if (effect.shockwave) {
+      this.triggerShockwave({
+        radius: effect.shockwaveRadius,
+        damage: effect.shockwaveDamage,
+        color: effect.shockwaveColor,
+        scorePerBullet: effect.scorePerBullet,
+        scoreBulletCap: effect.scoreBulletCap
+      });
+    }
+
+    if (!preserveSlots && effect.instant && !effect.durationMs && !effect.bombShots) {
+      this.activePowerup.type = null;
+      this.activePowerup.expiresAt = 0;
+      this.activePowerup.remainingMs = 0;
+      this.activePowerup.durationMode = 'wall_clock';
+      this.powerupEffect = null;
+    }
+  }
+
   applyPowerup(type) {
-    if (type !== 'shield' && this.activePowerup.type === type) {
-      this.activePowerup.expiresAt = Date.now() + 12000;
-      console.log(`[Powerup] refresh type=${type} expiresAt=${this.activePowerup.expiresAt}`);
+    const meta = getPowerupMeta(type);
+    const effect = meta?.effect || {};
+    const now = this.getGameplayClockMs();
+    const durationMs = Math.max(0, Number(effect.durationMs || 12000)) * (Number(this.runAugmentModifiers?.powerupDurationMult) || 1);
+    if (type === 'row_core' || effect.rowCore) {
+      this.triggerRowCore();
+      this.notePowerup(type);
+      this.ensureRenderable('applyPowerup:' + type);
+      return;
+    }
+    if (effect.instant === true && effect.charges !== true) {
+      this.applyCatalogPowerupEffect(type, effect, now, { preserveSlots: true });
+      this.notePowerup(type);
+      this.recalculateStats();
+      this.syncPowerupRuntimeState(now);
+      this.ensureRenderable('applyPowerup:' + type);
+      return;
+    }
+    const permanentBombRack = Number(this.runAugmentModifiers?.sectorStart?.bombShots || 0) > 0;
+    if (type === 'bomb' && (permanentBombRack || this.bombShotsLeft > 0)) {
+      const addedShots = Math.max(1, Math.round(Number(effect.bombShots) || 3));
+      const chargeCap = permanentBombRack
+        ? MAX_BANKED_BOMB_SHOTS
+        : addedShots * MAX_DUPLICATE_DURATION_STACKS;
+      this.bombShotsLeft = Math.min(chargeCap,
+        Math.max(0, Math.round(Number(this.bombShotsLeft) || 0)) + addedShots);
+      this.bombMaxShots = Math.max(this.bombMaxShots || 3, this.bombShotsLeft);
+      if (permanentBombRack) {
+        this.tacticalBombShotsLeft = this.bombShotsLeft;
+        this.bombPowerupType = 'tactical';
+      }
+      this.bombSpentUntil = 0;
+      this.armBombTargetingWindow(now);
+      this.createBombIndicator();
+      this.notePowerup(type);
+      this.lastBankedPowerupPickup = { type, added: addedShots, total: this.bombShotsLeft, at: now };
+      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+      this.ensureRenderable('applyPowerup:' + type);
+      return;
+    }
+    const permanentOrbitalRack = Number(this.runAugmentModifiers?.sectorStart?.orbitalCharges || 0) > 0;
+    if (type === 'orbital_strike' && permanentOrbitalRack) {
+      const addedCharges = Math.max(1, Math.round(Number(effect.orbitalCharges) || 5));
+      this.orbitalStrikeCharges = Math.min(MAX_BANKED_ORBITAL_CHARGES,
+        Math.max(0, Math.round(Number(this.orbitalStrikeCharges) || 0)) + addedCharges);
+      this.tacticalOrbitalStrikeCharges = this.orbitalStrikeCharges;
+      this.orbitalStrikeMaxCharges = Math.max(5, this.orbitalStrikeCharges);
+      this.orbitalStrikeActive = this.orbitalStrikeCharges > 0;
+      this.orbitalStrikePowerupType = 'tactical';
+      this.orbitalStrikeCooldown = 0;
+      this.notePowerup(type);
+      this.lastBankedPowerupPickup = { type, added: addedCharges, total: this.orbitalStrikeCharges, at: now };
+      AudioManager.playSfx(meta?.sfx || 'orbital_strike_charge', { force: true, volume: 0.9 });
+      this.ensureRenderable('applyPowerup:' + type);
+      return;
+    }
+    const duplicateSlot = this.getPowerupSlots().find((slot) => slot.type === type) || null;
+    if (duplicateSlot && effect.charges === true && effect.bombShots) {
+      const addedShots = Math.max(1, Math.round(Number(effect.bombShots) || 1));
+      const chargeCap = addedShots * MAX_DUPLICATE_DURATION_STACKS;
+      this.bombShotsLeft = Math.min(chargeCap, Math.max(0, Math.round(Number(this.bombShotsLeft) || 0)) + addedShots);
+      this.bombMaxShots = Math.max(this.bombMaxShots || addedShots, this.bombShotsLeft);
+      this.bombSpentUntil = 0;
+      this.bombPowerupType = type;
+      this.armBombTargetingWindow(now);
+      this.createBombIndicator();
+      this.lastBankedPowerupPickup = { type, added: addedShots, total: this.bombShotsLeft, at: now, duplicate: true };
+      console.log(`[Powerup] stack charges type=${type} total=${this.bombShotsLeft}`);
+      return;
+    }
+    if (duplicateSlot && effect.orbitalCharges) {
+      const addedCharges = Math.max(1, Math.round(Number(effect.orbitalCharges) || 1));
+      const chargeCap = addedCharges * MAX_DUPLICATE_DURATION_STACKS;
+      this.orbitalStrikeCharges = Math.min(chargeCap,
+        Math.max(0, Math.round(Number(this.orbitalStrikeCharges) || 0)) + addedCharges);
+      this.orbitalStrikeMaxCharges = Math.max(this.orbitalStrikeMaxCharges || addedCharges, this.orbitalStrikeCharges);
+      this.orbitalStrikeActive = this.orbitalStrikeCharges > 0;
+      this.orbitalStrikePowerupType = type;
+      this.stackPowerupSlotDuration(duplicateSlot, type, durationMs, now);
+      this.syncPowerupRuntimeState(now);
+      console.log(`[Powerup] stack orbital type=${type} total=${this.orbitalStrikeCharges}`);
+      return;
+    }
+    if (duplicateSlot && effect.charges !== true) {
+      const stackedRemaining = this.stackPowerupSlotDuration(duplicateSlot, type, durationMs, now);
+      if (effect.shield && this.shieldSource === type) {
+        this.shieldExpiresAt = Math.max(this.shieldExpiresAt || 0, duplicateSlot.expiresAt);
+      }
+      if (effect.pointDefense && this.pointDefenseSource === type) {
+        this.activatePointDefense(0, {
+          now,
+          expiresAt: duplicateSlot.expiresAt,
+          extend: true,
+          playSfx: false,
+          source: type
+        });
+      }
+      this.syncPowerupRuntimeState(now);
+      if (duplicateSlot === this.activePowerup) this.powerupEffect = effect;
+      if (this.scoreMultiplierType === type) this.scoreBoostExpiresAt = duplicateSlot.expiresAt;
+      if (this.magnetActive && effect.magnetRadius) this.magnetExpiresAt = duplicateSlot.expiresAt;
+      if (this.dronesActive && effect.droneCount) this.dronesExpiresAt = duplicateSlot.expiresAt;
+      console.log(`[Powerup] stack duration type=${type} remainingMs=${stackedRemaining}`);
       return;
     }
 
-    this.resetPowerups(); // Clear existing to prevent stacking weirdness
-    this.activePowerup.type = type;
-    this.activePowerup.expiresAt = Date.now() + 12000; // 12 Seconds Default
+    const previousDoubleShotFloor = this.doubleShotShotFloor;
+    const doubleShotShotFloor = type === 'double_shot'
+      ? Math.max(1, Math.min(8, Math.round(Number(this.multiShot) || 1)))
+      : 0;
+    const preserved = this.preparePowerupSlotsFor(type);
+    this.doubleShotShotFloor = doubleShotShotFloor || (preserved?.type === 'double_shot' ? previousDoubleShotFloor : 0);
+    this.activePowerup = { ...createEmptyPowerupSlot(), type, effect };
+    this.setActivePowerupDuration(type, durationMs, now);
+    this.powerupEffect = effect;
 
     switch (type) {
       case 'slow_time':
         // Global effect handled by Scene
-        this.activePowerup.expiresAt = Date.now() + 8000; // 8s
         break;
       case 'ghost':
-        this.activePowerup.expiresAt = Date.now() + 8000; // 8s
         // Ghost mode uses reduced alpha for the CONTAINER only, not destroying visibility
         this.sprite.alpha = 0.4;
         break;
       case 'magnet':
         this.magnetActive = true;
-        this.magnetExpiresAt = Date.now() + 8000;
+        this.magnetExpiresAt = this.activePowerup.expiresAt;
         break;
       case 'drones':
         this.dronesActive = true;
-        this.dronesExpiresAt = Date.now() + 8000;
+        this.dronesExpiresAt = this.activePowerup.expiresAt;
         this.createDrones();
         break;
       case 'rapid_fire':
-        this.activePowerup.expiresAt = Date.now() + 8000;
         break;
       case 'double_shot':
-        this.activePowerup.expiresAt = Date.now() + 8000;
         break;
       case 'damage_up':
-        this.activePowerup.expiresAt = Date.now() + 8000;
         break;
       case 'speed_up':
-        this.activePowerup.expiresAt = Date.now() + 8000;
         break;
       case 'pierce':
-        this.activePowerup.expiresAt = Date.now() + 7000;
         break;
       case 'shield':
-        this.activateShield();
+        this.activateShield(15000, { source: type });
         if (type === 'shield') {
           this.activePowerup.type = null; // Don't block weapon slot
+          this.activePowerup.expiresAt = 0;
+          this.activePowerup.durationMode = 'wall_clock';
+          this.activePowerup.remainingMs = 0;
+          this.powerupEffect = null;
         }
         break;
       case 'point_defense':
-        this.pointDefenseActive = true;
-        this.pointDefenseExpiresAt = Date.now() + 10000; // 10 seconds
-        this.createPointDefenseRing();
-        AudioManager.playSfx('forceField', { force: true, volume: 0.8 }); // Activation sound
+        this.activatePointDefense(durationMs, {
+          now,
+          playSfx: true,
+          volume: 0.8,
+          source: 'point_defense'
+        });
         break;
       case 'bomb':
         this.bombShotsLeft = 3; // Next 3 shots are bombs
+        this.bombSpentUntil = 0;
+        this.bombPowerupType = type;
+        this.armBombTargetingWindow(now);
         this.createBombIndicator();
         AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
         break;
       case 'score_x2':
         this.scoreMultiplier = 2;
-        this.scoreBoostExpiresAt = Date.now() + 10000; // 10 seconds
-        this.activePowerup.expiresAt = Date.now() + 10000;
+        this.scoreMultiplierType = 'score_x2';
+        this.scoreBoostExpiresAt = this.activePowerup.expiresAt;
         break;
       case 'shockwave':
         // Clear all enemy bullets and deal damage to nearby enemies
         this.triggerShockwave();
         this.activePowerup.type = null; // Instant effect, don't block slot
+        this.activePowerup.expiresAt = 0;
+        this.activePowerup.durationMode = 'wall_clock';
+        this.activePowerup.remainingMs = 0;
+        this.powerupEffect = null;
         break;
       case 'chain_lightning':
         this.chainLightningActive = true;
         this.chainLightningMaxChains = 3;
-        this.activePowerup.expiresAt = Date.now() + 12000;
         break;
       case 'orbital_strike':
         this.orbitalStrikeActive = true;
+        this.orbitalStrikePowerupType = type;
         this.orbitalStrikeCharges = 5;
+        this.orbitalStrikeMaxCharges = 5;
         this.orbitalStrikeCooldown = 0;
-        this.activePowerup.expiresAt = Date.now() + 15000;
         break;
       case 'vampire':
         this.vampireActive = true;
+        this.vampirePowerupType = type;
         this.vampireKillCount = 0;
-        this.activePowerup.expiresAt = Date.now() + 20000; // 20 seconds
+        break;
+      default:
+        this.applyCatalogPowerupEffect(type, effect, now);
         break;
     }
 
     this.notePowerup(type);
     const before = this.getStatSnapshot();
     this.recalculateStats();
+    this.syncPowerupRuntimeState(now);
     const after = this.getStatSnapshot();
     console.log(`[Powerup] apply type=${type} before=${before} after=${after}`);
 
@@ -2100,6 +5284,12 @@ export class Player {
 
   resetPowerups() {
     const expiredType = this.activePowerup.type;
+    const now = this.getGameplayClockMs();
+    const tacticalPointDefenseExpiresAt = this.tacticalPointDefenseExpiresAt > now
+      ? this.tacticalPointDefenseExpiresAt
+      : 0;
+    const tacticalBombShotsLeft = Math.max(0, Math.round(Number(this.tacticalBombShotsLeft) || 0));
+    const tacticalOrbitalStrikeCharges = Math.max(0, Math.round(Number(this.tacticalOrbitalStrikeCharges) || 0));
     // Visuals
     if (this.sprite && !this.isDodging && !this.invulnerable) {
       this.sprite.alpha = 1;
@@ -2114,17 +5304,55 @@ export class Player {
     this.magnetExpiresAt = 0;
     this.clearDrones();
     this.deactivatePointDefense();
+    this.deactivateBomb({ preserveSlots: true });
+    this.powerupEffect = null;
+    this.shieldSpentUntil = 0;
+    this.bombSpentUntil = 0;
     this.scoreMultiplier = 1;
+    this.scoreMultiplierType = null;
     this.scoreBoostExpiresAt = 0;
     this.chainLightningActive = false;
+    this.chainLightningMaxChains = 3;
     this.orbitalStrikeActive = false;
     this.orbitalStrikeCharges = 0;
+    this.orbitalStrikeMaxCharges = 5;
+    this.orbitalStrikePowerupType = null;
     this.vampireActive = false;
     this.vampireKillCount = 0;
-    this.activePowerup.type = null;
-    this.activePowerup.expiresAt = 0;
+    this.vampirePowerupType = null;
+    this.bombMaxShots = 3;
+    this.bombBlastRadius = 150;
+    this.bombDamageMult = 5;
+    this.bombColor = 0xffaa00;
+    this.droneCount = 2;
+    this.droneColor = 0x66ccff;
+    this.doubleShotShotFloor = 0;
+    this.secondaryPowerup = createEmptyPowerupSlot();
+    this.activePowerup = createEmptyPowerupSlot();
+    if (tacticalPointDefenseExpiresAt > now) {
+      this.activatePointDefense(0, {
+        now,
+        expiresAt: tacticalPointDefenseExpiresAt,
+        playSfx: false,
+        source: 'tactical_restore'
+      });
+    }
+    if (tacticalBombShotsLeft > 0) {
+      this.bombShotsLeft = tacticalBombShotsLeft;
+      this.bombPowerupType = 'tactical';
+      this.bombMaxShots = Math.max(this.bombMaxShots, tacticalBombShotsLeft);
+      this.armBombTargetingWindow(now);
+      this.createBombIndicator();
+    }
+    if (tacticalOrbitalStrikeCharges > 0) {
+      this.orbitalStrikeActive = true;
+      this.orbitalStrikePowerupType = 'tactical';
+      this.orbitalStrikeCharges = tacticalOrbitalStrikeCharges;
+      this.orbitalStrikeMaxCharges = Math.max(5, tacticalOrbitalStrikeCharges);
+    }
     const before = this.getStatSnapshot();
     this.recalculateStats();
+    this.syncPowerupRuntimeState(now);
     const after = this.getStatSnapshot();
     console.log(`[Powerup] expire before=${before} after=${after}`);
     const playScene = this.game?.scenes?.play;
@@ -2135,7 +5363,7 @@ export class Player {
 
   notePowerup(type) {
     if (!type) return;
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     const previous = this.lastPowerupType;
     const previousAt = this.lastPowerupAt;
     this.lastPowerupType = type;
@@ -2148,7 +5376,7 @@ export class Player {
   }
 
   tryActivateSynergy(type, previous, previousAt) {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     const recentOk = previous && (now - previousAt < 8000);
     const playScene = this.game?.scenes?.play;
     const activate = (key, label) => {
@@ -2185,7 +5413,50 @@ export class Player {
     this.recalculateStats();
   }
 
-  recalculateStats() {
+  applyCatalogStatModifiers(effect = {}, { preview = false } = {}) {
+    if (!effect || typeof effect !== 'object') return;
+
+    if (Number.isFinite(effect.shotsMin)) {
+      this.multiShot = Math.max(this.multiShot, Math.min(7, Math.round(effect.shotsMin)));
+    }
+    if (Number.isFinite(effect.shotBonus)) {
+      this.multiShot = Math.min(7, this.multiShot + Math.max(0, Math.round(effect.shotBonus)));
+    }
+    if (Number.isFinite(effect.damageMult)) {
+      this.bulletDamage = Math.max(0.65, this.bulletDamage * effect.damageMult);
+    }
+    if (Number.isFinite(effect.damageMin)) {
+      this.bulletDamage = Math.max(this.bulletDamage, effect.damageMin);
+    }
+    if (Number.isFinite(effect.fireRateMult)) {
+      this.shootDelay = Math.max(45, this.shootDelay * effect.fireRateMult);
+    }
+    if (Number.isFinite(effect.speedMult)) {
+      this.speed *= effect.speedMult;
+    }
+    if (Number.isFinite(effect.bulletSpeedMult)) {
+      this.bulletSpeed = Math.max(2.5, this.bulletSpeed * effect.bulletSpeedMult);
+    }
+    if (effect.pierce) {
+      this.bulletPierce = true;
+    }
+    if (Number.isFinite(effect.dodgeDelayMult)) {
+      this.dodgeDelay = Math.round(Math.max(420, this.dodgeDelay * effect.dodgeDelayMult));
+    }
+    if (Number.isFinite(effect.magnetRadius)) {
+      this.magnetActive = true;
+      this.magnetRadius = Math.max(80, effect.magnetRadius);
+      this.magnetStrength = Math.max(0.02, Number(effect.magnetStrength || 0.08));
+    }
+    if (Number.isFinite(effect.droneCount)) {
+      this.dronesActive = true;
+      this.droneCount = Math.max(1, Math.min(4, Math.round(effect.droneCount)));
+      this.droneColor = Number.isFinite(effect.droneColor) ? effect.droneColor : this.droneColor;
+      if (!preview && !this.drones.length && this.sprite) this.createDrones(this.droneCount, this.droneColor);
+    }
+  }
+
+  recalculateStats({ preview = false } = {}) {
     // 1. Reset to BASE STATS from Single Source of Truth
     this.speed = this.stats.speed;
     this.bulletDamage = this.stats.damage;
@@ -2204,8 +5475,8 @@ export class Player {
     this.rankBoostBulletFx = false;
     this.magnetActive = false;
     this.dronesActive = false;
-    this.magnetRadius = 140;
-    this.magnetStrength = 0.08;
+    this.magnetRadius = 180;
+    this.magnetStrength = 0.14;
 
     // 4. Apply Powerups (Additive or Multiplicative). Tractor nullification
     // suppresses active effects briefly, but keeps their timers intact.
@@ -2227,7 +5498,7 @@ export class Player {
           this.shootDelay = this.stats.fireRate * 0.5;
           break;
         case 'double_shot':
-          this.multiShot = Math.max(this.multiShot, 2);
+          this.multiShot = Math.min(8, this.multiShot + 1);
           break;
         case 'damage_up':
           this.bulletDamage = Math.max(2, Math.round(this.bulletDamage * 1.6));
@@ -2243,14 +5514,41 @@ export class Player {
           break;
         case 'drones':
           this.dronesActive = true;
-          if (!this.drones.length && this.sprite) this.createDrones();
+          if (!preview && !this.drones.length && this.sprite) this.createDrones();
           break;
+      }
+
+      if (!BASE_POWERUP_TYPE_SET.has(this.activePowerup.type)) {
+        this.applyCatalogStatModifiers(this.powerupEffect || {}, { preview });
+      }
+      if (this.secondaryPowerup?.type) {
+        switch (this.secondaryPowerup.type) {
+          case 'rapid_fire':
+            this.shootDelay = this.stats.fireRate * 0.5;
+            break;
+          case 'double_shot':
+            this.multiShot = Math.min(8, this.multiShot + 1);
+            break;
+          case 'damage_up':
+            this.bulletDamage = Math.max(2, Math.round(this.bulletDamage * 1.6));
+            break;
+          case 'pierce':
+            this.bulletPierce = true;
+            break;
+          case 'magnet':
+            this.magnetActive = true;
+            break;
+          default:
+            this.applyCatalogStatModifiers(this.secondaryPowerup.effect || {}, { preview });
+            break;
+        }
       }
     }
 
     this.applyRankBoostModifiers();
     this.applySynergyModifiers();
     this.applyStatusEffectModifiers();
+    this.applyRunAugmentModifiers({ preview });
   }
 
   applyStatusEffectModifiers() {
@@ -2320,11 +5618,12 @@ export class Player {
     if (!this.rankBoost.type) return;
     this.rankBoost.type = null;
     this.rankBoost.expiresAt = 0;
+    this.drawRankBoostAura(null);
     this.recalculateStats();
   }
 
   applyRankBoost(type, durationMs) {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     const before = {
       shootDelay: this.shootDelay,
       speed: this.speed,
@@ -2337,6 +5636,7 @@ export class Player {
       this.rankBoost.expiresAt = now + durationMs;
       this.recalculateStats();
     }
+    this.drawRankBoostAura(type);
 
     const playScene = this.game && this.game.scenes ? this.game.scenes.play : null;
     if (playScene && playScene.showToast) {
@@ -2463,6 +5763,7 @@ export class Player {
   }
 
   forceRespawn(screenWidth, screenHeight) {
+    this.cancelDodgeExitPulse('life_lost', { endDodge: true });
     this.x = screenWidth / 2;
     this.y = screenHeight - 100;
     this.sprite.x = this.x;
@@ -2499,6 +5800,7 @@ export class Player {
   }
 
   destroy() {
+    this.cancelDodgeExitPulse('destroy', { endDodge: true });
     this.clearStatusEffects('destroy');
     // Clean up visual enhancements
     if (this.visualEnhancementCleanup) {

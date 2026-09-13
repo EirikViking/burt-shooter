@@ -1,0 +1,1850 @@
+{
+  "afterimage_duelist": {
+    "url": "art/mysteries/afterimage_duelist.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 683281,
+    "sha256": "c9ca24ce082c8a1d9d09a8724390e909c128e7582742f5a65224385619218010",
+    "frames": {
+      "topLeft": [
+        266,
+        21,
+        172,
+        579
+      ],
+      "topRight": [
+        830,
+        59,
+        253,
+        560
+      ],
+      "bottomRight": [
+        834,
+        651,
+        234,
+        586
+      ],
+      "bottomLeft": [
+        172,
+        657,
+        255,
+        568
+      ]
+    }
+  },
+  "avalanche_engine": {
+    "url": "art/mysteries/avalanche_engine.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1874121,
+    "sha256": "0dbd289a734455deda89d0ce64f149dc1077ecd16b8112086b30ffe6df9c634f",
+    "frames": {
+      "topLeft": [
+        46,
+        10,
+        629,
+        604
+      ],
+      "topRight": [
+        793,
+        66,
+        385,
+        551
+      ],
+      "bottomLeft": [
+        89,
+        661,
+        386,
+        551
+      ],
+      "bottomRight": [
+        634,
+        680,
+        591,
+        554
+      ]
+    }
+  },
+  "bellfoundry": {
+    "url": "art/mysteries/bellfoundry.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1811906,
+    "sha256": "11f51a60e3f36492ac057c4e15082d1ce83db928d2fdf7b3ad34849ef48be466",
+    "frames": {
+      "topLeft": [
+        19,
+        15,
+        591,
+        593
+      ],
+      "topRight": [
+        643,
+        38,
+        592,
+        528
+      ],
+      "bottomLeft": [
+        72,
+        657,
+        485,
+        514
+      ],
+      "bottomRight": [
+        698,
+        657,
+        484,
+        514
+      ]
+    }
+  },
+  "blind_leviathan": {
+    "url": "art/mysteries/blind_leviathan.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1563278,
+    "sha256": "3a8a9c1fe0ae956613172658d002dc7c1e66d2db7bdfff68899ffafd4355deca",
+    "frames": {
+      "topLeft": [
+        63,
+        0,
+        516,
+        715
+      ],
+      "topRight": [
+        660,
+        202,
+        560,
+        438
+      ],
+      "bottomRight": [
+        669,
+        708,
+        544,
+        537
+      ],
+      "bottomLeft": [
+        36,
+        764,
+        556,
+        439
+      ]
+    }
+  },
+  "bloom_queen": {
+    "url": "art/mysteries/bloom_queen.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 2051778,
+    "sha256": "c7988f3443fc069a44d3f7f20f86cbac013b00dbf3778670635883799fb0d8df",
+    "frames": {
+      "topLeft": [
+        34,
+        13,
+        587,
+        609
+      ],
+      "topRight": [
+        664,
+        47,
+        576,
+        571
+      ],
+      "bottomRight": [
+        663,
+        640,
+        561,
+        586
+      ],
+      "bottomLeft": [
+        14,
+        642,
+        578,
+        576
+      ]
+    }
+  },
+  "brood_ark": {
+    "url": "art/mysteries/brood_ark.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1260201,
+    "sha256": "18c92ca4e60baa5b620442438f815c108fa375375daf75f707ef0dd59628a65f",
+    "frames": {
+      "topLeft": [
+        156,
+        12,
+        281,
+        616
+      ],
+      "topRight": [
+        789,
+        36,
+        375,
+        579
+      ],
+      "bottomLeft": [
+        90,
+        663,
+        375,
+        579
+      ],
+      "bottomRight": [
+        751,
+        701,
+        385,
+        495
+      ]
+    }
+  },
+  "bulwark_hauler": {
+    "url": "art/mysteries/bulwark_hauler.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1824255,
+    "sha256": "6159dd9b42415cd20cc4ea42ae7d297df70e9a2d27d1bb9ff2451458287084a0",
+    "frames": {
+      "topLeft": [
+        49,
+        20,
+        589,
+        691
+      ],
+      "topRight": [
+        758,
+        68,
+        447,
+        609
+      ],
+      "bottomRight": [
+        789,
+        786,
+        402,
+        393
+      ],
+      "bottomLeft": [
+        36,
+        806,
+        662,
+        353
+      ]
+    }
+  },
+  "cable_kraken": {
+    "url": "art/mysteries/cable_kraken.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1635259,
+    "sha256": "16e2901b5e358f1ff067312c2fa7aa9127bd8a0c68ad94576c0c0be7ce89c7aa",
+    "frames": {
+      "topLeft": [
+        23,
+        22,
+        569,
+        544
+      ],
+      "topRight": [
+        714,
+        47,
+        505,
+        549
+      ],
+      "bottomLeft": [
+        44,
+        693,
+        530,
+        513
+      ],
+      "bottomRight": [
+        772,
+        753,
+        405,
+        393
+      ]
+    }
+  },
+  "carrion_weaver": {
+    "url": "art/mysteries/carrion_weaver.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1405795,
+    "sha256": "c300f0e15d91b86d4901d30890620c639f8acf8ecec3efd15bcd825d7c1059bd",
+    "frames": {
+      "topRight": [
+        849,
+        23,
+        299,
+        585
+      ],
+      "topLeft": [
+        56,
+        58,
+        514,
+        493
+      ],
+      "bottomLeft": [
+        62,
+        653,
+        537,
+        559
+      ],
+      "bottomRight": [
+        657,
+        679,
+        551,
+        527
+      ]
+    }
+  },
+  "cathedral_of_teeth": {
+    "url": "art/mysteries/cathedral_of_teeth.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1820340,
+    "sha256": "cb7d8e335b6dbeeddf83ab68648576edb90fcbff913106a9f462fa32722e060d",
+    "frames": {
+      "topLeft": [
+        46,
+        10,
+        538,
+        609
+      ],
+      "topRight": [
+        705,
+        10,
+        505,
+        607
+      ],
+      "bottomRight": [
+        797,
+        628,
+        292,
+        590
+      ],
+      "bottomLeft": [
+        45,
+        637,
+        505,
+        607
+      ]
+    }
+  },
+  "choir_unbound": {
+    "url": "art/mysteries/choir_unbound.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1279886,
+    "sha256": "d946d4e16e0bf070a67cf410b971132da42d4dec8449d60de20cb179022238d2",
+    "frames": {
+      "topRight": [
+        839,
+        19,
+        236,
+        574
+      ],
+      "topLeft": [
+        37,
+        47,
+        554,
+        531
+      ],
+      "bottomRight": [
+        794,
+        641,
+        365,
+        592
+      ],
+      "bottomLeft": [
+        29,
+        745,
+        569,
+        367
+      ]
+    }
+  },
+  "chrysalis_hunter": {
+    "url": "art/mysteries/chrysalis_hunter.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1456182,
+    "sha256": "eea1253bb185b9bf93deacb4709868f0c53e859b18e522cb94826ebc975ee5c6",
+    "frames": {
+      "topLeft": [
+        153,
+        34,
+        321,
+        560
+      ],
+      "topRight": [
+        687,
+        44,
+        544,
+        536
+      ],
+      "bottomRight": [
+        798,
+        642,
+        287,
+        594
+      ],
+      "bottomLeft": [
+        23,
+        671,
+        544,
+        536
+      ]
+    }
+  },
+  "cinder_manta": {
+    "url": "art/mysteries/cinder_manta.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1421931,
+    "sha256": "8f66b4282ddf3bcb48718ee672ea999ceb31c222a5d3b18ee9915df49608a4c9",
+    "frames": {
+      "topLeft": [
+        80,
+        14,
+        489,
+        600
+      ],
+      "topRight": [
+        641,
+        79,
+        598,
+        494
+      ],
+      "bottomLeft": [
+        36,
+        686,
+        612,
+        495
+      ],
+      "bottomRight": [
+        782,
+        708,
+        351,
+        478
+      ]
+    }
+  },
+  "cipher_engine": {
+    "url": "art/mysteries/cipher_engine.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1509240,
+    "sha256": "24272dfeeabb50ce9504637b3703f5657c64a9eace4dda875790be0a14ab2ed5",
+    "frames": {
+      "topLeft": [
+        32,
+        33,
+        635,
+        573
+      ],
+      "topRight": [
+        865,
+        64,
+        236,
+        509
+      ],
+      "bottomRight": [
+        718,
+        666,
+        459,
+        522
+      ],
+      "bottomLeft": [
+        72,
+        669,
+        507,
+        505
+      ]
+    }
+  },
+  "clockray": {
+    "url": "art/mysteries/clockray.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1368322,
+    "sha256": "16106fcd0bfcdb4249d05c4ead95ef93faf9fc4309dd429078a4557ca7218912",
+    "frames": {
+      "topLeft": [
+        243,
+        14,
+        173,
+        608
+      ],
+      "topRight": [
+        646,
+        58,
+        594,
+        533
+      ],
+      "bottomRight": [
+        758,
+        635,
+        366,
+        605
+      ],
+      "bottomLeft": [
+        28,
+        649,
+        577,
+        542
+      ]
+    }
+  },
+  "comet_shepherd": {
+    "url": "art/mysteries/comet_shepherd.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1426630,
+    "sha256": "efdaf81de44c5e67f920655ce710ff05896ddfebb5c71240e27aba121d9a7584",
+    "frames": {
+      "topLeft": [
+        34,
+        23,
+        560,
+        557
+      ],
+      "topRight": [
+        746,
+        40,
+        444,
+        551
+      ],
+      "bottomLeft": [
+        57,
+        663,
+        450,
+        552
+      ],
+      "bottomRight": [
+        701,
+        705,
+        521,
+        475
+      ]
+    }
+  },
+  "constellation_beast": {
+    "url": "art/mysteries/constellation_beast.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1684216,
+    "sha256": "719d8816c5e7c0ca045a2221afddd5188c1ea428b3d8496cb7fb770b8bfeed20",
+    "frames": {
+      "topRight": [
+        733,
+        3,
+        510,
+        622
+      ],
+      "topLeft": [
+        8,
+        8,
+        617,
+        612
+      ],
+      "bottomLeft": [
+        19,
+        624,
+        491,
+        627
+      ],
+      "bottomRight": [
+        702,
+        650,
+        475,
+        580
+      ]
+    }
+  },
+  "courier_zero": {
+    "url": "art/mysteries/courier_zero.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1235479,
+    "sha256": "59a3763975a81bd9f151ae444f4dc4ce13dbf0b7e2fd91364f03d30089333f3a",
+    "frames": {
+      "topRight": [
+        702,
+        29,
+        489,
+        569
+      ],
+      "topLeft": [
+        181,
+        32,
+        261,
+        562
+      ],
+      "bottomLeft": [
+        60,
+        656,
+        489,
+        569
+      ],
+      "bottomRight": [
+        728,
+        701,
+        427,
+        441
+      ]
+    }
+  },
+  "debt_collector": {
+    "url": "art/mysteries/debt_collector.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1313721,
+    "sha256": "cad44f054ad3203ec361e6089ce782d11acd7713d41f6718f0a980f0751afac3",
+    "frames": {
+      "topLeft": [
+        38,
+        43,
+        552,
+        528
+      ],
+      "topRight": [
+        672,
+        151,
+        548,
+        371
+      ],
+      "bottomLeft": [
+        34,
+        774,
+        559,
+        368
+      ],
+      "bottomRight": [
+        790,
+        775,
+        316,
+        318
+      ]
+    }
+  },
+  "doorwraith": {
+    "url": "art/mysteries/doorwraith.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1176570,
+    "sha256": "a3cec6f0ee8125c002fca1fb193e368ebeae53ee136de8476fa8268e1e3613ea",
+    "frames": {
+      "topRight": [
+        836,
+        21,
+        308,
+        584
+      ],
+      "topLeft": [
+        46,
+        22,
+        548,
+        570
+      ],
+      "bottomLeft": [
+        111,
+        648,
+        308,
+        584
+      ],
+      "bottomRight": [
+        704,
+        689,
+        476,
+        493
+      ]
+    }
+  },
+  "dying_star": {
+    "url": "art/mysteries/dying_star.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1868996,
+    "sha256": "485072220a56e06522d0e06c52df03e19808cd7f1a1879bd138b3cc41f778b8f",
+    "frames": {
+      "topLeft": [
+        67,
+        50,
+        502,
+        530
+      ],
+      "topRight": [
+        783,
+        50,
+        407,
+        557
+      ],
+      "bottomLeft": [
+        35,
+        688,
+        596,
+        519
+      ],
+      "bottomRight": [
+        710,
+        699,
+        518,
+        511
+      ]
+    }
+  },
+  "eventide_engine": {
+    "url": "art/mysteries/eventide_engine.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1718338,
+    "sha256": "a2ebded50a6ce1689b841e803fec32b9dc6740588fce655a658a641f6edbd0db",
+    "frames": {
+      "topLeft": [
+        14,
+        9,
+        615,
+        620
+      ],
+      "topRight": [
+        671,
+        140,
+        533,
+        419
+      ],
+      "bottomRight": [
+        659,
+        641,
+        580,
+        580
+      ],
+      "bottomLeft": [
+        188,
+        672,
+        268,
+        568
+      ]
+    }
+  },
+  "false_sun": {
+    "url": "art/mysteries/false_sun.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1801022,
+    "sha256": "6ccd4506207dd566d93dce2556b0c897ad5cb51ffdc169e26103dfaf9577bdfd",
+    "frames": {
+      "topRight": [
+        641,
+        30,
+        589,
+        601
+      ],
+      "topLeft": [
+        69,
+        46,
+        525,
+        555
+      ],
+      "bottomLeft": [
+        22,
+        614,
+        594,
+        599
+      ],
+      "bottomRight": [
+        695,
+        637,
+        457,
+        560
+      ]
+    }
+  },
+  "foldship": {
+    "url": "art/mysteries/foldship.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1515612,
+    "sha256": "cf8582b3679f763805d250348a5503abc1b7c5348ed2231e83c3854e356ea87d",
+    "frames": {
+      "topLeft": [
+        157,
+        13,
+        350,
+        618
+      ],
+      "topRight": [
+        685,
+        27,
+        539,
+        595
+      ],
+      "bottomLeft": [
+        30,
+        650,
+        542,
+        583
+      ],
+      "bottomRight": [
+        768,
+        655,
+        346,
+        564
+      ]
+    }
+  },
+  "fortune_leech": {
+    "url": "art/mysteries/fortune_leech.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1612647,
+    "sha256": "617709812007b5c31cdbc166e8a673cc39562ecfe725c4a3a5cc4de5d5a2d6d1",
+    "frames": {
+      "topLeft": [
+        17,
+        38,
+        594,
+        587
+      ],
+      "topRight": [
+        792,
+        73,
+        317,
+        535
+      ],
+      "bottomRight": [
+        742,
+        707,
+        486,
+        466
+      ],
+      "bottomLeft": [
+        26,
+        708,
+        486,
+        465
+      ]
+    }
+  },
+  "gilded_pilgrim": {
+    "url": "art/mysteries/gilded_pilgrim.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1318207,
+    "sha256": "1d06e65fddb2aa8db2c0fc4e0c2a01d9f9bdc08dde3bb4d6666b6f861e78175d",
+    "frames": {
+      "topLeft": [
+        215,
+        4,
+        211,
+        619
+      ],
+      "topRight": [
+        671,
+        38,
+        545,
+        574
+      ],
+      "bottomRight": [
+        676,
+        652,
+        536,
+        592
+      ],
+      "bottomLeft": [
+        40,
+        664,
+        544,
+        575
+      ]
+    }
+  },
+  "glass_widow": {
+    "url": "art/mysteries/glass_widow.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1309937,
+    "sha256": "d690d1240473e9c035e9005e72f91e5492f823961bc2a19b7066dc71b3f0db08",
+    "frames": {
+      "topLeft": [
+        152,
+        14,
+        360,
+        672
+      ],
+      "topRight": [
+        633,
+        123,
+        604,
+        515
+      ],
+      "bottomRight": [
+        812,
+        707,
+        262,
+        484
+      ],
+      "bottomLeft": [
+        44,
+        717,
+        610,
+        516
+      ]
+    }
+  },
+  "horizon_biter": {
+    "url": "art/mysteries/horizon_biter.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1424622,
+    "sha256": "8eb686059dde882a3016044ef563927a6c3cbfd95b913425e7edd8928f9ae006",
+    "frames": {
+      "topLeft": [
+        42,
+        21,
+        611,
+        606
+      ],
+      "topRight": [
+        748,
+        29,
+        469,
+        621
+      ],
+      "bottomLeft": [
+        50,
+        638,
+        472,
+        605
+      ],
+      "bottomRight": [
+        804,
+        779,
+        291,
+        363
+      ]
+    }
+  },
+  "husk_parade": {
+    "url": "art/mysteries/husk_parade.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1407693,
+    "sha256": "751298002a4240832ae2b8fc9e1432772e47129f9a800ce601a7b52a19a15ace",
+    "frames": {
+      "topRight": [
+        752,
+        55,
+        364,
+        547
+      ],
+      "topLeft": [
+        97,
+        59,
+        446,
+        535
+      ],
+      "bottomLeft": [
+        61,
+        669,
+        528,
+        512
+      ],
+      "bottomRight": [
+        735,
+        680,
+        403,
+        490
+      ]
+    }
+  },
+  "lantern_eater": {
+    "url": "art/mysteries/lantern_eater.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1615384,
+    "sha256": "ff171ab6cd8a0d292205980eb1a8b59d94e3f70292b3dd5958bea6b76b631c58",
+    "frames": {
+      "topLeft": [
+        9,
+        5,
+        649,
+        610
+      ],
+      "topRight": [
+        758,
+        102,
+        488,
+        500
+      ],
+      "bottomRight": [
+        804,
+        633,
+        342,
+        590
+      ],
+      "bottomLeft": [
+        7,
+        681,
+        555,
+        530
+      ]
+    }
+  },
+  "lantern_mimic": {
+    "url": "art/mysteries/lantern_mimic.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1361253,
+    "sha256": "7688e0c355055297eb1f1f39f3e53d96431b38924aee1f9bf7d3b4afd3f636e1",
+    "frames": {
+      "topLeft": [
+        133,
+        60,
+        380,
+        534
+      ],
+      "topRight": [
+        749,
+        69,
+        357,
+        510
+      ],
+      "bottomLeft": [
+        146,
+        668,
+        363,
+        512
+      ],
+      "bottomRight": [
+        719,
+        672,
+        442,
+        522
+      ]
+    }
+  },
+  "lantern_shoal": {
+    "url": "art/mysteries/lantern_shoal.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1338401,
+    "sha256": "f8d7487d768e5987b50ee116bb9c26a7d43f92e92e8f982f082556362aa28fff",
+    "frames": {
+      "topRight": [
+        773,
+        52,
+        396,
+        565
+      ],
+      "topLeft": [
+        54,
+        103,
+        598,
+        507
+      ],
+      "bottomRight": [
+        855,
+        666,
+        323,
+        550
+      ],
+      "bottomLeft": [
+        149,
+        701,
+        396,
+        451
+      ]
+    }
+  },
+  "magnet_urchin": {
+    "url": "art/mysteries/magnet_urchin.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1305906,
+    "sha256": "42571143a2872a0a5a9b27c410097e13ec8a01b8315ffa615bae7b04d8073e10",
+    "frames": {
+      "topLeft": [
+        69,
+        72,
+        519,
+        517
+      ],
+      "topRight": [
+        697,
+        72,
+        499,
+        512
+      ],
+      "bottomRight": [
+        716,
+        721,
+        448,
+        438
+      ],
+      "bottomLeft": [
+        103,
+        795,
+        444,
+        367
+      ]
+    }
+  },
+  "mercy_trap": {
+    "url": "art/mysteries/mercy_trap.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1602976,
+    "sha256": "59987623eb1d8ad1db075dcdc042319ad7d5c351ad7b3fb769a24e900fa7149a",
+    "frames": {
+      "topRight": [
+        636,
+        15,
+        602,
+        617
+      ],
+      "topLeft": [
+        120,
+        27,
+        415,
+        581
+      ],
+      "bottomLeft": [
+        16,
+        632,
+        602,
+        617
+      ],
+      "bottomRight": [
+        761,
+        698,
+        360,
+        459
+      ]
+    }
+  },
+  "mirror_court": {
+    "url": "art/mysteries/mirror_court.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1277061,
+    "sha256": "bffe77e38d998af9c35c549c70b48846eb9566a1d27d975a4e5009bd975504f2",
+    "frames": {
+      "topLeft": [
+        94,
+        8,
+        466,
+        608
+      ],
+      "topRight": [
+        864,
+        27,
+        230,
+        585
+      ],
+      "bottomRight": [
+        752,
+        708,
+        425,
+        454
+      ],
+      "bottomLeft": [
+        17,
+        743,
+        593,
+        421
+      ]
+    }
+  },
+  "needle_saint": {
+    "url": "art/mysteries/needle_saint.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 780966,
+    "sha256": "2b3451cc2245e4cca6b103a5f787ad0d61958866f7fcbd897b6e323d63a4bf41",
+    "frames": {
+      "topLeft": [
+        226,
+        7,
+        224,
+        662
+      ],
+      "topRight": [
+        633,
+        156,
+        570,
+        347
+      ],
+      "bottomRight": [
+        881,
+        595,
+        120,
+        644
+      ],
+      "bottomLeft": [
+        40,
+        787,
+        579,
+        352
+      ]
+    }
+  },
+  "nova_anvil": {
+    "url": "art/mysteries/nova_anvil.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1731247,
+    "sha256": "3e6f8e84c1ff9f1ad09a3e8b2770d68e2cbeb2776cd4ca78d8906434986a1e5a",
+    "frames": {
+      "topLeft": [
+        24,
+        7,
+        612,
+        618
+      ],
+      "topRight": [
+        793,
+        17,
+        321,
+        605
+      ],
+      "bottomRight": [
+        706,
+        677,
+        482,
+        494
+      ],
+      "bottomLeft": [
+        43,
+        682,
+        578,
+        529
+      ]
+    }
+  },
+  "oathkeeper": {
+    "url": "art/mysteries/oathkeeper.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1412227,
+    "sha256": "ab066248f1970ae11797d3b74d5d439757dcd890f9fa3f196fbe6caf7eebd3a3",
+    "frames": {
+      "topLeft": [
+        86,
+        38,
+        456,
+        544
+      ],
+      "topRight": [
+        694,
+        52,
+        524,
+        509
+      ],
+      "bottomRight": [
+        654,
+        646,
+        574,
+        563
+      ],
+      "bottomLeft": [
+        36,
+        679,
+        524,
+        509
+      ]
+    }
+  },
+  "parallax_hunter": {
+    "url": "art/mysteries/parallax_hunter.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1114779,
+    "sha256": "320687fa5593bbf617fd06f1437070a1721770e88f0c80ab3fe45168f41a72ee",
+    "frames": {
+      "topLeft": [
+        206,
+        19,
+        280,
+        607
+      ],
+      "topRight": [
+        672,
+        64,
+        553,
+        533
+      ],
+      "bottomRight": [
+        757,
+        656,
+        360,
+        553
+      ],
+      "bottomLeft": [
+        30,
+        672,
+        558,
+        545
+      ]
+    }
+  },
+  "prism_bastion": {
+    "url": "art/mysteries/prism_bastion.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1395340,
+    "sha256": "b67d2f5f49259db78a257930a4dd85da48123fd44cbb7e1507d28cb5b575a2bd",
+    "frames": {
+      "topLeft": [
+        37,
+        17,
+        571,
+        602
+      ],
+      "topRight": [
+        862,
+        67,
+        220,
+        515
+      ],
+      "bottomRight": [
+        704,
+        637,
+        472,
+        591
+      ],
+      "bottomLeft": [
+        145,
+        734,
+        378,
+        450
+      ]
+    }
+  },
+  "rail_cathedral": {
+    "url": "art/mysteries/rail_cathedral.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1313004,
+    "sha256": "4bbc6f47549c92b0be88d139eae53dade880ecde0dfc635e31cfa4c1b3a047d6",
+    "frames": {
+      "topLeft": [
+        192,
+        8,
+        244,
+        626
+      ],
+      "topRight": [
+        774,
+        45,
+        335,
+        569
+      ],
+      "bottomLeft": [
+        130,
+        673,
+        368,
+        553
+      ],
+      "bottomRight": [
+        754,
+        686,
+        374,
+        508
+      ]
+    }
+  },
+  "rainmaker": {
+    "url": "art/mysteries/rainmaker.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1877850,
+    "sha256": "6440a5b2250cd77d35f6a3c6ff5e05434731b38f238183d73fedf94df3fd2b78",
+    "frames": {
+      "topLeft": [
+        37,
+        34,
+        559,
+        564
+      ],
+      "topRight": [
+        650,
+        48,
+        584,
+        541
+      ],
+      "bottomLeft": [
+        32,
+        689,
+        582,
+        526
+      ],
+      "bottomRight": [
+        772,
+        691,
+        346,
+        514
+      ]
+    }
+  },
+  "red_wake": {
+    "url": "art/mysteries/red_wake.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 718328,
+    "sha256": "8a44c038a0df84e7b491d5a22441c6fc8cc1925ab17117be743a98ea22031a77",
+    "frames": {
+      "topLeft": [
+        241,
+        8,
+        148,
+        612
+      ],
+      "topRight": [
+        739,
+        55,
+        458,
+        545
+      ],
+      "bottomRight": [
+        856,
+        639,
+        170,
+        592
+      ],
+      "bottomLeft": [
+        79,
+        683,
+        485,
+        543
+      ]
+    }
+  },
+  "ricochet_duchess": {
+    "url": "art/mysteries/ricochet_duchess.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1171913,
+    "sha256": "355543b4cbfcdd27b8316688f76be60585452fa44004fd713c7535d6e8d37025",
+    "frames": {
+      "topRight": [
+        817,
+        16,
+        267,
+        606
+      ],
+      "topLeft": [
+        57,
+        54,
+        514,
+        534
+      ],
+      "bottomLeft": [
+        176,
+        642,
+        266,
+        604
+      ],
+      "bottomRight": [
+        730,
+        742,
+        422,
+        402
+      ]
+    }
+  },
+  "rift_surgeon": {
+    "url": "art/mysteries/rift_surgeon.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 814222,
+    "sha256": "10286046455ce723bbe79d39961ef14ef775fc243f468e476dbd49322852365a",
+    "frames": {
+      "topLeft": [
+        226,
+        14,
+        206,
+        586
+      ],
+      "topRight": [
+        861,
+        15,
+        183,
+        602
+      ],
+      "bottomLeft": [
+        188,
+        641,
+        184,
+        601
+      ],
+      "bottomRight": [
+        727,
+        726,
+        427,
+        406
+      ]
+    }
+  },
+  "scissor_twins": {
+    "url": "art/mysteries/scissor_twins.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1242131,
+    "sha256": "02d552567f7b4789763bc73a843629f5c1d76f0997cec9ab2c168a3db45733a8",
+    "frames": {
+      "topRight": [
+        738,
+        7,
+        389,
+        628
+      ],
+      "topLeft": [
+        121,
+        15,
+        403,
+        611
+      ],
+      "bottomRight": [
+        699,
+        698,
+        492,
+        483
+      ],
+      "bottomLeft": [
+        61,
+        700,
+        507,
+        479
+      ]
+    }
+  },
+  "siege_orchid": {
+    "url": "art/mysteries/siege_orchid.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1720675,
+    "sha256": "c3a1597f1f00043a5ec5d7dd44544ae908cebbd9c1374724c54b6599c391fc69",
+    "frames": {
+      "topLeft": [
+        63,
+        32,
+        503,
+        558
+      ],
+      "topRight": [
+        680,
+        120,
+        535,
+        402
+      ],
+      "bottomRight": [
+        676,
+        656,
+        535,
+        532
+      ],
+      "bottomLeft": [
+        53,
+        691,
+        488,
+        495
+      ]
+    }
+  },
+  "signal_thief": {
+    "url": "art/mysteries/signal_thief.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1276812,
+    "sha256": "72482c9495079d326dad630cb52d3fa865a8001492680b7a6ef2f4b5806fe4a5",
+    "frames": {
+      "topLeft": [
+        53,
+        32,
+        531,
+        545
+      ],
+      "topRight": [
+        771,
+        32,
+        346,
+        563
+      ],
+      "bottomLeft": [
+        140,
+        648,
+        415,
+        563
+      ],
+      "bottomRight": [
+        686,
+        663,
+        519,
+        539
+      ]
+    }
+  },
+  "spore_monk": {
+    "url": "art/mysteries/spore_monk.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1589116,
+    "sha256": "3dfaf23f5b0b4006665113c45d5944abd71f23a349ffcf07a2dece0068791c89",
+    "frames": {
+      "topRight": [
+        694,
+        48,
+        500,
+        508
+      ],
+      "topLeft": [
+        72,
+        56,
+        496,
+        481
+      ],
+      "bottomLeft": [
+        61,
+        674,
+        503,
+        508
+      ],
+      "bottomRight": [
+        713,
+        682,
+        457,
+        501
+      ]
+    }
+  },
+  "surveyor": {
+    "url": "art/mysteries/surveyor.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1601814,
+    "sha256": "464428170ba47777639cfff1dd0562836f84adc0705c3e605ca7ee00292c837f",
+    "frames": {
+      "topLeft": [
+        52,
+        46,
+        555,
+        542
+      ],
+      "topRight": [
+        657,
+        190,
+        562,
+        295
+      ],
+      "bottomLeft": [
+        36,
+        665,
+        564,
+        530
+      ],
+      "bottomRight": [
+        733,
+        666,
+        479,
+        534
+      ]
+    }
+  },
+  "switchyard": {
+    "url": "art/mysteries/switchyard.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1245616,
+    "sha256": "62ca929b04c858ccade0e16c2a62fbf1019be05969d5c642c76254a93bfef241",
+    "frames": {
+      "topRight": [
+        684,
+        69,
+        516,
+        513
+      ],
+      "topLeft": [
+        54,
+        142,
+        589,
+        366
+      ],
+      "bottomRight": [
+        704,
+        673,
+        457,
+        454
+      ],
+      "bottomLeft": [
+        133,
+        702,
+        401,
+        445
+      ]
+    }
+  },
+  "thunder_loom": {
+    "url": "art/mysteries/thunder_loom.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 875420,
+    "sha256": "fbb50c6b6ec10a4adeb687c7886a6ee6ba48e36b179a559495367cdad0a3c632",
+    "frames": {
+      "topLeft": [
+        154,
+        21,
+        320,
+        578
+      ],
+      "topRight": [
+        809,
+        29,
+        272,
+        569
+      ],
+      "bottomLeft": [
+        168,
+        650,
+        297,
+        574
+      ],
+      "bottomRight": [
+        826,
+        727,
+        266,
+        402
+      ]
+    }
+  },
+  "tidemason": {
+    "url": "art/mysteries/tidemason.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1319802,
+    "sha256": "75c6e623fb2a3fdb6e9e849335e79c2672e04d1bc08ee64647797e7955cba924",
+    "frames": {
+      "topLeft": [
+        40,
+        23,
+        602,
+        578
+      ],
+      "topRight": [
+        779,
+        47,
+        416,
+        554
+      ],
+      "bottomRight": [
+        833,
+        633,
+        214,
+        596
+      ],
+      "bottomLeft": [
+        57,
+        671,
+        418,
+        559
+      ]
+    }
+  },
+  "vault_crawler": {
+    "url": "art/mysteries/vault_crawler.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1588263,
+    "sha256": "cd576d5870c87e140e1bed9d8bdf66952ef438fd4fd5f900550ff7efe44311cf",
+    "frames": {
+      "topLeft": [
+        36,
+        75,
+        612,
+        555
+      ],
+      "topRight": [
+        820,
+        93,
+        356,
+        565
+      ],
+      "bottomRight": [
+        698,
+        727,
+        483,
+        439
+      ],
+      "bottomLeft": [
+        85,
+        787,
+        492,
+        353
+      ]
+    }
+  },
+  "witness": {
+    "url": "art/mysteries/witness.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1413768,
+    "sha256": "528164f13561140195bf8ab07098db23bab6a5f9073ba2b10accbcb5d8c19cde",
+    "frames": {
+      "topRight": [
+        762,
+        43,
+        357,
+        537
+      ],
+      "topLeft": [
+        52,
+        46,
+        531,
+        532
+      ],
+      "bottomLeft": [
+        106,
+        673,
+        414,
+        514
+      ],
+      "bottomRight": [
+        795,
+        674,
+        336,
+        513
+      ]
+    }
+  },
+  "worldmolt": {
+    "url": "art/mysteries/worldmolt.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1835505,
+    "sha256": "c5f918b1effdf84ffe3480315685d4ed0b0b65a8c279985effbda03bd52e3bda",
+    "frames": {
+      "topLeft": [
+        14,
+        9,
+        603,
+        617
+      ],
+      "topRight": [
+        756,
+        36,
+        463,
+        562
+      ],
+      "bottomRight": [
+        718,
+        642,
+        436,
+        589
+      ],
+      "bottomLeft": [
+        44,
+        663,
+        472,
+        564
+      ]
+    }
+  }
+}

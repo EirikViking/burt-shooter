@@ -1,0 +1,282 @@
+{
+  "glass_widow": {
+    "url": "/audio/voice/mysteries-v2/glass_widow.mp3",
+    "duration": 3.228662,
+    "text": "Glass Widow inbound. Watch her fangs."
+  },
+  "parallax_hunter": {
+    "url": "/audio/voice/mysteries-v2/parallax_hunter.mp3",
+    "duration": 4.465374,
+    "text": "Parallax Hunter. Three shadows. One killer."
+  },
+  "choir_unbound": {
+    "url": "/audio/voice/mysteries-v2/choir_unbound.mp3",
+    "duration": 4.515941,
+    "text": "Choir Unbound. Silence them, one by one."
+  },
+  "cinder_manta": {
+    "url": "/audio/voice/mysteries-v2/cinder_manta.mp3",
+    "duration": 2.64,
+    "text": "Cinder Manta. Keep clear of the furnace."
+  },
+  "needle_saint": {
+    "url": "/audio/voice/mysteries-v2/needle_saint.mp3",
+    "duration": 3.587415,
+    "text": "Needle Saint on approach. Never fly straight."
+  },
+  "blind_leviathan": {
+    "url": "/audio/voice/mysteries-v2/blind_leviathan.mp3",
+    "duration": 3.825986,
+    "text": "Blind Leviathan. It can hear you move."
+  },
+  "lantern_eater": {
+    "url": "/audio/voice/mysteries-v2/lantern_eater.mp3",
+    "duration": 4.050408,
+    "text": "Lantern Eater incoming. Something hungry in the dark."
+  },
+  "scissor_twins": {
+    "url": "/audio/voice/mysteries-v2/scissor_twins.mp3",
+    "duration": 3.434989,
+    "text": "Scissor Twins. Do not let them box you in."
+  },
+  "red_wake": {
+    "url": "/audio/voice/mysteries-v2/red_wake.mp3",
+    "duration": 3.401043,
+    "text": "Red Wake. Fast mover. Mind the trail."
+  },
+  "foldship": {
+    "url": "/audio/voice/mysteries-v2/foldship.mp3",
+    "duration": 4.16966,
+    "text": "Foldship arriving. Those wings are weapons."
+  },
+  "doorwraith": {
+    "url": "/audio/voice/mysteries-v2/doorwraith.mp3",
+    "duration": 3.221179,
+    "text": "Doorwraith. Watch where the shots come out."
+  },
+  "tidemason": {
+    "url": "/audio/voice/mysteries-v2/tidemason.mp3",
+    "duration": 2.96,
+    "text": "Tidemason incoming. Ride the gaps."
+  },
+  "clockray": {
+    "url": "/audio/voice/mysteries-v2/clockray.mp3",
+    "duration": 3.293946,
+    "text": "Clockray. Those shots will not stay frozen."
+  },
+  "horizon_biter": {
+    "url": "/audio/voice/mysteries-v2/horizon_biter.mp3",
+    "duration": 3.834989,
+    "text": "Horizon Biter. That mouth is not decorative."
+  },
+  "rift_surgeon": {
+    "url": "/audio/voice/mysteries-v2/rift_surgeon.mp3",
+    "duration": 3.564286,
+    "text": "Rift Surgeon. Keep moving. Keep your distance."
+  },
+  "bloom_queen": {
+    "url": "/audio/voice/mysteries-v2/bloom_queen.mp3",
+    "duration": 3.965215,
+    "text": "Bloom Queen. Beautiful does not mean friendly."
+  },
+  "brood_ark": {
+    "url": "/audio/voice/mysteries-v2/brood_ark.mp3",
+    "duration": 3.345079,
+    "text": "Brood Ark incoming. Take out the hatcheries."
+  },
+  "carrion_weaver": {
+    "url": "/audio/voice/mysteries-v2/carrion_weaver.mp3",
+    "duration": 3.185646,
+    "text": "Carrion Weaver. It wants what is left of you."
+  },
+  "spore_monk": {
+    "url": "/audio/voice/mysteries-v2/spore_monk.mp3",
+    "duration": 3.194989,
+    "text": "Spore Monk. Do not linger in its wake."
+  },
+  "husk_parade": {
+    "url": "/audio/voice/mysteries-v2/husk_parade.mp3",
+    "duration": 2.56,
+    "text": "Husk Parade. Break the procession."
+  },
+  "magnet_urchin": {
+    "url": "/audio/voice/mysteries-v2/magnet_urchin.mp3",
+    "duration": 3.342948,
+    "text": "Magnet Urchin. Give those spines some room."
+  },
+  "chrysalis_hunter": {
+    "url": "/audio/voice/mysteries-v2/chrysalis_hunter.mp3",
+    "duration": 4.174989,
+    "text": "Chrysalis Hunter. Crack the shell. Stay sharp."
+  },
+  "rail_cathedral": {
+    "url": "/audio/voice/mysteries-v2/rail_cathedral.mp3",
+    "duration": 3.352562,
+    "text": "Rail Cathedral. Heavy guns. Small windows."
+  },
+  "siege_orchid": {
+    "url": "/audio/voice/mysteries-v2/siege_orchid.mp3",
+    "duration": 3.24619,
+    "text": "Siege Orchid. Those petals pack artillery."
+  },
+  "bulwark_hauler": {
+    "url": "/audio/voice/mysteries-v2/bulwark_hauler.mp3",
+    "duration": 3.650907,
+    "text": "Bulwark Hauler. Strip the armor. Find the heart."
+  },
+  "bellfoundry": {
+    "url": "/audio/voice/mysteries-v2/bellfoundry.mp3",
+    "duration": 3.614671,
+    "text": "Bellfoundry inbound. Hear that? Duck."
+  },
+  "prism_bastion": {
+    "url": "/audio/voice/mysteries-v2/prism_bastion.mp3",
+    "duration": 3.314853,
+    "text": "Prism Bastion. One beam becomes three."
+  },
+  "cable_kraken": {
+    "url": "/audio/voice/mysteries-v2/cable_kraken.mp3",
+    "duration": 3.358345,
+    "text": "Cable Kraken. Cut the limbs before they close."
+  },
+  "switchyard": {
+    "url": "/audio/voice/mysteries-v2/switchyard.mp3",
+    "duration": 3.39381,
+    "text": "Switchyard. Incoming fire can change direction."
+  },
+  "false_sun": {
+    "url": "/audio/voice/mysteries-v2/false_sun.mp3",
+    "duration": 3.328957,
+    "text": "False Sun. That light is hunting you."
+  },
+  "mirror_court": {
+    "url": "/audio/voice/mysteries-v2/mirror_court.mp3",
+    "duration": 3.096054,
+    "text": "Mirror Court. Shatter the accomplices."
+  },
+  "signal_thief": {
+    "url": "/audio/voice/mysteries-v2/signal_thief.mp3",
+    "duration": 3.374989,
+    "text": "Signal Thief detected. Trust your eyes, pilot."
+  },
+  "lantern_mimic": {
+    "url": "/audio/voice/mysteries-v2/lantern_mimic.mp3",
+    "duration": 3.052063,
+    "text": "Lantern Mimic. That is not a pickup."
+  },
+  "afterimage_duelist": {
+    "url": "/audio/voice/mysteries-v2/afterimage_duelist.mp3",
+    "duration": 3.04,
+    "text": "Afterimage Duelist. Shoot the one that shoots back."
+  },
+  "surveyor": {
+    "url": "/audio/voice/mysteries-v2/surveyor.mp3",
+    "duration": 3.272494,
+    "text": "Surveyor inbound. Do not give it a clean reading."
+  },
+  "cipher_engine": {
+    "url": "/audio/voice/mysteries-v2/cipher_engine.mp3",
+    "duration": 3.805329,
+    "text": "Cipher Engine. New pattern. Same trigger finger."
+  },
+  "rainmaker": {
+    "url": "/audio/voice/mysteries-v2/rainmaker.mp3",
+    "duration": 3.407778,
+    "text": "Rainmaker. Forecast says incoming fire."
+  },
+  "comet_shepherd": {
+    "url": "/audio/voice/mysteries-v2/comet_shepherd.mp3",
+    "duration": 2.88,
+    "text": "Comet Shepherd. It brought company."
+  },
+  "thunder_loom": {
+    "url": "/audio/voice/mysteries-v2/thunder_loom.mp3",
+    "duration": 3.511655,
+    "text": "Thunder Loom. Find the break in the storm."
+  },
+  "avalanche_engine": {
+    "url": "/audio/voice/mysteries-v2/avalanche_engine.mp3",
+    "duration": 3.519569,
+    "text": "Avalanche Engine. Keep your escape lane open."
+  },
+  "ricochet_duchess": {
+    "url": "/audio/voice/mysteries-v2/ricochet_duchess.mp3",
+    "duration": 3.523175,
+    "text": "Ricochet Duchess. Watch the return shots."
+  },
+  "lantern_shoal": {
+    "url": "/audio/voice/mysteries-v2/lantern_shoal.mp3",
+    "duration": 3.231678,
+    "text": "Lantern Shoal. The whole school bites."
+  },
+  "nova_anvil": {
+    "url": "/audio/voice/mysteries-v2/nova_anvil.mp3",
+    "duration": 3.332834,
+    "text": "Nova Anvil. Stay out from under it."
+  },
+  "gilded_pilgrim": {
+    "url": "/audio/voice/mysteries-v2/gilded_pilgrim.mp3",
+    "duration": 2.96,
+    "text": "Gilded Pilgrim. Make it pay for the visit."
+  },
+  "vault_crawler": {
+    "url": "/audio/voice/mysteries-v2/vault_crawler.mp3",
+    "duration": 2.8,
+    "text": "Vault Crawler. Crack it open, pilot."
+  },
+  "oathkeeper": {
+    "url": "/audio/voice/mysteries-v2/oathkeeper.mp3",
+    "duration": 3.425873,
+    "text": "Oathkeeper. It came looking for a duel."
+  },
+  "courier_zero": {
+    "url": "/audio/voice/mysteries-v2/courier_zero.mp3",
+    "duration": 4.700612,
+    "text": "Courier Zero. Fast delivery. Bad intentions."
+  },
+  "debt_collector": {
+    "url": "/audio/voice/mysteries-v2/debt_collector.mp3",
+    "duration": 3.96839,
+    "text": "Debt Collector. Tell it we are not paying."
+  },
+  "mercy_trap": {
+    "url": "/audio/voice/mysteries-v2/mercy_trap.mp3",
+    "duration": 3.04,
+    "text": "Mercy Trap. Nothing free out here."
+  },
+  "fortune_leech": {
+    "url": "/audio/voice/mysteries-v2/fortune_leech.mp3",
+    "duration": 4.114989,
+    "text": "Fortune Leech. Shake it off before it settles."
+  },
+  "constellation_beast": {
+    "url": "/audio/voice/mysteries-v2/constellation_beast.mp3",
+    "duration": 3.956349,
+    "text": "Constellation Beast. The stars just grew teeth."
+  },
+  "cathedral_of_teeth": {
+    "url": "/audio/voice/mysteries-v2/cathedral_of_teeth.mp3",
+    "duration": 4.11102,
+    "text": "Cathedral of Teeth. Keep every gun on that mouth."
+  },
+  "dying_star": {
+    "url": "/audio/voice/mysteries-v2/dying_star.mp3",
+    "duration": 3.747166,
+    "text": "Dying Star. It plans to take you with it."
+  },
+  "worldmolt": {
+    "url": "/audio/voice/mysteries-v2/worldmolt.mp3",
+    "duration": 3.04,
+    "text": "Worldmolt incoming. Peel it apart."
+  },
+  "eventide_engine": {
+    "url": "/audio/voice/mysteries-v2/eventide_engine.mp3",
+    "duration": 3.896259,
+    "text": "Eventide Engine. Nightfall has guns."
+  },
+  "witness": {
+    "url": "/audio/voice/mysteries-v2/witness.mp3",
+    "duration": 3.372132,
+    "text": "The Witness. It remembers how you fight."
+  }
+}

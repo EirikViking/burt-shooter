@@ -76,6 +76,8 @@ html, body {
 canvas {
   display: block;
   image-rendering: pixelated;
+  border: 0;
+  outline: none;
   /* Prevent canvas touch scrolling */
   touch-action: none;
   /* Center canvas when constrained */
@@ -84,11 +86,26 @@ canvas {
   max-width: 100%;
   max-height: 100%;
 }
+#game-container:focus,
+#game-container:focus-visible,
+canvas:focus,
+canvas:focus-visible {
+  outline: none;
+}
 html.controller-input-active,
 html.controller-input-active body,
 html.controller-input-active #game-container,
 html.controller-input-active canvas {
   cursor: none;
+}
+html.gameplay-cursor-hidden,
+html.gameplay-cursor-hidden body,
+html.gameplay-cursor-hidden #game-container,
+html.gameplay-cursor-hidden canvas,
+body.gameplay-cursor-hidden,
+body.gameplay-cursor-hidden #game-container,
+body.gameplay-cursor-hidden canvas {
+  cursor: none !important;
 }
 .loading {
   position: absolute;

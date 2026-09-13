@@ -2,6 +2,14 @@ import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
+import { getHijackerMaxHealth } from '../config/HijackerBalance.js';
+import {getTractorProfile} from '../config/TractorFleet.js';
+import {sampleTractorField} from '../config/TractorFields.js';
+import {TractorBeamVisual} from '../effects/TractorBeamVisual.js';
+
+const TRACTOR_BEAM_VISUAL_PROFILE = Object.freeze({
+  blendMode: 'normal'
+});
 
 /**
  * Hijacker - special interceptor enemy with a readable tractor-beam attack.
@@ -14,7 +22,7 @@ import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
  */
 
 export class Hijacker {
-  constructor(x, y, level, game) {
+  constructor(x, y, level, game, options = {}) {
     // Safety: Should never be instantiated if feature disabled
     if (!isHijackerEnabled()) {
       console.warn('[Hijacker] Feature disabled, should not instantiate');
@@ -26,6 +34,8 @@ export class Hijacker {
     this.y = y;
     this.level = Number.isFinite(level) ? level : (Number(game?.level) || 1);
     this.game = game;
+    this.tractorProfile = getTractorProfile(this.level, options.tractorVariant);
+    this.tractorSoundGroup = `tractor_${this.tractorProfile.id}`;
     this.active = true;
     this.kind = 'hijacker';
     this.type = 'hijacker';
@@ -40,21 +50,27 @@ export class Hijacker {
     this.hoverFreq = 0.02; // Hover frequency
 
     // Health (tougher than regular enemies)
-    this.health = 30 + this.level * 5;
+    this.health = getHijackerMaxHealth(this.level);
     this.maxHealth = this.health;
     this.scoreValue = 500;
 
     // Tractor beam: readable, dangerous, escapable through hard lateral movement, and valuable if broken.
     this.beamState = 'cooldown';
-    this.beamWarningMs = 820;
-    this.beamActiveMs = 1850;
+    this.beamWarningMs = this.tractorProfile.warning;
+    this.beamActiveMs = this.tractorProfile.active;
     this.beamCooldownMs = Math.max(3100, 4650 - this.level * 115);
-    this.nextBeamAt = Date.now() + 1500 + Math.random() * 900;
+    const initialBeamDelayMs = Number.isFinite(Number(options.initialBeamDelayMs))
+      ? Math.max(0, Number(options.initialBeamDelayMs))
+      : 1500 + Math.random() * 900;
+    this.nextBeamAt = Date.now() + initialBeamDelayMs;
     this.beamStartedAt = 0;
     this.beamTarget = { x, y: y + 360 };
     this.beamPullActive = false;
     this.lastBeamToastAt = 0;
     this.destroyedDuringBeam = false;
+    this.hitFeedbackUntil = 0;
+    this.hitFeedbackDurationMs = 180;
+    this.lastHitFeedback = null;
 
     this.createSprite();
   }
@@ -65,21 +81,29 @@ export class Hijacker {
     this.sprite.y = this.y;
     this.sprite.sortableChildren = true;
 
-    this.beamLayer = new PIXI.Graphics();
+    this.beamLayer = new PIXI.Container();
     this.beamLayer.zIndex = -2;
-    this.beamLayer.blendMode = 'add';
+    this.beamLayer.blendMode = TRACTOR_BEAM_VISUAL_PROFILE.blendMode;
     this.sprite.addChild(this.beamLayer);
+    this.beamArtwork = new TractorBeamVisual(this.tractorProfile);
+    this.beamLayer.addChild(this.beamArtwork);
+
+    this.hitFeedbackLayer = new PIXI.Graphics();
+    this.hitFeedbackLayer.zIndex = 2;
+    this.hitFeedbackLayer.blendMode = 'add';
+    this.hitFeedbackLayer.visible = false;
+    this.sprite.addChild(this.hitFeedbackLayer);
 
     // Use the generated Nova Swarm hijacker craft instead of legacy UFO pack art.
     const loader = PIXI.Assets;
-    const ufoPath = '/art/generated/nova-swarm/enemies/nova-hijacker-tractor-craft-20260518.png';
+    const ufoPath = this.tractorProfile.sprite;
 
     loader.load(ufoPath).then(texture => {
       if (!this.active) return; // Destroyed before texture loaded
 
       const ufo = new PIXI.Sprite(texture);
       ufo.anchor.set(0.5);
-      const targetSize = 96;
+      const targetSize = 140;
       const scale = Math.min(targetSize / texture.width, targetSize / texture.height);
       ufo.scale.set(scale);
       ufo.zIndex = 1;
@@ -112,17 +136,33 @@ export class Hijacker {
 
   updateHealthBar() {
     this.healthBar.clear();
-    const barWidth = 60;
-    const barHeight = 4;
-    const healthPct = this.health / this.maxHealth;
+    const barWidth = 72;
+    const barHeight = 7;
+    const barY = Math.max(this.radius + 34, 72);
+    const healthPct = Math.max(0, Math.min(1, this.health / this.maxHealth));
+    const fillColor = healthPct > 0.5 ? 0x43ff9a : healthPct > 0.25 ? 0xffef7e : 0xff4b6b;
 
-    // Background
-    this.healthBar.rect(-barWidth / 2, -this.radius - 15, barWidth, barHeight);
-    this.healthBar.fill({ color: 0x333333 });
+    this.healthBar.roundRect(-barWidth / 2 - 3, barY - 3, barWidth + 6, barHeight + 6, 4);
+    this.healthBar.fill({ color: 0x020711, alpha: 0.88 });
+    this.healthBar.stroke({ color: 0x7ee9ff, width: 1.25, alpha: 0.92 });
+    this.healthBar.roundRect(-barWidth / 2, barY, barWidth, barHeight, 2);
+    this.healthBar.fill({ color: 0x291228, alpha: 0.96 });
 
-    // Health
-    this.healthBar.rect(-barWidth / 2, -this.radius - 15, barWidth * healthPct, barHeight);
-    this.healthBar.fill({ color: healthPct > 0.5 ? 0x00ff00 : 0xff0000 });
+    if (healthPct > 0) {
+      this.healthBar.roundRect(-barWidth / 2, barY, Math.max(2, barWidth * healthPct), barHeight, 2);
+      this.healthBar.fill({ color: fillColor, alpha: 0.98 });
+    }
+    this.healthBar.moveTo(0, barY - 2);
+    this.healthBar.lineTo(0, barY + barHeight + 2);
+    this.healthBar.stroke({ color: 0xffffff, width: 1, alpha: 0.36 });
+    this.healthBar._debugLayout = {
+      localY: barY,
+      worldY: this.y + barY,
+      width: barWidth,
+      height: barHeight,
+      healthPct,
+      belowCraft: barY > this.radius
+    };
   }
 
   update(delta, playerX, playerY) {
@@ -145,14 +185,95 @@ export class Hijacker {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
+    this.updateHitFeedback();
     this.updateTractorBeam(delta, playerX, playerY);
   }
 
-  takeDamage(amount) {
+  triggerHitFeedback(sourceId = 'ordinary_fire') {
+    if (!this.hitFeedbackLayer || this.destroyed || !this.active) return null;
+    const normalizedSource = sourceId === 'chain_lightning' ? 'chain_lightning' : 'ordinary_fire';
+    const color = normalizedSource === 'chain_lightning' ? 0x8fffff : 0xfff3ad;
+    const accent = normalizedSource === 'chain_lightning' ? 0xffffff : 0xff55d9;
+    const ringRadius = this.radius + 14;
+    const braceCount = 4;
+    const layer = this.hitFeedbackLayer;
+    layer.clear();
+    layer.circle(0, 0, ringRadius);
+    layer.stroke({ color, width: 4, alpha: 0.92 });
+    layer.circle(0, 0, ringRadius + 8);
+    layer.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+    for (let i = 0; i < braceCount; i += 1) {
+      const angle = (Math.PI * 2 * i) / braceCount + Math.PI / 4;
+      const x1 = Math.cos(angle) * (ringRadius + 3);
+      const y1 = Math.sin(angle) * (ringRadius + 3);
+      const x2 = Math.cos(angle) * (ringRadius + 16);
+      const y2 = Math.sin(angle) * (ringRadius + 16);
+      layer.moveTo(x1, y1);
+      layer.lineTo(x2, y2);
+    }
+    layer.stroke({ color: accent, width: 3, alpha: 0.9 });
+    if (normalizedSource === 'chain_lightning') {
+      layer.moveTo(-ringRadius * 0.72, ringRadius * 0.48);
+      layer.lineTo(-4, -ringRadius * 0.18);
+      layer.lineTo(7, ringRadius * 0.08);
+      layer.lineTo(ringRadius * 0.72, -ringRadius * 0.52);
+      layer.stroke({ color: 0xffffff, width: 3.5, alpha: 0.96 });
+    }
+    layer.visible = true;
+    layer.alpha = 1;
+    layer.scale.set(1);
+    this.hitFeedbackUntil = Date.now() + this.hitFeedbackDurationMs;
+    if (this.ufoSprite) this.ufoSprite.tint = color;
+    this.lastHitFeedback = {
+      sourceId: normalizedSource,
+      color,
+      accent,
+      durationMs: this.hitFeedbackDurationMs,
+      ringRadius,
+      braceCount,
+      visible: true
+    };
+    layer._debugHitFeedback = { ...this.lastHitFeedback };
+    return this.lastHitFeedback;
+  }
+
+  updateHitFeedback(now = Date.now()) {
+    if (!this.hitFeedbackLayer?.visible) return false;
+    const remainingMs = Math.max(0, this.hitFeedbackUntil - now);
+    if (remainingMs <= 0) {
+      this.hitFeedbackLayer.visible = false;
+      this.hitFeedbackLayer.clear();
+      this.hitFeedbackLayer.alpha = 0;
+      if (this.ufoSprite) this.ufoSprite.tint = 0xffffff;
+      if (this.lastHitFeedback) this.lastHitFeedback = { ...this.lastHitFeedback, visible: false };
+      if (this.hitFeedbackLayer._debugHitFeedback) {
+        this.hitFeedbackLayer._debugHitFeedback = {
+          ...this.hitFeedbackLayer._debugHitFeedback,
+          visible: false,
+          remainingMs: 0
+        };
+      }
+      return false;
+    }
+    const progress = remainingMs / this.hitFeedbackDurationMs;
+    this.hitFeedbackLayer.alpha = Math.max(0.22, progress);
+    this.hitFeedbackLayer.scale.set(1 + (1 - progress) * 0.12);
+    if (this.hitFeedbackLayer._debugHitFeedback) {
+      this.hitFeedbackLayer._debugHitFeedback = {
+        ...this.hitFeedbackLayer._debugHitFeedback,
+        visible: true,
+        remainingMs: Math.round(remainingMs)
+      };
+    }
+    return true;
+  }
+
+  takeDamage(amount, options = {}) {
     if (this.destroyed || !this.active) return false;
     const brokeBeam = this.isBeamThreatening();
     this.health -= amount;
     this.updateHealthBar();
+    this.triggerHitFeedback(options?.sourceId);
 
     if (this.health <= 0) {
       this.destroy(brokeBeam);
@@ -173,23 +294,25 @@ export class Hijacker {
     this.beamState = 'telegraph';
     this.beamStartedAt = Date.now();
     this.beamTarget = { x: playerX, y: playerY };
-    AudioManager.playSfx('tractor_lock_charge', { volume: 0.58, minIntervalMs: 900 });
+    this.beamAnchor = {x:this.x,y:this.y};
+    this.playTractorSound('charge');
   }
 
   activateBeam(playerX, playerY) {
     this.beamState = 'active';
     this.beamStartedAt = Date.now();
-    this.beamTarget = { x: playerX, y: playerY };
-    AudioManager.playSfx('tractor_beam_active', { volume: 0.56, minIntervalMs: 900 });
+    // The target is locked during the warning, never snapped to the player on activation.
+    this.playTractorSound('active');
   }
 
   interruptBeam(reason = 'interrupted') {
+    AudioManager.stopSfxGroup(this.tractorSoundGroup);
     this.beamState = 'cooldown';
     this.nextBeamAt = Date.now() + Math.max(1200, this.beamCooldownMs * 0.55);
     this.beamPullActive = false;
     this.clearBeamVisual();
     if (reason === 'hit') {
-      AudioManager.playSfx('tractor_break_bloom', { volume: 0.5, minIntervalMs: 180 });
+      this.playTractorSound('break');
     }
   }
 
@@ -231,6 +354,7 @@ export class Hijacker {
       if (progress >= 1) {
         this.beamState = 'cooldown';
         this.nextBeamAt = now + this.beamCooldownMs;
+        AudioManager.stopSfxGroup(this.tractorSoundGroup);
         this.clearBeamVisual();
       }
       return;
@@ -250,19 +374,12 @@ export class Hijacker {
     const playerY = Number.isFinite(player.y) ? player.y : gameHeight * 0.78;
     const tickDelta = Number.isFinite(delta) ? delta : Number(delta?.deltaTime) || 1;
 
-    const relX = playerX - this.x;
-    const relY = playerY - this.y;
-    if (relY < this.radius || relY > gameHeight * 0.82) return;
-
-    const halfWidth = Math.max(44, 22 + relY * 0.24);
-    if (Math.abs(relX) > halfWidth) return;
-
-    const frameScale = Math.max(0.5, Math.min(2.6, tickDelta));
-    const beamCentering = 0.052 + Math.min(0.024, this.level * 0.0018);
-    const pullX = (this.x - playerX) * beamCentering * frameScale;
-    const pullY = (3.85 + Math.min(2.4, this.level * 0.11)) * frameScale;
-    player.x = Math.max(playerRadius, Math.min(gameWidth - playerRadius, playerX + pullX));
-    player.y = Math.max(this.y + this.radius + 76, playerY - pullY);
+    const field = this.getBeamField();
+    const force = sampleTractorField(this.tractorProfile,{...field,x:playerX,y:playerY});
+    if(!force)return;
+    const frameScale = Math.max(0,Math.min(2.6,tickDelta));
+    player.x = Math.max(playerRadius,Math.min(gameWidth-playerRadius,playerX+force.x*frameScale));
+    player.y = Math.max(this.y+this.radius+76,Math.min(gameHeight-playerRadius,playerY+force.y*frameScale));
     this.beamPullActive = true;
 
     const debuffResult = player.applyTractorDebuff?.({
@@ -299,97 +416,29 @@ export class Hijacker {
     }
   }
 
-  updateBeamVisual(progress, active, playerX, playerY) {
-    if (!this.beamLayer) return;
-    const layer = this.beamLayer;
-    layer.clear();
+  getBeamField() {
+    const width=this.game.getWidth(),height=this.game.getHeight();
+    const anchor=this.tractorProfile.id==='anchor'?this.beamAnchor:null;
+    const originX=anchor?.x??this.x,originY=(anchor?.y??this.y)+this.radius*.62;
+    return {originX,originY,length:Math.max(160,height-originY-20),span:Math.min(width,height*1.6),
+      aim:Math.max(-width*.3,Math.min(width*.3,this.beamTarget.x-originX)),
+      progress:Math.max(0,Math.min(1,(Date.now()-this.beamStartedAt)/this.beamActiveMs)),time:Date.now()/1000};
+  }
 
-    const relX = (active ? playerX : this.beamTarget.x) - this.x;
-    const relY = Math.max(160, (active ? playerY : this.beamTarget.y) - this.y);
-    const halfWidth = Math.max(56, 30 + relY * 0.25);
-    const now = Date.now();
-    const pulse = 1 + Math.sin(now * 0.028) * 0.06;
-    const shimmer = 0.5 + Math.sin(now * 0.05) * 0.5;
-    const coreColor = active ? 0x66ffff : 0xff66ff;
-    const edgeColor = active ? 0xffffff : 0xffe066;
-    const warningColor = active ? 0x28dfff : 0xff3fcf;
-    const hotColor = active ? 0x9cfff7 : 0xfff090;
-    const startY = this.radius * 0.62;
-    const endX = relX;
-    const endY = relY;
+  playTractorSound(event) {
+    AudioManager.stopSfxGroup(this.tractorSoundGroup);
+    AudioManager.playSfx(`tractor_${this.tractorProfile.id}_${event}`,{volume:event==='active'?.95:.82,
+      force:true,minIntervalMs:0,priority:event==='charge'?9:8,preserveGameplayRng:true,sfxGroup:this.tractorSoundGroup});
+  }
 
-    const coneWidth = halfWidth * pulse;
-    const innerWidth = coneWidth * (active ? 0.55 : 0.42 + progress * 0.08);
-    const tipY = startY + 4;
-    const drawCone = (width, color, alpha) => {
-      layer.moveTo(0, tipY);
-      layer.lineTo(endX - width, endY);
-      layer.lineTo(endX + width, endY);
-      layer.closePath();
-      layer.fill({ color, alpha });
-    };
-
-    drawCone(coneWidth * 1.18, warningColor, active ? 0.1 : 0.06 + progress * 0.08);
-    drawCone(coneWidth, coreColor, active ? 0.19 : 0.09 + progress * 0.13);
-    drawCone(innerWidth, 0xffffff, active ? 0.06 + shimmer * 0.04 : 0.04 + progress * 0.05);
-
-    const edgePoints = [
-      [endX - coneWidth, endY],
-      [endX + coneWidth, endY]
-    ];
-    for (const [x, y] of edgePoints) {
-      layer.moveTo(0, tipY);
-      layer.lineTo(x, y);
-    }
-    layer.stroke({ color: 0xffffff, width: active ? 8 : 4 + progress * 3, alpha: active ? 0.2 : 0.12 + progress * 0.26 });
-    for (const [x, y] of edgePoints) {
-      layer.moveTo(0, tipY);
-      layer.lineTo(x, y);
-    }
-    layer.stroke({ color: edgeColor, width: active ? 3.5 : 2 + progress * 1.8, alpha: active ? 0.68 : 0.28 + progress * 0.42 });
-
-    const strandCount = active ? 7 : 5;
-    for (let i = 0; i < strandCount; i++) {
-      const lane = strandCount === 1 ? 0 : (i / (strandCount - 1) - 0.5);
-      const phase = now * (0.006 + i * 0.0006) + i * 1.7;
-      const widthAtEnd = innerWidth * (0.18 + Math.abs(lane) * 1.15);
-      const targetX = endX + lane * widthAtEnd + Math.sin(phase) * (active ? 10 : 5);
-      const targetY = endY - Math.sin(phase * 0.8) * 10;
-      layer.moveTo(Math.sin(phase) * 4, tipY + 3);
-      layer.lineTo(targetX, targetY);
-    }
-    layer.stroke({ color: hotColor, width: active ? 2.2 : 1.6, alpha: active ? 0.42 + shimmer * 0.18 : 0.18 + progress * 0.28 });
-
-    const rings = active ? 6 : 4;
-    for (let i = 1; i <= rings; i++) {
-      const t = i / (rings + 1);
-      const x = endX * t;
-      const y = startY + (endY - startY) * t;
-      const ringPulse = 0.88 + progress * 0.2 + Math.sin(now * 0.012 + i) * 0.08;
-      const r = (halfWidth * t * 0.58 + 10) * ringPulse * pulse;
-      layer.ellipse(x, y, r, Math.max(8, r * 0.22));
-      layer.stroke({ color: i % 2 ? coreColor : edgeColor, width: active ? 2.5 : 1.5, alpha: active ? 0.5 : 0.22 + progress * 0.26 });
-      if (active) {
-        const nodeA = now * 0.006 + i;
-        layer.circle(x + Math.cos(nodeA) * r, y + Math.sin(nodeA) * r * 0.22, 3.5 + shimmer * 2);
-        layer.fill({ color: 0xffffff, alpha: 0.34 });
-      }
-    }
-
-    if (active) {
-      layer.ellipse(endX, endY, coneWidth * 0.64, Math.max(14, coneWidth * 0.14));
-      layer.stroke({ color: 0xffffff, width: 3, alpha: 0.46 });
-      layer.ellipse(endX, endY, coneWidth * 0.46, Math.max(10, coneWidth * 0.1));
-      layer.stroke({ color: coreColor, width: 3, alpha: 0.62 });
-      layer.circle(0, tipY, 13 + shimmer * 5);
-      layer.fill({ color: coreColor, alpha: 0.2 });
-      layer.circle(0, tipY, 6 + shimmer * 2);
-      layer.fill({ color: 0xffffff, alpha: 0.42 });
-    }
+  updateBeamVisual(progress, active) {
+    const field=this.getBeamField();
+    this.lastBeamVisual=this.beamArtwork.render({...field,originX:field.originX-this.x,originY:field.originY-this.y,progress,active});
   }
 
   clearBeamVisual() {
-    if (this.beamLayer) this.beamLayer.clear();
+    this.beamArtwork?.clear();
+    if (this.lastBeamVisual) this.lastBeamVisual = { ...this.lastBeamVisual, active: false };
   }
 
   getTractorState() {
@@ -403,9 +452,16 @@ export class Hijacker {
       ? Math.max(0, this.nextBeamAt - now)
       : Math.max(0, this.beamStartedAt + duration - now);
     return {
+      variant: this.tractorProfile.id,
+      name: this.tractorProfile.name,
       state: this.beamState,
       remainingMs: Math.round(remainingMs),
       pullActive: this.beamPullActive,
+      health: Math.max(0, Math.round(this.health)),
+      maxHealth: Math.max(0, Math.round(this.maxHealth)),
+      visual: this.lastBeamVisual ? { ...this.lastBeamVisual } : null,
+      hitFeedback: this.hitFeedbackLayer?._debugHitFeedback || this.lastHitFeedback,
+      healthBar: this.healthBar?._debugLayout || null,
       target: {
         x: Math.round(this.beamTarget.x),
         y: Math.round(this.beamTarget.y)
@@ -419,6 +475,7 @@ export class Hijacker {
     this.destroyed = true;
     this.active = false;
     this.destroyedDuringBeam = Boolean(brokeBeam);
+    AudioManager.stopSfxGroup(this.tractorSoundGroup);
     this.clearBeamVisual();
 
     // Play destruction audio
@@ -427,11 +484,14 @@ export class Hijacker {
     // Award points
     const playScene = this.game.scenes.play;
     if (playScene) {
+      if(this.health<=0)playScene.queueThreatDefeat?.(`tractor_${this.tractorProfile.id}`, 'enemies', {
+        name:this.tractorProfile.name, sector:this.level
+      }, {scoreBonus:false});
       const bonus = brokeBeam ? 1200 : 0;
       const breakAward = this.scoreValue + bonus;
       this.game.addScore(breakAward);
       if (brokeBeam) {
-        AudioManager.playSfx('tractor_break_bloom', { force: true, volume: 0.72, minIntervalMs: 120 });
+        this.playTractorSound('break');
         const hijackResult = playScene.triggerTractorHijack?.({
           x: this.x,
           y: this.y,
@@ -451,6 +511,10 @@ export class Hijacker {
           priority: hijacked ? 6 : 5
         });
       }
+    }
+    if(this.sprite && !this.sprite.destroyed) {
+      this.sprite.parent?.removeChild(this.sprite);
+      this.sprite.destroy({children:true});
     }
     return true;
   }

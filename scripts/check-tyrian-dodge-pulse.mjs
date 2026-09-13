@@ -1,0 +1,322 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+globalThis.Audio = class {
+  addEventListener() {}
+  removeEventListener() {}
+  pause() {}
+  play() { return Promise.resolve(); }
+};
+
+const [{ Player }, { AudioManager }, { PlayScene }] = await Promise.all([
+  import('../src/entities/Player.js'),
+  import('../src/audio/AudioManager.js'),
+  import('../src/scenes/PlayScene.js')
+]);
+
+const audioEvents = [];
+const originalPlaySfx = AudioManager.playSfx;
+AudioManager.playSfx = (id, options = {}) => {
+  audioEvents.push({ id, options });
+  return true;
+};
+
+function bulletAt(distance, angle = 0) {
+  return {
+    active: true,
+    x: 300 + Math.cos(angle) * distance,
+    y: 220 + Math.sin(angle) * distance
+  };
+}
+
+function makeHarness({
+  traitRadius = 0,
+  phaseRadius = 0,
+  riftReprisal = false,
+  bullets = [],
+  experiment = null,
+  gameTime = 0
+} = {}) {
+  const counters = {
+    deactivations: 0,
+    pruneCalls: 0,
+    playerBullets: 0,
+    scoreEvents: 0,
+    toasts: 0,
+    toastMessages: [],
+    combatVolleys: 0
+  };
+  const bulletManager = {
+    enemyBullets: bullets,
+    playerBullets: [],
+    deactivateBullet(bullet, reason) {
+      if (bullet.active === false) throw new Error(`duplicate clear for ${reason}`);
+      bullet.active = false;
+      bullet.clearReason = reason;
+      counters.deactivations += 1;
+    },
+    pruneInactiveBullets() {
+      counters.pruneCalls += 1;
+    },
+    addPlayerBullet(bullet) {
+      this.playerBullets.push(bullet);
+      counters.playerBullets += 1;
+      return true;
+    }
+  };
+  const play = {
+    gameTime,
+    bulletManager,
+    enemyManager: {
+      enemies: [{ id: 'target-alpha', active: true, x: 300, y: 80, radius: 18 }],
+      hijacker: null,
+      boss: null
+    },
+    particleManager: null,
+    gameContainer: null,
+    enqueueToast(message) {
+      counters.toasts += 1;
+      counters.toastMessages.push(String(message));
+    },
+    recordCombatVolley() {
+      counters.combatVolleys += 1;
+    }
+  };
+  const game = {
+    lateGameExperiment: experiment,
+    scenes: { play },
+    addScore() {
+      counters.scoreEvents += 1;
+    }
+  };
+  const player = Object.create(Player.prototype);
+  Object.assign(player, {
+    x: 300,
+    y: 220,
+    game,
+    sprite: { alpha: 1 },
+    traitCombat: { dodgePulseRadius: traitRadius },
+    runAugmentModifiers: { phaseClearRadius: phaseRadius, riftReprisal },
+    visualVariant: { accent: 0x66ffff },
+    tacticalFusionStats: {
+      riftShardsFired: 0,
+      constellationVolleys: 0,
+      aegisPurges: 0,
+      skyVerdicts: 0
+    },
+    lastTacticalFusionEvent: null,
+    bulletSpeed: 8,
+    bulletDamage: 2,
+    isDodging: false,
+    invulnerable: false,
+    invulnerableTime: 0,
+    dodgeDuration: 0,
+    dodgeDurationMax: 333,
+    dodgeDelay: 1000,
+    dodgeSequence: 0,
+    pendingDodgeExitPulseToken: 0,
+    resolvedDodgeExitPulseToken: 0,
+    lastDodgeExitPulse: null,
+    experimentalPulseReadyAt: 0,
+    shootCooldown: 0,
+    updateDodgeVisual() {},
+    clearDodgeVisual() {},
+    isGhostActive() { return false; }
+  });
+  return { player, play, counters };
+}
+
+function runDodge(harness) {
+  const { player, play } = harness;
+  const activeBefore = play.bulletManager.enemyBullets.filter((bullet) => bullet.active !== false).length;
+  assert.equal(player.startDodge(), true, 'dodge should start once');
+  assert.equal(player.invulnerable, true, 'dodge should preserve the invulnerable phase window');
+  assert.equal(
+    play.bulletManager.enemyBullets.filter((bullet) => bullet.active !== false).length,
+    activeBefore,
+    'bullets must remain available for graze during dodge'
+  );
+  const token = player.pendingDodgeExitPulseToken;
+  assert.equal(player.startDodge(), false, 'repeated input must not queue a second pulse');
+  assert.equal(player.pendingDodgeExitPulseToken, token, 'repeated input changed the queued pulse token');
+  assert.equal(player.finishDodge('duration'), true, 'natural dodge exit should resolve');
+  assert.equal(player.finishDodge('duration'), false, 'a resolved dodge must not finish twice');
+  assert.equal(player.resolveDodgeExitPulse(token), false, 'a resolved pulse token must not trigger twice');
+  return player.lastDodgeExitPulse;
+}
+
+try {
+  audioEvents.length = 0;
+  const traitOnly = makeHarness({
+    traitRadius: 64,
+    bullets: [bulletAt(32), bulletAt(70)]
+  });
+  const traitResult = runDodge(traitOnly);
+  assert.equal(traitResult.cleared, 1, 'trait-only pulse should clear only bullets inside its radius');
+  assert.equal(traitResult.phaseCleared, 0, 'trait-only pulse must not claim Phase clears');
+  assert.equal(traitResult.shards, 0, 'trait-only pulse must not fire Rift shards');
+  assert.equal(traitResult.discardedReason, 'rift_not_owned');
+  assert.equal(traitOnly.counters.deactivations, 1);
+
+  const innateRift = makeHarness({traitRadius:64,riftReprisal:true,bullets:[bulletAt(32),bulletAt(70)]});
+  const innateResult = runDodge(innateRift);
+  assert.equal(innateResult.phaseCleared, 0);
+  assert.equal(innateResult.shards, 1, 'Owned Rift must convert an innate ship pulse clear');
+  assert.equal(innateRift.counters.deactivations, 1);
+
+  audioEvents.length = 0;
+  const phaseOnly = makeHarness({
+    phaseRadius: 58,
+    bullets: [bulletAt(24), bulletAt(57), bulletAt(61)]
+  });
+  const phaseResult = runDodge(phaseOnly);
+  assert.equal(phaseResult.cleared, 2, 'Phase Wake should clear at phase exit');
+  assert.equal(phaseResult.phaseCleared, 2);
+  assert.equal(phaseResult.shards, 0);
+  assert.equal(audioEvents.filter((event) => event.id === 'forceField').length, 1, 'one clear should emit one clear sound');
+
+  audioEvents.length = 0;
+  const combined = makeHarness({
+    traitRadius: 72,
+    phaseRadius: 58,
+    riftReprisal: true,
+    bullets: [bulletAt(40), bulletAt(68), bulletAt(78), bulletAt(90)]
+  });
+  const combinedResult = runDodge(combined);
+  assert.equal(combinedResult.combinedRadiusBonus, 12, 'combined pulse bonus should be modest and deterministic');
+  assert.equal(combinedResult.radius, 84, 'combined pulse should be bounded');
+  assert.equal(combinedResult.cleared, 3, 'combined pulse should gain one bounded outer clear');
+  assert.equal(combinedResult.phaseCleared, 2, 'Phase attribution remains separate from total clears');
+  assert.equal(combinedResult.shards, 3, 'Rift Reprisal should return clears from the entire dodge pulse');
+  assert.deepEqual(combinedResult.clearedByRadius, { trait: 2, phase: 2, combinedBonus: 1 }, 'radius/source accounting drifted');
+  assert.equal(combinedResult.riftEligible, 3);
+  assert.equal(combinedResult.riftCap, 5);
+  assert.equal(combinedResult.shardsCreated, 3);
+  assert.equal(combinedResult.targets.length, 3, 'each created Rift shard should expose its initial target trajectory');
+  assert.equal(combinedResult.discardedReason, null);
+  assert.equal(combined.counters.deactivations, 3, 'a combined pulse must clear each bullet exactly once');
+  assert.equal(combined.counters.playerBullets, 3, 'Rift shard count should match cleared positions');
+  assert(combined.counters.toastMessages.some((message) => message.includes('×3')), 'Rift Reprisal should report the visible shard count');
+  assert.equal(combined.counters.scoreEvents, 0, 'dodge exit clears must remain score-neutral');
+  assert.equal(audioEvents.filter((event) => event.id === 'forceField').length, 1, 'combined clear must not duplicate clear audio');
+  assert.equal(audioEvents.filter((event) => event.id === 'tactical_phase_reactor').length, 1, 'Rift volley must emit one Fusion audio event');
+  const firstRiftShard = combined.play.bulletManager.playerBullets[0];
+  const target = combined.play.enemyManager.enemies[0];
+  assert.equal(PlayScene.prototype.recordRiftShardHit.call({ player: combined.player }, firstRiftShard, target), true);
+  assert.equal(combinedResult.hits.length, 1, 'consolidated pulse audit must record Rift hits');
+  assert.equal(combinedResult.hits[0].intendedTargetId, 'target-alpha');
+
+  audioEvents.length = 0;
+  const riftCap = makeHarness({
+    phaseRadius: 58,
+    riftReprisal: true,
+    bullets: Array.from({ length: 7 }, (_, index) => bulletAt(34 + index, index))
+  });
+  const riftResult = runDodge(riftCap);
+  assert.equal(riftResult.cleared, 7);
+  assert.equal(riftResult.shards, 5, 'Rift Reprisal must keep its five-shard cap');
+  assert.equal(riftResult.riftEligible, 7);
+  assert.equal(riftResult.shardsCreated, 5);
+  assert.equal(riftResult.discardedCount, 2);
+  assert.equal(riftResult.discardedReason, 'rift_cap');
+
+  audioEvents.length = 0;
+  const empty = makeHarness({ traitRadius: 64, bullets: [] });
+  const emptyResult = runDodge(empty);
+  assert.equal(emptyResult.cleared, 0, 'zero nearby bullets should remain a valid zero-clear pulse');
+  assert.equal(empty.counters.deactivations, 0);
+  assert.equal(audioEvents.filter((event) => event.id === 'forceField').length, 0, 'zero-clear pulse must not emit clear audio');
+
+  const experimentMetrics = {
+    pulseActivations: 0,
+    pulseClears: 0,
+    pulseRechargeBlocks: 0,
+    pulseUnavailableDodges: 0
+  };
+  const experimental = makeHarness({
+    traitRadius: 72,
+    phaseRadius: 58,
+    bullets: [bulletAt(68), bulletAt(73)],
+    experiment: {
+      active: true,
+      phasePulse: { available: true, maxRadius: 72, rechargeMs: 2000 },
+      metrics: experimentMetrics
+    }
+  });
+  const experimentalFirst = runDodge(experimental);
+  assert.equal(experimentalFirst.combinedRadiusBonus, 0, 'experimental pulse must stop hidden additive radius stacking');
+  assert.equal(experimentalFirst.radius, 72, 'experimental pulse radius must cap at 72px');
+  assert.equal(experimentalFirst.cleared, 1, 'every hostile bullet inside the visible 72px ring should clear');
+  assert.equal(experimental.play.bulletManager.enemyBullets[1].active, true, 'bullet outside the ring must remain');
+  assert.equal(experimentalFirst.rechargeMs, 2000);
+  assert.equal(experimentMetrics.pulseActivations, 1);
+  assert.equal(experimentMetrics.pulseClears, 1);
+
+  experimental.play.gameTime = 0.5;
+  experimental.player.dodgeCooldown = 0;
+  experimental.player.invulnerable = false;
+  assert.equal(experimental.player.startDodge(), true, 'movement dodge must remain available while pulse clear recharges');
+  assert.equal(experimental.player.finishDodge('duration'), true);
+  assert.equal(experimental.player.lastDodgeExitPulse.reason, 'experiment_pulse_recharging');
+  assert.equal(experimental.player.lastDodgeExitPulse.rechargeRemainingMs, 1500);
+  assert.equal(experimental.play.bulletManager.enemyBullets[1].active, true);
+  assert.equal(experimentMetrics.pulseRechargeBlocks, 1);
+
+  experimental.play.gameTime = 2.1;
+  experimental.play.bulletManager.enemyBullets.push(bulletAt(40));
+  experimental.player.dodgeCooldown = 0;
+  experimental.player.invulnerable = false;
+  assert.equal(experimental.player.startDodge(), true);
+  assert.equal(experimental.player.finishDodge('duration'), true);
+  assert.equal(experimental.player.lastDodgeExitPulse.cleared, 1, 'pulse should clear again after the configured recharge');
+  assert.equal(experimentMetrics.pulseActivations, 2);
+  assert.equal(experimentMetrics.pulseClears, 2);
+
+  const unavailableExperiment = makeHarness({
+    phaseRadius: 58,
+    bullets: [bulletAt(20)],
+    experiment: {
+      active: true,
+      phasePulse: { available: false, maxRadius: 72, rechargeMs: 2000 },
+      metrics: {
+        pulseActivations: 0,
+        pulseClears: 0,
+        pulseRechargeBlocks: 0,
+        pulseUnavailableDodges: 0
+      }
+    }
+  });
+  const unavailableResult = runDodge(unavailableExperiment);
+  assert.equal(unavailableResult.reason, 'experiment_pulse_unavailable');
+  assert.equal(unavailableExperiment.play.bulletManager.enemyBullets[0].active, true);
+  assert.equal(unavailableExperiment.player.game.lateGameExperiment.metrics.pulseUnavailableDodges, 1);
+
+  audioEvents.length = 0;
+  const interrupted = makeHarness({ traitRadius: 64, bullets: [bulletAt(20)] });
+  assert.equal(interrupted.player.startDodge(), true);
+  const interruptedToken = interrupted.player.pendingDodgeExitPulseToken;
+  assert.equal(interrupted.player.cancelDodgeExitPulse('life_lost', { endDodge: true }), true);
+  assert.equal(interrupted.player.lastDodgeExitPulse.reason, 'life_lost');
+  assert.equal(interrupted.player.lastDodgeExitPulse.cancelled, true);
+  assert.equal(interrupted.player.lastDodgeExitPulse.discardedReason, 'life_lost');
+  assert.equal(interrupted.player.resolveDodgeExitPulse(interruptedToken), false, 'life loss must invalidate the queued pulse');
+  assert.equal(interrupted.play.bulletManager.enemyBullets[0].active, true, 'life-loss interruption must not clear bullets later');
+  assert.equal(interrupted.counters.deactivations, 0);
+
+  const sceneChange = makeHarness({ phaseRadius: 58, bullets: [bulletAt(20)] });
+  sceneChange.player.startDodge();
+  const sceneToken = sceneChange.player.pendingDodgeExitPulseToken;
+  sceneChange.player.cancelDodgeExitPulse('scene_change', { endDodge: true });
+  assert.equal(sceneChange.player.resolveDodgeExitPulse(sceneToken), false, 'scene changes must invalidate the queued pulse');
+  assert.equal(sceneChange.counters.deactivations, 0);
+  const playSceneSource = readFileSync('src/scenes/PlayScene.js', 'utf8');
+  assert.match(
+    playSceneSource,
+    /onLifeLost[\s\S]*cancelDodgeExitPulse\?\.\('life_lost', \{ endDodge: true \}\)/,
+    'all life-loss paths, including final death, must cancel the queued pulse before early returns'
+  );
+
+  console.log('[tyrian-dodge-pulse] PASS trait, Phase Wake, combined radius, Rift shards, zero-clear, interruption, and duplicate guards');
+} finally {
+  AudioManager.playSfx = originalPlaySfx;
+}

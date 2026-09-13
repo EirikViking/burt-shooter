@@ -1,18 +1,39 @@
 import './styles.css';
 import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
+import { initializeBossEncounterTest, getBossEncounterTest } from './config/BossEncounterTest.js';
+import { RUN_MODES, getRunModeProfile } from './game/RunMode.js';
+import { summarizeRunReport } from './game/RunReport.js';
+import { POINT_DEFENSE_RADIUS } from './game/ProjectileDefenseRules.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { BootWatchdog } from './utils/BootWatchdog.js';
 import { installConsoleLogFilter } from './utils/Logger.js';
 import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
-import { getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
+import { applyDisplaySettings, getDisplaySettings } from './config/DisplaySettings.js';
+import { getShipUnlockHistoryLine, getShipUnlockProgress, getShipUnlockRequirementLine, getShipUsage, isShipUnlocked } from './config/ShipMetadata.js';
 import { getSectorInfo } from './config/SectorCatalog.js';
 import { getRunPacingDebugState } from './config/RunPacingConfig.js';
+import { RARE_CHAOS_VISITOR_VARIANT_COUNT, RARE_CHAOS_VISITOR_WAVE_CHANCE } from './config/RareChaosVisitors.js';
+import {
+  getMaintainerDevtoolsState,
+  initializeMaintainerDevtools,
+  isMaintainerDevtoolsEnabled
+} from './config/MaintainerDevtools.js';
 import { getThreatCodexCatalog } from './config/ThreatCodexCatalog.js';
-import { getCodexCompletionCounts, getDiscoveriesThisRun, getDiscoveryStats } from './progression/ThreatDiscoveryState.js';
+import {
+  flushThreatDiscoveryState,
+  getCodexCompletionCounts,
+  getDiscoveriesThisRun,
+  getDiscoveryStats
+} from './progression/ThreatDiscoveryState.js';
 import { getHangarProgressSummary } from './progression/HangarProgressState.js';
+import {
+  getActiveProfileStorageContext,
+  installProfileStorageNamespace
+} from './profile/ProfileStorageNamespace.js';
+import { getGameplayCursorDebugState } from './ui/GameplayCursor.js';
 import {
   LANGUAGE_CHANGE_EVENT,
   getCurrentLanguage,
@@ -23,16 +44,31 @@ import {
 } from './i18n/index.js';
 import { installPixiTextLocalization } from './i18n/pixiTextLocalization.js';
 import {
+  UI_FONT_PREFLIGHT_TIMEOUT_MS,
+  getUiFontPolicyDebugState,
+  installPixiFontPolicy,
+  pinUiFontFallback,
+  preflightCriticalUiFonts
+} from './ui/UiFontPolicy.js';
+import {
   collectSteamCloudPersistenceState,
   restoreSteamCloudPersistenceToStorage,
   summarizeSteamCloudPersistence
 } from './steamCloudPersistence.js';
+import {
+  configurePersistenceScheduler,
+  flushPersistence,
+  getPersistenceSchedulerDebugState,
+  markPersistenceDirty
+} from './persistence/PersistenceScheduler.js';
 
 installConsoleLogFilter();
+installPixiFontPolicy(PIXI);
 installPixiTextLocalization(PIXI);
 
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;
+const UI_FONT_BOOT_STEP_TIMEOUT_MS = UI_FONT_PREFLIGHT_TIMEOUT_MS + 250;
 const PERF_SAMPLE_MS = 500;
 const MAX_DELTA = 2;
 const urlParams = new URLSearchParams(window.location.search);
@@ -62,6 +98,7 @@ const bootState = {
 };
 const supportsAsyncInit = typeof PIXI.Application?.prototype?.init === 'function';
 let autoStartTriggered = false;
+let profileStorageContext = getActiveProfileStorageContext();
 
 applyResponsiveLayout(window.innerWidth, window.innerHeight);
 window.addEventListener('resize', () => {
@@ -74,15 +111,15 @@ installSteamDiagnosticsExport();
 installSteamCloudStateExport();
 
 function isBootDebugEnabled() {
-  return urlParams.get('debug') === '1';
+  return urlParams.get('debug') === '1' && isMaintainerDevtoolsEnabled();
 }
 
 function isPerfEnabled() {
-  return urlParams.get('perf') === '1';
+  return urlParams.get('perf') === '1' && isMaintainerDevtoolsEnabled();
 }
 
 function isAutoStartEnabled() {
-  return urlParams.get('autostart') === '1';
+  return Boolean(getBossEncounterTest()) || urlParams.get('autostart') === '1';
 }
 
 function isDesktopRuntime() {
@@ -141,10 +178,22 @@ function collectSteamCloudRendererState() {
   });
 }
 
-async function syncSteamCloudRendererState() {
+async function initializeProfileStorageNamespace() {
   const api = window.__novaSteamCloud;
-  if (!api?.mergeRendererState) return null;
-  return api.mergeRendererState(collectSteamCloudRendererState());
+  const context = await api?.getProfileContext?.().catch(error => ({
+    type: 'local',
+    id: 'local-offline',
+    reason: error?.message || 'profile_context_unavailable'
+  }));
+  profileStorageContext = installProfileStorageNamespace(context || {});
+  return {
+    bootDetail: `${profileStorageContext.type}:${profileStorageContext.storageId}`
+  };
+}
+
+async function syncSteamCloudRendererState({ reason = 'explicit_sync', force = false, domain = 'explicit' } = {}) {
+  markPersistenceDirty(domain, { scheduleFlush: false });
+  return flushPersistence({ reason, force });
 }
 
 async function collectSteamCloudDiagnostics() {
@@ -158,6 +207,7 @@ async function collectSteamCloudDiagnostics() {
     buildId: BUILD_ID,
     gitSha: GIT_SHA,
     rendererState: collectSteamCloudRendererState(),
+    profileStorage: getActiveProfileStorageContext(),
     persistenceSummary: summarizeSteamCloudPersistence(save),
     electron,
     save
@@ -171,18 +221,40 @@ async function logSteamCloudDiagnostics() {
 }
 
 function installSteamCloudStateExport() {
+  configurePersistenceScheduler({
+    collectSnapshot: collectSteamCloudRendererState,
+    mergeSnapshot: async (snapshot) => {
+      const api = window.__novaSteamCloud;
+      if (!api?.mergeRendererState) return { ok: true, skipped: true, reason: 'native_cloud_bridge_unavailable' };
+      return api.mergeRendererState(snapshot);
+    },
+    isCombatActive: () => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      if (game?.currentSceneName !== 'play' || !play) return false;
+      const state = play.enemyManager?.state || '';
+      return state === 'WAVE_ACTIVE'
+        || state === 'BOSS_ACTIVE'
+        || play.shouldDeferActiveGameplayPersistence?.() === true;
+    },
+    onEvent: (label, details) => window.__novaMayhemPerformanceDiagnostics?.mark?.(label, details)
+  });
   window.__novaSteamCloudDiagnostics = Object.freeze({
     collect: collectSteamCloudDiagnostics,
     log: logSteamCloudDiagnostics,
-    sync: syncSteamCloudRendererState
+    sync: syncSteamCloudRendererState,
+    getSchedulerState: getPersistenceSchedulerDebugState
   });
   window.addEventListener('pagehide', () => {
-    syncSteamCloudRendererState().catch(() => {});
+    window.__game?.scenes?.play?.flushRunPersistenceAtSafePoint?.('pagehide');
+    flushThreatDiscoveryState();
+    syncSteamCloudRendererState({ reason: 'pagehide', force: true, domain: 'pagehide' }).catch(() => {});
   });
   window.addEventListener(LANGUAGE_CHANGE_EVENT, () => {
-    syncSteamCloudRendererState().catch(() => {});
+    syncSteamCloudRendererState({ reason: 'language_change', force: true, domain: 'settings' }).catch(() => {});
   });
   window.addEventListener('keydown', (event) => {
+    if (!isMaintainerDevtoolsEnabled()) return;
     if (event.ctrlKey && event.altKey && event.shiftKey && event.code === 'KeyC') {
       event.preventDefault();
       logSteamCloudDiagnostics();
@@ -220,6 +292,7 @@ function installSteamDiagnosticsExport() {
     }
   });
   window.addEventListener('keydown', (event) => {
+    if (!isMaintainerDevtoolsEnabled()) return;
     if (event.ctrlKey && event.altKey && event.shiftKey && event.code === 'KeyD') {
       event.preventDefault();
       copySteamDiagnostics();
@@ -337,8 +410,11 @@ function createPerfOverlay(enabled) {
 
 function updatePerfStats(app, game, delta, clampedDelta) {
   perfState.lastFrameTime = performance.now();
-  perfState.frameMs = app.ticker.deltaMS || 0;
-  perfState.fps = app.ticker.FPS || (perfState.frameMs ? 1000 / perfState.frameMs : 0);
+  perfState.frameMs = app.ticker.deltaMS || (Number.isFinite(delta) && delta > 0 ? delta * (1000 / 60) : 0);
+  const tickerFps = Number(app.ticker.FPS);
+  perfState.fps = Number.isFinite(tickerFps) && tickerFps > 0
+    ? tickerFps
+    : (perfState.frameMs ? 1000 / perfState.frameMs : 0);
   perfState.delta = delta;
   perfState.clampedDelta = clampedDelta;
   perfState.level = game?.level || 0;
@@ -364,6 +440,23 @@ function updatePerfStats(app, game, delta, clampedDelta) {
   if (performance && performance.memory && performance.memory.usedJSHeapSize) {
     perfState.memory = performance.memory.usedJSHeapSize;
   }
+}
+
+function publishTickerFrameTiming(game, rawDelta, clampedDelta, source = 'pixi_ticker') {
+  if (!game) return;
+  const raw = Number.isFinite(rawDelta) ? rawDelta : 0;
+  const clamped = Number.isFinite(clampedDelta) ? clampedDelta : raw;
+  game.lastTickerFrameTiming = {
+    source,
+    rawDelta: raw,
+    clampedDelta: clamped,
+    rawDeltaMs: raw * (1000 / 60),
+    clampedDeltaMs: clamped * (1000 / 60),
+    simulationStepsPerRender: 1,
+    interpolationAlpha: 1,
+    timeScale: 1,
+    capturedAt: typeof performance !== 'undefined' ? performance.now() : Date.now()
+  };
 }
 
 function getStableSceneName(game) {
@@ -394,18 +487,24 @@ function buildGameTextState(game) {
   const playerBullets = playScene?.bulletManager?.playerBullets || playScene?.bulletManager?.bullets || [];
   const enemyBullets = playScene?.bulletManager?.enemyBullets || [];
   const activeSettingsOverlay = game?.currentScene?.settingsOverlay || playScene?.settingsOverlay || null;
+  const activeHowToPlayOverlay = game?.currentScene?.howToPlayOverlay || playScene?.howToPlayOverlay || null;
   const menuScene = getStableSceneName(game) === 'menu' ? game?.currentScene : null;
   const introScene = getStableSceneName(game) === 'intro' ? game?.currentScene : null;
   const shipSelectScene = getStableSceneName(game) === 'shipSelect' ? game?.currentScene : null;
+  const shipDetailsScene = getStableSceneName(game) === 'shipDetails' ? game?.currentScene : null;
   const gameOverScene = getStableSceneName(game) === 'gameOver' ? game?.currentScene : null;
   const highscoreScene = getStableSceneName(game) === 'highscore' ? game?.currentScene : null;
   const achievementsScene = getStableSceneName(game) === 'achievements' ? game?.currentScene : null;
   const threatCodexScene = getStableSceneName(game) === 'threatCodex' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
+  const activeHangarShip = shipSelectScene?.ships?.find?.((ship) => (
+    ship.spriteKey === (game?.selectedShipSpriteKey || shipSelectScene?.activeShipSpriteKey)
+  )) || null;
   const pacingDebug = getRunPacingDebugState(game);
   const hangarProgressSummary = getHangarProgressSummary();
   const threatCodexCatalog = getThreatCodexCatalog();
   const sector = getSectorInfo(game?.level || 1);
+  const globalRivalProjection = game?.getGlobalRivalChaseState?.() || null;
   const getBoundsDebug = (displayObject) => {
     try {
       if (!displayObject?.getBounds) return null;
@@ -433,6 +532,112 @@ function buildGameTextState(game) {
       return null;
     }
   };
+  const isDisplayRenderable = (displayObject) => {
+    let cursor = displayObject;
+    while (cursor) {
+      if (cursor.visible === false || cursor.renderable === false || cursor.alpha === 0) return false;
+      cursor = cursor.parent;
+    }
+    return Boolean(displayObject?.parent);
+  };
+  const isPendingEntryEnemy = (enemy) => {
+    if (!enemy || enemy.destroyed === true) return false;
+    if (enemy.waitingForEntry === true) return true;
+    const entryStart = Number(enemy.entryCurve?.startTime);
+    return enemy.active === false &&
+      enemy.state === 'ENTRY' &&
+      Number.isFinite(entryStart) &&
+      entryStart > Date.now();
+  };
+  const getVisualAuditBounds = (displayObject) => {
+    try {
+      if (!displayObject?.getBounds) return null;
+      const bounds = displayObject.getBounds();
+      const width = Math.round(bounds.width || 0);
+      const height = Math.round(bounds.height || 0);
+      if (width <= 0 || height <= 0) return null;
+      return {
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width,
+        height
+      };
+    } catch {
+      return null;
+    }
+  };
+  const collectEnemyVisualNodes = () => {
+    const result = [];
+    const walk = (node) => {
+      if (!node) return;
+      const label = String(node.label || '');
+      if (label.startsWith('enemy_visual:')) result.push(node);
+      for (const child of node.children || []) walk(child);
+    };
+    walk(playScene?.gameContainer);
+    return result;
+  };
+  const createEnemyVisualAudit = () => {
+    if (!playScene || !enemyManager) {
+      return { staleVisibleCount: 0, orphanedVisibleCount: 0, pendingEntryVisibleCount: 0, samples: [] };
+    }
+    const trackedEnemies = [
+      ...enemies,
+      enemyManager.boss,
+      enemyManager.hijacker
+    ].filter(Boolean);
+    const trackedSprites = new Set(trackedEnemies.map(enemy => enemy.sprite).filter(Boolean));
+    const samples = [];
+    let staleVisibleCount = 0;
+    let pendingEntryVisibleCount = 0;
+    for (const enemy of trackedEnemies) {
+      const sprite = enemy?.sprite;
+      if (!sprite?.parent || !isDisplayRenderable(sprite)) continue;
+      const pending = isPendingEntryEnemy(enemy);
+      if (pending) {
+        pendingEntryVisibleCount += 1;
+        continue;
+      }
+      if (enemy.active === false || enemy.destroyed === true || enemy.visualsDeactivated === true) {
+        staleVisibleCount += 1;
+        if (samples.length < 8) {
+          samples.push({
+            issue: 'tracked_inactive_visible',
+            kind: enemy.kind || null,
+            type: enemy.type || enemy.profile?.id || null,
+            active: Boolean(enemy.active),
+            destroyed: Boolean(enemy.destroyed),
+            waitingForEntry: Boolean(enemy.waitingForEntry),
+            reason: enemy.visualDeactivateReason || null,
+            bounds: getVisualAuditBounds(sprite)
+          });
+        }
+      }
+    }
+
+    let orphanedVisibleCount = 0;
+    for (const node of collectEnemyVisualNodes()) {
+      if (trackedSprites.has(node)) continue;
+      if (!isDisplayRenderable(node)) continue;
+      orphanedVisibleCount += 1;
+      if (samples.length < 8) {
+        samples.push({
+          issue: 'orphaned_enemy_visual',
+          label: node.label || null,
+          bounds: getVisualAuditBounds(node)
+        });
+      }
+    }
+
+    return {
+      staleVisibleCount,
+      orphanedVisibleCount,
+      pendingEntryVisibleCount,
+      trackedEnemyVisualCount: trackedSprites.size,
+      renderTreeEnemyVisualCount: collectEnemyVisualNodes().length,
+      samples
+    };
+  };
 
   return {
     coordinateSystem: 'origin top-left, x right, y down',
@@ -450,33 +655,123 @@ function buildGameTextState(game) {
     lives: game?.lives ?? 0,
     runMode: game?.runMode || (game?.isDebugRun ? 'unranked' : 'ranked'),
     runModeReason: game?.runModeReason || null,
+    runModeProfile: game?.getRunModeProfile?.() || getRunModeProfile(game?.runMode),
+    scoutAnomaly: game?.scoutAnomaly ? { ...game.scoutAnomaly } : null,
+    combatTelemetry: playScene?.getCombatTelemetrySummary?.() || null,
+    sectorStartChallenge: (game?.runMode === RUN_MODES.SECTOR_START || game?.runSummary?.sectorStartChallengeAttempt) ? {
+      checkpoint: game?.sectorStartCheckpoint || game?.runSummary?.sectorStartCheckpoint || null,
+      playSector: game?.sectorStartPlaySector || game?.runSummary?.sectorStartPlaySector || null,
+      highestLegitimatelyReached: game?.sectorStartHighestReached || null,
+      attempt: game?.runSummary?.sectorStartChallengeAttempt || null,
+      previousBest: game?.runSummary?.sectorStartChallengePreviousBest || null,
+      best: game?.runSummary?.sectorStartChallengeBest || null,
+      newBest: Boolean(game?.runSummary?.sectorStartChallengeNewBest)
+    } : null,
     globalLeaderboardCues: game?.globalLeaderboardCueState || null,
     scoreSubmissionAllowed: typeof game?.isScoreSubmissionAllowed === 'function'
       ? game.isScoreSubmissionAllowed()
       : !game?.isDebugRun,
+    maintainerDevtools: getMaintainerDevtoolsState(),
     selectedShipSpriteKey: game?.selectedShipSpriteKey || null,
+    threatResponse: game?.threatResponse || null,
     steamUploadDiagnostics: readLastSteamUploadDiagnostics(),
     achievements: game?.getAchievementDebugState ? game.getAchievementDebugState() : null,
     isPaused: Boolean(playScene?.isPaused),
     overlays: {
       pause: Boolean(playScene?.pauseOverlay?.visible && playScene?.pauseOverlay?.parent),
       settings: Boolean(activeSettingsOverlay?.container?.parent),
+      howToPlay: Boolean(activeHowToPlayOverlay?.container?.parent),
+      tacticalLoadout: Boolean(playScene?.tacticalLoadoutOverlay?.container?.parent),
       credits: Boolean(activeSettingsOverlay?.creditsPanel?.parent),
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
+    pauseOverlay: playScene?.getPauseDebugState ? playScene.getPauseDebugState() : null,
+    cursor: getGameplayCursorDebugState(game),
     menu: menuScene?.getLayoutDebugState ? menuScene.getLayoutDebugState() : null,
+    runContracts: playScene?.getRunContractDebugState ? playScene.getRunContractDebugState() : null,
+    tacticalDirectives: playScene?.getTacticalDirectiveDebugState ? playScene.getTacticalDirectiveDebugState() : null,
+    rareChaosVisitors: playScene ? {
+      availableVariants: RARE_CHAOS_VISITOR_VARIANT_COUNT,
+      waveChance: RARE_CHAOS_VISITOR_WAVE_CHANCE,
+      stats: playScene.enemyManager?.rareChaosVisitorStats ? { ...playScene.enemyManager.rareChaosVisitorStats } : null,
+      lastAnnouncement: playScene.lastRareChaosVisitorAnnouncement || null,
+      lastDefeat: playScene.lastRareChaosVisitorDefeat || null
+    } : null,
+    reinforcementPresentation: playScene?.getMayhemReinforcementPresentationDebugState?.() || null,
+    spectacle: playScene?.spectacleDirector?.getDebugState?.() || null,
+    cabinetWonders: playScene?.getCabinetWonderDebugState?.() || null,
+    gameplayBackdrop: playScene ? {
+      mode: playScene.gameplayBackdropMode || 'base',
+      elapsedMs: Math.round(playScene.gameplayBackdropElapsedMs || 0),
+      reducedMotion: Boolean(playScene.gameplayBackdropReducedMotion),
+      starCount: (playScene.starLayers || []).reduce((total, layer) => total + (layer?.length || 0), 0),
+      travelMoteCount: (playScene.cosmicTravelLayers || []).reduce((total, layer) => total + (layer?.length || 0), 0),
+      auroraBandCount: playScene.cosmicAuroraBands?.length || 0
+    } : null,
+    highscoreChase: game?.highscoreChase ? {
+      targetScore: Math.max(0, Math.floor(Number(game.highscoreChase.targetScore) || 0)),
+      targetSector: Math.max(0, Math.floor(Number(game.highscoreChase.targetSector) || 0)),
+      targetTimeSeconds: Math.max(0, Math.floor(Number(game.highscoreChase.targetTimeSeconds) || 0)),
+      goalMode: game.highscoreChase.goalMode || 'score',
+      bestAttemptSector: Math.max(0, Math.floor(Number(game.highscoreChase.bestAttemptSector) || 0)),
+      hasDailyClear: Boolean(game.highscoreChase.hasDailyClear),
+      source: game.highscoreChase.source || null,
+      syncingTarget: Boolean(game.highscoreChase.syncingTarget),
+      surpassed: Boolean(game.highscoreChase.surpassed),
+      celebrationFired: Boolean(game.highscoreChase.celebrationFired),
+      celebrationScore: Math.max(0, Math.floor(Number(game.highscoreChase.celebrationScore) || 0))
+    } : null,
+    globalRivalProjection: globalRivalProjection ? {
+      targetKind: globalRivalProjection.targetKind,
+      targetName: globalRivalProjection.targetName || null,
+      targetRank: globalRivalProjection.targetRank || null,
+      targetScore: globalRivalProjection.targetScore || 0,
+      scoreToPass: globalRivalProjection.scoreToPass || 0,
+      projectedPlacement: globalRivalProjection.projectedPlacement || null,
+      projectedNumberOne: Boolean(globalRivalProjection.projectedNumberOne),
+      snapshotOnly: true
+    } : null,
+    personalBestCelebration: playScene?.getPersonalBestCelebrationDebugState
+      ? playScene.getPersonalBestCelebrationDebugState()
+      : null,
+    aceBounties: playScene?.getAceBountyDebugState ? playScene.getAceBountyDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
+    howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
+    tacticalLoadoutOverlay: playScene?.tacticalLoadoutOverlay?.getDebugState?.() || null,
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
+    shootAudio: playScene?.shootSoundHealthCheck ? {
+      key: playScene.shootSoundHealthCheck.lastSoundKey || null,
+      requestIntervalMs: playScene.shootSoundHealthCheck.lastRequestIntervalMs || 0,
+      totalVolleys: playScene.shootSoundHealthCheck.totalVolleys || 0,
+      totalRequests: playScene.shootSoundHealthCheck.totalRequests || 0,
+      totalPlayed: playScene.shootSoundHealthCheck.totalPlayed || 0,
+      totalSuppressed: playScene.shootSoundHealthCheck.totalSuppressed || 0
+    } : null,
+    display: getDisplaySettings(),
+    layout: getCurrentLayout(),
     accessibility: getAccessibilitySettings(),
     input: {
-      gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null
+      gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null,
+      controls: playScene?.inputManager?.getTransientDebugState?.() || null,
+      autoFireCueVisible: Boolean(playScene?.controlModeHudCue?.visible)
     },
     debugTools: playScene ? {
-      invincible: Boolean(playScene.debugInvincible),
+      enabled: isMaintainerDevtoolsEnabled(),
+      invincible: Boolean(isMaintainerDevtoolsEnabled() && playScene.debugInvincible),
       levelToolsUsed: Boolean(playScene.debugLevelToolsUsed),
-      levelJumpAvailable: typeof playScene.debugJumpToLevel === 'function'
+      levelJumpAvailable: isMaintainerDevtoolsEnabled() && typeof playScene.debugJumpToLevel === 'function'
     } : null,
-    toast: playScene?.getToastDebugState ? playScene.getToastDebugState() : null,
+    toast: playScene?.getToastDebugState ? playScene.getToastDebugState(getBoundsDebug) : null,
+    shipIntro: playScene?.getShipIntroDebugState ? playScene.getShipIntroDebugState() : null,
+    gameOverInterlude: playScene?.getGameOverInterludeDebugState
+      ? playScene.getGameOverInterludeDebugState(getBoundsDebug)
+      : { active: false, visible: false },
+    gameOverAnimation: playScene?.getGameOverAnimationDebugState
+      ? playScene.getGameOverAnimationDebugState(getBoundsDebug)
+      : { active: false, visible: false },
+    overrunInterlude: playScene?.getOverrunInterludeDebugState
+      ? playScene.getOverrunInterludeDebugState(getBoundsDebug)
+      : { active: false, requiresConfirm: false },
     scoring: playScene ? {
       comboCount: playScene.comboCount || 0,
       comboMultiplier: playScene.comboMultiplier || 1,
@@ -484,8 +779,40 @@ function buildGameTextState(game) {
       dangerDodgeTimerMs: Math.max(0, Math.round(playScene.dangerDodgeTimerMs || 0)),
       bestDangerDodgeStreak: playScene.bestDangerDodgeStreak || 0,
       lastDangerDodgeScore: playScene.lastDangerDodgeScore || 0,
-      grazeBreakReady: Boolean(playScene.grazeBreakReady && Date.now() <= (playScene.grazeBreakExpiresAt || 0)),
-      grazeBreakReadyMs: Math.max(0, Math.round((playScene.grazeBreakExpiresAt || 0) - Date.now())),
+      nearMissSurgesThisRun: playScene.nearMissSurgesThisRun || 0,
+      lastNearMissSurge: playScene.lastNearMissSurge ? {
+        triggered: Boolean(playScene.lastNearMissSurge.triggered),
+        streak: playScene.lastNearMissSurge.streak || 0,
+        cooldownBefore: playScene.lastNearMissSurge.cooldownBefore || 0,
+        cooldownAfter: playScene.lastNearMissSurge.cooldownAfter || 0,
+        remainingMs: Math.max(0, Math.round(
+          (playScene.lastNearMissSurge.startedAt + playScene.lastNearMissSurge.durationMs) - Date.now()
+        ))
+      } : null,
+      lastComboCelebration: playScene.lastComboCelebration ? {
+        triggered: Boolean(playScene.lastComboCelebration.triggered),
+        threshold: playScene.lastComboCelebration.threshold || 0,
+        multiplier: playScene.lastComboCelebration.multiplier || 1,
+        reason: playScene.lastComboCelebration.reason || null,
+        remainingMs: Math.max(0, Math.round(
+          (playScene.lastComboCelebration.startedAt + playScene.lastComboCelebration.durationMs) - Date.now()
+        ))
+      } : null,
+      lastPowerupPickupJuice: playScene.lastPowerupPickupJuice ? {
+        triggered: Boolean(playScene.lastPowerupPickupJuice.triggered),
+        type: playScene.lastPowerupPickupJuice.type || null,
+        major: Boolean(playScene.lastPowerupPickupJuice.major),
+        x: playScene.lastPowerupPickupJuice.x || 0,
+        y: playScene.lastPowerupPickupJuice.y || 0,
+        remainingMs: Math.max(0, Math.round(
+          (playScene.lastPowerupPickupJuice.startedAt + playScene.lastPowerupPickupJuice.durationMs) - Date.now()
+        ))
+      } : null,
+      grazeBreakReady: Boolean(playScene.grazeBreakReady && playScene.getGameplayClockMs() <= (playScene.grazeBreakExpiresAt || 0)),
+      grazeBreakReadyMs: Math.max(0, Math.round((playScene.grazeBreakExpiresAt || 0) - playScene.getGameplayClockMs())),
+      grazeBreakNeedsFireRelease: Boolean(playScene.grazeBreakNeedsFireRelease),
+      grazeBreakReleasePrimed: Boolean(playScene.grazeBreakReleasePrimed),
+      firePressed: Boolean(playScene.currentFirePressed),
       grazeBreakBullets: playerBullets.filter(bullet => bullet?.active !== false && bullet.isGrazeBreaker).length,
       lastGrazeBreak: playScene.lastGrazeBreak ? {
         triggered: Boolean(playScene.lastGrazeBreak.triggered),
@@ -494,8 +821,14 @@ function buildGameTextState(game) {
         enemiesDestroyed: playScene.lastGrazeBreak.enemiesDestroyed || 0,
         bonusScore: playScene.lastGrazeBreak.bonusScore || 0,
         radius: playScene.lastGrazeBreak.radius || 0,
+        visualRadius: playScene.lastGrazeBreak.visualRadius || 0,
+        visualScale: playScene.lastGrazeBreak.visualScale || 1,
+        visualRingCount: playScene.lastGrazeBreak.visualRingCount || 0,
+        visualSparkleCount: playScene.lastGrazeBreak.visualSparkleCount || 0,
+        visualFilamentCount: playScene.lastGrazeBreak.visualFilamentCount || 0,
+        visual: playScene.lastGrazeBreakVisualDebug ? { ...playScene.lastGrazeBreakVisualDebug } : null,
         remainingMs: Math.max(0, Math.round(
-          (playScene.lastGrazeBreak.startedAt + playScene.lastGrazeBreak.durationMs) - Date.now()
+          (playScene.activeGrazeBreakVisual?.durationMs || 0) - (playScene.activeGrazeBreakVisual?.elapsedMs || 0)
         ))
       } : null
     } : null,
@@ -517,6 +850,7 @@ function buildGameTextState(game) {
       livesGainedThisRun: playScene?.repairsGrantedThisRun || 0,
       repairsGrantedThisRun: playScene?.repairsGrantedThisRun || 0,
       extraLifeDropsThisRun: playScene?.powerupManager?.powerups?.filter?.(powerup => powerup?.type === 'life')?.length || 0,
+      pickupSpawns: playScene?.powerupManager?.getDebugState?.() || null,
       bossesKilled: playScene?.bossKills || 0,
       wavesCleared: playScene?.wavesCleared || 0,
       runCleared: Boolean(game?.runCleared || game?.runSummary?.runCleared),
@@ -535,6 +869,26 @@ function buildGameTextState(game) {
       newlyUnlockedShips: game?.runSummary?.newlyUnlockedShips || [],
       shipUnlockProgressSummary: hangarProgressSummary
     },
+    tacticalDraft: playScene?.getTacticalDraftDebugState?.() || null,
+    tacticalAugments: player?.getRunAugmentDebugState?.() || null,
+    runReport: summarizeRunReport(game?.lastRunReport || null),
+    lateGameExperiment: game?.lateGameExperiment ? {
+      ...game.lateGameExperiment,
+      baselineAugmentIds: [...(game.lateGameExperiment.baselineAugmentIds || [])],
+      pressureProfile: game.lateGameExperiment.pressureProfile
+        ? { ...game.lateGameExperiment.pressureProfile }
+        : null
+    } : null,
+    highSectorPrototype: game?.highSectorPrototypeRun ? {
+      ...game.highSectorPrototypeRun,
+      baselineAugmentIds: [...(game.highSectorPrototypeRun.baselineAugmentIds || [])]
+    } : null,
+    runRewardSuppression: game?.getRunRewardSuppressionState?.() || {
+      suppressed: false,
+      reason: null,
+      surfaces: []
+    },
+    highSectorEscalation: enemyManager?.getHighSectorEscalationDebugState?.() || null,
     wave: enemyManager ? {
       phase: enemyManager.phase || null,
       state: enemyManager.state || null,
@@ -542,6 +896,7 @@ function buildGameTextState(game) {
       currentWaveIndex: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex : null,
       currentWaveNumber: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex + 1 : null,
       totalWaves: enemyManager.normalWavesTotal || 0,
+      challengeFlight: enemyManager.getChallengeFlightDebugState?.() || null,
       briefingMs: Math.round(enemyManager.waveBriefingTimer || 0),
       tactic: enemyManager.currentWaveTactic ? {
         id: enemyManager.currentWaveTactic.id || null,
@@ -583,15 +938,119 @@ function buildGameTextState(game) {
       totalModels: shipSelectScene.baseOrder?.length || 0,
       shipName: selectedShip.name || null,
       spriteKey: selectedShip.spriteKey || null,
+      selectionInfo: shipSelectScene.selectionInfoText?.text || null,
+      activeShipName: activeHangarShip?.name || null,
+      activeSpriteKey: activeHangarShip?.spriteKey || null,
+      activeIndex: activeHangarShip ? shipSelectScene.ships.indexOf(activeHangarShip) : null,
+      description: selectedShip.baseDescription || selectedShip.description || null,
+      renderedDescription: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.descText?.text || null,
+      renderedTrait: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.traitText?.text || null,
+      tier: selectedShip.tier || 'standard',
+      role: selectedShip.role || null,
+      weakness: selectedShip.weakness || null,
+      powerRating: Number.isFinite(selectedShip.powerRating) ? selectedShip.powerRating : 1,
       trait: selectedShip.trait?.label || null,
       unlocked: isShipUnlocked(selectedShip.spriteKey, getShipUnlockProgress()),
       unlock: selectedShip.unlock || null,
+      unlockHistoryText: getShipUnlockHistoryLine(selectedShip.spriteKey, getShipUnlockProgress(), { translate: translateText }),
+      unlockDetailsText: shipSelectScene.rightIntel?.unlock?.text || null,
+      usageCount: getShipUsage(selectedShip.spriteKey),
+      firstFlight: {
+        eligible: Boolean(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.firstFlightEligible),
+        badgeVisible: Boolean(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.firstFlightBadge?.visible),
+        badgeText: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.firstFlightBadgeText?.text || null,
+        badgeBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.firstFlightBadge),
+        eligibleShipCount: (shipSelectScene.shipCards || []).filter(card => card?.firstFlightEligible).length
+      },
+      mastery: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.masteryBadge?.__debugMastery || null,
+      careerSignal: shipSelectScene.leftIntel ? {
+        count: shipSelectScene.leftIntel.count?.text || null,
+        progress: shipSelectScene.leftIntel.progress?.text || null,
+        stats: shipSelectScene.leftIntel.stats?.text || null,
+        hint: shipSelectScene.leftIntel.hint?.text || null,
+        panelBounds: getBoundsDebug(shipSelectScene.leftIntel.panel),
+        focusBounds: getBoundsDebug(shipSelectScene.leftIntel.alertGlow),
+        hintBounds: getBoundsDebug(shipSelectScene.leftIntel.hint)
+      } : null,
+      centerLayout: {
+        shipBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.sprite),
+        masteryBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.masteryBadge),
+        descriptionBounds: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.descText?.visible
+          ? getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.descText)
+          : null,
+        traitBounds: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.traitText?.visible
+          ? getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.traitText)
+          : null,
+        compactIntelBounds: shipSelectScene.compactIntel?.panel?.visible !== false
+          ? getBoundsDebug(shipSelectScene.compactIntel?.panel)
+          : null,
+        rosterBounds: getBoundsDebug(shipSelectScene.rosterStrip),
+        footerBounds: getBoundsDebug(shipSelectScene.footerInstructions)
+      },
+      headerLayout: shipSelectScene.hangarHeaderNodes ? {
+        panelBounds: shipSelectScene.hangarHeaderBounds || null,
+        titleBounds: getBoundsDebug(shipSelectScene.hangarHeaderNodes.title),
+        subtitleBounds: getBoundsDebug(shipSelectScene.hangarHeaderNodes.subtitle),
+        selectionBounds: getBoundsDebug(shipSelectScene.hangarHeaderNodes.selection),
+        recommendationBounds: getBoundsDebug(shipSelectScene.recommendationBanner)
+      } : null,
+      intelLayout: {
+        leftPanelBounds: getBoundsDebug(shipSelectScene.leftIntel?.panel),
+        leftProgressBounds: getBoundsDebug(shipSelectScene.leftIntel?.progress),
+        leftStatsBounds: getBoundsDebug(shipSelectScene.leftIntel?.stats),
+        leftHintBounds: getBoundsDebug(shipSelectScene.leftIntel?.hint),
+        rightPanelBounds: getBoundsDebug(shipSelectScene.rightIntel?.panel),
+        rightRoleBounds: getBoundsDebug(shipSelectScene.rightIntel?.role),
+        rightWeaponBounds: getBoundsDebug(shipSelectScene.rightIntel?.weapon),
+        rightTraitBounds: getBoundsDebug(shipSelectScene.rightIntel?.trait),
+        rightTuneBounds: getBoundsDebug(shipSelectScene.rightIntel?.statPanel),
+        rightUnlockBounds: getBoundsDebug(shipSelectScene.rightIntel?.unlock),
+        compactPanelBounds: getBoundsDebug(shipSelectScene.compactIntel?.panel),
+        compactRoleBounds: getBoundsDebug(shipSelectScene.compactIntel?.role),
+        compactWeaponBounds: getBoundsDebug(shipSelectScene.compactIntel?.weapon),
+        compactTraitBounds: getBoundsDebug(shipSelectScene.compactIntel?.trait)
+      },
+      recommended: shipSelectScene.recommendedShip ? {
+        shipName: shipSelectScene.recommendedShip.name || null,
+        spriteKey: shipSelectScene.recommendedShip.spriteKey || null,
+        selected: shipSelectScene.recommendedShip.spriteKey === selectedShip.spriteKey,
+        bannerVisible: Boolean(shipSelectScene.recommendationBanner?.visible !== false && shipSelectScene.recommendationBanner?.parent),
+        dismissed: Boolean(shipSelectScene.recommendationDismissed),
+        recommendationKey: shipSelectScene.recommendationKey || null,
+        label: shipSelectScene.recommendationText?.text || null,
+        reason: shipSelectScene.recommendationReasonText?.text || null,
+        jumpLabel: shipSelectScene.recommendationJumpText?.text || null
+      } : null,
       launchInProgress: Boolean(shipSelectScene.launchInProgress),
+      launchModeChoice: shipSelectScene.launchModeOverlay?.getDebugState?.(getBoundsDebug) || null,
+      controllerFocus: shipSelectScene.getControllerFocus ? shipSelectScene.getControllerFocus() : (shipSelectScene.mainMenuButtonFocused ? 'back' : 'ship'),
+      focusedActionButtonId: shipSelectScene.getFocusedActionButtonId ? shipSelectScene.getFocusedActionButtonId() : null,
       backButton: getBoundsDebug(shipSelectScene.backButton),
       mainMenuButtonFocused: Boolean(shipSelectScene.mainMenuButtonFocused),
       hangarMenu: shipSelectScene.getHangarMenuDebugState ? shipSelectScene.getHangarMenuDebugState(getBoundsDebug) : null,
       careerInfo: shipSelectScene.getCareerInfoDebugState ? shipSelectScene.getCareerInfoDebugState(getBoundsDebug) : null,
-      startButton: getBoundsDebug(shipSelectScene.startButton)
+      unlockPresentation: shipSelectScene.getHangarUnlockPresentationDebugState ? shipSelectScene.getHangarUnlockPresentationDebugState(getBoundsDebug) : null,
+      detailsButton: getBoundsDebug(shipSelectScene.detailsButton),
+      startButton: getBoundsDebug(shipSelectScene.startButton),
+      randomButton: getBoundsDebug(shipSelectScene.randomButton)
+    } : null,
+    shipDetails: shipDetailsScene ? {
+      spriteKey: shipDetailsScene.spriteKey || null,
+      shipName: shipDetailsScene.ship?.name || null,
+      tier: shipDetailsScene.ship?.tier || 'standard',
+      role: shipDetailsScene.ship?.role || null,
+      weakness: shipDetailsScene.ship?.weakness || null,
+      powerRating: Number.isFinite(shipDetailsScene.ship?.powerRating) ? shipDetailsScene.ship.powerRating : 1,
+      unlocked: isShipUnlocked(shipDetailsScene.spriteKey, getShipUnlockProgress()),
+      unlockHistoryText: getShipUnlockHistoryLine(shipDetailsScene.spriteKey, getShipUnlockProgress(), { translate: translateText }),
+      unlockRequirementText: getShipUnlockRequirementLine(shipDetailsScene.spriteKey, { translate: translateText }),
+      unlockProvenanceText: shipDetailsScene.unlockProvenanceText?.text || null,
+      unlockProvenanceBounds: getBoundsDebug(shipDetailsScene.unlockProvenanceText),
+      focusedButtonIndex: Number.isFinite(shipDetailsScene.focusedButtonIndex) ? shipDetailsScene.focusedButtonIndex : null,
+      focusedButtonId: shipDetailsScene.focusedButtonIndex === 0 ? 'back' : shipDetailsScene.focusedButtonIndex === 1 ? 'start' : null,
+      launchModeChoice: shipDetailsScene.launchModeOverlay?.getDebugState?.(getBoundsDebug) || null,
+      backButton: getBoundsDebug(shipDetailsScene.backButton),
+      startButton: getBoundsDebug(shipDetailsScene.startButton)
     } : null,
     gameOver: gameOverScene ? {
       score: gameOverScene.finalScore || 0,
@@ -605,10 +1064,30 @@ function buildGameTextState(game) {
       nameInput: gameOverScene.nameInput || '',
       controllerNameCursor: Number.isFinite(gameOverScene.controllerNameCursor) ? gameOverScene.controllerNameCursor : null,
       inputDevice: gameOverScene.lastInputDevice || null,
+      firstFlight: gameOverScene.getFirstFlightDebugState ? gameOverScene.getFirstFlightDebugState() : null,
       primaryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       retryCta: gameOverScene.getRetryCtaDebugState ? gameOverScene.getRetryCtaDebugState() : null,
       leaderboardCta: gameOverScene.getLeaderboardCtaDebugState ? gameOverScene.getLeaderboardCtaDebugState() : null,
+      hangarCta: gameOverScene.getHangarCtaDebugState ? gameOverScene.getHangarCtaDebugState() : null,
+      mainMenuCta: gameOverScene.getMainMenuCtaDebugState ? gameOverScene.getMainMenuCtaDebugState() : null,
+      counterAdviceCard: gameOverScene.getCounterAdviceCardDebugState ? gameOverScene.getCounterAdviceCardDebugState() : null,
+      runReportCta: gameOverScene.getRunReportCtaDebugState ? gameOverScene.getRunReportCtaDebugState() : null,
+      runReportOverlay: gameOverScene.getRunReportOverlayDebugState ? gameOverScene.getRunReportOverlayDebugState() : null,
+      runReport: gameOverScene.getRunReportDebugState ? gameOverScene.getRunReportDebugState() : null,
+      personalBestCarry: gameOverScene.getPersonalBestCarryDebugState ? gameOverScene.getPersonalBestCarryDebugState() : null,
       state: gameOverScene.state || null,
+      submittedHoldReady: typeof gameOverScene.isSubmittedHoldContinueReady === 'function'
+        ? gameOverScene.isSubmittedHoldContinueReady()
+        : null,
+      submittedHoldRemainingMs: typeof gameOverScene.getSubmittedHoldRemainingMs === 'function'
+        ? Math.round(gameOverScene.getSubmittedHoldRemainingMs())
+        : null,
+      resultHoldReady: typeof gameOverScene.isResultHoldContinueReady === 'function'
+        ? gameOverScene.isResultHoldContinueReady()
+        : null,
+      resultHoldRemainingMs: typeof gameOverScene.getResultHoldRemainingMs === 'function'
+        ? Math.round(gameOverScene.getResultHoldRemainingMs())
+        : null,
       runbackReason: gameOverScene.runbackReason || null,
       steamSubmissionMode: Boolean(gameOverScene.steamSubmissionMode),
       steamPlayerName: gameOverScene.steamPlayerName || null,
@@ -622,10 +1101,17 @@ function buildGameTextState(game) {
       localQualified: Boolean(gameOverScene.localQualified),
       globalQualified: Boolean(gameOverScene.globalQualified),
       globalStatus: gameOverScene.globalStatus || null,
+      localPlacement: gameOverScene.localPlacement || null,
+      localPlacementSource: gameOverScene.localPlacementSource || null,
       globalPlacement: gameOverScene.globalPlacement || null,
       globalPlacementTier: gameOverScene.globalPlacementTier || null,
+      sectorSteamStatus: gameOverScene.sectorSteamStatus || null,
+      sectorSteamRank: gameOverScene.sectorSteamRank || null,
+      sectorSteamError: gameOverScene.sectorSteamError || null,
+      lastSectorLeaderboardResult: game?.lastSectorLeaderboardResult || null,
       ceremonyTitle: gameOverScene.title?.text || null,
       ceremonyComment: gameOverScene.comment?.text || null,
+      deathCoach: gameOverScene.getDeathCoachAdvice ? gameOverScene.getDeathCoachAdvice() : null,
       backdropLoaded: Boolean(gameOverScene.backdropLoaded),
       canEnterName: Boolean(gameOverScene.canEnterName),
       globalFanfarePlayed: Boolean(gameOverScene.qualificationFanfarePlayed),
@@ -638,13 +1124,18 @@ function buildGameTextState(game) {
       tabs: highscoreScene.leaderboardTabs?.map(tab => tab.id) || [],
       status: highscoreScene.status || null,
       sourceLabel: highscoreScene.activeLeaderboardResult?.sourceLabel || null,
-      rows: highscoreScene.entries?.map(entry => ({
+      rows: highscoreScene.entriesNormalized?.map(entry => ({
         rank: entry.rank || null,
         name: entry.name || entry.playerName || null,
         score: entry.score || 0,
         level: entry.level || 0,
-        source: entry.source || null
+        source: entry.source || null,
+        cpuRival: entry.isCpuRival === true
       })) || [],
+      page: (Number(highscoreScene.leaderboardPage) || 0) + 1,
+      pageCount: Number(highscoreScene.leaderboardPageCount) || 1,
+      rowLayout: highscoreScene.rowLayoutDebug || [],
+      manifestRanges: highscoreScene.manifestRanges || [],
       runtime: game?.leaderboardAdapter?.getRuntimeSummary ? game.leaderboardAdapter.getRuntimeSummary() : null
     } : null,
     achievementsScreen: achievementsScene?.getDebugState ? achievementsScene.getDebugState() : null,
@@ -661,7 +1152,33 @@ function buildGameTextState(game) {
       stats: player.getStatSnapshot ? player.getStatSnapshot() : null,
       powerup: player.activePowerup?.type || null,
       powerups: player.getActivePowerupStates ? player.getActivePowerupStates() : [],
+      pointDefense: {
+        active: Boolean(player.pointDefenseActive),
+        radius: player.pointDefenseActive ? POINT_DEFENSE_RADIUS : 0,
+        remainingMs: player.pointDefenseActive
+          ? Math.max(0, Math.round((Number(player.pointDefenseExpiresAt) || 0) - (Number(playScene?.getGameplayClockMs?.()) || 0)))
+          : 0,
+        interceptTotal: Math.max(0, Number(player.pointDefenseInterceptCount) || 0),
+        lastIntercept: player.lastPointDefenseIntercept ? { ...player.lastPointDefenseIntercept } : null,
+        ring: player.pointDefenseRing?.__debugPointDefense || null
+      },
+      bombIntent: {
+        charges: Math.max(0, Number(player.bombShotsLeft) || 0),
+        armedAt: Math.max(0, Number(player.bombArmedAt) || 0),
+        triggerQueued: Boolean(player.bombTriggerQueued),
+        commit: player.lastBombCommitState ? {
+          ready: Boolean(player.lastBombCommitState.ready),
+          reason: player.lastBombCommitState.reason || null,
+          clusterCount: player.lastBombCommitState.clusterCount || 0
+        } : null,
+        lastTrigger: player.lastBombTriggerIntent ? { ...player.lastBombTriggerIntent } : null,
+        indicator: player.bombIndicator?.__debugBombIndicator || null
+      },
       statusEffects: player.getActiveStatusEffects ? player.getActiveStatusEffects() : [],
+      hitboxReticle: player.getHitboxReticleDebugState ? player.getHitboxReticleDebugState() : null,
+      ghostTimer: player.getGhostTimerDebugState ? player.getGhostTimerDebugState() : null,
+      dodgeExitPulse: player.lastDodgeExitPulse ? { ...player.lastDodgeExitPulse } : null,
+      cockpitMastery: playScene?.hud?.livesGroup?._debugShipMastery || null,
       tractorDebuff: player.getTractorDebuffState ? player.getTractorDebuffState() : null
     } : null,
     hijacker: hijacker?.active ? {
@@ -693,6 +1210,7 @@ function buildGameTextState(game) {
         playerY: playScene.lastTractorHijack.playerY || 0
       } : null
     } : null,
+    inputContinuity: playScene?.inputManager?.getContinuityDebugState?.() || null,
     eliteMiddleShips: enemies
       .filter(enemy => enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry))
       .map(enemy => ({
@@ -714,10 +1232,15 @@ function buildGameTextState(game) {
       eliteMiddleShips: enemies.filter(enemy =>
         enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry)
       ).length,
+      rareChaosVisitors: enemies.filter(enemy =>
+        enemy?.isRareChaosVisitor && (enemy.active !== false || enemy.waitingForEntry)
+      ).length,
       playerBullets: playerBullets.filter(bullet => bullet?.active !== false).length,
       enemyBullets: enemyBullets.filter(bullet => bullet?.active !== false).length,
       particles: playScene?.particleManager?.particles?.length || 0
     },
+    projectileLifecycle: playScene?.bulletManager?.getDebugState?.() || null,
+    enemyVisualAudit: createEnemyVisualAudit(),
     enemyWeapons: {
       activeProfiles: [...new Set(enemyBullets
         .filter(bullet => bullet?.active !== false && bullet.weaponProfileId)
@@ -731,6 +1254,8 @@ function buildGameTextState(game) {
           radius: bullet.radius || 0,
           profile: bullet.weaponProfileId || null,
           label: bullet.weaponLabel || null,
+          art: bullet.visualConfig?.projectileArt || null,
+          animation: bullet.visualConfig?.animationStyle || null,
           behavior: bullet.behavior || null,
           waveTactic: bullet.waveTactic || null,
           threatAction: bullet.threatActionId || null,
@@ -747,10 +1272,13 @@ function buildGameTextState(game) {
           hit: Boolean(hazard.hit),
           remainingMs: Math.max(0, Math.round((hazard.startedAt + hazard.durationMs) - Date.now()))
         })),
-      lastHit: playScene.lastBossHazardHit || null
+      lastHit: playScene.lastBossHazardHit || null,
+      lastCleanup: playScene.lastBossHazardCleanup || null,
+      layerHasGeometry: Boolean(playScene.bossHazardLayerHasGeometry)
     } : null,
     visibleEnemies: enemies
       .filter(enemy => enemy?.active !== false)
+      .sort((left, right) => Number(Boolean(right?.isAce)) - Number(Boolean(left?.isAce)))
       .slice(0, 8)
       .map(enemy => ({
         x: Math.round(enemy.x || 0),
@@ -765,8 +1293,21 @@ function buildGameTextState(game) {
           role: enemy.waveRole || null
         } : null,
         threatAction: enemy.getThreatDebugState ? enemy.getThreatDebugState() : null,
+        ace: enemy.getAceDebugState ? enemy.getAceDebugState() : null,
+        rivalWing: enemy.getRivalWingDebugState ? enemy.getRivalWingDebugState() : null,
         variant: enemy.visualVariant?.slug || null,
         eliteMiddleShip: enemy.getEliteDebugState ? enemy.getEliteDebugState() : null,
+        rareChaosVisitor: enemy.getRareChaosVisitorDebugState ? enemy.getRareChaosVisitorDebugState() : null,
+        reinforcement: enemy.isMayhemReinforcement ? {
+          groupIndex: Math.max(0, Math.floor(Number(enemy.reinforcementGroupIndex) || 0)),
+          groupCount: Math.max(1, Math.floor(Number(enemy.reinforcementGroupCount) || 1)),
+          superStorm: Boolean(enemy.isMayhemSuperStorm),
+          swarmEntry: Boolean(enemy.isReinforcementSwarmEntry),
+          routine: Boolean(enemy.isOverrunRoutineReinforcement),
+          entryRoute: enemy.reinforcementEntryRoute || null,
+          spawnCueDurationMs: Math.max(0, Math.round(Number(enemy.spawnCueDurationMs) || 0)),
+          spawnCue: enemy.spawnCueLayer?._debugSpawnCue ? { ...enemy.spawnCueLayer._debugSpawnCue } : null
+        } : null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
         maxHealth: Number.isFinite(enemy.maxHealth) ? Math.max(0, Math.round(enemy.maxHealth)) : null,
         phase: Number.isFinite(enemy.phase) ? enemy.phase : null,
@@ -777,6 +1318,8 @@ function buildGameTextState(game) {
         bossAttack: enemy.profile?.attack || null,
         bossSignature: enemy.getSignatureForPhase ? enemy.getSignatureForPhase(enemy.phase || 1) : (enemy.profile?.signature || null),
         bossAnimation: enemy.getAnimationDebugState ? enemy.getAnimationDebugState() : null,
+        bossSignatureWarning: enemy.getSignatureWarningDebugState ? enemy.getSignatureWarningDebugState() : null,
+        bossWarningLifecycle: enemy.getAttackWarningLifecycleDebugState ? enemy.getAttackWarningLifecycleDebugState() : null,
         safeLanes: Array.isArray(enemy.safeLanes) ? enemy.safeLanes : [],
         phaseShift: enemy.kind === 'boss' ? {
           anchorOffset: Math.round(enemy.phaseAnchorOffset || 0),
@@ -787,12 +1330,20 @@ function buildGameTextState(game) {
         telegraph: enemy.telegraph ? {
           type: enemy.telegraph.type || null,
           label: enemy.telegraph.label || null,
-          remainingMs: Math.max(0, Math.round((enemy.telegraph.start + enemy.telegraph.duration) - Date.now()))
+          lockedAngle: Number.isFinite(enemy.telegraph.lockedAngle)
+            ? Number(enemy.telegraph.lockedAngle.toFixed(4))
+            : null,
+          movementLocked: Boolean(enemy.telegraph.movementLocked),
+          remainingMs: enemy.getAttackWarningRemainingMs
+            ? enemy.getAttackWarningRemainingMs(enemy.telegraph)
+            : Math.max(0, Math.round((enemy.telegraph.start + enemy.telegraph.duration) - Date.now()))
         } : enemy.regularTelegraph ? {
           type: enemy.regularTelegraph.type || null,
           label: 'REGULAR ATTACK TELL',
           attack: enemy.regularTelegraph.attack || null,
-          remainingMs: Math.max(0, Math.round((enemy.regularTelegraph.start + enemy.regularTelegraph.duration) - Date.now()))
+          remainingMs: enemy.getAttackWarningRemainingMs
+            ? enemy.getAttackWarningRemainingMs(enemy.regularTelegraph)
+            : Math.max(0, Math.round((enemy.regularTelegraph.start + enemy.regularTelegraph.duration) - Date.now()))
         } : null,
         type: enemy.type || enemy.constructor?.name || 'enemy'
       }))
@@ -924,6 +1475,7 @@ function showFatalOverlay(step, error) {
 
 async function runBootStep(logger, label, fn, options = {}) {
   const { timeoutMs, logFailure = true } = options;
+  BootWatchdog.checkpoint(label, timeoutMs);
   const finish = logger.startStep(label);
   let timeoutId;
 
@@ -1166,7 +1718,7 @@ async function init() {
   }
 
   // Register service worker in production with version param
-  if ('serviceWorker' in navigator && import.meta.env.PROD && !isDesktopRuntime()) {
+  if ('serviceWorker' in navigator && import.meta.env.PROD && !isDesktopRuntime() && ['http:', 'https:'].includes(window.location.protocol)) {
     try {
       // TASK 4: Mobile Safety - Cache busting param
       const swUrl = `/sw.js?v=${BUILD_ID}`;
@@ -1202,7 +1754,13 @@ async function init() {
   BootWatchdog.checkpoint('BOOT_START');
   // ---------------------------
 
+  await initializeMaintainerDevtools();
+  await initializeBossEncounterTest();
   const bootLogger = createBootLogger(isBootDebugEnabled());
+  await runBootStep(bootLogger, 'init profile storage namespace', () => initializeProfileStorageNamespace(), {
+    timeoutMs: 900,
+    logFailure: false
+  });
   await runBootStep(bootLogger, 'restore Steam Cloud persistence', () => restoreSteamCloudPersistence(), {
     timeoutMs: 900,
     logFailure: false
@@ -1221,6 +1779,24 @@ async function init() {
   window.__perfStats = perfState;
 
   await runBootStep(bootLogger, 'dom ready', waitForDomReady, { timeoutMs: DOM_READY_TIMEOUT_MS });
+  const uiFontResult = await runBootStep(
+    bootLogger,
+    'load critical UI fonts',
+    async () => {
+      const state = await preflightCriticalUiFonts({ timeoutMs: UI_FONT_PREFLIGHT_TIMEOUT_MS });
+      return { bootDetail: `${state.mode}:${Math.round(state.elapsedMs)}ms` };
+    },
+    { timeoutMs: UI_FONT_BOOT_STEP_TIMEOUT_MS, logFailure: false }
+  );
+  if (!uiFontResult.ok) {
+    pinUiFontFallback(
+      uiFontResult.timedOut ? 'font_boot_step_timeout' : 'font_boot_step_failed',
+      { elapsedMs: UI_FONT_BOOT_STEP_TIMEOUT_MS }
+    );
+  }
+  window.__novaUiFontPolicy = Object.freeze({
+    getState: () => getUiFontPolicyDebugState()
+  });
   createPerfOverlay(perfState.enabled);
   registerBootErrorHandlers();
 
@@ -1275,11 +1851,9 @@ async function init() {
     return attachCanvas(canvas);
   });
 
-  await runBootStep(bootLogger, 'hide loading', () => {
-    if (loadingEl) {
-      loadingEl.style.display = 'none';
-    }
-  });
+  // Keep the loading screen through the initial showroom upload. Revealing
+  // the menu first caused a visible freeze when its GLB compiled moments later.
+  if (canvas) canvas.style.visibility = 'hidden';
 
   const audioResult = await runBootStep(bootLogger, 'init audio', () => {
     AudioManager.init();
@@ -1320,6 +1894,7 @@ async function init() {
   window.advanceTime = (ms = 1000 / 60) => {
     const steps = Math.max(1, Math.min(600, Math.round(Number(ms) / (1000 / 60))));
     for (let i = 0; i < steps; i++) {
+      publishTickerFrameTiming(game, 1, 1, 'advanceTime');
       game.update(1);
       updatePerfStats(app, game, 1, 1);
     }
@@ -1328,15 +1903,11 @@ async function init() {
   perfState.renderer = app.renderer?.constructor?.name || perfState.renderer;
   await runBootStep(bootLogger, 'start game', () => {
     game.start();
-    if (document.body) {
-      document.body.dataset.menuReady = '1';
-    }
     syncSteamCloudRendererState().catch(() => {});
-    if (isAutoStartEnabled() && !autoStartTriggered) {
-      autoStartTriggered = true;
-      setTimeout(() => {
-        game.startGame();
-      }, 100);
+    const displaySettings = getDisplaySettings();
+    const hasDisplayBridge = Boolean(window.__novaDisplay?.applySettings);
+    if (hasDisplayBridge || displaySettings.mode !== 'fullscreen') {
+      applyDisplaySettings(displaySettings).catch(() => {});
     }
   });
 
@@ -1344,13 +1915,45 @@ async function init() {
     app.ticker.add((delta) => {
       const rawDelta = delta.deltaTime;
       const clampedDelta = Math.min(rawDelta, MAX_DELTA);
-      game.update(clampedDelta);
+      publishTickerFrameTiming(game, rawDelta, clampedDelta);
+      const elapsedFrameMs = Number(delta.elapsedMS);
+      game.update(
+        clampedDelta,
+        Number.isFinite(elapsedFrameMs) ? Math.max(0, elapsedFrameMs) : rawDelta * (1000 / 60)
+      );
       updatePerfStats(app, game, rawDelta, clampedDelta);
     });
   });
 
+  await runBootStep(bootLogger, 'prepare initial showroom', () => game.scenes.menu.presentationReady, {
+    timeoutMs: 30000,
+    logFailure: false
+  });
+  await runBootStep(bootLogger, 'hide loading', async () => {
+    app.renderer.render({container:app.stage});
+    // Let the initial canvas transfer and GPU uploads finish while the existing
+    // loading screen is still covering the showroom. This is startup only.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    app.renderer.render({container:app.stage});
+    app.renderer.gl?.finish();
+    if (canvas) canvas.style.visibility = '';
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (document.body) document.body.dataset.menuReady = '1';
+  });
+
   bootState.completed = true;
   BootWatchdog.checkpoint('SCENE_READY');
+  if (isAutoStartEnabled() && !autoStartTriggered) {
+    autoStartTriggered = true;
+    setTimeout(() => {
+      // Trusted test launches retain ship selection, after startup owns no
+      // pending showroom work that could compete with the hangar transition.
+      const launch = getBossEncounterTest()
+        ? game.showShipSelect()
+        : game.startGame(undefined, { countShipUsage: false });
+      Promise.resolve(launch).catch(error => console.error('[Boot] Launch failed:', error));
+    }, 100);
+  }
 }
 
 init().catch((error) => {

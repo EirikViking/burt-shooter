@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const STEAM_LEADERBOARD_NAME = process.env.NOVA_SWARM_STEAM_LEADERBOARD_NAME || 'nova_swarm_global_score';
+const STEAM_LEADERBOARD_NAME = process.env.NOVA_SWARM_STEAM_LEADERBOARD_NAME || 'nova_swarm_global_score_v2';
 const TEST_SCORE = 1;
 const TEST_DETAILS = [1, 0, 1, 0, 0, 0];
 const DETAILS_MODES = new Set(['basic', 'none', 'empty']);

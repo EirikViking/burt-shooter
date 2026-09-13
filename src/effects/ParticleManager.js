@@ -1,5 +1,12 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
+import { HullBreakup } from './HullBreakup.js';
+import { AstraDetonation } from './AstraDetonation.js';
+import {
+  isMayhemPerformanceDiagnosticsActive,
+  markMayhemPerformanceEvent,
+  recordMayhemPerformanceDuration
+} from '../debug/MayhemPerformanceDiagnostics.js';
 
 class Particle {
   constructor() {
@@ -22,7 +29,7 @@ class Particle {
     this.bitmap.visible = false;
   }
 
-  reset(x, y, vx, vy, color, size, lifetime, texture = null) {
+  reset(x, y, vx, vy, color, size, lifetime, texture = null, suppressed = false) {
     this.x = x;
     this.y = y;
     this.vx = vx;
@@ -32,6 +39,7 @@ class Particle {
     this.lifetime = lifetime;
     this.age = 0;
     this.active = true;
+    this.astraSuppressed = suppressed;
     this.rotationSpeed = (Math.random() - 0.5) * 0.2;
 
     if (texture) {
@@ -49,14 +57,42 @@ class Particle {
       this.sprite.visible = false;
     } else {
       this.isDebris = false;
+      const speed = Math.max(0.1, Math.hypot(vx, vy));
+      const shardLength = Math.max(3.2, Math.min(18, size * (1.5 + Math.min(1.65, speed * 0.17))));
+      const shardWidth = Math.max(0.9, Math.min(6.5, size * 0.7));
+      const curl = (Math.random() - 0.5) * shardWidth * 1.2;
+      // Keep both random draws and the allocator unchanged, but never build
+      // invisible geometry. Boss cascades previously tessellated hundreds of
+      // suppressed shards at the exact moment of the death.
+      if (!suppressed) {
       this.sprite.clear();
-      this.sprite.circle(0, 0, size);
-      this.sprite.fill({ color: color });
+      this.sprite.moveTo(-shardLength * 0.5, curl * 0.18);
+      this.sprite.bezierCurveTo(
+        -shardLength * 0.1, -shardWidth * 0.72,
+        shardLength * 0.46, -shardWidth * 1.04 + curl,
+        shardLength, -shardWidth * 0.08
+      );
+      this.sprite.bezierCurveTo(
+        shardLength * 0.42, shardWidth * 0.38 + curl * 0.35,
+        -shardLength * 0.06, shardWidth * 0.78,
+        -shardLength * 0.5, curl * 0.18
+      );
+      this.sprite.fill({ color, alpha: 0.92 });
+      this.sprite.moveTo(-shardLength * 0.08, curl * 0.1);
+      this.sprite.bezierCurveTo(
+        shardLength * 0.25, -shardWidth * 0.2,
+        shardLength * 0.56, curl * 0.18,
+        shardLength * 0.82, -shardWidth * 0.06
+      );
+      this.sprite.stroke({ color: 0xffffff, width: Math.max(0.55, shardWidth * 0.22), alpha: 0.72 });
+      }
       this.sprite.x = x;
       this.sprite.y = y;
+      this.sprite.rotation = Math.atan2(vy, vx);
       this.sprite.alpha = 1;
       this.sprite.scale.set(1);
-      this.sprite.visible = true;
+      this.sprite.blendMode = 'add';
+      this.sprite.visible = !suppressed;
       this.bitmap.visible = false;
     }
   }
@@ -84,8 +120,9 @@ class Particle {
       this.sprite.x = this.x;
       this.sprite.y = this.y;
       const lifePercent = this.age / this.lifetime;
-      this.sprite.alpha = 1 - lifePercent;
-      this.sprite.scale.set(1 - lifePercent * 0.5);
+      this.sprite.rotation = Math.atan2(this.vy, this.vx) + this.rotationSpeed * this.age * 0.08;
+      this.sprite.alpha = Math.pow(1 - lifePercent, 1.35);
+      this.sprite.scale.set(1 - lifePercent * 0.42, 1 - lifePercent * 0.68);
     }
   }
 }
@@ -93,74 +130,377 @@ class Particle {
 export class ParticleManager {
   constructor(container, onCap) {
     this.container = container;
+    this.hullBreakup = new HullBreakup(container);
+    this.detonations = new AstraDetonation(container);
     this.particles = [];
     this.pool = [];
-    this.maxParticles = 400;
+    this.maxParticles = 640;
+    this.softParticleBudget = 520;
+    this.pressureSpawnCounter = 0;
+    this.lastPressureTrimCount = 0;
+    this.energyBlooms = [];
+    this.energyBloomPool = [];
+    this.maxEnergyBlooms = 18;
+    this.lastEnergyBloomVariant = -1;
+    this.energyBloomVariantCounts = [0, 0, 0, 0];
     this.onCap = onCap;
+    GameAssets.ensurePlasmaBloomTextures?.().catch(() => {});
   }
 
-  spawnParticle(x, y, vx, vy, color, size, lifetime, texture = null) {
+  attachParticleDisplay(particle) {
+    if (!particle) return;
+    if (particle.sprite?.parent !== this.container) this.container.addChild(particle.sprite);
+    if (particle.bitmap?.parent !== this.container) this.container.addChild(particle.bitmap);
+  }
+
+  prewarm(count = 0) {
+    const safeCount = Math.max(0, Math.min(this.maxParticles, Math.floor(Number(count) || 0)));
+    const existing = this.pool.length + this.particles.length;
+    for (let i = existing; i < safeCount; i += 1) {
+      const particle = new Particle();
+      this.attachParticleDisplay(particle);
+      this.pool.push(particle);
+    }
+  }
+
+  spawnParticle(x, y, vx, vy, color, size, lifetime, texture = null, suppressed = false) {
     if (this.particles.length >= this.maxParticles) {
       if (this.onCap) this.onCap('particles');
       return null;
     }
+    if (this.shouldSkipPressureSpawn(texture)) {
+      return null;
+    }
 
     const particle = this.pool.pop() || new Particle();
-    particle.reset(x, y, vx, vy, color, size, lifetime, texture);
+    particle.reset(x, y, vx, vy, color, size, lifetime, texture, suppressed);
     this.particles.push(particle);
 
-    // Ensure both are added (safe to add if already added, PIXI handles parent checks)
-    this.container.addChild(particle.sprite);
-    this.container.addChild(particle.bitmap);
+    this.attachParticleDisplay(particle);
 
     return particle;
   }
 
-  createExplosion(x, y, color, intensity = 1) {
-    const particleCount = Math.floor(20 * intensity);
-    const speedMult = intensity;
-    const sizeMult = intensity;
+  shouldSkipPressureSpawn(texture = null) {
+    const activeCount = this.particles.length;
+    const softBudget = Math.max(0, Math.floor(Number(this.softParticleBudget) || 0));
+    if (softBudget <= 0 || activeCount < softBudget) return false;
+
+    const hardBudget = Math.max(softBudget + 1, Math.floor(Number(this.maxParticles) || softBudget + 1));
+    const pressure = Math.min(1, Math.max(0, (activeCount - softBudget) / (hardBudget - softBudget)));
+    const stride = pressure >= 0.75 ? 3 : 2;
+    this.pressureSpawnCounter = (this.pressureSpawnCounter + 1) % stride;
+
+    if (texture && activeCount >= softBudget - 8) {
+      return this.pressureSpawnCounter !== 0;
+    }
+    return pressure >= 0.75
+      ? this.pressureSpawnCounter !== 0
+      : this.pressureSpawnCounter === 0;
+  }
+
+  retireParticle(particle) {
+    if (!particle) return;
+    particle.active = false;
+    if (particle.sprite) particle.sprite.visible = false;
+    if (particle.bitmap) particle.bitmap.visible = false;
+  }
+
+  createEnergyBloom(x, y, intensity = 1, options = {}) {
+    const textures = GameAssets.getPlasmaBloomTextures?.() || [];
+    const variant = this.resolveEnergyBloomVariant(options.color, options.variant, textures.length);
+    const texture = GameAssets.getPlasmaBloomTexture?.(variant);
+    if (!GameAssets.isValidTexture(texture)) {
+      GameAssets.ensurePlasmaBloomTextures?.().catch(() => {});
+      return false;
+    }
+    if (this.energyBlooms.length >= this.maxEnergyBlooms) {
+      const oldest = this.energyBlooms.shift();
+      if (oldest?.sprite) {
+        oldest.sprite.visible = false;
+        this.energyBloomPool.push(oldest.sprite);
+      }
+    }
+    const sprite = this.energyBloomPool.pop() || new PIXI.Sprite(texture);
+    sprite.texture = texture;
+    sprite.anchor.set(0.5);
+    sprite.x = x;
+    sprite.y = y;
+    sprite.rotation = Number(options.rotation) || Math.random() * Math.PI * 2;
+    sprite.alpha = 0;
+    sprite.tint = 0xffffff;
+    sprite.blendMode = 'add';
+    sprite.visible = !this.suppressBloomVisuals;
+    if (sprite.parent !== this.container) this.container.addChild(sprite);
+
+    const safeIntensity = Math.max(0.2, Math.min(3.2, Number(intensity) || 1));
+    const targetPixels = Math.max(68, Number(options.size) || (92 + Math.sqrt(safeIntensity) * 68));
+    const baseScale = targetPixels / Math.max(1, texture.width, texture.height);
+    const aspect = Math.max(0.72, Math.min(1.34, Number(options.aspect) || (0.86 + Math.random() * 0.28)));
+    sprite.scale.set(baseScale * 0.22 * aspect, baseScale * 0.22 / aspect);
+    this.energyBlooms.push({
+      sprite,
+      astraSuppressed: Boolean(this.suppressBloomVisuals),
+      variant,
+      age: 0,
+      lifetime: Math.max(22, Number(options.lifetime) || (34 + Math.sqrt(safeIntensity) * 18)),
+      baseScale,
+      aspect,
+      alpha: Math.max(0.18, Math.min(0.9, Number(options.alpha) || (0.38 + safeIntensity * 0.12))),
+      rotationSpeed: Number(options.rotationSpeed) || (Math.random() - 0.5) * 0.018
+    });
+    this.lastEnergyBloomVariant = variant;
+    this.energyBloomVariantCounts[variant] = (this.energyBloomVariantCounts[variant] || 0) + 1;
+    return true;
+  }
+
+  resolveEnergyBloomVariant(color = null, requestedVariant = null, textureCount = 0) {
+    const count = Math.max(1, Number(textureCount) || GameAssets.getPlasmaBloomTextures?.().length || 1);
+    const namedVariants = { nova: 0, ion: 1, solar: 2, void: 3 };
+    if (typeof requestedVariant === 'string' && requestedVariant in namedVariants) {
+      return namedVariants[requestedVariant] % count;
+    }
+    if (Number.isFinite(requestedVariant)) return Math.abs(Math.floor(requestedVariant)) % count;
+
+    const numericColor = Number(color);
+    let candidates = Array.from({ length: count }, (_, index) => index);
+    if (Number.isFinite(numericColor) && count > 1) {
+      const red = (numericColor >> 16) & 0xff;
+      const green = (numericColor >> 8) & 0xff;
+      const blue = numericColor & 0xff;
+      if (red > blue * 1.12 && red > green * 1.05) candidates = [2, 0].filter((index) => index < count);
+      else if (blue > red * 1.18 && red > green * 0.8) candidates = [3, 1, 0].filter((index) => index < count);
+      else if (blue + green > red * 1.7) candidates = [1, 0, 3].filter((index) => index < count);
+    }
+    let choice = candidates[Math.floor(Math.random() * candidates.length)] ?? 0;
+    if (count > 1 && choice === this.lastEnergyBloomVariant) {
+      const alternatives = candidates.filter((index) => index !== choice);
+      choice = alternatives.length
+        ? alternatives[Math.floor(Math.random() * alternatives.length)]
+        : (choice + 1) % count;
+    }
+    return choice;
+  }
+
+  createExplosion(x, y, color, intensity = 1, presentation = 'combustion') {
+    const startedAt = isMayhemPerformanceDiagnosticsActive()
+      ? (globalThis.performance?.now?.() || 0)
+      : 0;
+    const visualIntensity = Math.max(0.2, Number(intensity) || 1);
+    const rendered = presentation === 'celebration' || (presentation === 'combustion' && this.detonations.emit(x, y, visualIntensity));
+    const previousBloomSuppression = this.suppressBloomVisuals;
+    this.suppressBloomVisuals = rendered;
+    const bloomIntensity = Math.min(2.2, visualIntensity);
+    this.createEnergyBloom(x, y, bloomIntensity, {
+      size: 78 + Math.sqrt(bloomIntensity) * 58,
+      alpha: Math.min(0.62, 0.34 + Math.sqrt(bloomIntensity) * 0.16),
+      color
+    });
+    this.suppressBloomVisuals = previousBloomSuppression;
+    const particleCount = Math.min(64, Math.max(5, Math.floor(18 * visualIntensity)));
+    const speedMult = Math.min(2.35, 0.72 + Math.sqrt(visualIntensity) * 0.52);
+    const sizeMult = Math.min(1.7, 0.72 + Math.sqrt(visualIntensity) * 0.38);
 
     for (let i = 0; i < particleCount; i++) {
-      const angle = (Math.PI * 2 * i) / particleCount + (Math.random() * 0.3 - 0.15);
-      const speed = (2 + Math.random() * 3) * speedMult;
+      const angle = (Math.PI * 2 * i) / particleCount + (Math.random() * 0.62 - 0.31);
+      const speed = (1.6 + Math.random() * 4.2) * speedMult;
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
       const size = (2 + Math.random() * 3) * sizeMult;
-      const lifetime = 30 + Math.random() * 30;
+      const lifetime = 22 + Math.random() * 34;
 
-      if (!this.spawnParticle(x, y, vx, vy, color, size, lifetime)) {
+      const particle = this.spawnParticle(x, y, vx, vy, color, size, lifetime, null, rendered && i >= 4);
+      if (!particle) {
         break;
       }
+      // Preserve the old allocator/RNG sequence while replacing its visual spray.
+      if (rendered && i >= 4) { particle.astraSuppressed = true;particle.sprite.visible = false; }
     }
+    markMayhemPerformanceEvent('gameplay.particle_burst', {
+      type: 'explosion',
+      requestedParticles: particleCount,
+      activeParticles: this.particles.length,
+      intensity: visualIntensity
+    });
+    if (startedAt > 0) {
+      recordMayhemPerformanceDuration('vfx.particle_burst_creation', performance.now() - startedAt);
+    }
+  }
 
-    // Debris
-    const debrisCount = Math.floor((2 + Math.floor(Math.random() * 3)) * intensity);
-    for (let i = 0; i < debrisCount; i++) {
-      const tex = GameAssets.getRandomPart();
-      if (tex) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = (1 + Math.random() * 2) * speedMult;
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
-        this.spawnParticle(x, y, vx, vy, 0xffffff, 5 * sizeMult, 60, tex);
+  async prewarmEnergyBlooms(count = this.maxEnergyBlooms) {
+    const target = Math.max(0, Math.min(this.maxEnergyBlooms, Math.floor(Number(count) || 0)));
+    await GameAssets.ensurePlasmaBloomTextures?.();
+    const texture = GameAssets.getPlasmaBloomTexture?.(0);
+    if (!GameAssets.isValidTexture(texture)) return 0;
+    const existing = this.energyBloomPool.length + this.energyBlooms.length;
+    for (let index = existing; index < target; index += 1) {
+      const sprite = new PIXI.Sprite(texture);
+      sprite.anchor.set(0.5);
+      sprite.visible = false;
+      sprite.blendMode = 'add';
+      this.container.addChild(sprite);
+      this.energyBloomPool.push(sprite);
+    }
+    return this.energyBloomPool.length;
+  }
+
+  createRadialBurst(x, y, color, options = {}) {
+    const count = Math.max(1, Math.floor(options.count ?? 24));
+    const intensity = Math.max(0.1, Number(options.intensity) || 1);
+    const minSpeed = Math.max(0, Number(options.minSpeed) || 1.4);
+    const maxSpeed = Math.max(minSpeed, Number(options.maxSpeed) || 4.2);
+    const baseSize = Math.max(0.5, Number(options.size) || 2.4);
+    const lifetime = Math.max(4, Number(options.lifetime) || 38);
+    const angleOffset = Number(options.angleOffset) || Math.random() * Math.PI * 2;
+    const arc = Math.max(0.05, Number(options.arc) || Math.PI * 2);
+    const alternateColor = Number.isFinite(options.alternateColor) ? options.alternateColor : null;
+    const upwardBias = Number(options.upwardBias) || 0;
+
+    for (let i = 0; i < count; i += 1) {
+      const t = count === 1 ? 0.5 : i / count;
+      const jitter = (Math.random() - 0.5) * (options.jitter ?? 0.22);
+      const angle = angleOffset + t * arc + jitter;
+      const speed = (minSpeed + Math.random() * (maxSpeed - minSpeed)) * intensity;
+      const size = baseSize * (0.75 + Math.random() * 0.7) * intensity;
+      const life = lifetime * (0.75 + Math.random() * 0.65);
+      const particleColor = alternateColor !== null && i % 3 === 1 ? alternateColor : color;
+      const particle = this.spawnParticle(
+        x,
+        y,
+        Math.cos(angle) * speed,
+        Math.sin(angle) * speed - upwardBias,
+        particleColor,
+        size,
+        life,
+        null,
+        this.suppressExplosionParticles && i >= 4
+      );
+      if (!particle) {
+        break;
       }
+      if (this.suppressExplosionParticles && i >= 4) { particle.astraSuppressed = true;particle.sprite.visible = false; }
+    }
+  }
+
+  createBossEntranceBurst(x, y, color, accent = 0xffffff) {
+    this.createRadialBurst(x, y, color, {
+      count: 38,
+      intensity: 1.05,
+      minSpeed: 1.8,
+      maxSpeed: 5.4,
+      size: 2.9,
+      lifetime: 48,
+      alternateColor: accent
+    });
+    this.createRadialBurst(x, y + 18, accent, {
+      count: 22,
+      intensity: 0.82,
+      minSpeed: 0.8,
+      maxSpeed: 2.6,
+      size: 2,
+      lifetime: 54,
+      arc: Math.PI,
+      angleOffset: Math.PI,
+      upwardBias: 0.8,
+      alternateColor: 0xffffff
+    });
+  }
+
+  createBossChargeSparks(x, y, color, intensity = 1) {
+    const count = Math.max(5, Math.floor(9 * Math.max(0.5, intensity)));
+    for (let i = 0; i < count; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 20 + Math.random() * 42 * Math.max(0.65, intensity);
+      const px = x + Math.cos(angle) * distance;
+      const py = y + Math.sin(angle) * distance * 0.7;
+      const speed = 0.6 + Math.random() * 1.6;
+      this.spawnParticle(
+        px,
+        py,
+        -Math.cos(angle) * speed,
+        -Math.sin(angle) * speed * 0.6,
+        i % 3 === 0 ? 0xffffff : color,
+        1.4 + Math.random() * 2.2,
+        16 + Math.random() * 18
+      );
     }
   }
 
   // Massive explosion for boss deaths
   createBossExplosion(x, y, color) {
-    this.createExplosion(x, y, color, 3.0);
-    // Add extra ring of slower particles
-    for (let i = 0; i < 30; i++) {
-      const angle = (Math.PI * 2 * i) / 30;
-      const speed = 1 + Math.random();
-      const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed;
-      const size = 4 + Math.random() * 4;
-      const lifetime = 60 + Math.random() * 40;
-      this.spawnParticle(x, y, vx, vy, color, size, lifetime);
-    }
+    const rendered = this.detonations.emit(x, y, 1, true);
+    const previousBloomSuppression = this.suppressBloomVisuals;
+    const previousParticleSuppression = this.suppressExplosionParticles;
+    this.suppressBloomVisuals = rendered;
+    this.suppressExplosionParticles = rendered;
+    const primaryVariant = this.resolveEnergyBloomVariant(color, null, GameAssets.getPlasmaBloomTextures?.().length);
+    const secondaryVariant = (primaryVariant + 1 + Math.floor(Math.random() * 2)) % Math.max(1, GameAssets.getPlasmaBloomTextures?.().length || 1);
+    this.createEnergyBloom(x, y, 2.8, {
+      size: 310,
+      lifetime: 76,
+      alpha: 0.82,
+      aspect: 1.12,
+      color,
+      variant: primaryVariant
+    });
+    this.createEnergyBloom(x - 16, y + 8, 1.9, {
+      size: 220,
+      lifetime: 64,
+      alpha: 0.52,
+      aspect: 0.78,
+      color,
+      variant: secondaryVariant,
+      rotation: Math.random() * Math.PI * 2
+    });
+    this.createRadialBurst(x, y, color, {
+      count: 52,
+      intensity: 1.45,
+      minSpeed: 2.2,
+      maxSpeed: 7.8,
+      size: 2.8,
+      lifetime: 54,
+      jitter: 0.34,
+      alternateColor: 0xffffff
+    });
+    this.createRadialBurst(x, y, color, {
+      count: 28,
+      intensity: 0.88,
+      minSpeed: 0.65,
+      maxSpeed: 2.6,
+      size: 3.7,
+      lifetime: 82,
+      angleOffset: Math.PI / 28,
+      jitter: 0.42,
+      alternateColor: 0xfff4b0
+    });
+    this.suppressBloomVisuals = previousBloomSuppression;
+    this.suppressExplosionParticles = previousParticleSuppression;
+  }
+
+  createLayeredBossExplosion(x, y, color, accent = 0xffffff, intensity = 1) {
+    const previousParticleSuppression = this.suppressExplosionParticles;
+    this.suppressExplosionParticles = this.detonations.emit(x, y, intensity, true);
+    const scale = Math.max(0.75, Number(intensity) || 1);
+    this.createBossExplosion(x, y, color);
+    this.createRadialBurst(x, y, accent, {
+      count: Math.floor(34 * scale),
+      intensity: 1.25 * scale,
+      minSpeed: 2.4,
+      maxSpeed: 7.2,
+      size: 2.2,
+      lifetime: 52,
+      alternateColor: 0xffffff
+    });
+    this.createRadialBurst(x, y, color, {
+      count: Math.floor(28 * scale),
+      intensity: 0.92 * scale,
+      minSpeed: 0.7,
+      maxSpeed: 2.4,
+      size: 4.2,
+      lifetime: 76,
+      alternateColor: accent
+    });
+    this.suppressExplosionParticles = previousParticleSuppression;
   }
 
   // Muzzle flash burst
@@ -260,15 +600,63 @@ export class ParticleManager {
   }
 
   update(delta) {
-    this.particles = this.particles.filter(particle => {
+    this.hullBreakup.update(delta);
+    this.detonations.update(delta);
+    for (let index = this.energyBlooms.length - 1; index >= 0; index -= 1) {
+      const bloom = this.energyBlooms[index];
+      bloom.age += delta;
+      const t = Math.min(1, bloom.age / bloom.lifetime);
+      const intro = Math.min(1, t / 0.11);
+      const expansion = 0.24 + intro * 0.74 + Math.pow(t, 0.72) * 0.9;
+      bloom.sprite.scale.set(
+        bloom.baseScale * expansion * bloom.aspect,
+        bloom.baseScale * expansion / bloom.aspect
+      );
+      bloom.sprite.alpha = bloom.alpha * intro * Math.pow(1 - t, 1.08);
+      bloom.sprite.rotation += bloom.rotationSpeed * delta;
+      if (t >= 1) {
+        bloom.sprite.visible = false;
+        this.energyBloomPool.push(bloom.sprite);
+        this.energyBlooms.splice(index, 1);
+      }
+    }
+
+    const softBudget = Math.max(0, Math.floor(Number(this.softParticleBudget) || 0));
+    const overflow = softBudget > 0 ? Math.max(0, this.particles.length - softBudget) : 0;
+    const trimTarget = overflow > 0 ? Math.min(overflow, Math.ceil(this.particles.length * 0.18)) : 0;
+    let trimmed = 0;
+    if (trimTarget > 0) {
+      for (const particle of this.particles) {
+        if (trimmed >= trimTarget) break;
+        const lifetime = Math.max(1, Number(particle?.lifetime) || 1);
+        const lifePercent = Math.max(0, Math.min(1, (Number(particle?.age) || 0) / lifetime));
+        if (lifePercent < 0.42) continue;
+        this.retireParticle(particle);
+        trimmed += 1;
+      }
+      for (const particle of this.particles) {
+        if (trimmed >= trimTarget) break;
+        if (!particle?.active || particle?.isDebris) continue;
+        this.retireParticle(particle);
+        trimmed += 1;
+      }
+    }
+    this.lastPressureTrimCount = trimmed;
+
+    let writeIndex = 0;
+    for (const particle of this.particles) {
+      if (!particle.active) {
+        this.pool.push(particle);
+        continue;
+      }
       particle.update(delta);
       if (!particle.active) {
-        this.container.removeChild(particle.sprite);
-        this.container.removeChild(particle.bitmap);
         this.pool.push(particle);
-        return false;
+        continue;
       }
-      return true;
-    });
+      this.particles[writeIndex] = particle;
+      writeIndex += 1;
+    }
+    this.particles.length = writeIndex;
   }
 }

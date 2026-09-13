@@ -1,7 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { AssetManifest } from '../assets/assetManifest.js';
-const NUM_RANKS = 20;
-const MAX_RANK_INDEX = 19;
+import { MAX_RANK_INDEX, NUM_RANKS } from '../shared/RankPolicy.js';
 const BUNDLE_NAME = 'rank_badges';
 
 class RankAssetsManager {
@@ -165,7 +164,7 @@ class RankAssetsManager {
 
     async preloadHighscoreBadges() {
         await this.preloadAll();
-        const aliases = Array.from({ length: 20 }, (_, i) => this.rankAlias(i));
+        const aliases = Array.from({ length: NUM_RANKS }, (_, i) => this.rankAlias(i));
         return aliases.map(alias => this.cache.get(alias)).filter(Boolean);
     }
 }

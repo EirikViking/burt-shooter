@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Nova Swarm sector 037 signal emblem">
+<defs>
+<radialGradient id="g" cx="50%" cy="48%" r="48%"><stop offset="0%" stop-color="hsl(299 100% 72%)"/><stop offset="46%" stop-color="hsl(95 100% 45%)"/><stop offset="100%" stop-color="#020712"/></radialGradient>
+<filter id="glow" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="256" height="256" fill="#020712"/>
+<circle cx="128" cy="128" r="106" fill="url(#g)" opacity="0.32"/>
+<circle cx="188.2" cy="109.6" r="0.98" fill="hsl(299 100% 75%)" opacity="0.35"/>
+<circle cx="85.0" cy="202.5" r="1.26" fill="hsl(320 100% 75%)" opacity="0.45"/>
+<circle cx="103.5" cy="21.8" r="1.54" fill="hsl(341 100% 75%)" opacity="0.55"/>
+<circle cx="172.8" cy="158.2" r="0.70" fill="hsl(2 100% 75%)" opacity="0.65"/>
+<circle cx="51.9" cy="140.0" r="0.98" fill="hsl(23 100% 75%)" opacity="0.75"/>
+<circle cx="189.6" cy="49.2" r="1.26" fill="hsl(44 100% 75%)" opacity="0.35"/>
+<circle cx="131.9" cy="172.8" r="1.54" fill="hsl(65 100% 75%)" opacity="0.45"/>
+<circle cx="77.5" cy="82.5" r="0.70" fill="hsl(86 100% 75%)" opacity="0.55"/>
+<circle cx="219.0" cy="126.4" r="0.98" fill="hsl(107 100% 75%)" opacity="0.65"/>
+<circle cx="46.0" cy="207.2" r="1.26" fill="hsl(128 100% 75%)" opacity="0.75"/>
+<circle cx="131.1" cy="69.1" r="1.54" fill="hsl(149 100% 75%)" opacity="0.35"/>
+<circle cx="180.7" cy="190.8" r="0.70" fill="hsl(170 100% 75%)" opacity="0.45"/>
+<circle cx="23.8" cy="115.2" r="0.98" fill="hsl(191 100% 75%)" opacity="0.55"/>
+<circle cx="168.5" cy="98.6" r="1.26" fill="hsl(212 100% 75%)" opacity="0.65"/>
+<circle cx="114.1" cy="199.7" r="1.54" fill="hsl(233 100% 75%)" opacity="0.75"/>
+<circle cx="77.1" cy="46.6" r="0.70" fill="hsl(254 100% 75%)" opacity="0.35"/>
+<circle cx="167.6" cy="138.6" r="0.98" fill="hsl(275 100% 75%)" opacity="0.45"/>
+<circle cx="71.5" cy="158.0" r="1.26" fill="hsl(296 100% 75%)" opacity="0.55"/>
+<circle cx="156.3" cy="45.7" r="1.54" fill="hsl(317 100% 75%)" opacity="0.65"/>
+<circle cx="172.7" cy="228.5" r="0.70" fill="hsl(338 100% 75%)" opacity="0.75"/>
+<circle cx="77.4" cy="106.5" r="0.98" fill="hsl(359 100% 75%)" opacity="0.35"/>
+<circle cx="201.3" cy="101.3" r="1.26" fill="hsl(20 100% 75%)" opacity="0.45"/>
+<g filter="url(#glow)">
+<circle cx="128" cy="128" r="34" fill="none" stroke="hsl(95 96% 58%)" stroke-width="1.2" stroke-dasharray="8 5" opacity="0.45"/>
+<circle cx="128" cy="128" r="54" fill="none" stroke="hsl(115 96% 58%)" stroke-width="1.2" stroke-dasharray="9 6" opacity="0.56"/>
+<circle cx="128" cy="128" r="74" fill="none" stroke="hsl(135 96% 58%)" stroke-width="2.4" stroke-dasharray="10 7" opacity="0.67"/>
+<path d="M163.0 128.0 L212.0 128.0" stroke="hsl(299 100% 62%)" stroke-width="2.6" stroke-linecap="round"/>
+<path d="M158.6 153.7 L196.9 185.9" stroke="hsl(312 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M135.8 172.3 L141.5 204.8" stroke="hsl(325 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M113.0 154.0 L86.0 200.7" stroke="hsl(338 100% 62%)" stroke-width="2.6" stroke-linecap="round"/>
+<path d="M95.1 140.0 L43.4 158.8" stroke="hsl(351 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M90.4 114.3 L54.7 101.3" stroke="hsl(4 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M105.5 89.0 L86.0 55.3" stroke="hsl(17 100% 62%)" stroke-width="2.6" stroke-linecap="round"/>
+<path d="M133.2 98.5 L143.6 39.4" stroke="hsl(30 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M154.8 105.5 L187.8 77.9" stroke="hsl(43 100% 62%)" stroke-width="1.4" stroke-linecap="round"/>
+<path d="M128 58 L158 128 L128 198 L98 128 Z" fill="none" stroke="hsl(205 100% 70%)" stroke-width="3.4"/>
+<path d="M128 57 L150 128 L128 199 L106 128 Z" fill="hsl(299 100% 56%)" opacity="0.24"/>
+<circle cx="128" cy="128" r="14" fill="hsl(299 100% 72%)"/>
+</g>
+</svg>

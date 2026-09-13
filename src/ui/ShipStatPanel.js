@@ -1,3 +1,4 @@
+import { drawAstraPanel } from './AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { ShipData } from '../config/ShipData.js';
 import { createText } from '../utils/pixiText.js';
@@ -40,6 +41,7 @@ export function computeShipStatRanges(ships = ShipData) {
 }
 
 export function getShipCombatRole(ship = {}, ranges = DEFAULT_RANGES) {
+  if (ship?.role) return String(ship.role).toUpperCase();
   const stats = ship.stats || {};
   const damage = normalizeRange(stats.damage, ranges.damage);
   const speed = normalizeRange(stats.speed, ranges.speed);
@@ -53,6 +55,10 @@ export function getShipCombatRole(ship = {}, ranges = DEFAULT_RANGES) {
   return 'BALANCED ARCADE';
 }
 
+export function getShipTierLabel(ship = {}) {
+  return ship?.tier === 'ascendant' ? 'ASCENDANT TIER' : '';
+}
+
 function makeText(label, style = {}) {
   return createText(label, {
     fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -62,9 +68,7 @@ function makeText(label, style = {}) {
 }
 
 function drawSegmentedBar(graphics, x, y, width, height, progress, color) {
-  graphics.roundRect(x, y, width, height, height / 2);
-  graphics.fill({ color: 0x061426, alpha: 0.92 });
-  graphics.stroke({ color: 0x2a5d78, width: 1, alpha: 0.7 });
+  drawAstraPanel(graphics, x, y, width, height, height / 2, { color: 0x061426, alpha: 0.92 }, { color: 0x2a5d78, width: 1, alpha: 0.7 });
 
   const gap = 3;
   const segments = 8;
@@ -77,7 +81,7 @@ function drawSegmentedBar(graphics, x, y, width, height, progress, color) {
   }
 }
 
-function createStatRow({ label, value, progress, color, y, width, compact }) {
+function createStatRow({ label, value, progress, color, y, width, compact, uiScaleMode }) {
   const row = new PIXI.Container();
   const leftX = -width / 2 + (compact ? 18 : 24);
   const barX = compact ? -44 : -34;
@@ -85,9 +89,10 @@ function createStatRow({ label, value, progress, color, y, width, compact }) {
   const barHeight = compact ? 9 : 12;
 
   const labelText = makeText(label, {
-    fontSize: compact ? 11 : 13,
+    fontSize: compact ? 13 : 15,
     fontWeight: '800',
-    fill: '#aeefff'
+    fill: '#aeefff',
+    uiScaleMode
   });
   labelText.anchor.set(0, 0.5);
   labelText.position.set(leftX, y);
@@ -98,9 +103,10 @@ function createStatRow({ label, value, progress, color, y, width, compact }) {
   row.addChild(bar);
 
   const valueText = makeText(value, {
-    fontSize: compact ? 12 : 14,
+    fontSize: compact ? 14 : 16,
     fontWeight: '900',
-    fill: toHexText(color)
+    fill: toHexText(color),
+    uiScaleMode
   });
   valueText.anchor.set(1, 0.5);
   valueText.position.set(width / 2 - (compact ? 16 : 22), y);
@@ -112,37 +118,39 @@ function createStatRow({ label, value, progress, color, y, width, compact }) {
 export function createShipStatPanel(ship = {}, options = {}) {
   const compact = Boolean(options.compact);
   const width = options.width || (compact ? 330 : 560);
-  const height = options.height || (compact ? 96 : 148);
+  const height = options.height || (compact ? 110 : 156);
   const accent = Number.isFinite(options.accent) ? options.accent : 0x00eaff;
   const ranges = options.ranges || DEFAULT_RANGES;
   const stats = ship.stats || {};
-  const role = getShipCombatRole(ship, ranges);
+  const tierLabel = getShipTierLabel(ship);
+  const role = tierLabel || getShipCombatRole(ship, ranges);
+  const uiScaleMode = options.uiScaleMode;
 
   const panel = new PIXI.Container();
   panel.shipStatPanel = true;
 
   const bg = new PIXI.Graphics();
-  bg.roundRect(-width / 2, 0, width, height, compact ? 10 : 12);
-  bg.fill({ color: 0x020916, alpha: compact ? 0.72 : 0.84 });
-  bg.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+  drawAstraPanel(bg, -width / 2, 0, width, height, compact ? 10 : 12, { color: 0x020916, alpha: compact ? 0.72 : 0.84 }, { color: accent, width: 1.5, alpha: 0.72 });
   bg.rect(-width / 2 + 1, 1, width - 2, compact ? 28 : 34);
   bg.fill({ color: accent, alpha: 0.11 });
   panel.addChild(bg);
 
   const title = makeText(options.title || 'COMBAT PROFILE', {
     fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
-    fontSize: compact ? 11 : 14,
+    fontSize: compact ? 14 : 16,
     fontWeight: '900',
-    fill: '#ffffff'
+    fill: '#ffffff',
+    uiScaleMode
   });
   title.anchor.set(0, 0.5);
   title.position.set(-width / 2 + (compact ? 16 : 22), compact ? 15 : 18);
   panel.addChild(title);
 
   const roleText = makeText(role, {
-    fontSize: compact ? 11 : 13,
+    fontSize: compact ? 13 : 15,
     fontWeight: '900',
-    fill: toHexText(accent)
+    fill: toHexText(accent),
+    uiScaleMode
   });
   roleText.anchor.set(1, 0.5);
   roleText.position.set(width / 2 - (compact ? 16 : 22), compact ? 15 : 18);
@@ -178,14 +186,15 @@ export function createShipStatPanel(ship = {}, options = {}) {
     });
   }
 
-  const startY = compact ? 42 : 52;
-  const step = compact ? 18 : 24;
+  const startY = compact ? 46 : 54;
+  const step = compact ? 21 : 25;
   rows.forEach((row, index) => {
     panel.addChild(createStatRow({
       ...row,
       y: startY + index * step,
       width,
-      compact
+      compact,
+      uiScaleMode
     }));
   });
 

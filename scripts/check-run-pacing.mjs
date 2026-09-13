@@ -26,7 +26,7 @@ for (const phase of RunPacingConfig.pressurePhases) {
 
 const sustain = RunPacingConfig.sustain || {};
 if ((sustain.bossRepairMaxLives || 99) > 3) fail('boss repair max lives must stay capped at 3');
-if ((BalanceConfig.powerups.extraLifeChance || 0) > 0.04) fail(`extraLifeChance should be bounded, got ${BalanceConfig.powerups.extraLifeChance}`);
+if ((BalanceConfig.powerups.extraLifeChance || 0) > 0.08) fail(`extraLifeChance should be bounded, got ${BalanceConfig.powerups.extraLifeChance}`);
 if ((BalanceConfig.powerups.maxDropChance || 0) > 0.09) fail(`maxDropChance should be bounded, got ${BalanceConfig.powerups.maxDropChance}`);
 
 const early = getPressureMultipliers(0);

@@ -8,6 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4331));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/tractor-hijack-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -98,15 +99,17 @@ page.on('console', (message) => {
 
 try {
   await page.goto(withQuery(baseUrl, {
-    autostart: '1',
-    debugBossToken: 'NOVA_DEBUG_2026',
-    startLevel: '2'
+    skipIntro: '1', offlineLeaderboard: '1', controlSmoke:'1'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+  await page.waitForFunction(()=>window.__game?.scenes?.menu?.astraMenuShip?.ready,null,{timeout:120000});
+  await page.mouse.click(900,650);
+  await page.evaluate(()=>window.__game.startGame('nova-player-ship-01.png',{runMode:'ranked_tactical'}));
 
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state?.scene === 'play' && state?.player?.active;
-  }, { timeout: 30000 });
+    return state?.scene === 'play' && state?.player?.active && window.__game?.scenes?.play?.enemyManager?.state === 'WAVE_ACTIVE';
+  }, null, { timeout: 120000 });
 
   await page.evaluate(() => {
     const game = window.__game;
@@ -114,6 +117,7 @@ try {
     const player = play?.player;
     const enemyManager = play?.enemyManager;
     if (!game || !play || !player || !enemyManager) throw new Error('Missing play scene for tractor hijack check');
+    game.markUnrankedRun('tractor_hijack_qa');play.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;play.setPaused(false);
 
     enemyManager.enemies.forEach(enemy => {
       if (enemy.kind !== 'boss') {
@@ -138,10 +142,31 @@ try {
     const sourceY = 132;
     const playerY = Math.round(height * 0.79);
 
-    enemyManager.enemies
+    const targets = enemyManager.enemies
       .filter(enemy => enemy.kind !== 'boss')
-      .slice(0, 4)
-      .forEach((enemy, index) => {
+      .slice(0, 4);
+    while (targets.length < 4) {
+      const staged = {
+        kind: 'tractor_hijack_test_target',
+        type: 'chaser',
+        active: true,
+        waitingForEntry: false,
+        radius: 22,
+        color: 0x8fffd5,
+        health: 1,
+        maxHealth: 1,
+        canShoot: () => false,
+        shoot: () => null,
+        update: () => {},
+        destroy() {
+          this.destroyed = true;
+          this.active = false;
+        }
+      };
+      enemyManager.enemies.push(staged);
+      targets.push(staged);
+    }
+    targets.forEach((enemy, index) => {
         const t = 0.28 + index * 0.13;
         enemy.waitingForEntry = false;
         enemy.active = true;
@@ -152,7 +177,7 @@ try {
         enemy.speed = 0;
         enemy.vx = 0;
         enemy.vy = 0;
-        enemy.x = sourceX + (index - 1.5) * 22;
+        enemy.x = sourceX + 58 + index * 8;
         enemy.y = sourceY + (playerY - sourceY) * t;
         enemy.update = () => {};
         if (enemy.sprite) {
@@ -172,7 +197,7 @@ try {
     hijacker.baseY = sourceY;
     hijacker.health = 30;
     hijacker.maxHealth = 30;
-    hijacker.beamActiveMs = 2200;
+    hijacker.beamActiveMs = 4000;
     hijacker.beamWarningMs = 120;
     hijacker.sprite.x = hijacker.x;
     hijacker.sprite.y = hijacker.y;
@@ -185,8 +210,10 @@ try {
 
     for (let i = 0; i < 3; i++) {
       const bullet = hijacker.shoot(player.x, player.y);
-      bullet.x = sourceX + (i - 1) * 28;
-      bullet.y = sourceY + 210 + i * 74;
+      bullet.x = sourceX + 50 + i * 8;
+      bullet.y = sourceY + 100 + i * 60;
+      bullet.vx = 0;
+      bullet.vy = 0;
       if (bullet.sprite) {
         bullet.sprite.x = bullet.x;
         bullet.sprite.y = bullet.y;
@@ -205,6 +232,15 @@ try {
 
   const armedState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const scoreBeforeBreak = armedState.score;
+  mkdirSync(outputDir, { recursive: true });
+  const activeScreenshot = path.join(outputDir, 'tractor-active-chain-hit-feedback.png');
+  await page.evaluate(() => {
+    const hijacker = window.__game?.scenes?.play?.enemyManager?.hijacker;
+    if (!hijacker) throw new Error('Hijacker missing before active-state screenshot');
+    hijacker.triggerHitFeedback('chain_lightning');
+  });
+  await page.waitForTimeout(30);
+  await page.screenshot({ path: activeScreenshot, fullPage: true });
 
   await page.evaluate(() => {
     const hijacker = window.__game?.scenes?.play?.enemyManager?.hijacker;
@@ -218,26 +254,34 @@ try {
   }, { timeout: 4000 });
 
   const hijackedState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
-  mkdirSync(outputDir, { recursive: true });
   const screenshot = path.join(outputDir, 'tractor-hijack-payoff.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
   const last = hijackedState.tractorHijack?.last || {};
-  const expectedMinimumGain = 1700 + last.bonusScore;
+  const expectedBreakGain = await page.evaluate(() => window.__game?.getScoreAward?.(1700) || 1700);
+  const expectedRawBonus = 600 + (last.capturedEnemies || 0) * 360 + (last.clearedBullets || 0) * 25;
+  const expectedAppliedBonus = await page.evaluate((raw) => window.__game?.getScoreAward?.(raw) || raw, expectedRawBonus);
+  const expectedMinimumGain = Math.max(0, expectedBreakGain + (last.bonusScore || 0) - 2);
   const actualGain = hijackedState.score - scoreBeforeBreak;
+  const unexpectedConsoleWarningsOrErrors = consoleWarningsOrErrors.filter((message) =>
+    !message.includes('[SW] Service worker script missing or invalid, skipping registration.')
+  );
   const report = {
     ok: last.triggered === true &&
       last.capturedEnemies >= 3 &&
       last.clearedBullets >= 1 &&
-      last.bonusScore >= 600 + last.capturedEnemies * 360 + last.clearedBullets * 25 &&
+      last.bonusScore >= expectedAppliedBonus - 2 &&
       actualGain >= expectedMinimumGain &&
       hijackedState.audio?.lastVoiceEvent === 'mission_control_tractor_hijack' &&
       pageErrors.length === 0 &&
-      consoleWarningsOrErrors.length === 0,
+      unexpectedConsoleWarningsOrErrors.length === 0,
     baseUrl,
     scoreBeforeBreak,
     scoreAfterBreak: hijackedState.score,
     actualGain,
+    expectedBreakGain,
+    expectedRawBonus,
+    expectedAppliedBonus,
     expectedMinimumGain,
     tractor: armedState.hijacker?.tractor || null,
     tractorHijack: last,
@@ -248,6 +292,8 @@ try {
     },
     pageErrors,
     consoleWarningsOrErrors,
+    unexpectedConsoleWarningsOrErrors,
+    activeScreenshot,
     screenshot
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
@@ -256,7 +302,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[tractor-hijack] PASS captured=${last.capturedEnemies} bullets=${last.clearedBullets} gain=${actualGain} voice=${hijackedState.audio?.lastVoiceTrack || 'none'} screenshot=${screenshot}`);
+    console.log(`[tractor-hijack] PASS captured=${last.capturedEnemies} bullets=${last.clearedBullets} gain=${actualGain} voice=${hijackedState.audio?.lastVoiceTrack || 'none'} activeScreenshot=${activeScreenshot} screenshot=${screenshot}`);
   }
 } finally {
   await browser.close();

@@ -297,6 +297,7 @@ export function translateText(source, vars = {}) {
   return translateTextForLocale(currentLanguage, source, vars);
 }
 
+const numberFormatters = new Map();
 export function formatNumber(value) {
   const locale = {
     de: 'de-DE',
@@ -307,7 +308,12 @@ export function formatNumber(value) {
     ko: 'ko-KR',
     ja: 'ja-JP'
   }[currentLanguage] || 'en-US';
-  return Number(value || 0).toLocaleString(locale);
+  let formatter = numberFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(locale);
+    numberFormatters.set(locale, formatter);
+  }
+  return formatter.format(Number(value || 0));
 }
 
 export function onLanguageChange(callback) {

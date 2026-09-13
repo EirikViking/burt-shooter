@@ -10,9 +10,10 @@ const port = process.env.STEAM_CAPTURE_URL ? null : (explicitPort || await findA
 const baseUrl = process.env.STEAM_CAPTURE_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.STEAM_CAPTURE_OUTPUT_DIR || `release/steam-screenshots/draft-${dateStamp()}`);
 const viewport = {
-  width: Number(process.env.STEAM_CAPTURE_WIDTH || 1280),
-  height: Number(process.env.STEAM_CAPTURE_HEIGHT || 720)
+  width: Number(process.env.STEAM_CAPTURE_WIDTH || 1920),
+  height: Number(process.env.STEAM_CAPTURE_HEIGHT || 1080)
 };
+const localDevtoolsHash = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 const consoleEvents = [];
 const pageErrors = [];
@@ -214,8 +215,8 @@ function windowSceneFallback(state) {
   return state?.scene || 'unknown';
 }
 
-async function stabilizePlayer(page) {
-  await page.evaluate(() => {
+async function stabilizePlayer(page, { clearEnemyBullets = false } = {}) {
+  await page.evaluate(({ shouldClearEnemyBullets }) => {
     const assist = () => {
       const game = window.__game;
       const play = game?.scenes?.play;
@@ -227,7 +228,7 @@ async function stabilizePlayer(page) {
         if (typeof game?.getWidth === 'function') player.x = game.getWidth() / 2;
         if (typeof game?.getHeight === 'function') player.y = game.getHeight() * 0.82;
       }
-      if (play?.bulletManager?.enemyBullets) {
+      if (shouldClearEnemyBullets && play?.bulletManager?.enemyBullets) {
         play.bulletManager.enemyBullets.forEach((bullet) => {
           bullet.active = false;
         });
@@ -236,7 +237,7 @@ async function stabilizePlayer(page) {
     clearInterval(window.__steamCaptureAssist);
     window.__steamCaptureAssist = window.setInterval(assist, 100);
     assist();
-  });
+  }, { shouldClearEnemyBullets: clearEnemyBullets });
 }
 
 async function clearPlayToasts(page) {
@@ -523,6 +524,7 @@ async function captureMidgameAction(browser) {
     autostart: '1',
     controlSmoke: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': localDevtoolsHash,
     startLevel: '3'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForScene(page, 'play', 30000);
@@ -535,12 +537,200 @@ async function captureMidgameAction(browser) {
   await page.close();
 }
 
+async function captureLateGameAction(browser) {
+  const swarmPage = await browser.newPage({ viewport });
+  observePage(swarmPage, 'late-game-swarm');
+  await swarmPage.goto(withQuery(baseUrl, {
+    autostart: '1',
+    controlSmoke: '1',
+    debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': localDevtoolsHash,
+    startLevel: '11'
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(swarmPage, 'play', 30000);
+  await swarmPage.waitForFunction(() => window.__game?.scenes?.play?.player, null, { timeout: 20000 });
+  await stabilizePlayer(swarmPage);
+  await waitForGameplayBackdrop(swarmPage);
+  await waitForActiveGameplay(swarmPage);
+  await swarmPage.keyboard.down('Space');
+  await swarmPage.waitForTimeout(4200);
+  await capture(swarmPage, '17-late-sector-swarm', 'Late-sector swarm', 'Current-build Sector 11 action with the starter ship, advanced enemy formations, and live projectiles.');
+  await swarmPage.keyboard.up('Space');
+  await swarmPage.close();
+
+  const bossPage = await browser.newPage({ viewport });
+  observePage(bossPage, 'late-boss-mayhem');
+  await bossPage.goto(withQuery(baseUrl, {
+    autostart: '1',
+    debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': localDevtoolsHash,
+    startAtBoss: '1',
+    startLevel: '11'
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(bossPage, 'play', 30000);
+  await waitForGameplayBackdrop(bossPage);
+  await bossPage.waitForFunction(() => {
+    const enemyManager = window.__game?.scenes?.play?.enemyManager;
+    return enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active;
+  }, null, { timeout: 30000 });
+  await stabilizePlayer(bossPage);
+  await bossPage.evaluate(() => {
+    const enemyManager = window.__game?.scenes?.play?.enemyManager;
+    enemyManager?.spawnBossFuelShipSquad?.(3);
+    enemyManager?.spawnBossAdds?.(8);
+  });
+  await bossPage.keyboard.down('Space');
+  await bossPage.waitForTimeout(2600);
+  await bossPage.keyboard.up('Space');
+  await capture(bossPage, '18-late-boss-mayhem', 'Late boss mayhem', 'Current-build Sector 11 boss pressure with support ships, adds, and live projectiles.');
+  await bossPage.close();
+}
+
+async function captureTacticalSystems(browser) {
+  const page = await browser.newPage({ viewport });
+  observePage(page, 'tactical-systems');
+  await page.goto(withQuery(baseUrl, {
+    autostart: '1',
+    controlSmoke: '1',
+    debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': localDevtoolsHash,
+    startLevel: '7'
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(page, 'play', 30000);
+  await page.waitForFunction(() => window.__game?.scenes?.play?.player, null, { timeout: 20000 });
+  await stabilizePlayer(page);
+  await waitForGameplayBackdrop(page);
+  await waitForActiveGameplay(page);
+  await clearPlayToasts(page);
+
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    if (!game || !play?.player) throw new Error('Missing active run for Tactical Draft capture');
+    game.level = 7;
+    game.score = Math.max(48325, Number(game.score) || 0);
+    play.openTacticalDraft({ sectorCleared: 7 });
+  });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').tacticalDraft?.inputArmed === true, null, { timeout: 10000 });
+  await page.waitForTimeout(550);
+  await capture(page, '13-tactical-draft', 'Tactical Draft', 'Current post-boss choice screen with three permanent run upgrades and a rescan decision.');
+
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    if (!play?.player) throw new Error('Missing player for Tactical loadout capture');
+    play.clearTacticalDraft('steam_capture');
+    play.player.runAugmentIds = [
+      'salvage_clock',
+      'target_paint',
+      'rapid_fire',
+      'rail_surge',
+      'plasma_lance',
+      'chain_lightning',
+      'pierce',
+      'speed_up',
+      'phase_reactor',
+      'combo_anchor',
+      'graze_plating',
+      'drone_link'
+    ];
+    play.player.consumedRunAugmentIds = [];
+    play.setPaused(true);
+    play.openTacticalLoadoutOverlay();
+  });
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.tacticalLoadoutOverlay?.container?.visible), null, { timeout: 10000 });
+  await page.waitForTimeout(500);
+  await capture(page, '14-tactical-loadout', 'Tactical upgrades', 'A developed run build showing twelve distinct permanent augments across two pages.');
+
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    play?.closeTacticalLoadoutOverlay?.();
+    play?.setPaused(false);
+    game.score = 121025;
+    game.level = 12;
+    game.lives = 0;
+    if (play) {
+      play.totalKills = 1054;
+      play.bossKills = 11;
+      play.wavesCleared = 66;
+      play.powerupsCollectedThisRun = 19;
+      play.gameTime = 1015;
+      play.tacticalDraftHistory = play.player.runAugmentIds.map((id, index) => ({
+        id,
+        sectorCleared: index + 1,
+        stacks: 1
+      }));
+    }
+    globalThis.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__ = true;
+    game.gameOver();
+  });
+  await waitForScene(page, 'gameOver', 10000);
+  await page.waitForFunction(() => Boolean(window.__game?.lastRunReport), null, { timeout: 10000 });
+  await page.evaluate(() => window.__game?.scenes?.gameOver?.openRunReport?.());
+  await page.waitForFunction(() => window.__game?.scenes?.gameOver?.runReportOpen === true, null, { timeout: 10000 });
+  await page.waitForTimeout(650);
+  await capture(page, '15-run-report', 'Run Report', 'Readable post-run combat, survival, progression, and Tactical build summary.');
+  await page.close();
+}
+
+async function captureSectorRunSelector(browser) {
+  const page = await browser.newPage({ viewport });
+  observePage(page, 'sector-run-selector');
+  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => Boolean(window.__game && window.render_game_to_text), null, { timeout: 30000 });
+  await page.evaluate(() => {
+    localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
+      version: 1,
+      unlockTuningVersion: 3,
+      pilotXp: 6800,
+      pilotRank: 25,
+      highestPilotRank: 25,
+      totalRuns: 34,
+      bestScore: 278967,
+      bestSector: 31,
+      bestLevel: 31,
+      bestRank: 25,
+      bestRunTimeSeconds: 1260,
+      survivedSeconds: 1260,
+      totalBossesDefeated: 77,
+      totalWavesCleared: 420,
+      totalCodexDiscoveries: 56,
+      runClears: 1,
+      noHitWaves: 18,
+      noHitSectors: 3,
+      clearWithLivesRemaining: 1,
+      highestScoreMultiplier: 4,
+      shipSpecificMilestones: {},
+      discoveredThreatIds: [],
+      defeatedBossIds: [],
+      runThemesSurvived: [],
+      secretShipUnlockIds: [],
+      creditsEasterEggFound: false,
+      unlockedShipIds: ['nova_ship_01'],
+      lastNewlyUnlockedShipIds: [],
+      newRanksThisRun: [],
+      rankAchievementsUnlocked: [],
+      updatedAt: '2026-07-11T00:00:00.000Z'
+    }));
+    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 278967, bestRank: 25, bestLevel: 31 }));
+  });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForScene(page, 'menu', 30000);
+  await page.evaluate(() => window.__game?.scenes?.menu?.openSectorSelector?.());
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.sectorStart?.selector?.open === true, null, { timeout: 10000 });
+  await page.waitForTimeout(650);
+  await capture(page, '16-sector-run-selector', 'Sector Run checkpoints', 'Unlocked checkpoint starts for deeper routing and practice.');
+  await page.close();
+}
+
 async function captureBossFightAtLevel(browser, level, name, title, notes) {
   const page = await browser.newPage({ viewport });
   observePage(page, `boss-level-${level}`);
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': localDevtoolsHash,
     startAtBoss: '1',
     startLevel: String(level)
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -563,13 +753,17 @@ async function captureBossAndGameOver(browser) {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': localDevtoolsHash,
     startAtBoss: '1',
     startLevel: '1'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForScene(page, 'play', 30000);
   await waitForGameplayBackdrop(page);
-  await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
-  await capture(page, '07-boss-inbound', 'Boss inbound', 'Deterministic capture route for representative boss warning.');
+  await page.waitForFunction(() => {
+    const enemyManager = window.__game?.scenes?.play?.enemyManager;
+    return enemyManager?.state === 'BOSS_GATE' || (enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active);
+  }, null, { timeout: 30000 });
+  await capture(page, '07-boss-inbound', 'Boss arrival', 'Deterministic capture route for the opening boss encounter.');
   await page.waitForFunction(() => {
     const enemyManager = window.__game?.scenes?.play?.enemyManager;
     return enemyManager?.state === 'BOSS_ACTIVE' && enemyManager?.boss?.active;
@@ -640,6 +834,9 @@ async function main() {
     await captureGameplay(browser);
     await captureMidgameAction(browser);
     await captureBossAndGameOver(browser);
+    await captureTacticalSystems(browser);
+    await captureSectorRunSelector(browser);
+    await captureLateGameAction(browser);
   } finally {
     await browser.close();
     if (server) server.kill();
@@ -655,6 +852,8 @@ async function main() {
       'These are Steam screenshot candidates, not final store approval.',
       'Midgame action uses the deterministic level-three debug route to capture denser representative gameplay.',
       'Boss screenshots use deterministic debug boss routes for reliable representative capture across early, mid, and late archetypes.',
+      'Current-system screenshots cover Tactical Draft, accumulated run builds, Run Report, and Sector Run checkpoints.',
+      'Late-game action candidates use current-build Sector 11 routes with live projectiles and support ships.',
       'Final store upload still needs human curation and Steamworks review.'
     ],
     shots,

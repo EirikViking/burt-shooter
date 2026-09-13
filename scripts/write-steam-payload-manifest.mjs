@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -14,7 +14,17 @@ function rel(file, base = root) {
 
 function hashFile(file) {
   const hash = createHash('sha256');
-  hash.update(readFileSync(file));
+  // Game archives can exceed Node's single-buffer file-read limit.
+  const descriptor = openSync(file, 'r');
+  const chunk = Buffer.allocUnsafe(1024 * 1024);
+  try {
+    let bytes;
+    while ((bytes = readSync(descriptor, chunk, 0, chunk.length, null)) > 0) {
+      hash.update(chunk.subarray(0, bytes));
+    }
+  } finally {
+    closeSync(descriptor);
+  }
   return hash.digest('hex');
 }
 

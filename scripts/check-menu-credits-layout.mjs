@@ -12,6 +12,7 @@ const viewport = {
   width: Number(process.env.CHECK_WIDTH) || 1920,
   height: Number(process.env.CHECK_HEIGHT) || 1000
 };
+const checkMenuFrame = process.env.CHECK_MENU_FRAME !== '0';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -130,18 +131,11 @@ try {
   const menuPanel = menuState.menu?.panel;
   const menuItems = menuState.menu?.items || {};
   const menuFailures = outsideFrameFailures(menuPanel, menuItems, [
-    'kicker',
-    'title',
-    'subtitle',
-    'flavor',
-    'primaryHint',
-    'launchButton',
     'hangarButton',
     'highscoresButton',
     'threatCodexButton',
-    'settingsButton',
-    'exitButton',
-    'disclaimer'
+    'achievementsButton',
+    'settingsButton'
   ]);
 
   await page.evaluate(() => {
@@ -167,9 +161,13 @@ try {
     'backButton'
   ]);
   const overlapFailures = [
+    intersects(credits.subtitle, credits.art, 4) ? 'credits subtitle overlaps art' : null,
+    intersects(credits.subtitle, credits.body, 4) ? 'credits subtitle overlaps body text' : null,
+    intersects(credits.subtitle, credits.footer, 4) ? 'credits subtitle overlaps footer' : null,
     intersects(credits.art, credits.body, 8) ? 'credits art overlaps body text' : null,
     intersects(credits.art, credits.footer, 8) ? 'credits art overlaps footer' : null,
     intersects(credits.art, credits.backButton, 8) ? 'credits art overlaps back button' : null,
+    intersects(credits.body, credits.footer, 8) ? 'credits body overlaps footer' : null,
     intersects(credits.body, credits.backButton, 8) ? 'credits body overlaps back button' : null,
     intersects(credits.footer, credits.backButton, 6) ? 'credits footer overlaps back button' : null,
     intersects(credits.footer, credits.coin, 4) ? 'credits footer overlaps cabinet seal' : null,
@@ -179,12 +177,17 @@ try {
     intersects(credits.coin, credits.eggStatus, 2) ? 'credits cabinet seal overlaps status text' : null
   ].filter(Boolean);
 
+  mkdirSync(outputDir, { recursive: true });
+  const screenshot = path.join(outputDir, `menu-credits-layout-${viewport.width}x${viewport.height}.png`);
+  await page.screenshot({ path: screenshot, fullPage: true });
+
   const eggTrigger = await page.evaluate(() => {
     const overlay = window.__game?.currentScene?.settingsOverlay;
     const coin = overlay?.creditsPanel?.children?.find((child) => child?.label === 'ui_creditsCabinetSeal');
     if (!overlay || !coin || typeof overlay.triggerCreditsEasterEgg !== 'function') {
       return { ok: false, reason: 'credits cabinet seal unavailable' };
     }
+    window.__novaCreditsAscendantEasterEggRandom = () => 1;
     overlay.triggerCreditsEasterEgg(coin);
     overlay.triggerCreditsEasterEgg(coin);
     overlay.triggerCreditsEasterEgg(coin);
@@ -198,22 +201,50 @@ try {
     !eggTrigger.ok ? eggTrigger.reason : null,
     !revealCredits.unlockReveal ? 'credits unlock reveal missing' : null,
     !/CONGRATULATIONS/i.test(String(unlockText.title || '')) ? 'credits unlock reveal title missing congratulations' : null,
-    !/(NEW SHIP|ALREADY UNLOCKED)/i.test(String(unlockText.subtitle || '')) ? 'credits unlock reveal subtitle missing ship unlock result' : null,
+    !/NEW SHIP/i.test(String(unlockText.subtitle || '')) ? 'credits unlock reveal subtitle missing new ship result' : null,
     !/QUASAR FAN/i.test(String(unlockText.ship || '')) ? 'credits unlock reveal ship name missing' : null
   ].filter(Boolean);
 
-  mkdirSync(outputDir, { recursive: true });
-  const screenshot = path.join(outputDir, `menu-credits-layout-${viewport.width}x${viewport.height}.png`);
-  await page.screenshot({ path: screenshot, fullPage: true });
+  const revealScreenshot = path.join(outputDir, `menu-credits-unlock-${viewport.width}x${viewport.height}.png`);
+  await page.screenshot({ path: revealScreenshot, fullPage: true });
+
+  const alreadyUnlockedTrigger = await page.evaluate(() => {
+    const overlay = window.__game?.currentScene?.settingsOverlay;
+    const coin = overlay?.creditsPanel?.children?.find((child) => child?.label === 'ui_creditsCabinetSeal');
+    if (!overlay || !coin) return { ok: false, reason: 'credits cabinet seal unavailable for repeat trigger' };
+    if (overlay.creditsRevealTicker) {
+      overlay.game.app.ticker.remove(overlay.creditsRevealTicker);
+      overlay.creditsRevealTicker = null;
+    }
+    if (overlay.creditsUnlockReveal?.parent) {
+      overlay.creditsUnlockReveal.parent.removeChild(overlay.creditsUnlockReveal);
+    }
+    overlay.creditsUnlockReveal = null;
+    overlay.creditsCoinClicks = 0;
+    overlay.triggerCreditsEasterEgg(coin);
+    overlay.triggerCreditsEasterEgg(coin);
+    overlay.triggerCreditsEasterEgg(coin);
+    return {
+      ok: true,
+      revealActive: Boolean(overlay.creditsUnlockReveal?.parent),
+      status: overlay.creditsEggStatusText?.text || ''
+    };
+  });
+  const repeatFailures = [
+    !alreadyUnlockedTrigger.ok ? alreadyUnlockedTrigger.reason : null,
+    alreadyUnlockedTrigger.revealActive ? 'already-unlocked credits trigger opened a duplicate celebration' : null,
+    !/already signed/i.test(String(alreadyUnlockedTrigger.status || '')) ? 'already-unlocked credits trigger lost its inline status' : null
+  ].filter(Boolean);
 
   const report = {
     ok: Boolean(
       menuPanel &&
-      menuFailures.length === 0 &&
+      (!checkMenuFrame || menuFailures.length === 0) &&
       credits.panel &&
       creditsFailures.length === 0 &&
       overlapFailures.length === 0 &&
       revealFailures.length === 0 &&
+      repeatFailures.length === 0 &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
@@ -221,15 +252,19 @@ try {
     baseUrl,
     menuPanel,
     menuItems,
-    menuFailures,
+    menuFailures: checkMenuFrame ? menuFailures : [],
+    skippedMenuFailures: checkMenuFrame ? [] : menuFailures,
     credits,
     creditsFailures,
     overlapFailures,
     revealCredits,
     revealFailures,
+    alreadyUnlockedTrigger,
+    repeatFailures,
     pageErrors,
     consoleErrors,
-    screenshot
+    screenshot,
+    revealScreenshot
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
 

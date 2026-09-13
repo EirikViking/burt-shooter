@@ -13,7 +13,9 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const board = [
   50000, 42000, 36000, 30000, 24000, 20000, 16000, 12000, 9000, 8000,
-  7600, 7300, 7000, 6800, 6600, 6400, 6250, 6150, 6050, 6000
+  7900, 7800, 7700, 7600, 7500, 7400, 7300, 7200, 7100, 7000,
+  6900, 6800, 6700, 6600, 6500, 6400, 6350, 6300, 6250, 6200,
+  6180, 6160, 6140, 6120, 6100, 6080, 6060, 6040, 6020, 6000
 ].map((score, index) => ({
   name: `GLB${index + 1}`,
   score,
@@ -140,6 +142,230 @@ async function checkCeremony(browser, { score, expectedTier, titlePattern, shotN
   };
 }
 
+async function checkInGameFinalDeathAnimation(browser) {
+  const { page, pageErrors } = await preparePage(browser);
+  await page.evaluate(async () => {
+    await window.__game?.scenes?.play?.gameOverFinalTransmissionReady;
+  });
+  const injectedHazard = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game.scenes?.play;
+    const width = game.getWidth();
+    const height = game.getHeight();
+    const wall = {
+      kind: 'wall',
+      type: 'wall',
+      sourceX: width / 2,
+      sourceY: 80,
+      columns: [width * 0.41, width * 0.59],
+      startY: 100,
+      endY: height + 80,
+      width: 24,
+      durationMs: 500,
+      armingMs: 80,
+      elapsedMs: 250,
+      color: 0xff315f,
+      hit: false
+    };
+    play.bossHazards = [wall];
+    play.drawBossHazard(wall, 0.5);
+    const before = {
+      hazards: play.bossHazards.length,
+      geometry: play.bossHazardLayerHasGeometry
+    };
+    game.score = 12345;
+    game.level = 6;
+    game.lives = 1;
+    game.loseLife({ source: 'boss_wall' });
+    return before;
+  });
+  assert(injectedHazard.hazards === 1 && injectedHazard.geometry === true, `synthetic wall hazard did not render before final death: ${JSON.stringify(injectedHazard)}`);
+  await page.waitForFunction(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    return game?.currentSceneName === 'play' &&
+      play?.gameOverSequenceStarted === true &&
+      Boolean(play?.gameOverAnimationLayer?.parent);
+  }, null, { timeout: 5000 });
+  const lockedState = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game.scenes?.play;
+    return {
+      blockedAward: game.addScore(999, 'baseScore'),
+      score: game.score,
+      finalScoreSnapshot: game.finalScoreSnapshot,
+      finalScoreLocked: game.finalScoreLocked,
+      animation: structuredClone(play?.gameOverAnimationDebug || null),
+      fatalBarrier: structuredClone(play?.getFatalEventBarrierDebugState?.() || null),
+      layerAlpha: play?.gameOverAnimationLayer?.alpha,
+      deathHoldCueAttached: Boolean(play?.uiOverlay?.children?.some((child) => child?.label === 'game_over_death_hold_cue')),
+      fatalImpact: structuredClone(play?.finalDeathImpact || null),
+      combatCleanup: structuredClone(play?.lastFinalDeathCombatCleanup || null),
+      damageFlash: structuredClone(play?.lastPlayerDamageFlashDebug || null),
+      player: {
+        active: play?.player?.active,
+        visible: play?.player?.sprite?.visible,
+        renderable: play?.player?.sprite?.renderable
+      },
+      bossHazards: play?.bossHazards?.length || 0,
+      bossHazardGeometry: Boolean(play?.bossHazardLayerHasGeometry)
+    };
+  });
+  assert(lockedState.blockedAward === 0, `post-death score award was not blocked: ${lockedState.blockedAward}`);
+  assert(lockedState.score === 12345, `score changed after final death: ${lockedState.score}`);
+  assert(lockedState.finalScoreSnapshot === 12345, `wrong final score snapshot: ${lockedState.finalScoreSnapshot}`);
+  assert(lockedState.finalScoreLocked === true, 'final score did not lock on the final life');
+  assert(lockedState.animation?.deathHoldMs === 620 && lockedState.animation?.skipDebounceMs === 600 && lockedState.animation?.skippable === true, `death hold/skip contract missing: ${JSON.stringify(lockedState.animation)}`);
+  assert(lockedState.animation?.automaticTargetMs <= 3000 && lockedState.animation?.skippedTargetMs <= 1500, `death-to-results timing budget regressed: ${JSON.stringify(lockedState.animation)}`);
+  assert(lockedState.animation?.finalDamageLabel === 'HAZARD IMPACT' && /^FINAL HIT: HAZARD IMPACT$/.test(lockedState.animation?.finalHitLine || ''), `final-hit cause was not explained: ${JSON.stringify(lockedState.animation)}`);
+  assert(/ANY KEY/.test(lockedState.animation?.continuePrompt || ''), `universal continue prompt missing: ${JSON.stringify(lockedState.animation)}`);
+  assert(lockedState.fatalBarrier?.active === true && lockedState.fatalBarrier?.cause?.category === 'hazard_impact', `fatal event barrier did not activate with the final cause: ${JSON.stringify(lockedState.fatalBarrier)}`);
+  assert(lockedState.player?.active === false && lockedState.player?.visible === false && lockedState.player?.renderable === false, `destroyed player ship remained active or visible: ${JSON.stringify(lockedState.player)}`);
+  assert(lockedState.layerAlpha === 0, `frozen battle should remain visible during the death hold: ${lockedState.layerAlpha}`);
+  assert(lockedState.deathHoldCueAttached === true, 'visible frozen-battle death-hold cue is missing');
+  assert(lockedState.fatalImpact?.source === 'boss_wall', `fatal source was not preserved: ${JSON.stringify(lockedState.fatalImpact)}`);
+  assert(lockedState.combatCleanup?.bossHazardsCleared === 1, `final-death wall hazard was not cleared: ${JSON.stringify(lockedState.combatCleanup)}`);
+  assert(lockedState.bossHazards === 0 && lockedState.bossHazardGeometry === false, `boss-hazard seam geometry survived final death: ${JSON.stringify(lockedState)}`);
+  assert(lockedState.damageFlash?.renderMode === 'filled_edge_bands' && lockedState.damageFlash?.strokeCount === 0, `damage cue still uses seam-prone strokes: ${JSON.stringify(lockedState.damageFlash)}`);
+  await page.waitForTimeout(300);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(100);
+  const earlySkipState = await page.evaluate(() => window.__game?.currentSceneName);
+  assert(earlySkipState === 'play', `held/early input skipped the final-death presentation before 600ms: ${earlySkipState}`);
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: path.join(outputDir, 'in-game-final-death.png'), fullPage: true });
+  await page.waitForTimeout(300);
+  const signalState = await page.evaluate(() => structuredClone(window.__game?.scenes?.play?.gameOverAnimationDebug || null));
+  assert(signalState?.signalAssetReady === true, `generated final-signal asset was not visible: ${JSON.stringify(signalState)}`);
+  assert(signalState?.continuePromptVisible === true, `continue prompt was not visible once skipping became available: ${JSON.stringify(signalState)}`);
+  await page.screenshot({ path: path.join(outputDir, 'in-game-final-signal.png'), fullPage: true });
+  const skipRequestedAt = await page.evaluate(() => Date.now());
+  await page.keyboard.press('q');
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 5000 });
+  const state = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const invariant = await page.evaluate(() => {
+    const game = window.__game;
+    return {
+      gameScore: game.score,
+      finalScoreSnapshot: game.finalScoreSnapshot,
+      breakdownScore: game.scoreBreakdown?.finalScore,
+      summaryScore: game.runSummary?.finalScore,
+      reportScore: game.lastRunReport?.summary?.score,
+      sceneScore: game.scenes?.gameOver?.finalScore
+    };
+  });
+  assert(state.scene === 'gameOver', `expected gameOver after final death ceremony, got ${state.scene}`);
+  assert(state.gameOverAnimation?.skipped === true && state.gameOverAnimation?.skipReason === 'keyboard', `game-over ceremony did not record the intentional skip: ${JSON.stringify(state.gameOverAnimation)}`);
+  assert(state.gameOverAnimation?.completedAt - skipRequestedAt <= 500, `skip input did not hand off promptly: ${JSON.stringify(state.gameOverAnimation)}`);
+  assert(Object.values(invariant).every((value) => value === 12345), `final score invariant failed: ${JSON.stringify(invariant)}`);
+  assert(pageErrors.length === 0, `page errors for in-game final death animation: ${pageErrors.join('; ')}`);
+  await page.close();
+  return {
+    scenario: 'in_game_final_death_animation',
+    finalScene: state.scene,
+    finalScore: state.gameOver?.score || 0,
+    invariant
+  };
+}
+
+async function checkEarlySkipDeathTransition(browser) {
+  const { page, pageErrors } = await preparePage(browser);
+  await page.evaluate(async () => {
+    await window.__game?.scenes?.play?.gameOverFinalTransmissionReady;
+    const game = window.__game;
+    const play = game.scenes.play;
+    play.clearToastState?.();
+    game.score = 19001;
+    game.level = 5;
+    game.lives = 1;
+    game.loseLife({ source: 'enemy_contact' });
+  });
+  await page.waitForTimeout(650);
+  const skipRequestedAt = await page.evaluate(() => Date.now());
+  await page.keyboard.press('x');
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 2500 });
+  const timing = await page.evaluate(() => ({
+    scene: window.__game?.currentSceneName,
+    animation: structuredClone(window.__game?.scenes?.play?.gameOverAnimationDebug || null)
+  }));
+  assert(timing.animation?.skipped === true && timing.animation?.skipReason === 'keyboard', `early skip was not accepted: ${JSON.stringify(timing)}`);
+  assert(timing.animation?.transitionElapsedMs <= 1500, `true skipped death-to-results exceeded 1.5s: ${JSON.stringify(timing.animation)}`);
+  assert(timing.animation?.completedAt - skipRequestedAt <= 500, `early skip handoff latency exceeded 500ms: ${JSON.stringify(timing.animation)}`);
+  assert(pageErrors.length === 0, `page errors for early-skip death transition: ${pageErrors.join('; ')}`);
+  await page.close();
+  return { scenario: 'early_skip_death_transition', ...timing };
+}
+
+async function checkNaturalDeathTransition(browser) {
+  const { page, pageErrors } = await preparePage(browser);
+  await page.evaluate(async () => {
+    await window.__game?.scenes?.play?.gameOverFinalTransmissionReady;
+    const game = window.__game;
+    const play = game.scenes.play;
+    play.clearToastState?.();
+    play.scorePopupManager?.clearVisuals?.({ preserveCombo: true });
+    game.score = 23456;
+    game.level = 8;
+    game.lives = 1;
+    game.loseLife({ source: 'enemy_bullet' });
+  });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 5000 });
+  const timing = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    return {
+      animation: structuredClone(play?.gameOverAnimationDebug || null),
+      scene: window.__game?.currentSceneName,
+      gameOverStatus: window.__game?.scenes?.gameOver?.globalStatus || null
+    };
+  });
+  assert(timing.scene === 'gameOver', `natural death did not reach results: ${JSON.stringify(timing)}`);
+  assert(timing.animation?.skipped === false && timing.animation?.skipReason == null, `natural death was incorrectly marked skipped: ${JSON.stringify(timing.animation)}`);
+  assert(timing.animation?.transitionElapsedMs <= 3000, `natural death-to-results exceeded 3s: ${JSON.stringify(timing.animation)}`);
+  assert(timing.animation?.transitionElapsedMs >= 1800, `natural death presentation was cut off too early: ${JSON.stringify(timing.animation)}`);
+  assert(['checking', 'offline', 'submitting', 'submitted', 'idle', 'steam_ready', null].includes(timing.gameOverStatus), `results waited on online work: ${JSON.stringify(timing)}`);
+  assert(pageErrors.length === 0, `page errors for natural death transition: ${pageErrors.join('; ')}`);
+  const screenshot = path.join(outputDir, 'natural-death-results.png');
+  await page.screenshot({ path: screenshot, fullPage: true });
+  await page.close();
+  return { scenario: 'natural_death_transition', screenshot, ...timing };
+}
+
+async function checkNormalLifeLossFeedback(browser) {
+  const { page, pageErrors } = await preparePage(browser);
+  const setup = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    game.lives = 2;
+    play.clearToastState();
+    play.showToast('SHIP GRAZE +8', { slot: 'corner', type: 'nearMiss', priority: 1, duration: 4000 });
+    play.enqueueToast('CABINET LOG PARAGRAPH', { slot: 'top', type: 'lore', priority: 1, duration: 4000 });
+    game.loseLife({ source: 'enemy_contact' });
+    play.triggerPlayerDeathFeedback({ source: 'enemy_contact' });
+    return {
+      lives: game.lives,
+      gameOverSequenceStarted: Boolean(play.gameOverSequenceStarted),
+      suppression: structuredClone(play.lastLifeLossNotificationSuppression || null),
+      damageFlash: structuredClone(play.lastPlayerDamageFlashDebug || null),
+      toast: structuredClone(play.getToastDebugState?.() || null),
+      playerInvulnerable: Boolean(play.player?.invulnerable)
+    };
+  });
+  await page.waitForTimeout(120);
+  const screenshot = path.join(outputDir, 'in-game-normal-life-loss.png');
+  await page.screenshot({ path: screenshot, fullPage: true });
+  assert(setup.lives === 1 && setup.gameOverSequenceStarted === false, `normal life loss entered final-death flow: ${JSON.stringify(setup)}`);
+  const suppressedSecondaryCount = Number(setup.suppression?.queuedRemoved || 0)
+    + Number(setup.suppression?.activeDismissed || 0)
+    + Number(setup.suppression?.hiddenPositiveSurfaces || 0);
+  assert(suppressedSecondaryCount >= 2, `secondary notifications survived life loss: ${JSON.stringify(setup.suppression)}`);
+  assert(setup.toast?.active?.some?.((toast) => toast?.type === 'player_survival'), `survival notice did not replace positive notifications: ${JSON.stringify(setup.toast)}`);
+  assert(setup.damageFlash?.finalDeath === false && setup.damageFlash?.impactSource === 'enemy_contact', `normal impact feedback lost its source: ${JSON.stringify(setup.damageFlash)}`);
+  assert(setup.playerInvulnerable === true, 'normal life loss did not enter respawn invulnerability');
+  assert(pageErrors.length === 0, `page errors for normal life loss: ${pageErrors.join('; ')}`);
+  await page.close();
+  return { scenario: 'normal_life_loss_feedback', screenshot, setup };
+}
+
 const server = await startPreviewServer();
 console.log(`[gameover-ceremony] preview ready ${baseUrl}`);
 const browser = await chromium.launch({
@@ -155,6 +381,9 @@ try {
     const { page, pageErrors } = await preparePage(browser);
     await page.evaluate(() => {
       const game = window.__game;
+      game.scoreMultiplier = 1;
+      if (game.scenes?.play?.player) game.scenes.play.player.scoreMultiplier = 1;
+      if (game.runPressureDirector) game.runPressureDirector.getScoreMultiplier = () => 1;
       game.globalLeaderboardTargets = [
         { score: 50000 }, { score: 42000 }, { score: 36000 }, { score: 30000 },
         { score: 24000 }, { score: 20000 }, { score: 16000 }, { score: 12000 },
@@ -162,9 +391,12 @@ try {
         { score: 7000 }, { score: 6800 }, { score: 6600 }, { score: 6400 },
         { score: 6250 }, { score: 6150 }, { score: 6050 }, { score: 6000 }
       ];
-      game.addScore(52000);
-      game.addScore(250000);
-      game.addScore(180000);
+      game.score = 100;
+      game.updateGlobalLeaderboardVoiceCues?.();
+      game.score = 33000;
+      game.updateGlobalLeaderboardVoiceCues?.();
+      game.score = 46000;
+      game.updateGlobalLeaderboardVoiceCues?.();
     });
     const cueState = await page.evaluate(() => JSON.parse(window.render_game_to_text()).globalLeaderboardCues);
     assert(cueState.global === true, 'near-global voice cue did not arm');
@@ -174,6 +406,18 @@ try {
     results.push({ scenario: 'live_cues', cueState });
     await page.close();
   }
+
+  console.log('[gameover-ceremony] checking in-game final death animation');
+  results.push(await checkInGameFinalDeathAnimation(browser));
+
+  console.log('[gameover-ceremony] checking natural death-to-results timing');
+  results.push(await checkNaturalDeathTransition(browser));
+
+  console.log('[gameover-ceremony] checking earliest intentional skip timing');
+  results.push(await checkEarlySkipDeathTransition(browser));
+
+  console.log('[gameover-ceremony] checking normal life-loss hierarchy');
+  results.push(await checkNormalLifeLossFeedback(browser));
 
   console.log('[gameover-ceremony] checking number-one ceremony');
   results.push(await checkCeremony(browser, {
@@ -186,7 +430,7 @@ try {
   results.push(await checkCeremony(browser, {
     score: 39000,
     expectedTier: 'top3',
-    titlePattern: /TOP THREE/i,
+    titlePattern: /Steam Global Leaderboard #3/i,
     shotName: 'top-three.png'
   }));
   console.log('[gameover-ceremony] checking global-slot ceremony');

@@ -338,7 +338,7 @@ async function stageGrazeBreakPayoff(page) {
       await new Promise((resolve) => setTimeout(resolve, 70));
     }
     play.grazeBreakReady = true;
-    play.grazeBreakExpiresAt = Date.now() + 5000;
+    play.grazeBreakExpiresAt = play.getGameplayClockMs() + 5000;
 
     player.shootCooldown = 0;
     const playerBullets = player.shoot();

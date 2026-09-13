@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+﻿import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
@@ -10,16 +10,28 @@ const port = process.env.I18N_UI_URL ? null : (explicitPort || await findAvailab
 const baseUrl = process.env.I18N_UI_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.I18N_UI_OUTPUT_DIR || `test-results/i18n-ui-${timestamp()}`);
 
-const languages = [
-  { code: 'en', slug: 'english', settingsLabel: 'English', menuSettings: 'SETTINGS', launch: 'LAUNCH RUN', scorePrefix: 'SCORE', gameOver: 'GAME OVER', leaderboard: 'GLOBAL SCORE DECK', glyphProbe: 'Nova Swarm' },
-  { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'RUN STARTEN', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'GLOBALES SCORE-DECK', glyphProbe: 'äöüÄÖÜß' },
-  { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: '开始游戏', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: '全球计分榜', glyphProbe: '设置排行榜游戏结束' },
-  { code: 'ru', slug: 'russian', settingsLabel: 'Русский', menuSettings: 'НАСТРОЙКИ', launch: 'НАЧАТЬ ЗАБЕГ', scorePrefix: 'ОЧКИ', gameOver: 'ИГРА ОКОНЧЕНА', leaderboard: 'ГЛОБАЛЬНАЯ ТАБЛИЦА', glyphProbe: 'Настройки Очки Игра' },
-  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'INICIAR PARTIDA', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'MARCADOR GLOBAL', glyphProbe: 'Ajustes Puntuación ñáéíóú' },
-  { code: 'pt-BR', slug: 'portuguese-brazil', settingsLabel: 'Português do Brasil', menuSettings: 'CONFIGURAÇÕES', launch: 'INICIAR PARTIDA', scorePrefix: 'PONTUAÇÃO', gameOver: 'FIM DE JOGO', leaderboard: 'RANKING GLOBAL', glyphProbe: 'Configurações pontuação á à â ã ç é ê í ó ô õ ú' },
-  { code: 'ko', slug: 'korean', settingsLabel: '한국어', menuSettings: '설정', launch: '게임 시작', scorePrefix: '점수', gameOver: '게임 오버', leaderboard: '글로벌 순위표', glyphProbe: '한국어 설정 점수 순위표' },
-  { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'ゲーム開始', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'グローバルランキング', glyphProbe: '日本語 設定 スコア ランキング' }
+const allLanguages = [
+  { code: 'en', slug: 'english', settingsLabel: 'English', menuSettings: 'SETTINGS', launch: 'MAYHEM PURE', scorePrefix: 'SCORE', gameOver: 'GAME OVER', leaderboard: 'STEAM SCORE DECK', route: 'ROUTE', glyphProbe: 'Nova Swarm' },
+  { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'MAYHEM PUR', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'STEAM-PUNKTETAFEL', route: 'ROUTE', glyphProbe: 'äöüÄÖÜß' },
+  { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: '纯粹狂潮', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: 'STEAM 得分榜', route: '路线', glyphProbe: '设置排行榜游戏结束' },
+  { code: 'ru', slug: 'russian', settingsLabel: 'Русский', menuSettings: 'НАСТРОЙКИ', launch: 'ЧИСТЫЙ MAYHEM', scorePrefix: 'ОЧКИ', gameOver: 'ИГРА ОКОНЧЕНА', leaderboard: 'ТАБЛИЦА STEAM', route: 'МАРШРУТ', glyphProbe: 'Настройки Очки Игра' },
+  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'MAYHEM PURO', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'TABLERO STEAM', route: 'RUTA', glyphProbe: 'Ajustes Puntuación ñáéíóú' },
+  { code: 'pt-BR', slug: 'portuguese-brazil', settingsLabel: 'Português do Brasil', menuSettings: 'CONFIGURAÇÕES', launch: 'MAYHEM PURO', scorePrefix: 'PONTUAÇÃO', gameOver: 'FIM DE JOGO', leaderboard: 'PLACAR STEAM', route: 'ROTA', glyphProbe: 'Configurações pontuação á à â ã ç é ê í ó ô õ ú' },
+  { code: 'ko', slug: 'korean', settingsLabel: '한국어', menuSettings: '설정', launch: '메이헴 퓨어', scorePrefix: '점수', gameOver: '게임 오버', leaderboard: 'STEAM 스코어 덱', route: '경로', glyphProbe: '한국어 설정 점수 순위표' },
+  { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'メイヘム・ピュア', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'STEAMスコアデッキ', route: 'ルート', glyphProbe: '日本語 設定 スコア ランキング' }
 ];
+const requestedLanguages = new Set(
+  String(process.env.I18N_UI_LANGUAGES || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
+const languages = requestedLanguages.size
+  ? allLanguages.filter((language) => requestedLanguages.has(language.code))
+  : allLanguages;
+if (languages.length === 0) {
+  throw new Error(`No i18n UI languages matched I18N_UI_LANGUAGES=${[...requestedLanguages].join(',')}`);
+}
 
 const forbiddenPlaceholderMarkers = [
   'Texto:',
@@ -32,7 +44,17 @@ const forbiddenPlaceholderMarkers = [
   'UNTRANSLATED:'
 ];
 const englishLeakLanguageCodes = new Set(['pt-BR', 'ko', 'ja']);
+const resultScreenLeakFragments = [
+  'NEXT CAREER GOAL:',
+  'Local board rank #',
+  'DEFEAT 1 BOSS:',
+  'Steam ranking wa riyou',
+  'Steam paihangbang buke',
+  'Steam sunwipyo sayong',
+  'Tablitsa Steam nedostupna',
+];
 const forbiddenEnglishFragments = [
+  ...resultScreenLeakFragments,
   'Sector 1:',
   'Sector 2:',
   'Sector 3:',
@@ -232,24 +254,49 @@ async function snapshot(page) {
         return null;
       }
     };
+    const collectRenderedText = (displayObject) => {
+      const values = [];
+      const visit = (node) => {
+        if (!node) return;
+        if (typeof node.text === 'string' && node.text.trim()) values.push(node.text.trim());
+        for (const child of node.children || []) visit(child);
+      };
+      visit(displayObject);
+      return values;
+    };
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     const game = window.__game;
     const scene = game?.currentScene;
     const play = game?.scenes?.play;
     const settings = scene?.settingsOverlay || play?.settingsOverlay || null;
+    const settingsDebug = settings?.getDebugState?.() || null;
     const highscore = game?.scenes?.highscore;
     const pause = play?.pauseOverlay || play?.settingsOverlay || null;
     return {
       language: state.language,
       scene: state.scene,
       menu: {
-        launch: game?.scenes?.menu?.startBtn?._label?.text || null,
-        settings: game?.scenes?.menu?.settingsBtn?._label?.text || null
+        launch: game?.scenes?.menu?.launchHome?.buttons?.launchTactical?._label?.text || null,
+        settings: game?.scenes?.menu?.launchHome?.buttons?.settings?._label?.text || null,
+        primaryRunMode: game?.scenes?.menu?.launchHome?.debug?.().primaryRunMode || null,
+        homeAlpha: game?.scenes?.menu?.launchHome?.alpha,
+        duplicateRotateHint: game?.scenes?.menu?.astraMenuShip?.caption?.visible,
+        missionBriefing: state.menu?.missionBriefing || null,
+        launchDeck: state.menu?.launchDeck || null,
+        modeBriefing: state.menu?.modeBriefing
+          ? {
+              ...state.menu.modeBriefing,
+              renderedText: collectRenderedText(game?.scenes?.menu?.modeBriefingOverlay?.container)
+            }
+          : null
       },
       settings: {
+        activePage: settingsDebug?.activePage || null,
         language: settings?.languageButton?._label?.text || null,
         languageHint: settings?.languageHint?.text || null,
-        close: settings?.footerButtons?.close?._label?.text || null
+        close: settings?.footerButtons?.close?._label?.text || null,
+        renderedText: collectRenderedText(settings?.pageContainers?.[settingsDebug?.activePage]),
+        prototype: settingsDebug?.prototype || null
       },
       hud: {
         score: play?.hud?.scoreText?.text || null,
@@ -258,7 +305,8 @@ async function snapshot(page) {
       },
       pause: {
         title: pause?.title?.text || scene?.pauseTitle?.text || null,
-        resume: pause?.resumeButton?._label?.text || null
+        resume: pause?.resumeButton?._label?.text || null,
+        trait: play?.pauseOverlay?.children?.find(child => child.label === 'ui_pauseTraitExplanation')?.text || null
       },
       gameOver: {
         title: game?.scenes?.gameOver?.title?.text || null,
@@ -294,6 +342,14 @@ async function snapshot(page) {
 function boxesOverlap(a, b, gap = 0) {
   if (!a || !b || a.width <= 0 || a.height <= 0 || b.width <= 0 || b.height <= 0) return false;
   return !(a.right + gap <= b.x || b.right + gap <= a.x || a.bottom + gap <= b.y || b.bottom + gap <= a.y);
+}
+
+function boxContains(outer, inner, tolerance = 3) {
+  if (!outer || !inner || outer.width <= 0 || outer.height <= 0 || inner.width <= 0 || inner.height <= 0) return false;
+  return inner.x >= outer.x - tolerance
+    && inner.y >= outer.y - tolerance
+    && inner.right <= outer.right + tolerance
+    && inner.bottom <= outer.bottom + tolerance;
 }
 
 async function screenshot(page, name) {
@@ -335,12 +391,14 @@ function stripAllowedEnglish(text) {
 }
 
 function collectEnglishLeakHits(value, pathLabel = 'snapshot', localeCode = null, hits = []) {
-  if (!englishLeakLanguageCodes.has(localeCode) || value == null) return hits;
+  if (!localeCode || localeCode === 'en' || value == null) return hits;
   if (typeof value === 'string') {
     const lowered = value.toLowerCase();
-    for (const fragment of forbiddenEnglishFragments) {
+    const fragments = englishLeakLanguageCodes.has(localeCode) ? forbiddenEnglishFragments : resultScreenLeakFragments;
+    for (const fragment of fragments) {
       if (lowered.includes(fragment.toLowerCase())) hits.push(`${pathLabel}: forbidden English phrase "${fragment}" in "${value}"`);
     }
+    if (!englishLeakLanguageCodes.has(localeCode)) return hits;
     const stripped = stripAllowedEnglish(value);
     const tokens = stripped.match(/\b[A-Za-z][A-Za-z'’.-]*\b/g) || [];
     let sequence = [];
@@ -389,13 +447,63 @@ async function captureLanguage(page, language, index) {
   assert(snaps.settings.language.current === language.code, `${language.slug} did not resolve to ${language.code}`);
   assert(snaps.settings.settings.language === language.settingsLabel, `${language.slug} Settings language label mismatch`);
 
+  await page.evaluate(() => window.__game?.currentScene?.settingsOverlay?.setActiveSettingsPage?.('prototype'));
+  await page.waitForTimeout(120);
+  snaps.prototypeSettings = await snapshot(page);
+  assertSnapshotClean(snaps.prototypeSettings, language, `${language.slug}.prototypeSettings`);
+  shots.prototypeSettings = await screenshot(page, `${prefix}-settings-prototype.png`);
+  const prototypeInfo = snaps.prototypeSettings.settings?.prototype?.infoCard;
+  assert(snaps.prototypeSettings.settings.activePage === 'prototype', `${language.slug} Prototype Settings page did not open`);
+  assert(boxContains(prototypeInfo?.frameBounds, prototypeInfo?.contentBounds), `${language.slug} prototype explanation escaped its frame: ${JSON.stringify(prototypeInfo)}`);
+  assert(prototypeInfo?.scale >= 0.62, `${language.slug} prototype explanation became too small: ${JSON.stringify(prototypeInfo)}`);
+
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !window.__game?.currentScene?.settingsOverlay, null, { timeout: 10000 });
+  await page.waitForFunction(() => window.__game?.scenes?.menu?.astraMenuShip?.ready, null, { timeout: 120000 });
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   snaps.menu = await snapshot(page);
   assertSnapshotClean(snaps.menu, language, `${language.slug}.menu`);
   shots.menu = await screenshot(page, `${prefix}-main-menu.png`);
   assert(snaps.menu.menu.settings === language.menuSettings, `${language.slug} menu Settings label mismatch`);
-  assert(snaps.menu.menu.launch === language.launch, `${language.slug} launch label mismatch`);
+  const homePlay = {en:'PLAY',de:'SPIELEN',es:'JUGAR',ru:'ИГРАТЬ','zh-CN':'游玩','pt-BR':'JOGAR',ko:'플레이',ja:'プレイ'};
+  assert(snaps.menu.menu.launch === homePlay[language.code], `${language.slug} visible home Play label mismatch`);
+  assert(snaps.menu.menu.primaryRunMode === 'ranked_tactical', `${language.slug} home Play must stay Tactical`);
+  assert(snaps.menu.menu.homeAlpha === 1, `${language.slug} home must recover brightness after Settings`);
+  assert(snaps.menu.menu.duplicateRotateHint === false, `${language.slug} home must have only one rotation hint`);
+
+  await page.evaluate((showAttempt) => {
+    const menu = window.__game?.scenes?.menu || window.__game?.currentScene;
+    menu.launchHome.openModes();
+    const syntheticRecord = {
+      score: 123456,
+      sectorReached: 9,
+      runElapsedSeconds: 599,
+      runCleared: !showAttempt
+    };
+    menu.dailySignalBestAttempt = showAttempt ? syntheticRecord : null;
+    menu.dailySignalBestClear = showAttempt ? null : syntheticRecord;
+    menu.dailySignalBest = syntheticRecord;
+    menu?.setMenuFocusByButton?.(menu?.dailySignalBtn);
+  }, index % 2 === 1);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.missionBriefing?.mode === 'dailySignal', null, { timeout: 10000 });
+  snaps.dailyMenu = await snapshot(page);
+  assertSnapshotClean(snaps.dailyMenu, language, `${language.slug}.dailyMenu`);
+  shots.dailyMenu = await screenshot(page, `${prefix}-daily-signal-menu.png`);
+  assert(boxContains(snaps.dailyMenu.menu?.missionBriefing?.panelBounds, snaps.dailyMenu.menu?.missionBriefing?.titleBounds), `${language.slug} Daily title escaped its briefing panel: ${JSON.stringify(snaps.dailyMenu.menu?.missionBriefing)}`);
+  assert(boxContains(snaps.dailyMenu.menu?.missionBriefing?.panelBounds, snaps.dailyMenu.menu?.missionBriefing?.bodyBounds), `${language.slug} Daily body escaped its briefing panel: ${JSON.stringify(snaps.dailyMenu.menu?.missionBriefing)}`);
+  assert(snaps.dailyMenu.menu?.launchDeck?.featuredDailySignal?.flightLog?.symbols?.length > 0, `${language.slug} Daily Flight Log was not exposed`);
+
+  await page.keyboard.press('KeyI');
+  await page.waitForFunction(() => Boolean(JSON.parse(window.render_game_to_text?.() || '{}').menu?.modeBriefing?.open), null, { timeout: 10000 });
+  snaps.modeBriefing = await snapshot(page);
+  assertSnapshotClean(snaps.modeBriefing, language, `${language.slug}.modeBriefing`);
+  assert(
+    JSON.stringify(snaps.modeBriefing.menu?.modeBriefing || {}).includes(language.route),
+    `${language.slug} Mode Briefing route label mismatch`
+  );
+  shots.modeBriefing = await screenshot(page, `${prefix}-mode-briefing.png`);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !JSON.parse(window.render_game_to_text?.() || '{}').menu?.modeBriefing?.open, null, { timeout: 10000 });
 
   await page.evaluate(() => window.__game?.startGame?.());
   await waitForScene(page, 'play');

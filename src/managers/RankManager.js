@@ -11,7 +11,10 @@ import {
     getNextRankThreshold,
     getPilotXpThreshold,
     getNextPilotXpThreshold,
-    getPilotRankProgress
+    getPilotRankProgress,
+    getCareerRankProgress,
+    formatCareerInteger,
+    normalizePilotXpExact
 } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
 
@@ -49,7 +52,13 @@ export class RankManager {
     }
 
     getRankString(rankIndex) {
-        return `RANK ${rankIndex.toString().padStart(3, '0')}`;
+        const normalized = Math.max(0, Math.floor(Number(rankIndex) || 0));
+        const displayRank = Math.min(MAX_RANK_INDEX + 1, normalized + 1);
+        return `RANK ${displayRank}`;
+    }
+
+    getCareerRankString(displayRankExact) {
+        return `RANK ${formatCareerInteger(normalizePilotXpExact(displayRankExact), { maxPlainDigits: 6 })}`;
     }
 
     getRankProgress(level, rankIndex) {
@@ -70,6 +79,10 @@ export class RankManager {
 
     getPilotRankProgress(pilotXp) {
         return getPilotRankProgress(pilotXp);
+    }
+
+    getCareerRankProgress(pilotXpExact) {
+        return getCareerRankProgress(pilotXpExact);
     }
 
     // TASK 2: Get rank title

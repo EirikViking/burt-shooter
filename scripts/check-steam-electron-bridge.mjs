@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
+import { EventEmitter } from 'node:events';
 import path from 'node:path';
 
 const require = createRequire(import.meta.url);
 const {
+  DEFAULT_STEAM_APP_ID,
   STEAM_LEADERBOARD_NAME,
   createSteamLeaderboardBridge
 } = require('../electron/steamLeaderboardBridge.cjs');
@@ -25,6 +28,26 @@ function createFakeSteamNative({ initResult = true, uploadResult = null, rawUplo
     },
     shutdown() {
       calls.push(['shutdown']);
+    },
+    isOverlayAvailable() {
+      calls.push(['isOverlayAvailable']);
+      return true;
+    },
+    addElectronSteamOverlay(browserWindow, options) {
+      calls.push(['addElectronSteamOverlay', Boolean(browserWindow), options]);
+      return true;
+    },
+    screenshots: {
+      hookScreenshots(enabled) {
+        calls.push(['hookScreenshots', enabled]);
+      },
+      triggerScreenshot() {
+        calls.push(['triggerScreenshot']);
+      },
+      addScreenshotToLibrary(filename, thumbnailFilename, width, height) {
+        calls.push(['addScreenshotToLibrary', filename, thumbnailFilename, width, height]);
+        return 42;
+      }
     },
     getStatus() {
       return { steamId: '76561198000000001' };
@@ -87,7 +110,9 @@ function createFakeSteamNative({ initResult = true, uploadResult = null, rawUplo
             steamId: '76561198000000001',
             globalRank: 1,
             score: 44000,
-            details: [8, 3, 240, 120, 2, 19]
+            level: 1,
+            levelReached: 1,
+            details: '0x0800000003000000f0000000780000000200000013000000'
           },
           {
             steamId: '76561198000000002',
@@ -136,6 +161,17 @@ async function checkUnavailableWithoutNative() {
   bridge.shutdown();
 }
 
+function checkDefaultNovaSteamAppId() {
+  const bridge = createSteamLeaderboardBridge({
+    allowNativeLoad: false,
+    rootDir: process.cwd()
+  });
+  assert.equal(DEFAULT_STEAM_APP_ID, 4765070);
+  assert.equal(bridge.getStatus().appId, 4765070, 'Nova Swarm Steam packages must default to the real app id');
+  assert.equal(bridge.getStatus().leaderboardName, 'nova_swarm_global_score_v2');
+  bridge.shutdown();
+}
+
 async function checkMissingAppIdDoesNotInitNative() {
   const nativeModule = createFakeSteamNative();
   const bridge = createSteamLeaderboardBridge({
@@ -161,6 +197,55 @@ async function checkNativeBridgeHappyPath() {
 
   assert.equal(await bridge.isAvailable(), true);
   assert.equal(await bridge.getPersonaName(), 'Steam Native Ace');
+  const webContents = new EventEmitter();
+  webContents.capturePage = async () => ({
+    getSize: () => ({ width: 1920, height: 1080 }),
+    toPNG: () => Buffer.from('fake-png')
+  });
+  const captureWindow = {
+    isDestroyed: () => false,
+    webContents
+  };
+  const screenshotOutputDir = mkdtempSync(path.join(tmpdir(), 'nova-swarm-screenshot-test-'));
+  const captureSurface = bridge.enableElectronScreenshotCapture(captureWindow, {
+    outputDir: screenshotOutputDir
+  });
+  assert.deepEqual(captureSurface, {
+    enabled: true,
+    reason: 'on_demand_ready',
+    mode: 'f12_on_demand',
+    continuousMirror: false
+  });
+  const screenshot = await bridge.triggerSteamScreenshot(captureWindow, {
+    outputDir: screenshotOutputDir,
+    source: 'unit_test'
+  });
+  assert.equal(screenshot.ok, true);
+  assert.equal(screenshot.handle, '42');
+  assert.equal(screenshot.width, 1920);
+  assert.equal(screenshot.height, 1080);
+  assert.ok(nativeModule.fakeSteam.calls.some(call => call[0] === 'hookScreenshots' && call[1] === true));
+  assert.ok(nativeModule.fakeSteam.calls.some(call => call[0] === 'addScreenshotToLibrary' && call[3] === 1920 && call[4] === 1080));
+  let prevented = false;
+  webContents.emit('before-input-event', {
+    preventDefault() {
+      prevented = true;
+    }
+  }, {
+    type: 'keyDown',
+    key: 'F12',
+    isAutoRepeat: false
+  });
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(prevented, true);
+  assert.equal(
+    nativeModule.fakeSteam.calls.filter(call => call[0] === 'addScreenshotToLibrary').length,
+    2,
+    'physical F12 should capture exactly one frame'
+  );
+  assert.equal(nativeModule.fakeSteam.calls.some(call => call[0] === 'addElectronSteamOverlay'), false);
+  assert.equal(nativeModule.fakeSteam.calls.some(call => call[0] === 'triggerScreenshot'), false);
+  rmSync(screenshotOutputDir, { recursive: true, force: true });
 
   const globalScores = await bridge.getTopScores({
     leaderboardName: STEAM_LEADERBOARD_NAME,
@@ -173,6 +258,7 @@ async function checkNativeBridgeHappyPath() {
   assert.equal(globalScores[0].playerName, 'Steam Native Ace');
   assert.equal(globalScores[0].isCurrentPlayer, true);
   assert.equal(globalScores[0].metadata.levelReached, 8);
+  assert.equal(globalScores[0].level, 8, 'Steam hex details must override stale LV1 fields');
 
   const friendsScores = await bridge.getFriendsScores({
     leaderboardName: STEAM_LEADERBOARD_NAME,
@@ -276,10 +362,30 @@ async function checkUploadInFlightGuard() {
 function checkPreloadSurface() {
   const preload = readFileSync(path.resolve('electron/preload.cjs'), 'utf8');
   assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaSteamLeaderboard'/);
+  assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaDisplay'/);
+  assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaPerformanceDiagnostics'/);
+  assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaApp'/);
   assert.doesNotMatch(preload, /fs\.|child_process|shell|process\.env/);
   for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getFriendsScores', 'submitScore', 'submitScoreDetailed', 'requestCurrentStats', 'getLastUploadDiagnostics', 'getRuntimeInfo']) {
     assert.match(preload, new RegExp(`${method}:`));
   }
+  for (const method of ['getSettings', 'getInfo', 'applySettings']) {
+    assert.match(preload, new RegExp(`${method}:`));
+  }
+  assert.match(preload, /writeReport:/);
+  assert.match(preload, /saveSignalCard:/);
+  assert.match(preload, /copyText:/);
+}
+
+function checkDailySignalCardIpcGuard() {
+  const main = readFileSync(path.resolve('electron/main.cjs'), 'utf8');
+  assert.match(main, /nova-app:saveSignalCard/);
+  assert.match(main, /MAX_SIGNAL_CARD_BYTES/);
+  assert.match(main, /invalid_png_signature/);
+  assert.match(main, /sanitizeSignalCardFilename/);
+  assert.match(main, /showSaveDialog/);
+  assert.match(main, /nova-app:copyText/);
+  assert.match(main, /text\.length > 4096/);
 }
 
 function checkNoRendererNativeImport() {
@@ -295,12 +401,26 @@ function checkNoRendererNativeImport() {
   }
 }
 
+function checkFreshProfileSteamIsolationGuard() {
+  const main = readFileSync(path.resolve('electron/main.cjs'), 'utf8');
+  assert.match(main, /const isFreshProfile =/);
+  assert.match(main, /FRESH_PROFILE_STEAM_REASON = 'fresh_profile_isolated'/);
+  assert.match(main, /function getFreshProfileSteamStatus/);
+  assert.match(main, /function getFreshProfileSteamResult/);
+  assert.match(main, /function registerSteamLeaderboardIpc\(\) \{\s+if \(isFreshProfile\)/);
+  assert.match(main, /function registerSteamAchievementsIpc\(\) \{\s+if \(isFreshProfile\)/);
+  assert.match(main, /steamIntegrationIsolated: isFreshProfile/);
+}
+
 await checkUnavailableWithoutNative();
+checkDefaultNovaSteamAppId();
 await checkMissingAppIdDoesNotInitNative();
 await checkNativeBridgeHappyPath();
 await checkRawUploadFailureDiagnostics();
 await checkUploadInFlightGuard();
 checkPreloadSurface();
+checkDailySignalCardIpcGuard();
 checkNoRendererNativeImport();
+checkFreshProfileSteamIsolationGuard();
 
 console.log('[steam-electron-bridge] PASS native bridge contract, preload surface, renderer isolation');

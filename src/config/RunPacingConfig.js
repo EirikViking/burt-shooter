@@ -109,17 +109,23 @@ export const RunPacingConfig = {
   },
 
   pilotXp: {
-    scoreDivisor: 300,
-    sectorReachedBase: 90,
-    waveClear: 12,
-    bossDefeat: 110,
-    codexDiscovery: 28,
+    scoreDivisor: 600,
+    sectorReachedBase: 55,
+    waveClear: 6,
+    bossDefeat: 60,
+    codexDiscovery: 14,
     newThreatDefeat: 80,
-    runThemeDiscovery: 60,
-    noHitWave: 70,
-    noHitSector: 220,
+    runThemeDiscovery: 35,
+    noHitWave: 45,
+    noHitSector: 160,
     runClear: 900,
-    clearWithLivesRemaining: 250
+    clearWithLivesRemaining: 250,
+    // Very long survival runs consume dramatically more real time than normal
+    // sessions. Ramp career credit only after 50 sectors actually cleared, and
+    // reach 2x at 120 cleared sectors so late ranks value endurance fairly.
+    enduranceBonusStartSectors: 50,
+    enduranceBonusFullSectors: 120,
+    enduranceMaxMultiplier: 2
   }
 };
 
@@ -148,13 +154,16 @@ function finiteNumber(value, fallback = 0) {
 }
 
 export function getRunElapsedSeconds(game) {
+  const experimentOffset = game?.lateGameExperiment?.active === true
+    ? Math.max(0, finiteNumber(game.lateGameExperiment?.pressureProfile?.elapsedSeconds, 0))
+    : 0;
   const playScene = game?.scenes?.play;
-  if (Number.isFinite(playScene?.gameTime)) return Math.max(0, playScene.gameTime);
-  if (Number.isFinite(game?.runElapsedSeconds)) return Math.max(0, game.runElapsedSeconds);
+  if (Number.isFinite(playScene?.gameTime)) return experimentOffset + Math.max(0, playScene.gameTime);
+  if (Number.isFinite(game?.runElapsedSeconds)) return experimentOffset + Math.max(0, game.runElapsedSeconds);
   if (Number.isFinite(game?.runStartedAtMs) && game.runStartedAtMs > 0) {
-    return Math.max(0, (Date.now() - game.runStartedAtMs) / 1000);
+    return experimentOffset + Math.max(0, (Date.now() - game.runStartedAtMs) / 1000);
   }
-  return 0;
+  return experimentOffset;
 }
 
 export function getCurrentPressurePhase(elapsedSeconds = 0) {

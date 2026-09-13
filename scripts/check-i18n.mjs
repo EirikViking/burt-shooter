@@ -9,6 +9,10 @@ import { ptBR } from '../src/i18n/locales/pt-BR.js';
 import { ru } from '../src/i18n/locales/ru.js';
 import { zhCN } from '../src/i18n/locales/zh-CN.js';
 import {
+  MODE_BRIEFING_SOURCE_TEXT,
+  getModeBriefingReviewSourceText
+} from '../src/i18n/modeBriefingReviewSourceText.js';
+import {
   normalizeLanguageCode,
   resolveLanguage,
   setLanguagePreference,
@@ -109,6 +113,11 @@ function findForbiddenPlaceholderMarkers(value) {
   return forbiddenPlaceholderMarkers.filter((marker) => text.includes(marker));
 }
 
+function findQuestionPlaceholderMarkers(value) {
+  const text = String(value ?? '');
+  return text.match(/\?{2,}/g) || [];
+}
+
 function findEnglishLeakMarkers(value) {
   const text = String(value ?? '');
   const hits = forbiddenEnglishFragments.filter((fragment) => text.toLowerCase().includes(fragment.toLowerCase()));
@@ -142,6 +151,7 @@ const sourceTextKeys = new Set(sourceLocales.flatMap((locale) => Object.keys(loc
 const allowTodos = process.argv.includes('--allow-i18n-todo');
 const todoMarkers = [];
 const placeholderMarkers = [];
+const questionPlaceholderMarkers = [];
 for (const [code, locale] of locales) {
   for (const [key, value] of Object.entries(locale.sourceText || {})) {
     if (/\b(TODO|TBD|TRANSLATE|UNLOCALIZED)\b/i.test(String(value))) {
@@ -151,12 +161,20 @@ for (const [code, locale] of locales) {
     if (markers.length) {
       placeholderMarkers.push(`${code}.sourceText.${key}: ${markers.join(', ')}`);
     }
+    const questionMarkers = findQuestionPlaceholderMarkers(value);
+    if (questionMarkers.length) {
+      questionPlaceholderMarkers.push(`${code}.sourceText.${key}: ${questionMarkers.join(', ')}`);
+    }
   }
   for (const key of flattenKeys(locale)) {
     const value = key.split('.').reduce((node, part) => node?.[part], locale);
     const markers = findForbiddenPlaceholderMarkers(value);
     if (markers.length) {
       placeholderMarkers.push(`${code}.${key}: ${markers.join(', ')}`);
+    }
+    const questionMarkers = findQuestionPlaceholderMarkers(value);
+    if (questionMarkers.length) {
+      questionPlaceholderMarkers.push(`${code}.${key}: ${questionMarkers.join(', ')}`);
     }
   }
 }
@@ -168,6 +186,11 @@ assert.deepEqual(
   placeholderMarkers,
   [],
   `Player-facing placeholder markers are forbidden in locale data:\n${placeholderMarkers.join('\n')}`
+);
+assert.deepEqual(
+  questionPlaceholderMarkers,
+  [],
+  `Player-facing question-mark placeholders are forbidden in locale data:\n${questionPlaceholderMarkers.join('\n')}`
 );
 
 const patternIds = locales.map(([code, locale]) => [code, (locale.patterns || []).map((pattern) => pattern.id)]);
@@ -198,12 +221,10 @@ const hardcodedTextAllowlist = new Set([
   'Last error: ${this.lastError}',
   'build: ${BUILD_ID}',
   '#${index + 1}',
-  'LV ${score.level || 0}',
   '+${bonusAmount}',
   'pVis:${vis} a:${alpha} tex:${texOk} parent:${parent}',
   'S:${score} R:${rank} (seen:${seen}) REV:${rankEv} UI:${uiRankEv}',
   '${trimmed}...',
-  'COMBO x${this.comboMultiplier}  (${this.comboCount})',
   'COMBO:${this.comboCount}x${this.comboMultiplier} STREAK:${this.killStreak}',
   'Used ${usageCount} times by players',
   'HULL ${this.selectedIndex + 1}/${this.ships.length}  |  SERIES ${modelIndex}/${modelTotal}  |  ${status}',
@@ -355,7 +376,7 @@ assert.equal(resolveLanguage({
 assert.equal(t('settings.language.system', {}, { locale: 'de' }), 'Systemeinstellung');
 assert.equal(translateTextForLocale('de', 'SETTINGS'), 'EINSTELLUNGEN');
 assert.equal(translateTextForLocale('de', 'SCORE 1,234'), 'PUNKTZAHL 1,234');
-assert.equal(translateTextForLocale('de', 'WAVE 2/5  HOSTILES 8  THREATS 3'), 'WELLE 2/5  GEGNER 8  GEFAHREN 3');
+assert.equal(translateTextForLocale('de', 'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3'), 'WELLE: 2/5 | GEGNER: 8 | GEFAHREN: 3');
 assert.equal(translateTextForLocale('de', 'Reach Level 7'), 'Level 7 erreichen');
 assert.equal(translateTextForLocale('de', 'Rank Up: ACE'), 'Rangaufstieg: ASS');
 assert.equal(translateTextForLocale('de', 'LOCAL BOARD: QUALIFIED\nGLOBAL BOARD: OFFLINE - LOCAL STILL WORKS'), 'LOKALE LISTE: QUALIFIZIERT\nGLOBALE LISTE: OFFLINE - LOKAL FUNKTIONIERT');
@@ -373,7 +394,7 @@ const criticalSamples = {
     'SETTINGS': 'AJUSTES',
     'LAUNCH RUN': 'INICIAR PARTIDA',
     'SCORE 1,234': 'PUNTUACIÓN 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': 'OLEADA 2/5  ENEMIGOS 8  AMENAZAS 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': 'OLEADA: 2/5 | ENEMIGOS: 8 | AMENAZAS: 3',
     'GAME OVER': 'FIN DE LA PARTIDA',
     'SUBMIT SCORE': 'ENVIAR PUNTUACIÓN',
     'SCORE SUBMITTED': 'PUNTUACIÓN ENVIADA',
@@ -386,7 +407,7 @@ const criticalSamples = {
     'SETTINGS': 'НАСТРОЙКИ',
     'LAUNCH RUN': 'НАЧАТЬ ЗАБЕГ',
     'SCORE 1,234': 'ОЧКИ 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': 'ВОЛНА 2/5  ВРАГИ 8  УГРОЗЫ 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': 'ВОЛНА: 2/5 | ВРАГИ: 8 | УГРОЗЫ: 3',
     'GAME OVER': 'ИГРА ОКОНЧЕНА',
     'SUBMIT SCORE': 'ОТПРАВИТЬ ОЧКИ',
     'SCORE SUBMITTED': 'ОЧКИ ОТПРАВЛЕНЫ',
@@ -399,7 +420,7 @@ const criticalSamples = {
     'SETTINGS': '设置',
     'LAUNCH RUN': '开始游戏',
     'SCORE 1,234': '分数 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': '波次 2/5  敌人 8  威胁 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': '波次: 2/5 | 敌人: 8 | 威胁: 3',
     'GAME OVER': '游戏结束',
     'SUBMIT SCORE': '提交分数',
     'SCORE SUBMITTED': '分数已提交',
@@ -412,7 +433,7 @@ const criticalSamples = {
     'SETTINGS': 'CONFIGURAÇÕES',
     'LAUNCH RUN': 'INICIAR PARTIDA',
     'SCORE 1,234': 'PONTUAÇÃO 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': 'ONDA 2/5  INIMIGOS 8  AMEAÇAS 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': 'ONDA: 2/5 | INIMIGOS: 8 | AMEAÇAS: 3',
     'GAME OVER': 'FIM DE JOGO',
     'SUBMIT SCORE': 'ENVIAR PONTUAÇÃO',
     'SCORE SUBMITTED': 'PONTUAÇÃO ENVIADA',
@@ -425,7 +446,7 @@ const criticalSamples = {
     'SETTINGS': '설정',
     'LAUNCH RUN': '게임 시작',
     'SCORE 1,234': '점수 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': '웨이브 2/5  적 8  위협 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': '웨이브: 2/5 | 적: 8 | 위협: 3',
     'GAME OVER': '게임 오버',
     'SUBMIT SCORE': '점수 제출',
     'SCORE SUBMITTED': '점수 제출됨',
@@ -438,7 +459,7 @@ const criticalSamples = {
     'SETTINGS': '設定',
     'LAUNCH RUN': 'ゲーム開始',
     'SCORE 1,234': 'スコア 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': 'ウェーブ 2/5  敵 8  脅威 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': 'ウェーブ: 2/5 | 敵: 8 | 脅威: 3',
     'GAME OVER': 'ゲームオーバー',
     'SUBMIT SCORE': 'スコア送信',
     'SCORE SUBMITTED': 'スコア送信済み',
@@ -496,6 +517,29 @@ assert.equal(translateTextForLocale('ja', 'Sector 1: Popcorn Patrol'), 'セク�
 assert.notEqual(translateTextForLocale('ko', 'No scores yet. Start the first legend.'), 'No scores yet. Start the first legend.');
 assert.notEqual(translateTextForLocale('ja', 'No scores yet. Start the first legend.'), 'No scores yet. Start the first legend.');
 
+const modeBriefingLocales = ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja'];
+const placeholderPattern = /\{[^}]+\}/g;
+for (const code of modeBriefingLocales) {
+  const translated = getModeBriefingReviewSourceText(code);
+  assert.equal(
+    Object.keys(translated).length,
+    MODE_BRIEFING_SOURCE_TEXT.length,
+    `${code} must translate every Mode Briefing source string`
+  );
+  for (const source of MODE_BRIEFING_SOURCE_TEXT) {
+    const localized = translated[source];
+    assert.ok(
+      typeof localized === 'string' && localized.trim().length > 0,
+      `${code} has an empty Mode Briefing translation for "${source}"`
+    );
+    assert.deepEqual(
+      localized.match(placeholderPattern) || [],
+      source.match(placeholderPattern) || [],
+      `${code} changed placeholders in Mode Briefing source "${source}"`
+    );
+  }
+}
+
 const phrasePoolEnglishLeaks = [];
 for (const code of ['pt-BR', 'ko', 'ja']) {
   await setLanguagePreference(code);
@@ -548,3 +592,6 @@ for (const marker of ['spawnMarketingDebugBoss', 'marketingDebugMode']) {
 }
 
 console.log('i18n checks passed');
+console.log(
+  `i18n Mode Briefing complete: ${MODE_BRIEFING_SOURCE_TEXT.length} source strings translated in ${modeBriefingLocales.length} non-English locales`
+);

@@ -20,6 +20,9 @@ if ((powerups.maxPerLevel ?? 99) > 2) {
 if (powerups.extraLifeDropsEnabled !== true) {
   errors.push('extraLifeDropsEnabled should be true so rare life powerups can drop');
 }
+if (Number(powerups.extraLifeFinalSector) !== 100) {
+  errors.push(`extraLifeFinalSector should end endurance life drops after Sector 100, got ${powerups.extraLifeFinalSector}`);
+}
 if ((powerups.extraLifeChance ?? 99) > 0.08) {
   errors.push(`extraLifeChance should stay at or below 0.08, got ${powerups.extraLifeChance}`);
 }

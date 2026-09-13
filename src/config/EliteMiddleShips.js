@@ -1,10 +1,14 @@
-export const ELITE_MIDDLE_SHIP_FULL_UNLOCK_LEVEL = 40;
-export const ELITE_MIDDLE_SHIP_ASSET_COUNT = 20;
+import {discoverySector} from './DiscoveryProgression.js';
+import { getNormalWavePressureTuning } from './BalanceConfig.js';
+import { ELITE_MIDDLE_SHIP_EXPANSION } from './EliteMiddleShipExpansion.js';
+
+export const ELITE_MIDDLE_SHIP_FULL_UNLOCK_LEVEL = 60;
+export const ELITE_MIDDLE_SHIP_ASSET_COUNT = 50;
 
 const assetPath = (index, slug) =>
   `/art/generated/nova-swarm/elites/nova-elite-middle-${String(index).padStart(2, '0')}-${slug}-20260523.png`;
 
-export const ELITE_MIDDLE_SHIPS = [
+const AUTHORED_ELITES = [
   {
     id: 'nova_elite_tractor_puller',
     type: 'nova_elite_tractor_puller',
@@ -764,8 +768,15 @@ export const ELITE_MIDDLE_SHIPS = [
     },
     vfx: ['hunterLock', 'greenPredatorDash'],
     designNote: 'Late-game priority hunter with fast readable volleys, still far below boss durability.'
-  }
+  },
+  ...ELITE_MIDDLE_SHIP_EXPANSION
 ];
+
+const revealOrder=[...AUTHORED_ELITES].sort((a,b)=>a.minLevel-b.minLevel);
+export const ELITE_MIDDLE_SHIPS=AUTHORED_ELITES.map(profile=>{
+  const unlockLevel=Math.max(profile.minLevel,discoverySector(revealOrder.indexOf(profile),AUTHORED_ELITES.length,3));
+  return {...profile,minLevel:unlockLevel,unlockLevel};
+});
 
 export const ELITE_MIDDLE_SHIP_IDS = ELITE_MIDDLE_SHIPS.map((profile) => profile.id);
 export const ELITE_MIDDLE_SHIP_ASSETS = ELITE_MIDDLE_SHIPS.map((profile) => profile.asset);
@@ -842,10 +853,14 @@ export function planEliteMiddleShipSpawns(level, waveCount, random = Math.random
   }
 
   const maxActive = getEliteMiddleShipMaxActive(safeLevel);
+  const pressureTuning = getNormalWavePressureTuning(safeLevel);
+  const lateSecondSlotChance = Number.isFinite(Number(pressureTuning.eliteSecondSlotChance))
+    ? Number(pressureTuning.eliteSecondSlotChance)
+    : 0.7;
   const targetCount = safeLevel >= 40
-    ? Math.min(maxActive, 1 + (((typeof random === 'function' ? random() : Math.random()) < 0.7) ? 1 : 0))
+    ? Math.min(maxActive, 1 + (((typeof random === 'function' ? random() : Math.random()) < lateSecondSlotChance) ? 1 : 0))
     : safeLevel >= 30
-      ? Math.min(maxActive, 1 + (((typeof random === 'function' ? random() : Math.random()) < 0.35) ? 1 : 0))
+      ? Math.min(maxActive, 1 + (((typeof random === 'function' ? random() : Math.random()) < (pressureTuning.eliteSecondSlotChance || 0.35)) ? 1 : 0))
       : 1;
   const eligibleWaveIndices = [];
   for (let index = 1; index < totalWaves - 1; index += 1) eligibleWaveIndices.push(index);

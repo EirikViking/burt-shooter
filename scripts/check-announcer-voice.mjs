@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { AssetManifest } from '../src/assets/assetManifest.js';
 import { SFX_CATALOG, VOICE_MIX } from '../src/audio/SoundCatalog.js';
+import { REINFORCEMENT_VOICE_COUNT } from '../src/config/ReinforcementVoiceLines.js';
 
 const rootDir = process.cwd();
 const errors = [];
@@ -11,6 +12,7 @@ const requiredPools = {
   mission_control_launch: 3,
   mission_control_level_start: 3,
   mission_control_wave_clear: 3,
+  mission_control_reinforcements_incoming: REINFORCEMENT_VOICE_COUNT,
   mission_control_boss_inbound: 3,
   mission_control_life_low: 3,
   mission_control_lives_max: 1,
@@ -19,6 +21,7 @@ const requiredPools = {
   mission_control_game_over: 3,
   mission_control_ship_unlocked: 1,
   mission_control_ships_unlocked: 1,
+  mission_control_viking_legend_unlocked: 1,
   mission_control_combo: 3,
   mission_control_local_highscore: 2,
   mission_control_global_highscore: 2,
@@ -32,6 +35,12 @@ const requiredPools = {
   mission_control_restart: 2,
   mission_control_hijacker: 2,
   mission_control_tractor_hijack: 3,
+  mission_control_overrun_clear_sector_10: 1,
+  mission_control_overrun_clear_sector_20: 1,
+  mission_control_overrun_clear_sector_30: 1,
+  mission_control_overrun_clear_sector_40: 1,
+  mission_control_overrun_clear_sector_50: 1,
+  mission_control_overrun_clear_far_signal: 1,
   mission_control_credits: 1
 };
 
@@ -109,9 +118,17 @@ for (const requiredText of [
   'mission_control_combo',
   'mission_control_ship_unlocked',
   'mission_control_ships_unlocked',
+  'mission_control_viking_legend_unlocked',
   'mission_control_lives_max',
+  'mission_control_reinforcements_incoming',
   'mission_control_restart',
   'mission_control_tractor_hijack',
+  'mission_control_overrun_clear_sector_10',
+  'mission_control_overrun_clear_sector_20',
+  'mission_control_overrun_clear_sector_30',
+  'mission_control_overrun_clear_sector_40',
+  'mission_control_overrun_clear_sector_50',
+  'mission_control_overrun_clear_far_signal',
   'mission_control_credits'
 ]) {
   if (!runtimeSource.includes(requiredText)) {

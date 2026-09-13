@@ -126,7 +126,7 @@ async function testFirstRunPickup(browser) {
   ), null, { timeout: 12000 });
   await page.evaluate(() => {
     const play = window.__game?.scenes?.play;
-    const targets = (play?.enemyManager?.enemies || []).filter((enemy) => enemy?.active).slice(0, 3);
+    const targets = (play?.enemyManager?.enemies || []).filter((enemy) => enemy?.active).slice(0, 2);
     for (const enemy of targets) {
       play.onEnemyKilled(enemy);
       enemy.active = false;
@@ -176,6 +176,66 @@ async function testDodgeAlpha(browser) {
   return { alpha, pageErrors, consoleErrors, screenshot };
 }
 
+async function testBossComboBoundary(browser) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const pageErrors = [];
+  const consoleErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForPlayReady(page);
+  const result = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const enemyManager = play?.enemyManager;
+    if (!play || !enemyManager) throw new Error('Missing play scene for boss combo boundary check');
+    play.comboBossEncounterActive = false;
+    play.comboCount = 12;
+    play.comboMultiplier = 2;
+    play.comboTimerMs = 900;
+    enemyManager.state = 'WAVE_BRIEFING';
+    play.updateComboTimers(30);
+    const waveBriefingTimerMs = play.comboTimerMs;
+    enemyManager.state = 'BOSS_GATE';
+    play.updateComboTimers(1);
+    const bossEntry = {
+      count: play.comboCount,
+      multiplier: play.comboMultiplier,
+      timerMs: play.comboTimerMs,
+      reason: play.lastComboResetReason
+    };
+    play.comboCount = 6;
+    play.comboMultiplier = 1;
+    play.comboTimerMs = 700;
+    enemyManager.state = 'BOSS_ACTIVE';
+    play.updateComboTimers(1);
+    const bossActive = {
+      count: play.comboCount,
+      timerMs: play.comboTimerMs,
+      reason: play.lastComboResetReason
+    };
+    enemyManager.state = 'LEVEL_COMPLETE';
+    play.updateComboTimers(1);
+    const bossExit = {
+      count: play.comboCount,
+      multiplier: play.comboMultiplier,
+      timerMs: play.comboTimerMs,
+      reason: play.lastComboResetReason
+    };
+    return {
+      waveBriefingTimerMs,
+      bossEntry,
+      bossActive,
+      bossExit,
+      openingSector1: enemyManager.getOpeningMomentumTuning(1),
+      openingSector4: enemyManager.getOpeningMomentumTuning(4)
+    };
+  });
+  await page.close();
+  return { result, pageErrors, consoleErrors };
+}
+
 const server = await startPreviewServer();
 const browser = await chromium.launch({
   headless: true,
@@ -189,6 +249,7 @@ try {
   const spaceStart = await testMenuKey(browser, 'Space', 'menu-space-start.png');
   const pickup = await testFirstRunPickup(browser);
   const dodge = await testDodgeAlpha(browser);
+  const bossCombo = await testBossComboBoundary(browser);
   const allErrors = [
     ...enterStart.pageErrors,
     ...enterStart.consoleErrors,
@@ -197,16 +258,33 @@ try {
     ...pickup.pageErrors,
     ...pickup.consoleErrors,
     ...dodge.pageErrors,
-    ...dodge.consoleErrors
+    ...dodge.consoleErrors,
+    ...bossCombo.pageErrors,
+    ...bossCombo.consoleErrors
   ];
   const report = {
     ok: Boolean(
       enterStart.state.scene === 'play' &&
       spaceStart.state.scene === 'play' &&
-      pickup.powerups.some((powerup) => powerup.type === 'rapid_fire') &&
+      pickup.powerups.some((powerup) => powerup.type === 'rapid_fire' && powerup.y >= 260) &&
       dodge.alpha.isDodging === true &&
       dodge.alpha.alpha !== null &&
       dodge.alpha.alpha < 0.65 &&
+      bossCombo.result.waveBriefingTimerMs === 900 &&
+      bossCombo.result.bossEntry.count === 0 &&
+      bossCombo.result.bossEntry.multiplier === 1 &&
+      bossCombo.result.bossEntry.timerMs === 0 &&
+      bossCombo.result.bossEntry.reason === 'boss_entry' &&
+      bossCombo.result.bossActive.count === 6 &&
+      bossCombo.result.bossActive.timerMs > 0 &&
+      bossCombo.result.bossActive.timerMs <= 700 &&
+      bossCombo.result.bossActive.reason === 'boss_entry' &&
+      bossCombo.result.bossExit.count === 0 &&
+      bossCombo.result.bossExit.multiplier === 1 &&
+      bossCombo.result.bossExit.timerMs === 0 &&
+      bossCombo.result.bossExit.reason === 'boss_exit' &&
+      bossCombo.result.openingSector1.enabled === true &&
+      bossCombo.result.openingSector4.enabled === false &&
       allErrors.length === 0
     ),
     baseUrl,
@@ -229,6 +307,7 @@ try {
       alpha: dodge.alpha,
       screenshot: dodge.screenshot
     },
+    bossCombo: bossCombo.result,
     errors: allErrors
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

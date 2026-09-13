@@ -94,6 +94,13 @@ async function waitForPlay(page) {
     }
   }, { timeout: 30000 });
 
+  await page.evaluate(async () => {
+    const play = window.__game?.scenes?.play;
+    if (!play) throw new Error('Missing play scene while waiting for ship catalog');
+    await play.shipCatalogReady;
+    if (!play.shipCatalogLoaded) throw new Error('Ship catalog promise resolved without loaded state');
+  });
+
   await page.evaluate(() => {
     const assist = () => {
       const game = window.__game;
@@ -114,7 +121,6 @@ async function waitForPlay(page) {
         player.sprite.scale.set(1);
         player.sprite.alpha = 1;
       }
-      play.bulletManager?.enemyBullets?.forEach((bullet) => { bullet.active = false; });
     };
     window.__eliteCaptureAssist ??= window.setInterval(assist, 120);
     assist();
@@ -130,21 +136,20 @@ async function clearArena(page) {
     play.enemyManager.clearEnemies();
     play.enemyManager.hijacker = null;
     play.enemyManager.level = 40;
+    play.isPaused = false;
     play.enemyManager.eliteMiddleShipsSpawnedThisLevel = 0;
     play.enemyManager.eliteMiddleShipPlan = [];
     window.__game.level = 40;
     play.bulletManager.enemyBullets.forEach((bullet) => { bullet.active = false; });
     play.bulletManager.enemyBullets = [];
-    play.toastQueue = [];
-    play.toastTopQueue = [];
-    play.toastCornerQueue = [];
+    play.clearToastState?.();
     play.player?.clearStatusEffects?.('capture_reset');
   });
 }
 
 async function stageElites(page, ids, { activeAbility = true } = {}) {
   await clearArena(page);
-  await page.evaluate(({ ids: stageIds, activeAbility: makeActive }) => {
+  const staged = await page.evaluate(({ ids: stageIds, activeAbility: makeActive }) => {
     const game = window.__game;
     const play = game?.scenes?.play;
     const manager = play?.enemyManager;
@@ -156,12 +161,12 @@ async function stageElites(page, ids, { activeAbility = true } = {}) {
         waveColor: index % 2 ? 'Blue' : 'Black',
         delayMs: 0
       });
-      if (!elite) return;
+      if (!elite) throw new Error(`Could not spawn elite ${id}`);
       elite.waitingForEntry = false;
       elite.active = true;
       elite.state = 'FORMATION';
       elite.x = spacing * (index + 1);
-      elite.y = 130 + (index % 2) * 52;
+      elite.y = 170 + (index % 2) * 80;
       elite.formationX = elite.x;
       elite.formationY = elite.y;
       if (elite.sprite) {
@@ -177,8 +182,28 @@ async function stageElites(page, ids, { activeAbility = true } = {}) {
         elite.update?.(1, play.player.x, play.player.y);
       }
     });
+    const staged = stageIds.map((id) => {
+      const elite = manager.enemies.find((enemy) => enemy?.middleShipProfile?.id === id && enemy.active !== false);
+      return elite ? {
+        id,
+        ability: elite.middleShipProfile?.specialAbility || null,
+        activeSfx: elite.middleShipProfile?.sfx?.active || null,
+        hasSprite: Boolean(elite.usingEliteMiddleShipTexture && !elite.usingFallbackGraphics),
+        hasBody: Boolean(elite.body),
+        usingEliteMiddleShipTexture: Boolean(elite.usingEliteMiddleShipTexture),
+        usingFallbackGraphics: Boolean(elite.usingFallbackGraphics),
+        textureFallbackIndex: elite.eliteMiddleShipTextureFallbackIndex,
+        hasVfxLayer: Boolean(elite.eliteVfxLayer)
+      } : null;
+    });
+    play.isPaused = true;
+    return staged;
   }, { ids, activeAbility });
+  if (staged.some((entry) => !entry?.hasSprite || entry?.textureFallbackIndex !== null || !entry?.hasVfxLayer || !entry?.activeSfx)) {
+    throw new Error(`Incomplete staged elite runtime state: ${JSON.stringify(staged)}`);
+  }
   await page.waitForTimeout(450);
+  return staged;
 }
 
 async function stageTractorDebuff(page, debuffIndex) {
@@ -241,6 +266,7 @@ async function capture(page, filename, label) {
     scene: state.scene,
     level: state.level,
     eliteMiddleShips: state.eliteMiddleShips || [],
+    counts: state.counts || {},
     playerStatusEffects: state.player?.statusEffects || [],
     hijacker: state.hijacker || null
   };
@@ -250,6 +276,9 @@ mkdirSync(outputDir, { recursive: true });
 const contactSheetSource = path.resolve('public/art/generated/nova-swarm/elites/nova-elite-middle-ships-contact-sheet-20260523.jpg');
 const copiedContactSheet = path.join(outputDir, '01-elite-art-contact-sheet.jpg');
 if (existsSync(contactSheetSource)) copyFileSync(contactSheetSource, copiedContactSheet);
+const expansionContactSheetSource = path.resolve('artifacts/elite-expansion/elite-expansion-sprite-sheet.png');
+const copiedExpansionContactSheet = path.join(outputDir, '01b-elite-expansion-art-contact-sheet.png');
+if (existsSync(expansionContactSheetSource)) copyFileSync(expansionContactSheetSource, copiedExpansionContactSheet);
 
 const server = await startDevServer();
 const browser = await chromium.launch({
@@ -263,7 +292,10 @@ const report = {
   generatedAt: new Date().toISOString(),
   baseUrl,
   outputDir,
-  captures: existsSync(copiedContactSheet) ? [{ label: '20 elite art contact sheet', path: copiedContactSheet }] : []
+  captures: [
+    ...(existsSync(copiedContactSheet) ? [{ label: '20 original elite art contact sheet', path: copiedContactSheet }] : []),
+    ...(existsSync(copiedExpansionContactSheet) ? [{ label: '30 elite expansion art contact sheet', path: copiedExpansionContactSheet }] : [])
+  ]
 };
 
 try {
@@ -290,6 +322,60 @@ try {
 
   await stageSplitterDeath(page);
   report.captures.push(await capture(page, '07-splitter-death-special.png', 'splitter elite death releases weak escorts'));
+
+  const expansionStages = [
+    {
+      ids: ['nova_elite_aurora_verdict', 'nova_elite_sunspike_howitzer'],
+      filename: '08-prism-and-meteor-expansion.png',
+      label: 'expansion prism barrage and meteor bloom active',
+      abilities: ['prism_barrage', 'meteor_bloom'],
+      expectProjectiles: true
+    },
+    {
+      ids: ['nova_elite_voidtalon_executioner', 'nova_elite_crown_of_knives'],
+      filename: '09-dash-and-satellite-expansion.png',
+      label: 'expansion hunter dash and satellite ring active',
+      abilities: ['hunter_dash', 'satellite_ring'],
+      expectProjectiles: true
+    },
+    {
+      ids: ['nova_elite_deadtime_magistrate', 'nova_elite_gravewell_reclaimer'],
+      filename: '10-stasis-and-siphon-expansion.png',
+      label: 'expansion stasis lattice and siphon tether active',
+      abilities: ['stasis_lattice', 'siphon_tether'],
+      expectProjectiles: false
+    },
+    {
+      ids: ['nova_elite_cataclysm_cantor', 'nova_elite_afterimage_butcher'],
+      filename: '11-command-and-warp-expansion.png',
+      label: 'expansion resonance command and warp ambush active',
+      abilities: ['resonance_command', 'warp_ambush'],
+      expectProjectiles: true
+    },
+    {
+      ids: ['nova_elite_blue_ruin_cleaver', 'nova_elite_last_warning_arsenal'],
+      filename: '12-shear-and-siege-expansion.png',
+      label: 'expansion ion shear and siege beacon active',
+      abilities: ['ion_shear', 'siege_beacon'],
+      expectProjectiles: true
+    }
+  ];
+  for (const stage of expansionStages) {
+    const staged = await stageElites(page, stage.ids);
+    const stagedAbilities = staged.map((entry) => entry.ability);
+    if (stagedAbilities.join(',') !== stage.abilities.join(',')) {
+      throw new Error(`Expansion ability mismatch for ${stage.ids.join(',')}: ${stagedAbilities.join(',')}`);
+    }
+    const captured = await capture(page, stage.filename, stage.label);
+    const capturedAbilities = captured.eliteMiddleShips.map((entry) => entry?.profile?.ability).filter(Boolean);
+    if (!stage.abilities.every((ability) => capturedAbilities.includes(ability))) {
+      throw new Error(`Missing active expansion ability in capture ${stage.filename}: ${capturedAbilities.join(',')}`);
+    }
+    if (stage.expectProjectiles && Number(captured.counts?.enemyBullets || 0) < 2) {
+      throw new Error(`Expansion projectile pattern missing in ${stage.filename}: ${captured.counts?.enemyBullets || 0} bullets`);
+    }
+    report.captures.push(captured);
+  }
 
   report.ok = true;
 } finally {

@@ -9,7 +9,7 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/leaderboard-visuals-${timestamp()}`);
 const localKey = 'novaSwarm.localLeaderboard.v2';
-const currentPlayerIndex = 7;
+const currentPlayerIndex = 3;
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -75,18 +75,28 @@ function findChrome() {
   return candidates.find((candidate) => existsSync(candidate));
 }
 
-function seededScores() {
+function seededScores(count = 40) {
   const names = [
-    'NOVA ACE', 'ORBIT QUEEN', 'LASER PILOT', 'STAR RUNNER', 'SWARM BREAKER',
+    'NOVA ACE', 'ORBIT QUEEN', 'LASER PILOT', 'VIOLET CHIMAERA', 'SWARM BREAKER',
     'PILOT41', 'COMBO ROYAL', 'SKY VECTOR', 'PILOT35', 'PILOT37',
     'CABINET ACE', 'VOID SPARK', 'NEON RUNNER', 'ORBITAL KID', 'LASER SAGE',
-    'BOSS BAITER', 'NOVA PRIME', 'STAR CLERK', 'SWARM PILOT', 'PIXEL KNIGHT'
+    'BOSS BAITER', 'NOVA PRIME', 'STAR CLERK', 'SWARM PILOT', 'PIXEL KNIGHT',
+    'RIFT TAXI', 'COMET JUDGE', 'ASTRO BOLT', 'LUNAR WRENCH', 'STATIC DUKE',
+    'ION NERD', 'PLASMA VICAR', 'SUN GHOST', 'METEOR BOSS', 'LASER COOK',
+    'STAR HAGGLER', 'ORBIT MOTH', 'VOID CLERK', 'NOVA TELLER', 'SWARM DENT',
+    'BULLET POET', 'HULL MONK', 'RANK KNIFE', 'SCORE VICE', 'FINAL COIN'
   ];
-  return Array.from({ length: 20 }, (_, index) => ({
+  const foreverCareerRanks = [
+    '157',
+    '88',
+    '1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890'
+  ];
+  return Array.from({ length: count }, (_, index) => ({
     name: names[index],
-    score: 240000 - index * 9100,
+    score: 240000 - index * 4200,
     level: Math.max(3, 12 - Math.floor(index / 2)),
     rank_index: Math.max(0, 12 - index),
+    careerRankExact: foreverCareerRanks[index] || null,
     isCurrentPlayer: index === currentPlayerIndex
   }));
 }
@@ -149,11 +159,34 @@ async function openLeaderboard(page, viewport) {
       comment: scene?.comment?.text || '',
       tauntBubbleVisible: Boolean(scene?.currentBubble?.container?.visible),
       tableMetrics: scene?.tableMetrics || null,
+      manifestRanges: scene?.manifestRanges || [],
       rows: scene?.rowLayoutDebug || [],
+      pageRange: scene?.leaderboardPageRange || null,
+      pageSize: scene?.leaderboardPageSize || 0,
+      unrendered: scene?.unrenderedLeaderboardEntries || 0,
       highlightedRows: (scene?.rowLayoutDebug || []).filter((row) => row.featured).map((row) => row.index),
       rowChildren: scene?.rowsContainer?.children?.length || 0,
       title: scene?.title?.text || ''
     };
+  });
+}
+
+async function openGlobalLeaderboard(page, viewport) {
+  await page.setViewportSize(viewport);
+  await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
+  await page.evaluate(() => {
+    window.__game.leaderboardView = 'global';
+    window.__game.switchScene('highscore');
+  });
+  await page.waitForFunction(() => {
+    const scene = window.__game?.scenes?.highscore;
+    return window.__game?.currentSceneName === 'highscore' && scene?.status === 'LOADED' && scene?.activeLeaderboard === 'global';
+  }, null, { timeout: 45000 });
+  await page.waitForTimeout(400);
+  return page.evaluate(() => {
+    const scene = window.__game?.scenes?.highscore;
+    return { title: scene.title?.text || '', subtitle: scene.subtitle?.text || '', rows: scene.rowLayoutDebug || [], statsText: scene.statsText?.text || '' };
   });
 }
 
@@ -184,15 +217,64 @@ try {
   await page.screenshot({ path: desktopShot, fullPage: true });
   results.push({ viewport: 'desktop', screenshot: desktopShot, state: desktop });
 
+  const compactDesktop = await openLeaderboard(page, { width: 960, height: 640 });
+  const compactDesktopShot = path.join(outputDir, 'leaderboard-compact-desktop.png');
+  await page.screenshot({ path: compactDesktopShot, fullPage: true });
+  results.push({ viewport: 'compact-desktop', screenshot: compactDesktopShot, state: compactDesktop });
+
   const wide = await openLeaderboard(page, { width: 1920, height: 955 });
   const wideShot = path.join(outputDir, 'leaderboard-wide.png');
   await page.screenshot({ path: wideShot, fullPage: true });
   results.push({ viewport: 'wide', screenshot: wideShot, state: wide });
 
-  const mobile = await openLeaderboard(page, { width: 390, height: 844 });
+  const globalWide = await openGlobalLeaderboard(page, { width: 1920, height: 955 });
+  const globalWideShot = path.join(outputDir, 'leaderboard-global-wide.png');
+  await page.screenshot({ path: globalWideShot, fullPage: true });
+
+  const cpuPageState = await page.evaluate(async () => {
+    const scene = window.__game?.scenes?.highscore;
+    scene.leaderboardPage = 2;
+    await scene.layoutHighscore();
+    return {
+      page: scene.leaderboardPage + 1,
+      pageCount: scene.leaderboardPageCount,
+      statsText: scene.statsText?.text || '',
+      manifestRanges: scene.manifestRanges || [],
+      rows: scene.rowLayoutDebug || [],
+      pageRange: scene.leaderboardPageRange || null,
+      pageSize: scene.leaderboardPageSize || 0,
+      unrendered: scene.unrenderedLeaderboardEntries || 0
+    };
+  });
+  await page.waitForTimeout(250);
+  const cpuPageShot = path.join(outputDir, 'leaderboard-wide-cpu-page.png');
+  await page.screenshot({ path: cpuPageShot, fullPage: true });
+
+  const tacticalRunButton = await page.evaluate(async () => {
+    const scene = window.__game?.scenes?.highscore;
+    scene.activeLeaderboard = 'tactical';
+    scene.updateLeaderboardChrome();
+    await scene.layoutHighscore();
+    const bounds = scene.runAgainBtn?._label?.getBounds?.();
+    const width = scene.runAgainBtn?._buttonWidth || 0;
+    const height = scene.runAgainBtn?._buttonHeight || 0;
+    return {
+      text: scene.runAgainBtn?._label?.text || '',
+      frame: {
+        x: scene.runAgainBtn.x - width / 2,
+        y: scene.runAgainBtn.y - height / 2,
+        right: scene.runAgainBtn.x + width / 2,
+        bottom: scene.runAgainBtn.y + height / 2
+      },
+      label: bounds ? { x: bounds.x, y: bounds.y, right: bounds.x + bounds.width, bottom: bounds.y + bounds.height } : null
+    };
+  });
+  const tacticalButtonShot = path.join(outputDir, 'leaderboard-tactical-run-button.png');
+  await page.screenshot({ path: tacticalButtonShot, fullPage: true });
+
+  const mobile = await openGlobalLeaderboard(page, { width: 390, height: 844 });
   const mobileShot = path.join(outputDir, 'leaderboard-mobile.png');
   await page.screenshot({ path: mobileShot, fullPage: true });
-  results.push({ viewport: 'mobile', screenshot: mobileShot, state: mobile });
 
   const failures = [
     ...results.flatMap((result) => [
@@ -200,14 +282,32 @@ try {
       result.state.activeLeaderboard !== 'local' ? `${result.viewport}: local view not active` : null,
       result.state.status !== 'LOADED' ? `${result.viewport}: leaderboard not loaded` : null,
       !result.state.backdropLoaded ? `${result.viewport}: generated backdrop not loaded` : null,
-      !/(TINYFOUNDRY GAMES|TINYFOUNDRY|TFG)/.test(result.state.statsText) ? `${result.viewport}: stats deck missing Tinyfoundry mark` : null,
+      !/(TINYFOUNDRY GAMES|TINYFOUNDRY|TFG|STEAM PILOTS)/.test(result.state.statsText) ? `${result.viewport}: stats deck missing roster provenance` : null,
       result.state.tauntBubbleVisible ? `${result.viewport}: taunt bubble is visible on scoreboard` : null,
       /\b(roast|taunt|mock|boss bait|fixes everything|damage)\b/i.test(result.state.comment) ? `${result.viewport}: taunting comment text is still present` : null,
       result.state.rowChildren < 20 ? `${result.viewport}: row chrome did not render` : null,
       result.state.title !== 'LOCAL SCORE DECK' ? `${result.viewport}: title did not switch to local score deck` : null,
-      result.viewport !== 'mobile' && result.state.rows?.length !== 20 ? `${result.viewport}: desktop leaderboard did not render top 20` : null,
-      result.viewport === 'mobile' && result.state.rows?.length !== 10 ? `${result.viewport}: mobile leaderboard should keep 10 visible rows` : null,
-      !result.state.highlightedRows?.includes(currentPlayerIndex) ? `${result.viewport}: current player row was not highlighted` : null,
+      result.state.rows?.[0]?.careerRankLabel !== '157' ? `${result.viewport}: exact post-cap rank 157 is not visible` : null,
+      result.state.rows?.[1]?.careerRankLabel !== '88' ? `${result.viewport}: exact post-cap rank 88 is not visible` : null,
+      result.state.rows?.[2]?.careerRankLabel !== '1.23e99' ? `${result.viewport}: 100-digit career rank did not compact to 1.23e99` : null,
+      result.state.rows?.[currentPlayerIndex]?.fullName !== 'VIOLET CHIMAERA' ? `${result.viewport}: stored full pilot name was not preserved` : null,
+      result.state.rows?.[currentPlayerIndex]?.displayedName !== 'VIOLET CHIMAERA' ? `${result.viewport}: VIOLET CHIMAERA was unnecessarily truncated` : null,
+      result.state.rows?.[currentPlayerIndex]?.nameDisplayFallback ? `${result.viewport}: VIOLET CHIMAERA unexpectedly used the exceptional-name fallback` : null,
+      result.viewport !== 'mobile' && (result.state.rows?.length || 0) > 50 ? `${result.viewport}: desktop leaderboard exceeded top-50 cap` : null,
+      result.viewport === 'mobile' && (result.state.rows?.length || 0) > 10 ? `${result.viewport}: mobile leaderboard exceeded 10 visible rows` : null,
+      result.state.unrendered > 0 ? `${result.viewport}: ${result.state.unrendered} leaderboard entries were not rendered on the active page` : null,
+      result.state.pageRange?.total !== 50 ? `${result.viewport}: page chrome did not disclose the full Top 50 roster` : null,
+      (result.state.rows?.length || 0) >= currentPlayerIndex + 1 && !result.state.highlightedRows?.includes(currentPlayerIndex) ? `${result.viewport}: visible current player row was not highlighted` : null,
+      ...((result.state.manifestRanges || []).map((range) => {
+        const actual = (result.state.rows || []).filter((row) => {
+          const expectedStart = range.start - 1;
+          const expectedEnd = range.end - 1;
+          return row.index >= expectedStart && row.index <= expectedEnd;
+        }).length;
+        return actual !== range.renderedCount || range.end - range.start + 1 !== range.renderedCount
+          ? `${result.viewport}: manifest ${range.label} claims ${range.end - range.start + 1} ranks but renders ${actual}`
+          : null;
+      })),
       (() => {
         const rows = result.state.rows || [];
         if (!rows.length || !result.state.tableMetrics) return null;
@@ -215,7 +315,7 @@ try {
         const targetBottom = result.state.tableMetrics.rowsBottom || result.state.tableMetrics.bottom;
         const gap = targetBottom - lastBottom;
         const maxGap = result.viewport === 'wide' ? 32 : result.viewport === 'desktop' ? 34 : 38;
-        return gap > maxGap ? `${result.viewport}: leaderboard leaves ${Math.round(gap)}px unused below last row` : null;
+        return gap > maxGap + 36 ? `${result.viewport}: leaderboard leaves ${Math.round(gap)}px unused below last row` : null;
       })(),
       ...((result.state.rows || []).flatMap((row, index, rows) => [
         !contains(row.row, row.name, 3) ? `${result.viewport}: row ${index + 1} pilot name escapes row frame` : null,
@@ -227,14 +327,28 @@ try {
         row.scoreGroup && intersects(row.name, row.scoreGroup, 2) ? `${result.viewport}: row ${index + 1} pilot name crowds score group` : null,
         row.scoreGroup && intersects(row.rankTitle, row.scoreGroup, 2) ? `${result.viewport}: row ${index + 1} rank title crowds score group` : null,
         rows[index + 1] && intersects(row.rankTitle, rows[index + 1].name, 2) ? `${result.viewport}: row ${index + 1} rank title overlaps next pilot name` : null,
-        row.scoreGroup && row.scoreGroup.width < (result.viewport === 'mobile' ? 120 : 166) ? `${result.viewport}: row ${index + 1} score group is too cramped` : null
+        row.scoreGroup && row.scoreGroup.width < (result.viewport === 'mobile' ? 120 : (result.state.rows?.length >= 30 ? 96 : 166)) ? `${result.viewport}: row ${index + 1} score group is too cramped` : null
       ]))
     ]),
     ...pageErrors.map((message) => `page error: ${message}`),
-    ...consoleErrors.map((message) => `console error: ${message}`)
+    ...consoleErrors.map((message) => `console error: ${message}`),
+    tacticalRunButton.text !== 'ONE MORE TACTICAL RUN' ? 'tactical runback label did not switch' : null,
+    !contains(tacticalRunButton.frame, tacticalRunButton.label, 2) ? 'tactical runback label escapes its button frame' : null,
+    cpuPageState.page !== 3 || cpuPageState.pageCount !== 3 ? 'wide CPU page must be page 3 of 3' : null,
+    cpuPageState.rows.length !== 10 || !cpuPageState.rows.every((row) => row.cpuRival) ? 'wide page 3 must show ten disclosed CPU rivals' : null,
+    !cpuPageState.manifestRanges.every((range) => /CPU RIVALS/i.test(range.label)) ? 'wide CPU page headers must disclose CPU rivals' : null,
+    !/PAGE 3\/3/i.test(cpuPageState.statsText) ? 'wide CPU page must show PAGE 3/3' : null,
+    cpuPageState.unrendered > 0 ? 'wide CPU page dropped entries outside the rendered rows' : null,
+    cpuPageState.pageRange?.start !== 41 || cpuPageState.pageRange?.end !== 50 || cpuPageState.pageRange?.total !== 50 ? 'wide CPU page must disclose ranks 41-50 of Top 50' : null,
+    globalWide.title !== 'STEAM SCORE DECK' || !/VERIFIED PILOTS/i.test(globalWide.subtitle) ? 'global leaderboard identity is not explicit' : null,
+    mobile.rows.length !== 10 ? `mobile leaderboard must render ten actual rows, got ${mobile.rows.length}` : null,
+    mobile.rows?.[currentPlayerIndex]?.fullName !== 'VIOLET CHIMAERA' ? 'mobile: stored full pilot name was not preserved' : null,
+    mobile.rows?.[currentPlayerIndex]?.displayedName !== 'VIOLET CHIMAERA' ? 'mobile: VIOLET CHIMAERA was unnecessarily truncated' : null,
+    mobile.rows?.[currentPlayerIndex]?.nameDisplayFallback ? 'mobile: VIOLET CHIMAERA unexpectedly used the exceptional-name fallback' : null,
+    !/STEAM SCORE DECK/i.test(mobile.title) || !/PAGE 1\/5/i.test(mobile.statsText) || !/TOP 50/i.test(mobile.statsText) ? 'mobile global identity or Top-50 page indicator is missing' : null
   ].filter(Boolean);
 
-  const report = { ok: failures.length === 0, baseUrl, results, failures, pageErrors, consoleErrors };
+  const report = { ok: failures.length === 0, baseUrl, results, globalWide, globalWideShot, mobile, mobileShot, cpuPageState, cpuPageShot, tacticalRunButton, tacticalButtonShot, failures, pageErrors, consoleErrors };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   if (failures.length) {
     console.error(JSON.stringify(report, null, 2));

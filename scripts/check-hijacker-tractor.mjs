@@ -8,6 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4330));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/hijacker-tractor-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -96,6 +97,7 @@ try {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
     startLevel: '2',
     controlSmoke: '1'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -116,18 +118,27 @@ try {
     const player = play?.player;
     const enemyManager = play?.enemyManager;
     if (!game || !play || !player || !enemyManager) throw new Error('Missing play scene for hijacker tractor check');
-    enemyManager.spawnHijacker();
+    enemyManager.level = 20;
+    enemyManager.spawnHijacker({tractorVariant:'harpoon'});
     const hijacker = enemyManager.hijacker;
     player.x = hijacker.x;
     player.y = game.getHeight() * 0.78;
     player.invulnerable = true;
     player.invulnerableTime = 12000;
-    hijacker.health = 30;
-    hijacker.maxHealth = 30;
     hijacker.nextBeamAt = Date.now() - 1;
     hijacker.beamWarningMs = 260;
-    hijacker.beamActiveMs = 1800;
+    hijacker.beamActiveMs = 4000;
     hijacker.updateHealthBar?.();
+    for (let i = 0; i < 7; i += 1) {
+      const bullet = hijacker.shoot(player.x, player.y);
+      bullet.x = hijacker.x + (i - 3) * 24;
+      bullet.y = hijacker.y + 130 + i * 52;
+      if (bullet.sprite) {
+        bullet.sprite.x = bullet.x;
+        bullet.sprite.y = bullet.y;
+      }
+      play.bulletManager.addEnemyBullet(bullet);
+    }
   });
 
   await page.waitForFunction(() => {
@@ -138,12 +149,13 @@ try {
   const activeState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const yBeforePull = activeState.player.y;
   mkdirSync(outputDir, { recursive: true });
-  const tractorScreenshot = path.join(outputDir, 'hijacker-tractor-active.png');
+  const tractorScreenshot = path.join(outputDir, 'hijacker-tractor-sector20-active.png');
   await page.screenshot({ path: tractorScreenshot, fullPage: true });
 
   await page.waitForTimeout(500);
   const pulledState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
-  const scoreBeforeBreak = pulledState.score;
+  const scoreBeforeBreak = await page.evaluate(() => Number(window.__game?.score) || 0);
+  const expectedBreakScore = await page.evaluate(() => window.__game?.getScoreAward?.(1700) || 1700);
 
   await page.evaluate(() => {
     const hijacker = window.__game?.scenes?.play?.enemyManager?.hijacker;
@@ -156,6 +168,7 @@ try {
     return !state.hijacker;
   }, { timeout: 4000 });
   const brokenState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const scoreAfterBreak = await page.evaluate(() => Number(window.__game?.score) || 0);
   const breakScreenshot = path.join(outputDir, 'hijacker-tractor-break.png');
   await page.screenshot({ path: breakScreenshot, fullPage: true });
 
@@ -163,17 +176,22 @@ try {
   const report = {
     ok: activeState.hijacker?.tractor?.state === 'active' &&
       activeState.hijacker?.tractor?.pullActive === true &&
+      activeState.hijacker?.tractor?.maxHealth === 85 &&
+      activeState.hijacker?.tractor?.visual?.blendMode === 'normal' &&
+      activeState.hijacker?.tractor?.visual?.hostileProjectilesAboveBeam === true &&
+      activeState.hijacker?.tractor?.visual?.surfacePeakAlpha <= 0.54 &&
       Number.isFinite(yBeforePull) &&
       Number.isFinite(yAfterPull) &&
       yAfterPull < yBeforePull &&
-      brokenState.score >= scoreBeforeBreak + 1700 &&
+      scoreAfterBreak >= scoreBeforeBreak + expectedBreakScore &&
       pageErrors.length === 0 &&
       consoleWarningsOrErrors.length === 0,
     baseUrl,
     yBeforePull,
     yAfterPull,
     scoreBeforeBreak,
-    scoreAfterBreak: brokenState.score,
+    scoreAfterBreak,
+    expectedBreakScore,
     tractor: activeState.hijacker?.tractor || null,
     pageErrors,
     consoleWarningsOrErrors,
@@ -188,7 +206,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[hijacker-tractor] PASS y ${yBeforePull}->${yAfterPull} score ${scoreBeforeBreak}->${brokenState.score} screenshot=${tractorScreenshot}`);
+    console.log(`[hijacker-tractor] PASS y ${yBeforePull}->${yAfterPull} score ${scoreBeforeBreak}->${scoreAfterBreak} screenshot=${tractorScreenshot}`);
   }
 } finally {
   await browser.close();

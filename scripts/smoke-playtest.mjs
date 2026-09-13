@@ -9,6 +9,7 @@ const explicitPort = process.env.SMOKE_PORT ? Number(process.env.SMOKE_PORT) : n
 const port = process.env.SMOKE_URL ? null : (explicitPort || await findAvailablePort(Number(process.env.SMOKE_PORT_START || 4173)));
 const baseUrl = process.env.SMOKE_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.SMOKE_OUTPUT_DIR || `test-results/smoke-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function withQuery(url, params) {
   const next = new URL(url);
@@ -137,8 +138,6 @@ async function collectGameState(page) {
       pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible && play?.pauseOverlay?.parent),
       settingsOverlayVisible: Boolean(scene?.settingsOverlay?.container?.parent || play?.settingsOverlay?.container?.parent),
       creditsOverlayVisible: Boolean(scene?.settingsOverlay?.creditsPanel?.parent || play?.settingsOverlay?.creditsPanel?.parent),
-      easterEggActive: Boolean(play?.legendaryFlyby),
-      easterEggAlias: play?.legendaryFlyby?.alias || null,
       storyTransmission: (() => {
         const toasts = (() => {
           try {
@@ -147,8 +146,9 @@ async function collectGameState(page) {
             return [];
           }
         })();
-        return toasts.find((toast) => toast?.type === 'lore') || null;
+        return toasts.find((toast) => toast?.type === 'lore' || toast?.type === 'cabinet_log') || null;
       })(),
+      cabinetLogArchive: play?.lastCabinetLog ? { ...play.lastCabinetLog } : null,
       fatalOverlay: Boolean(document.getElementById('fatal-overlay')),
       textState: (() => {
         try {
@@ -299,9 +299,11 @@ function summarizeSmokeReport(report, blockingIssues) {
       '02-gameplay.png',
       '02-powerup-hud.png',
       '03-gamepad-pause.png',
+      '05-cabinet-log-compact.png',
       '06-game-over.png',
       '08-mobile-intro.png',
       '10-level3-gameplay.png',
+      '14a-boss-impact.png',
       '14-boss-defeated.png',
       '15-level-2-start.png'
     ],
@@ -317,14 +319,14 @@ function summarizeSmokeReport(report, blockingIssues) {
     settings: {
       overlayVisible: Boolean(report.settingsState?.settingsOverlayVisible),
       creditsVisible: Boolean(report.creditsState?.creditsOverlayVisible),
-      sfxAudition: report.settingsState?.textState?.audio?.lastSfxEvent || null,
+      sfxAudition: report.settingsSfxState?.textState?.audio?.lastSfxEvent || report.settingsState?.textState?.audio?.lastSfxEvent || null,
       voiceAudition: report.settingsState?.textState?.audio?.lastVoiceEvent || null,
       accessibility: report.settingsState?.textState?.accessibility || null
     },
     coverage: {
       gamepadConnected: Boolean(report.gamepadMoveState?.textState?.input?.gamepad?.connected),
       powerupHud: report.powerupHudState?.label || null,
-      storyTransmission: report.storyTransmissionState?.storyTransmission?.imageAlias || null,
+      cabinetLog: report.storyTransmissionState?.storyTransmission?.type || null,
       waveTransition: report.waveTransitionState?.textState?.wave?.currentWaveNumber || null,
       bossDefeatMusic: `${musicContext(report.bossDefeatedState) || 'none'} / ${musicTrackName(report.bossDefeatedState) || 'none'}`
     },
@@ -421,6 +423,27 @@ async function runSmoke() {
     }, null, { timeout: 5000 });
     await page.waitForTimeout(500);
     await page.screenshot({ path: path.join(outputDir, '01-settings.png'), fullPage: true });
+    await page.evaluate(() => {
+      window.__game?.scenes?.menu?.settingsOverlay?.setActiveSettingsPage?.('audio');
+    });
+    await page.waitForFunction(() => {
+      return window.__game?.scenes?.menu?.settingsOverlay?.getDebugState?.().activePage === 'audio';
+    }, null, { timeout: 5000 });
+    await page.waitForTimeout(150);
+    // Menu voices now default OFF. Explicitly enable them through the actual
+    // Settings control before expecting a voice audition to play in this profile.
+    const menuVoices = await page.evaluate(() => {
+      const overlay = window.__game.scenes.menu.settingsOverlay;
+      const control = overlay.controls.find(control => control.id === 'toggle_menu_voices');
+      const bounds = control?.button?.getBounds();
+      const rect = document.querySelector('canvas')?.getBoundingClientRect();
+      const screen = window.__game.app.screen;
+      return bounds && rect ? { x: rect.left + (bounds.x + bounds.width / 2) / screen.width * rect.width, y: rect.top + (bounds.y + bounds.height / 2) / screen.height * rect.height } : null;
+    });
+    if (!menuVoices) throw new Error('Menu voice setting was not exposed');
+    await page.mouse.click(menuVoices.x, menuVoices.y);
+    await page.screenshot({ path: path.join(outputDir, '01-settings-audio.png'), fullPage: true });
+    let settingsSfxState = null;
     const audioTestButtonState = await page.evaluate(() => {
       const overlay = window.__game?.scenes?.menu?.settingsOverlay;
       const toPoint = (button) => {
@@ -451,6 +474,7 @@ async function runSmoke() {
           return false;
         }
       }, null, { timeout: 2500 });
+      settingsSfxState = await collectGameState(page);
     }
     if (audioTestButtonState?.voice) {
       await page.mouse.click(audioTestButtonState.voice.x, audioTestButtonState.voice.y);
@@ -538,9 +562,16 @@ async function runSmoke() {
 
     const gamepadPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(gamepadPage, 'gamepad');
-    await gamepadPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await gamepadPage.goto(`${baseUrl}/?autostart=1&controlSmoke=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await gamepadPage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
     await gamepadPage.waitForFunction(() => window.__game?.scenes?.play?.player, null, { timeout: 15000 });
+    await gamepadPage.waitForFunction(
+      () => window.__game?.scenes?.play?.enemyManager?.state === 'WAVE_ACTIVE',
+      null,
+      // This is the smoke suite's second live game page. Allow the shared ship
+      // catalog and level-entry warmup to finish under concurrent rendering.
+      { timeout: 30000 }
+    );
     await gamepadPage.evaluate(() => {
       const game = window.__game;
       const play = game?.scenes?.play;
@@ -618,13 +649,16 @@ async function runSmoke() {
       play.dismissActiveToastSlotsBelowPriority?.(['top'], 99);
       play.showStoryTransmission({ force: true });
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      return (state.toast?.active || []).some((toast) => toast?.type === 'lore' && /^nova-swarm-story-comms-/.test(toast.imageAlias || ''));
+      return (state.toast?.active || []).some((toast) => (
+        toast?.type === 'cabinet_log'
+        && String(toast.message || '').split('\n').length === 2
+        && !toast.imageAlias
+      ));
     }, null, { timeout: 15000 });
-    await storyPage.waitForTimeout(500);
-    await storyPage.screenshot({ path: path.join(outputDir, '05-story-transmission.png'), fullPage: true });
     const storyTransmissionState = await collectGameState(storyPage);
+    await storyPage.screenshot({ path: path.join(outputDir, '05-cabinet-log-compact.png'), fullPage: true });
     await storyPage.close();
-    logStep('story transmission captured');
+    logStep('compact Cabinet Log captured');
 
     const gameOverPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(gameOverPage, 'game-over');
@@ -707,7 +741,7 @@ async function runSmoke() {
 
     const level3Page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(level3Page, 'level3');
-    await level3Page.goto(withQuery(baseUrl, { autostart: '1', debugBossToken: 'NOVA_DEBUG_2026', startLevel: '3' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await level3Page.goto(withQuery(baseUrl, { autostart: '1', debugBossToken: 'NOVA_DEBUG_2026', startLevel: '3', 'nova-devtools-hash': LOCAL_DEVTOOLS_HASH }), { waitUntil: 'domcontentloaded', timeout: 30000 });
     await level3Page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
     await stabilizeSmokePlayer(level3Page);
     await level3Page.waitForFunction(() => {
@@ -747,6 +781,7 @@ async function runSmoke() {
       }
       const enemyManager = play?.enemyManager;
       if (!enemyManager) return;
+      enemyManager.clearPendingWaveSpawns?.();
       enemyManager.enemies = enemyManager.enemies.filter((enemy) => {
         const isObjective = typeof enemyManager.isObjectiveEnemy === 'function'
           ? enemyManager.isObjectiveEnemy(enemy)
@@ -756,6 +791,12 @@ async function runSmoke() {
         if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);
         return false;
       });
+      enemyManager.spawning = false;
+      enemyManager.waveSpawnPendingCount = 0;
+      enemyManager.waveEnding = false;
+      enemyManager.cleanupTimer = 0;
+      enemyManager.cleanupPhase = 'NONE';
+      enemyManager.onWaveCleared?.();
     });
     await stabilizeSmokePlayer(transitionPage);
     await transitionPage.waitForFunction(() => {
@@ -783,7 +824,7 @@ async function runSmoke() {
 
     const bossPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(bossPage, 'boss-victory');
-    await bossPage.goto(withQuery(baseUrl, { autostart: '1', debugBossToken: 'NOVA_DEBUG_2026', startAtBoss: '1', startLevel: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await bossPage.goto(withQuery(baseUrl, { autostart: '1', debugBossToken: 'NOVA_DEBUG_2026', startAtBoss: '1', startLevel: '1', 'nova-devtools-hash': LOCAL_DEVTOOLS_HASH }), { waitUntil: 'domcontentloaded', timeout: 30000 });
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_GATE', null, { timeout: 30000 });
     await bossPage.screenshot({ path: path.join(outputDir, '12-boss-gate.png'), fullPage: true });
     await bossPage.waitForFunction(() => {
@@ -802,6 +843,8 @@ async function runSmoke() {
       boss.finishGateUntilMs = 0;
       boss.takeDamage((boss.health || boss.maxHealth || 1) + 9999);
     });
+    await bossPage.waitForTimeout(180);
+    await bossPage.screenshot({ path: path.join(outputDir, '14a-boss-impact.png'), fullPage: true });
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'LEVEL_COMPLETE', null, { timeout: 10000 });
     await bossPage.waitForFunction(() => {
       try {
@@ -818,6 +861,17 @@ async function runSmoke() {
     await bossPage.waitForTimeout(900);
     await bossPage.screenshot({ path: path.join(outputDir, '14-boss-defeated.png'), fullPage: true });
     await bossPage.waitForFunction(() => {
+      try {
+        return JSON.parse(window.render_game_to_text?.() || '{}').tacticalDraft?.active === true;
+      } catch {
+        return false;
+      }
+    }, null, { timeout: 12000 });
+    await bossPage.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').tacticalDraft?.inputArmed === true, null, { timeout: 5000 });
+    const bossTacticalDraftState = await collectGameState(bossPage);
+    await bossPage.screenshot({ path: path.join(outputDir, '14b-tactical-draft.png'), fullPage: true });
+    await bossPage.evaluate(() => window.__game?.scenes?.play?.confirmTacticalDraft?.(1, 'pointer'));
+    await bossPage.waitForFunction(() => {
       const game = window.__game;
       const enemyManager = game?.scenes?.play?.enemyManager;
       return game?.level >= 2 && enemyManager?.state === 'WAVE_ACTIVE';
@@ -833,6 +887,7 @@ async function runSmoke() {
       baseUrl,
       outputDir,
       menuState,
+      settingsSfxState,
       settingsState,
       creditsState,
       gameplayState,
@@ -849,6 +904,7 @@ async function runSmoke() {
       waveTransitionState,
       bossActiveState,
       bossDefeatedState,
+      bossTacticalDraftState,
       bossVictoryState,
       routineConsoleEvents,
       consoleEvents,
@@ -866,7 +922,7 @@ async function runSmoke() {
       ...(menuState.textState?.scene !== 'menu' ? [`menu text state used unstable scene name: ${menuState.textState?.scene || 'none'}`] : []),
       ...(!settingsState.settingsOverlayVisible ? ['menu settings overlay did not appear'] : []),
       ...(!audioTestButtonState?.sfx || !audioTestButtonState?.voice ? ['settings audio test buttons were not exposed'] : []),
-      ...(!['achievement', 'shoot_small'].includes(settingsState.textState?.audio?.lastSfxEvent) ? [`settings SFX test did not update telemetry: ${settingsState.textState?.audio?.lastSfxEvent || 'none'}`] : []),
+      ...(!['achievement', 'shoot_small'].includes((settingsSfxState || settingsState).textState?.audio?.lastSfxEvent) ? [`settings SFX test did not update telemetry: ${(settingsSfxState || settingsState).textState?.audio?.lastSfxEvent || 'none'}`] : []),
       ...(settingsState.textState?.audio?.lastVoiceEvent !== 'mission_control_launch' ? [`settings voice test did not update telemetry: ${settingsState.textState?.audio?.lastVoiceEvent || 'none'}`] : []),
       ...(!creditsState.creditsOverlayVisible || creditsState.textState?.overlays?.credits !== true ? ['credits overlay did not appear or was missing from text state'] : []),
       ...(!Number.isFinite(settingsState.textState?.accessibility?.screenShake) ? ['accessibility screen-shake setting was not exposed'] : []),
@@ -880,9 +936,10 @@ async function runSmoke() {
       ...((gamepadMoveState.textState?.player?.y || 0) >= (gamepadBeforeState.textState?.player?.y || 9999) - 4 ? ['gamepad movement did not move the player upward'] : []),
       ...((gamepadMoveState.textState?.counts?.playerBullets || 0) <= 0 ? ['gamepad fire did not produce player bullets'] : []),
       ...(!gamepadPauseState.isPaused || !gamepadPauseState.pauseOverlayVisible ? ['gamepad pause button did not open pause overlay'] : []),
-      ...(storyTransmissionState.easterEggActive ? ['removed lore flyby was still active'] : []),
-      ...(!storyTransmissionState.storyTransmission ? ['forced story transmission did not appear'] : []),
-      ...(!/^nova-swarm-story-comms-/.test(storyTransmissionState.storyTransmission?.imageAlias || '') ? [`story transmission did not use generated story art: ${storyTransmissionState.storyTransmission?.imageAlias || 'none'}`] : []),
+      ...(!storyTransmissionState.storyTransmission ? ['forced Cabinet Log did not appear'] : []),
+      ...(storyTransmissionState.storyTransmission?.type !== 'cabinet_log' ? [`Cabinet Log did not use compact combat presentation: ${storyTransmissionState.storyTransmission?.type || 'none'}`] : []),
+      ...(String(storyTransmissionState.storyTransmission?.message || '').split('\n').length !== 2 ? ['compact Cabinet Log did not use a two-line live toast'] : []),
+      ...(storyTransmissionState.cabinetLogArchive?.fullTextArchived !== true ? ['Cabinet Log full archive text was not preserved'] : []),
       ...(gameOverState.scene !== 'gameOver' ? ['forced game over did not reach game over scene'] : []),
       ...(gameOverState.perf?.scene !== 'gameOver' ? [`game-over perf state used unstable scene name: ${gameOverState.perf?.scene || 'none'}`] : []),
       ...(gameOverState.textState?.scene !== 'gameOver' ? [`game-over text state used unstable scene name: ${gameOverState.textState?.scene || 'none'}`] : []),
@@ -905,7 +962,7 @@ async function runSmoke() {
       ...((powerupHudState.group?.right || 0) > (powerupHudState.canvas?.width || 0) ? ['powerup HUD overflowed right edge'] : []),
       ...((powerupHudState.location && powerupHudState.group?.y < powerupHudState.location.bottom + 3) ? ['powerup HUD overlapped sector/location label'] : []),
       ...visibleEnemyHealthIssues(gameplayState, 'desktop gameplay'),
-      ...visibleEnemyHealthIssues(storyTransmissionState, 'story transmission'),
+      ...visibleEnemyHealthIssues(storyTransmissionState, 'Cabinet Log'),
       ...(mobileGameplayState.fatalOverlay ? ['mobile fatal overlay visible'] : []),
       ...(mobileGameplayState.textState?.scene !== 'play' ? ['mobile autostart did not reach play scene'] : []),
       ...(!mobileGameplayState.textState?.wave ? ['mobile gameplay did not expose wave state'] : []),
@@ -952,6 +1009,18 @@ async function runSmoke() {
     if (blockingIssues.length) {
       throw new Error(`Smoke playtest failed: ${blockingIssues.join('; ')}`);
     }
+  } catch (error) {
+    // Preserve real failure state before closing tabs, especially intermittent
+    // startup waits. This does not relax any smoke assertion or timeout.
+    const failedPages = [];
+    for (const context of browser.contexts()) {
+      for (const page of context.pages()) {
+        failedPages.push({ url: page.url(), state: await collectGameState(page).catch(() => null) });
+        await page.screenshot({ path: path.join(outputDir, `failure-${failedPages.length}.png`) }).catch(() => {});
+      }
+    }
+    writeFileSync(path.join(outputDir, 'failure-state.json'), JSON.stringify(failedPages, null, 2));
+    throw error;
   } finally {
     await browser.close();
     if (server) server.kill();

@@ -144,14 +144,37 @@ try {
     const fakeBullet = { x: player.x + player.radius + 9, y: player.y, radius: 5, active: true };
     for (let i = 0; i < 3; i += 1) {
       play.nearMissCooldownAt = 0;
-      play.applyNearMiss(fakeBullet);
-      await new Promise((resolve) => setTimeout(resolve, 80));
+      play.updateGrazeBreakFireIntent?.(true);
+      // Three distinct threats; a single projectile cannot award repeat grazes.
+      play.applyNearMiss({ ...fakeBullet });
+      if (i < 2) await new Promise((resolve) => setTimeout(resolve, 80));
     }
 
+    play.hud?.updateActivePowerup?.();
+    const armedHud = play.hud?.activePowerupGroup?._debugStatus || null;
     const armedState = JSON.parse(window.render_game_to_text());
+    play.setPaused(true);
+    const pausedBefore = JSON.parse(window.render_game_to_text());
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    const pausedAfter = JSON.parse(window.render_game_to_text());
+    play.setPaused(false);
+    player.shootCooldown = 0;
+    const heldBullets = player.shoot();
+    const heldCharged = play.markGrazeBreakShot(heldBullets);
+    const afterHeldState = JSON.parse(window.render_game_to_text());
+
+    play.updateGrazeBreakFireIntent?.(false);
+    const releaseState = JSON.parse(window.render_game_to_text());
+    play.updateGrazeBreakFireIntent?.(true);
     player.shootCooldown = 0;
     const playerBullets = player.shoot();
     const charged = play.markGrazeBreakShot(playerBullets);
+    const chargedLaunch = charged ? {
+      x: charged.x,
+      vx: charged.vx,
+      vy: charged.vy,
+      playerX: player.x
+    } : null;
     for (const bullet of playerBullets) play.bulletManager.addPlayerBullet(bullet);
     if (charged) {
       charged.x = impactX;
@@ -167,6 +190,9 @@ try {
     play.checkCollisions();
     await new Promise((resolve) => setTimeout(resolve, 180));
     const finalState = JSON.parse(window.render_game_to_text());
+    play.nearMissCooldownAt = 0;
+    play.applyNearMiss({ x: player.x + player.radius + 10, y: player.y, radius: 5, active: true });
+    const reearnState = JSON.parse(window.render_game_to_text());
 
     return {
       ok: true,
@@ -175,11 +201,36 @@ try {
       scoreGain: finalState.score - beforeScore,
       armedState: {
         dangerDodgeCount: armedState.scoring?.dangerDodgeCount || 0,
-        grazeBreakReady: armedState.scoring?.grazeBreakReady || false
+        grazeBreakReady: armedState.scoring?.grazeBreakReady || false,
+        grazeBreakNeedsFireRelease: armedState.scoring?.grazeBreakNeedsFireRelease || false,
+        grazeBreakReleasePrimed: armedState.scoring?.grazeBreakReleasePrimed || false
+      },
+      armedHud,
+      pausedTimer: {
+        beforeMs: pausedBefore.scoring?.grazeBreakReadyMs || 0,
+        afterMs: pausedAfter.scoring?.grazeBreakReadyMs || 0,
+        remainedReady: pausedAfter.scoring?.grazeBreakReady || false
+      },
+      heldShotMarked: Boolean(heldCharged?.isGrazeBreaker),
+      afterHeldState: {
+        grazeBreakReady: afterHeldState.scoring?.grazeBreakReady || false,
+        grazeBreakNeedsFireRelease: afterHeldState.scoring?.grazeBreakNeedsFireRelease || false
+      },
+      releaseState: {
+        grazeBreakReady: releaseState.scoring?.grazeBreakReady || false,
+        grazeBreakNeedsFireRelease: releaseState.scoring?.grazeBreakNeedsFireRelease || false,
+        grazeBreakReleasePrimed: releaseState.scoring?.grazeBreakReleasePrimed || false
       },
       chargedBulletMarked: Boolean(charged?.isGrazeBreaker),
+      chargedLaunch,
       remainingEnemyBullets: finalState.counts?.enemyBullets || 0,
       lastGrazeBreak: finalState.scoring?.lastGrazeBreak || null,
+      immediateReearn: {
+        grazeBreakReady: reearnState.scoring?.grazeBreakReady || false,
+        dangerDodgeCount: reearnState.scoring?.dangerDodgeCount || 0,
+        cooldownAt: play.grazeBreakCooldownAt || 0,
+        gameplayClockMs: play.getGameplayClockMs?.() || 0
+      },
       activeToastMessages: (finalState.toast?.active || []).map((toast) => toast.message),
       lastSfxEvent: finalState.audio?.lastSfxEvent || null
     };
@@ -196,13 +247,29 @@ try {
       result.ok &&
       result.armedState?.dangerDodgeCount >= 3 &&
       result.armedState?.grazeBreakReady === true &&
+      result.armedState?.grazeBreakNeedsFireRelease === true &&
+      result.armedHud?.states?.some((state) => state.type === 'graze_break' && state.remainingMs > 0) &&
+      result.pausedTimer?.remainedReady === true &&
+      Math.abs((result.pausedTimer?.afterMs || 0) - (result.pausedTimer?.beforeMs || 0)) <= 40 &&
+      result.heldShotMarked === false &&
+      result.afterHeldState?.grazeBreakReady === true &&
+      result.afterHeldState?.grazeBreakNeedsFireRelease === true &&
+      result.releaseState?.grazeBreakReleasePrimed === true &&
       result.chargedBulletMarked === true &&
+      result.chargedLaunch?.vx === 0 &&
+      result.chargedLaunch?.vy < 0 &&
+      Math.abs((result.chargedLaunch?.x || 0) - (result.chargedLaunch?.playerX || 0)) < 0.001 &&
       last.triggered === true &&
       last.bulletsCleared >= 3 &&
       last.bonusScore >= 775 &&
-      result.scoreGain >= last.bonusScore &&
+      last.visualScale >= 2.8 &&
+      last.visualSparkleCount >= 14 &&
+      last.visualRingCount >= 3 &&
+      last.visual?.active === true &&
+      result.immediateReearn?.grazeBreakReady === true &&
+      result.immediateReearn?.cooldownAt <= result.immediateReearn?.gameplayClockMs &&
+      result.scoreGain > 0 &&
       result.remainingEnemyBullets <= 2 &&
-      result.activeToastMessages.some((message) => /GRAZE BREAK/i.test(message || '')) &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),

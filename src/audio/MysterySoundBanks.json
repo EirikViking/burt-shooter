@@ -1,0 +1,1878 @@
+{
+  "glass_widow": {
+    "url": "/audio/sfx/mysteries-v2/glass_widow.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "parallax_hunter": {
+    "url": "/audio/sfx/mysteries-v2/parallax_hunter.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "choir_unbound": {
+    "url": "/audio/sfx/mysteries-v2/choir_unbound.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      },
+      "motif_0": {
+        "offset": 9.200000000000001,
+        "duration": 0.8
+      },
+      "motif_1": {
+        "offset": 10.000000000000002,
+        "duration": 0.8
+      },
+      "motif_2": {
+        "offset": 10.800000000000002,
+        "duration": 0.8
+      },
+      "motif_3": {
+        "offset": 11.600000000000003,
+        "duration": 0.8
+      },
+      "motif_4": {
+        "offset": 12.400000000000004,
+        "duration": 0.8
+      },
+      "motif_5": {
+        "offset": 13.200000000000005,
+        "duration": 0.8
+      },
+      "motif_6": {
+        "offset": 14.000000000000005,
+        "duration": 0.8
+      }
+    }
+  },
+  "cinder_manta": {
+    "url": "/audio/sfx/mysteries-v2/cinder_manta.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "needle_saint": {
+    "url": "/audio/sfx/mysteries-v2/needle_saint.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "blind_leviathan": {
+    "url": "/audio/sfx/mysteries-v2/blind_leviathan.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "lantern_eater": {
+    "url": "/audio/sfx/mysteries-v2/lantern_eater.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "scissor_twins": {
+    "url": "/audio/sfx/mysteries-v2/scissor_twins.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "red_wake": {
+    "url": "/audio/sfx/mysteries-v2/red_wake.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "foldship": {
+    "url": "/audio/sfx/mysteries-v2/foldship.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "doorwraith": {
+    "url": "/audio/sfx/mysteries-v2/doorwraith.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "tidemason": {
+    "url": "/audio/sfx/mysteries-v2/tidemason.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "clockray": {
+    "url": "/audio/sfx/mysteries-v2/clockray.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "horizon_biter": {
+    "url": "/audio/sfx/mysteries-v2/horizon_biter.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "rift_surgeon": {
+    "url": "/audio/sfx/mysteries-v2/rift_surgeon.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "bloom_queen": {
+    "url": "/audio/sfx/mysteries-v2/bloom_queen.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "brood_ark": {
+    "url": "/audio/sfx/mysteries-v2/brood_ark.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "carrion_weaver": {
+    "url": "/audio/sfx/mysteries-v2/carrion_weaver.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "spore_monk": {
+    "url": "/audio/sfx/mysteries-v2/spore_monk.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "husk_parade": {
+    "url": "/audio/sfx/mysteries-v2/husk_parade.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "magnet_urchin": {
+    "url": "/audio/sfx/mysteries-v2/magnet_urchin.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "chrysalis_hunter": {
+    "url": "/audio/sfx/mysteries-v2/chrysalis_hunter.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "rail_cathedral": {
+    "url": "/audio/sfx/mysteries-v2/rail_cathedral.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "siege_orchid": {
+    "url": "/audio/sfx/mysteries-v2/siege_orchid.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "bulwark_hauler": {
+    "url": "/audio/sfx/mysteries-v2/bulwark_hauler.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "bellfoundry": {
+    "url": "/audio/sfx/mysteries-v2/bellfoundry.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "prism_bastion": {
+    "url": "/audio/sfx/mysteries-v2/prism_bastion.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "cable_kraken": {
+    "url": "/audio/sfx/mysteries-v2/cable_kraken.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "switchyard": {
+    "url": "/audio/sfx/mysteries-v2/switchyard.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "false_sun": {
+    "url": "/audio/sfx/mysteries-v2/false_sun.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "mirror_court": {
+    "url": "/audio/sfx/mysteries-v2/mirror_court.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "signal_thief": {
+    "url": "/audio/sfx/mysteries-v2/signal_thief.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "lantern_mimic": {
+    "url": "/audio/sfx/mysteries-v2/lantern_mimic.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "afterimage_duelist": {
+    "url": "/audio/sfx/mysteries-v2/afterimage_duelist.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "surveyor": {
+    "url": "/audio/sfx/mysteries-v2/surveyor.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "cipher_engine": {
+    "url": "/audio/sfx/mysteries-v2/cipher_engine.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "rainmaker": {
+    "url": "/audio/sfx/mysteries-v2/rainmaker.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "comet_shepherd": {
+    "url": "/audio/sfx/mysteries-v2/comet_shepherd.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "thunder_loom": {
+    "url": "/audio/sfx/mysteries-v2/thunder_loom.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "avalanche_engine": {
+    "url": "/audio/sfx/mysteries-v2/avalanche_engine.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "ricochet_duchess": {
+    "url": "/audio/sfx/mysteries-v2/ricochet_duchess.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "lantern_shoal": {
+    "url": "/audio/sfx/mysteries-v2/lantern_shoal.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "nova_anvil": {
+    "url": "/audio/sfx/mysteries-v2/nova_anvil.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "gilded_pilgrim": {
+    "url": "/audio/sfx/mysteries-v2/gilded_pilgrim.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "vault_crawler": {
+    "url": "/audio/sfx/mysteries-v2/vault_crawler.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "oathkeeper": {
+    "url": "/audio/sfx/mysteries-v2/oathkeeper.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "courier_zero": {
+    "url": "/audio/sfx/mysteries-v2/courier_zero.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "debt_collector": {
+    "url": "/audio/sfx/mysteries-v2/debt_collector.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "mercy_trap": {
+    "url": "/audio/sfx/mysteries-v2/mercy_trap.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "fortune_leech": {
+    "url": "/audio/sfx/mysteries-v2/fortune_leech.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "constellation_beast": {
+    "url": "/audio/sfx/mysteries-v2/constellation_beast.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "cathedral_of_teeth": {
+    "url": "/audio/sfx/mysteries-v2/cathedral_of_teeth.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "dying_star": {
+    "url": "/audio/sfx/mysteries-v2/dying_star.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "worldmolt": {
+    "url": "/audio/sfx/mysteries-v2/worldmolt.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "eventide_engine": {
+    "url": "/audio/sfx/mysteries-v2/eventide_engine.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  },
+  "witness": {
+    "url": "/audio/sfx/mysteries-v2/witness.mp3",
+    "cues": {
+      "arrival": {
+        "offset": 0,
+        "duration": 1.8
+      },
+      "warning": {
+        "offset": 1.8,
+        "duration": 0.7
+      },
+      "attack": {
+        "offset": 2.5,
+        "duration": 1
+      },
+      "attack_alt": {
+        "offset": 3.5,
+        "duration": 1.2
+      },
+      "break": {
+        "offset": 4.7,
+        "duration": 1.1
+      },
+      "death": {
+        "offset": 5.800000000000001,
+        "duration": 2.3
+      },
+      "presence": {
+        "offset": 8.100000000000001,
+        "duration": 1.1
+      }
+    }
+  }
+}

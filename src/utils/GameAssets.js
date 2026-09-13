@@ -1,9 +1,73 @@
 import { AssetManifest } from '../assets/assetManifest.js';
+import {preloadEnergyMaterials} from '../effects/AstraEnergyMaterial.js';
+import { BONUS_CORES } from '../config/BonusCoreCatalog.js';
+import { SPACE_SNAKES } from '../config/SpaceSnakes.js';
+import { preloadEnemyOrbitMaterial } from '../effects/EnemyOrbitRig.js';
+import { GENERATED_ENEMY_LEGACY_ASSET_COUNT } from '../config/GeneratedEnemyProfiles.js';
+import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import * as PIXI from 'pixi.js';
+import { getAstraHullTexture } from '../effects/AstraHullMaterial.js';
 
 class GameAssetsManager {
+    async ensureShowroomShip(index) {
+        const safeIndex = Math.max(0, Math.min(29, Math.floor(Number(index) || 0)));
+        this.showroomShips ||= new Map();
+        if (!this.showroomShips.has(safeIndex)) {
+            const path = `/art/solid-fleet-20260908/showroom/${String(safeIndex + 1).padStart(2, '0')}`;
+            this.showroomShips.set(safeIndex, Promise.all([PIXI.Assets.load(`${path}.webp`), PIXI.Assets.load(`${path}.json`)]).then(([texture, anchors]) => ({ texture, emitters: anchors.emitters })));
+        }
+        return this.showroomShips.get(safeIndex);
+    }
+
+    getThreatPresentationSource(source, family, index) {
+        if (source?.includes('/fleet-v5/')) return source;
+        const count = AssetManifest.generated.astraThreatCounts?.[family] || 0;
+        return index >= 0 && index < count ? `/art/astra/${family}/${String(index + 1).padStart(3, '0')}.png` : source;
+    }
+
+    getCodexPresentationSource(entry) {
+        const source = entry?.art;
+        const support = /^boss_support_ship_(\d+)$/.exec(entry?.id || '');
+        if (support && Number(support[1]) <= AssetManifest.generated.astraThreatCounts.supports) return `/art/astra/dossier/supports/${support[1]}.webp`;
+        if (source?.includes('/fleet-v5/')) return source.replace('/astra/fleet-v5/', '/astra/dossier/fleet-v5/').replace('.png', '.webp');
+        const elite = AssetManifest.generated.eliteMiddleShips.indexOf(source);
+        if (elite >= 0 && elite < AssetManifest.generated.astraThreatCounts.elites) return `/art/astra/dossier/elites/${String(elite + 1).padStart(3, '0')}.webp`;
+        const enemy = AssetManifest.generated.enemies.indexOf(source);
+        if (enemy >= 0 && enemy < 50) return `/art/astra/dossier/enemy/${String(enemy + 1).padStart(2, '0')}.webp`;
+        if (enemy >= 50 && enemy - 50 < AssetManifest.generated.astraThreatCounts.late) return `/art/astra/dossier/late/${String(enemy - 49).padStart(3, '0')}.webp`;
+        const boss = AssetManifest.generated.bosses.indexOf(source);
+        if (boss >= 0) return `/art/astra/dossier/boss/${String(boss + 1).padStart(2, '0')}.webp`;
+        return this.getBossPresentationSource(source);
+    }
+
+    getBossPresentationSource(source) {
+        const index = AssetManifest.generated.bosses.indexOf(source);
+        return AssetManifest.generated.bossPresentation?.[index] || source;
+    }
+
+    createDeferredSprite(source) {
+        const sprite = new PIXI.Sprite(PIXI.Texture.EMPTY);
+        PIXI.Assets.load(source).then((texture) => {
+            if (sprite.destroyed) return;
+            const { width, height } = sprite;
+            sprite.texture = texture;
+            sprite.width = width;
+            sprite.height = height;
+        }).catch((error) => console.warn('[GameAssets] Sprite failed to load:', source, error));
+        return sprite;
+    }
+
     constructor() {
         this.bonusCoreTexture = null;
+        this.plasmaBloomTexture = null;
+        this.plasmaBloomTextures = [];
+        this.microSignalTextures = {};
+        this.tacticalDraftFieldTexture = null;
+        this.gameOverFinalTransmissionTexture = null;
+        this.gameOverFinalTransmissionTextures = {};
+        this.gameOverFinalSignalTexture = null;
+        this.gameOverFinalSignalTextures = {};
+        this.cabinetWonderTextures = {};
         this.commsPortraits = {};
         this.fallbackCommsPortraitList = AssetManifest.loreImages;
         this.crewPortraitList = AssetManifest.generated?.crewPortraits || [];
@@ -12,11 +76,52 @@ class GameAssetsManager {
         this.generatedEnemyTextures = [];
         this.eliteMiddleShipTextures = [];
         this.enemyWeaponTextures = [];
+        this.projectileTextures = {};
         this.rankShipTextures = [];
         this.rankShipList = AssetManifest.sprites.playerRankShips || [];
+        this.xtra = this.createXtraStore();
+    }
+
+    createXtraStore(existing = {}) {
+        return {
+            ships: existing.ships || {},
+            enemies: existing.enemies || {},
+            lasers: existing.lasers || {},
+            damage: existing.damage || {},
+            parts: existing.parts || {},
+            effects: existing.effects || {},
+            powerups: existing.powerups || {}
+        };
+    }
+
+    async loadCoreSerpentTexture(path) {
+        const texture = await PIXI.Assets.load(path);
+        texture.source.autoGenerateMipmaps = true;
+        texture.source.scaleMode = 'linear';
+        texture.source.updateMipmaps();
+        return texture;
     }
 
     async ensureBonusCoreTexture() {
+        if (!this.coreSerpentLoad) {
+            this.bonusCoreVariants = {};
+            this.serpentTextures = {};
+            this.coreSerpentLoad = Promise.all([
+                preloadEnemyOrbitMaterial(),
+                ...BONUS_CORES.map(async core => { this.bonusCoreVariants[core.id] = await this.loadCoreSerpentTexture(core.art); }),
+                ...SPACE_SNAKES.flatMap(profile => ['head', 'body', 'tail'].map(async part => {
+                    this.serpentTextures[`${profile.index}-${part}`] = await this.loadCoreSerpentTexture(part === 'head' ? profile.art : '/art/core-serpent/snake-body-imagegen.png');
+                }))
+            ]);
+        }
+        await this.coreSerpentLoad;
+        if (!this.bonusDroneTextures) {
+            this.bonusDroneTextures = [];
+            this.bonusDroneLoad = Promise.all(AssetManifest.generated.bonusDrones.map(async (src, index) => {
+                this.bonusDroneTextures[index] = await PIXI.Assets.load(src);
+            })).catch(error => console.warn('[GameAssets] Drone art fallback:', error.message));
+        }
+        await this.bonusDroneLoad;
         if (this.isValidTexture(this.bonusCoreTexture)) return this.bonusCoreTexture;
 
         try {
@@ -43,6 +148,183 @@ class GameAssetsManager {
 
     async ensureBonusCoreTextureLoaded() {
         return this.ensureBonusCoreTexture();
+    }
+
+    getBonusDroneTexture(index = 0) {
+        return this.bonusDroneTextures?.[index] || this.bonusCoreTexture;
+    }
+
+    async ensurePlasmaBloomTexture() {
+        await this.ensurePlasmaBloomTextures();
+        return this.plasmaBloomTexture;
+    }
+
+    async ensurePlasmaBloomTextures() {
+        const sources = AssetManifest.generated?.vfx?.plasmaBlooms || [AssetManifest.generated?.vfx?.plasmaBloom];
+        const loaded = await Promise.all(sources.filter(Boolean).map(async (src, index) => {
+            if (this.isValidTexture(this.plasmaBloomTextures[index])) return this.plasmaBloomTextures[index];
+            try {
+                return await PIXI.Assets.load({
+                    alias: index === 0 ? 'nova_plasma_bloom' : `nova_plasma_bloom_${index + 1}`,
+                    src
+                });
+            } catch (error) {
+                console.warn(`[GameAssets] Plasma bloom texture ${index + 1} unavailable:`, error?.message || error);
+                return null;
+            }
+        }));
+        this.plasmaBloomTextures = loaded.filter((texture) => this.isValidTexture(texture));
+        this.plasmaBloomTexture = this.plasmaBloomTextures[0] || null;
+        return this.plasmaBloomTextures;
+    }
+
+    getMicroSignalSources() {
+        return {
+            phase: AssetManifest.generated?.vfx?.microPhaseSigil,
+            direction: AssetManifest.generated?.vfx?.microDirectionBeacon,
+            combo: AssetManifest.generated?.vfx?.microComboCrest,
+            contact: AssetManifest.generated?.vfx?.microContactRune,
+            ace: AssetManifest.generated?.vfx?.microAceCommandCrest,
+            waveClear: AssetManifest.generated?.vfx?.waveClearVictoryFlourish,
+            mission: AssetManifest.generated?.vfx?.missionCommandSpine,
+            combatSignal: AssetManifest.generated?.vfx?.combatSignalFlourish,
+            hudCapsule: AssetManifest.generated?.vfx?.hudCommandCapsule,
+            skillFlight: AssetManifest.generated?.vfx?.cabinetSkillFlightPlaque,
+            overrunDais: AssetManifest.generated?.vfx?.overrunCoronationDais,
+            droneConstellation: AssetManifest.generated?.vfx?.droneConstellationCrest
+        };
+    }
+
+    async ensureMicroSignalTexture(key) {
+        if (this.isValidTexture(this.microSignalTextures[key])) return this.microSignalTextures[key];
+        const src = this.getMicroSignalSources()[key];
+        if (!src) return null;
+        try {
+            const texture = await PIXI.Assets.load({
+                alias: `nova_micro_signal_${key}`,
+                src
+            });
+            if (this.isValidTexture(texture)) this.microSignalTextures[key] = texture;
+            return this.microSignalTextures[key] || null;
+        } catch (error) {
+            console.warn(`[GameAssets] Micro-signal texture ${key} unavailable:`, error?.message || error);
+            return null;
+        }
+    }
+
+    async ensureMicroSignalTextures() {
+        const entries = await Promise.all(Object.keys(this.getMicroSignalSources()).map(async (key) => [
+            key,
+            await this.ensureMicroSignalTexture(key)
+        ]));
+        for (const [key, texture] of entries) {
+            if (this.isValidTexture(texture)) this.microSignalTextures[key] = texture;
+        }
+        return this.microSignalTextures;
+    }
+
+    async ensureTacticalDraftFieldTexture() {
+        if (this.isValidTexture(this.tacticalDraftFieldTexture)) return this.tacticalDraftFieldTexture;
+        try {
+            const texture = await PIXI.Assets.load({
+                alias: 'nova_tactical_draft_command_field',
+                src: AssetManifest.generated?.tacticalDraftField
+            });
+            if (this.isValidTexture(texture)) this.tacticalDraftFieldTexture = texture;
+        } catch (error) {
+            console.warn('[GameAssets] Tactical Draft command field unavailable:', error?.message || error);
+        }
+        return this.tacticalDraftFieldTexture;
+    }
+
+    resolveGameOverFinalTransmissionVariant(variantOrId) {
+        const variants = AssetManifest.generated?.gameOverFinalTransmissions || [];
+        if (variantOrId?.id && variantOrId?.src) return variantOrId;
+        const id = String(variantOrId || '');
+        return variants.find((variant) => variant.id === id) || variants[0] || {
+            id: 'final_transmission_01',
+            src: AssetManifest.generated?.gameOverFinalTransmission
+        };
+    }
+
+    async ensureGameOverFinalTransmissionTexture(variantOrId) {
+        const variant = this.resolveGameOverFinalTransmissionVariant(variantOrId);
+        if (this.isValidTexture(this.gameOverFinalTransmissionTextures[variant.id])) {
+            return this.gameOverFinalTransmissionTextures[variant.id];
+        }
+        try {
+            const texture = await PIXI.Assets.load({
+                alias: `nova_game_over_${variant.id}`,
+                src: variant.src
+            });
+            if (this.isValidTexture(texture)) {
+                Object.keys(this.gameOverFinalTransmissionTextures).forEach((cachedId) => {
+                    if (cachedId === variant.id) return;
+                    delete this.gameOverFinalTransmissionTextures[cachedId];
+                    try {
+                        Promise.resolve(PIXI.Assets.unload(`nova_game_over_${cachedId}`)).catch(() => {});
+                    } catch {
+                        // The new current texture remains usable if an old cache entry cannot unload.
+                    }
+                });
+                this.gameOverFinalTransmissionTextures[variant.id] = texture;
+                this.gameOverFinalTransmissionTexture = texture;
+            }
+        } catch (error) {
+            console.warn(`[GameAssets] Game Over final-transmission plate ${variant.id} unavailable:`, error?.message || error);
+        }
+        return this.gameOverFinalTransmissionTextures[variant.id] || null;
+    }
+
+    async ensureGameOverFinalSignalTexture(variantOrId) {
+        const variant = this.resolveGameOverFinalTransmissionVariant(variantOrId);
+        if (!variant.signalSrc) return null;
+        if (this.isValidTexture(this.gameOverFinalSignalTextures[variant.id])) {
+            return this.gameOverFinalSignalTextures[variant.id];
+        }
+        try {
+            const texture = await PIXI.Assets.load({
+                alias: `nova_game_over_signal_${variant.id}`,
+                src: variant.signalSrc
+            });
+            if (this.isValidTexture(texture)) {
+                Object.keys(this.gameOverFinalSignalTextures).forEach((cachedId) => {
+                    if (cachedId === variant.id) return;
+                    delete this.gameOverFinalSignalTextures[cachedId];
+                    try {
+                        Promise.resolve(PIXI.Assets.unload(`nova_game_over_signal_${cachedId}`)).catch(() => {});
+                    } catch {
+                        // The selected signal remains usable if an old cache entry cannot unload.
+                    }
+                });
+                this.gameOverFinalSignalTextures[variant.id] = texture;
+                this.gameOverFinalSignalTexture = texture;
+            }
+        } catch (error) {
+            console.warn(`[GameAssets] Game Over final-signal ${variant.id} unavailable:`, error?.message || error);
+        }
+        return this.gameOverFinalSignalTextures[variant.id] || null;
+    }
+
+    async ensureCabinetWonderTexture(id) {
+        const sources = AssetManifest.generated?.cabinetWonders || {};
+        const key = String(id || '');
+        if (!key || !sources[key]) return null;
+        if (this.isValidTexture(this.cabinetWonderTextures[key])) return this.cabinetWonderTextures[key];
+        try {
+            const texture = await PIXI.Assets.load({ alias: `nova_cabinet_wonder_${key}`, src: sources[key] });
+            if (this.isValidTexture(texture)) this.cabinetWonderTextures[key] = texture;
+        } catch (error) {
+            console.warn(`[GameAssets] Cabinet Wonder texture ${key} unavailable:`, error?.message || error);
+        }
+        return this.getCabinetWonderTexture(key);
+    }
+
+    async ensureCabinetWonderTextures(ids = []) {
+        const sources = AssetManifest.generated?.cabinetWonders || {};
+        const requestedIds = Array.isArray(ids) && ids.length ? ids : Object.keys(sources).slice(0, 1);
+        await Promise.all(requestedIds.map((id) => this.ensureCabinetWonderTexture(id)));
+        return this.cabinetWonderTextures;
     }
 
     async loadBonusCore() {
@@ -92,6 +374,41 @@ class GameAssetsManager {
         return this.bonusCoreTexture;
     }
 
+    getPlasmaBloomTexture(variant = 0) {
+        const textures = this.getPlasmaBloomTextures();
+        if (!textures.length) return this.plasmaBloomTexture;
+        const index = Math.abs(Math.floor(Number(variant) || 0)) % textures.length;
+        return textures[index];
+    }
+
+    getPlasmaBloomTextures() {
+        return this.plasmaBloomTextures.filter((texture) => this.isValidTexture(texture));
+    }
+
+    getMicroSignalTexture(key) {
+        const texture = this.microSignalTextures[String(key || '')];
+        return this.isValidTexture(texture) ? texture : null;
+    }
+
+    getTacticalDraftFieldTexture() {
+        return this.tacticalDraftFieldTexture;
+    }
+
+    getGameOverFinalTransmissionTexture(variantOrId) {
+        const variant = this.resolveGameOverFinalTransmissionVariant(variantOrId);
+        return this.gameOverFinalTransmissionTextures[variant.id] || null;
+    }
+
+    getGameOverFinalSignalTexture(variantOrId) {
+        const variant = this.resolveGameOverFinalTransmissionVariant(variantOrId);
+        return this.gameOverFinalSignalTextures[variant.id] || null;
+    }
+
+    getCabinetWonderTexture(id) {
+        const texture = this.cabinetWonderTextures[String(id || '')];
+        return this.isValidTexture(texture) ? texture : null;
+    }
+
     getBonusCoreSpriteTexture() {
         return this.getBonusCoreTexture();
     }
@@ -109,6 +426,7 @@ class GameAssetsManager {
     }
 
     async loadShips() {
+        await preloadEnergyMaterials();
         // Load Rank Player Ships
         const rankShips = this.rankShipList;
         await Promise.all(rankShips.map(async (filename, index) => {
@@ -173,11 +491,14 @@ class GameAssetsManager {
         }));
 
         const generatedEnemies = AssetManifest.generated?.enemies || [];
-        await Promise.all(generatedEnemies.map(async (filepath, index) => {
+        const loadGeneratedEnemies = getNovaPerformanceFlags().disableNewEnemyRoster
+            ? generatedEnemies.slice(0, GENERATED_ENEMY_LEGACY_ASSET_COUNT)
+            : generatedEnemies;
+        await Promise.all(loadGeneratedEnemies.map(async (filepath, index) => {
             try {
                 const texture = await PIXI.Assets.load({
                     alias: `nova_generated_enemy_${index + 1}`,
-                    src: filepath
+                    src: this.getThreatPresentationSource(filepath, 'late', index - 50)
                 });
                 if (this.isValidTexture(texture)) this.generatedEnemyTextures[index] = texture;
             } catch (e) {
@@ -198,12 +519,25 @@ class GameAssetsManager {
             }
         }));
 
+        const projectileAssets = AssetManifest.generated?.projectiles || {};
+        await Promise.all(Object.entries(projectileAssets).map(async ([name, filepath]) => {
+            try {
+                const texture = await PIXI.Assets.load({
+                    alias: `nova_projectile_${name}`,
+                    src: filepath
+                });
+                if (this.isValidTexture(texture)) this.projectileTextures[name] = texture;
+            } catch (e) {
+                console.warn(`[GameAssets] Failed to load projectile asset ${filepath}:`, e);
+            }
+        }));
+
         const eliteMiddleShips = AssetManifest.generated?.eliteMiddleShips || [];
         await Promise.all(eliteMiddleShips.map(async (filepath, index) => {
             try {
                 const texture = await PIXI.Assets.load({
                     alias: `nova_elite_middle_ship_${index + 1}`,
-                    src: filepath
+                    src: this.getThreatPresentationSource(filepath, 'elites', index)
                 });
                 if (this.isValidTexture(texture)) this.eliteMiddleShipTextures[index] = texture;
             } catch (e) {
@@ -211,7 +545,13 @@ class GameAssetsManager {
             }
         }));
 
-        console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length, 'GeneratedEnemy:', this.generatedEnemyTextures.filter(Boolean).length, 'EliteMiddle:', this.eliteMiddleShipTextures.filter(Boolean).length, 'EnemyWeapons:', this.enemyWeaponTextures.filter(Boolean).length);
+        this.supportShipTextures ||= [];
+        await Promise.all(Array.from({length: AssetManifest.generated.astraThreatCounts.supports}, async (_, index) => {
+            const path = `/art/astra/supports/${String(index + 1).padStart(3, '0')}.png`;
+            this.supportShipTextures[index] = await PIXI.Assets.load(path);
+        }));
+
+        console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length, 'GeneratedEnemy:', this.generatedEnemyTextures.filter(Boolean).length, 'EliteMiddle:', this.eliteMiddleShipTextures.filter(Boolean).length, 'EnemyWeapons:', this.enemyWeaponTextures.filter(Boolean).length, 'Projectiles:', Object.keys(this.projectileTextures).length);
 
         // Load Xtra Assets
         await this.loadXtraAssets();
@@ -225,13 +565,16 @@ class GameAssetsManager {
 
         const filename = this.rankShipList[safeIndex];
         if (!filename) return null;
+        // Keep canonical identities and unlock metadata; only the loaded art
+        // changes, including the five named Ascendant hulls.
+        const presentation = AssetManifest.generated.playerPresentation?.[safeIndex] || filename;
 
         const parts = filename.split('/');
         const alias = `rank_ship_${safeIndex}_${parts[parts.length - 1].split('.')[0]}`;
         try {
             const texture = await PIXI.Assets.load({
                 alias,
-                src: filename
+                src: presentation
             });
             if (this.isValidTexture(texture)) {
                 this.rankShipTextures[safeIndex] = texture;
@@ -239,6 +582,25 @@ class GameAssetsManager {
             }
         } catch (e) {
             console.warn(`[GameAssets] Failed to load rank ship ${filename}:`, e);
+        }
+
+        const fallbackFilename = AssetManifest.sprites.playerRankShipFallbacks?.[safeIndex];
+        if (fallbackFilename) {
+            const fallbackParts = fallbackFilename.split('/');
+            const fallbackAlias = `rank_ship_${safeIndex}_fallback_${fallbackParts[fallbackParts.length - 1].split('.')[0]}`;
+            try {
+                const fallbackTexture = await PIXI.Assets.load({
+                    alias: fallbackAlias,
+                    src: fallbackFilename
+                });
+                if (this.isValidTexture(fallbackTexture)) {
+                    this.rankShipTextures[safeIndex] = fallbackTexture;
+                    console.warn(`[GameAssets] Using safe fallback for rank ship ${safeIndex}: ${fallbackFilename}`);
+                    return fallbackTexture;
+                }
+            } catch (fallbackError) {
+                console.warn(`[GameAssets] Failed to load rank ship fallback ${fallbackFilename}:`, fallbackError);
+            }
         }
 
         return null;
@@ -253,19 +615,23 @@ class GameAssetsManager {
     }
 
     getRankShipTexture(index) {
-        return this.rankShipTextures ? this.rankShipTextures[index] : null;
+        return getAstraHullTexture(this.rankShipTextures ? this.rankShipTextures[index] : null);
     }
 
     getGeneratedEnemyTexture(index) {
-        return this.generatedEnemyTextures ? this.generatedEnemyTextures[index] : null;
+        return getAstraHullTexture(this.generatedEnemyTextures ? this.generatedEnemyTextures[index] : null);
     }
 
     getEliteMiddleShipTexture(index) {
-        return this.eliteMiddleShipTextures ? this.eliteMiddleShipTextures[index] : null;
+        return getAstraHullTexture(this.eliteMiddleShipTextures ? this.eliteMiddleShipTextures[index] : null);
     }
 
     getEnemyWeaponTexture(index) {
         return this.enemyWeaponTextures ? this.enemyWeaponTextures[index] : null;
+    }
+
+    getProjectileTexture(name) {
+        return this.projectileTextures ? this.projectileTextures[name] : null;
     }
 
     getRankShipCount() {
@@ -277,7 +643,7 @@ class GameAssetsManager {
     }
 
     async loadXtraAssets() {
-        this.xtra = { ships: {}, enemies: {}, lasers: {}, damage: {}, parts: {}, effects: {}, powerups: {} };
+        this.xtra = this.createXtraStore(this.xtra);
 
         // Loading Xtra Player Ships (for rank progression)
         const shipPromises = [];
@@ -344,15 +710,7 @@ class GameAssetsManager {
         });
 
         // Loading generated Nova Swarm powerup icons.
-        const powerupPromises = [];
-        const generatedPowerups = AssetManifest.generated?.powerups || {};
-        Object.entries(generatedPowerups).forEach(([name, src]) => {
-            powerupPromises.push(this.loadSingleAsset(
-                `xtra_powerup_${name}`,
-                src,
-                this.xtra.powerups
-            ));
-        });
+        const powerupPromises = [this.loadPowerupAssets()];
 
         await Promise.all([...shipPromises, ...enemyPromises, ...laserPromises, ...dmgPromises, ...fxPromises, ...powerupPromises]);
         console.log('[GameAssets] Xtra Assets Loaded (ships:', Object.keys(this.xtra.ships).length, 'powerups:', Object.keys(this.xtra.powerups).length, ')');
@@ -365,6 +723,18 @@ class GameAssetsManager {
         } catch (e) {
             // calculated risk: ignore missing optional assets
         }
+    }
+
+    async loadPowerupAssets() {
+        this.xtra = this.createXtraStore(this.xtra);
+        const generatedPowerups = AssetManifest.generated?.powerups || {};
+        const powerupPromises = Object.entries(generatedPowerups).map(([name, src]) => {
+            const alias = `xtra_powerup_${name}`;
+            if (this.isValidTexture(this.xtra.powerups[alias])) return Promise.resolve(this.xtra.powerups[alias]);
+            return this.loadSingleAsset(alias, src, this.xtra.powerups);
+        });
+        await Promise.all(powerupPromises);
+        return this.xtra.powerups;
     }
 
     getXtraShip(type, color) {

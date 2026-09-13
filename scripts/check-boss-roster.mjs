@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { BOSS_ROSTER } from '../src/config/BossRoster.js';
+import { BOSS_ROSTER, getBossProfileForRun } from '../src/config/BossRoster.js';
 import { AssetManifest } from '../src/assets/assetManifest.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -43,10 +43,49 @@ for (const boss of BOSS_ROSTER) {
 
 if (ids.size !== BOSS_ROSTER.length) errors.push('Boss profile ids are not unique.');
 if (names.size !== BOSS_ROSTER.length) errors.push('Boss profile names are not unique.');
+if (BOSS_ROSTER[1]?.name !== 'Sam the Misfit') errors.push(`Boss 2 must be Sam the Misfit, found ${BOSS_ROSTER[1]?.name || 'missing'}.`);
+if (BOSS_ROSTER[5]?.name !== 'Misfit Galaxy') errors.push(`Boss 6 must be Misfit Galaxy, found ${BOSS_ROSTER[5]?.name || 'missing'}.`);
 if (archetypes.size < 10) errors.push(`Expected at least 10 boss archetypes, found ${archetypes.size}.`);
 if (attacks.size < 10) errors.push(`Expected at least 10 boss attack styles, found ${attacks.size}.`);
 if (movements.size < 9) errors.push(`Expected at least 9 boss movement styles, found ${movements.size}.`);
 if (signatures.size < 5) errors.push(`Expected at least 5 boss signature styles, found ${signatures.size}.`);
+
+for (let sector = 1; sector <= 20; sector += 1) {
+  if (getBossProfileForRun(sector, { seed: 'preserve-first-20', seenThroughSector: 30 }) !== BOSS_ROSTER[sector - 1]) {
+    errors.push(`Sector ${sector} must preserve the authored first-20 boss reveal order.`);
+  }
+}
+
+const seenThirtyCycle = Array.from({ length: 30 }, (_entry, index) =>
+  getBossProfileForRun(61 + index, { seed: 'seen-thirty', seenThroughSector: 30 })
+);
+if (seenThirtyCycle.some((profile) => profile.index > 30)) {
+  errors.push('Sector 61+ pool exposed a boss beyond the profile seen-through limit.');
+}
+if (new Set(seenThirtyCycle.map((profile) => profile.id)).size !== 30) {
+  errors.push('Sector 61+ first cycle must visit every seen boss exactly once.');
+}
+
+const repeatSeenThirtyCycle = Array.from({ length: 30 }, (_entry, index) =>
+  getBossProfileForRun(61 + index, { seed: 'seen-thirty', seenThroughSector: 30 })
+);
+if (seenThirtyCycle.map((profile) => profile.id).join(',') !== repeatSeenThirtyCycle.map((profile) => profile.id).join(',')) {
+  errors.push('Sector 61+ boss shuffle must be deterministic for the run seed.');
+}
+
+const alternateCycle = Array.from({ length: 30 }, (_entry, index) =>
+  getBossProfileForRun(61 + index, { seed: 'alternate-seed', seenThroughSector: 30 })
+);
+if (seenThirtyCycle.map((profile) => profile.id).join(',') === alternateCycle.map((profile) => profile.id).join(',')) {
+  errors.push('Sector 61+ boss shuffle should vary with the run seed.');
+}
+
+const secondSeenThirtyCycle = Array.from({ length: 30 }, (_entry, index) =>
+  getBossProfileForRun(91 + index, { seed: 'seen-thirty', seenThroughSector: 30 })
+);
+if (seenThirtyCycle[29]?.id === secondSeenThirtyCycle[0]?.id) {
+  errors.push('Sector 61+ boss shuffle must avoid an immediate repeat at cycle boundaries.');
+}
 
 if (errors.length) {
   console.error('[check-boss-roster] failed');

@@ -1,4 +1,21 @@
+import { claimMajorTelegraph } from '../config/EncounterPacing.js';
+import {drawEnergySurface,drawEnergyLink,energyClock} from '../effects/AstraEnergyMaterial.js';
+import {drawEnergyShell} from '../effects/AstraEnergyMaterial.js';
+import { ARCADE_FLIGHT_ENABLED, sampleBossFlight } from '../config/ArcadeFlight.js';
+import { BOSS_ARSENAL_ENABLED, getBossArsenal } from '../config/BossArsenal.js';
+import { hasColossus } from '../config/BossReinvention.js';
+import { ColossusRig, loadColossus } from '../effects/ColossusRig.js';
+import { drawColossusWarning } from '../effects/ColossusAssaultVfx.js';
+import { choreographColossusSalvo } from '../config/ColossusSalvo.js';
+import { BossArsenalRig } from '../effects/BossArsenalRig.js';
+import { getArsenalProjectile } from '../effects/BossArsenalMaterials.js';
+import { drawArsenalAnnulus } from '../effects/BossArsenalFields.js';
+import { getReducedMotionEnabled, getFlashIntensityScale } from '../config/AccessibilitySettings.js';
+import { drawAstraWarningLane, drawAstraWarningSector, drawAstraWarningRing } from '../effects/AstraWarningField.js';
+import { AstraAttackRig } from '../effects/AstraAttackRig.js';
+import { drawBossChargeCrown, drawBossDischarge } from '../effects/AstraBossEnergy.js';
 import * as PIXI from 'pixi.js';
+import { GameAssets } from '../utils/GameAssets.js';
 import { Bullet } from './Bullet.js';
 import { extendBossNames } from '../text/phrasePool.js';
 import { createBossVisual } from '../game/BossFactory.js';
@@ -7,9 +24,18 @@ import { createText } from '../utils/pixiText.js';
 import { getBossProfile } from '../config/BossRoster.js';
 import { getBossSignatureWeaponProfile, getBossWeaponProfile, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { CreatureAudio } from '../audio/CreatureAudio.js';
+import { translateText } from '../i18n/index.js';
+import {
+  hideMicroSignals,
+  presentPhaseSignal
+} from '../effects/MicroSignalVfx.js';
+import { isWeaponFxKillSwitchActive } from '../config/isExtrasEnabled.js';
 
 const ENABLE_BOSS_WEAPON_FX = true;
-const HARD_SCALE_FACTOR = 0.3;
+const BOSS_POLISH_VERSION = 'boss-impact-20260612';
+const HARD_SCALE_FACTOR = 0.34;
+const LEGACY_HITBOX_SCALE_FACTOR = 0.3;
 const BOSS_PHASE_PLANS = {
   conductor: { signatures: { 2: 'cone', 3: 'ring' }, anchor: { 2: -0.12, 3: 0.14 }, lane: { 2: -0.01, 3: 0.02 } },
   forge: { signatures: { 2: 'ring', 3: 'cone' }, anchor: { 2: 0.1, 3: -0.12 }, lane: { 2: 0.02, 3: 0.04 } },
@@ -23,12 +49,26 @@ const BOSS_PHASE_PLANS = {
   clock: { signatures: { 2: 'lance', 3: 'ring' }, anchor: { 2: 0.13, 3: -0.13 }, lane: { 2: 0, 3: 0.03 } }
 };
 
-const BOSS_HURT_FLASH_MS = 180;
-const BOSS_FIRE_RECOIL_MS = 260;
-const BOSS_PHASE_PULSE_MS = 860;
+const BOSS_HURT_FLASH_MS = 220;
+const BOSS_FIRE_RECOIL_MS = 300;
+const BOSS_PHASE_PULSE_MS = 1080;
+const BOSS_SPAWN_INVULNERABLE_MS = 800;
+const BOSS_FAST_KILL_GUIDE_MS = 7000;
+const BOSS_ARMOR_BLEED_START_RATIO = 0.22;
+const BOSS_ARMOR_BLEED_MIN_SCALE = 0.06;
+const BOSS_ARMOR_BLEED_MAX_SCALE = 0.68;
+const BOSS_WARNING_FRAME_MS = 16.67;
+const BOSS_WARNING_LONG_FRAME_MS = 250;
+const BOSS_WARNING_INTERRUPTION_RECOVERY_MS = 250;
+const BOSS_WARNING_OUTCOME_HISTORY_LIMIT = 24;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function finiteNumber(value, fallback = 1) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 function normalizeAngle(angle) {
@@ -59,13 +99,14 @@ function fitPixiTextToBox(text, maxWidth, maxHeight, minScale = 0.62) {
 }
 
 export class Boss {
-  constructor(x, y, level, game) {
+  constructor(x, y, level, game, profile = null) {
     this.x = x;
     this.y = y;
     this.level = level;
     this.active = true;
     this.game = game;
     this.radius = 50;
+    this.visualRadius = 50;
     // CLEANUP FIX: Add kind tag for cleanup targeting
     this.kind = 'boss';
     this.vx = 2;
@@ -73,16 +114,26 @@ export class Boss {
     const diff = BalanceConfig.difficulty;
     const rawHealth = Math.round(diff.bossBaseHealth + Math.max(0, level - 1) * diff.bossHealthPerLevel);
     const healthBeforePostFirstEase = Math.max(rawHealth, diff.bossMinHealth || 70);
+    this.earlyDifficultyScalar = this.getEarlyBossDifficultyScalar();
     this.difficultyScalar = this.getPostFirstBossDifficultyScalar();
-    this.health = Math.max(1, Math.round(healthBeforePostFirstEase * this.difficultyScalar));
+    const firstBossHealthScalar = level <= 1 ? 0.86 : 1;
+    this.health = Math.max(1, Math.round(
+      healthBeforePostFirstEase *
+      this.earlyDifficultyScalar *
+      this.difficultyScalar *
+      firstBossHealthScalar *
+      this.getRunModeBossDifficultyMultiplier() *
+      Math.max(1, Number(this.game?.threatResponse?.bossHealthMult) || 1)
+    ));
     this.maxHealth = this.health;
     this.shootCooldown = 0;
     this.shootDelay = this.getPhaseShootDelay(1);
     this.moveTimer = 0;
     this.entryStartMs = null;
-    this.entryDurationMs = 1000;
+    this.entryDurationMs = 1280;
     this.entryFromY = 0;
     this.entryToY = 0;
+    this.entryImpactTriggered = false;
     this.bossLaneY = 0;
     this.baseX = x;
     this.phaseAnchorOffset = 0;
@@ -96,32 +147,49 @@ export class Boss {
     this.tauntHalfShown = false;
     this.scoreValue = 1000;
     this.phase = 1;
-    this.profile = getBossProfile(level);
+    this.profile = profile || getBossProfile(level);
+    CreatureAudio.prepare(this.profile);
+    this.playMonsterVoice('arrival');
     this.color = this.profile?.palette || 0xff00ff;
     this.signatureCooldown = 0;
     this.telegraph = null;
     this.regularTelegraph = null;
+    this.attackWarningToken = null;
+    this.attackWarningTokenSequence = 0;
+    this.attackWarningOutcomes = [];
     this.safeLanes = [];
     this.chaosPressureReliefUntilMs = 0;
     this.delayedSignature = null;
     this.phaseNotified = { 2: false, 3: false };
     this.spawnedAtMs = Date.now();
-    this.regularAttackReadyAt = this.spawnedAtMs + (level <= 1 ? 1800 : 1400);
-    this.invulnerableUntilMs = this.spawnedAtMs + 800;
-    this.minimumFightMs = Math.max(7200, Math.min(9800, 7600 + Math.max(0, level - 1) * 140));
+    this.regularAttackReadyAt = this.spawnedAtMs + this.getOpeningAttackDelayMs();
+    this.invulnerableUntilMs = this.spawnedAtMs + BOSS_SPAWN_INVULNERABLE_MS;
+    this.armorBleedGuideMs = Math.max(BOSS_FAST_KILL_GUIDE_MS, Math.min(9000, 7000 + Math.max(0, level - 1) * 55));
+    this.minimumFightMs = this.armorBleedGuideMs;
+    this.firstDamageAtMs = 0;
+    this.fastKillGuideUntilMs = 0;
     this.finishGateUntilMs = 0;
     this.finishGateFxAt = 0;
     this.finishGateLogged = false;
+    this.finishGateDamageScale = 1;
+    this.finishGateLastDamageAt = 0;
     this.visualBaseScale = { x: 1, y: 1 };
     this.animationRig = null;
     this.animationDebug = null;
     this.presentationState = 'idle';
     this.presentationStateUntil = 0;
     this.hurtFlashUntil = 0;
+    this.healPulseUntil = 0;
+    this.healPulseStartedAt = 0;
+    this.lastHealAmount = 0;
+    this.lastHealSource = null;
     this.phasePulseUntil = 0;
     this.fireRecoilUntil = 0;
     this.lastHurtFxAt = 0;
     this.lastFireFxAt = 0;
+    this.lastChargeSparkAt = 0;
+    this.lastPhaseSparkAt = 0;
+    this.lastRegularFireSfxAt = 0;
     this.lastFireAngle = -Math.PI / 2;
     this.defeatPresentationAt = 0;
 
@@ -142,13 +210,15 @@ export class Boss {
 
   async createSprite() {
     this.sprite = new PIXI.Container();
+    this.sprite.label = `enemy_visual:${this.kind}:boss`;
+    this.sprite.__enemyOwner = this;
     this.sprite.sortableChildren = true;
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
     // Load boss visual from factory
-    const maxBossWidth = this.game?.getWidth ? this.game.getWidth() * 0.55 : null;
-    const bossVisual = await createBossVisual(this.level, maxBossWidth);
+    const maxBossWidth = this.game?.getWidth ? this.game.getWidth() * 0.62 : null;
+    const bossVisual = await createBossVisual(this.level, maxBossWidth, this.profile);
     this.profile = bossVisual.profile || this.profile;
     this.color = this.profile?.palette || this.color;
     this.name = this.profile?.name || this.name;
@@ -190,12 +260,23 @@ export class Boss {
     // Compute accurate hitbox from actual boss body size
     if (this.hitboxRef) {
       const bounds = this.hitboxRef.getBounds();
-      // Use the larger dimension for radius (accounting for rotation)
-      this.radius = Math.max(bounds.width, bounds.height) / 2;
-      console.log(`[Boss] ${this.bossType} hitbox radius computed: ${this.radius.toFixed(1)}`);
+      this.visualRadius = Math.max(bounds.width, bounds.height) / 2;
+      const gameplayScale = HARD_SCALE_FACTOR > 0 ? LEGACY_HITBOX_SCALE_FACTOR / HARD_SCALE_FACTOR : 1;
+      this.radius = this.visualRadius * gameplayScale;
+      console.log(`[Boss] ${this.bossType} visual radius ${this.visualRadius.toFixed(1)} gameplay radius preserved ${this.radius.toFixed(1)}`);
     }
 
     this.createBossAnimationRig();
+    if (hasColossus(this.profile?.archetype)) {
+      const texture = await loadColossus(this.profile.archetype);
+      this.colossusRig = new ColossusRig(texture, this.animationRig.radius, this.profile.archetype, this.radius);
+      this.colossusRig.zIndex = 2;
+      this.sprite.addChild(this.colossusRig);
+      this.visualContainer.visible = false;
+      this.animationRig.root.visible = false;
+      this.entryStartMs=Date.now();
+    }
+    this.setPresentationState('arrival', this.entryDurationMs + 420);
 
     // Health bar overlay
     this.healthBar = new PIXI.Graphics();
@@ -203,8 +284,12 @@ export class Boss {
     this.sprite.addChild(this.healthBar);
     this.updateHealthBar();
 
+    this.signatureWarningLayer = new PIXI.Graphics();
+    this.signatureWarningLayer.zIndex = 4;
+    this.sprite.addChild(this.signatureWarningLayer);
+
     this.attackWarningLayer = new PIXI.Graphics();
-    this.attackWarningLayer.zIndex = 4;
+    this.attackWarningLayer.zIndex = 3;
     this.sprite.addChild(this.attackWarningLayer);
 
     // Name display overlay
@@ -220,7 +305,7 @@ export class Boss {
       lineHeight: 22
     });
     this.nameText.anchor.set(0.5);
-    this.nameText.y = -Math.min(this.radius + 30, 72);
+    this.nameText.y = -Math.min(this.getVisualRadius() + 30, 82);
     this.nameText.zIndex = 6;
     this.sprite.addChild(this.nameText);
     this.fitNameText();
@@ -236,19 +321,161 @@ export class Boss {
     fitPixiTextToBox(this.nameText, maxWidth, maxHeight, 0.58);
   }
 
+  getVisualRadius() {
+    return Math.max(this.radius || 50, this.visualRadius || 0);
+  }
+
   updateHealthBar() {
     if (!this.healthBar) return;
 
     this.healthBar.clear();
-    const barWidth = this.radius * 3;
-    const barHeight = 8;
+    const visualRadius = this.getVisualRadius();
+    const barWidth = visualRadius * 3;
+    const barHeight = 9;
     const healthPercent = Math.max(0, Math.min(1, this.health / this.maxHealth));
+    const bossPhaseThresholds = [0.75, 0.5, 0.4];
+    const lowHealth = healthPercent <= 0.25;
+    const bossPhaseCount = 3;
+    const currentPhase = Math.max(1, Math.min(bossPhaseCount, Math.round(this.phase || 1)));
+    const phasePipColors = [0x2cff8f, 0xffd166, 0xff4b6b];
+    const barX = -barWidth / 2;
+    const barY = visualRadius + 10;
+    const barColor = healthPercent <= 0.4
+      ? 0xff4b6b
+      : healthPercent <= 0.75 ? 0xff9f3d : 0xff2e58;
+    const frameColor = lowHealth ? 0xffef7e : healthPercent <= 0.4 ? 0xff8fb0 : 0xff6677;
+    let lowHealthBraceCount = 0;
+    let lowHealthSparkCount = 0;
+    let healPulseTickCount = 0;
+    let healPulseSparkCount = 0;
+    const now = Date.now();
+    const healPulseRemaining = Math.max(0, (this.healPulseUntil || 0) - now);
+    const healPulseActive = healPulseRemaining > 0 && (Number(this.lastHealAmount) || 0) > 0;
 
-    this.healthBar.rect(-barWidth / 2, this.radius + 10, barWidth, barHeight);
-    this.healthBar.fill({ color: 0x333333 });
+    this.healthBar.roundRect(barX - 3, barY - 3, barWidth + 6, barHeight + 6, 4);
+    this.healthBar.fill({ color: 0x08070c, alpha: 0.76 });
+    this.healthBar.stroke({ color: frameColor, width: lowHealth ? 1.8 : 1.2, alpha: lowHealth ? 0.86 : 0.64 });
 
-    this.healthBar.rect(-barWidth / 2, this.radius + 10, barWidth * healthPercent, barHeight);
-    this.healthBar.fill({ color: 0xff0000 });
+    this.healthBar.roundRect(barX, barY, barWidth, barHeight, 3);
+    this.healthBar.fill({ color: 0x311018, alpha: 0.92 });
+
+    const fillWidth = Math.max(0, barWidth * healthPercent);
+    if (fillWidth > 0) {
+      this.healthBar.roundRect(barX, barY, fillWidth, barHeight, 3);
+      this.healthBar.fill({ color: barColor, alpha: 0.96 });
+      const leadX = barX + fillWidth;
+      this.healthBar.moveTo(leadX, barY - 3);
+      this.healthBar.lineTo(leadX, barY + barHeight + 3);
+      this.healthBar.stroke({ color: 0xffffff, width: lowHealth ? 2 : 1.3, alpha: lowHealth ? 0.88 : 0.68 });
+    }
+
+    if (healPulseActive && fillWidth > 0) {
+      const healedPercent = Math.max(0, Math.min(1, (Number(this.lastHealAmount) || 0) / Math.max(1, this.maxHealth || 1)));
+      const healWidth = Math.max(9, Math.min(fillWidth, barWidth * healedPercent));
+      const healX = Math.max(barX, barX + fillWidth - healWidth);
+      const pulseProgress = Math.max(0, Math.min(1, healPulseRemaining / 940));
+      const pulse = Math.sin(now * 0.026) * 0.5 + 0.5;
+      this.healthBar.roundRect(healX, barY - 1, healWidth, barHeight + 2, 3);
+      this.healthBar.fill({ color: 0x7dffcc, alpha: 0.22 + pulseProgress * 0.3 });
+      this.healthBar.roundRect(healX - 3, barY - 4, healWidth + 6, barHeight + 8, 5);
+      this.healthBar.stroke({ color: 0x7dffcc, width: 1.25 + pulse * 0.85, alpha: 0.28 + pulseProgress * 0.36 });
+      for (let index = 0; index < 4; index += 1) {
+        const ratio = (index + 0.5) / 4;
+        const tickX = healX + healWidth * ratio;
+        this.healthBar.moveTo(tickX, barY - 5);
+        this.healthBar.lineTo(tickX, barY + barHeight + 5);
+        healPulseTickCount += 1;
+      }
+      this.healthBar.stroke({ color: 0xffffff, width: 0.9, alpha: 0.2 + pulseProgress * 0.26 });
+      const sparkBaseX = Math.min(barX + barWidth - 8, barX + fillWidth + 6);
+      for (let index = 0; index < 3; index += 1) {
+        const sparkX = Math.max(barX + 8, sparkBaseX - index * 9);
+        const sparkY = barY + barHeight * 0.5 + (index % 2 ? 5 : -5);
+        this.healthBar.circle(sparkX, sparkY, 2.4 + pulse * 1.4);
+        this.healthBar.fill({ color: index === 0 ? 0xffffff : 0x7dffcc, alpha: 0.26 + pulseProgress * 0.28 });
+        healPulseSparkCount += 1;
+      }
+    }
+
+    for (const threshold of bossPhaseThresholds) {
+      const markX = Math.round(barX + barWidth * threshold);
+      const cleared = healthPercent <= threshold;
+      this.healthBar.moveTo(markX, barY - 4);
+      this.healthBar.lineTo(markX, barY + barHeight + 4);
+      this.healthBar.stroke({
+        color: cleared ? 0xffffff : 0xffd166,
+        width: threshold === 0.5 ? 1.4 : 1,
+        alpha: cleared ? 0.78 : 0.58
+      });
+    }
+    const phasePipY = barY + barHeight + 9;
+    const phasePipSpacing = Math.min(18, Math.max(12, barWidth / 8));
+    const phasePipStartX = -((bossPhaseCount - 1) * phasePipSpacing) / 2;
+    const phasePulse = Math.sin(now * 0.012) * 0.5 + 0.5;
+    hideMicroSignals(this.healthBar, 'boss-phase:');
+    for (let index = 0; index < bossPhaseCount; index += 1) {
+      const phaseNumber = index + 1;
+      const pipX = phasePipStartX + index * phasePipSpacing;
+      const active = phaseNumber <= currentPhase;
+      const current = phaseNumber === currentPhase;
+      const pipColor = phasePipColors[index] || 0xffd166;
+      const signal = presentPhaseSignal(this.healthBar, `boss-phase:${index}`, {
+        x: pipX,
+        y: phasePipY,
+        color: active ? pipColor : 0x466071,
+        size: current ? 17 : 13,
+        alpha: active ? (current ? 1 : 0.72) : 0.3,
+        current,
+        pulse: phasePulse
+      });
+      if (!signal) {
+        this.healthBar.poly([
+          pipX, phasePipY - 4,
+          pipX + 5, phasePipY,
+          pipX, phasePipY + 4,
+          pipX - 5, phasePipY
+        ]);
+        this.healthBar.fill({ color: active ? pipColor : 0x152838, alpha: active ? (current ? 0.92 : 0.68) : 0.46 });
+        this.healthBar.stroke({ color: current ? 0xffffff : pipColor, width: current ? 1.2 : 0.8, alpha: current ? 0.86 : 0.46 });
+      }
+    }
+    if (lowHealth) {
+      const hatchCount = 7;
+      for (let index = 0; index < hatchCount; index += 1) {
+        const hatchX = barX + 3 + index * (barWidth / (hatchCount - 0.2));
+        this.healthBar.moveTo(hatchX, barY - 5);
+        this.healthBar.lineTo(hatchX + 10, barY + barHeight + 5);
+        this.healthBar.stroke({ color: 0xffef7e, width: 0.8, alpha: 0.26 });
+      }
+      this.healthBar.roundRect(barX - 6, barY - 6, barWidth + 12, barHeight + 12, 6);
+      this.healthBar.stroke({ color: 0xffef7e, width: 1.1, alpha: 0.34 });
+      const braceY = barY + barHeight * 0.5;
+      for (const sideX of [barX - 9, barX + barWidth + 9]) {
+        const direction = sideX < 0 ? 1 : -1;
+        this.healthBar.moveTo(sideX, braceY - 8);
+        this.healthBar.lineTo(sideX, braceY + 8);
+        this.healthBar.moveTo(sideX, braceY - 8);
+        this.healthBar.lineTo(sideX + direction * 8, braceY - 8);
+        this.healthBar.moveTo(sideX, braceY + 8);
+        this.healthBar.lineTo(sideX + direction * 8, braceY + 8);
+        lowHealthBraceCount += 1;
+      }
+      this.healthBar.stroke({ color: 0xff4b6b, width: 1.35, alpha: 0.54 });
+
+      const sparkStartX = Math.min(barX + barWidth - 30, barX + Math.max(10, fillWidth) + 8);
+      for (let index = 0; index < 3; index += 1) {
+        const sparkX = Math.min(barX + barWidth - 8, sparkStartX + index * 10);
+        const sparkY = barY + barHeight * 0.5 + (index % 2 === 0 ? -3 : 3);
+        this.healthBar.poly([
+          sparkX, sparkY - 3,
+          sparkX + 4, sparkY,
+          sparkX, sparkY + 3,
+          sparkX - 4, sparkY
+        ]);
+        this.healthBar.fill({ color: index === 0 ? 0xffffff : 0xffef7e, alpha: 0.38 });
+        lowHealthSparkCount += 1;
+      }
+    }
 
     // Health text (no decimals)
     const healthText = `${Math.max(0, Math.ceil(this.health))}/${Math.ceil(this.maxHealth)}`;
@@ -258,16 +485,40 @@ export class Boss {
     this.healthText = createText(healthText, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
-      fill: '#ffffff'
+      fontWeight: '900',
+      fill: lowHealth ? '#ffef7e' : '#ffffff',
+      stroke: '#05070c',
+      strokeThickness: 3
     });
     this.healthText.anchor.set(0.5);
-    this.healthText.y = this.radius + 14;
+    this.healthText.y = visualRadius + 14.5 + (this.colossusRig ? this.animationRig.radius*.73 : 0);
     if (this.sprite) {
       this.sprite.addChild(this.healthText);
     }
+    this.healthBar.__debugBossHealthBar = {
+      semanticRole: 'dominant_boss_health',
+      missionStatusDuplicatesHealth: false,
+      tickCount: bossPhaseThresholds.length,
+      healthPercent: Number(healthPercent.toFixed(3)),
+      lowHealth,
+      fillColor: barColor,
+      hasLeadEdge: fillWidth > 0,
+      currentPhase,
+      phasePipCount: bossPhaseCount,
+      currentPhasePip: currentPhase,
+      dangerHatchCount: lowHealth ? 7 : 0,
+      lowHealthBraceCount,
+      lowHealthSparkCount,
+      healPulseActive,
+      healPulseTickCount,
+      healPulseSparkCount,
+      lastHealAmount: Math.round(Number(this.lastHealAmount) || 0),
+      lastHealSource: this.lastHealSource || null,
+      text: healthText
+    };
   }
 
-  update(delta, playerX, playerY) {
+  update(delta, playerX, playerY, warningDelta = delta) {
     if (!this.active) return;
 
     // Guard: Sprite might not be ready yet (async creation) or destroyed
@@ -279,25 +530,18 @@ export class Boss {
       return;
     }
 
-    this.moveTimer += delta;
-
-    // Phase transitions
-    if (this.health < this.maxHealth * 0.75 && this.phase === 1) {
-      this.phase = 2;
-      this.shootDelay = this.getPhaseShootDelay(2);
-      this.color = this.profile?.accent || 0xff8800;
-      this.startPhaseChange(2, playerX, playerY);
-      if (!this.tauntPhase2Shown) {
-        const playScene = this.game?.scenes?.play;
-        if (playScene?.showBossTaunt) playScene.showBossTaunt('boss_phase2');
-        this.tauntPhase2Shown = true;
-      }
-    } else if (this.health < this.maxHealth * 0.40 && this.phase === 2) {
-      this.phase = 3;
-      this.shootDelay = this.getPhaseShootDelay(3);
-      this.color = this.profile?.palette || 0xff0000;
-      this.startPhaseChange(3, playerX, playerY);
+    if (!this.attackWarningToken?.movementLocked) {
+      this.moveTimer += delta;
     }
+    if ((this.healPulseUntil || 0) > Date.now()) {
+      this.updateHealthBar();
+    } else if (this.healPulseUntil) {
+      this.healPulseUntil = 0;
+      this.updateHealthBar();
+    }
+
+    this.updatePhaseTransitions(playerX, playerY);
+    this.updateMonsterVoice(delta);
 
     if (!this.tauntHalfShown && this.health <= this.maxHealth * 0.5) {
       const playScene = this.game?.scenes?.play;
@@ -308,17 +552,27 @@ export class Boss {
     const now = Date.now();
     if (this.entryStartMs && now - this.entryStartMs < this.entryDurationMs) {
       const t = (now - this.entryStartMs) / this.entryDurationMs;
-      const ease = 1 - Math.pow(1 - t, 2);
+      const ease = 1 - Math.pow(1 - t, 2.35);
       this.y = this.entryFromY + (this.entryToY - this.entryFromY) * ease;
       this.x = this.baseX;
     } else {
+      this.triggerEntranceImpact();
       this.applyBossMovement(delta, playerX, playerY);
     }
 
+    if(Number.isFinite(this.discoveryLane)){
+      const width=this.game.getWidth();
+      this.x=clamp(this.x,width*(this.discoveryLane-.13),width*(this.discoveryLane+.13));
+    }
     this.sprite.x = this.x;
     this.sprite.y = this.y;
-    this.updateBossAnimation(delta, playerX, playerY);
+    const animationAim = this.getSignatureAimPoint(playerX, playerY);
+    this.updateBossAnimation(delta, animationAim.x, animationAim.y);
 
+    if(Date.now()<(this.discoveryHoldUntil||0)){
+      if(this.attackWarningToken)this.cancelAttackWarning('discovery_attack_handoff');
+      return;
+    }
     if (this.signatureCooldown > 0) {
       this.signatureCooldown -= delta;
     }
@@ -334,25 +588,22 @@ export class Boss {
       console.log(`[BossChaos] delayedSignature phase=${delayed.phase} type=${delayed.type}`);
     }
 
+    this.advanceAttackWarningClock(warningDelta);
     if (this.telegraph) {
-      const elapsed = Date.now() - this.telegraph.start;
-      const progress = clamp(elapsed / this.telegraph.duration, 0, 1);
+      const progress = this.getAttackWarningProgress(this.telegraph);
       this.clearRegularAttackTelegraphVisual();
       this.updateTelegraphVisual(progress, playerX, playerY);
       if (this.nameText) {
         this.nameText.alpha = 1;
       }
-      if (elapsed > this.telegraph.duration) {
-        this.clearTelegraphVisual();
-        this.executeSignatureMove(this.telegraph.type, playerX, playerY);
-        this.telegraph = null;
+      if (this.isAttackWarningReady('signature')) {
+        this.releaseSignatureAttackWarning(playerX, playerY);
       }
     } else if (this.nameText) {
       this.nameText.alpha = 1;
       this.clearTelegraphVisual();
       if (this.regularTelegraph) {
-        const elapsed = Date.now() - this.regularTelegraph.start;
-        const progress = clamp(elapsed / this.regularTelegraph.duration, 0, 1);
+        const progress = this.getAttackWarningProgress(this.regularTelegraph);
         this.updateRegularAttackTelegraphVisual(progress, playerX, playerY);
       } else {
         this.clearRegularAttackTelegraphVisual();
@@ -443,17 +694,29 @@ export class Boss {
       this.animationRig.root.parent.removeChild(this.animationRig.root);
     }
 
-    const radius = Math.max(58, Math.min(150, this.radius || 80));
+    const radius = Math.max(58, Math.min(168, this.getVisualRadius() || 80));
     const palette = this.profile?.palette || this.color || 0xff55d9;
     const accent = this.profile?.accent || 0x37f5ff;
     const root = new PIXI.Container();
     root.sortableChildren = true;
     root.zIndex = 2;
 
+    const auraLayer = new PIXI.Graphics();
+    auraLayer.zIndex = -5;
+    auraLayer.blendMode = 'add';
+    const silhouetteLayer = new PIXI.Graphics();
+    silhouetteLayer.zIndex = -4;
+    silhouetteLayer.blendMode = 'add';
     const backLayer = new PIXI.Graphics();
     backLayer.zIndex = -2;
     const engineLayer = new PIXI.Graphics();
     engineLayer.zIndex = -1;
+    const articulationLayer = new PIXI.Container();
+    articulationLayer.sortableChildren = true;
+    articulationLayer.zIndex = 1;
+    const threatLayer = new PIXI.Graphics();
+    threatLayer.zIndex = 2;
+    threatLayer.blendMode = 'add';
     const frontLayer = new PIXI.Graphics();
     frontLayer.zIndex = 3;
     const scanLayer = new PIXI.Graphics();
@@ -461,6 +724,9 @@ export class Boss {
     const impactLayer = new PIXI.Graphics();
     impactLayer.zIndex = 5;
     impactLayer.blendMode = 'add';
+    const chargeLayer = new PIXI.Graphics();
+    chargeLayer.zIndex = 6;
+    chargeLayer.blendMode = 'add';
 
     const leftFin = this.createBossFin(-1, radius, palette, accent);
     const rightFin = this.createBossFin(1, radius, palette, accent);
@@ -472,41 +738,65 @@ export class Boss {
     leftMandible.zIndex = 3;
     rightMandible.zIndex = 3;
 
+    const sidePanels = [];
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 3; i += 1) {
+        const panel = this.createBossSidePanel(side, i, radius, palette, accent);
+        articulationLayer.addChild(panel);
+        sidePanels.push(panel);
+      }
+    }
+
+    const coreShutters = [];
+    for (let i = 0; i < 4; i += 1) {
+      const shutter = this.createBossCoreShutter(i, radius, palette, accent);
+      articulationLayer.addChild(shutter);
+      coreShutters.push(shutter);
+    }
+
     const weaponNodes = [];
     const nodeCount = this.profile?.archetype === 'carrier' ? 4 : this.profile?.archetype === 'needle' ? 3 : 3;
     for (let i = 0; i < nodeCount; i += 1) {
-      const node = new PIXI.Graphics();
-      node.circle(0, 0, Math.max(5, radius * 0.055));
-      node.fill({ color: accent, alpha: 0.52 });
-      node.circle(0, 0, Math.max(8, radius * 0.085));
-      node.stroke({ color: palette, width: 2, alpha: 0.38 });
+      const node = this.createBossWeaponPod(i, nodeCount, radius, palette, accent);
       node.zIndex = 4;
       root.addChild(node);
       weaponNodes.push(node);
     }
 
+    root.addChild(auraLayer);
+    root.addChild(silhouetteLayer);
     root.addChild(backLayer);
     root.addChild(engineLayer);
     root.addChild(leftFin);
     root.addChild(rightFin);
     root.addChild(leftMandible);
     root.addChild(rightMandible);
+    root.addChild(articulationLayer);
+    root.addChild(threatLayer);
     root.addChild(frontLayer);
     root.addChild(scanLayer);
     root.addChild(impactLayer);
+    root.addChild(chargeLayer);
     this.sprite.addChild(root);
 
     this.animationRig = {
       root,
+      auraLayer,
+      silhouetteLayer,
       backLayer,
       engineLayer,
+      articulationLayer,
+      threatLayer,
       frontLayer,
       scanLayer,
       impactLayer,
+      chargeLayer,
       leftFin,
       rightFin,
       leftMandible,
       rightMandible,
+      sidePanels,
+      coreShutters,
       weaponNodes,
       radius,
       palette,
@@ -551,14 +841,170 @@ export class Boss {
     return mandible;
   }
 
+  createBossSidePanel(side, index, radius, palette, accent) {
+    const part = new PIXI.Container();
+    const length = radius * (0.22 + index * 0.045);
+    const width = radius * (0.10 + index * 0.02);
+    const hingeX = side * radius * (0.26 + index * 0.18);
+    const hingeY = radius * (-0.2 + index * 0.22);
+    const plate = new PIXI.Graphics();
+    plate.poly([
+      0, -width * 0.48,
+      side * length, -width * 0.24,
+      side * length * 1.08, width * 0.2,
+      0, width * 0.54
+    ]);
+    plate.fill({ color: palette, alpha: 0.18 + index * 0.025 });
+    plate.poly([
+      0, -width * 0.48,
+      side * length, -width * 0.24,
+      side * length * 1.08, width * 0.2,
+      0, width * 0.54
+    ]);
+    plate.stroke({ color: accent, width: 2, alpha: 0.42 + index * 0.06 });
+    plate.moveTo(side * length * 0.26, -width * 0.2);
+    plate.lineTo(side * length * 0.9, width * 0.16);
+    plate.stroke({ color: 0xffffff, width: 1, alpha: 0.13 });
+    const panelTexture = GameAssets.bossComponentTextures?.[0];
+    if (panelTexture) {
+      plate.clear();
+      const armor = new PIXI.Sprite(panelTexture);
+      armor.anchor.set(0, 0.5);
+      armor.width = length * 1.08;
+      armor.height = width;
+      armor.scale.x *= side;
+      part.addChild(armor);
+    }
+    part.addChild(plate);
+    part.x = hingeX;
+    part.y = hingeY;
+    part.baseX = hingeX;
+    part.baseY = hingeY;
+    part.baseRotation = side * (0.1 + index * 0.045);
+    part.side = side;
+    part.index = index;
+    part.phaseOffset = side * 0.9 + index * 1.23;
+    part.rotation = part.baseRotation;
+    part.zIndex = 1 + index;
+    return part;
+  }
+
+  createBossCoreShutter(index, radius, palette, accent) {
+    const part = new PIXI.Container();
+    const angle = index * Math.PI / 2;
+    const length = radius * 0.28;
+    const width = radius * 0.078;
+    let plate = new PIXI.Graphics();
+    plate.roundRect(-width / 2, -length * 0.12, width, length, Math.max(3, width * 0.36));
+    plate.fill({ color: palette, alpha: 0.2 });
+    plate.roundRect(-width / 2, -length * 0.12, width, length, Math.max(3, width * 0.36));
+    plate.stroke({ color: accent, width: 1.6, alpha: 0.5 });
+    plate.circle(0, length * 0.12, Math.max(2.5, width * 0.22));
+    plate.fill({ color: 0xffffff, alpha: 0.12 });
+    const shutterTexture = GameAssets.bossComponentTextures?.[1];
+    if (shutterTexture) {
+      plate.destroy();
+      plate = new PIXI.Container();
+      const armor = new PIXI.Sprite(shutterTexture);
+      armor.anchor.set(0.5, 0.12);
+      armor.width = width;
+      armor.height = length;
+      plate.addChild(armor);
+    }
+    part.addChild(plate);
+    part.rotation = angle;
+    part.baseRotation = angle;
+    part.baseSlide = radius * 0.11;
+    part.index = index;
+    part.x = 0;
+    part.y = 0;
+    plate.y = part.baseSlide;
+    part.plate = plate;
+    part.zIndex = 5 + index;
+    return part;
+  }
+
+  createBossWeaponPod(index, total, radius, palette, accent) {
+    const pod = new PIXI.Container();
+    const shell = new PIXI.Graphics();
+    let barrel = new PIXI.Graphics();
+    const core = new PIXI.Graphics();
+    const size = Math.max(8, radius * 0.08);
+    shell.circle(0, 0, size);
+    shell.fill({ color: accent, alpha: 0.5 });
+    shell.circle(0, 0, size * 1.45);
+    shell.stroke({ color: palette, width: 2, alpha: 0.42 });
+    barrel.roundRect(-size * 0.25, -size * 1.7, size * 0.5, size * 2.2, size * 0.22);
+    barrel.fill({ color: palette, alpha: 0.28 });
+    barrel.roundRect(-size * 0.25, -size * 1.7, size * 0.5, size * 2.2, size * 0.22);
+    barrel.stroke({ color: 0xffffff, width: 1.2, alpha: 0.28 });
+    core.circle(0, 0, size * 0.42);
+    core.fill({ color: 0xffffff, alpha: 0.18 });
+    const weaponTexture = GameAssets.bossComponentTextures?.[2];
+    if (weaponTexture) {
+      barrel.destroy();
+      barrel = new PIXI.Container();
+      shell.clear();
+      const hardware = new PIXI.Sprite(weaponTexture);
+      hardware.anchor.set(0.5, 0.65);
+      hardware.width = size * 1.65;
+      hardware.height = size * 3.1;
+      barrel.addChild(hardware);
+    }
+    pod.addChild(barrel);
+    pod.addChild(shell);
+    pod.addChild(core);
+    pod.baseSize = size;
+    pod.index = index;
+    pod.total = total;
+    pod.phaseOffset = index * ((Math.PI * 2) / Math.max(1, total));
+    pod.barrel = barrel;
+    pod.core = core;
+    return pod;
+  }
+
   setPresentationState(state, durationMs = 240) {
     const until = Date.now() + Math.max(0, durationMs);
     this.presentationState = state;
     this.presentationStateUntil = Math.max(this.presentationStateUntil || 0, until);
   }
 
+  getEntryProgress(now = Date.now()) {
+    if (!this.entryStartMs || this.entryDurationMs <= 0) return 1;
+    return clamp((now - this.entryStartMs) / this.entryDurationMs, 0, 1);
+  }
+
+  triggerEntranceImpact() {
+    if (this.entryImpactTriggered) return;
+    this.entryImpactTriggered = true;
+    this.setPresentationState('arrivalImpact', 560);
+    const playScene = this.game?.scenes?.play;
+    const color = this.profile?.palette || this.color || 0xff55d9;
+    const accent = this.profile?.accent || 0xffffff;
+    playScene?.particleManager?.createBossEntranceBurst?.(this.x, this.y, color, accent);
+    playScene?.triggerShockwave?.(this.x, this.y, accent);
+    playScene?.screenShake?.shake(6, 16);
+    AudioManager.playSfx('boss_spawn', { force: true, volume: 0.20, minIntervalMs: 700 });
+    AudioManager.playSfx('boss_entrance_impact', { force: true, volume: 0.32, minIntervalMs: 900 });
+  }
+
+  playMonsterVoice(event = 'hunt') {
+    CreatureAudio.play(this, this.profile, event, { x: this.x / this.game.getWidth() });
+    this.lastMonsterPhase = this.phase;
+    this.monsterVoiceClock = 0;
+  }
+
+  updateMonsterVoice(delta) {
+    if (!this.entryImpactTriggered || this.health <= 0) return;
+    this.monsterVoiceClock = (this.monsterVoiceClock || 0) + delta / 60;
+    const phaseChanged = this.phase !== this.lastMonsterPhase;
+    const interval = 15 - Math.min(3, this.phase) * 2 + this.level % 3;
+    if ((phaseChanged && this.monsterVoiceClock > 2.8) || this.monsterVoiceClock > interval) this.playMonsterVoice(phaseChanged ? (this.phase >= 3 ? 'rage' : 'phase') : 'hunt');
+  }
+
   getPresentationState(now = Date.now()) {
     if (this.health <= 0 || this.defeatPresentationAt > 0) return 'death';
+    if (!this.entryImpactTriggered && this.getEntryProgress(now) < 1) return 'arrival';
     if (now < this.phasePulseUntil) return 'phaseChange';
     if (this.telegraph) return 'charge';
     if (now < this.fireRecoilUntil) return 'firing';
@@ -571,6 +1017,7 @@ export class Boss {
     const now = Date.now();
     const angle = Math.atan2(playerY - this.y, playerX - this.x);
     this.lastFireAngle = Number.isFinite(angle) ? angle : this.lastFireAngle;
+    this.lastFireVisualFamily = type;
     this.fireRecoilUntil = now + (signature ? BOSS_FIRE_RECOIL_MS + 120 : BOSS_FIRE_RECOIL_MS);
     this.setPresentationState('firing', signature ? 380 : 240);
 
@@ -579,9 +1026,15 @@ export class Boss {
       this.lastFireFxAt = now;
       const color = signature ? (this.profile?.accent || 0xffffff) : (this.profile?.palette || this.color || 0xffffff);
       playScene.particleManager.createMuzzleFlash(this.x, this.y + 18, this.lastFireAngle, color);
+      if (signature || this.phase >= 2) {
+        playScene.particleManager.createBossChargeSparks?.(this.x, this.y + 10, color, signature ? 1.25 : 0.7);
+      }
     }
     if (signature && playScene?.screenShake) {
       playScene.screenShake.shake(4, 12);
+    } else if (!signature && now - this.lastRegularFireSfxAt > 260) {
+      this.lastRegularFireSfxAt = now;
+      AudioManager.playSfx('shoot_heavy', { volume: 0.26, minIntervalMs: 220 });
     }
   }
 
@@ -592,23 +1045,27 @@ export class Boss {
     const playScene = this.game?.scenes?.play;
     if (playScene?.particleManager && now - this.lastHurtFxAt > 80) {
       this.lastHurtFxAt = now;
-      const radius = Math.max(40, this.radius || 70);
+      const radius = Math.max(40, this.getVisualRadius() || 70);
       const angle = ((now * 0.017) % (Math.PI * 2)) + amount * 0.11;
       const x = this.x + Math.cos(angle) * radius * 0.42;
       const y = this.y + Math.sin(angle) * radius * 0.28;
       playScene.particleManager.createHitSpark(x, y, this.profile?.accent || 0xffff00, 1.15);
+      playScene.particleManager.createBossChargeSparks?.(x, y, this.profile?.palette || this.color || 0xffff00, 0.45);
     }
+    AudioManager.playSfx('boss_damage_armor_crack', { volume: 0.32, minIntervalMs: 115 });
   }
 
   triggerDefeatPresentation() {
     if (this.defeatPresentationAt > 0) return;
+    this.cancelAttackWarning('boss_defeated');
     this.defeatPresentationAt = Date.now();
     this.setPresentationState('death', 640);
     const playScene = this.game?.scenes?.play;
     const color = this.profile?.accent || this.color || 0xffff33;
-    playScene?.particleManager?.createBossExplosion(this.x, this.y, color);
+    playScene?.particleManager?.hullBreakup?.emit(this);
+    playScene?.particleManager?.createLayeredBossExplosion?.(this.x, this.y, color, this.profile?.palette || 0xffffff, 1.05);
     playScene?.triggerShockwave?.(this.x, this.y, color);
-    playScene?.screenShake?.shake(8, 20);
+    playScene?.screenShake?.shake(10, 24);
   }
 
   triggerFinishGatePresentation(untilMs = Date.now() + 1200) {
@@ -620,27 +1077,79 @@ export class Boss {
     const color = this.profile?.accent || this.color || 0xffff33;
     playScene?.triggerShockwave?.(this.x, this.y, color);
     playScene?.particleManager?.createHitSpark(this.x, this.y, color, 1.25);
+    playScene?.particleManager?.createBossChargeSparks?.(this.x, this.y, color, 1.05);
     playScene?.screenShake?.shake(3, 10);
     AudioManager.playSfx('boss_phase_surge', { volume: 0.45, minIntervalMs: 900 });
   }
 
+  heal(amount = 0, { source = 'unknown' } = {}) {
+    if (!this.active || this.health <= 0) return 0;
+    const value = Math.max(0, Number(amount) || 0);
+    if (value <= 0) return 0;
+    const before = this.health;
+    const supportFuel = source === 'boss_fuel_ship' || source === 'boss_support';
+    const ceiling = supportFuel ? this.maxHealth * 0.6 : this.maxHealth;
+    this.health = before >= ceiling ? before : Math.min(ceiling, before + value);
+    const healed = Math.max(0, this.health - before);
+    if (healed <= 0) return 0;
+    if (source === 'boss_fuel_ship' || source === 'boss_support') {
+      this.applyRecoveryPause(500, 'boss_refuel');
+    }
+    const now = Date.now();
+    this.healPulseStartedAt = now;
+    this.healPulseUntil = now + 940;
+    this.lastHealAmount = healed;
+    this.lastHealSource = source;
+    this.updateHealthBar();
+    const playScene = this.game?.scenes?.play;
+    const color = this.profile?.accent || this.color || 0x7dffcc;
+    playScene?.particleManager?.createBossChargeSparks?.(this.x, this.y, color, 1.1);
+    playScene?.particleManager?.createHitSpark?.(this.x, this.y, 0x7dffcc, 1.35);
+    console.log(`[BossHeal] level=${this.level} source=${source} hpBefore=${before} heal=${healed} hpAfter=${this.health}`);
+    return healed;
+  }
+
   updateBossAnimation(delta, playerX, playerY) {
     if (!this.animationRig || !this.visualContainer) return;
+    if (this.colossusRig) {
+      const now = Date.now(), token = this.attackWarningToken;
+      this.colossusVisualTime=(this.colossusVisualTime||0)+Math.max(0,delta)/60;
+      const charge = token?.terminalState === 'active' ? this.getAttackWarningProgress(token) : 0;
+      const recoil = clamp((this.fireRecoilUntil - now) / BOSS_FIRE_RECOIL_MS, 0, 1);
+      this.colossusRig.update({charge, recoil, phase:this.phase, time:this.colossusVisualTime,
+        angle:token?.lockedAngle ?? this.lastFireAngle ?? Math.PI/2,
+        signature:token?.category==='signature', hurt:clamp((this.hurtFlashUntil-now)/BOSS_HURT_FLASH_MS,0,1),
+        death:this.defeatPresentationAt>0?clamp((now-this.defeatPresentationAt)/840,0,1):0});
+      if(this.healthBar)this.healthBar.y=this.animationRig.radius*.73;
+      if(this.healthText)this.healthText.y=this.getVisualRadius()+14.5+this.animationRig.radius*.73;
+      if(this.nameText)this.nameText.y=-this.animationRig.radius*1.1;
+      this.animationDebug={...this.colossusRig.debug,telegraph:charge,recoil,phase:this.phase,state:this.getPresentationState(),
+        visualRadius:this.getVisualRadius(),gameplayRadius:this.radius,polishVersion:'colossus-20260906'};
+      return;
+    }
     const rig = this.animationRig;
     const now = Date.now();
     const t = this.moveTimer * 0.032;
     const phaseBoost = 1 + (this.phase - 1) * 0.08;
     const telegraphProgress = this.telegraph
-      ? clamp((now - this.telegraph.start) / this.telegraph.duration, 0, 1)
+      ? this.getAttackWarningProgress(this.telegraph)
       : this.regularTelegraph
-        ? clamp((now - this.regularTelegraph.start) / this.regularTelegraph.duration, 0, 1) * 0.65
+        ? this.getAttackWarningProgress(this.regularTelegraph) * 0.65
         : 0;
     const hurtProgress = clamp((this.hurtFlashUntil - now) / BOSS_HURT_FLASH_MS, 0, 1);
     const recoilProgress = clamp((this.fireRecoilUntil - now) / BOSS_FIRE_RECOIL_MS, 0, 1);
     const phaseProgress = clamp((this.phasePulseUntil - now) / BOSS_PHASE_PULSE_MS, 0, 1);
     const presentationState = this.getPresentationState(now);
+    const entryProgress = this.getEntryProgress(now);
+    const entryEnergy = entryProgress < 1 ? Math.sin(entryProgress * Math.PI) : 0;
+    const impactProgress = presentationState === 'arrivalImpact'
+      ? clamp((this.presentationStateUntil - now) / 560, 0, 1)
+      : 0;
+    const deathProgress = this.defeatPresentationAt > 0
+      ? clamp((now - this.defeatPresentationAt) / 840, 0, 1)
+      : 0;
     const rage = 1 - clamp(this.health / Math.max(1, this.maxHealth), 0, 1);
-    const intensity = 1 + telegraphProgress * 0.18 + hurtProgress * 0.22 + recoilProgress * 0.12 + phaseProgress * 0.18 + rage * 0.12 + (this.phase - 1) * 0.04;
+    const intensity = 1 + telegraphProgress * 0.2 + hurtProgress * 0.24 + recoilProgress * 0.13 + phaseProgress * 0.22 + rage * 0.16 + entryEnergy * 0.18 + impactProgress * 0.2 + deathProgress * 0.22 + (this.phase - 1) * 0.05;
     const radius = rig.radius;
     const palette = rig.palette;
     const accent = rig.accent;
@@ -649,7 +1158,9 @@ export class Boss {
     const fireSquash = recoilProgress * 0.045;
     const hurtSnap = hurtProgress * 0.055;
     const phaseSwell = phaseProgress * 0.035;
-    const bodyPulse = 1 + Math.sin(t * (archetype === 'clock' ? 1.6 : 0.85)) * 0.01 * intensity + hurtSnap + phaseSwell;
+    const entrySwell = entryProgress < 1 ? (1 - entryProgress) * 0.08 + entryEnergy * 0.045 : 0;
+    const impactSwell = impactProgress * 0.052;
+    const bodyPulse = 1 + Math.sin(t * (archetype === 'clock' ? 1.6 : 0.85)) * 0.01 * intensity + hurtSnap + phaseSwell + entrySwell + impactSwell;
     const bodyStretch = Math.cos(t * 0.7) * 0.006 * intensity + fireSquash;
     this.visualContainer.scale.set(
       this.visualBaseScale.x * (bodyPulse + bodyStretch),
@@ -663,17 +1174,47 @@ export class Boss {
     this.visualContainer.skew.x = Math.sin(t * 0.55 + this.phase) * 0.005 * intensity;
     this.visualContainer.skew.y = Math.cos(t * 0.42) * 0.003 * intensity;
 
+    rig.root.rotation = Math.sin(t * 0.48 + this.phase) * 0.01 * intensity + Math.sin(now * 0.1) * hurtProgress * 0.018;
+    rig.root.scale.set(1 + phaseProgress * 0.035 + impactProgress * 0.045 + deathProgress * 0.06);
+
     const finFlap = Math.sin(t * (archetype === 'jester' ? 1.6 : 0.95) + telegraphProgress * Math.PI * 0.35) * 0.08 * intensity;
-    rig.leftFin.rotation = -0.16 + finFlap;
-    rig.rightFin.rotation = 0.16 - finFlap;
-    rig.leftFin.scale.set(1 + Math.max(0, Math.sin(t * 0.9)) * 0.025 * intensity, 1);
-    rig.rightFin.scale.set(1 + Math.max(0, Math.cos(t * 0.9)) * 0.025 * intensity, 1);
+    const wingOpen = Math.max(telegraphProgress * 0.82, phaseProgress * 0.68, entryEnergy * 0.76, impactProgress * 0.58, deathProgress);
+    rig.leftFin.rotation = -0.16 + finFlap - wingOpen * 0.18;
+    rig.rightFin.rotation = 0.16 - finFlap + wingOpen * 0.18;
+    rig.leftFin.scale.set(1 + Math.max(0, Math.sin(t * 0.9)) * 0.025 * intensity + wingOpen * 0.08, 1 + wingOpen * 0.04);
+    rig.rightFin.scale.set(1 + Math.max(0, Math.cos(t * 0.9)) * 0.025 * intensity + wingOpen * 0.08, 1 + wingOpen * 0.04);
 
     const bite = 0.045 + telegraphProgress * 0.12 + (archetype === 'needle' ? 0.04 : 0);
-    rig.leftMandible.rotation = -0.16 - Math.sin(t * 1.9) * bite;
-    rig.rightMandible.rotation = 0.16 + Math.sin(t * 1.9) * bite;
-    rig.leftMandible.y = radius * (0.22 + Math.max(0, Math.sin(t * 1.0)) * 0.025 * intensity);
-    rig.rightMandible.y = radius * (0.22 + Math.max(0, Math.cos(t * 1.0)) * 0.025 * intensity);
+    rig.leftMandible.rotation = -0.16 - Math.sin(t * 1.9) * bite - wingOpen * 0.12;
+    rig.rightMandible.rotation = 0.16 + Math.sin(t * 1.9) * bite + wingOpen * 0.12;
+    rig.leftMandible.y = radius * (0.22 + Math.max(0, Math.sin(t * 1.0)) * 0.025 * intensity + wingOpen * 0.035);
+    rig.rightMandible.y = radius * (0.22 + Math.max(0, Math.cos(t * 1.0)) * 0.025 * intensity + wingOpen * 0.035);
+
+    const panelOpen = clamp(wingOpen + recoilProgress * 0.18 + hurtProgress * 0.08, 0, 1.35);
+    for (const part of rig.sidePanels || []) {
+      const side = part.side || 1;
+      const index = part.index || 0;
+      const flap = Math.sin(t * (0.85 + index * 0.17) + part.phaseOffset) * (0.045 + index * 0.025) * intensity;
+      const scatter = deathProgress * deathProgress * radius * (0.08 + index * 0.035);
+      part.x = part.baseX + side * (panelOpen * radius * (0.028 + index * 0.012) + scatter);
+      part.y = part.baseY + Math.sin(t * 1.08 + part.phaseOffset) * radius * 0.013 + recoilProgress * radius * 0.018 - deathProgress * radius * (0.018 + index * 0.01);
+      part.rotation = part.baseRotation + side * (panelOpen * (0.13 + index * 0.05) + flap + deathProgress * 0.28);
+      part.scale.set(1 + phaseProgress * 0.05 + hurtProgress * 0.04, 1 + telegraphProgress * 0.055 + impactProgress * 0.04);
+      part.alpha = clamp(0.68 + panelOpen * 0.22 - deathProgress * 0.26, 0.38, 0.95);
+    }
+
+    const shutterOpen = clamp(Math.max(telegraphProgress, phaseProgress * 0.78, entryEnergy * 0.65, impactProgress * 0.72) + recoilProgress * 0.2 + deathProgress * 0.8, 0, 1.4);
+    for (const shutter of rig.coreShutters || []) {
+      const index = shutter.index || 0;
+      const plate = shutter.plate;
+      const breathe = Math.sin(t * 1.55 + index) * 0.014 * intensity;
+      shutter.rotation = shutter.baseRotation + breathe + shutterOpen * (index % 2 === 0 ? 0.09 : -0.09);
+      if (plate) {
+        plate.y = shutter.baseSlide + shutterOpen * radius * (0.075 + index * 0.005);
+        plate.scale.set(1 + shutterOpen * 0.08, 1 + recoilProgress * 0.12);
+        plate.alpha = clamp(0.76 + shutterOpen * 0.22 - deathProgress * 0.18, 0.45, 1);
+      }
+    }
 
     rig.engineLayer.clear();
     const exhaust = (0.46 + Math.max(0, Math.sin(t * 1.4)) * 0.12 + telegraphProgress * 0.12) * intensity;
@@ -691,8 +1232,7 @@ export class Boss {
     const ringCount = archetype === 'vortex' || archetype === 'clock' ? 2 : 1;
     for (let i = 0; i < ringCount; i += 1) {
       const ringRadius = radius * (0.76 + i * 0.2 + Math.sin(t + i) * 0.008 + telegraphProgress * 0.025);
-      rig.backLayer.circle(0, 0, ringRadius);
-      rig.backLayer.stroke({
+      drawEnergyShell(rig.backLayer, 0, 0, ringRadius, {
         color: i % 2 ? palette : accent,
         width: i === 0 ? 2 : 1,
         alpha: (0.11 + telegraphProgress * 0.1) / (i + 1)
@@ -703,17 +1243,51 @@ export class Boss {
     const coreRadius = radius * (0.12 + Math.max(0, Math.sin(t * 1.05)) * 0.012 + telegraphProgress * 0.025);
     rig.frontLayer.circle(0, 0, coreRadius);
     rig.frontLayer.fill({ color: accent, alpha: 0.18 + telegraphProgress * 0.12 });
-    rig.frontLayer.circle(0, 0, coreRadius * 1.9);
-    rig.frontLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.16 + telegraphProgress * 0.14 });
+    drawEnergyShell(rig.frontLayer, 0, 0, coreRadius * 1.9, { color: 0xffffff, width: 2, alpha: 0.16 + telegraphProgress * 0.14 });
     this.drawArchetypeBossAnimation(rig, archetype, t, intensity, telegraphProgress, playerX, playerY);
+
+    if (!rig.astraAttackRig) {
+      rig.astraAttackRig = new AstraAttackRig(radius, accent, {hardware: false});
+      rig.astraAttackRig.zIndex = 7;
+      rig.root.addChild(rig.astraAttackRig);
+    }
+    rig.astraAttackRig.update({charge: telegraphProgress, recoil: recoilProgress, time: now * .001, active: recoilProgress > 0, aim: this.lastFireAngle});
+    if (BOSS_ARSENAL_ENABLED) {
+      rig.astraAttackRig.visible = false;
+      if (!rig.arsenalRig) {
+        rig.arsenalRig = new BossArsenalRig(radius, archetype, accent, this.profile?.chapter || 1);
+        rig.arsenalRig.zIndex = 8;
+        rig.root.addChild(rig.arsenalRig);
+      }
+      rig.arsenalRig.update({
+        charge: this.attackWarningToken ? this.getAttackWarningProgress(this.attackWarningToken) : 0,
+        recoil: recoilProgress, time: this.moveTimer * .01667,
+        angle: this.attackWarningToken?.lockedAngle ?? this.lastFireAngle ?? Math.PI / 2,
+        phase: this.phase, signature: this.attackWarningToken?.category === 'signature', death: deathProgress,
+        sequence: this.attackWarningTokenSequence || 0
+      });
+    }
+
 
     rig.weaponNodes.forEach((node, index) => {
       const nodePhase = t * (archetype === 'clock' ? 0.34 : 0.28) + index * ((Math.PI * 2) / rig.weaponNodes.length);
       const orbitRadius = radius * (0.48 + Math.sin(t * 0.45 + index) * 0.015 + telegraphProgress * 0.06);
       node.x = Math.cos(nodePhase) * orbitRadius;
       node.y = Math.sin(nodePhase) * orbitRadius * (archetype === 'carrier' ? 0.36 : 0.46);
-      node.scale.set((0.78 + Math.sin(t * 0.9 + index) * 0.04 + telegraphProgress * 0.08) * phaseBoost);
-      node.alpha = 0.4 + Math.sin(t * 0.75 + index) * 0.06 + telegraphProgress * 0.1;
+      const basePodScale = (0.82 + Math.sin(t * 0.9 + index) * 0.05 + telegraphProgress * 0.14 + recoilProgress * 0.08) * phaseBoost;
+      node.scale.set(basePodScale * (1 + deathProgress * 0.16));
+      node.alpha = clamp(0.44 + Math.sin(t * 0.75 + index) * 0.06 + telegraphProgress * 0.16 - deathProgress * 0.2, 0.28, 0.9);
+      const homeAngle = nodePhase + Math.PI / 2;
+      const aimAngle = Math.atan2(playerY - this.y, playerX - this.x) + Math.PI / 2;
+      node.rotation = lerpAngle(node.rotation || homeAngle, telegraphProgress > 0.05 ? aimAngle : homeAngle, 0.05 + telegraphProgress * 0.22 + recoilProgress * 0.14);
+      if (node.barrel) {
+        node.barrel.scale.y = 1 + telegraphProgress * 0.18 + recoilProgress * 0.3 + phaseProgress * 0.08;
+        node.barrel.y = -recoilProgress * radius * 0.045;
+      }
+      if (node.core) {
+        node.core.alpha = 0.36 + telegraphProgress * 0.34 + recoilProgress * 0.2;
+        node.core.scale.set(1 + telegraphProgress * 0.42 + phaseProgress * 0.18);
+      }
       if (archetype === 'needle' && index === 1) {
         node.y -= radius * (0.08 + telegraphProgress * 0.06);
       }
@@ -723,8 +1297,38 @@ export class Boss {
       recoilProgress,
       phaseProgress,
       telegraphProgress,
+      entryProgress,
+      entryEnergy,
+      impactProgress,
+      deathProgress,
+      rage,
       presentationState
     });
+    const auraPrestige = this.drawBossAuraLayers(rig, t, {
+      intensity,
+      telegraphProgress,
+      phaseProgress,
+      hurtProgress,
+      recoilProgress,
+      entryProgress,
+      entryEnergy,
+      impactProgress,
+      deathProgress,
+      rage,
+      presentationState
+    });
+
+    // Decorative rig stays subordinate to the actual boss hull. Attack paths,
+    // weapon nodes, charge and hit flashes retain their full warning contrast.
+    rig.auraLayer.alpha = 0.035;
+    rig.silhouetteLayer.alpha = 0.035;
+    rig.backLayer.alpha = 0.045;
+    rig.frontLayer.alpha = 0.065;
+    rig.articulationLayer.alpha = 0.90;
+    rig.threatLayer.alpha = 0.14;
+    rig.chargeLayer.alpha = 0.12;
+    rig.leftFin.alpha = rig.rightFin.alpha = 0.055;
+    rig.leftMandible.alpha = rig.rightMandible.alpha = 0.07;
 
     rig.scanLayer.clear();
     const scanY = -radius * 0.62 + ((t * 15) % (radius * 1.24));
@@ -744,6 +1348,20 @@ export class Boss {
       hurt: Number(hurtProgress.toFixed(3)),
       recoil: Number(recoilProgress.toFixed(3)),
       phasePulse: Number(phaseProgress.toFixed(3)),
+      entry: Number(entryProgress.toFixed(3)),
+      death: Number(deathProgress.toFixed(3)),
+      shutterOpen: Number(shutterOpen.toFixed(3)),
+      sidePanelCount: rig.sidePanels?.length || 0,
+      visualRadius: Math.round(this.getVisualRadius()),
+      gameplayRadius: Math.round(this.radius || 0),
+      visualGameplayRadiusRatio: Number((this.getVisualRadius() / Math.max(1, this.radius || 1)).toFixed(3)),
+      aura: Number((Math.min(1, 0.22 + rage * 0.22 + telegraphProgress * 0.26 + phaseProgress * 0.18 + entryEnergy * 0.2 + impactProgress * 0.22)).toFixed(3)),
+      auraWakeRibbonCount: auraPrestige?.auraWakeRibbonCount || 0,
+      weaponChargeRayCount: auraPrestige?.weaponChargeRayCount || 0,
+      panelServoSparkCount: auraPrestige?.panelServoSparkCount || 0,
+      phaseGlyphCount: auraPrestige?.phaseGlyphCount || 0,
+      rageInstabilityCount: auraPrestige?.rageInstabilityCount || 0,
+      polishVersion: BOSS_POLISH_VERSION,
       phase: this.phase
     };
   }
@@ -854,8 +1472,7 @@ export class Boss {
       for (let i = 0; i < 3; i += 1) {
         const p = clamp(phaseAge + i * 0.18, 0, 1);
         const r = radius * (0.58 + p * 0.72);
-        layer.circle(0, 0, r);
-        layer.stroke({ color: i % 2 ? palette : accent, width: 3 - i * 0.4, alpha: (0.32 - i * 0.06) * phaseProgress });
+        drawEnergyShell(layer, 0, 0, r, { color: i % 2 ? palette : accent, width: 3 - i * 0.4, alpha: (0.32 - i * 0.06) * phaseProgress });
       }
     }
 
@@ -868,6 +1485,9 @@ export class Boss {
     }
 
     if (recoilProgress > 0) {
+      drawBossDischarge(layer, { radius, color: palette, edge: accent,
+        angle: this.lastFireAngle, progress: recoilProgress,
+        family: this.lastFireVisualFamily || this.profile?.attack });
       const length = radius * (0.5 + recoilProgress * 0.52);
       const spread = 0.18 + recoilProgress * 0.08;
       const start = radius * 0.14;
@@ -912,11 +1532,94 @@ export class Boss {
     }
   }
 
+  drawBossAuraLayers(rig, t, state = {}) {
+    const {
+      auraLayer,
+      silhouetteLayer,
+      threatLayer,
+      chargeLayer
+    } = rig || {};
+    if (!auraLayer || !silhouetteLayer || !threatLayer || !chargeLayer) {
+      return {
+        auraWakeRibbonCount: 0,
+        weaponChargeRayCount: 0,
+        panelServoSparkCount: 0,
+        phaseGlyphCount: 0,
+        rageInstabilityCount: 0
+      };
+    }
+
+    auraLayer.clear();
+    silhouetteLayer.clear();
+    threatLayer.clear();
+    chargeLayer.clear();
+
+    const radius = rig.radius;
+    const palette = rig.palette;
+    const accent = rig.accent;
+    const {
+      intensity = 1,
+      telegraphProgress = 0,
+      phaseProgress = 0,
+      hurtProgress = 0,
+      recoilProgress = 0,
+      entryProgress = 1,
+      entryEnergy = 0,
+      impactProgress = 0,
+      deathProgress = 0,
+      rage = 0,
+      presentationState = 'idle'
+    } = state;
+    const charge = Math.max(telegraphProgress, phaseProgress * .9, entryEnergy * .7, impactProgress, deathProgress * .85);
+    const clock=energyClock(t*1000);
+    const color=accent||palette;
+    // Quiet powered hull at rest; charge and impact wake up the machinery.
+    // No common clock-face, radial ruler, orbiting diamonds or stacked rings.
+    drawEnergySurface(auraLayer,{kind:'membrane',width:radius*(2.10+charge*.25),height:radius*(1.7+charge*.18),color,alpha:.07+charge*.14});
+    let auraWakeRibbonCount=0,weaponChargeRayCount=0,panelServoSparkCount=0,phaseGlyphCount=0,rageInstabilityCount=0;
+    const sides=this.profile?.archetype==='carrier'?[-1,-.5,.5,1]:[-1,1];
+    for(const side of sides){
+      drawEnergySurface(auraLayer,{kind:'rift',x:side*radius*.88,y:radius*.24,width:radius*.28,height:radius*(.92+charge*.50),color,alpha:(.08+charge*.22)*intensity,angle:-side*.18});
+      auraWakeRibbonCount++;
+    }
+    if(charge>.08)for(const node of rig.weaponNodes||[]){
+      drawEnergyLink(chargeLayer,{x:node.x*.2,y:node.y*.2,toX:node.x*.92,toY:node.y*.92,width:10+charge*13,color,alpha:.16+charge*.30});
+      drawEnergySurface(chargeLayer,{kind:'corona',x:node.x,y:node.y,width:18+charge*30,height:16+charge*24,color,alpha:charge*.48});
+      weaponChargeRayCount++;
+    }
+    const servoAlpha=Math.max(charge*.22,hurtProgress*.26,rage*.08);
+    if(servoAlpha>.03)for(const panel of rig.sidePanels||[]){
+      drawEnergySurface(chargeLayer,{kind:'corona',x:panel.x+(panel.side||1)*radius*.08,y:panel.y,width:12+charge*14,height:8+charge*10,color,alpha:servoAlpha});
+      panelServoSparkCount++;
+    }
+    if(phaseProgress>.03){
+      drawEnergySurface(threatLayer,{kind:'pressure',width:radius*(1.2+phaseProgress*1.65),height:radius*(.9+phaseProgress*1.25),color,alpha:phaseProgress*(1-phaseProgress*.7)*.42});
+      phaseGlyphCount=1;
+    }
+    if(hurtProgress>0||recoilProgress>0){
+      const flash=Math.max(hurtProgress,recoilProgress*.7);
+      drawEnergySurface(threatLayer,{kind:'corona',width:radius*(1+flash*.8),height:radius*(.7+flash*.6),color:0xffeadb,alpha:flash*.4});
+    }
+    if(rage>.38||presentationState==='death')for(let i=0;i<3;i++){
+      const angle=clock*.15+i*Math.PI*2/3;
+      drawEnergySurface(threatLayer,{kind:'rift',x:Math.cos(angle)*radius*.70,y:Math.sin(angle)*radius*.55,width:radius*.26,height:radius*.80,color,alpha:.12+rage*.12+deathProgress*.16,angle:angle-Math.PI/2});
+      rageInstabilityCount++;
+    }
+    if(entryProgress<1||impactProgress>0||deathProgress>0){
+      const energy=Math.max(entryEnergy*.3,impactProgress*.5,deathProgress*(1-deathProgress*.5)*.5);
+      drawEnergySurface(chargeLayer,{kind:'pressure',width:radius*(2.5+impactProgress*.5+deathProgress*1.2),height:radius*(1.8+impactProgress*.4+deathProgress),color,alpha:energy});
+    }
+    return {auraWakeRibbonCount,weaponChargeRayCount,panelServoSparkCount,phaseGlyphCount,rageInstabilityCount};
+  }
+
   getAnimationDebugState() {
     return this.animationDebug || null;
   }
 
   applyBossMovement(delta, playerX, playerY) {
+    if (this.attackWarningToken?.movementLocked) return;
+
+    const previousX = this.x, previousY = this.y;
     const profile = this.moveProfile || this.getMoveProfile(this.bossType);
     const t = this.moveTimer * 0.02;
     const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
@@ -1002,6 +1705,14 @@ export class Boss {
         break;
     }
 
+    if (ARCADE_FLIGHT_ENABLED && hasColossus(this.profile?.archetype)) {
+      const target = sampleBossFlight({family:this.profile.archetype,time:this.moveTimer/60,phase:this.phase,level:this.level,
+        width:gameWidth,height:gameHeight,anchorX,laneY});
+      const distance=Math.hypot(target.x-previousX,target.y-previousY);
+      const step=Math.min(1, Math.max(0,delta)/60 * gameWidth*.15 / Math.max(.001,distance));
+      this.x=previousX+(target.x-previousX)*step;this.y=previousY+(target.y-previousY)*step;
+      this.flightDebug={...target,speedCap:gameWidth*.15};
+    }
     this.x = clamp(this.x, gameWidth * 0.12, gameWidth * 0.88);
     this.y = clamp(this.y, gameHeight * 0.13, gameHeight * 0.43);
 
@@ -1024,14 +1735,62 @@ export class Boss {
     return Number.isFinite(scalar) ? clamp(scalar, 0.2, 1) : 1;
   }
 
+  getEarlyBossDifficultyScalar() {
+    const diff = BalanceConfig.difficulty || {};
+    const maxLevel = Math.max(1, Math.round(Number(diff.bossEarlyDifficultyMaxLevel) || 0));
+    if (this.level > maxLevel) return 1;
+    const scalar = Number(diff.bossEarlyDifficultyScalar);
+    return Number.isFinite(scalar) ? clamp(scalar, 0.2, 1) : 1;
+  }
+
+  getCombinedBossDifficultyScalar() {
+    return this.getEarlyBossDifficultyScalar() * this.getPostFirstBossDifficultyScalar();
+  }
+
+  getRunModeBossDifficultyMultiplier() {
+    const profile = this.game?.getRunModeProfile?.() || null;
+    return clamp(finiteNumber(profile?.bossDifficultyMult, 1), 0.1, 2);
+  }
+
+  getRunModeBossAttackDangerMultiplier() {
+    const profile = this.game?.getRunModeProfile?.() || null;
+    const hpMultiplier = this.getRunModeBossDifficultyMultiplier();
+    const attackMultiplier = clamp(finiteNumber(profile?.bossAttackDangerMult, 1), 0.1, 2);
+    const threatResponseMultiplier = clamp(finiteNumber(this.game?.threatResponse?.bossAttackDangerMult, 1), 1, 1.2);
+    return clamp(hpMultiplier * attackMultiplier * threatResponseMultiplier, 0.1, 2.2);
+  }
+
+  getBossProfileRelief() {
+    const fairness = BalanceConfig.difficulty?.bossFairness || {};
+    const profile = this.profile || getBossProfile(this.level);
+    const relief = fairness.profileRelief?.[profile?.id] || null;
+    if (!relief) return null;
+    const minLevel = Math.max(1, Math.floor(finiteNumber(relief.minLevel, 1)));
+    const maxLevel = Math.max(minLevel, Math.floor(finiteNumber(relief.maxLevel, this.level)));
+    return this.level >= minLevel && this.level <= maxLevel ? relief : null;
+  }
+
+  getBossProfileReliefNumber(key, fallback = 1) {
+    const relief = this.getBossProfileRelief();
+    return relief ? finiteNumber(relief[key], fallback) : fallback;
+  }
+
+  getOpeningAttackDelayMs() {
+    const base = this.level <= 1 ? 1800 : 1400;
+    return Math.max(base, Math.round(this.getBossProfileReliefNumber('openingAttackDelayMs', base)));
+  }
+
   getBossPressureScalar() {
     let scalar = 1;
-    if (this.level <= 1) scalar = 0.78;
+    if (this.level <= 1) scalar = 0.58;
     else if (this.level === 2) scalar = 0.88;
     else if (this.level <= 4) scalar = 0.92;
     else if (this.level <= 6) scalar = 0.96;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 0.72 : 1;
-    return scalar * this.getPostFirstBossDifficultyScalar() * chaosRelief;
+    return scalar *
+      this.getCombinedBossDifficultyScalar() *
+      chaosRelief *
+      clamp(this.getBossProfileReliefNumber('pressureScalarMult', 1), 0.2, 1.2);
   }
 
   getPhaseShootDelay(phase) {
@@ -1042,7 +1801,10 @@ export class Boss {
         ? diff.bossShootDelayPhase2
         : diff.bossShootDelayPhase3;
     const openingDelayScalar = this.level <= 1 ? 1.55 : this.level === 2 ? 1.2 : 1;
-    return (baseDelay * openingDelayScalar) / this.getPostFirstBossDifficultyScalar();
+    return (baseDelay * openingDelayScalar) / (
+      this.getCombinedBossDifficultyScalar() *
+      this.getRunModeBossAttackDangerMultiplier()
+    );
   }
 
   getBossProjectileSpeed(phase) {
@@ -1057,7 +1819,7 @@ export class Boss {
     return Math.min(
       diff.bossProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
       baseSpeed + levelScale * (diff.bossProjectileSpeedPerLevel ?? 0)
-    ) * (fairness.globalProjectileMultiplier ?? 1);
+    ) * (fairness.globalProjectileMultiplier ?? 1) * this.getRunModeBossAttackDangerMultiplier();
   }
 
   getBossAttackSpeedMultiplier(attackType = 'normal') {
@@ -1075,17 +1837,315 @@ export class Boss {
   }
 
   getRegularAttackIntervalMs() {
-    const base = this.level <= 1 ? 2200 : this.level === 2 ? 2400 : 2700;
-    const phaseScalar = this.phase === 1 ? 1 : this.phase === 2 ? 0.95 : 0.9;
+    const base = this.level <= 1 ? 3800 : this.level === 2 ? 2580 : 2920;
+    const phaseScalar = this.level <= 1
+      ? (this.phase === 1 ? 1 : 1.28)
+      : this.phase === 2 ? 0.95 : 0.9;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
-    return Math.round((base * phaseScalar * chaosRelief) / this.getPostFirstBossDifficultyScalar());
+    const reliefMult = clamp(this.getBossProfileReliefNumber('regularAttackIntervalMult', 1), 0.5, 2);
+    return Math.round(((base * phaseScalar * chaosRelief) / (
+      this.getCombinedBossDifficultyScalar() *
+      this.getRunModeBossAttackDangerMultiplier()
+    )) * reliefMult * (this.discoveryCoordinator?.plan?.regularIntervalMultiplier || 1));
   }
 
   getRegularTelegraphDurationMs() {
     const fairness = BalanceConfig.difficulty.bossFairness || {};
-    if (this.level <= 2) return fairness.regularTelegraphEarlyMs ?? 960;
-    if (this.level <= 8) return fairness.regularTelegraphMidMs ?? 880;
-    return fairness.regularTelegraphLateMs ?? 780;
+    const base = this.level <= 2
+      ? (fairness.regularTelegraphEarlyMs ?? 960)
+      : this.level <= 8
+        ? (fairness.regularTelegraphMidMs ?? 880)
+        : (fairness.regularTelegraphLateMs ?? 780);
+    return Math.round(base * clamp(this.getBossProfileReliefNumber('regularTelegraphMult', 1), 0.75, 1.6));
+  }
+
+  updatePhaseTransitions(playerX, playerY) {
+    if (this.health < this.maxHealth * 0.75 && this.phase === 1) {
+      this.phase = 2;
+      this.shootDelay = this.getPhaseShootDelay(2);
+      this.color = this.profile?.accent || 0xff8800;
+      this.startPhaseChange(2, playerX, playerY);
+      if (!this.tauntPhase2Shown) {
+        const playScene = this.game?.scenes?.play;
+        if (playScene?.showBossTaunt) playScene.showBossTaunt('boss_phase2');
+        this.tauntPhase2Shown = true;
+      }
+      return 2;
+    }
+    if (this.health < this.maxHealth * 0.40 && this.phase === 2) {
+      this.phase = 3;
+      this.shootDelay = this.getPhaseShootDelay(3);
+      this.color = this.profile?.palette || 0xff0000;
+      this.startPhaseChange(3, playerX, playerY);
+      return 3;
+    }
+    return null;
+  }
+
+  cloneAttackWarningSafeLanes(safeLanes = this.safeLanes) {
+    return Array.isArray(safeLanes)
+      ? safeLanes.map((lane) => ({ ...lane }))
+      : [];
+  }
+
+  beginAttackWarning(category, details = {}) {
+    const normalizedCategory = category === 'signature' ? 'signature' : 'regular';
+    const ownedSafeLanes = this.cloneAttackWarningSafeLanes(details.safeLanes);
+    this.cancelAttackWarning(`superseded_by_${normalizedCategory}`);
+
+    const durationMs = Math.max(1, Math.round(Number(details.durationMs ?? details.duration) || 1));
+    const startedAt = Date.now();
+    const warningTokenId = ++this.attackWarningTokenSequence;
+    const token = {
+      id: warningTokenId,
+      category: normalizedCategory,
+      attackProfile: Object.freeze({
+        attack: details.attack || null,
+        type: details.type || details.attack || null,
+        phase: this.phase,
+        bossLevel: this.level,
+        profileId: this.profile?.id || null,
+        archetype: this.profile?.archetype || null,
+        movementTimer: this.moveTimer
+      }),
+      lockedAim: Object.freeze({
+        angle: Number.isFinite(details.lockedAngle) ? details.lockedAngle : null,
+        distance: Number.isFinite(details.aimDistance) ? details.aimDistance : null,
+        originX: Number.isFinite(details.originX) ? details.originX : this.x,
+        originY: Number.isFinite(details.originY) ? details.originY : this.y
+      }),
+      safeLanes: Object.freeze(ownedSafeLanes.map((lane) => Object.freeze({ ...lane }))),
+      startedAt,
+      durationMs,
+      visibleElapsedMs: 0,
+      terminalState: 'active',
+      terminalReason: null,
+      endedAt: null,
+      outcomeCount: 0,
+      visible: true,
+      audioCueActive: false,
+      audioTerminalState: 'idle',
+      audioGroup: `boss_warning:${this.level}:${startedAt}:${warningTokenId}`,
+      notificationId: `boss_attack_warning:${this.level}:${startedAt}:${warningTokenId}`,
+      notificationTerminalState: 'pending',
+      notificationDismissedCount: 0,
+      rngSnapshot: Object.freeze({
+        // Boss attacks currently make no random draw between warning and release.
+        // Keep that zero-draw state explicit so future profiles cannot add a
+        // release-time roll without extending the token contract and its tests.
+        drawCount: 0,
+        values: Object.freeze([])
+      }),
+      longFrameInterruptions: 0,
+      lastFrameInputMs: 0,
+      // Compatibility fields retained for diagnostics and existing visual helpers.
+      attack: details.attack || null,
+      type: details.type || details.attack || null,
+      label: details.label || null,
+      duration: durationMs,
+      lockedAngle: Number.isFinite(details.lockedAngle) ? details.lockedAngle : null,
+      aimDistance: Number.isFinite(details.aimDistance) ? details.aimDistance : null,
+      movementLocked: Boolean(details.movementLocked),
+      originX: Number.isFinite(details.originX) ? details.originX : this.x,
+      originY: Number.isFinite(details.originY) ? details.originY : this.y,
+      laneOffsets: Array.isArray(details.laneOffsets) ? details.laneOffsets.slice() : null
+    };
+    Object.defineProperty(token, 'durationMs', { writable: false });
+    Object.defineProperty(token, 'duration', { writable: false });
+    Object.defineProperty(token, 'start', {
+      configurable: true,
+      enumerable: true,
+      get: () => Date.now() - token.visibleElapsedMs,
+      set: (value) => {
+        const requestedElapsed = Date.now() - (Number(value) || Date.now());
+        token.visibleElapsedMs = clamp(requestedElapsed, 0, token.durationMs);
+      }
+    });
+
+    this.attackWarningToken = token;
+    this.telegraph = normalizedCategory === 'signature' ? token : null;
+    this.regularTelegraph = normalizedCategory === 'regular' ? token : null;
+    this.safeLanes = this.cloneAttackWarningSafeLanes(ownedSafeLanes);
+    return token;
+  }
+
+  getAttackWarningProgress(token = this.attackWarningToken) {
+    if (!token || token.terminalState !== 'active') return 0;
+    return clamp(token.visibleElapsedMs / Math.max(1, token.durationMs), 0, 1);
+  }
+
+  getAttackWarningRemainingMs(token = this.attackWarningToken) {
+    if (!token || token.terminalState !== 'active') return 0;
+    return Math.max(0, Math.round(token.durationMs - token.visibleElapsedMs));
+  }
+
+  isAttackWarningReady(category = null) {
+    const token = this.attackWarningToken;
+    if (!token || token.terminalState !== 'active') return false;
+    if (category && token.category !== category) return false;
+    return token.visibleElapsedMs >= token.durationMs;
+  }
+
+  advanceAttackWarningClock(deltaFrames = 0) {
+    return this.advanceAttackWarningClockMs(Math.max(0, Number(deltaFrames) || 0) * BOSS_WARNING_FRAME_MS);
+  }
+
+  advanceAttackWarningClockMs(deltaMs = 0) {
+    const token = this.attackWarningToken;
+    if (!token || token.terminalState !== 'active' || token.visible !== true) return 0;
+
+    const expectedAlias = token.category === 'signature' ? this.telegraph : this.regularTelegraph;
+    if (expectedAlias !== token) {
+      this.cancelAttackWarning('warning_alias_detached');
+      return 0;
+    }
+
+    const frameMs = Math.max(0, Number(deltaMs) || 0);
+    token.lastFrameInputMs = frameMs;
+    if (frameMs > BOSS_WARNING_LONG_FRAME_MS) {
+      token.longFrameInterruptions += 1;
+      this.applyRecoveryPause(BOSS_WARNING_INTERRUPTION_RECOVERY_MS, 'long_frame_gap');
+      return 0;
+    }
+    token.visibleElapsedMs = Math.min(token.durationMs, token.visibleElapsedMs + frameMs);
+    return token.visibleElapsedMs;
+  }
+
+  setAttackWarningVisibleElapsedForDebug(elapsedMs = 0) {
+    const token = this.attackWarningToken;
+    if (!token || token.terminalState !== 'active') return 0;
+    token.visibleElapsedMs = clamp(Number(elapsedMs) || 0, 0, token.durationMs);
+    return token.visibleElapsedMs;
+  }
+
+  finishAttackWarning(token, terminalState, reason) {
+    if (!token || token !== this.attackWarningToken || token.terminalState !== 'active') return null;
+    if (terminalState !== 'released' && terminalState !== 'cancelled') return null;
+    if (terminalState === 'released' && token.visibleElapsedMs < token.durationMs) return null;
+
+    token.terminalState = terminalState;
+    token.terminalReason = String(reason || terminalState);
+    token.endedAt = Date.now();
+    token.outcomeCount += 1;
+    token.visible = false;
+    const playScene = this.game?.scenes?.play;
+    const notificationCleanupAvailable = typeof playScene?.cancelNotificationById === 'function';
+    token.notificationDismissedCount += Math.max(0, Number(
+      playScene?.cancelNotificationById?.(
+        token.notificationId,
+        `boss_warning_${terminalState}:${token.terminalReason}`
+      )
+    ) || 0);
+    token.notificationTerminalState = terminalState;
+    AudioManager.stopSfxGroup?.(token.audioGroup);
+    token.audioCueActive = false;
+    token.audioTerminalState = terminalState;
+    const outcome = {
+      id: token.id,
+      category: token.category,
+      attack: token.attackProfile.attack,
+      type: token.attackProfile.type,
+      phase: token.attackProfile.phase,
+      terminalState,
+      reason: token.terminalReason,
+      outcomeCount: token.outcomeCount,
+      durationMs: token.durationMs,
+      visibleElapsedMs: token.visibleElapsedMs,
+      lockedAngle: token.lockedAim.angle,
+      safeLanes: this.cloneAttackWarningSafeLanes(token.safeLanes),
+      rngSnapshot: {
+        drawCount: token.rngSnapshot.drawCount,
+        values: token.rngSnapshot.values.slice()
+      },
+      longFrameInterruptions: token.longFrameInterruptions,
+      visualsCleaned: true,
+      audioCleaned: true,
+      notificationId: token.notificationId,
+      notificationCleaned: notificationCleanupAvailable,
+      notificationDismissedCount: token.notificationDismissedCount,
+      endedAt: token.endedAt
+    };
+    this.attackWarningOutcomes.push(outcome);
+    if (this.attackWarningOutcomes.length > BOSS_WARNING_OUTCOME_HISTORY_LIMIT) {
+      this.attackWarningOutcomes.splice(0, this.attackWarningOutcomes.length - BOSS_WARNING_OUTCOME_HISTORY_LIMIT);
+    }
+
+    this.attackWarningToken = null;
+    if (this.telegraph === token) this.telegraph = null;
+    if (this.regularTelegraph === token) this.regularTelegraph = null;
+    if (terminalState === 'cancelled' && token.category === 'signature' && this.presentationState === 'charge') {
+      this.presentationState = 'idle';
+      this.presentationStateUntil = 0;
+    }
+    if (token.category === 'signature') this.clearTelegraphVisual();
+    else this.clearRegularAttackTelegraphVisual();
+    if (terminalState === 'cancelled') this.safeLanes = [];
+    return outcome;
+  }
+
+  cancelAttackWarning(reason = 'boss_warning_interrupted', { category = null } = {}) {
+    const token = this.attackWarningToken;
+    if (!token || token.terminalState !== 'active') return null;
+    if (category && token.category !== category) return null;
+    return this.finishAttackWarning(token, 'cancelled', reason);
+  }
+
+  getAttackWarningLifecycleDebugState() {
+    const token = this.attackWarningToken;
+    return {
+      active: token ? {
+        id: token.id,
+        category: token.category,
+        attackProfile: { ...token.attackProfile },
+        lockedAim: { ...token.lockedAim },
+        safeLanes: this.cloneAttackWarningSafeLanes(token.safeLanes),
+        rngSnapshot: {
+          drawCount: token.rngSnapshot.drawCount,
+          values: token.rngSnapshot.values.slice()
+        },
+        durationMs: token.durationMs,
+        visibleElapsedMs: Number(token.visibleElapsedMs.toFixed(3)),
+        remainingMs: this.getAttackWarningRemainingMs(token),
+        terminalState: token.terminalState,
+        longFrameInterruptions: token.longFrameInterruptions,
+        notificationId: token.notificationId,
+        notificationTerminalState: token.notificationTerminalState,
+        regularOwner: this.regularTelegraph === token,
+        signatureOwner: this.telegraph === token
+      } : null,
+      outcomes: this.attackWarningOutcomes.map((outcome) => ({ ...outcome }))
+    };
+  }
+
+  applyRecoveryPause(durationMs = 0, reason = 'boss_recovery') {
+    const duration = Math.max(0, Number(durationMs) || 0);
+    if (duration <= 0) return 0;
+
+    const now = Date.now();
+    const cooldownFrames = Math.ceil(duration / 16.67);
+    const interruptedSignature = this.attackWarningToken?.category === 'signature'
+      ? {
+        phase: this.attackWarningToken.attackProfile.phase,
+        type: this.attackWarningToken.attackProfile.type
+      }
+      : null;
+    this.cancelAttackWarning(reason);
+    this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, now + duration);
+    this.shootCooldown = Math.max(this.shootCooldown || 0, cooldownFrames);
+    this.signatureCooldown = Math.max(this.signatureCooldown || 0, cooldownFrames);
+    if (interruptedSignature?.type) {
+      this.delayedSignature = {
+        phase: interruptedSignature.phase,
+        type: interruptedSignature.type,
+        dueAt: now + duration,
+        interruptionReason: reason
+      };
+    } else if (this.delayedSignature) {
+      this.delayedSignature.dueAt = Math.max(this.delayedSignature.dueAt || 0, now + duration);
+    }
+    this.chaosPressureReliefUntilMs = Math.max(this.chaosPressureReliefUntilMs || 0, now + duration);
+    console.log(`[BossRecoveryPause] level=${this.level} reason=${reason} durationMs=${Math.round(duration)}`);
+    return duration;
   }
 
   getPhasePlan() {
@@ -1154,10 +2214,12 @@ export class Boss {
 
   setRingSafeLane(count = 16, wedge = 0.38) {
     const angle = this.getRingSafeAngle(count);
+    const reliefBonus = this.getBossProfileReliefNumber('ringSafeWedgeBonus', 0);
+    const safeWedge = clamp(Number(wedge) + reliefBonus, 0.1, 1.2);
     this.safeLanes = [this.getSafeLaneHint('ring-wedge', {
       signature: 'ring',
       angle: Number(angle.toFixed(3)),
-      width: Number(wedge.toFixed(3)),
+      width: Number(safeWedge.toFixed(3)),
       label: 'BOTTOM WEDGE'
     })];
   }
@@ -1175,6 +2237,7 @@ export class Boss {
   startPhaseChange(phase, playerX, playerY) {
     if (this.phaseNotified[phase]) return;
     this.phaseNotified[phase] = true;
+    this.cancelAttackWarning(`phase_${phase}_transition`);
     this.applyPhasePlan(phase);
     const playScene = this.game?.scenes?.play;
     if (playScene?.onBossPhaseChange) {
@@ -1212,135 +2275,324 @@ export class Boss {
     return 'web';
   }
 
-  playSignatureTelegraphSfx(type) {
+  isAimedSignature(type) {
+    return type === 'cone' || type === 'mirror' || type === 'lance';
+  }
+
+  getSignatureAimPoint(playerX, playerY) {
+    const lockedAngle = this.telegraph?.lockedAngle;
+    if (!Number.isFinite(lockedAngle)) {
+      return { x: playerX, y: playerY, locked: false };
+    }
+    const distance = Math.max(240, Number(this.telegraph?.aimDistance) || 0);
+    return {
+      x: this.x + Math.cos(lockedAngle) * distance,
+      y: this.y + Math.sin(lockedAngle) * distance,
+      locked: true
+    };
+  }
+
+  playSignatureTelegraphSfx(type, warningToken = this.attackWarningToken) {
     const family = this.getSignatureSfxFamily(type);
+    const mechanismCue = BOSS_ARSENAL_ENABLED ? `boss_arsenal_${this.profile?.archetype || 'conductor'}` : 'boss_charge_lattice';
+    AudioManager.playSfx(mechanismCue, {
+      volume: BOSS_ARSENAL_ENABLED ? 0.34 : 0.42,
+      minIntervalMs: 720,
+      sfxGroup: warningToken?.audioGroup
+    });
     AudioManager.playSfx(`boss_${family}_telegraph`, {
       volume: family === 'beam' ? 0.6 : 0.52,
-      minIntervalMs: 640
+      minIntervalMs: 640,
+      sfxGroup: warningToken?.audioGroup
     });
   }
 
   startSignatureTelegraph(type, playerX, playerY) {
+    if (this.discoveryCoordinator?.plan ? !this.discoveryCoordinator.claimAttack(this, 'signature')
+      : !claimMajorTelegraph(this.game, this, 1.4)) {
+      this.delayedSignature = { phase: this.phase, type, dueAt: Date.now() + 200 };
+      return;
+    }
+    const diagnostics = this.game?.scenes?.play?.performanceDiagnostics;
+    const measurePerformance = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
     const fairness = BalanceConfig.difficulty.bossFairness || {};
+    const earlyBoss = this.level <= 2;
     if (type === 'ring' || type === 'adds') {
-      this.setRingSafeLane(type === 'adds' ? 14 : 18, type === 'adds' ? 0.48 : (fairness.ringSafeWedge ?? 0.5));
+      const safeWedge = type === 'adds'
+        ? 0.48
+        : earlyBoss
+          ? (fairness.ringSafeWedgeEarly ?? fairness.ringSafeWedge ?? 0.5)
+          : (fairness.ringSafeWedge ?? 0.5);
+      this.setRingSafeLane(type === 'adds' ? 14 : 18, safeWedge);
     } else {
       const spread = type === 'lance' ? 0.16 : type === 'mirror' ? 0.38 : this.level <= 2 ? 0.5 : 0.64;
       this.setAimedSafeLane(type, playerX, playerY, spread);
     }
-    this.telegraph = {
+    const ringTelegraphMs = earlyBoss
+      ? (fairness.signatureRingTelegraphEarlyMs ?? fairness.signatureRingTelegraphMs ?? 1220)
+      : (fairness.signatureRingTelegraphMs ?? 1220);
+    const aimedTelegraphMs = earlyBoss
+      ? (fairness.signatureTelegraphEarlyMs ?? fairness.signatureTelegraphMs ?? 1120)
+      : (fairness.signatureTelegraphMs ?? 1120);
+    const telegraphReliefMult = clamp(this.getBossProfileReliefNumber('signatureTelegraphMult', 1), 0.75, 1.7);
+    const aimed = this.isAimedSignature(type);
+    const lockedAngle = aimed
+      ? Math.atan2(playerY - this.y, playerX - this.x)
+      : null;
+    this.telegraph = this.beginAttackWarning('signature', {
       type,
       label: this.getSignatureLabel(type),
-      start: Date.now(),
-      duration: type === 'ring' || type === 'adds'
-        ? (fairness.signatureRingTelegraphMs ?? 1220)
-        : (fairness.signatureTelegraphMs ?? 1120)
-    };
+      durationMs: Math.round((type === 'ring' || type === 'adds' ? ringTelegraphMs : aimedTelegraphMs) * telegraphReliefMult),
+      lockedAngle,
+      aimDistance: aimed ? Math.max(240, Math.hypot(playerX - this.x, playerY - this.y)) : null,
+      movementLocked: aimed,
+      originX: this.x,
+      originY: this.y,
+      safeLanes: this.safeLanes
+    });
+    this.telegraph.audioCueActive = true;
+    this.telegraph.audioTerminalState = 'playing';
     this.setPresentationState('charge', this.telegraph.duration);
     const playScene = this.game?.scenes?.play;
+    diagnostics?.mark?.('boss_event_telegraph_start', {
+      kind: 'boss_signature',
+      type,
+      level: this.level,
+      duration: this.telegraph.duration
+    });
     if (playScene?.enqueueToast) {
       playScene.enqueueToast(this.telegraph.label, {
         fontSize: 18,
         fill: '#fff45c',
         slot: 'top',
         type: 'boss',
+        notificationId: this.telegraph.notificationId,
         duration: 900
       });
+      this.telegraph.notificationTerminalState = 'owned';
     }
-    this.playSignatureTelegraphSfx(type);
-    this.updateTelegraphVisual(0, playerX, playerY);
+    this.playSignatureTelegraphSfx(type, this.telegraph);
+    measurePerformance('boss_event_telegraph_start.visual_creation', () => this.updateTelegraphVisual(0, playerX, playerY));
+  }
+
+  drawTelegraphMuzzleCharge(layer, originX, originY, radius, color, progress) {
+    if (!layer) return;
+    const charge = clamp(progress, 0, 1);
+    // Contained emitter ignition leaves the boss armor visible.
+    layer.circle(originX, originY + radius * 0.24, radius * (0.075 + charge * 0.035));
+    layer.fill({ color, alpha: 0.12 + charge * 0.16 });
+    layer.circle(originX, originY + radius * 0.24, radius * 0.025);
+    layer.fill({ color: 0xffeed4, alpha: 0.28 + charge * 0.32 });
+  }
+
+  getTelegraphVfxPalette(type, fallbackColor) {
+    if (type === 'lance') return { warning: 0xff665c, hot: 0xffffff, edge: 0xffc45c };
+    if (type === 'mirror') return { warning: 0xff5f72, hot: 0xffffff, edge: 0xffb24f };
+    if (type === 'cone' || type === 'fan' || type === 'aim') return { warning: 0xff8a4a, hot: 0xffffff, edge: 0xffd166 };
+    if (type === 'wall') return { warning: 0xff704d, hot: 0xffffff, edge: 0xffc45c };
+    if (type === 'ring' || type === 'adds' || type === 'radial') return { warning: 0xff4f67, hot: 0xffffff, edge: 0xffd166 };
+    return { warning: fallbackColor || 0xff6b57, hot: 0xffffff, edge: 0xffc45c };
+  }
+
+  drawTelegraphChargeHalo(layer, originX, originY, radius, palette, progress, options = {}) {
+    if (!layer) return;
+    if (BOSS_ARSENAL_ENABLED) return; // The deployed physical arsenal owns boss-local charging.
+    drawBossChargeCrown(layer, { x: originX, y: originY,
+      radius: Math.max(14, radius * (options.scale || 1)),
+      color: palette.warning, edge: palette.edge, progress,
+      family: this.telegraph?.type || this.regularTelegraph?.type || 'aim',
+      reverse: options.reverse });
+  }
+
+  drawTelegraphReleaseGate(layer, originX, originY, angle, length, spread, palette, progress, options = {}) {
+    if (!layer) return;
+    const charge = clamp(progress, 0, 1);
+    const t = Number.isFinite(options.t) ? options.t : (0.26 + charge * 0.58);
+    const d = length * t;
+    // Small brackets ride the envelope edges; no bars cross the open lanes.
+    for (const side of [-1, 1]) {
+      const a = angle + side * Math.abs(spread || 0.12) * 0.5;
+      const x = originX + Math.cos(a) * d, y = originY + Math.sin(a) * d;
+      layer.moveTo(x - Math.cos(a) * 9, y - Math.sin(a) * 9);
+      layer.lineTo(x + Math.cos(a) * 9, y + Math.sin(a) * 9);
+      layer.stroke({ color: palette.edge, width: 2.2, alpha: 0.34 + charge * 0.32 });
+    }
+  }
+
+  drawTelegraphLaneCharge(layer, originX, originY, angle, length, lanes, spread, color, progress, options = {}) {
+    if (!layer || !Array.isArray(lanes)) return;
+    const start = Number.isFinite(options.start) ? length * options.start : this.getVisualRadius() * 0.55;
+    for (const lane of lanes) {
+      drawAstraWarningLane(layer, { x: originX, y: originY, angle: angle + lane * spread,
+        start, length, halfWidth: options.halfWidth || 5, color, progress });
+    }
+  }
+
+  drawTelegraphRingCharge(layer, originX, originY, inner, outer, color, progress, options = {}) {
+    if (!layer) return;
+    const safe = this.safeLanes?.find(lane => lane.kind === 'ring-wedge');
+    drawAstraWarningRing(layer, { x: originX, y: originY + (options.centerY || 0),
+      inner, outer, color, progress, safeAngle: Number(safe?.angle) || 0,
+      safeWedge: Number(safe?.width) || 0 });
+    if (BOSS_ARSENAL_ENABLED) {
+      drawArsenalAnnulus(layer,{x:originX,y:originY+(options.centerY||0),inner,outer,
+        safeAngle:Number(safe?.angle)||0,safeWedge:Number(safe?.width)||0,
+        material:getBossArsenal(this.profile?.archetype).material,
+        time:getReducedMotionEnabled()?0:this.moveTimer*.01667,
+        alpha:(.08+progress*.20)*getFlashIntensityScale()});
+    }
+  }
+
+  drawSignatureCountdownRing(layer, progress, visualRadius) {
+    if (!layer || !this.telegraph) return;
+    const charge = clamp(progress, 0, 1);
+    const radius = Math.max(82, visualRadius * 1.34);
+    const start = -Math.PI / 2;
+    const sweep = Math.PI * charge;
+    const timerColor = charge >= 0.86 ? 0xffffff : 0xffc16b;
+
+    layer.circle(0, 0, radius);
+    layer.stroke({ color: 0x05070c, width: 8, alpha: 0.72 });
+    layer.circle(0, 0, radius);
+    layer.stroke({ color: 0xffffff, width: 1, alpha: 0.28 });
+
+    if (sweep > 0.001) {
+      // Separate paths prevent Pixi connecting the two sweeps across the hull.
+      layer.moveTo(Math.cos(start) * radius, Math.sin(start) * radius);
+      layer.arc(0, 0, radius, start, start + sweep);
+      layer.moveTo(Math.cos(start) * radius, Math.sin(start) * radius);
+      layer.arc(0, 0, radius, start, start - sweep, true);
+      layer.stroke({ color: timerColor, width: 4, alpha: 0.94 });
+    }
+
+    for (const angle of [start, Math.PI / 2]) {
+      const inner = radius - 10;
+      const outer = radius + 10;
+      layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    layer.stroke({
+      color: charge >= 0.86 ? 0xffa83d : 0xffffff,
+      width: charge >= 0.86 ? 5 : 3,
+      alpha: 0.9
+    });
+
+    layer.__debugBossSignatureWarning = {
+      phase: 'warning',
+      type: this.telegraph.type,
+      progress: Number(charge.toFixed(3)),
+      radius: Math.round(radius),
+      leftArcSweep: Number(sweep.toFixed(3)),
+      rightArcSweep: Number(sweep.toFixed(3)),
+      startsAtTop: true,
+      endsAtBottom: charge >= 0.999,
+      aimLocked: Number.isFinite(this.telegraph.lockedAngle),
+      movementLocked: Boolean(this.telegraph.movementLocked),
+      nameCountdownRemoved: true
+    };
+  }
+
+  getSignatureWarningDebugState() {
+    if (this.telegraph) {
+      const progress = this.getAttackWarningProgress(this.telegraph);
+      return {
+        phase: 'warning',
+        type: this.telegraph.type,
+        progress: Number(progress.toFixed(3)),
+        lockedAngle: Number.isFinite(this.telegraph.lockedAngle)
+          ? Number(this.telegraph.lockedAngle.toFixed(4))
+          : null,
+        movementLocked: Boolean(this.telegraph.movementLocked),
+        originX: Math.round(Number(this.telegraph.originX) || 0),
+        originY: Math.round(Number(this.telegraph.originY) || 0),
+        timer: this.signatureWarningLayer?.__debugBossSignatureWarning || null
+      };
+    }
+    if (this.lastSignatureRelease && Date.now() - this.lastSignatureRelease.releasedAt < 500) {
+      return {
+        phase: 'release',
+        type: this.lastSignatureRelease.type,
+        lockedAngle: Number.isFinite(this.lastSignatureRelease.lockedAngle)
+          ? Number(this.lastSignatureRelease.lockedAngle.toFixed(4))
+          : null,
+        originX: Math.round(Number(this.lastSignatureRelease.originX) || 0),
+        originY: Math.round(Number(this.lastSignatureRelease.originY) || 0)
+      };
+    }
+    return null;
   }
 
   updateTelegraphVisual(progress, playerX, playerY) {
     if (!this.telegraph) return;
+    if(this.colossusRig && this.signatureWarningLayer && drawColossusWarning(this.signatureWarningLayer,this,this.telegraph,progress)){
+      this.drawSignatureCountdownRing(this.signatureWarningLayer,progress,this.getVisualRadius());
+      return;
+    }
 
-    const warningColor = this.telegraph.type === 'ring' || this.telegraph.type === 'adds'
+    const baseWarningColor = this.telegraph.type === 'ring' || this.telegraph.type === 'adds'
       ? (this.profile?.accent || 0xff3355)
       : (this.profile?.palette || 0xfff45c);
+    const palette = this.getTelegraphVfxPalette(this.telegraph.type, baseWarningColor);
+    const warningColor = palette.warning;
     const fillAlpha = 0.28 + progress * 0.16;
     const laneAlpha = 0.54 + progress * 0.24;
-    const pulse = 1 + Math.sin(Date.now() * 0.024) * 0.08;
+    const pulse = 1;
     const originX = 0;
     const originY = 0;
+    const visualRadius = this.getVisualRadius();
     this.updateHealthBar();
-    const warningLayer = this.healthBar;
+    const warningLayer = this.signatureWarningLayer || this.healthBar;
     if (!warningLayer) return;
+    warningLayer.clear();
 
     if (this.telegraph.type === 'cone' || this.telegraph.type === 'mirror' || this.telegraph.type === 'lance') {
-      const angle = Math.atan2(playerY - this.y, playerX - this.x);
+      const angle = Number.isFinite(this.telegraph.lockedAngle)
+        ? this.telegraph.lockedAngle
+        : Math.atan2(playerY - this.y, playerX - this.x);
       const spread = this.telegraph.type === 'lance' ? 0.16 : this.telegraph.type === 'mirror' ? 0.38 : this.level <= 2 ? 0.5 : 0.64;
-      const length = Math.max(this.radius * 2.8, 230);
-      const steps = 8;
-      const points = [originX, originY];
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps - 0.5;
-        const a = angle + t * spread;
-        points.push(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
-      }
-      warningLayer.poly(points);
-      warningLayer.fill({ color: warningColor, alpha: fillAlpha * 0.58 });
-      warningLayer.poly(points);
-      warningLayer.fill({ color: 0xffffff, alpha: 0.04 + progress * 0.05 });
-      warningLayer.poly(points);
-      warningLayer.stroke({ color: 0xffffff, width: 2 + progress * 3, alpha: 0.48 + progress * 0.34 });
+      const length = Math.max(visualRadius * 2.8, 230);
+      drawAstraWarningSector(warningLayer, { x: originX, y: originY, angle,
+        length: length * pulse, spread, color: warningColor, progress });
       const lanes = this.telegraph.type === 'lance' ? [-0.08, 0, 0.08] : [-0.5, -0.22, 0.22, 0.5];
-      for (const lane of lanes) {
-        const a = angle + lane * spread;
-        warningLayer.moveTo(originX + Math.cos(a) * this.radius * 0.7, originY + Math.sin(a) * this.radius * 0.7);
-        warningLayer.lineTo(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
-      }
-      warningLayer.stroke({ color: warningColor, width: 2 + progress * 2, alpha: laneAlpha });
-      const crossCount = this.telegraph.type === 'lance' ? 5 : 4;
-      for (let i = 1; i <= crossCount; i++) {
-        const t = i / (crossCount + 1);
-        const a = angle;
-        const cx = originX + Math.cos(a) * length * t;
-        const cy = originY + Math.sin(a) * length * t;
-        const band = Math.max(10, spread * length * t * 0.18);
-        const px = -Math.sin(a);
-        const py = Math.cos(a);
-        warningLayer.moveTo(cx - px * band, cy - py * band);
-        warningLayer.lineTo(cx + px * band, cy + py * band);
-      }
-      warningLayer.stroke({ color: 0xffffff, width: 1.4 + progress, alpha: 0.2 + progress * 0.18 });
-      warningLayer.circle(originX, originY, this.radius * (0.32 + progress * 0.16));
-      warningLayer.fill({ color: warningColor, alpha: 0.18 + progress * 0.1 });
-      warningLayer.circle(originX, originY, this.radius * (0.18 + progress * 0.08));
-      warningLayer.fill({ color: 0xffffff, alpha: 0.18 + progress * 0.16 });
+      this.drawTelegraphChargeHalo(warningLayer, originX, originY, visualRadius, palette, progress, {
+        scale: this.telegraph.type === 'lance' ? 1.24 : 1.08,
+        spokes: this.telegraph.type === 'lance' ? 14 : 12,
+        nodes: this.telegraph.type === 'lance' ? 12 : 10
+      });
+      this.drawTelegraphReleaseGate(warningLayer, originX, originY, angle, length * pulse, spread, palette, progress, {
+        widthMult: this.telegraph.type === 'lance' ? 0.36 : 0.9,
+        chevrons: this.telegraph.type === 'lance' ? 4 : 3
+      });
+      this.drawTelegraphLaneCharge(warningLayer, originX, originY, angle, length * pulse, lanes, spread, warningColor, progress, {
+        nodeCount: this.telegraph.type === 'lance' ? 5 : 4,
+        size: this.telegraph.type === 'lance' ? 3.6 : 3
+      });
+      this.drawTelegraphMuzzleCharge(warningLayer, originX, originY, visualRadius, warningColor, progress);
     } else {
-      const maxRadius = Math.max(this.radius * 2.15, 170);
+      const maxRadius = Math.max(visualRadius * 2.15, 170);
       const innerRadius = maxRadius * 0.46;
       const outer = maxRadius * (0.72 + progress * 0.34) * pulse;
       const inner = innerRadius * (0.8 + progress * 0.16);
-      warningLayer.circle(originX, originY + 18, outer * 1.08);
-      warningLayer.stroke({ color: warningColor, width: 8, alpha: 0.1 + progress * 0.14 });
-      warningLayer.circle(originX, originY + 18, outer);
-      warningLayer.stroke({ color: warningColor, width: 5, alpha: 0.48 + progress * 0.26 });
-      warningLayer.circle(originX, originY + 18, inner);
-      warningLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.5 });
-      warningLayer.circle(originX, originY + 18, inner * 0.58);
-      warningLayer.stroke({ color: warningColor, width: 2, alpha: 0.3 + progress * 0.2 });
-      for (let i = 0; i < 18; i++) {
-        const a = (Math.PI * 2 * i) / 18 + progress * 0.65;
-        const r1 = inner + 8;
-        const r2 = outer - 8;
-        warningLayer.moveTo(originX + Math.cos(a) * r1, originY + 18 + Math.sin(a) * r1);
-        warningLayer.lineTo(originX + Math.cos(a) * r2, originY + 18 + Math.sin(a) * r2);
-      }
-      warningLayer.stroke({ color: warningColor, width: 2, alpha: 0.28 + progress * 0.16 });
-      for (let i = 0; i < 8; i++) {
-        const a = (Math.PI * 2 * i) / 8 - progress * 0.9;
-        const nodeR = outer * 0.88;
-        warningLayer.circle(originX + Math.cos(a) * nodeR, originY + 18 + Math.sin(a) * nodeR, 4 + progress * 3);
-      }
-      warningLayer.fill({ color: 0xffffff, alpha: 0.16 + progress * 0.16 });
+      this.drawTelegraphChargeHalo(warningLayer, originX, originY + 18, visualRadius * 1.2, palette, progress, {
+        scale: 1.26,
+        rings: 4,
+        spokes: 16,
+        nodes: 14,
+        reverse: true
+      });
+      this.drawTelegraphRingCharge(warningLayer, originX, originY, inner, outer, warningColor, progress, {
+        centerY: 18,
+        arcCount: 3,
+        nodeCount: 14
+      });
     }
 
+    this.drawSignatureCountdownRing(warningLayer, progress, visualRadius);
+
     if (this.nameText) {
-      const remaining = Math.max(0, Math.ceil((1 - progress) * 3));
-      this.nameText.text = `${this.telegraph.label}\n${remaining}`;
-      this.nameText.alpha = 0.88 + progress * 0.12;
-      this.fitNameText(58);
+      this.nameText.text = this.name;
+      this.nameText.alpha = 1;
+      this.fitNameText();
     }
 
   }
@@ -1352,27 +2604,30 @@ export class Boss {
       this.nameText.alpha = 1;
       this.fitNameText();
     }
+    if (this.signatureWarningLayer) {
+      this.signatureWarningLayer.clear();
+      this.signatureWarningLayer.__debugBossSignatureWarning = null;
+    }
     if (hadTelegraphOverlay) {
       this.updateHealthBar();
     }
   }
 
   startRegularAttackTelegraph(playerX, playerY) {
+    if (this.discoveryCoordinator && !this.discoveryCoordinator.claimAttack(this, 'regular')) return;
     const fairness = BalanceConfig.difficulty.bossFairness || {};
     const attack = this.profile?.attack || 'aimed';
-    const type = ['spiral', 'clock', 'chord'].includes(attack)
+    const type = attack === 'split'
+      ? 'split'
+      : ['spiral', 'clock', 'chord'].includes(attack)
       ? 'radial'
       : attack === 'wall'
         ? 'wall'
         : ['fan', 'burst', 'fakeout'].includes(attack)
           ? 'fan'
           : 'aim';
-    this.regularTelegraph = {
-      attack,
-      type,
-      start: Date.now(),
-      duration: this.getRegularTelegraphDurationMs()
-    };
+    const lockedAngle = Math.atan2(playerY - this.y, playerX - this.x);
+    const duration = this.getRegularTelegraphDurationMs();
     if (type === 'wall') {
       this.setWallSafeLane();
     } else if (type === 'radial') {
@@ -1380,96 +2635,169 @@ export class Boss {
     } else {
       const spread = type === 'fan'
         ? (this.level <= 2 ? 0.3 : 0.42)
+        : type === 'split'
+          ? 0.18
         : (attack === 'sniper' ? 0.07 : 0.16);
       this.setAimedSafeLane(type, playerX, playerY, spread);
+    }
+    this.regularTelegraph = this.beginAttackWarning('regular', {
+      attack,
+      type,
+      durationMs: duration,
+      lockedAngle,
+      movementLocked: hasColossus(this.profile?.archetype),
+      laneOffsets: type === 'split' ? [-0.18, 0.18] : null,
+      originX: this.x,
+      originY: this.y,
+      safeLanes: this.safeLanes
+    });
+    CreatureAudio.play(this, this.profile, 'attack', { x: this.x / this.game.getWidth() });
+    if(hasColossus(this.profile?.archetype)){
+      AudioManager.playSfx(`boss_arsenal_${this.profile.archetype}`,{volume:.46,minIntervalMs:500,sfxGroup:this.regularTelegraph.audioGroup,preserveGameplayRng:true});
+      this.regularTelegraph.audioCueActive=true;
+      this.regularTelegraph.audioTerminalState='playing';
+    }
+    this.lastRegularTelegraphStart = {
+      attack,
+      type,
+      lockedAngle,
+      laneOffsets: this.regularTelegraph.laneOffsets?.slice?.() || [0],
+      warningAt: this.regularTelegraph.startedAt,
+      releaseNotBefore: this.regularTelegraph.startedAt + duration,
+      warningTokenId: this.regularTelegraph.id
+    };
+    const attackLabel = translateText(String(attack).toUpperCase());
+    const viewportWidth = this.game?.getWidth?.() || 800;
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.enqueueToast) {
+      playScene.enqueueToast(translateText('ATTACK: {threat}', { threat: attackLabel }), {
+        fontSize: viewportWidth < 720 ? 13 : 15,
+        fill: '#fff3a0',
+        slot: 'top',
+        channel: 'combat',
+        type: 'boss_attack_windup',
+        notificationId: this.regularTelegraph.notificationId,
+        priority: 5,
+        duration: Math.max(700, Math.min(1100, duration)),
+        restrained: true,
+        authoredBadge: false,
+        signalPlate: true,
+        signalMinWidth: viewportWidth < 720 ? 144 : 168,
+        maxWidth: Math.min(viewportWidth - 40, viewportWidth < 720 ? viewportWidth * 0.62 : 280)
+      });
+      this.regularTelegraph.notificationTerminalState = 'owned';
     }
     this.updateRegularAttackTelegraphVisual(0, playerX, playerY);
   }
 
   updateRegularAttackTelegraphVisual(progress, playerX, playerY) {
     if (!this.attackWarningLayer || !this.regularTelegraph || this.telegraph) return;
+    if(this.colossusRig && drawColossusWarning(this.attackWarningLayer,this,this.regularTelegraph,progress))return;
     const layer = this.attackWarningLayer;
     layer.clear();
 
     const warningColor = this.profile?.accent || this.profile?.palette || 0xfff45c;
-    const pulse = 1 + Math.sin(Date.now() * 0.03) * 0.06;
+    const palette = this.getTelegraphVfxPalette(this.regularTelegraph.type, warningColor);
+    const familyColor = palette.warning;
+    const pulse = 1;
     const alpha = 0.18 + progress * 0.34;
     const width = 2 + progress * 2;
     const originX = 0;
     const originY = 18;
+    const visualRadius = this.getVisualRadius();
     const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
     const gameHeight = this.game?.getHeight ? this.game.getHeight() : 600;
     const length = Math.max(gameHeight * 0.7, 440);
-    const angle = Math.atan2(playerY - this.y, playerX - this.x);
+    const angle = Number.isFinite(this.regularTelegraph.lockedAngle)
+      ? this.regularTelegraph.lockedAngle
+      : Math.atan2(playerY - this.y, playerX - this.x);
 
     if (this.regularTelegraph.type === 'radial') {
-      const outer = Math.max(this.radius * 1.85, 145) * (0.78 + progress * 0.24) * pulse;
+      const outer = Math.max(visualRadius * 1.85, 145) * (0.78 + progress * 0.24) * pulse;
       const inner = outer * 0.55;
-      layer.circle(originX, originY, outer);
-      layer.stroke({ color: warningColor, width: 4, alpha: 0.38 + progress * 0.26 });
-      layer.circle(originX, originY, inner);
-      layer.stroke({ color: 0xffffff, width: 2, alpha: 0.28 + progress * 0.24 });
-      for (let i = 0; i < 10; i++) {
-        const a = (Math.PI * 2 * i) / 10 + progress * 0.45;
-        layer.moveTo(originX + Math.cos(a) * (inner + 10), originY + Math.sin(a) * (inner + 10));
-        layer.lineTo(originX + Math.cos(a) * (outer - 10), originY + Math.sin(a) * (outer - 10));
-      }
-      layer.stroke({ color: warningColor, width: 2, alpha: 0.34 + progress * 0.18 });
+      this.drawTelegraphChargeHalo(layer, originX, originY, visualRadius, palette, progress);
+      this.drawTelegraphRingCharge(layer, originX, originY, inner, outer, warningColor, progress, {
+        arcCount: 2,
+        nodeCount: 10
+      });
       return;
     }
 
     if (this.regularTelegraph.type === 'wall') {
       const offsets = this.getWallColumnOffsets();
       for (const x of offsets) {
-        layer.roundRect(x - 7, originY + this.radius * 0.35, 14, length * pulse, 8);
-        layer.fill({ color: warningColor, alpha });
-        layer.moveTo(x, originY + this.radius * 0.2);
-        layer.lineTo(x, originY + length * pulse);
+        drawAstraWarningLane(layer, { x, y: originY + visualRadius * 0.35,
+          length: length * pulse, halfWidth: 7, color: familyColor, progress });
       }
-      layer.stroke({ color: 0xffffff, width, alpha: 0.34 + progress * 0.26 });
+      this.drawTelegraphChargeHalo(layer, originX, originY, visualRadius * 0.92, palette, progress, {
+        scale: 1.06,
+        rings: 2,
+        spokes: 10,
+        nodes: 8
+      });
       const safeColumn = this.getWallSafeColumn() * Math.min(30, gameWidth * 0.035);
-      layer.roundRect(safeColumn - 14, originY + this.radius * 0.4, 28, length * 0.92, 12);
+      layer.roundRect(safeColumn - 14, originY + visualRadius * 0.4, 28, length * 0.92, 12);
       layer.stroke({ color: 0x8cffb5, width: 2, alpha: 0.32 + progress * 0.28 });
       return;
     }
 
     const spread = this.regularTelegraph.type === 'fan'
       ? (this.level <= 2 ? 0.3 : 0.42)
+      : this.regularTelegraph.type === 'split'
+        ? 0.18
       : (this.regularTelegraph.attack === 'sniper' ? 0.07 : 0.16);
-    const lanes = this.regularTelegraph.type === 'fan' ? [-0.5, -0.25, 0, 0.25, 0.5] : [0];
-    for (const lane of lanes) {
-      const a = angle + lane * spread;
-      const start = this.radius * 0.55;
-      layer.moveTo(originX + Math.cos(a) * start, originY + Math.sin(a) * start);
-      layer.lineTo(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
-    }
-    layer.stroke({ color: warningColor, width, alpha: 0.62 + progress * 0.28 });
-
+    const lanes = this.regularTelegraph.type === 'fan'
+      ? [-0.5, -0.25, 0, 0.25, 0.5]
+      : this.regularTelegraph.type === 'split'
+        ? [-1, 1]
+        : [0];
     if (this.regularTelegraph.type === 'fan') {
-      const points = [originX, originY];
-      for (let i = 0; i <= 8; i++) {
-        const t = i / 8 - 0.5;
-        const a = angle + t * spread;
-        points.push(originX + Math.cos(a) * length * 0.78 * pulse, originY + Math.sin(a) * length * 0.78 * pulse);
-      }
-      layer.poly(points);
-      layer.fill({ color: warningColor, alpha: 0.08 + progress * 0.1 });
+      drawAstraWarningSector(layer, { x: originX, y: originY, angle,
+        length: length * 0.78 * pulse, spread, color: familyColor, progress });
     }
+    this.drawTelegraphChargeHalo(layer, originX, originY, visualRadius * 0.92, palette, progress, {
+      scale: this.regularTelegraph.attack === 'sniper' ? 1.18 : 1,
+      rings: 3,
+      spokes: this.regularTelegraph.attack === 'sniper' ? 14 : 10,
+      nodes: this.regularTelegraph.attack === 'sniper' ? 12 : 8
+    });
+    this.drawTelegraphReleaseGate(layer, originX, originY, angle, length * pulse, spread, palette, progress, {
+      widthMult: this.regularTelegraph.attack === 'sniper' ? 0.24 : 0.78,
+      chevrons: this.regularTelegraph.attack === 'sniper' ? 4 : 2
+    });
+    this.drawTelegraphLaneCharge(layer, originX, originY, angle, length * pulse, lanes, spread, familyColor, progress, {
+      nodeCount: this.regularTelegraph.type === 'fan' ? 3 : 4,
+      size: this.regularTelegraph.attack === 'sniper' ? 3.4 : 2.8
+    });
+    this.drawTelegraphMuzzleCharge(layer, originX, originY, visualRadius * 0.72, warningColor, progress);
   }
 
   clearRegularAttackTelegraphVisual() {
     if (this.attackWarningLayer) this.attackWarningLayer.clear();
   }
 
-  executeSignatureMove(type, playerX, playerY) {
-    this.triggerFirePresentation(type, true, playerX, playerY);
+  executeSignatureMove(type, playerX, playerY, warningToken = this.telegraph) {
+    const lockedAngle = Number.isFinite(warningToken?.lockedAngle)
+      ? warningToken.lockedAngle
+      : null;
+    const aimPoint = this.getSignatureAimPoint(playerX, playerY);
+    this.lastSignatureRelease = {
+      type,
+      lockedAngle,
+      originX: this.x,
+      originY: this.y,
+      warningTokenId: warningToken?.id || null,
+      visibleLeadMs: warningToken?.visibleElapsedMs || 0,
+      releasedAt: Date.now()
+    };
+    this.triggerFirePresentation(type, true, aimPoint.x, aimPoint.y);
     if (type === 'cone') {
-      this.fireCone(playerX, playerY, this.level <= 2 ? 5 : 8, this.level <= 2 ? 0.5 : 0.64);
+      this.fireCone(aimPoint.x, aimPoint.y, this.level <= 2 ? 5 : 8, this.level <= 2 ? 0.5 : 0.64, lockedAngle);
     } else if (type === 'mirror') {
-      this.fireCone(playerX, playerY, this.level <= 2 ? 5 : 7, 0.38);
+      this.fireCone(aimPoint.x, aimPoint.y, this.level <= 2 ? 5 : 7, 0.38, lockedAngle);
       this.fireRingBurst(this.level <= 2 ? 8 : 12, 3);
     } else if (type === 'lance') {
-      this.fireCone(playerX, playerY, 3, 0.14);
+      this.fireCone(aimPoint.x, aimPoint.y, 3, 0.14, lockedAngle);
     } else if (type === 'adds') {
       const playScene = this.game?.scenes?.play;
       playScene?.enemyManager?.spawnBossAdds(this.level <= 2 ? 2 : 4);
@@ -1481,10 +2809,23 @@ export class Boss {
         playScene?.enemyManager?.spawnBossAdds(3);
       }
     }
-    this.game?.scenes?.play?.registerBossHazardFromBoss?.(this, 'signature', { type, playerX, playerY });
+    this.game?.scenes?.play?.registerBossHazardFromBoss?.(this, 'signature', {
+      type,
+      playerX: aimPoint.x,
+      playerY: aimPoint.y,
+      lockedAngle
+    });
   }
 
-  fireCone(playerX, playerY, shots = 7, spread = 0.6) {
+  releaseSignatureAttackWarning(playerX, playerY) {
+    const token = this.attackWarningToken;
+    if (!token || token.category !== 'signature' || !this.isAttackWarningReady('signature')) return null;
+    this.clearTelegraphVisual();
+    this.executeSignatureMove(token.type, playerX, playerY, token);
+    return this.finishAttackWarning(token, 'released', 'signature_release');
+  }
+
+  fireCone(playerX, playerY, shots = 7, spread = 0.6, lockedAngle = null) {
     const bullets = [];
     const visualConfig = toBulletVisualConfig(getBossSignatureWeaponProfile(this.telegraph?.type || 'cone'), {
       sourceEnemyType: 'boss',
@@ -1492,7 +2833,10 @@ export class Boss {
     });
     for (let i = 0; i < shots; i++) {
       const t = (i / (shots - 1)) - 0.5;
-      const angle = Math.atan2(playerY - this.y, playerX - this.x) + t * spread;
+      const baseAngle = Number.isFinite(lockedAngle)
+        ? lockedAngle
+        : Math.atan2(playerY - this.y, playerX - this.x);
+      const angle = baseAngle + t * spread;
       const attackType = this.telegraph?.type || 'cone';
       const speed = this.getBossProjectileSpeed(2) *
         this.getBossAttackSpeedMultiplier(attackType) *
@@ -1502,7 +2846,7 @@ export class Boss {
       const vy = Math.sin(angle) * speed;
       bullets.push(this.markBossBullet(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig), attackType));
     }
-    bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
+    choreographColossusSalvo(this,bullets).forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
   }
 
   fireRingBurst(count = 16, gapSize = 2) {
@@ -1513,7 +2857,12 @@ export class Boss {
     });
     const safeAngle = this.getRingSafeAngle(count);
     const fairness = BalanceConfig.difficulty.bossFairness || {};
-    const safeWedge = this.level <= 2 ? (fairness.ringSafeWedgeEarly ?? 0.58) : (fairness.ringSafeWedge ?? 0.5);
+    const safeWedge = clamp(
+      (this.level <= 2 ? (fairness.ringSafeWedgeEarly ?? 0.58) : (fairness.ringSafeWedge ?? 0.5)) +
+        this.getBossProfileReliefNumber('ringSafeWedgeBonus', 0),
+      0.1,
+      1.2
+    );
     this.setRingSafeLane(count, safeWedge);
     for (let i = 0; i < count; i++) {
       if (i % gapSize === 0) continue;
@@ -1527,7 +2876,7 @@ export class Boss {
       const vy = Math.sin(angle) * speed;
       bullets.push(this.markBossBullet(new Bullet(this.x, this.y + 20, vx, vy, 1, visualConfig.color || this.color, false, visualConfig), this.telegraph?.type || 'ring'));
     }
-    bullets.forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
+    choreographColossusSalvo(this,bullets).forEach(b => this.game.scenes.play.bulletManager.addEnemyBullet(b));
   }
 
   markBossBullet(bullet, fireStyle = 'boss') {
@@ -1536,10 +2885,17 @@ export class Boss {
     bullet.sourceFireStyle = fireStyle;
     bullet.sourceBossLevel = this.level;
     bullet.sourceBossName = this.name || null;
+    if (BOSS_ARSENAL_ENABLED && bullet.core?.__astraProjectile) {
+      const material = getBossArsenal(this.profile?.archetype).material;
+      bullet.core.texture = getArsenalProjectile(material, bullet.hostileInk || bullet.color);
+      bullet.arsenalMaterial = material;
+    }
+
     return bullet;
   }
 
   canShoot() {
+    if(Date.now()<(this.discoveryHoldUntil||0))return false;
     if (this.shootCooldown > 0 || this.telegraph) return false;
     const now = Date.now();
     if (now < this.finishGateUntilMs) return false;
@@ -1551,34 +2907,53 @@ export class Boss {
       this.startRegularAttackTelegraph(player?.x ?? this.x, player?.y ?? this.y + 260);
       return false;
     }
-    return now - this.regularTelegraph.start >= this.regularTelegraph.duration;
+    return this.isAttackWarningReady('regular');
   }
 
   shoot(playerX, playerY) {
-    const attack = this.profile?.attack || 'aimed';
+    const warningToken = this.attackWarningToken;
+    if (!warningToken || warningToken.category !== 'regular' || !this.isAttackWarningReady('regular')) {
+      return [];
+    }
+    const performanceDiagnostics = this.game?.scenes?.play?.performanceDiagnostics;
+    const burstStartedAt = performanceDiagnostics?.enabled ? performance.now() : 0;
+    const attack = warningToken.attackProfile.attack || 'aimed';
+    const releasePhase = warningToken.attackProfile.phase;
     const regularTelegraph = this.regularTelegraph
-      ? { type: this.regularTelegraph.type, attack: this.regularTelegraph.attack }
+      ? {
+        type: this.regularTelegraph.type,
+        attack: this.regularTelegraph.attack,
+        lockedAngle: this.regularTelegraph.lockedAngle,
+        warningAt: this.regularTelegraph.startedAt,
+        laneOffsets: this.regularTelegraph.laneOffsets?.slice?.() || null,
+        warningTokenId: this.regularTelegraph.id,
+        visibleLeadMs: this.regularTelegraph.visibleElapsedMs
+      }
       : null;
     this.shootCooldown = this.shootDelay;
     this.regularAttackReadyAt = Date.now() + this.getRegularAttackIntervalMs();
-    this.regularTelegraph = null;
     this.clearRegularAttackTelegraphVisual();
-    this.triggerFirePresentation(attack, false, playerX, playerY);
+    const releaseAimAngle = Number.isFinite(regularTelegraph?.lockedAngle)
+      ? regularTelegraph.lockedAngle
+      : Math.atan2(playerY - this.y, playerX - this.x);
+    const releaseAimX = this.x + Math.cos(releaseAimAngle) * 300;
+    const releaseAimY = this.y + Math.sin(releaseAimAngle) * 300;
+    this.triggerFirePresentation(attack, false, releaseAimX, releaseAimY);
     const bullets = [];
 
     // Boss FX
-    const killSwitch = typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_weapon_fx") === "1";
-    const weaponProfile = getBossWeaponProfile(attack, this.phase);
+    const killSwitch = isWeaponFxKillSwitchActive();
+    const weaponProfile = getBossWeaponProfile(attack, releasePhase);
     const vConfig = (ENABLE_BOSS_WEAPON_FX && !killSwitch)
       ? toBulletVisualConfig(weaponProfile, {
         sourceEnemyType: 'boss',
         sourceFireStyle: attack,
-        spriteScale: (weaponProfile?.spriteScale || 0.5) * (this.phase >= 3 ? 1.08 : 1)
+        spriteScale: (weaponProfile?.spriteScale || 0.5) * (releasePhase >= 3 ? 1.08 : 1)
       })
       : null;
     const pressure = BalanceConfig.difficulty.pressureScalar * this.getBossPressureScalar();
     const weaponSpeedMult = weaponProfile?.speedMult || 1;
-    const aimAngle = Math.atan2(playerY - this.y, playerX - this.x);
+    const aimAngle = releaseAimAngle;
     const addBullet = (x, y, angle, speed, color = weaponProfile?.color || this.color) => {
       bullets.push(this.markBossBullet(new Bullet(
         x,
@@ -1593,19 +2968,27 @@ export class Boss {
     };
 
     if (attack === 'fan' || attack === 'burst' || attack === 'fakeout') {
-      const count = this.phase === 1 ? 1 : attack === 'burst' ? 5 : 3;
-      const spread = this.phase === 1 ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
-      const speed = this.getBossProjectileSpeed(this.phase === 1 ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
+      const firstBoss = this.level <= 1;
+      const configuredBurstCount = releasePhase >= 3
+        ? this.getBossProfileReliefNumber('burstShotsPhase3', 5)
+        : this.getBossProfileReliefNumber('burstShotsPhase2', 5);
+      const count = releasePhase === 1 || firstBoss
+        ? 1
+        : attack === 'burst'
+          ? clamp(Math.round(configuredBurstCount), 1, 5)
+          : 3;
+      const spread = releasePhase === 1 || firstBoss ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
+      const speed = this.getBossProjectileSpeed(releasePhase === 1 || firstBoss ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
       for (let i = 0; i < count; i++) {
         const t = count === 1 ? 0 : (i / (count - 1)) - 0.5;
         addBullet(this.x, this.y, aimAngle + t * spread, speed);
       }
     } else if (attack === 'spiral' || attack === 'clock' || attack === 'chord') {
-      const count = attack === 'chord' ? 6 : this.phase === 1 ? 4 : 8;
-      const speed = this.getBossProjectileSpeed(this.phase === 3 ? 3 : 2) * pressure * this.getBossAttackSpeedMultiplier('radial');
+      const count = attack === 'chord' ? 6 : releasePhase === 1 ? 4 : 8;
+      const speed = this.getBossProjectileSpeed(releasePhase === 3 ? 3 : 2) * pressure * this.getBossAttackSpeedMultiplier('radial');
       const offset = attack === 'clock'
-        ? Math.floor(this.moveTimer / 26) * (Math.PI / 8)
-        : this.moveTimer * 0.045;
+        ? Math.floor(warningToken.attackProfile.movementTimer / 26) * (Math.PI / 8)
+        : warningToken.attackProfile.movementTimer * 0.045;
       const safeAngle = this.safeLanes?.[0]?.kind === 'ring-wedge'
         ? Number(this.safeLanes[0].angle)
         : this.getRingSafeAngle(count);
@@ -1614,15 +2997,15 @@ export class Boss {
         : 0.38;
       for (let i = 0; i < count; i++) {
         const angle = (Math.PI * 2 * i) / count + offset;
-        if (attack === 'clock' && this.phase < 3 && i % 4 === 0) continue;
+        if (attack === 'clock' && releasePhase < 3 && i % 4 === 0) continue;
         if (Math.abs(normalizeAngle(angle - safeAngle)) < safeWedge) continue;
         addBullet(this.x, this.y, angle, speed);
       }
     } else if (attack === 'split' || attack === 'sniper' || attack === 'wall') {
-      const speed = this.getBossProjectileSpeed(this.phase === 1 ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
+      const speed = this.getBossProjectileSpeed(releasePhase === 1 ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
       if (attack === 'sniper') {
         addBullet(this.x, this.y, aimAngle, speed * 1.16);
-        if (this.phase >= 3) {
+        if (releasePhase >= 3) {
           addBullet(this.x - 28, this.y, aimAngle + 0.08, speed);
           addBullet(this.x + 28, this.y, aimAngle - 0.08, speed);
         }
@@ -1638,11 +3021,11 @@ export class Boss {
     } else if (attack === 'summon') {
       const speed = this.getBossProjectileSpeed(1) * pressure * this.getBossAttackSpeedMultiplier('radial');
       addBullet(this.x, this.y, aimAngle, speed);
-      if (this.phase >= 2 && this.signatureCooldown <= 0) {
+      if (releasePhase >= 2 && this.signatureCooldown <= 0) {
         this.game?.scenes?.play?.enemyManager?.spawnBossAdds(this.level <= 1 ? 1 : 2);
         this.signatureCooldown = 180;
       }
-    } else if (this.phase === 1) {
+    } else if (releasePhase === 1) {
       // Single aimed shot
       const dx = playerX - this.x;
       const dy = playerY - this.y;
@@ -1661,7 +3044,7 @@ export class Boss {
         false,
         vConfig
       ), attack));
-    } else if (this.phase === 2) {
+    } else if (releasePhase === 2) {
       // 3-shot spread keeps the first boss readable while still punishing tunnel vision.
       for (let i = -1; i <= 1; i++) {
         const angle = Math.atan2(playerY - this.y, playerX - this.x) + i * 0.25;
@@ -1705,52 +3088,110 @@ export class Boss {
       type: regularTelegraph?.type || attack,
       attack,
       playerX,
-      playerY
+      playerY,
+      lockedAngle: regularTelegraph?.lockedAngle ?? null
     });
 
-    return bullets;
+    this.lastRegularAttackRelease = {
+      attack,
+      type: regularTelegraph?.type || attack,
+      lockedAngle: aimAngle,
+      warningAt: regularTelegraph?.warningAt || null,
+      releasedAt: Date.now(),
+      warningTokenId: regularTelegraph?.warningTokenId || null,
+      visibleLeadMs: regularTelegraph?.visibleLeadMs || 0,
+      laneOffsets: attack === 'split' ? [-0.18, 0.18] : regularTelegraph?.laneOffsets || [0],
+      projectileAngles: bullets.map((bullet) => Math.atan2(Number(bullet.vy) || 0, Number(bullet.vx) || 0))
+    };
+    this.game?.scenes?.play?.performanceDiagnostics?.mark?.('gameplay.boss_action', {
+      action: attack,
+      phase: releasePhase,
+      level: this.level,
+      projectiles: bullets.length,
+      summonedAdds: attack === 'summon' && releasePhase >= 2
+    });
+    if (burstStartedAt > 0) {
+      performanceDiagnostics.recordSection('vfx.boss_bullet_burst_creation', performance.now() - burstStartedAt);
+    }
+
+    this.finishAttackWarning(warningToken, 'released', 'regular_release');
+
+    return choreographColossusSalvo(this,bullets);
+  }
+
+  getArmorBleedThreshold() {
+    const maxHealth = Math.max(1, Number(this.maxHealth) || 1);
+    return Math.max(1, maxHealth * BOSS_ARMOR_BLEED_START_RATIO);
+  }
+
+  getArmorBleedDamageScale(elapsedMs = 0, guideMs = this.armorBleedGuideMs || this.minimumFightMs) {
+    const guide = Math.max(1, Number(guideMs) || this.armorBleedGuideMs || this.minimumFightMs || 1);
+    const progress = clamp((Number(elapsedMs) || 0) / guide, 0, 1);
+    const easedProgress = progress ** 2.35;
+    return clamp(
+      BOSS_ARMOR_BLEED_MIN_SCALE + easedProgress * (BOSS_ARMOR_BLEED_MAX_SCALE - BOSS_ARMOR_BLEED_MIN_SCALE),
+      BOSS_ARMOR_BLEED_MIN_SCALE,
+      BOSS_ARMOR_BLEED_MAX_SCALE
+    );
+  }
+
+  isFinishPacingActive(now = Date.now()) {
+    return Number(now) < (this.finishGateUntilMs || 0);
   }
 
   takeDamage(amount) {
     const now = Date.now();
     const invuln = now < this.invulnerableUntilMs;
     if (invuln) return false;
+    const rawDamage = Math.max(0, Number(amount) || 0);
+    if (rawDamage <= 0) return false;
+    if (!this.firstDamageAtMs) {
+      this.firstDamageAtMs = now;
+      this.fastKillGuideUntilMs = this.firstDamageAtMs + BOSS_FAST_KILL_GUIDE_MS;
+    }
     const hpBefore = this.health;
-    const elapsed = now - (this.spawnedAtMs || now);
+    const pacingAnchorAt = this.firstDamageAtMs || now;
+    const elapsed = now - pacingAnchorAt;
     const gateActive = now < this.finishGateUntilMs;
-    const minFightMs = Math.max(0, Number(this.minimumFightMs) || 0);
-    const incomingHealth = this.health - amount;
-    if (incomingHealth <= 0 && elapsed < minFightMs) {
-      const floor = Math.max(1, Math.ceil(this.maxHealth * 0.055));
-      this.health = Math.min(Math.max(floor, this.health), Math.max(floor, this.maxHealth));
-      this.finishGateUntilMs = Math.max(this.finishGateUntilMs || 0, (this.spawnedAtMs || now) + minFightMs);
+    const guideMs = Math.max(0, Number(this.armorBleedGuideMs || this.minimumFightMs) || 0);
+    const pacingActive = elapsed < guideMs;
+    const healthRatio = this.health / Math.max(1, this.maxHealth || 1);
+    const armorBleedThreshold = this.getArmorBleedThreshold();
+    const projectedFullDamageHealth = this.health - rawDamage;
+    const shouldArmorBleed = pacingActive && (
+      gateActive ||
+      healthRatio <= BOSS_ARMOR_BLEED_START_RATIO ||
+      projectedFullDamageHealth <= armorBleedThreshold
+    );
+    const damageScale = shouldArmorBleed ? this.getArmorBleedDamageScale(elapsed, guideMs) : 1;
+    const fullDamageBeforeBleed = shouldArmorBleed
+      ? Math.max(0, this.health - armorBleedThreshold)
+      : rawDamage;
+    const bleedDamage = shouldArmorBleed
+      ? Math.max(0, rawDamage - fullDamageBeforeBleed)
+      : 0;
+    const effectiveDamage = shouldArmorBleed
+      ? Math.min(rawDamage, fullDamageBeforeBleed + bleedDamage * damageScale)
+      : rawDamage;
+    const incomingHealth = this.health - effectiveDamage;
+    if (shouldArmorBleed) {
+      this.finishGateUntilMs = Math.max(this.finishGateUntilMs || 0, pacingAnchorAt + guideMs);
+      this.applyRecoveryPause(Math.max(1, this.finishGateUntilMs - now), 'armor_finish_gate');
+      this.finishGateDamageScale = damageScale;
+      this.finishGateLastDamageAt = now;
       this.shootCooldown = Math.max(this.shootCooldown || 0, 80);
       this.signatureCooldown = Math.max(this.signatureCooldown || 0, 180);
       this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500);
-      this.telegraph = null;
-      this.regularTelegraph = null;
-      this.clearTelegraphVisual();
-      this.clearRegularAttackTelegraphVisual();
-      this.updateHealthBar();
-      this.triggerHurtPresentation(amount);
-      this.triggerFinishGatePresentation(this.finishGateUntilMs);
       if (!this.finishGateLogged) {
         this.finishGateLogged = true;
-        console.log(`[BossDamageGate] level=${this.level} elapsedMs=${Math.round(elapsed)} minFightMs=${Math.round(minFightMs)} floor=${floor}`);
+        console.log(`[BossArmorBleed] level=${this.level} elapsedMs=${Math.round(elapsed)} guideMs=${Math.round(guideMs)} threshold=${Math.round(armorBleedThreshold)} scale=${damageScale.toFixed(2)}`);
       }
-      return false;
-    }
-    if (gateActive) {
-      const floor = Math.max(1, Math.ceil(this.maxHealth * 0.055));
-      this.health = Math.max(floor, incomingHealth);
-      this.updateHealthBar();
       this.triggerFinishGatePresentation(this.finishGateUntilMs);
-      return false;
     }
     this.health = incomingHealth;
     this.updateHealthBar();
-    console.log(`[BossDamage] level=${this.level} hpBefore=${hpBefore} dmg=${amount} hpAfter=${this.health} invuln=${invuln}`);
-    this.triggerHurtPresentation(amount);
+    console.log(`[BossDamage] level=${this.level} hpBefore=${hpBefore} dmg=${rawDamage} effective=${Number(effectiveDamage.toFixed(2))} hpAfter=${this.health} invuln=${invuln} armorBleed=${shouldArmorBleed}`);
+    this.triggerHurtPresentation(effectiveDamage);
 
     if (this.health <= 0) {
       this.triggerDefeatPresentation();
@@ -1761,6 +3202,8 @@ export class Boss {
   }
 
   destroy() {
+    CreatureAudio.stopOwner(this);
+    this.cancelAttackWarning('boss_destroyed');
     this.clearTelegraphVisual();
     this.clearRegularAttackTelegraphVisual();
     if (this.visualCleanup) {
