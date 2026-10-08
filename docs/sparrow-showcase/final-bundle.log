@@ -1,0 +1,27 @@
+[Vite] Using buildId from version.json: v2026-09-09_17-00-12
+vite v5.4.21 building for production...
+transforming...
+
+/fonts/orbitron-700.ttf referenced in /fonts/orbitron-700.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+/fonts/orbitron-800.ttf referenced in /fonts/orbitron-800.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+/fonts/orbitron-900.ttf referenced in /fonts/orbitron-900.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+/fonts/rajdhani-600.ttf referenced in /fonts/rajdhani-600.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+
+/fonts/rajdhani-700.ttf referenced in /fonts/rajdhani-700.ttf didn't resolve at build time, it will remain unchanged to be resolved at runtime
+✓ 966 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                          1.26 kB │ gzip:     0.60 kB
+dist/assets/index-Cfgs1KLw.css           2.07 kB │ gzip:     0.69 kB
+dist/assets/vendor-pixi-DMQ31nLQ.js    549.41 kB │ gzip:   158.33 kB
+dist/assets/vendor-BkbZGUfW.js         623.53 kB │ gzip:   160.82 kB
+dist/assets/index-D-NWWIDL.js        5,106.92 kB │ gzip: 1,715.22 kB
+
+(!) Some chunks are larger than 700 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 34.20s

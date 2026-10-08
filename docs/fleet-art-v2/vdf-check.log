@@ -1,0 +1,15 @@
+
+> nova-swarm@1.0.0 steamworks:write-vdf
+> npm run check:release-line && npm run check:steam-package-runtime && node scripts/write-steamworks-vdf.mjs
+
+
+> nova-swarm@1.0.0 check:release-line
+> node scripts/check-release-line.mjs
+
+[release-line] PASS latest localization, achievements, Steam Cloud, fullscreen, and marketing hotkey markers present
+
+> nova-swarm@1.0.0 check:steam-package-runtime
+> node scripts/check-steam-package-runtime.mjs
+
+[steam-package-runtime] PASS app=4765070 leaderboard=nova_swarm_global_score_v2 report=test-results/steam-package-runtime-2026-09-09T15-58-37-123Z/report.json
+wrote release/steamworks/app_build_LOCAL.vdf

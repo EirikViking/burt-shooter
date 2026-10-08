@@ -1,0 +1,99 @@
+
+> nova-swarm@1.0.0 prebuild:current
+> npm run check:codex-copy && npm run check:powerup-expansion && npm run check:global-score-tuning && npm run check:gameplay-backdrop-motion && npm run check:tactical-directives && npm run check:nova-humor && npm run check:challenge-flight && npm run check:chatter-frequency && npm run check:ship-mastery-readout && npm run check:cabinet-powerup-reachability
+
+
+> nova-swarm@1.0.0 check:codex-copy
+> node scripts/check-codex-copy.mjs
+
+[codex-copy] PASS locales=8 categories=11 entries=2408 unique=name+description+tip lore=nova-cabinet-black-box-v1
+
+> nova-swarm@1.0.0 check:powerup-expansion
+> node scripts/check-powerup-expansion.mjs
+
+[powerup-expansion] PASS powerups=20 uniqueNames=20 audioTreatments=11 localizedLocales=7
+
+> nova-swarm@1.0.0 check:global-score-tuning
+> node scripts/check-global-score-tuning.mjs
+
+[global-score-tuning] PASS exact 15% multiplier and score-breakdown accounting
+
+> nova-swarm@1.0.0 check:gameplay-backdrop-motion
+> node scripts/check-gameplay-backdrop-motion.mjs
+
+[gameplay-backdrop-motion] PASS modes, visible camera travel, coverage, reduced motion, lifecycle guards
+
+> nova-swarm@1.0.0 check:tactical-directives
+> node scripts/check-tactical-directives.mjs
+
+[tactical-directives] PASS variants=1000 campaign=50 minimumFinalSector=50 exhaustiveCompletions=1000
+
+> nova-swarm@1.0.0 check:nova-humor
+> node scripts/check-nova-humor-everywhere.mjs
+
+Nova humor check passed: 37 unique lines across 7 surfaces and 7 translated locales.
+
+> nova-swarm@1.0.0 check:challenge-flight
+> node scripts/check-challenge-flight.mjs
+
+[challenge-flight] PASS patterns=5 grades=PERFECT,A,B,C,MISS locales=7
+
+> nova-swarm@1.0.0 check:chatter-frequency
+> node scripts/check-chatter-frequency.mjs
+
+[chatter-frequency] PASS critical warnings protected, chatter throttled, settings/cloud/locales wired
+
+> nova-swarm@1.0.0 check:ship-mastery-readout
+> node scripts/check-ship-mastery-readout.mjs
+
+[ship-mastery-readout] PASS Hangar medals and cockpit Tour tally are visible and reward-neutral
+
+> nova-swarm@1.0.0 check:cabinet-powerup-reachability
+> node scripts/check-cabinet-powerup-reachability.mjs
+
+[cabinet-powerup-reachability] PASS Hull Surplus retargeted; life=EXTRA LIFE; super_extra_life=SUPER EXTRA LIFE
+
+> nova-swarm@1.0.0 build:current
+> node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-i18n.mjs && node scripts/check-easter-eggs.mjs && node scripts/check-fullscreen-menu-removed.mjs && node scripts/check-ship-recommendation.mjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-ship-trait-explanations.mjs && node scripts/check-ascendant-ships.mjs && node scripts/check-credits-ascendant-easter-egg.mjs && node scripts/check-hangar-unlock-integrity.mjs && node scripts/check-generated-rosters.mjs && node scripts/check-normal-enemy-variety.mjs && node scripts/check-enemy-movement-smoothing.mjs && node scripts/check-late-enemy-mayhem.mjs && node scripts/check-generated-ship-art.mjs && node scripts/check-sector-arrival-stinger.mjs && node scripts/check-boss-support-ships.mjs && node scripts/check-boss-roster.mjs && node scripts/check-boss-mercy.mjs && node scripts/check-powerup-balance.mjs && node scripts/check-powerup-assets.mjs && node scripts/check-super-extra-life-powerup.mjs && node scripts/check-nova-miracle-powerup.mjs && node scripts/check-row-core.mjs && node scripts/check-enemy-weapons.mjs && node scripts/check-elite-ships.mjs && node scripts/check-tractor-debuffs.mjs && node scripts/check-audio-catalog.mjs && node scripts/check-voice-mute-contract.mjs && node scripts/check-reinforcement-voices.mjs && node scripts/check-mayhem-super-storm-voices.mjs && node scripts/check-boss-death-voices.mjs && node scripts/check-gameover-taunts.mjs && node scripts/check-level-clear-voices.mjs && node scripts/check-menu-boss-barks.mjs && node scripts/check-tactical-boss-banter.mjs && vite build
+
+[Rank Guard] Checking for retired rank-count regressions...
+
+Rank guard passed: No rank system violations detected.
+[RankPolicy Parity] Checking frontend/backend consistency...
+
+✅ RankPolicy parity check passed: Frontend and backend files are identical.
+i18n checks passed
+i18n Mode Briefing complete: 93 source strings translated in 7 non-English locales
+[easter-eggs] PASS ambient gameplay easter egg flybys removed; credits secret remains
+[fullscreen-menu] PASS legacy fullscreen-only menu removed; display mode selector present
+[ship-recommendation] PASS advisory recommendation preserves manual selection and persists keyed dismissal
+[Sprite Catalog Check]
+Disk sprites: 1222
+Catalog sprites: 1222
+
+✅ Sprite catalog check passed
+All 1222 sprites are properly indexed
+[ShipTraits] PASS ships=30 totalSignatures=30 starter=NOVA SPARROW
+[ship-trait-explanations] PASS ships=30
+┌─────────┬────────────────┬────────────────────┬─────────────┬───────┬──────────┬──────────────┬─────────────┬─────────────┐
+│ (index) │ id             │ name               │ unlockLevel │ epi   │ epiRatio │ sustainedDps │ damageRatio │ target      │
+├─────────┼────────────────┼────────────────────┼─────────────┼───────┼──────────┼──────────────┼─────────────┼─────────────┤
+│ 0       │ 'nova_ship_26' │ 'AEGIS COMET'      │ 30          │ 7.516 │ 1.18     │ 47.647       │ 1.102       │ '1.09-1.14' │
+│ 1       │ 'nova_ship_27' │ 'RAILBREAKER'      │ 35          │ 6.406 │ 1.006    │ 48.098       │ 1.112       │ '1.1-1.15'  │
+│ 2       │ 'nova_ship_28' │ 'DRONE SOVEREIGN'  │ 40          │ 7.142 │ 1.122    │ 47.997       │ 1.11        │ '1.1-1.15'  │
+│ 3       │ 'nova_ship_29' │ 'PHASE SERAPH'     │ 45          │ 8.323 │ 1.307    │ 47.805       │ 1.106       │ '1.1-1.15'  │
+│ 4       │ 'nova_ship_30' │ 'EIRIK THE VIKING' │ 50          │ 6.993 │ 1.098    │ 48.582       │ 1.123       │ '1.11-1.16' │
+└─────────┴────────────────┴────────────────────┴─────────────┴───────┴──────────┴──────────────┴─────────────┴─────────────┘
+[ascendant-ships] PASS ships=30 ascendant=5 topNormalEpi=6.368 topNormalSustainedDps=43.243 level30DamageRatio=1.102 level50DamageRatio=1.123
+[credits-ascendant-easter-egg] PASS chance=0.002 maxAttempts=25 ship=nova_ship_30
+[hangar-unlock-integrity] PASS preserved=29 recovered=23 rescued=2 mastery=30
+[GeneratedRosters] PASS ships=30 enemies=1780 enemyBehaviors=1780
+[normal-enemy-variety] PASS profiles=1780 movement=28 attacks=23 level1=1433 earlySurge=1423 level10=1473 level11=1482 late=177 smallGated=8 level40=1772
+[enemy-movement-smoothing] PASS 28 generated enemy movement styles stay smooth while parked
+[late-enemy-mayhem] PASS total=1780 late=177 level10=1473 level11Late=5 uniqueAssets=177
+[generated-ship-art] PASS sectorScenes=240 uniqueSectorPngs=240 lateMayhem=177 uniqueShipPngs=177 haloButton2=/art/astra/fleet-v5/060.png
+[sector-arrival-stinger] PASS compact performance-safe radar signal wired behind HUD
+[boss-support-ships] PASS profiles=111 picked=109 codex=111 glyphs=8 beams=8
+[check-boss-roster] ok profiles=50 archetypes=10 attacks=10 signatures=5
+[boss-mercy] PASS level6Losses10s=2 level30Losses7s=2 cap=2/7000->4000ms cooldowns=l1:7000 l6:5750 l10:5000 min:2500
+[powerup-balance] PASS sparse drops, max 2 per level, pressure-bounded extra lives, no level-clear life grants

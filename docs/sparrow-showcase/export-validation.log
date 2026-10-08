@@ -1,0 +1,53 @@
+warn: tangents: No qualifying primitives found. See debug output.
+info: sparrow-showcase.glb (41.54 MB) → tangent.glb (41.26 MB)
+
+> dedup
+√ dedup               [2m 21ms[0m
+> instance
+√ instance            [2m 2ms[0m
+> flatten
+√ flatten             [2m 4ms[0m
+> join
+√ join                [2m 278ms[0m
+> weld
+√ weld                [2m 139ms[0m
+> resample
+√ resample            [2m 0ms[0m
+> prune
+√ prune               [2m 156ms[0m
+> sparse
+√ sparse              [2m 66ms[0m
+
+info: tangent.glb (41.26 MB) → runtime.glb (37.43 MB)
+
+Collapsed tangent frames repaired: 4
+
+ ERROR
+ ────────────────────────────────────────────
+info: No errors found.
+
+
+
+ WARNING
+ ────────────────────────────────────────────
+info: No warnings found.
+
+
+
+ INFO
+ ────────────────────────────────────────────
+[90m┌────────────────────────────────────[39m[90m┬──────────────────────────────────────────────────────────────────[39m[90m┬──────────[39m[90m┬────────────────────────────────┐[39m
+[90m│[39m[31m code                               [39m[90m│[39m[31m message                                                          [39m[90m│[39m[31m severity [39m[90m│[39m[31m pointer                        [39m[90m│[39m
+[90m├────────────────────────────────────[39m[90m┼──────────────────────────────────────────────────────────────────[39m[90m┼──────────[39m[90m┼────────────────────────────────┤[39m
+[90m│[39m ACCESSOR_INDEX_TRIANGLE_DEGENERATE [90m│[39m Indices accessor contains 8 degenerate triangles (out of 57716). [90m│[39m 2        [90m│[39m /meshes/2/primitives/0/indices [90m│[39m
+[90m├────────────────────────────────────[39m[90m┼──────────────────────────────────────────────────────────────────[39m[90m┼──────────[39m[90m┼────────────────────────────────┤[39m
+[90m│[39m ACCESSOR_INDEX_TRIANGLE_DEGENERATE [90m│[39m Indices accessor contains 5 degenerate triangles (out of 41140). [90m│[39m 2        [90m│[39m /meshes/3/primitives/0/indices [90m│[39m
+[90m├────────────────────────────────────[39m[90m┼──────────────────────────────────────────────────────────────────[39m[90m┼──────────[39m[90m┼────────────────────────────────┤[39m
+[90m│[39m ACCESSOR_INDEX_TRIANGLE_DEGENERATE [90m│[39m Indices accessor contains 12 degenerate triangles (out of 2728). [90m│[39m 2        [90m│[39m /meshes/4/primitives/0/indices [90m│[39m
+[90m└────────────────────────────────────[39m[90m┴──────────────────────────────────────────────────────────────────[39m[90m┴──────────[39m[90m┴────────────────────────────────┘[39m
+
+
+
+ HINT
+ ────────────────────────────────────────────
+info: No hints found.

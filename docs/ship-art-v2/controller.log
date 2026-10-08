@@ -1,0 +1,7 @@
+
+> nova-swarm@1.0.0 check:controller-flow
+> node scripts/check-controller-only-flow.mjs
+
+[preview] [Vite] Using buildId from version.json: v2026-08-22_14-35-02
+[preview]   ➜  Local:   http://127.0.0.1:4347/
+[controller-only-flow] PASS output=D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\test-results\controller-only-flow-2026-09-09T13-55-00-957Z

@@ -1,0 +1,39 @@
+{
+  "id": "01",
+  "dimensions": [
+    3.380000114440918,
+    0.6862393617630005,
+    3.1695027351379395
+  ],
+  "materials": 6,
+  "triangles": 23828,
+  "generator": "scripts/build-sparrow-v2.py",
+  "authoring": "Original Blender geometry and authored PBR maps; no external assets",
+  "files": [
+    {
+      "file": "public/art/solid-fleet-20260908/01.glb",
+      "bytes": 1856220,
+      "sha256": "d2b448441a35b24c67471c86ef493fb001e0536e9e2e91d880e9047d83c6e147"
+    },
+    {
+      "file": "public/art/solid-fleet-20260908/player/01.png",
+      "bytes": 189532,
+      "sha256": "d07c8c86ad1d82218df654f6629004e60b953258cbdaf9c9cb49649276e185f5"
+    },
+    {
+      "file": "public/art/solid-fleet-20260908/showroom/01.webp",
+      "bytes": 204616,
+      "sha256": "cd7b82e2cf09202f3a751b54a970426bda1821c74e76e607e72dad9531054614"
+    },
+    {
+      "file": "public/art/solid-fleet-20260908/showroom/01.json",
+      "bytes": 179,
+      "sha256": "642c109b9bbd68d0e11d555b667eb1903e1a53349efd5c7979a383738c8ba26d"
+    },
+    {
+      "file": "docs/ship-art-v2/nova-sparrow-v2.blend",
+      "bytes": 952723,
+      "sha256": "7de38f202752061bf88f792b35e7bce4e83cd7bf4c7c14f50e77fee536d10680"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+[
+  {
+    stage: 'menu',
+    counts: {
+      resident: 1,
+      geometries: 6,
+      textures: 8,
+      calls: 12,
+      triangles: 47656
+    }
+  },
+  {
+    stage: 'hangar',
+    counts: {
+      resident: 1,
+      geometries: 6,
+      textures: 8,
+      calls: 12,
+      triangles: 47656
+    }
+  },
+  {
+    stage: 'neighbor',
+    counts: {
+      resident: 1,
+      geometries: 9,
+      textures: 4,
+      calls: 18,
+      triangles: 104720
+    }
+  },
+  {
+    stage: 'sparrow',
+    counts: {
+      resident: 1,
+      geometries: 6,
+      textures: 8,
+      calls: 12,
+      triangles: 47656
+    }
+  },
+  {
+    stage: 'disposed',
+    counts: {
+      resident: 0,
+      geometries: 0,
+      textures: 2,
+      calls: 12,
+      triangles: 47656
+    }
+  }
+]

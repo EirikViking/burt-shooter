@@ -1,0 +1,247 @@
+
+> nova-swarm@1.0.0 desktop:smoke:current
+> electron electron/main.cjs --smoke
+
+
+Setting breakpad minidump AppID = 4765070
+SteamInternal_SetMinidumpSteamID:  Caching Steam ID:  76561198953993508 [API loaded no]
+(electron) 'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead.
+[Steamworks] Finding leaderboard: nova_swarm_global_score_v2
+[Steamworks] Finding leaderboard: nova_swarm_global_score_v2
+[Steamworks] Leaderboard found: nova_swarm_global_score_v2 (handle: 19997814)
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Leaderboard found: nova_swarm_global_score_v2 (handle: 19997814)
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Downloaded 4 entries
+[Steamworks] Downloaded 4 entries
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Downloading entries (1 to 100)
+[Steamworks] Finding leaderboard: nova_swarm_tactical_score_v1
+[Steamworks] Finding leaderboard: nova_swarm_tactical_score_v1
+[Steamworks] Leaderboard found: nova_swarm_tactical_score_v1 (handle: 20417250)
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Leaderboard found: nova_swarm_tactical_score_v1 (handle: 20417250)
+[Steamworks] Downloading entries (1 to 100)
+[Steamworks] Downloaded 4 entries
+[Steamworks] Downloaded 2 entries
+[Steamworks] Downloaded 41 entries
+[Steamworks] Downloaded 88 entries
+{
+  "outputDir": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\electron-smoke-2026-09-09T13-56-29-954Z",
+  "baseUrl": "nova-swarm://app",
+  "state": {
+    "title": "Nova Swarm - Arcade Patrol",
+    "apiOk": true,
+    "apiStatus": 200,
+    "steamBridgeStatus": {
+      "available": true,
+      "reason": "ready",
+      "appId": 4765070,
+      "sdkPathConfigured": true,
+      "nativeModuleLoaded": true,
+      "leaderboardName": "nova_swarm_global_score_v2"
+    },
+    "steamAchievementStatus": {
+      "available": true,
+      "reason": "ready",
+      "appId": 4765070,
+      "sdkPathConfigured": true,
+      "nativeModuleLoaded": true,
+      "achievementManagerPresent": true,
+      "leaderboardBridgeStatus": {
+        "available": true,
+        "reason": "ready",
+        "appId": 4765070,
+        "sdkPathConfigured": true,
+        "nativeModuleLoaded": true,
+        "leaderboardName": "nova_swarm_global_score_v2"
+      },
+      "lastDiagnostics": {
+        "ok": true,
+        "requested": [],
+        "synced": [],
+        "skipped": [],
+        "failed": [],
+        "steamUnlockedIds": [
+          "ACH_ARCADE_CLEAR",
+          "ACH_BLACK_BOX_ARCHIVIST",
+          "ACH_BOSS_HUNTER_25",
+          "ACH_BOSS_PAROLE_DENIED",
+          "ACH_BOSS_ROSTER_STAMPED",
+          "ACH_CLEAN_ROOM_RIOT",
+          "ACH_CLEAN_TEN_STATUTE",
+          "ACH_EARLY_PILOT",
+          "ACH_FIFTY_HIT_STATIC",
+          "ACH_FINAL_CLIMAX",
+          "ACH_FIVE_BOSS_FEVER",
+          "ACH_FULL_HANGAR_OMEGA",
+          "ACH_FULL_HULL_FIREWORKS",
+          "ACH_GLOBAL_LEADERBOARD",
+          "ACH_GLOBAL_NUMBER_ONE",
+          "ACH_HANGAR_AFTERPARTY",
+          "ACH_HANGAR_TWELVE",
+          "ACH_NEON_TAX_BRACKET",
+          "ACH_NO_HIT_SECTOR",
+          "ACH_NO_REPAIR_RECEIPTS",
+          "ACH_OVERRUN_CARTOGRAPHER",
+          "ACH_PERFECT_PRESSURE",
+          "ACH_RANK_01",
+          "ACH_RANK_02",
+          "ACH_RANK_03",
+          "ACH_RANK_04",
+          "ACH_RANK_05",
+          "ACH_RANK_06",
+          "ACH_RANK_07",
+          "ACH_RANK_08",
+          "ACH_RANK_09",
+          "ACH_RANK_10",
+          "ACH_RANK_11",
+          "ACH_RANK_12",
+          "ACH_RANK_13",
+          "ACH_RANK_14",
+          "ACH_RANK_15",
+          "ACH_RANK_16",
+          "ACH_RANK_17",
+          "ACH_RANK_18",
+          "ACH_RANK_19",
+          "ACH_RANK_20",
+          "ACH_RANK_21",
+          "ACH_RANK_22",
+          "ACH_RANK_23",
+          "ACH_RANK_24",
+          "ACH_RANK_25",
+          "ACH_RANK_26",
+          "ACH_SCORE_250K",
+          "ACH_SECTOR_FIFTY_ENDLESS",
+          "ACH_SECTOR_FIVE",
+          "ACH_SECTOR_STORMRIDER",
+          "ACH_SECTOR_THIRTY_BLACKOUT",
+          "ACH_SIGNAL_CARTOGRAPHER",
+          "ACH_SIX_FIGURE_SIGNAL",
+          "ACH_SWARM_TAXONOMIST",
+          "ACH_TEN_BOSS_TRIBUNAL",
+          "ACH_THEME_PARK_PANIC",
+          "ACH_THIRTY_WAVE_GHOST",
+          "ACH_TWO_LIVES_CLEAR"
+        ],
+        "status": {
+          "available": true,
+          "reason": "ready",
+          "appId": 4765070,
+          "sdkPathConfigured": true,
+          "nativeModuleLoaded": true,
+          "achievementManagerPresent": true,
+          "leaderboardBridgeStatus": {
+            "available": true,
+            "reason": "ready",
+            "appId": 4765070,
+            "sdkPathConfigured": true,
+            "nativeModuleLoaded": true,
+            "leaderboardName": "nova_swarm_global_score_v2"
+          },
+          "lastDiagnostics": null
+        },
+        "recordedAt": "2026-09-09T13:56:47.553Z"
+      }
+    },
+    "freshProfileSteamIsolated": false,
+    "freshProfileSubmitProbe": null,
+    "freshProfileAchievementProbe": null,
+    "steamLeaderboardAvailable": true,
+    "steamLeaderboardBridgePresent": true,
+    "steamCloudDiagnostics": {
+      "ok": true,
+      "profile": {
+        "type": "steam",
+        "id": "76561198953993508",
+        "steamId": "76561198953993508",
+        "storageId": "steam-76561198953993508",
+        "personaName": "Tiny Foundry",
+        "reason": "steam_identity_ready"
+      },
+      "userDataPath": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\electron-smoke-user-data-2026-09-09T13-56-17-700Z",
+      "cloudDir": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\electron-smoke-user-data-2026-09-09T13-56-17-700Z\\steam-cloud",
+      "profileDir": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\electron-smoke-user-data-2026-09-09T13-56-17-700Z\\steam-cloud\\profiles\\steam-76561198953993508",
+      "cloudSavePath": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\electron-smoke-user-data-2026-09-09T13-56-17-700Z\\steam-cloud\\profiles\\steam-76561198953993508\\nova-swarm-save.json",
+      "legacyCloudSavePath": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\electron-smoke-user-data-2026-09-09T13-56-17-700Z\\steam-cloud\\nova-swarm-save.json",
+      "legacySharedSavePath": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\electron-smoke-user-data-2026-09-09T13-56-17-700Z\\steam-cloud\\profiles\\legacy-shared\\nova-swarm-save.json",
+      "io": {
+        "asyncReads": 2,
+        "asyncWrites": 4,
+        "skippedUnchangedWrites": 0,
+        "queuedMerges": 2,
+        "activeMerges": 0,
+        "maxConcurrentMerges": 1,
+        "lastReadMs": 6.84769999999844,
+        "lastWriteMs": 140.22810000000027,
+        "lastWriteSkipped": false
+      },
+      "persistenceSummary": {
+        "profile": {
+          "type": "steam",
+          "id": "76561198953993508",
+          "steamId": "76561198953993508",
+          "storageId": "steam-76561198953993508",
+          "personaName": "Tiny Foundry"
+        },
+        "cloudSavePath": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\electron-smoke-user-data-2026-09-09T13-56-17-700Z\\steam-cloud\\profiles\\steam-76561198953993508\\nova-swarm-save.json",
+        "legacyCloudSavePath": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\electron-smoke-user-data-2026-09-09T13-56-17-700Z\\steam-cloud\\nova-swarm-save.json",
+        "legacySharedSavePath": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\electron-smoke-user-data-2026-09-09T13-56-17-700Z\\steam-cloud\\profiles\\legacy-shared\\nova-swarm-save.json",
+        "languagePreference": "system",
+        "currentLanguage": "en",
+        "localHighscoresCount": 0,
+        "achievementMirrorCount": 60,
+        "selectedShipKey": null,
+        "progression": {
+          "bestScore": 0,
+          "bestRank": 0,
+          "bestLevel": 1
+        },
+        "hangarPilotXp": 0,
+        "hangarUnlockedShips": 3,
+        "pilotOrdersCompleted": 0,
+        "shipUsageShips": 0,
+        "shipUsageTotal": 0,
+        "sectorStartChallengeCheckpoints": 0,
+        "scoutRunBestScore": 0,
+        "overrunRunBestScores": {},
+        "threatDiscoveryCategories": 16,
+        "threatDiscoveryUnread": 0,
+        "updatedAt": "2026-09-09T13:56:48.977Z"
+      },
+      "steamworksAutoCloud": {
+        "byteQuota": 1048576,
+        "fileCount": 20,
+        "root": "WinAppDataRoaming",
+        "subdirectory": "electron-smoke-user-data-2026-09-09T13-56-17-700Z/steam-cloud",
+        "pattern": "nova-swarm-save.json",
+        "recursive": false,
+        "dynamicCloudSync": false
+      }
+    },
+    "scene": "menu",
+    "build": "v2026-08-22_14-35-02",
+    "gitSha": "0439b1f",
+    "introTitle": null,
+    "readyState": {
+      "scene": "menu",
+      "introTitle": "",
+      "introCaption": "",
+      "panelTextures": 0,
+      "ready": true
+    }
+  },
+  "consoleEvents": [
+    {
+      "level": 2,
+      "message": "THREE.WebGLProgram: Program Info Log: (210,81-129): warning X4122: sum of 0.996094 and -2.98545e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(210,82-106): warning X4122: sum of 1 and -1.49272e-017 cannot be represented accurately in double precision\n(209,37-61): warning X4122: sum of 1 and -1.66644e-018 cannot be represented accurately in double precision\n(210,82-106): warning"
+    },
+    {
+      "level": 2,
+      "message": "THREE.WebGLShadowMap: PCFSoftShadowMap has been deprecated. Using PCFShadowMap instead."
+    }
+  ]
+}
+Error: Electron smoke failed
+    at runSmoke (D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\electron\main.cjs:814:88)
+    at async D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\electron\main.cjs:1662:7

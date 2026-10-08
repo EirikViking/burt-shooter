@@ -1,0 +1,44 @@
+info: model.glb (1.78 MB) → tangent.glb (2.03 MB)
+
+> dedup
+√ dedup               [2m 3ms[0m
+> instance
+√ instance            [2m 1ms[0m
+> flatten
+√ flatten             [2m 1ms[0m
+> join
+√ join                [2m 12ms[0m
+> weld
+√ weld                [2m 15ms[0m
+> resample
+√ resample            [2m 1ms[0m
+> prune
+√ prune               [2m 43ms[0m
+> sparse
+√ sparse              [2m 13ms[0m
+
+info: tangent.glb (2.03 MB) → runtime.glb (1.72 MB)
+
+Collapsed bevel tangent frames repaired: 0
+
+ ERROR
+ ────────────────────────────────────────────
+info: No errors found.
+
+
+
+ WARNING
+ ────────────────────────────────────────────
+info: No warnings found.
+
+
+
+ INFO
+ ────────────────────────────────────────────
+info: No infos found.
+
+
+
+ HINT
+ ────────────────────────────────────────────
+info: No hints found.

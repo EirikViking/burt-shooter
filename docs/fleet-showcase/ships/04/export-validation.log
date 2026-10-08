@@ -1,0 +1,47 @@
+warn: tangents: No qualifying primitives found. See debug output.
+info: model.glb (15.2 MB) → tangent.glb (15.16 MB)
+
+> dedup
+√ dedup               [2m 18ms[0m
+> instance
+√ instance            [2m 5ms[0m
+> flatten
+√ flatten             [2m 6ms[0m
+> join
+√ join                [2m 185ms[0m
+> weld
+√ weld                [2m 61ms[0m
+> resample
+√ resample            [2m 0ms[0m
+> prune
+√ prune               [2m 52ms[0m
+> sparse
+√ sparse              [2m 36ms[0m
+
+info: tangent.glb (15.16 MB) → runtime.glb (12.74 MB)
+
+Collapsed tangent frames repaired: 0
+
+ ERROR
+ ────────────────────────────────────────────
+info: No errors found.
+
+
+
+ WARNING
+ ────────────────────────────────────────────
+info: No warnings found.
+
+
+
+ INFO
+ ────────────────────────────────────────────
+info: No infos found.
+
+
+
+ HINT
+ ────────────────────────────────────────────
+info: No hints found.
+
+

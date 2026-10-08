@@ -1,0 +1,18 @@
+> dedup
+√ dedup               [2m 4ms[0m
+> instance
+√ instance            [2m 1ms[0m
+> flatten
+√ flatten             [2m 1ms[0m
+> join
+√ join                [2m 10ms[0m
+> weld
+√ weld                [2m 13ms[0m
+> resample
+√ resample            [2m 0ms[0m
+> prune
+√ prune               [2m 43ms[0m
+> sparse
+√ sparse              [2m 10ms[0m
+
+info: nova-sparrow-tangent.glb (2.39 MB) → nova-sparrow-runtime.glb (1.86 MB)

@@ -1,0 +1,140 @@
+{
+  "gpu": {
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "vendor": "Google Inc. (NVIDIA)"
+  },
+  "initial": {
+    "resident": 1,
+    "geometries": 6,
+    "textures": 8,
+    "calls": 12,
+    "triangles": 47656
+  },
+  "drag": {
+    "yaw": 1.9199999966110497,
+    "pitch": 0.5849999989674292
+  },
+  "rotation": {
+    "frame": {
+      "samples": 716,
+      "meanMs": 16.667039106145253,
+      "p50Ms": 16.69999999999891,
+      "p95Ms": 16.80000000000291,
+      "maxMs": 17.299999999999272
+    },
+    "renderAndCanvasCopy": {
+      "samples": 715,
+      "meanMs": 0.831608391672998,
+      "p50Ms": 0.7999999970197678,
+      "p95Ms": 1.3000000044703484,
+      "maxMs": 3
+    }
+  },
+  "counts": [
+    {
+      "stage": "hangar-sparrow",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "hangar-courier",
+      "resident": 1,
+      "geometries": 9,
+      "textures": 4,
+      "calls": 18,
+      "triangles": 104720
+    },
+    {
+      "stage": "hangar-sparrow-return",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "menu",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "hangar-sparrow",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "hangar-courier",
+      "resident": 1,
+      "geometries": 9,
+      "textures": 4,
+      "calls": 18,
+      "triangles": 104720
+    },
+    {
+      "stage": "hangar-sparrow-return",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "menu",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "hangar-sparrow",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "hangar-courier",
+      "resident": 1,
+      "geometries": 9,
+      "textures": 4,
+      "calls": 18,
+      "triangles": 104720
+    },
+    {
+      "stage": "hangar-sparrow-return",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "menu",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "gameplay",
+      "resident": 0,
+      "geometries": 0,
+      "textures": 2,
+      "calls": 12,
+      "triangles": 47656
+    }
+  ],
+  "errors": []
+}

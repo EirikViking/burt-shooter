@@ -1,0 +1,13 @@
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "http://127.0.0.1:5201/?skipIntro=1&offlineLeaderboard=1&nova-devtools-hash=f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c", waiting until "load"
+
+    at D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\scripts\capture-sparrow-showcase.mjs:9:13 {
+  name: 'TimeoutError'
+}
+
+Node.js v24.12.0

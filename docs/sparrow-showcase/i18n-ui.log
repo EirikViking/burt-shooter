@@ -1,0 +1,16 @@
+
+> nova-swarm@1.0.0 check:i18n-ui
+> node scripts/check-i18n-ui.mjs
+
+{
+  "outputDir": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa",
+  "status": "passed",
+  "languages": [
+    "en",
+    "de"
+  ],
+  "consoleEvents": [],
+  "pageErrors": [],
+  "placeholderHits": [],
+  "englishLeakHits": []
+}
