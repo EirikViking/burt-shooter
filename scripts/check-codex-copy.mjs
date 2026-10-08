@@ -1,5 +1,5 @@
 import { getSupportedLanguages } from '../src/i18n/index.js';
-import { CODEX_LORE_VERSION } from '../src/i18n/codexLore.js';
+import { CODEX_LORE_VERSION, getCodexUiText } from '../src/i18n/codexLore.js';
 import {
   getThreatCodexCatalog,
   getThreatCodexRuntimeDescription,
@@ -58,6 +58,12 @@ for (const category of expectedCategories) {
 }
 
 for (const locale of locales) {
+  for (const key of ['subtitle', 'nextNew']) {
+    const value = getCodexUiText(key, locale);
+    if (!value || value === key || (locale !== 'en' && value === getCodexUiText(key, 'en'))) {
+      fail(`${locale} is missing translated Codex UI copy: ${key}`);
+    }
+  }
   const catalog = locale === 'en' ? englishCatalog : getThreatCodexCatalog({ locale });
   const rows = flatCatalog(catalog);
   if (rows.length !== expectedTotal) fail(`${locale} has ${rows.length} entries; expected ${expectedTotal}`);

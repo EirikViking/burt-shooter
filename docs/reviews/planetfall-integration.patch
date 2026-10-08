@@ -1,0 +1,65 @@
+diff --git a/src/managers/EnemyManager.js b/src/managers/EnemyManager.js
+--- a/src/managers/EnemyManager.js
++++ b/src/managers/EnemyManager.js
+@@ -5,3 +5,4 @@
+ import { AuthoredEnvironment } from './AuthoredEnvironment.js';
+ import { DreadnoughtBoss } from '../entities/DreadnoughtBoss.js';
++import { PlanetfallBoss } from '../entities/PlanetfallBoss.js';
+ import { dreadnoughtEligible, pacingRoll, encounterFamilyReady, recordEncounterFamily } from '../config/EncounterPacing.js';
+@@ -2678,2 +2679,2 @@
+-            if (dt < 1500 && !this.discoveryEncounter?.plan && !this.boss.isDreadnought) {
++            if (dt < 1500 && !this.discoveryEncounter?.plan && !this.boss.isDreadnought && !this.boss.isPlanetfall) {
+               if (this.game?.scenes?.play?.debugPowerups) {
+@@ -2731,2 +2732,2 @@
+-        } else if (!this.discoveryEncounter?.plan && !this.boss?.isDreadnought) {
++        } else if (!this.discoveryEncounter?.plan && !this.boss?.isDreadnought && !this.boss?.isPlanetfall) {
+           this.updateBossMayhemReinforcement();
+@@ -4647,3 +4648,4 @@
+     const breach=!marketingDebug&&dreadnoughtEligible(this);
+-    const boss = breach?new DreadnoughtBoss(centerX,spawnY,level,this.game,bossProfile,
++    const planetfall=!marketingDebug&&import.meta.env.DEV&&this.game.runPolicy?.prototype&&this.game.encounterEvolutionTest?.id==='planetfall';
++    const boss = planetfall?new PlanetfallBoss(centerX,spawnY,level,this.game,bossProfile):breach?new DreadnoughtBoss(centerX,spawnY,level,this.game,bossProfile,
+       this.game.encounterEvolutionTest?.id==='breach-diagonal'?1:Math.floor(pacingRoll(this.game.contentDirector?.seed,level,'breach-layout')*2)):new Boss(centerX, spawnY, level, this.game, bossProfile); // VISIBILITY FIX: Spawn at visible position
+@@ -4719,2 +4721,2 @@
+-        disabled:Boolean(boss.isDreadnought||this.authoredBossSupportState||this.game?.lateGameExperiment?.active||this.game?.runMode==='daily_signal')
++        disabled:Boolean(boss.isPlanetfall||boss.isDreadnought||this.authoredBossSupportState||this.game?.lateGameExperiment?.active||this.game?.runMode==='daily_signal')
+       });
+diff --git a/src/scenes/PlayScene.js b/src/scenes/PlayScene.js
+--- a/src/scenes/PlayScene.js
++++ b/src/scenes/PlayScene.js
+@@ -5687,3 +5687,4 @@
+     this.firstLightDirector?.syncVisibility();
+     this.cosmicFauna?.sync();
++    this.enemyManager?.boss?.syncInterruption?.();
+     if (this.game?.lateGameExperiment?.active === true && this.cabinetWonderOpportunity) {
+diff --git a/src/config/EncounterEvolutionTest.js b/src/config/EncounterEvolutionTest.js
+--- a/src/config/EncounterEvolutionTest.js
++++ b/src/config/EncounterEvolutionTest.js
+@@ -8,3 +8,3 @@
+   const id=params.get('encounterEvolution');
+-  return ['molt','payback','natural','reassembly','crossover','breach','breach-diagonal','graveyard','siege','migration','fusions','orbit-breaker','reactor-tow','counterweight',...CONVOY_SURPRISES.map(row=>`rescue-${row.id}`)].includes(id)?Object.freeze({id,seed:'encounter-evolution-local-v1'}):null;
++  return ['molt','payback','natural','reassembly','crossover','breach','breach-diagonal','planetfall','graveyard','siege','migration','fusions','orbit-breaker','reactor-tow','counterweight',...CONVOY_SURPRISES.map(row=>`rescue-${row.id}`)].includes(id)?Object.freeze({id,seed:'encounter-evolution-local-v1'}):null;
+ }
+diff --git a/src/config/EncounterExpansionTest.js b/src/config/EncounterExpansionTest.js
+--- a/src/config/EncounterExpansionTest.js
++++ b/src/config/EncounterExpansionTest.js
+@@ -7,2 +7,2 @@
+-  const sector=id.startsWith('breach')?10:id==='crossover'?23:id==='reassembly'?11:16;g.level=m.level=sector;
++  const sector=id.startsWith('breach')||id==='planetfall'?10:id==='crossover'?23:id==='reassembly'?11:16;g.level=m.level=sector;
+   const {Enemy}=await import('../entities/Enemy.js');
+@@ -16,2 +16,2 @@
+-  }else if(id.startsWith('breach')){
++  }else if(id.startsWith('breach')||id==='planetfall'){
+     m.phase='BOSS';m.state='BOSS_ACTIVE';await m.spawnBoss(sector);
+diff --git a/src/i18n/firstLightText.js b/src/i18n/firstLightText.js
+--- a/src/i18n/firstLightText.js
++++ b/src/i18n/firstLightText.js
+@@ -6,2 +6,3 @@
+ import {getCounterweightSourceText} from './counterweightText.js';
++import {getPlanetfallSourceText} from './planetfallText.js';
+ // English source strings and complete encounter translations.
+@@ -136,3 +137,3 @@
+   const translated = TEXT[locale] || TEXT.en;
+-  return {...Object.fromEntries(Object.keys(TEXT.en).map(key => [TEXT.en[key], translated[key]])),...getEncounterEvolutionSourceText(locale),...getEncounterExpansionSourceText(locale),...getConvoySurpriseSourceText(locale),...getReactorTowSourceText(locale),...getCounterweightSourceText(locale)};
++  return {...Object.fromEntries(Object.keys(TEXT.en).map(key => [TEXT.en[key], translated[key]])),...getEncounterEvolutionSourceText(locale),...getEncounterExpansionSourceText(locale),...getConvoySurpriseSourceText(locale),...getReactorTowSourceText(locale),...getCounterweightSourceText(locale),...getPlanetfallSourceText(locale)};
+ }

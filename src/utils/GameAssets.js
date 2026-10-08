@@ -1,5 +1,5 @@
-import { readablePowerupTexture } from '../effects/ReadablePowerupIcons.js';
 import { AssetManifest } from '../assets/assetManifest.js';
+import {preloadEnergyMaterials} from '../effects/AstraEnergyMaterial.js';
 import { BONUS_CORES } from '../config/BonusCoreCatalog.js';
 import { SPACE_SNAKES } from '../config/SpaceSnakes.js';
 import { preloadEnemyOrbitMaterial } from '../effects/EnemyOrbitRig.js';
@@ -7,6 +7,7 @@ import { GENERATED_ENEMY_LEGACY_ASSET_COUNT } from '../config/GeneratedEnemyProf
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import * as PIXI from 'pixi.js';
 import { getAstraHullTexture } from '../effects/AstraHullMaterial.js';
+import { prewarmPremiumArt } from '../effects/PremiumArt.js';
 
 class GameAssetsManager {
     async ensureShowroomShip(index) {
@@ -426,6 +427,7 @@ class GameAssetsManager {
     }
 
     async loadShips() {
+        await preloadEnergyMaterials();
         // Load Rank Player Ships
         const rankShips = this.rankShipList;
         await Promise.all(rankShips.map(async (filename, index) => {
@@ -725,6 +727,7 @@ class GameAssetsManager {
     }
 
     async loadPowerupAssets() {
+        await prewarmPremiumArt();
         this.xtra = this.createXtraStore(this.xtra);
         const generatedPowerups = AssetManifest.generated?.powerups || {};
         const powerupPromises = Object.entries(generatedPowerups).map(([name, src]) => {
@@ -762,7 +765,7 @@ class GameAssetsManager {
     }
 
     getPowerupTexture(name) {
-        return readablePowerupTexture(name, this.getXtraPowerup(name));
+        return this.getXtraPowerup(name);
     }
 }
 

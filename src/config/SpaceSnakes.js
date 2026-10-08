@@ -1,3 +1,10 @@
+import {discoverySector} from './DiscoveryProgression.js';
+import { isOverrunRunMode } from '../game/RunMode.js';
+import { GLOBAL_CHALLENGE_TUNING } from './BalanceConfig.js';
+export const ONSLAUGHT_SNAKE_EXPOSED_SECONDS = .72;
+export function getSpaceSnakeDamageMultiplier(runMode, age, exposedUntilAge) {
+  return isOverrunRunMode(runMode) && age >= 3 && age <= (Number(exposedUntilAge) || 0) ? 1.55 : 1;
+}
 const originals = [
   ['cinder',8,0xff783a,7.6,.33,1,190,'sweep',1.0],
   ['thorn',10,0xb2f64d,9.2,.35,2,220,'coil',1.05],
@@ -17,13 +24,27 @@ const additions = [
   ['eclipse',10,0xf0bbef,9.8,.34,3,185,'hook',1.14]
 ];
 export const SPACE_SNAKES = Object.freeze([...originals,...additions].map((p,index)=>Object.freeze({
-  id:`space_snake_${p[0]}`,index,segments:p[1],color:p[2],period:p[3],amplitude:p[4],coils:p[5],fireDelay:p[6],motion:p[7],bodyScale:p[8],
+  id:`space_snake_${p[0]}`,index,unlockLevel:discoverySector(index,14,6),segments:p[1],color:p[2],period:p[3],amplitude:p[4],coils:p[5],fireDelay:p[6],motion:p[7],bodyScale:p[8],
   art:index<4?`/art/core-serpent/snake-${index+1}-head-imagegen.png`:`/art/predator-20260908/snake-${index+1}.png`,voice:`serpent_${index+1}`
 })));
 export function getSpaceSnakeProfile(id){return SPACE_SNAKES.find(p=>p.id===id)||null;}
 export function isSpaceSnakeEligible(config,level,game){return level>=6&&!config.isChallenge&&config.type!=='BOSS'&&!config.isMayhemReinforcement&&!config.isBossMayhemReinforcement&&!config.allowConcurrentSpawn&&!config.highSectorAuthoredEncounter&&!game?.lateGameExperiment?.active&&game?.runMode!=='daily_signal';}
-export function isSpaceSnakeWave(roll){return Number.isFinite(roll)&&roll>=0&&roll<.2;}
-export function getSpaceSnakeSectionHealth(level){const depth=Math.max(0,(Number(level)||6)-6);return Math.round(18+Math.min(240,2.8*Math.pow(depth,.85)));}
+export function isSpaceSnakeWave(roll){return Number.isFinite(roll)&&roll>=0&&roll<.12;}
+export function getSpaceSnakeSectionHealth(level){
+  const sector=Number(level);
+  const depth=Math.max(0,(sector||6)-6);
+  const baseline=Math.round((18+Math.min(240,2.8*Math.pow(depth,.85)))*.8*GLOBAL_CHALLENGE_TUNING.snakeHealth);
+  return sector>=6&&sector<=10?baseline*1.3:baseline;
+}
+export function getSpaceSnakeMotionRate(age, shootCooldown, liveSections = Infinity) {
+  if (age < 3) return 1.1;
+  const u = Math.max(0, Math.min(1, (Number(shootCooldown) || 0) / 60));
+  const rate = .3 + .7 * u * u * (3 - 2 * u);
+  return (liveSections === 1 ? rate * .5 : rate) * 1.1;
+}
+export function hasSpaceSnakeBreathingRoom(ordinal, lastOrdinal) {
+  return ordinal - (lastOrdinal ?? -3) >= 3;
+}
 const routes=['sweep','coil','figure8','orbit','ribbon','hook','slalom','zigzag'];
 function route(kind,t){
  switch(kind){
@@ -51,3 +72,5 @@ export function sampleSpaceSnake(profile,seconds,width,height,seed=0){
  const entry=Math.min(1,Math.max(0,seconds/3));
  return {x:width*Math.max(.09,Math.min(.91,x)),y:-140+(height*y+140)*entry,route:routes[current]};
 }
+
+export function getSpaceSnakesForLevel(level){return SPACE_SNAKES.filter(p=>p.unlockLevel<=level);}

@@ -1,0 +1,47 @@
+{
+  "id": 30,
+  "name": "Drone Sovereign",
+  "architecture": "carrier",
+  "baselineDesign": [
+    "Drone Sovereign",
+    1.65,
+    1.36,
+    1.0,
+    1.28,
+    "carrier",
+    [
+      [
+        0.28,
+        1.02,
+        -1.4,
+        0.21
+      ],
+      [
+        0.86,
+        0.89,
+        -1.48,
+        0.25
+      ],
+      [
+        1.47,
+        0.53,
+        -1.35,
+        0.19
+      ],
+      [
+        1.72,
+        0.16,
+        -1.01,
+        0.046
+      ]
+    ]
+  ],
+  "palette": [
+    "183840",
+    "a28645",
+    "02c9ff"
+  ],
+  "textureSize": 1536,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false
+}

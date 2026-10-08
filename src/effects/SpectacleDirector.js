@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { drawEnergySurface } from './AstraEnergyMaterial.js';
 
 const DEFAULT_COLOR = 0x43efff;
 const DEFAULT_ACCENT = 0xff5df7;
@@ -309,9 +310,8 @@ export class SpectacleDirector {
       });
     }
 
-    // Irregular plasma tendrils replace the old radar rings and radial spokes.
-    // Every path bends on a different axis so the burst reads as turbulent energy,
-    // not a geometric emblem.
+    // Textured plasma lobes replace wire tendrils. They stay compact around the
+    // event instead of drawing long paths across live combat.
     for (let index = 0; index < tendrilCount; index += 1) {
       const variation = Math.sin((index + 1) * 17.31 + pulse.seed * 5.17);
       const angle = rotation + (Math.PI * 2 * index) / tendrilCount + variation * 0.34;
@@ -322,38 +322,13 @@ export class SpectacleDirector {
       const ny = Math.sin(angle);
       const tx = -ny;
       const ty = nx;
-      const sx = pulse.x + nx * inner;
-      const sy = pulse.y + ny * inner;
-      const ex = pulse.x + nx * reach + tx * bend * 0.42;
-      const ey = pulse.y + ny * reach + ty * bend * 0.42;
-      this.layer.moveTo(sx, sy);
-      this.layer.bezierCurveTo(
-        pulse.x + nx * reach * 0.3 + tx * bend,
-        pulse.y + ny * reach * 0.3 + ty * bend,
-        pulse.x + nx * reach * 0.68 - tx * bend * 0.46,
-        pulse.y + ny * reach * 0.68 - ty * bend * 0.46,
-        ex,
-        ey
-      );
-      this.layer.stroke({
+      const cx = pulse.x + nx * (inner + reach) * 0.46 + tx * bend * 0.16;
+      const cy = pulse.y + ny * (inner + reach) * 0.46 + ty * bend * 0.16;
+      drawEnergySurface(this.layer, { kind: index % 3 ? 'corona' : 'rift',
+        x: cx, y: cy, width: Math.max(14, reach * 0.42),
+        height: Math.max(16, reach * 0.58), angle: angle - Math.PI / 2,
         color: index % 3 === 0 ? pulse.accent : pulse.color,
-        width: Math.max(2.2, (9 - index * 0.18) * (1 - t * 0.42)),
-        alpha: 0.075 * alpha
-      });
-      this.layer.moveTo(sx, sy);
-      this.layer.bezierCurveTo(
-        pulse.x + nx * reach * 0.3 + tx * bend,
-        pulse.y + ny * reach * 0.3 + ty * bend,
-        pulse.x + nx * reach * 0.68 - tx * bend * 0.46,
-        pulse.y + ny * reach * 0.68 - ty * bend * 0.46,
-        ex,
-        ey
-      );
-      this.layer.stroke({
-        color: index % 4 === 0 ? 0xffffff : (index % 2 ? pulse.color : pulse.accent),
-        width: Math.max(0.8, 2.4 - t * 1.2),
-        alpha: 0.3 * alpha
-      });
+        alpha: 0.3 * alpha });
     }
 
     // Broken, off-axis wavefronts preserve impact scale without concentric circles.
@@ -366,23 +341,11 @@ export class SpectacleDirector {
       const tx = -ny;
       const ty = nx;
       const offset = baseRadius * (wave - (wavefrontCount - 1) * 0.5) * 0.13;
-      this.layer.moveTo(
-        pulse.x - tx * span + nx * offset,
-        pulse.y - ty * span + ny * offset
-      );
-      this.layer.bezierCurveTo(
-        pulse.x - tx * span * 0.32 + nx * span * 0.22,
-        pulse.y - ty * span * 0.32 + ny * span * 0.22,
-        pulse.x + tx * span * 0.36 + nx * span * 0.12,
-        pulse.y + ty * span * 0.36 + ny * span * 0.12,
-        pulse.x + tx * span + nx * offset * 0.35,
-        pulse.y + ty * span + ny * offset * 0.35
-      );
-      this.layer.stroke({
-        color: wave % 2 ? pulse.accent : pulse.color,
-        width: Math.max(1, 3.4 - wave * 0.7),
-        alpha: (0.22 - wave * 0.035) * alpha
-      });
+      drawEnergySurface(this.layer, { kind: 'pressure',
+        x: pulse.x + nx * offset, y: pulse.y + ny * offset,
+        width: span * 1.55, height: Math.max(18, baseRadius * 0.2),
+        angle: axis, color: wave % 2 ? pulse.accent : pulse.color,
+        alpha: (0.2 - wave * 0.03) * alpha });
     }
 
     // Thin, tapered fragments are deliberately uneven and never form diamonds.
@@ -411,28 +374,18 @@ export class SpectacleDirector {
     if (profile.horizontalSweep) {
       const sweep = width * (0.1 + Math.min(1, t * 1.7) * 0.42);
       const y = clamp(pulse.y, height * 0.12, height * 0.88);
-      this.layer.moveTo(Math.max(0, pulse.x - sweep), y - 5);
-      this.layer.bezierCurveTo(pulse.x - sweep * 0.3, y + 4, pulse.x + sweep * 0.25, y - 4, Math.min(width, pulse.x + sweep), y + 3);
-      this.layer.stroke({ color: pulse.accent, width: 1.5, alpha: 0.12 * alpha });
+      drawEnergySurface(this.layer, { kind: 'pressure', x: pulse.x, y,
+        width: Math.min(width, sweep * 1.8), height: 32,
+        color: pulse.accent, alpha: 0.16 * alpha });
     }
 
     if (profile.edgeBloom) {
       const edgeAlpha = 0.1 * alpha * Math.max(0, 1 - t * 0.76);
       const inset = 8 + t * 24;
-      const corner = Math.min(width, height) * (0.08 + intensity * 0.018);
-      this.layer.moveTo(inset, corner);
-      this.layer.lineTo(inset, inset);
-      this.layer.lineTo(corner, inset);
-      this.layer.moveTo(width - corner, inset);
-      this.layer.lineTo(width - inset, inset);
-      this.layer.lineTo(width - inset, corner);
-      this.layer.moveTo(inset, height - corner);
-      this.layer.lineTo(inset, height - inset);
-      this.layer.lineTo(corner, height - inset);
-      this.layer.moveTo(width - corner, height - inset);
-      this.layer.lineTo(width - inset, height - inset);
-      this.layer.lineTo(width - inset, height - corner);
-      this.layer.stroke({ color: pulse.accent, width: 2.6, alpha: edgeAlpha });
+      for (const x of [inset, width - inset]) for (const y of [inset, height - inset]) {
+        drawEnergySurface(this.layer, { kind: 'corona', x, y,
+          width: 46, height: 46, color: pulse.accent, alpha: edgeAlpha });
+      }
     }
 
     const core = Math.max(4, baseRadius * (0.08 + (1 - t) * 0.055));

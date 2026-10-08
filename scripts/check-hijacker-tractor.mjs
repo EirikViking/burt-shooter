@@ -119,7 +119,7 @@ try {
     const enemyManager = play?.enemyManager;
     if (!game || !play || !player || !enemyManager) throw new Error('Missing play scene for hijacker tractor check');
     enemyManager.level = 20;
-    enemyManager.spawnHijacker();
+    enemyManager.spawnHijacker({tractorVariant:'harpoon'});
     const hijacker = enemyManager.hijacker;
     player.x = hijacker.x;
     player.y = game.getHeight() * 0.78;
@@ -179,7 +179,7 @@ try {
       activeState.hijacker?.tractor?.maxHealth === 85 &&
       activeState.hijacker?.tractor?.visual?.blendMode === 'normal' &&
       activeState.hijacker?.tractor?.visual?.hostileProjectilesAboveBeam === true &&
-      activeState.hijacker?.tractor?.visual?.coreFillAlpha <= 0.085 &&
+      activeState.hijacker?.tractor?.visual?.surfacePeakAlpha <= 0.54 &&
       Number.isFinite(yBeforePull) &&
       Number.isFinite(yAfterPull) &&
       yAfterPull < yBeforePull &&

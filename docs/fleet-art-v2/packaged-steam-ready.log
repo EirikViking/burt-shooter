@@ -1,0 +1,5 @@
+
+> nova-swarm@1.0.0 desktop:smoke:packaged
+> node scripts/smoke-packaged-desktop.mjs
+
+[packaged-smoke] ok: test-results/fleet-art-v2-packaged-steam-ready/report.json

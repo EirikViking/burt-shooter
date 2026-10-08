@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const root = process.cwd();
-const outputDir = path.resolve(root, 'test-results', `steam-sdk-ready-${timestamp()}`);
+const outputDir = path.resolve(process.env.NOVA_SWARM_STEAM_SDK_CHECK_OUTPUT_DIR || path.join(root, 'test-results', `steam-sdk-ready-${timestamp()}`));
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');

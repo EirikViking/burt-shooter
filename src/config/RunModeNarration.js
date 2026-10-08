@@ -7,6 +7,7 @@ const defineNarration = ({
   transcriptSource,
   rankedStatus,
   mechanicSummary,
+  audioEnabled = true,
   variants = []
 }) => Object.freeze({
   modeId,
@@ -17,6 +18,7 @@ const defineNarration = ({
   transcriptSource,
   rankedStatus,
   mechanicSummary,
+  audioEnabled,
   variants: Object.freeze(variants.map((variant) => Object.freeze({ ...variant })))
 });
 
@@ -24,22 +26,22 @@ export const RUN_MODE_NARRATION_SPECS = Object.freeze([
   defineNarration({
     modeId: 'mayhem_tactical',
     menuIds: ['launchTactical', 'mayhemTactical'],
-    displayTitle: 'MAYHEM TACTICAL',
+    displayTitle: 'ARCADE TACTICAL',
     narrationKey: 'runModeNarration.mayhemTactical',
     event: 'boss_menu_bark_mode_tactical',
-    transcriptSource: 'Mayhem Tactical. Ranked. Draft one permanent tactical upgrade for this run after every boss.',
+    transcriptSource: 'Arcade Tactical. Ranked. Draft one permanent tactical upgrade for this run after every boss.',
     rankedStatus: 'ranked',
     mechanicSummary: 'Separate Tactical leaderboard; one permanent-for-the-run tactical draft after each boss.'
   }),
   defineNarration({
     modeId: 'mayhem_pure',
     menuIds: ['launch', 'mayhem'],
-    displayTitle: 'MAYHEM PURE',
+    displayTitle: 'ARCADE PURE',
     narrationKey: 'runModeNarration.mayhemPure',
     event: 'boss_menu_bark_mode_pure',
-    transcriptSource: 'Mayhem Pure. Ranked. No tactical drafts, only the original Mayhem ruleset.',
+    transcriptSource: 'Arcade Pure. Ranked. No tactical drafts, only the original Arcade ruleset.',
     rankedStatus: 'ranked',
-    mechanicSummary: 'Separate Pure leaderboard; original Mayhem rules with no tactical drafts.'
+    mechanicSummary: 'Separate Pure leaderboard; original Arcade rules with no tactical drafts.'
   }),
   defineNarration({
     modeId: 'daily_signal',
@@ -67,39 +69,41 @@ export const RUN_MODE_NARRATION_SPECS = Object.freeze([
     displayTitle: 'SECTOR RUN',
     narrationKey: 'runModeNarration.sectorStart',
     event: 'boss_menu_bark_mode_sector',
-    transcriptSource: 'Sector Run. Unranked checkpoint practice. Start from a sector unlocked in Mayhem; records stay local.',
+    transcriptSource: 'Sector Run. Unranked checkpoint practice. Start from a sector unlocked in Arcade; records stay local.',
     rankedStatus: 'unranked_practice',
-    mechanicSummary: 'Checkpoint practice from sectors unlocked in Mayhem; local sector records and no achievements.'
+    mechanicSummary: 'Checkpoint practice from sectors unlocked in Arcade; local sector records and no achievements.'
   }),
   defineNarration({
     modeId: 'overrun_tactical',
-    menuIds: ['overrun'],
-    displayTitle: 'OVERRUN TACTICAL',
+    menuIds: ['onslaught', 'overrun'],
+    displayTitle: 'ONSLAUGHT TACTICAL',
     narrationKey: 'runModeNarration.overrunTactical',
     event: 'boss_menu_bark_mode_overrun_tactical',
-    transcriptSource: 'Overrun Tactical unlocked. Start at Sector Fifty-One with zero score. You begin with Damage Up, Rapid Fire, Blink Drive, Focus Lens, and Double Shot. Career XP is reduced to sixty-five percent; leaderboards and achievements stay off.',
-    rankedStatus: 'unranked_career',
-    mechanicSummary: 'Sector 51 start with five fixed Tactical augments, continued boss Drafts, reduced Career XP, and no leaderboard or achievements.',
+    transcriptSource: 'Choose a ship and three Tactical augments, then launch at Sector 51. Chase separate global records.\nEarn full career XP from play. Skipped sectors and starting equipment grant no rewards.',
+    rankedStatus: 'ranked_challenge',
+    mechanicSummary: 'Sector 51, zero score, three chosen Tactical augments and continued boss Drafts. Separate global records, full earned Career XP, explicit post-launch achievement eligibility, and no checkpoint credit.',
+    audioEnabled: true,
     variants: [
       {
         id: 'pure',
         modeId: 'overrun_pure',
-        displayTitle: 'OVERRUN PURE',
+        displayTitle: 'ONSLAUGHT PURE',
         narrationKey: 'runModeNarration.overrunPure',
         event: 'boss_menu_bark_mode_overrun_pure',
-        transcriptSource: 'Overrun Pure unlocked. Start at Sector Fifty-One with zero score and no Tactical augments or boss Drafts. Career XP is reduced to sixty-five percent; leaderboards and achievements stay off.',
+        transcriptSource: 'Onslaught Pure. Start at Sector 51 without Tactical augments or boss Drafts. Earn 85% career XP and eligible Onslaught achievements from play. No skipped-sector or checkpoint credit.',
         rankedStatus: 'unranked_career',
-        mechanicSummary: 'Sector 51 start without Tactical augments or Drafts, with reduced Career XP and no leaderboard or achievements.'
+        mechanicSummary: 'Sector 51 start without Tactical augments or Drafts, with 85% earned Career XP, eligible Onslaught achievements and no global score submission.',
+        audioEnabled: true
       },
       {
         id: 'locked',
         modeId: 'overrun_locked',
-        displayTitle: 'OVERRUN',
+        displayTitle: 'ONSLAUGHT',
         narrationKey: 'runModeNarration.overrunLocked',
         event: 'boss_menu_bark_mode_overrun_locked',
-        transcriptSource: 'Overrun locked. Reach Sector Thirty in Mayhem to unlock the Sector Fifty-One start. It begins at zero score and earns sixty-five percent Career XP; leaderboards and achievements stay off.',
+        transcriptSource: 'Available from the start.',
         rankedStatus: 'locked',
-        mechanicSummary: 'Reach Sector 30 in Mayhem to unlock the Sector 51 start.'
+        mechanicSummary: 'Available from the start; launches at Sector 51.'
       }
     ]
   })

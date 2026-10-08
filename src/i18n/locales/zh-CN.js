@@ -1,3 +1,10 @@
+import { getGameOverQualitySourceText } from '../gameOverQualityText.js';
+import { getFirstLightSourceText } from '../firstLightText.js';
+import { getOnslaughtText } from '../onslaughtText.js';
+import { getAudioSettingsHelpText } from '../audioSettingsHelpText.js';
+import { getMysterySourceText } from '../mysteryText.js';
+import {getDiscoveryText} from '../discoveryText.js';
+import { getTractorFleetSourceText } from '../tractorFleetText.js';
 import { getMenuAudioSourceText } from '../menuAudioText.js';
 import { getActivePilotingText } from '../activePilotingText.js';
 import { getLaunchHomeSourceText } from '../launchHomeText.js';
@@ -33,6 +40,7 @@ import { getHighSectorSourceText } from '../highSectorSourceText.js';
 import { getLateGameExperimentSourceText } from '../lateGameExperimentSourceText.js';
 
 const sourceText = Object.freeze({
+  ...getAudioSettingsHelpText('zh-CN'),
   'MOVE — WASD / ARROWS  •  SHOOT — SPACE': '移动 — WASD / 方向键  •  射击 — 空格',
   'MOVE — STICK / D-PAD  •  SHOOT — A / RT': '移动 — 摇杆 / D-PAD  •  射击 — A / RT',
   'PHASE — SHIFT': '相位 — SHIFT',
@@ -870,6 +878,11 @@ const sourceText = Object.freeze({
   'VOICE': '语音',
   'Boss Voices': '首领语音',
   'CTA VOICE': '重试语音',
+  'RETRY VOICE': '重试语音',
+  'POST-RUN VOICE': '赛后语音',
+  'TACTICAL WARNINGS': '战术警报',
+  'Tactical Warnings play incoming threats even with Voice off. Retry Voice controls retry prompts. Chatter Rate affects optional voices.': '即使关闭普通语音，战术警报仍会提示来袭威胁。重试语音控制再次挑战的提示。闲聊频率只影响可选语音。',
+  'Tactical Warnings announce incoming threats even with Voice off. Post-Run Voice invites another try on the results screen. Chatter Rate affects optional voices.': '即使关闭普通语音，战术警报仍会提示来袭威胁。赛后语音会在结果画面邀请你再次挑战。闲聊频率只影响可选语音。',
   'Chatter Frequency': '闲聊频率',
   'CHATTER RATE': '闲聊频率',
   'Full': '完整',
@@ -1438,6 +1451,7 @@ const sourceText = Object.freeze({
   'Reach sector 15 in overrun and pilot rank 13': '在超限中抵达第 15 扇区并达到飞行员军衔 13',
   'Discover 160 Threat Codex entries and reach pilot rank 14': '发现 160 条威胁 Codex 记录并达到飞行员军衔 14',
   'Clear the arcade run 3 times and reach pilot rank 14': '完成街机出击 3 次并达到飞行员军衔 14',
+  "Clear Sector 10 in Mayhem with 2 lives left, or score 500,000 in Mayhem": "在狂潮模式中以剩余2条命完成第10星区，或在狂潮模式中获得500,000分",
   'Clear with 2 lives remaining or score 500,000': '以剩余 2 条命通关或获得 500,000 分',
   'Clear twice, reach rank 16, and discover 180 threats': '通关两次，达到军衔 16，并发现 180 个威胁',
   'HULLS READY': '船体就绪',
@@ -1458,6 +1472,7 @@ const sourceText = Object.freeze({
   'Qualify for the global leaderboard.': '进入全球排行榜。',
   'Swarm Elite': '虫群精英',
   'Submit a 750,000-point ranked run.': '提交一场 750,000 分的排名出击。',
+  'Submit a ranked score of at least 250,000 points. Modes: Arcade Tactical, Arcade Pure, Onslaught Tactical.': '提交至少 250,000 分的排名成绩。模式：Arcade Tactical、Arcade Pure、Onslaught Tactical。',
   'Legacy Ranked Run': '旧版排名出击',
   'Unknown Run Mode': '未知出击模式',
   'First Ranked Run': 'Shouci paiming chuji',
@@ -1857,6 +1872,8 @@ const overhaulSourceText = Object.freeze({
 
 export const zhCN = {
   code: 'zh-CN',
+  history: { unknownMode: "模式未知", sectorUnrecorded: "扇区未记录", sectorUnrecordedHint: "旧版 Steam 记录未保存扇区详情。" },
+  recovery: {storageHelp:"保存失败。请保持游戏开启，释放磁盘空间或恢复对存档文件夹的访问。游戏会自动重试保存。保存成功前无法重启。","title":"游戏遇到问题，已暂停","help":"若画面恢复，可返回暂停菜单。重启会结束当前未完成的飞行；已保存的进度将保留。若再次发生，请在报告中注明版本并附上 recovery/recovery-latest.json。","resume":"返回暂停菜单","restart":"重启游戏"},
   name: 'Simplified Chinese',
   nativeName: '简体中文',
   settings: {
@@ -1878,6 +1895,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText: Object.freeze({ ...getMenuAudioSourceText('zh-CN'), ...getActivePilotingText('zh-CN'), ...getLaunchHomeSourceText('zh-CN'), ...getShipTraitSummarySourceText("zh-CN"), ...getBonusCoreSourceText('zh-CN'), ...getBonusDroneSourceText('zh-CN'), ...getCoreSerpentSourceText('zh-CN'), ...getAstraPresentationSourceText('zh-CN'), ...getFirstRunRetentionSourceText('zh-CN'), ...getModeBriefingReviewSourceText('zh-CN'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getOverrunModeSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getTyrianFeedbackSourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN'), ...getTacticalDraftClaritySourceText('zh-CN'), ...getWonderCodexSourceText('zh-CN'), ...getHangarLaunchModeSourceText('zh-CN'), ...getNewestTyrianFeedbackSourceText('zh-CN'), ...getSecondPolishSourceText('zh-CN'), ...getTyrian112SourceText('zh-CN'), ...getHighSectorSourceText('zh-CN'), ...getLateGameExperimentSourceText('zh-CN') }),
+  sourceText: Object.freeze({ ...getFirstLightSourceText('zh-CN'), ...getOnslaughtText('zh-CN'), "Steam: Upload pending":"Steam：等待上传","Steam: Upload not confirmed":"Steam：上传尚未确认", "TEST FLIGHT · SECTOR {sector} · CHOOSE ANY SHIP": "试飞 · 第 {sector} 星区 · 可任选飞船", ...getMysterySourceText('zh-CN'), ...getDiscoveryText('zh-CN'), ...getTractorFleetSourceText('zh-CN'), ...getMenuAudioSourceText('zh-CN'), ...getActivePilotingText('zh-CN'), ...getLaunchHomeSourceText('zh-CN'), ...getShipTraitSummarySourceText("zh-CN"), ...getBonusCoreSourceText('zh-CN'), ...getBonusDroneSourceText('zh-CN'), ...getCoreSerpentSourceText('zh-CN'), ...getAstraPresentationSourceText('zh-CN'), ...getFirstRunRetentionSourceText('zh-CN'), ...getModeBriefingReviewSourceText('zh-CN'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getOverrunModeSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getTyrianFeedbackSourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN'), ...getTacticalDraftClaritySourceText('zh-CN'), ...getWonderCodexSourceText('zh-CN'), ...getHangarLaunchModeSourceText('zh-CN'), ...getNewestTyrianFeedbackSourceText('zh-CN'), ...getSecondPolishSourceText('zh-CN'), ...getTyrian112SourceText('zh-CN'), ...getHighSectorSourceText('zh-CN'), ...getLateGameExperimentSourceText('zh-CN'), ...getGameOverQualitySourceText('zh-CN') }),
   patterns
 };

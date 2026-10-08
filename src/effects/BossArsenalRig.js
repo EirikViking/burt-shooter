@@ -3,6 +3,7 @@ import { getBossArsenal } from '../config/BossArsenal.js';
 import { getReducedMotionEnabled, getFlashIntensityScale } from '../config/AccessibilitySettings.js';
 import { getArsenalModule, getArsenalProjectile, getArsenalFieldTexture } from './BossArsenalMaterials.js';
 import { drawEnergyGlint } from './AstraBossEnergy.js';
+import { drawEnergyLink, drawEnergySurface } from './AstraEnergyMaterial.js';
 
 const ease = x => { const p=Math.max(0,Math.min(1,x));return p*p*(3-2*p); };
 
@@ -55,15 +56,14 @@ export class BossArsenalRig extends Container {
       if(power>.01){
         // Supply cables visibly load each weapon in sequence, then snap into discharge.
         const strength=(.2+stagger*.8)*flash;
-        for(let j=0;j<2;j++){
-          g.moveTo(side*r*.08,-r*.05);
-          g.bezierCurveTo(x*.65-r*.04*j,y*.2,x*.4,y*.8,muzzleX,muzzleY);
-          g.stroke({color:this.color,width:1+j,alpha:power*strength*(j?.13:.62)});
-        }
+        drawEnergyLink(g,{x:side*r*.08,y:-r*.05,toX:muzzleX,toY:muzzleY,
+          width:Math.max(10,r*.1),color:this.color,alpha:power*strength*.45});
         for(let j=0;j<3;j++){
           const v=reduced?.5:((t*(.7+compression)+j/3+i*.13)%1);
           const px=muzzleX*v,py=muzzleY*v;
-          g.moveTo(px,py).lineTo(px+muzzleX*.07,py+muzzleY*.07).stroke({color:0xeaffff,width:1.5,alpha:charge*Math.sin(v*Math.PI)*.8*flash});
+          drawEnergySurface(g,{kind:'corona',x:px,y:py,width:Math.max(7,r*.07),
+            height:Math.max(9,r*.1),color:0xeaffff,
+            alpha:charge*Math.sin(v*Math.PI)*.5*flash});
         }
         drawEnergyGlint(g,muzzleX,muzzleY,r*(.05+stagger*.11+recoil*.10),this.color,(stagger*.75+recoil*.85)*flash);
         if(recoil>0){
@@ -78,9 +78,12 @@ export class BossArsenalRig extends Container {
       const focus=signature?1.2:1,core=r*(.07+compression*.10)*focus;
       drawEnergyGlint(g,0,r*.12,core*(d.material==='magma'?2:1.5),this.color,charge*.8*flash);
       if(d.formation==='rail'||d.formation==='organ'){
-        for(const s of [-1,1])g.moveTo(s*r*.10,-r*.50).lineTo(s*r*.045,r*.38).stroke({color:0xe7fbff,width:1.5,alpha:compression*.85*flash});
+        for(const s of [-1,1])drawEnergyLink(g,{x:s*r*.10,y:-r*.50,toX:s*r*.045,
+          toY:r*.38,width:Math.max(8,r*.08),color:0xe7fbff,
+          alpha:compression*.55*flash});
       }else if(d.formation==='diamond'||d.formation==='shuffle'){
-        g.poly([0,-core*1.3,core,0,0,core*1.5,-core,0]).stroke({color:0xf0faff,width:1.6,alpha:compression*.85*flash});
+        drawEnergySurface(g,{kind:'corona',x:0,y:0,width:core*3,height:core*3,
+          color:0xf0faff,alpha:compression*.55*flash});
       }
     }
     this.debug={archetype:this.archetype,formation:d.formation,modules:this.modules.length,charge,recoil,phase,signature,reduced,cadence};

@@ -66,7 +66,7 @@ for (const profile of ELITE_MIDDLE_SHIPS) {
   if (!profile.displayName) fail(`${profile.id} missing displayName`);
   if (!profile.role) fail(`${profile.id} missing role`);
   roles.add(profile.role);
-  if (!Number.isFinite(profile.minLevel) || profile.minLevel < 3 || profile.minLevel > 40) {
+  if (!Number.isFinite(profile.minLevel) || profile.minLevel < 3 || profile.minLevel > 60) {
     fail(`${profile.id} invalid minLevel ${profile.minLevel}`);
   }
   if (!Number.isFinite(profile.health) || profile.health < 8 || profile.health > 30) {
@@ -119,10 +119,12 @@ for (const [familyName, profiles] of expansionFamilies) {
   if (variants.join(',') !== '0,1,2') fail(`${familyName} should use variants 0,1,2, found ${variants.join(',')}`);
 }
 const level11 = getEliteMiddleShipsForLevel(11);
-const level40 = getEliteMiddleShipsForLevel(40);
+const level40 = getEliteMiddleShipsForLevel(60);
+if(getEliteMiddleShipsForLevel(19).length>25)fail('save half the elite identities for later');
+if(getEliteMiddleShipsForLevel(50).length>=50)fail('save elite reveals for51-60');
 if (level11.length >= 50) fail('level 11 must not expose all 50 elite middle ships');
 if (level11.length < 7 || level11.length > 14) warn(`level 11 exposes ${level11.length} elites; expected a controlled early pool`);
-if (level40.length !== 50) fail(`level 40 should expose all 50 elites, found ${level40.length}`);
+if (level40.length !== 50) fail(`level 60 should expose all 50 elites, found ${level40.length}`);
 if (getEliteMiddleShipMaxActive(10) !== 1) fail('early/mid game should cap active elites at 1');
 if (getEliteMiddleShipMaxActive(40) > 2) fail('late game active elite cap should stay careful, max 2');
 
@@ -159,4 +161,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`[elite-ships] PASS profiles=${ELITE_MIDDLE_SHIPS.length} level11=${level11.length} level40=${level40.length} assets=${manifestAssets.length}`);
+console.log(`[elite-ships] PASS profiles=${ELITE_MIDDLE_SHIPS.length} level11=${level11.length} level60=${level40.length} assets=${manifestAssets.length}`);

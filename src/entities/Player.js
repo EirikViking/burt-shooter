@@ -1,3 +1,7 @@
+import { predictIntercept } from '../combat/PredictiveAim.js';
+import { OrbitBreaker } from '../effects/OrbitBreaker.js';
+import {drawEnergySurface,drawEnergyArc,drawEnergyLink,energyClock} from '../effects/AstraEnergyMaterial.js';
+import {drawEnergyShell} from '../effects/AstraEnergyMaterial.js';
 import * as PIXI from 'pixi.js';
 import { updateRelicHullDetail } from '../effects/RelicHullDetail.js';
 import { createAstraEnginePlume } from '../effects/AstraEnginePlume.js';
@@ -595,10 +599,8 @@ export class Player {
 
     const glow = new PIXI.Graphics();
     const radius = Math.max(34, (this.baseShipWidth || 60) * 0.7);
-    glow.circle(0, 0, radius);
-    glow.fill({ color: variant.accent || variant.glow || 0x66ffff, alpha: 0.12 });
-    glow.circle(0, 0, radius * 0.55);
-    glow.stroke({ color: variant.glow || variant.accent || 0xffffff, width: 2, alpha: 0.28 });
+    drawEnergySurface(glow,{kind:'corona',width:radius*1.7,height:radius*2,color:variant.accent||variant.glow||0x66ffff,alpha:.09});
+    drawEnergyShell(glow, 0, 0, radius * 0.55, { color: variant.glow || variant.accent || 0xffffff, width: 2, alpha: 0.28 });
     glow.label = 'shipVariantGlow';
     return glow;
   }
@@ -716,9 +718,7 @@ export class Player {
       this.shieldSprite = new PIXI.Container();
 
       const sGfx = new PIXI.Graphics();
-      sGfx.circle(0, 0, 50);
-      sGfx.stroke({ width: 4, color: 0x00ffff, alpha: 0.8 });
-      sGfx.fill({ color: 0x00ffff, alpha: 0.1 });
+      drawEnergySurface(sGfx,{kind:'membrane',width:100,height:100,color:0x64e9ff,alpha:.48});
       this.shieldSprite.addChild(sGfx);
       this.shieldSprite.visible = false;
       this.sprite.addChild(this.shieldSprite);
@@ -785,10 +785,8 @@ export class Player {
     const outer = radius + 10;
 
     this.boostAura.clear();
-    this.boostAura.circle(0, 0, radius);
-    this.boostAura.stroke({ width: 4, color: style.color, alpha: 0.95 });
-    this.boostAura.circle(0, 0, radius * 0.58);
-    this.boostAura.stroke({ width: 1.4, color: style.alt, alpha: 0.48 });
+    drawEnergyShell(this.boostAura, 0, 0, radius, { width: 4, color: style.color, alpha: 0.95 });
+    drawEnergyShell(this.boostAura, 0, 0, radius * 0.58, { width: 1.4, color: style.alt, alpha: 0.48 });
 
     for (let i = 0; i < style.ticks; i++) {
       const angle = (Math.PI * 2 * i) / style.ticks;
@@ -902,14 +900,15 @@ export class Player {
       plume.width = i === 1 ? 10 : 12;
       plume.height = length * 1.8;
       plume.rotation = -lean * 0.12;
-      plume.alpha = 0.34 + intensity * 0.55;
+      // The Scout has two nozzles; retain the shared third sprite for other hulls.
+      plume.alpha = (0.34 + intensity * 0.55) * (this.rankShipIndex === 0 && i === 1 ? 0.12 : 1);
       layer.moveTo(x - 4.5, exhaustY - 1);
       layer.lineTo(x + lean * 10, exhaustY + length);
       layer.lineTo(x + 4.5, exhaustY - 1);
       layer.closePath();
-      layer.fill({ color: coreColor, alpha: alpha * (i === 1 ? 0.74 : 0.48) });
+      layer.fill({ color: coreColor, alpha: alpha * (i === 1 ? 0.12 : 0.18) });
       layer.circle(x + lean * 5, exhaustY + length * 0.58, 2.2 + intensity * 2.2);
-      layer.fill({ color: hotColor, alpha: 0.18 + intensity * 0.24 });
+      layer.fill({ color: hotColor, alpha: 0.06 + intensity * 0.1 });
       plumeCount += 1;
     }
 
@@ -921,7 +920,7 @@ export class Player {
       afterburnerBeadCount += 1;
     }
     if (afterburnerBeadCount > 0) {
-      layer.fill({ color: coreColor, alpha: 0.14 + intensity * 0.2 });
+      layer.fill({ color: coreColor, alpha: 0.04 + intensity * 0.06 });
     }
 
     for (let i = 0; i < 4; i += 1) {
@@ -932,7 +931,7 @@ export class Player {
       layer.circle(x, y, 1.5 + intensity * 1.25 + (i === 1 ? pulse * 0.7 : 0));
       heatPipCount += 1;
     }
-    layer.fill({ color: hotColor, alpha: 0.13 + intensity * 0.16 });
+    layer.fill({ color: hotColor, alpha: 0.04 + intensity * 0.06 });
 
     if (firingBoost > 0.01) {
       const noseY = -width * 0.52;
@@ -1069,33 +1068,11 @@ export class Player {
 
     this.focusRing.clear();
     if (this.game?.level >= 1 && this.game.level <= 3 && !this.isDodging && !this.invulnerable) {
-      // Locator brackets leave the hull and exact collision reticle open.
-      for (const side of [-1, 1]) {
-        const x = side * radius * .84;
-        this.focusRing.moveTo(x - side * 6, -9).lineTo(x, -9).lineTo(x, 9).lineTo(x - side * 6, 9);
-      }
-      this.focusRing.stroke({ color: 0x03101a, width: 4, alpha: .9 });
-      for (const side of [-1, 1]) {
-        const x = side * radius * .84;
-        this.focusRing.moveTo(x - side * 6, -9).lineTo(x, -9).lineTo(x, 9).lineTo(x - side * 6, 9);
-      }
-      this.focusRing.stroke({ color, width: 1.6, alpha: Math.max(.65, alpha) });
-      this.focusRing.visible = true;
+      // Early sectors do not need permanent brackets around the player hull.
+      this.focusRing.visible = false;
       return;
     }
-    this.focusRing.circle(0, 0, radius + pulse * 2);
-    this.focusRing.stroke({ color, width: 2 + focusScale * 1.2, alpha });
-    this.focusRing.circle(0, 0, radius * 0.62);
-    this.focusRing.stroke({ color: 0xffffff, width: 1, alpha: alpha * 0.38 });
-    this.focusRing.moveTo(-tickOutset, 0);
-    this.focusRing.lineTo(-tickInset, 0);
-    this.focusRing.moveTo(tickInset, 0);
-    this.focusRing.lineTo(tickOutset, 0);
-    this.focusRing.moveTo(0, -tickOutset);
-    this.focusRing.lineTo(0, -tickInset);
-    this.focusRing.moveTo(0, tickInset);
-    this.focusRing.lineTo(0, tickOutset);
-    this.focusRing.stroke({ color, width: 2, alpha: alpha * 0.82 });
+    drawEnergySurface(this.focusRing,{kind:'membrane',width:radius*2,height:radius*1.75,color,alpha:alpha*.28});
     this.focusRing.visible = true;
   }
 
@@ -1273,27 +1250,7 @@ export class Player {
       const arcSweep = Math.PI * 0.64;
       this.hitboxReticle.circle(0, 0, invulnRadius - 13);
       this.hitboxReticle.fill({ color: invulnColor, alpha: invulnerabilityExpiring ? 0.045 + pulse * 0.025 : 0.035 });
-      const bracketRadius = invulnRadius - 10;
-      for (let i = 0; i < 4; i += 1) {
-        const angle = -Math.PI * 0.25 + i * Math.PI * 0.5;
-        const tx = -Math.sin(angle);
-        const ty = Math.cos(angle);
-        const nx = Math.cos(angle);
-        const ny = Math.sin(angle);
-        const cx = nx * bracketRadius;
-        const cy = ny * bracketRadius;
-        const half = invulnerabilityExpiring ? 8 + pulse * 4 : 7;
-        this.hitboxReticle.moveTo(cx - tx * half, cy - ty * half);
-        this.hitboxReticle.lineTo(cx + tx * half, cy + ty * half);
-        this.hitboxReticle.moveTo(cx + tx * half, cy + ty * half);
-        this.hitboxReticle.lineTo(cx + tx * half - nx * 5, cy + ty * half - ny * 5);
-        invulnerabilityBracketCount += 1;
-      }
-      this.hitboxReticle.stroke({
-        color: invulnColor,
-        width: invulnerabilityExpiring ? 1.8 : 1.2,
-        alpha: invulnerabilityExpiring ? 0.42 + pulse * 0.2 : 0.3
-      });
+      drawEnergySurface(this.hitboxReticle,{kind:'membrane',width:(invulnRadius-10)*2,height:(invulnRadius-10)*2,color:invulnColor,alpha:invulnerabilityExpiring?.28:.18});
       this.hitboxReticle.arc(0, 0, invulnRadius, arcStart, arcStart + arcSweep);
       this.hitboxReticle.stroke({ color: 0xffffff, width: 1.2, alpha: 0.12 });
       this.hitboxReticle.arc(0, 0, invulnRadius, arcStart, arcStart + arcSweep * invulnerabilityProgress);
@@ -1854,15 +1811,7 @@ export class Player {
           const impactPulse = Math.max(0, Math.min(1, (this.pointDefensePulseUntil - visualNow) / 220));
           const radius = POINT_DEFENSE_RADIUS + Math.sin(visualNow * 0.008) * 3 + impactPulse * 6;
           const alphaScale = pointDefenseSuppressed ? 0.24 : 1;
-          this.pointDefenseRing.circle(0, 0, radius);
-          this.pointDefenseRing.stroke({
-            color: impactPulse > 0 ? 0xffffff : 0x00ddff,
-            width: 2.4 + impactPulse * 2.2,
-            alpha: (0.58 + Math.sin(visualNow * 0.01) * 0.12 + impactPulse * 0.22) * alphaScale
-          });
-          const innerRadius = radius - 9;
-          this.pointDefenseRing.circle(0, 0, innerRadius);
-          this.pointDefenseRing.stroke({ color: 0x8ffaff, width: 1.2, alpha: (0.34 + impactPulse * 0.22) * alphaScale });
+          drawEnergySurface(this.pointDefenseRing,{kind:'membrane',width:radius*2,height:radius*2,color:impactPulse>0?0xffffff:0x65dcff,alpha:(.24+impactPulse*.36)*alphaScale});
 
           const countdownRadius = radius + 8;
           if (remainingRatio > 0.002) {
@@ -1879,16 +1828,6 @@ export class Player {
               alpha: (0.58 + Math.sin(visualNow * 0.018) * 0.12) * alphaScale
             });
           }
-
-          const tickRotation = visualNow * 0.00018;
-          for (let tick = 0; tick < 12; tick += 1) {
-            const angle = tickRotation + (Math.PI * 2 * tick) / 12;
-            const start = radius - (tick % 3 === 0 ? 12 : 8);
-            const end = radius + (tick % 3 === 0 ? 5 : 2);
-            this.pointDefenseRing.moveTo(Math.cos(angle) * start, Math.sin(angle) * start);
-            this.pointDefenseRing.lineTo(Math.cos(angle) * end, Math.sin(angle) * end);
-          }
-          this.pointDefenseRing.stroke({ color: 0xb8fbff, width: 1.2, alpha: 0.38 * alphaScale });
 
           const interceptAge = now - (Number(this.lastPointDefenseIntercept?.at) || -10000);
           if (interceptAge >= 0 && interceptAge < 460) {
@@ -2152,6 +2091,10 @@ export class Player {
     }
 
     this.updateDrones(deltaSeconds);
+    if(this.orbitBreaker){
+      const hasHammer=[this.activePowerup,this.secondaryPowerup].some(slot=>this.getPowerupSlotEffect(slot)?.orbitalHammer);
+      if(!hasHammer||!this.active){this.orbitBreaker.destroy();this.orbitBreaker=null;}else this.orbitBreaker.update(timedDt/1000);
+    }
   }
 
   // --- Actions ---
@@ -2395,9 +2338,16 @@ export class Player {
     const focusSpreadMult = this.focusDriftActive
       ? this.getAdaptiveFocusSpreadMultiplier()
       : 1;
-    const spread = (this.weaponProfile?.spread ?? 0.15) * (scramble?.shotSpreadMult || 1) * focusSpreadMult;
+    // Preserve the hull firing cone as Draft projectiles fill it; Focus and scramble still apply before individual projectile jitter.
     const jitterRange = scramble?.shotJitter || 0;
     const totalShots = Math.max(1, this.multiShot + this.rankBoostExtraShots);
+    const ownedDraftShots = getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds)
+      .filter(id => id === 'double_shot').length;
+    const referenceShots = Math.max((this.weaponProfile?.bullets || 1) + this.rankBoostExtraShots, totalShots - ownedDraftShots);
+    const originalIntervals = Math.max(1, referenceShots - 1);
+    const extraShotDensity = totalShots > 1 ? Math.min(1, originalIntervals / (totalShots - 1)) : 1;
+    // Extra Draft shots fill the firing cone instead of widening it.
+    const spread = (this.weaponProfile?.spread ?? 0.15) * (scramble?.shotSpreadMult || 1) * focusSpreadMult * extraShotDensity;
     const spreadAngles = totalShots > 1 ?
       Array.from({ length: totalShots }, (_, i) => (i - (totalShots - 1) / 2) * spread) :
       [0];
@@ -2629,12 +2579,11 @@ export class Player {
       droneContainer.visible = true;
       droneContainer.alpha = 0.9;
 
-      // Drones are support silhouettes. Keep them below the player's hull so
-      // the pilot and practical hitbox remain readable during dense combat.
+      // Wingmen draw above the hull, with their formation kept outside the hitbox.
       const shipIndex = this.shipSprite?.parent === this.sprite
         ? this.sprite.getChildIndex(this.shipSprite)
         : 0;
-      this.sprite.addChildAt(droneContainer, Math.max(0, shipIndex));
+      this.sprite.addChildAt(droneContainer, Math.min(this.sprite.children.length, shipIndex + 1));
       this.drones.push(droneContainer);
     }
 
@@ -2646,14 +2595,15 @@ export class Player {
   updateDrones(deltaSeconds) {
     if (!this.dronesActive || this.drones.length === 0) return;
     const t = Date.now() * 0.002;
-    const offset = 32; // Increased from 28 for better visibility
+    const wingOffset = Math.max(48, (this.shipSprite?.width || 64) * 0.5 + 23);
     const count = Math.max(1, this.drones.length);
 
     this.drones.forEach((drone, i) => {
-      const slot = i - (count - 1) / 2;
-      const orbit = Math.sin(t + i) * 8;
-      drone.x = slot * offset + orbit;
-      drone.y = 10 + Math.cos(t + i) * (count > 2 ? 10 : 6);
+      const side = i % 2 === 0 ? -1 : 1;
+      const rank = Math.floor(i / 2);
+      const slot = side * (rank + 1);
+      drone.x = side * (wingOffset + rank * 27) + Math.sin(t + i) * 4;
+      drone.y = 12 + rank * 29 + Math.cos(t + i) * 4;
 
       // Rotate drone sprite slightly
       if (drone.rotation !== undefined) drone.rotation = slot * 0.08;
@@ -2982,10 +2932,8 @@ export class Player {
       const currentRadius = 22 + (radius - 22) * easeOut;
       const alpha = Math.max(0, 1 - t);
       ring.clear();
-      ring.circle(0, 0, currentRadius);
-      ring.stroke({ color, width: finalPulse ? 6 : 4, alpha: 0.82 * alpha });
-      ring.circle(0, 0, currentRadius * 0.72);
-      ring.stroke({ color: accent, width: finalPulse ? 3 : 2, alpha: 0.5 * alpha });
+      drawEnergyShell(ring, 0, 0, currentRadius, { color, width: finalPulse ? 6 : 4, alpha: 0.82 * alpha });
+      drawEnergyShell(ring, 0, 0, currentRadius * 0.72, { color: accent, width: finalPulse ? 3 : 2, alpha: 0.5 * alpha });
 
       oars.clear();
       const sweep = 44 + 42 * easeOut;
@@ -3422,10 +3370,8 @@ export class Player {
     if (!container) return;
 
     const ring = new PIXI.Graphics();
-    ring.circle(this.x, this.y, Math.max(26, this.radius * 2.2));
-    ring.stroke({ color, width: 4, alpha: 0.72 });
-    ring.circle(this.x, this.y, Math.max(14, this.radius * 1.25));
-    ring.stroke({ color: 0xffffff, width: 2, alpha: 0.4 });
+    drawEnergyShell(ring, this.x, this.y, Math.max(26, this.radius * 2.2), { color, width: 4, alpha: 0.72 });
+    drawEnergyShell(ring, this.x, this.y, Math.max(14, this.radius * 1.25), { color: 0xffffff, width: 2, alpha: 0.4 });
     ring.blendMode = 'add';
     container.addChild(ring);
     const start = Date.now();
@@ -3435,10 +3381,8 @@ export class Player {
       const t = Math.min(1, (Date.now() - start) / duration);
       const alpha = (1 - t) * 0.74;
       ring.clear();
-      ring.circle(this.x, this.y, baseRadius + t * 78);
-      ring.stroke({ color, width: 5, alpha });
-      ring.circle(this.x, this.y, baseRadius * 0.58 + t * 38);
-      ring.stroke({ color: 0xffffff, width: 2, alpha: alpha * 0.65 });
+      drawEnergyShell(ring, this.x, this.y, baseRadius + t * 78, { color, width: 5, alpha });
+      drawEnergyShell(ring, this.x, this.y, baseRadius * 0.58 + t * 38, { color: 0xffffff, width: 2, alpha: alpha * 0.65 });
       if (t >= 1) {
         playScene?.game?.app?.ticker?.remove(animate);
         if (ring.parent) ring.parent.removeChild(ring);
@@ -3457,7 +3401,7 @@ export class Player {
       return;
     }
 
-    const now = Date.now();
+    const now = energyClock()*1000;
     const layer = this.statusEffectLayer;
     const primary = activeEffects[0];
     const color = primary.color || 0xff66ff;
@@ -3466,10 +3410,8 @@ export class Player {
 
     layer.clear();
     layer.visible = true;
-    layer.circle(0, 0, radius);
-    layer.stroke({ color, width: 3.2, alpha: 0.68 });
-    layer.circle(0, 0, radius * 0.72);
-    layer.stroke({ color: 0xffffff, width: 1.8, alpha: 0.24 + this.statusVfxPulse * 0.26 });
+    drawEnergyShell(layer, 0, 0, radius, { color, width: 3.2, alpha: 0.68 });
+    drawEnergyShell(layer, 0, 0, radius * 0.72, { color: 0xffffff, width: 1.8, alpha: 0.24 + this.statusVfxPulse * 0.26 });
 
     activeEffects.slice(0, 3).forEach((effect, index) => {
       const phase = now * 0.004 + index * 2.1;
@@ -3607,23 +3549,7 @@ export class Player {
       this.magnetExpiresAt = 0;
     }
 
-    const tacticalDronesActive = Number(this.runAugmentModifiers?.droneCount || 0) > 0;
-    const droneEntries = entries.filter(({ effect }) => Number.isFinite(Number(effect.droneCount)));
-    if (tacticalDronesActive) {
-      this.dronesActive = true;
-      this.dronesExpiresAt = Number.MAX_SAFE_INTEGER;
-    } else if (droneEntries.length) {
-      this.dronesActive = true;
-      this.dronesExpiresAt = Math.max(...droneEntries.map(({ slot }) => Number(slot.expiresAt) || 0));
-    } else if (this.dronesActive || this.drones?.length) {
-      this.clearDrones();
-      this.dronesExpiresAt = 0;
-    }
-
-    const tacticalChainMax = Math.max(0, Math.round(Number(this.runAugmentModifiers?.chainMax) || 0));
-    const timedChainMax = Math.max(0, ...entries.map(({ effect }) => Math.round(Number(effect.chainMax) || 0)));
-    this.chainLightningActive = tacticalChainMax > 0 || timedChainMax > 0;
-    this.chainLightningMaxChains = Math.max(3, tacticalChainMax, timedChainMax);
+    this.reconcileSupportPowerups({ now });
 
     const vampireEntry = entries.find(({ effect }) => effect.vampire === true);
     this.vampireActive = Boolean(vampireEntry);
@@ -3636,6 +3562,24 @@ export class Player {
     }
   }
 
+  reconcileSupportPowerups({ preview = false, now = this.getGameplayClockMs() } = {}) {
+    const entries = this.isPowerupSuppressed() ? [] : this.getPowerupSlots()
+      .map(slot => ({ slot, effect: this.getPowerupSlotEffect(slot) || {} }));
+    const permanentDrones = Math.min(2, Math.max(0, Math.round(this.runAugmentModifiers?.droneCount || 0)));
+    const droneEntries = entries.filter(({ effect }) => Number(effect.droneCount) > 0);
+    this.droneCount = Math.min(4, Math.max(permanentDrones, ...droneEntries.map(({ effect }) => Math.round(effect.droneCount))));
+    this.dronesActive = this.droneCount > 0;
+    this.dronesExpiresAt = permanentDrones > 0 ? Number.MAX_SAFE_INTEGER
+      : Math.max(0, ...droneEntries.map(({ slot }) => Number(slot.expiresAt) || now));
+    if (!preview && this.sprite && this.drones.length !== this.droneCount) {
+      if (this.droneCount > 0) this.createDrones(this.droneCount, this.droneColor);
+      else this.clearDrones();
+    }
+    const permanentChains = Math.min(2, Math.max(0, Math.round(this.runAugmentModifiers?.chainMax || 0)));
+    this.chainLightningMaxChains = Math.max(permanentChains, ...entries.map(({ effect }) => Math.round(Number(effect.chainMax) || 0)));
+    this.chainLightningActive = this.chainLightningMaxChains > 0;
+  }
+
   clearPowerupRuntimeForSlot(slot, preservedSlots = []) {
     if (!slot?.type) return;
     const type = slot.type;
@@ -3643,6 +3587,7 @@ export class Player {
     const preservedEffects = preservedSlots.map((candidate) => this.getPowerupSlotEffect(candidate) || {});
     const preservedHas = (key) => preservedEffects.some((candidate) => candidate[key] === true || Number.isFinite(Number(candidate[key])));
 
+    if(effect.orbitalHammer&&!preservedHas('orbitalHammer')){this.orbitBreaker?.destroy();this.orbitBreaker=null;}
     if (effect.pointDefense && this.pointDefenseSource === type && !preservedHas('pointDefense')) {
       this.deactivatePointDefense();
     }
@@ -3934,6 +3879,7 @@ export class Player {
     this.dodgeSequence = token;
     this.pendingDodgeExitPulseToken = token;
     this.isDodging = true;
+    this.phaseStartPosition={x:this.x,y:this.y};
     this.invulnerable = true;
     this.dodgeDuration = this.dodgeDurationMax;
     this.dodgeCooldown = this.dodgeDelay;
@@ -4013,41 +3959,17 @@ export class Player {
     const duration = Math.max(1, this.dodgeDurationMax || 1);
     const progress = 1 - Math.max(0, Math.min(1, (this.dodgeDuration || 0) / duration));
     const color = this.visualVariant?.accent || 0xff55d9;
-    const pulse = Math.sin(Date.now() * 0.04) * 0.5 + 0.5;
+    const pulse = Math.sin(energyClock() * 1000 * 0.04) * 0.5 + 0.5;
     let phaseGateBracketCount = 0;
     let phaseLaneStreakCount = 0;
     if (this.dodgeRing) {
       const radius = Math.max(42, (this.baseShipWidth || 64) * (0.72 + progress * 0.36));
       this.dodgeRing.clear();
-      this.dodgeRing.circle(0, 0, radius + pulse * 4);
-      this.dodgeRing.stroke({ color, width: 4, alpha: 0.72 * (1 - progress * 0.45) });
-      this.dodgeRing.circle(0, 0, radius * 0.58);
-      this.dodgeRing.stroke({ color: 0xffffff, width: 1.6, alpha: 0.42 });
-      const sweep = progress * Math.PI * 0.62;
-      const gateRadius = radius + 11 + pulse * 3;
-      for (const baseAngle of [-Math.PI * 0.5 - sweep, -Math.PI * 0.5 + sweep, Math.PI * 0.5 - sweep, Math.PI * 0.5 + sweep]) {
-        const tx = Math.cos(baseAngle);
-        const ty = Math.sin(baseAngle);
-        const sx = -Math.sin(baseAngle);
-        const sy = Math.cos(baseAngle);
-        const cx = tx * gateRadius;
-        const cy = ty * gateRadius;
-        this.dodgeRing.moveTo(cx - sx * 7, cy - sy * 7);
-        this.dodgeRing.lineTo(cx + sx * 7, cy + sy * 7);
-        this.dodgeRing.moveTo(cx + sx * 7, cy + sy * 7);
-        this.dodgeRing.lineTo(cx + sx * 7 - tx * 5, cy + sy * 7 - ty * 5);
-        phaseGateBracketCount += 1;
+      drawEnergySurface(this.dodgeRing,{kind:'pressure',width:radius*2.1,height:radius*1.75,color,alpha:.48*(1-progress*.7)});
+      for(const side of [-1,1]) {
+        drawEnergySurface(this.dodgeRing,{kind:'rift',x:side*radius*.58,y:radius*.12,width:radius*.5,height:radius*1.65,color,alpha:.42*(1-progress*.6),angle:side*.14});
+        phaseLaneStreakCount++;
       }
-      this.dodgeRing.stroke({ color: 0xffffff, width: 1.35, alpha: 0.2 + pulse * 0.38 });
-      for (const side of [-1, 1]) {
-        const y = side * (radius * 0.38);
-        this.dodgeRing.moveTo(-radius - 12 - pulse * 5, y);
-        this.dodgeRing.lineTo(-radius * 0.24, y * 0.35);
-        this.dodgeRing.moveTo(radius * 0.24, y * 0.35);
-        this.dodgeRing.lineTo(radius + 12 + pulse * 5, y);
-        phaseLaneStreakCount += 2;
-      }
-      this.dodgeRing.stroke({ color, width: 1.6, alpha: 0.26 + pulse * 0.28 });
       this.dodgeRing.visible = true;
       this.dodgeRing.__debugPhaseActive = {
         visible: true,
@@ -4203,10 +4125,8 @@ export class Player {
     const ring = new PIXI.Graphics();
     const color = this.visualVariant?.accent || 0x66ffff;
     ring.label = 'experimentalDodgeExitPulseRing';
-    ring.circle(0, 0, radius);
-    ring.stroke({ color, width: 3, alpha: 0.9 });
-    ring.circle(0, 0, Math.max(4, radius - 4));
-    ring.stroke({ color: 0xffffff, width: 1, alpha: 0.34 });
+    drawEnergyShell(ring, 0, 0, radius, { color, width: 3, alpha: 0.9 });
+    drawEnergyShell(ring, 0, 0, Math.max(4, radius - 4), { color: 0xffffff, width: 1, alpha: 0.34 });
     ring.__debugExperimentalPulse = { radius, visible: true };
     this.sprite.addChild(ring);
     setTimeout(() => {
@@ -4320,6 +4240,7 @@ export class Player {
     const riftCap = 5;
     const riftEligible = cleared;
     let shardsCreated = 0;
+    let shardsQueued = 0;
     let shardAddRejected = 0;
     const riftTargets = [];
     const riftHits = [];
@@ -4329,13 +4250,19 @@ export class Player {
       if (playScene.enqueueToast) {
         playScene.enqueueToast(translateText('DODGE PULSE ×{count}', { count: cleared }), { fontSize: 16, fill: '#66ffff', slot: 'top', type: 'trait', duration: 800 });
       }
-      if (this.runAugmentModifiers?.riftReprisal && phaseClearedPositions.length > 0) {
+      if(this.runAugmentModifiers?.riftCrossfire&&phaseClearedPositions.length>0){
+        const allocated=playScene.enemyManager.behavioralFusions.queueRift({start:this.phaseStartPosition,
+          end:{x:this.x,y:this.y},count:Math.min(5,phaseClearedPositions.length),token,
+          damage:Math.max(this.bulletDamage*1.25,2+Math.max(0,Math.min(200,Number(this.game?.level)||1)-1)*.3)});
+        shardsQueued=allocated;
+        this.lastTacticalFusionEvent={id:'rift_crossfire',at:Date.now(),token,queuedShots:allocated,status:allocated?'queued':'no_target'};
+      }else if (this.runAugmentModifiers?.riftReprisal && phaseClearedPositions.length > 0) {
         const shardCount = Math.min(riftCap, phaseClearedPositions.length);
         const targetPool = [
           ...(Array.isArray(playScene.enemyManager?.enemies) ? playScene.enemyManager.enemies : []),
           playScene.enemyManager?.hijacker,
           playScene.enemyManager?.boss
-        ].filter((target, index, list) => target?.active && list.indexOf(target) === index);
+        ].filter((target, index, list) => target?.active && !target.untargetable && list.indexOf(target) === index);
         phaseClearedPositions.forEach((position, index) => {
           const nearestTargets = targetPool
             .slice()
@@ -4347,8 +4274,9 @@ export class Player {
             : null;
           const spread = shardCount <= 1 ? 0 : (index - (shardCount - 1) / 2) * 0.075;
           const speed = this.bulletSpeed * 1.36;
-          const targetDx = target ? (Number(target.x) || 0) - position.x : Math.sin(spread) * speed;
-          const targetDy = target ? (Number(target.y) || 0) - position.y : -Math.cos(spread) * speed;
+          const aim = target ? predictIntercept(position, target, speed) : null;
+          const targetDx = aim ? aim.x - position.x : Math.sin(spread) * speed;
+          const targetDy = aim ? aim.y - position.y : -Math.cos(spread) * speed;
           const targetDistance = Math.max(0.001, Math.hypot(targetDx, targetDy));
           const velocityX = target ? (targetDx / targetDistance) * speed : targetDx;
           const velocityY = target ? (targetDy / targetDistance) * speed : targetDy;
@@ -4360,7 +4288,7 @@ export class Player {
             Math.max(this.bulletDamage * 1.25, 2 + Math.max(0, Math.min(200, Number(this.game?.level) || 1) - 1) * 0.3),
             index % 2 === 0 ? 0xd86bff : 0x66ffff,
             true,
-            { color: index % 2 === 0 ? 'Red' : 'Blue', index: index % 2 === 0 ? 15 : 8 }
+            { color: index % 2 === 0 ? 'Red' : 'Blue', index: index % 2 === 0 ? 15 : 8, fusionShard: true }
           );
           shard.radius = 6;
           shard.isTacticalFusionShot = true;
@@ -4462,8 +4390,9 @@ export class Player {
       riftCap,
       shards: shardsCreated,
       shardsCreated,
+      shardsQueued,
       shardAddRejected,
-      discardedCount: Math.max(0, riftEligible - shardsCreated),
+      discardedCount: Math.max(0, riftEligible - shardsCreated - shardsQueued),
       discardedReason,
       targets: riftTargets,
       hits: riftHits,
@@ -4480,6 +4409,7 @@ export class Player {
       return false;
     }
 
+    if (this.invulnerable) return false;
     if (this.shieldActive && !this.isDefenseSuppressed()) {
       this.deactivateShield({ spentFeedback: true });
       this.triggerShieldBreakFeedback();
@@ -4487,7 +4417,6 @@ export class Player {
       return false; // DAMAGE ABSORBED
     }
 
-    if (this.invulnerable) return false;
     this.grantInvulnerability(2000 + (Number(this.runAugmentModifiers?.hitInvulnerabilityBonusMs) || 0), 'damage');
 
     // Trigger damage flash effect
@@ -4556,10 +4485,8 @@ export class Player {
     this.activatePointDefense(durationMs, { extend: true, playSfx: false, source: 'aegis_reactor' });
 
     const ring = new PIXI.Graphics();
-    ring.circle(this.x, this.y, radius);
-    ring.stroke({ color: 0x74ffd4, width: 5, alpha: 0.86 });
-    ring.circle(this.x, this.y, radius - 18);
-    ring.stroke({ color: 0xffffff, width: 2, alpha: 0.48 });
+    drawEnergyShell(ring, this.x, this.y, radius, { color: 0x74ffd4, width: 5, alpha: 0.86 });
+    drawEnergyShell(ring, this.x, this.y, radius - 18, { color: 0xffffff, width: 2, alpha: 0.48 });
     ring.blendMode = 'add';
     playScene.gameContainer?.addChild?.(ring);
     setTimeout(() => {
@@ -4900,6 +4827,7 @@ export class Player {
   applyRunAugmentModifiers({ preview = false } = {}) {
     const activeIds = getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds);
     const modifiers = buildTacticalDraftModifiers(activeIds, {
+      shotCapacity: Math.max(0, 8 - this.multiShot),
       activePowerupType: this.activePowerup?.type || null,
       activePowerupTypes: this.getPowerupSlots().map((slot) => slot.type),
       permanentPierceDamageMultOverride: this.game?.lateGameExperiment?.active === true
@@ -4940,16 +4868,7 @@ export class Player {
       this.magnetRadius = Math.max(this.magnetRadius, 180 + modifiers.magnetRadiusBonus);
       this.magnetStrength = Math.max(this.magnetStrength, 0.14 + modifiers.magnetStrengthBonus);
     }
-    if (modifiers.droneCount > 0) {
-      this.dronesActive = true;
-      this.dronesExpiresAt = Number.MAX_SAFE_INTEGER;
-      this.droneCount = Math.max(1, Math.min(2, Math.round(modifiers.droneCount)));
-      if (!preview && !this.drones.length && this.sprite) this.createDrones(this.droneCount, 0x66ccff);
-    }
-    if (modifiers.chainMax > 0) {
-      this.chainLightningActive = true;
-      this.chainLightningMaxChains = Math.max(this.chainLightningMaxChains || 0, Math.min(2, Math.round(modifiers.chainMax)));
-    }
+    this.reconcileSupportPowerups({ preview });
   }
 
   applyRunAugmentSectorStartEffects(sector = 1) {
@@ -4967,7 +4886,7 @@ export class Player {
       triggered.push('shield');
     }
     if (effects.invulnerabilityMs > 0) {
-      this.grantInvulnerability(Math.min(2400, effects.invulnerabilityMs), 'tactical_draft');
+      this.grantInvulnerability(Math.min(4500, effects.invulnerabilityMs), 'tactical_draft');
       triggered.push('invulnerability');
     }
     if (effects.pointDefenseMs > 0) {
@@ -5029,7 +4948,7 @@ export class Player {
     };
   }
 
-  repairFromPowerup(effect = {}, type = 'powerup') {
+  repairFromPowerup(effect = {}, type = 'powerup', lifeGrantOptions = {}) {
     const repairLives = Math.max(0, Math.round(Number(effect.repairLives || 0)));
     if (repairLives <= 0 || !this.game) return 0;
     const configuredMaxLives = Number(this.game.balanceConfig?.survival?.maxLives)
@@ -5040,10 +4959,11 @@ export class Player {
       : Number.POSITIVE_INFINITY;
     let repaired = 0;
     for (let i = 0; i < repairLives && this.game.lives < maxLives; i += 1) {
-      this.game.gainLife?.();
-      repaired += 1;
+      const before = this.game.lives;
+      this.game.gainLife?.({ ...lifeGrantOptions, source: type });
+      repaired += Math.max(0, this.game.lives - before);
     }
-    if (repaired <= 0 && Number(effect.scoreBonusAtMax || 0) > 0) {
+    if (repaired <= 0 && this.game.lives >= maxLives && Number(effect.scoreBonusAtMax || 0) > 0) {
       this.game.addScore?.(Math.round(effect.scoreBonusAtMax), type);
     }
     return repaired;
@@ -5064,7 +4984,8 @@ export class Player {
     return { granted: true, count: this.runAugmentGrazeCount, threshold };
   }
 
-  applyCatalogPowerupEffect(type, effect = {}, now = this.getGameplayClockMs(), { preserveSlots = false } = {}) {
+  applyCatalogPowerupEffect(type, effect = {}, now = this.getGameplayClockMs(), { preserveSlots = false, lifeGrantOptions = {} } = {}) {
+    if(effect.orbitalHammer&&!this.orbitBreaker)this.orbitBreaker=new OrbitBreaker(this);
     const durationMs = Math.max(0, Number(effect.durationMs || 0));
     const expiresAt = durationMs > 0 ? now + durationMs : this.activePowerup.expiresAt;
 
@@ -5077,7 +4998,7 @@ export class Player {
     }
 
     if (effect.repairLives) {
-      this.repairFromPowerup(effect, type);
+      this.repairFromPowerup(effect, type, lifeGrantOptions);
     }
 
     if (effect.shield) {
@@ -5165,7 +5086,7 @@ export class Player {
     }
   }
 
-  applyPowerup(type) {
+  applyPowerup(type, lifeGrantOptions = {}) {
     const meta = getPowerupMeta(type);
     const effect = meta?.effect || {};
     const now = this.getGameplayClockMs();
@@ -5177,7 +5098,7 @@ export class Player {
       return;
     }
     if (effect.instant === true && effect.charges !== true) {
-      this.applyCatalogPowerupEffect(type, effect, now, { preserveSlots: true });
+      this.applyCatalogPowerupEffect(type, effect, now, { preserveSlots: true, lifeGrantOptions });
       this.notePowerup(type);
       this.recalculateStats();
       this.syncPowerupRuntimeState(now);
@@ -5366,7 +5287,7 @@ export class Player {
         this.vampireKillCount = 0;
         break;
       default:
-        this.applyCatalogPowerupEffect(type, effect, now);
+        this.applyCatalogPowerupEffect(type, effect, now, { lifeGrantOptions });
         break;
     }
 
@@ -5383,6 +5304,7 @@ export class Player {
   }
 
   resetPowerups() {
+    this.orbitBreaker?.destroy();this.orbitBreaker=null;
     const expiredType = this.activePowerup.type;
     const now = this.getGameplayClockMs();
     const tacticalPointDefenseExpiresAt = this.tacticalPointDefenseExpiresAt > now
@@ -5877,7 +5799,7 @@ export class Player {
 
     // Invulnerability
     this.invulnerable = true;
-    this.invulnerableTime = RESPAWN_INVULNERABILITY_MS;
+    this.invulnerableTime = RESPAWN_INVULNERABILITY_MS + (Number(this.runAugmentModifiers?.hitInvulnerabilityBonusMs) || 0);
 
     // Reset cooldowns
     this.shootCooldown = 0;

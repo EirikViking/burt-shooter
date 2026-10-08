@@ -250,7 +250,7 @@ try {
         y: 240,
         radius: 22,
         health: 1,
-        scoreValue: 0,
+        scoreValue: 500,
         generatedProfile: { displayName: 'Bonus Drone Reward Probe', role: 'bonus' },
         takeDamage(damage) {
           this.health -= Math.max(1, Number(damage) || 1);
@@ -275,11 +275,14 @@ try {
         isBomb: false
       }];
       const beforeBonusScore = play.game.score;
-      const nominalBonusAward = play.getComboScore(500);
-      const expectedBonusAward = play.game.getScoreAward?.(nominalBonusAward) || nominalBonusAward;
+      // Bonus drones pay their displayed score directly, independently of combo.
+      const expectedBonusAward = 500;
       window.__novaCollisionHotpathStressActive = true;
       play.checkCollisions();
       window.__novaCollisionHotpathStressActive = false;
+      const paidOnce = play.game.score;
+      play.checkCollisions();
+      const duplicateAward = play.game.score - paidOnce;
       const bonusPopupTexts = (play.scorePopupManager?.popups || [])
         .map((popup) => String(popup?.sprite?.text || ''))
         .filter(Boolean);
@@ -287,6 +290,7 @@ try {
         beforeScore: beforeBonusScore,
         afterScore: play.game.score,
         expectedAward: expectedBonusAward,
+        duplicateAward,
         popupTexts: bonusPopupTexts,
         storageWritesDuringCollision,
         active: bonusDrone.active
@@ -363,6 +367,7 @@ try {
     `bonus drone reward should create a clear bonus payout popup, got ${stress.bonusDroneFeedback.popupTexts.join(', ')}`
   );
   assert.equal(stress.bonusDroneFeedback.active, false, 'bonus drone should be destroyed by the reward probe');
+  assert.equal(stress.bonusDroneFeedback.duplicateAward, 0, 'retired bonus drone must not pay again');
   assert.deepEqual(
     stress.shakeCoalescing.calls,
     [{ intensity: 3, duration: 22 }],

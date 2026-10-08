@@ -1,0 +1,239 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "before": {
+    "used": 5814,
+    "limit": 10000
+  },
+  "creditCeiling": 1800,
+  "cues": [
+    {
+      "id": "astral_cobra",
+      "request": {
+        "text": "An immense hooded alien serpent passes calmly. Deep porous chest hiss, slow ribbed hood membranes stretching with dry leathery creaks, textured scaled body gliding and a low descending throat vibration. Rich physical atmospheric animal Foley. No striking attack, jump scare, speech, music, weapon or alarm.",
+        "duration_seconds": 4.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "3fc7489e7cb4ecd7d0ae9ffcb00224fe13b4442f7a7e692e4b3b052876895204",
+      "master": "public/audio/sfx/cosmic-fauna/astral_cobra.wav",
+      "masterSha256": "212d5f04a2e02c8d6ada47db0f9c197ea53958b9851da904851433f6502ae50a",
+      "bytes": 377574
+    },
+    {
+      "id": "crown_shrimp",
+      "request": {
+        "text": "A giant crown shrimp flexes its enormous forelimbs. Two deep muffled chitin clacks, thick wet joint creaks, sequenced small swimming paddle ticks and a soft fan-tail pressure sweep. Huge vivid living crustacean, tactile cinematic Foley. No punch impact, attack sting, machinery, speech, music, weapon or alarm.",
+        "duration_seconds": 4.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "23",
+      "sourceSha256": "f97dd02cd39c68476d37e63d30f29bc15454bbf2e4fbf8d430b13a165ba94c57",
+      "master": "public/audio/sfx/cosmic-fauna/crown_shrimp.wav",
+      "masterSha256": "c4080eb10f33920c8d8bdbe2f0bc7dd8b7a5b8088d3cc5587e9a25543492f945",
+      "bytes": 366990
+    },
+    {
+      "id": "silt_wraith",
+      "request": {
+        "text": "A vast veiled alien drifts past. Deep hollow slow gill breathing, layers of damp heavy silk-like membrane brushing together, fine granular silt-like throat rasp and an airy fading tail movement. Haunting beautiful tangible animal, cinematic organic Foley. No ghost voice, whispering words, music, horror sting, weapon or alarm.",
+        "duration_seconds": 4.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "25",
+      "sourceSha256": "4110832a498a20d41a5f9c71efe7747665d469e80a2351afbd40b02cc5eed220",
+      "master": "public/audio/sfx/cosmic-fauna/silt_wraith.wav",
+      "masterSha256": "32ad578124398a6c3ad19f56fdcb48798ae88a1513d979f333d67401737ac7dc",
+      "bytes": 395214
+    },
+    {
+      "id": "coral_giant",
+      "request": {
+        "text": "A colossal coral-backed animal breathes once. Very deep warm rounded chest moan, many tiny porous coral branches creaking softly over its skin, a broad heavy flipper pressure sweep and long coarse airy exhale. Ancient immense living organism, physical cinematic Foley. No whale song melody, music, human voice, ship engine, explosion or alarm.",
+        "duration_seconds": 4.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "25",
+      "sourceSha256": "a92241d751330de4548050cf06863adda76ead0547849a881bc8f00d25d1a033",
+      "master": "public/audio/sfx/cosmic-fauna/coral_giant.wav",
+      "masterSha256": "dedf5a91ac1157c52c06fbc12c5a6d08ce35f6ef78a20c09437e8a83344c6df5",
+      "bytes": 395214
+    },
+    {
+      "id": "winter_cicada",
+      "request": {
+        "text": "A giant crystalline cicada unfolds its long wings. Slow dry icy wing-sheet flexes, a low brief resonant thoracic tremor, delicate irregular chitin ticks and a soft granular exhale. Large mysterious living insect, detailed restrained cinematic Foley. No high piercing cicada buzz, musical tones, voice, machinery, weapon or alarm.",
+        "duration_seconds": 4.1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "23",
+      "sourceSha256": "17e3c2c04c1bbb041593e23be9ab12795b4765de61dd3c469faf50bf6bbee890",
+      "master": "public/audio/sfx/cosmic-fauna/winter_cicada.wav",
+      "masterSha256": "33839dca392c0ae63528ad8af744608880a88d0f92d42c894a2222128e0956a5",
+      "bytes": 359934
+    },
+    {
+      "id": "onyx_hammerhead",
+      "request": {
+        "text": "An enormous smooth hammerheaded alien glides past. Deep closed-mouth nasal growl, broad dense fin-pressure whoosh, subtle gill folds breathing and a clean heavy tail sweep fading into a low airy hiss. Controlled dangerous living predator, physical cinematic creature Foley. No sonar, music, human voice, attack roar, weapon or alarm.",
+        "duration_seconds": 4.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "19e1f282cb0c058cf91a3700da25bacf3ec44bf757b328908a4183e3b9d85b76",
+      "master": "public/audio/sfx/cosmic-fauna/onyx_hammerhead.wav",
+      "masterSha256": "9e2bd88b9844a514f206ac31956ac7a0b7f752dc9526d012df4fa2cb0e2cc504",
+      "bytes": 377574
+    },
+    {
+      "id": "choir_siphonophore",
+      "request": {
+        "text": "A huge colonial alien pulses seven connected chambers in sequence. Rounded low liquid throbs descending gently in size, many fine wet filaments brushing, breathy gelatin membrane creaks and a soft uneven living resonance. Beautiful uncanny coherent organism, cinematic organic Foley. No choir, singing, musical scale, voice, sonar, weapon or alarm.",
+        "duration_seconds": 4.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "474acb899c85c00337a24ed2866d9bd229bfaed446849e8571333612a62a6492",
+      "master": "public/audio/sfx/cosmic-fauna/choir_siphonophore.wav",
+      "masterSha256": "7c57afe10d1ab06e2776495ff5f9f60c6cf762ddf0fb7d0bfbbbbc9e2ed64db8",
+      "bytes": 388158
+    },
+    {
+      "id": "copper_skate",
+      "request": {
+        "text": "A huge thin copper-skinned skate glides with two slow wing strokes. Dense leathery fin folds, delicate dry cartilage tension creaks, low breathing hum and two separate whip-tail swishes. Sleek powerful alien animal, richly textured cinematic Foley. No metallic blade strike, music, speech, engine, weapon or alarm.",
+        "duration_seconds": 4.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "23",
+      "sourceSha256": "d325f1c793fd5f6c274f53e6987c44bd2aabaea56b4f8581cbc521e0a467964d",
+      "master": "public/audio/sfx/cosmic-fauna/copper_skate.wav",
+      "masterSha256": "bef80f9f896e3e9e20ae30d7daab30f41e4f1d6022488314e63c66e9143e797a",
+      "bytes": 366990
+    },
+    {
+      "id": "eclipse_hydroid",
+      "request": {
+        "text": "An immense ring-finned hydroid rolls slowly. Three soft layered membrane pressure breaths with muted cartilage creaks, deep central bell resonance, six smooth arm sweeps and a long airy liquid decay. Strange beautiful physical living animal, cinematic Foley. No portal effect, machinery, melody, human voice, weapon or alarm.",
+        "duration_seconds": 4.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "7bf223a1397251eeb58445b1ac7daf7b60f63ac6e79ec3e74fb920bcd054c183",
+      "master": "public/audio/sfx/cosmic-fauna/eclipse_hydroid.wav",
+      "masterSha256": "ef0b2cd79d8122bd5e4e49a99c526339625f58364a170575afcd1562574f8b0d",
+      "bytes": 388158
+    },
+    {
+      "id": "dream_sailfish",
+      "request": {
+        "text": "A giant sail-backed alien unfolds its dorsal membrane. Wide silky sail-pressure swell, a soft long rib-tendon creak, low resonant gill breath and two trailing veil-tail whispers. Majestic dreamlike yet physical living predator, detailed cinematic organic Foley. No flute, melody, music, human voice, wind storm, weapon or alarm.",
+        "duration_seconds": 4.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "3ab407559d8fbd4757ad60bd21f99efa11fdd19205945aa197ea6fa661dbb9c9",
+      "master": "public/audio/sfx/cosmic-fauna/dream_sailfish.wav",
+      "masterSha256": "2c4b1a060d908930c943e71392c314263b02a591cd9b4a45fc24fd1d8b71ef3b",
+      "bytes": 377574
+    }
+  ],
+  "attempts": [
+    {
+      "id": "astral_cobra",
+      "estimate": 172,
+      "startedAt": "2026-10-02T16:15:59.416Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "crown_shrimp",
+      "estimate": 168,
+      "startedAt": "2026-10-02T16:16:02.646Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "silt_wraith",
+      "estimate": 180,
+      "startedAt": "2026-10-02T16:16:05.280Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "coral_giant",
+      "estimate": 180,
+      "startedAt": "2026-10-02T16:16:08.032Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "winter_cicada",
+      "estimate": 164,
+      "startedAt": "2026-10-02T16:16:10.948Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "onyx_hammerhead",
+      "estimate": 172,
+      "startedAt": "2026-10-02T16:16:14.248Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "choir_siphonophore",
+      "estimate": 176,
+      "startedAt": "2026-10-02T16:16:17.214Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "copper_skate",
+      "estimate": 168,
+      "startedAt": "2026-10-02T16:16:20.131Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "eclipse_hydroid",
+      "estimate": 176,
+      "startedAt": "2026-10-02T16:16:23.474Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "dream_sailfish",
+      "estimate": 172,
+      "startedAt": "2026-10-02T16:16:26.186Z",
+      "outcome": "source-saved"
+    }
+  ],
+  "startedAt": "2026-10-02T16:15:58.532Z",
+  "after": {
+    "used": 6005,
+    "limit": 10000
+  },
+  "finishedAt": "2026-10-02T16:16:28.975Z"
+}

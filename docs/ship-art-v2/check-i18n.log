@@ -1,0 +1,7 @@
+
+> nova-swarm@1.0.0 check:i18n
+> node scripts/check-i18n.mjs && node scripts/check-overrun-localization.mjs
+
+i18n checks passed
+i18n Mode Briefing complete: 93 source strings translated in 7 non-English locales
+[overrun-localization] PASS locales=8 modalKeys=39 identityWhitelist=6

@@ -5,12 +5,38 @@ import { fileURLToPath } from 'node:url';
 import {
   GAMEPLAY_BACKDROP_PROFILES,
   getGameplayBackdropCoverScale,
+  resolveGameplayBackdropSources,
   resolveGameplayBackdropMode,
   sampleGameplayBackdropMotion
 } from '../src/config/GameplayBackdropMotion.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const playSource = fs.readFileSync(path.join(root, 'src', 'scenes', 'PlayScene.js'), 'utf8');
+const generated = {
+  sectorWorlds: ['/modern/world-01.webp', '/modern/world-02.webp'],
+  gameplayArenaBackdrop: '/modern/fallback.webp',
+  legacyGameplayArenaBackdrop: '/legacy/cabinet.webp',
+  legacyStormGameplayBackdrop: '/legacy/storm.webp',
+  legacyBossArenaBackdrop: '/legacy/boss.webp'
+};
+
+assert.deepEqual(resolveGameplayBackdropSources(1, 'modern', generated), {
+  style: 'modern',
+  usesSectorWorlds: true,
+  worlds: generated.sectorWorlds,
+  base: '/modern/world-01.webp',
+  storm: null,
+  boss: null
+});
+assert.equal(resolveGameplayBackdropSources(6, 'modern', generated).base, '/modern/world-02.webp');
+assert.deepEqual(resolveGameplayBackdropSources(99, 'legacy', generated), {
+  style: 'legacy',
+  usesSectorWorlds: false,
+  worlds: [],
+  base: '/legacy/cabinet.webp',
+  storm: null,
+  boss: null
+});
 
 assert.equal(resolveGameplayBackdropMode(1), 'base');
 assert.equal(resolveGameplayBackdropMode(3), 'storm');

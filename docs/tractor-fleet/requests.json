@@ -1,0 +1,317 @@
+[
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "harpoon",
+    "text": "Cinematic sci-fi tractor field. A heavy electromagnetic harpoon, tight sizzling tungsten cable under enormous tension, sharp metallic resonances and a deep focused power core. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "harpoon",
+    "text": "Cinematic sci-fi tractor field. A heavy electromagnetic harpoon, tight sizzling tungsten cable under enormous tension, sharp metallic resonances and a deep focused power core. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "harpoon",
+    "text": "Cinematic sci-fi tractor field. A heavy electromagnetic harpoon, tight sizzling tungsten cable under enormous tension, sharp metallic resonances and a deep focused power core. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "tide",
+    "text": "Cinematic sci-fi tractor field. An enormous liquid magnetic tide sweeping sideways, glassy fluid turbulence and rolling subsonic pressure with clear upper harmonic spray. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "tide",
+    "text": "Cinematic sci-fi tractor field. An enormous liquid magnetic tide sweeping sideways, glassy fluid turbulence and rolling subsonic pressure with clear upper harmonic spray. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "tide",
+    "text": "Cinematic sci-fi tractor field. An enormous liquid magnetic tide sweeping sideways, glassy fluid turbulence and rolling subsonic pressure with clear upper harmonic spray. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "pulse",
+    "text": "Cinematic sci-fi tractor field. An industrial gravity hammer with three separated heavy piston suction pulses, mechanical clacks and dense resonant metal pressure. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "pulse",
+    "text": "Cinematic sci-fi tractor field. An industrial gravity hammer with three separated heavy piston suction pulses, mechanical clacks and dense resonant metal pressure. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "pulse",
+    "text": "Cinematic sci-fi tractor field. An industrial gravity hammer with three separated heavy piston suction pulses, mechanical clacks and dense resonant metal pressure. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "twin",
+    "text": "Cinematic sci-fi tractor field. Twin counter rotating electromagnetic spindles, interwoven silky electrical ribbons alternating left and right, crystalline metallic phase beating. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "twin",
+    "text": "Cinematic sci-fi tractor field. Twin counter rotating electromagnetic spindles, interwoven silky electrical ribbons alternating left and right, crystalline metallic phase beating. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "twin",
+    "text": "Cinematic sci-fi tractor field. Twin counter rotating electromagnetic spindles, interwoven silky electrical ribbons alternating left and right, crystalline metallic phase beating. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "helix",
+    "text": "Cinematic sci-fi tractor field. A corkscrew graviton drill winding through space, thick twisting spectral whorl, toothed magnetic oscillations and restrained mechanical grit. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "helix",
+    "text": "Cinematic sci-fi tractor field. A corkscrew graviton drill winding through space, thick twisting spectral whorl, toothed magnetic oscillations and restrained mechanical grit. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "helix",
+    "text": "Cinematic sci-fi tractor field. A corkscrew graviton drill winding through space, thick twisting spectral whorl, toothed magnetic oscillations and restrained mechanical grit. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "well",
+    "text": "Cinematic sci-fi tractor field. A monumental gravity lens bending spacetime, low architectural metal groan, resonant cathedral sized vacuum pressure and bright glass overtones. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "well",
+    "text": "Cinematic sci-fi tractor field. A monumental gravity lens bending spacetime, low architectural metal groan, resonant cathedral sized vacuum pressure and bright glass overtones. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "well",
+    "text": "Cinematic sci-fi tractor field. A monumental gravity lens bending spacetime, low architectural metal groan, resonant cathedral sized vacuum pressure and bright glass overtones. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "shepherd",
+    "text": "Cinematic sci-fi tractor field. A radiant solar magnetic sail parting into two sheets, broad shimmering ion wind and tense golden metallic harmonics moving outward. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "shepherd",
+    "text": "Cinematic sci-fi tractor field. A radiant solar magnetic sail parting into two sheets, broad shimmering ion wind and tense golden metallic harmonics moving outward. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "shepherd",
+    "text": "Cinematic sci-fi tractor field. A radiant solar magnetic sail parting into two sheets, broad shimmering ion wind and tense golden metallic harmonics moving outward. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "anchor",
+    "text": "Cinematic sci-fi tractor field. A massive aerospace docking clamp locking a gravitational anchor, weighty sequential latches, grounded magnetic drone with a taut cable resonance. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "anchor",
+    "text": "Cinematic sci-fi tractor field. A massive aerospace docking clamp locking a gravitational anchor, weighty sequential latches, grounded magnetic drone with a taut cable resonance. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "anchor",
+    "text": "Cinematic sci-fi tractor field. A massive aerospace docking clamp locking a gravitational anchor, weighty sequential latches, grounded magnetic drone with a taut cable resonance. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "elevator",
+    "text": "Cinematic sci-fi tractor field. Travelling gravity rings ascending a deep energy shaft, rising sequential electromagnetic steps, smooth charged metal and distant spatial shimmer. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "elevator",
+    "text": "Cinematic sci-fi tractor field. Travelling gravity rings ascending a deep energy shaft, rising sequential electromagnetic steps, smooth charged metal and distant spatial shimmer. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "elevator",
+    "text": "Cinematic sci-fi tractor field. Travelling gravity rings ascending a deep energy shaft, rising sequential electromagnetic steps, smooth charged metal and distant spatial shimmer. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "winch",
+    "text": "Cinematic sci-fi tractor field. An immense industrial winch accelerating from a slow strained motor into a powerful turbine pull, tension rattles and heated copper energy. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "winch",
+    "text": "Cinematic sci-fi tractor field. An immense industrial winch accelerating from a slow strained motor into a powerful turbine pull, tension rattles and heated copper energy. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "winch",
+    "text": "Cinematic sci-fi tractor field. An immense industrial winch accelerating from a slow strained motor into a powerful turbine pull, tension rattles and heated copper energy. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "prism",
+    "text": "Cinematic sci-fi tractor field. Three precision prism emitters firing in a deliberate left centre right sequence, distinct chiming magnetic resonances over a heavy coherent laser hum. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "prism",
+    "text": "Cinematic sci-fi tractor field. Three precision prism emitters firing in a deliberate left centre right sequence, distinct chiming magnetic resonances over a heavy coherent laser hum. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "prism",
+    "text": "Cinematic sci-fi tractor field. Three precision prism emitters firing in a deliberate left centre right sequence, distinct chiming magnetic resonances over a heavy coherent laser hum. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "pendulum",
+    "text": "Cinematic sci-fi tractor field. An alien inertial pendulum rocking magnetic weight back and forth, two alternating deep tonal stresses and tactile swinging servo machinery. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "pendulum",
+    "text": "Cinematic sci-fi tractor field. An alien inertial pendulum rocking magnetic weight back and forth, two alternating deep tonal stresses and tactile swinging servo machinery. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "pendulum",
+    "text": "Cinematic sci-fi tractor field. An alien inertial pendulum rocking magnetic weight back and forth, two alternating deep tonal stresses and tactile swinging servo machinery. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "zipper",
+    "text": "Cinematic sci-fi tractor field. Two huge magnetic jaws closing together with converging energy ribbons, zipper like sequential metal catches and a concentrated hot ion hiss. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "zipper",
+    "text": "Cinematic sci-fi tractor field. Two huge magnetic jaws closing together with converging energy ribbons, zipper like sequential metal catches and a concentrated hot ion hiss. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "zipper",
+    "text": "Cinematic sci-fi tractor field. Two huge magnetic jaws closing together with converging energy ribbons, zipper like sequential metal catches and a concentrated hot ion hiss. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "eclipse",
+    "text": "Cinematic sci-fi tractor field. A hollow antimatter corona with a silent centre, two dark resonating pressure walls, eerie rich metallic harmonics and granular electrical fringes. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "eclipse",
+    "text": "Cinematic sci-fi tractor field. A hollow antimatter corona with a silent centre, two dark resonating pressure walls, eerie rich metallic harmonics and granular electrical fringes. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "eclipse",
+    "text": "Cinematic sci-fi tractor field. A hollow antimatter corona with a silent centre, two dark resonating pressure walls, eerie rich metallic harmonics and granular electrical fringes. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "charge",
+    "duration_seconds": 1.5,
+    "ending": "A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending.",
+    "id": "sling",
+    "text": "Cinematic sci-fi tractor field. An enormous magnetic catapult winding a tense energy tether then releasing into an outward sweeping plasma surge, elastic metal stress and a powerful clean release. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "active",
+    "duration_seconds": 3,
+    "ending": "The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending.",
+    "id": "sling",
+    "text": "Cinematic sci-fi tractor field. An enormous magnetic catapult winding a tense energy tether then releasing into an outward sweeping plasma surge, elastic metal stress and a powerful clean release. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1,
+    "ending": "The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail.",
+    "id": "sling",
+    "text": "Cinematic sci-fi tractor field. An enormous magnetic catapult winding a tense energy tether then releasing into an outward sweeping plasma surge, elastic metal stress and a powerful clean release. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence."
+  }
+]

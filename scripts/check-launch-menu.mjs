@@ -32,6 +32,21 @@ try {
  await page.keyboard.press('Escape');
  assert.equal(await page.evaluate(()=>window.__game.scenes.menu.launchHome.surface),'home');
  await page.keyboard.press('Enter');await assertRun('ranked_tactical');report.checks.push('Fresh-pilot keyboard opens Other Modes, returns, and launches Tactical directly');
+ // Recreate the reported saved-profile path instead of calling startGame with
+ // a forced Tactical argument (which bypasses the actual Play button).
+ await page.evaluate(()=>{localStorage.setItem('nova.hangarProgress.v1',JSON.stringify({bestLevel:60,bestSector:60,totalRuns:12,overrunUnlockCelebrationSeen:true}));localStorage.setItem('nova_swarm_last_launched_mode_v1','sector_start');});
+ await ready();
+ assert.equal(await page.evaluate(()=>window.__game.scenes.menu.launchHome.getPrimaryRunMode()),'sector_start');
+ await clickHome('launchTactical');await assertRun('sector_start');
+ await ready();await clickHome('otherModes');
+ const mayhemCards=await page.evaluate(()=>{const m=window.__game.scenes.menu;return [m.tacticalStartBtn,m.startBtn].map(b=>({text:b._label.text,visible:b.visible&&b.parent.visible,interactive:b.eventMode}));});
+ assert.deepEqual(mayhemCards.map(b=>b.text),['MAYHEM TACTICAL','MAYHEM PURE']);
+ assert.ok(mayhemCards.every(b=>b.visible&&b.interactive==='static'));
+ await clickMode('tacticalStartBtn');await assertRun('ranked_tactical');
+ assert.equal(await page.evaluate(()=>window.__game.level),1);
+ await ready();assert.equal(await page.evaluate(()=>window.__game.scenes.menu.launchHome.buttons.launchTactical._subtitle.text),'MAYHEM TACTICAL');
+ await clickHome('launchTactical');await assertRun('ranked_tactical');
+ report.checks.push('Saved Sector Run launches from Play; visible Tactical card restores Sector 1 and remains remembered after reload');
  await ready();
  const before=await page.evaluate(()=>{const s=window.__game.scenes.menu.astraMenuShip;return{x:s.x,y:s.y,angle:s.targetAngle};});
  await page.mouse.move(before.x,before.y);await page.mouse.down();await page.mouse.move(before.x+100,before.y,{steps:12});await page.mouse.up();
@@ -66,7 +81,7 @@ try {
   await clickHome('backHome');report.locales.push(language);
  }
  await page.evaluate(async()=>{await window.__novaI18n.setLanguagePreference('en');localStorage.setItem('nova.hangarProgress.v1',JSON.stringify({bestLevel:60,bestSector:60,totalRuns:12,overrunUnlockCelebrationSeen:true}));});
- for(const [key,expected] of [['tacticalStartBtn','ranked'],['dailySignalBtn','daily_signal'],['scoutRunBtn','scout'],['sectorStartBtn','sector_start'],['overrunStartBtn','overrun_tactical'],['overrunStartBtn','overrun_pure']]) {
+ for(const [key,expected] of [['tacticalStartBtn','ranked_tactical'],['startBtn','ranked'],['dailySignalBtn','daily_signal'],['scoutRunBtn','scout'],['sectorStartBtn','sector_start'],['overrunStartBtn','overrun_tactical'],['overrunStartBtn','overrun_pure']]) {
   await ready();await clickHome('otherModes');
   if(expected.startsWith('overrun'))await page.evaluate(mode=>{const m=window.__game.scenes.menu;m.overrunRunMode=mode;m.refreshButtonCopy(m.overrunStartBtn,{forceGpuRefresh:true});m.layoutMenu();},expected);
   await clickMode(key);await assertRun(expected);
@@ -74,7 +89,14 @@ try {
  await ready();await clickHome('otherModes');
  assert.equal(await page.evaluate(()=>window.__game.scenes.menu.getSelectedMenuOptionId()),'overrun');
  assert.equal(await page.evaluate(()=>window.__game.scenes.menu.overrunRunMode),'overrun_pure');
- await clickHome('backHome');await clickHome('launchTactical');await assertRun('ranked_tactical');
- report.checks.push('All six alternative launches work; remembered Overrun Pure never changes home Play');
+ await clickHome('backHome');await clickHome('launchTactical');await assertRun('overrun_pure');
+ await ready();await clickHome('otherModes');
+ await page.keyboard.press('Home');
+ // Walk the real keyboard navigation back to the visible Tactical card.
+ for(let i=0;i<20 && await page.evaluate(()=>window.__game.scenes.menu.getSelectedMenuOptionId())!=='launchTactical';i++)await page.keyboard.press('ArrowUp');
+ assert.equal(await page.evaluate(()=>{const m=window.__game.scenes.menu;return m.menuOptions[m.focusedMenuIndex].button===m.tacticalStartBtn;}),true);
+ await page.keyboard.press('Enter');await assertRun('ranked_tactical');
+ await ready();await clickHome('launchTactical');await assertRun('ranked_tactical');
+ report.checks.push('All seven mode launches work; Play remembers Overrun Pure; keyboard can restore Tactical and Play remembers that too');
  assert.deepEqual(report.errors,[]);report.status='passed';console.log('PASS launch menu, all alternative modes, rotation and eight locales');
 }catch(error){report.status='failed';report.failure=error.stack;throw error;}finally{flush();await browser.close();}

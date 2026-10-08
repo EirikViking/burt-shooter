@@ -1,0 +1,14 @@
+Thanks for checking these, Tyrian. These are local development changes, not a released patch yet.
+
+[quote=Tyrian Mollusk]every snake segment that touched the phased ship was insta-killed[/quote]
+Confirmed. Contact was deactivating the segment without going through its health. Protected contact now lets you pass through the mother and babies without deleting them. Deliberate Phase Pulse and Rift damage still use their normal damage paths. I checked the crossing against all eight sections of a real snake, including the head, with health, lives and score preserved.
+
+[quote=Tyrian Mollusk]unhelpful tacticals[/quote]
+Understood. Fixing Impact Foam's respawn calculation and extending Ghost did not answer the question of when those upgrades become useful. I have not added another blanket duration increase or a low-health assistance trigger. A better earned activation opportunity is worth testing separately, including how Point Defense affects grazing and Rift play.
+
+[quote=Tyrian Mollusk]never seen either[/quote]
+I found two catalogued pickups missing from every normal random-drop pool: Vector Boost and Vampire Drain. Their effects and collection paths existed, but normal play could not select them. I restored those routes and checked that every catalogued pickup can be selected. Drop limits stay the same; selection within the affected pools changes slightly.
+
+Your Phase Wake/Phase Reactor starting-loadout suggestion makes sense as a candidate for testing. I have left the three-augment ranked Onslaught pool unchanged in this pass, because starting with Rift Reprisal needs a comparison against the existing opening and records. That request remains open.
+
+The Graze Break brightness change was already in the September 28 update, and your later confirmation that it is less disruptive is useful. I have not piled another visual change onto it here.

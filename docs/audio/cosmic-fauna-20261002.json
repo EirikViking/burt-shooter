@@ -1,0 +1,72 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "before": {
+    "used": 5047,
+    "limit": 10000
+  },
+  "creditCeiling": 600,
+  "cues": [
+    {
+      "id": "cathedral_ray",
+      "request": {
+        "text": "One enormous alien ray calling softly in deep space. A physical resonant chest moan opening into a haunting glass harmonica overtone, slow leathery wing pressure, several distant bone creaks, then a gentle fading breath. Beautiful immense living animal, serene but unsettling. Detailed cinematic organic creature Foley, no music, speech, alarms, explosions or harsh jump scare.",
+        "duration_seconds": 4.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "25",
+      "sourceSha256": "64ceca03f1fe5a57a9a791aa5fed4998f6c01321e116dc523773f7770d6030db",
+      "master": "public/audio/sfx/cosmic-fauna/cathedral_ray.wav",
+      "masterSha256": "c5294127bcdd740cfdb4b57d01efd0032050f1cf318432a01db2b80e255d7812",
+      "bytes": 395214
+    },
+    {
+      "id": "lantern_medusa",
+      "request": {
+        "text": "A vast translucent alien jellyfish breathes and pulses. A deep rounded liquid lung throb under delicate irregular crystalline tremors, soft wet silk filaments stroking past, three organic fluttering throat notes ending in an airy liquid sigh. Exquisite otherworldly living animal, intimate and ominous. No melody, speech, bells, UI beeps, explosions or sharp alarms.",
+        "duration_seconds": 4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "22",
+      "sourceSha256": "9d76ec9f2c7355ebc9792b8a91958b282dd5f9e07526565be921662b2a1eddaf",
+      "master": "public/audio/sfx/cosmic-fauna/lantern_medusa.wav",
+      "masterSha256": "13810b41f824ca08d2ab3c1c7304dc42ad974f790aa482a3261142e7578e9527",
+      "bytes": 352878
+    },
+    {
+      "id": "obsidian_mantis",
+      "request": {
+        "text": "An enormous armored alien mantis swims past. Slow close chitin plates flex and click against a low throaty predatory purr, two textured joint creaks, wide soft membranous sails inhaling, a restrained granular rasp decaying into breath. Tangible dangerous living animal, rich detailed cinematic Foley with low body and dry shell texture. No music, speech, weapons, jump scare or alarm.",
+        "duration_seconds": 4.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "23",
+      "sourceSha256": "325c732af85be901636e933f9727c964dcee8767261eb9f9095e511a7c9d396e",
+      "master": "public/audio/sfx/cosmic-fauna/obsidian_mantis.wav",
+      "masterSha256": "cb4bac735d650d3392a3fab1bd34a88feb9a11b95fa785bf2bae5ef50b82d3a5",
+      "bytes": 366990
+    }
+  ],
+  "startedAt": "2026-10-02T12:34:29.652Z",
+  "after": {
+    "used": 5047,
+    "limit": 10000
+  },
+  "finishedAt": "2026-10-02T12:34:38.326Z",
+  "delayedQuotaCheck": {
+    "at": "2026-10-02T12:59:35.332Z",
+    "used": 5117,
+    "limit": 10000,
+    "remaining": 4883,
+    "note": "Fresh provider counter after generation; immediate counter had not advanced. Counter delta is not a currency claim."
+  }
+}

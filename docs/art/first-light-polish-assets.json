@@ -1,0 +1,233 @@
+{
+  "tool": "built-in imagegen",
+  "assets": [
+    {
+      "id": "talon",
+      "input": "E:\\Codex\\tmp\\nova-first-light-polish\\ui-review\\convoy-assets\\talon-original.png",
+      "output": "public\\art\\first-light\\convoy-talon.webp",
+      "sha256": "4bea7badfcdef3d548adf701b895569b93836eaf7353b844066d063a915dea77",
+      "normalization": "alpha bounds, fit inside 1024, 16px transparent margin; no painted edits"
+    },
+    {
+      "id": "pearl",
+      "input": "E:\\Codex\\tmp\\nova-first-light-polish\\ui-review\\convoy-assets\\pearl-original.png",
+      "output": "public\\art\\first-light\\convoy-pearl.webp",
+      "sha256": "ec2736b1b3b342c6cd3d82490b4643060513ce808b6c52fa41c068a9432ea9ef",
+      "normalization": "alpha bounds, fit inside 1024, 16px transparent margin; no painted edits"
+    },
+    {
+      "id": "ark",
+      "input": "E:\\Codex\\tmp\\nova-first-light-polish\\ui-review\\convoy-assets\\ark-original.png",
+      "output": "public\\art\\first-light\\convoy-ark.webp",
+      "sha256": "37b975cd71c7a40af8a05e1f33fef8a3ec83ea12efd7dde426106d5bf95673d2",
+      "normalization": "alpha bounds, fit inside 1024, 16px transparent margin; no painted edits"
+    },
+    {
+      "id": "lancer",
+      "input": "E:\\Codex\\tmp\\nova-first-light-polish\\audio\\rival-art\\lancer.png",
+      "output": "public\\art\\first-light\\rival-lancer.webp",
+      "sha256": "89e06f1036a66a3d56452e820d9806a1ab294b424997a4fca8fbe04c6aa07e0c",
+      "normalization": "alpha bounds, fit inside 1024, 16px transparent margin; no painted edits"
+    },
+    {
+      "id": "forge",
+      "input": "E:\\Codex\\tmp\\nova-first-light-polish\\audio\\rival-art\\forge.png",
+      "output": "public\\art\\first-light\\rival-forge.webp",
+      "sha256": "90c8f8c14fa34aff7d5034e53a8ea71822552de80403ae141abe8b4dd650e2a9",
+      "normalization": "alpha bounds, fit inside 1024, 16px transparent margin; no painted edits"
+    },
+    {
+      "id": "vortex",
+      "input": "E:\\Codex\\tmp\\nova-first-light-polish\\audio\\rival-art\\vortex.png",
+      "output": "public\\art\\first-light\\rival-vortex.webp",
+      "sha256": "a5527905e10f3a46b24f0b65e9102798263f733ba860e54d36d9ca10d0067a7a",
+      "normalization": "alpha bounds, fit inside 1024, 16px transparent margin; no painted edits"
+    },
+    {
+      "id": "wasp",
+      "input": "E:\\Codex\\tmp\\nova-first-light-polish\\audio\\rival-art\\wasp.png",
+      "output": "public\\art\\first-light\\rival-wasp.webp",
+      "sha256": "6dacb984ad02e82d345fe4ac5bd11155635c07fbbc755cc69425831398a8c9a5",
+      "normalization": "alpha bounds, fit inside 1024, 16px transparent margin; no painted edits"
+    },
+    {
+      "id": "oracle",
+      "input": "E:\\Codex\\tmp\\nova-first-light-polish\\audio\\rival-art\\oracle.png",
+      "output": "public\\art\\first-light\\rival-oracle.webp",
+      "sha256": "0a96921ac6bf3079f954a8cf237d838734f93c7da8462d5d438a0fd765889285",
+      "normalization": "alpha bounds, fit inside 1024, 16px transparent margin; no painted edits"
+    }
+  ],
+  "convoy": {
+    "tool": "built-in image_gen",
+    "intent": "three new transparent convoy transport hulls",
+    "integration": "none; isolated E deliverables only",
+    "styleReferencesInspected": [
+      "D:/vibe-coding-e/nova-swarm-arcade-onslaught-20260920/public/art/first-light/prison-transport.webp",
+      "D:/vibe-coding-e/nova-swarm-arcade-onslaught-20260920/public/art/first-light/rival-core-hull.webp"
+    ],
+    "referenceImagesPassedToGenerator": false,
+    "transparent_background": true,
+    "assets": [
+      {
+        "id": "talon",
+        "prompt": "Use case: stylized-concept.\nAsset type: production-quality 2D SHMUP game sprite, prerendered 3D spacecraft hull for Nova Swarm.\nCamera and framing: STRICT ORTHOGRAPHIC TOP-DOWN dorsal view, ship nose points straight UP, all engines point DOWN. Exactly one complete centered hull. Broad landscape transport silhouette about 2.4 times as wide as tall, with comfortable transparent margin around every extremity. Bilateral mechanical balance, substantial central bridge spine and two large side holding-bay structures.\nGameplay integration: The renderer adds captive fighters and glowing shootable locks separately. Leave one clearly defined empty recessed holding-bay space in the left half and one in the right half of the hull. The spaces belong inside the hull structures; do not paint fighters, prisoners, lock symbols, UI, targets, or unattached props. The bays must be readable at gameplay size.\nRendering: premium detailed textured 3D asset, convincing layered materials, purposeful large armor forms, restrained fine mechanical detail, clear edge separation against dark space, coherent with a gritty sophisticated arcade SHMUP fleet. Soft neutral overhead lighting and dimensional self-shading only. Crisp readable silhouette, no huge emissive effects.\nBackground: genuinely transparent alpha everywhere outside the hull, including empty gaps. No sky, ground, backdrop, cast/drop shadow, pedestal, frame, text, logos, watermark, stars, or perspective tilt. No line art, flat vector icon, schematic, conventional small fighter icon, or distant ship. No oversized bloom or long exhaust trails. This is a large transport hull sprite, not a poster.\nSubject: TALON, a black and amber angular armored prison transport. A wide predatory clamp-like silhouette, long sharply swept outer armor prongs, faceted trapezoidal side holding bays, and a compact wedge nose at the top. The wide flanking structures dominate over the short central body. Layered charcoal-black ceramic and gunmetal armor, controlled amber inset lighting and a few amber hazard panels without symbols or writing. Recessed industrial grilles, dense armored bulkheads, clear chamfered edges with pale steel wear. Small engine vents at the lower rear of the central hull and side structures. Make its profile unmistakably angular and armored, not a rectangular cargo barge."
+      },
+      {
+        "id": "pearl",
+        "prompt": "Use case: stylized-concept.\nAsset type: production-quality 2D SHMUP game sprite, prerendered 3D spacecraft hull for Nova Swarm.\nCamera and framing: STRICT ORTHOGRAPHIC TOP-DOWN dorsal view, ship nose points straight UP, all engines point DOWN. Exactly one complete centered hull. Broad landscape transport silhouette about 2.4 times as wide as tall, with comfortable transparent margin around every extremity. Bilateral mechanical balance, substantial central bridge spine and two large side holding-bay structures.\nGameplay integration: The renderer adds captive fighters and glowing shootable locks separately. Leave one clearly defined empty recessed holding-bay space in the left half and one in the right half of the hull. The spaces belong inside the hull structures; do not paint fighters, prisoners, lock symbols, UI, targets, or unattached props. The bays must be readable at gameplay size.\nRendering: premium detailed textured 3D asset, convincing layered materials, purposeful large armor forms, restrained fine mechanical detail, clear edge separation against dark space, coherent with a gritty sophisticated arcade SHMUP fleet. Soft neutral overhead lighting and dimensional self-shading only. Crisp readable silhouette, no huge emissive effects.\nBackground: genuinely transparent alpha everywhere outside the hull, including empty gaps. No sky, ground, backdrop, cast/drop shadow, pedestal, frame, text, logos, watermark, stars, or perspective tilt. No line art, flat vector icon, schematic, conventional small fighter icon, or distant ship. No oversized bloom or long exhaust trails. This is a large transport hull sprite, not a poster.\nSubject: PEARL, an elegant alien transport made of curved ivory and teal armor. A wide flowing manta-and-crescent silhouette with two smooth oval side holding-bay loops, a softly tapered small nose pointing up, and a sculpted central nacelle. Use graceful continuous S-curves, overlapping pearl-ivory shell plates, satin ceramic, silver seams, rich dark-teal recessed interiors and restrained turquoise light slits. The two side holding bays are large open recessed ovals within the graceful side hull lobes. Engines are small sculpted teal apertures along the bottom trailing edge. Sophisticated and serene alien engineering with fully rendered volume and fine material detail; not a pointed angular fighter or human industrial barge."
+      },
+      {
+        "id": "ark",
+        "prompt": "Use case: stylized-concept.\nAsset type: production-quality 2D SHMUP game sprite, prerendered 3D spacecraft hull for Nova Swarm.\nCamera and framing: STRICT ORTHOGRAPHIC TOP-DOWN dorsal view, ship nose points straight UP, all engines point DOWN. Exactly one complete centered hull. Broad landscape transport silhouette about 2.4 times as wide as tall, with comfortable transparent margin around every extremity. Bilateral mechanical balance, substantial central bridge spine and two large side holding-bay structures.\nGameplay integration: The renderer adds captive fighters and glowing shootable locks separately. Leave one clearly defined empty recessed holding-bay space in the left half and one in the right half of the hull. The spaces belong inside the hull structures; do not paint fighters, prisoners, lock symbols, UI, targets, or unattached props. The bays must be readable at gameplay size.\nRendering: premium detailed textured 3D asset, convincing layered materials, purposeful large armor forms, restrained fine mechanical detail, clear edge separation against dark space, coherent with a gritty sophisticated arcade SHMUP fleet. Soft neutral overhead lighting and dimensional self-shading only. Crisp readable silhouette, no huge emissive effects.\nBackground: genuinely transparent alpha everywhere outside the hull, including empty gaps. No sky, ground, backdrop, cast/drop shadow, pedestal, frame, text, logos, watermark, stars, or perspective tilt. No line art, flat vector icon, schematic, conventional small fighter icon, or distant ship. No oversized bloom or long exhaust trails. This is a large transport hull sprite, not a poster.\nSubject: ARK, a green organic bioarmored ark transport. A broad living carapace silhouette, like a heavily plated alien seed-pod vessel with four short outward-curving armored lobes surrounding a thick central organism spine. Front at top, short rear rootlike engine lobes at bottom. Two large recessed organic holding cavities occupy the left and right halves, framed by thick ribbed bioarmor. Layered forest-green chitin, moss-green armored ridges, darker emerald membranes, muted olive bony ribs and small restrained chartreuse bioluminescent slits. Convincing textured living materials, a few subtle integrated technological seams, weighty three-dimensional shell armor. Read as a constructed alien ark spacecraft with a unique rounded scalloped segmented outline, not an animal portrait, leaf, insect drawing, angular fighter, or green recolor of a metal barge."
+      }
+    ]
+  },
+  "rival": {
+    "version": 1,
+    "tool": "built-in image_gen",
+    "date": "2026-09-27T22:11:02.084Z",
+    "targetUse": "Nova Swarm First Light rival hulls",
+    "method": "One independent generation per hull; Lancer additionally received one targeted framing repair. No procedural drawing or compositing. Original generated alpha and pixels retained.",
+    "assets": [
+      {
+        "id": "lancer",
+        "filename": "lancer.png",
+        "prompt": "Use case: stylized-concept. Asset type: finished top-down 2D space-shooter enemy sprite, one isolated spacecraft, genuinely transparent background. LANCER: an exceptionally sharp split-spear interceptor, silver and gunmetal armor with restrained icy-blue insets. Two long parallel forward spear prongs point downward separated by a deep open slot. Broad upper shoulders and two visibly detachable side gun pods with crisp railgun muzzles pointing down. An inset blue reactor sits in the central body. Slender, disciplined, lethal. Premium detailed hand-painted/physically rendered game sprite with strong material definition and crisp edges, matching the polish of a modern arcade shooter. Orthographic camera directly overhead, perfectly flat top view, no perspective tilt. Ship faces DOWN toward the player: nose and firing ends at the bottom, engines at top. Wide bilateral outer silhouette with subtle asymmetric wear and surface greebles. Compact visible central reactor and exactly TWO side weapon pods separated by readable dark mechanical seams; all components attached into one cohesive craft. Entire hull centered and completely visible with 8 percent clear margin. Top-left neutral studio lighting with integrated self-shading only. Preserve readable large armor shapes at small gameplay scale; intricate secondary machining must not obscure silhouette. NO text, logos, letters, symbols, ground plane, cast shadow, background, stars, engines firing, projectile trails, huge baked glow, luminous halo or bloom. Tiny restrained emissive insets only. Square transparent canvas.",
+        "repairPrompt": "Use case: precise-object-edit. This is the Lancer game sprite. Preserve its premium silver/gunmetal armor, icy-blue reactor, split-spear pointed nose facing DOWN, orthographic top view, two detachable side railgun pods, detailed material finish and bilaterally balanced identity. Repair its framing: the TOP ENGINE TIPS must be fully completed and visible, not cut off. Fit the ENTIRE finished craft within a SQUARE canvas with generous transparent empty margin on every side. Broaden the shoulder wings and place the existing two side weapon pods farther apart, so the footprint has broad shoulders and a longer central split-spear nose. Preserve two clear downward spear tips and exactly two side railgun pods. No extra ships or objects. Genuine transparent background, no floor, no cast shadow, no text, no huge glow, no exhaust, no cropped components.",
+        "referenceFile": "lancer-original.png",
+        "generatedSourcePath": "C:\\Users\\cromk\\.codex\\generated_images\\01a0e3ab-e4f1-7072-8ad3-4fa0a3258a7d\\exec-011bca32-e7e6-4b05-9c67-bf465d83d34d.png",
+        "alphaRequested": true,
+        "visualInspection": "Framing repaired: both engine tops and spear tips visible. Silver-blue split-spear form preserved; visually slimmer than the four other silhouettes.",
+        "qa": {
+          "sha256": "426d278da1318665f4c941e94b7e0567b8d4f8ebfea17ede87b52de40ef86e02",
+          "bytes": 1250054,
+          "width": 1254,
+          "height": 1254,
+          "format": "RGBA PNG, 8 bit, noninterlaced",
+          "transparentPixels": 1050730,
+          "opaquePixels": 1247,
+          "partialAlphaPixels": 520539,
+          "nearOpaquePixels": 486420,
+          "lowPartialAlphaPixels": 29533,
+          "occupiedBorderPixels": 0,
+          "visibleBounds": {
+            "minX": 143,
+            "minY": 20,
+            "maxX": 1110,
+            "maxY": 1218
+          }
+        }
+      },
+      {
+        "id": "forge",
+        "filename": "forge.png",
+        "prompt": "Use case: stylized-concept. Asset type: finished top-down 2D space-shooter enemy sprite, one isolated spacecraft, genuinely transparent background. FORGE: a massively built bronze foundry warship with a broad hammerhead silhouette, dark iron understructure, thick forged plates, tiny hot amber vent slits and heavy articulated machinery. Two huge detachable side cannon pods form the ends of the hammerhead, their blunt muzzle openings pointing downward. Short, stocky central prow points down, circular shielded reactor inset in the center. Dense industrial weight. Premium detailed hand-painted/physically rendered game sprite with strong material definition and crisp edges, matching the polish of a modern arcade shooter. Orthographic camera directly overhead, perfectly flat top view, no perspective tilt. Ship faces DOWN toward the player: nose and firing ends at the bottom, engines at top. Broad, horizontally spread bilateral outer silhouette with subtle asymmetric wear and surface greebles. Compact visible central reactor and exactly TWO side weapon pods separated by readable dark mechanical seams; all components attached into one cohesive craft. Entire hull centered and completely visible with a generous 12 percent EMPTY transparent margin on ALL FOUR sides. Nothing touches or approaches any canvas edge; whole engine exhausts and whole weapon tips must fit. Make the craft wider than it is tall. Top-left neutral studio lighting with integrated self-shading only. Preserve readable large armor shapes at small gameplay scale; intricate secondary machining must not obscure silhouette. NO text, logos, letters, symbols, ground plane, cast shadow, background, stars, engines firing, projectile trails, huge baked glow, luminous halo or bloom. Tiny restrained emissive insets only. Square transparent canvas.",
+        "generatedSourcePath": "C:\\Users\\cromk\\.codex\\generated_images\\01a0e3ab-e4f1-7072-8ad3-4fa0a3258a7d\\exec-689788f4-e16b-4154-9519-96c24ce3e2ab.png",
+        "alphaRequested": true,
+        "visualInspection": "Pass: distinct silhouette, downward orientation, central reactor and two side gun pods. No huge bloom, text or floor.",
+        "qa": {
+          "sha256": "b90c5216b5e7eed4d417b83a89c60b24e3a1ddc8626569b6248247cbdb5d152d",
+          "bytes": 1285165,
+          "width": 1254,
+          "height": 1254,
+          "format": "RGBA PNG, 8 bit, noninterlaced",
+          "transparentPixels": 1031754,
+          "opaquePixels": 414,
+          "partialAlphaPixels": 540348,
+          "nearOpaquePixels": 514928,
+          "lowPartialAlphaPixels": 20610,
+          "occupiedBorderPixels": 0,
+          "visibleBounds": {
+            "minX": 57,
+            "minY": 217,
+            "maxX": 1198,
+            "maxY": 1015
+          }
+        }
+      },
+      {
+        "id": "vortex",
+        "filename": "vortex.png",
+        "prompt": "Use case: stylized-concept. Asset type: finished top-down 2D space-shooter enemy sprite, one isolated spacecraft, genuinely transparent background. VORTEX: a premium violet gravity raider with a wide crescent silhouette and elegant curving swept wings. Layered aubergine and titanium armor surrounds a compact faceted violet central reactor. The tips of the crescent curve FORWARD toward the bottom of the image, ending in two visibly detachable curved weapon pods, dark emitter apertures pointing downward. Curved blade-like elegance, deep negative spaces, finely machined gravitational vanes. Premium detailed hand-painted/physically rendered game sprite with strong material definition and crisp edges, matching the polish of a modern arcade shooter. Orthographic camera directly overhead, perfectly flat top view, no perspective tilt. Ship faces DOWN toward the player: nose and firing ends at the bottom, engines at top. Broad, horizontally spread bilateral outer silhouette with subtle asymmetric wear and surface greebles. Compact visible central reactor and exactly TWO side weapon pods separated by readable dark mechanical seams; all components attached into one cohesive craft. Entire hull centered and completely visible with a generous 12 percent EMPTY transparent margin on ALL FOUR sides. Nothing touches or approaches any canvas edge; whole engine exhausts and whole weapon tips must fit. Make the craft wider than it is tall. Top-left neutral studio lighting with integrated self-shading only. Preserve readable large armor shapes at small gameplay scale; intricate secondary machining must not obscure silhouette. NO text, logos, letters, symbols, ground plane, cast shadow, background, stars, engines firing, projectile trails, huge baked glow, luminous halo or bloom. Tiny restrained emissive insets only. Square transparent canvas.",
+        "generatedSourcePath": "C:\\Users\\cromk\\.codex\\generated_images\\01a0e3ab-e4f1-7072-8ad3-4fa0a3258a7d\\exec-93c12dbc-71ca-4425-bf02-fafdcaec342f.png",
+        "alphaRequested": true,
+        "visualInspection": "Pass: distinct silhouette, downward orientation, central reactor and two side gun pods. No huge bloom, text or floor.",
+        "qa": {
+          "sha256": "c1325df9b596ab3b7ae6116269e34b473c54423d5577c8cb009d27e6511c860a",
+          "bytes": 1180843,
+          "width": 1254,
+          "height": 1254,
+          "format": "RGBA PNG, 8 bit, noninterlaced",
+          "transparentPixels": 1115960,
+          "opaquePixels": 773,
+          "partialAlphaPixels": 455783,
+          "nearOpaquePixels": 427812,
+          "lowPartialAlphaPixels": 23155,
+          "occupiedBorderPixels": 0,
+          "visibleBounds": {
+            "minX": 48,
+            "minY": 154,
+            "maxX": 1206,
+            "maxY": 1006
+          }
+        }
+      },
+      {
+        "id": "wasp",
+        "filename": "wasp.png",
+        "prompt": "Use case: stylized-concept. Asset type: finished top-down 2D space-shooter enemy sprite, one isolated spacecraft, genuinely transparent background. WASP: an aggressive emerald-green insectoid raider with angular articulated chitin-like metal plates, charcoal joints and fine lime vent insets. Broad sharply jointed wings and a slender pointed central stinger prow point downward. Two visibly detachable segmented needle-cannon pods along the outer wings, gun muzzles toward the bottom. Clearly mechanical armored craft, not a real insect. Angular menacing fast predator. Premium detailed hand-painted/physically rendered game sprite with strong material definition and crisp edges, matching the polish of a modern arcade shooter. Orthographic camera directly overhead, perfectly flat top view, no perspective tilt. Ship faces DOWN toward the player: nose and firing ends at the bottom, engines at top. Broad, horizontally spread bilateral outer silhouette with subtle asymmetric wear and surface greebles. Compact visible central reactor and exactly TWO side weapon pods separated by readable dark mechanical seams; all components attached into one cohesive craft. Entire hull centered and completely visible with a generous 12 percent EMPTY transparent margin on ALL FOUR sides. Nothing touches or approaches any canvas edge; whole engine exhausts and whole weapon tips must fit. Make the craft wider than it is tall. Top-left neutral studio lighting with integrated self-shading only. Preserve readable large armor shapes at small gameplay scale; intricate secondary machining must not obscure silhouette. NO text, logos, letters, symbols, ground plane, cast shadow, background, stars, engines firing, projectile trails, huge baked glow, luminous halo or bloom. Tiny restrained emissive insets only. Square transparent canvas.",
+        "generatedSourcePath": "C:\\Users\\cromk\\.codex\\generated_images\\01a0e3ab-e4f1-7072-8ad3-4fa0a3258a7d\\exec-6f1f4e1f-235d-40b6-99eb-9e4c1d4abb18.png",
+        "alphaRequested": true,
+        "visualInspection": "Pass: distinct silhouette, downward orientation, central reactor and two side gun pods. No huge bloom, text or floor.",
+        "qa": {
+          "sha256": "cf64f95a2e979a283286c10fd0b73d0886049f838a45e4dd3dce28971d772ef4",
+          "bytes": 931304,
+          "width": 1254,
+          "height": 1254,
+          "format": "RGBA PNG, 8 bit, noninterlaced",
+          "transparentPixels": 1226187,
+          "opaquePixels": 575,
+          "partialAlphaPixels": 345754,
+          "nearOpaquePixels": 310852,
+          "lowPartialAlphaPixels": 30061,
+          "occupiedBorderPixels": 0,
+          "visibleBounds": {
+            "minX": 73,
+            "minY": 239,
+            "maxX": 1181,
+            "maxY": 1013
+          }
+        }
+      },
+      {
+        "id": "oracle",
+        "filename": "oracle.png",
+        "prompt": "Use case: stylized-concept. Asset type: finished top-down 2D space-shooter enemy sprite, one isolated spacecraft, genuinely transparent background. ORACLE: an imposing ivory sentinel spacecraft with a broad triple-fin silhouette, warm porcelain ceramic armor, intricate metallic gold insets and dark graphite recesses. Three powerful vertical forward fins point downward: the two outer fins are visibly detachable side weapon pods with gold-edged muzzles facing down; the central fin is the ship's prow, containing an inset pale cyan reactor. Ancient precise technology, sophisticated sculptural surfaces. Premium detailed hand-painted/physically rendered game sprite with strong material definition and crisp edges, matching the polish of a modern arcade shooter. Orthographic camera directly overhead, perfectly flat top view, no perspective tilt. Ship faces DOWN toward the player: nose and firing ends at the bottom, engines at top. Broad, horizontally spread bilateral outer silhouette with subtle asymmetric wear and surface greebles. Compact visible central reactor and exactly TWO side weapon pods separated by readable dark mechanical seams; all components attached into one cohesive craft. Entire hull centered and completely visible with a generous 12 percent EMPTY transparent margin on ALL FOUR sides. Nothing touches or approaches any canvas edge; whole engine exhausts and whole weapon tips must fit. Make the craft wider than it is tall. Top-left neutral studio lighting with integrated self-shading only. Preserve readable large armor shapes at small gameplay scale; intricate secondary machining must not obscure silhouette. NO text, logos, letters, symbols, ground plane, cast shadow, background, stars, engines firing, projectile trails, huge baked glow, luminous halo or bloom. Tiny restrained emissive insets only. Square transparent canvas.",
+        "generatedSourcePath": "C:\\Users\\cromk\\.codex\\generated_images\\01a0e3ab-e4f1-7072-8ad3-4fa0a3258a7d\\exec-32fa458e-9622-4bf7-a5d4-3f12ca50a921.png",
+        "alphaRequested": true,
+        "visualInspection": "Pass: distinct silhouette, downward orientation, central reactor and two side gun pods. No huge bloom, text or floor.",
+        "qa": {
+          "sha256": "a4a3f76047e1643af08fcbcd873e9b15f3d328cf74232e3e28ae756a9f020a21",
+          "bytes": 1261878,
+          "width": 1254,
+          "height": 1254,
+          "format": "RGBA PNG, 8 bit, noninterlaced",
+          "transparentPixels": 1077933,
+          "opaquePixels": 878,
+          "partialAlphaPixels": 493705,
+          "nearOpaquePixels": 463978,
+          "lowPartialAlphaPixels": 25557,
+          "occupiedBorderPixels": 0,
+          "visibleBounds": {
+            "minX": 38,
+            "minY": 169,
+            "maxX": 1215,
+            "maxY": 1022
+          }
+        }
+      }
+    ],
+    "validation": "All five files have real transparent alpha, opaque hull pixels and zero occupied pixels on canvas edges. Visual inspection passed orientation, material identity and side-pod readability. Gameplay-size and collision integration remain root responsibility."
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "verifiedAtUtc": "2026-09-13T11:57:41.0247161Z",
+  "sourceRoot": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822",
+  "branch": "codex/space-snake-broods-20260912",
+  "baseline": "4663de24b5f04a24d72d88db1220aca77a92dc6b",
+  "milestone": "milestone/2026-09-13-encounter-brood-expansion",
+  "runtimeCommit": "b53a036",
+  "version": "v2026-09-13_13-28-12",
+  "package": {
+    "runtimeCommit": "b53a036",
+    "payload": "E:/Codex/builds/nova-swarm/forum-feedback-20260913/win-unpacked",
+    "baseline": "E:/Codex/builds/nova-swarm/snake-broods/package/win-unpacked",
+    "retained": 15435,
+    "playerAssets": 64,
+    "changed": [
+      "dist/index.html",
+      "dist/assets/vendor-pixi-DY7ldn6R.js",
+      "dist/assets/index-d1rBsAlU.css",
+      "dist/assets/index-CuAqLwnA.js",
+      "dist/assets/vendor-BkbZGUfW.js",
+      "dist/version.json",
+      "dist/sw.js",
+      "electron/steamAchievementsBridge.cjs"
+    ],
+    "bytes": 2339955352,
+    "asarSha256": "5bb1bf4378f355cf2d884323832f611c1c864d76a8bcb0790f687c43b97ca203",
+    "version": "v2026-09-13_13-28-12"
+  },
+  "steam": {
+    "appId": 4765070,
+    "depotId": 4765071,
+    "buildId": 25282423,
+    "manifest": "6968141716315948594",
+    "verifiedBy": "Successful SteamCMD upload plus reloaded Steamworks Builds page",
+    "branches": {
+      "default": 25274613,
+      "sector-continue-test": 25282423,
+      "test-build": 23782673
+    },
+    "payloadFiles": 5134,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesChanged": [
+      "resources/app.asar"
+    ]
+  },
+  "tyrian": {
+    "achievement": "ACH_RANK_27",
+    "awardDelivered": false,
+    "directApiResult": 8,
+    "nativeRecovery": "Requires Tyrian to launch this updated build online",
+    "publisherPermissions": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "verification": {
+    "productionSmoke": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\production-smoke-isolated\\report.json",
+    "productionLanguages": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\i18n-production\\report.json",
+    "nativeSteam": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\native-smoke-online\\report.json",
+    "nativeControls": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\native-controls\\report.json",
+    "nativeBroods": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\native-broods-isolated\\result.json",
+    "packageDependencies": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\package-runtime\\report.json",
+    "matrix": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\matrix\\summary.json",
+    "limitations": [
+      "No human playthrough or perceptual listening",
+      "Exact long-run hang not reproduced",
+      "Tyrian award not yet received",
+      "Earlier timeouts and frame outliers preserved"
+    ]
+  },
+  "changedFiles": [
+    "docs/forum-feedback-build-20260913.md",
+    "docs/forum-feedback-delivery-20260913.json",
+    "docs/steam/drafts/forum-feedback-replies-build-20260913.txt",
+    "docs/steam/drafts/forum-new-build-20260913.txt",
+    "electron/steamAchievementsBridge.cjs",
+    "progress.md",
+    "scripts/check-boss-encounter-balance.mjs",
+    "scripts/check-core-serpent.mjs",
+    "scripts/check-creature-audio-bus.mjs",
+    "scripts/check-forum-feedback-matrix.mjs",
+    "scripts/check-forum-feedback-policies.mjs",
+    "scripts/check-forum-feedback-runtime.mjs",
+    "scripts/check-graze-break.mjs",
+    "scripts/check-i18n-ui.mjs",
+    "scripts/check-result-screen-flow.mjs",
+    "scripts/check-snake-broods-packaged.mjs",
+    "scripts/check-tactical-fusion-protocols.mjs",
+    "scripts/package-forum-feedback.mjs",
+    "scripts/vite-forum-feedback.config.mjs",
+    "src/achievements/RankAchievementRecovery.js",
+    "src/audio/CreatureAudio.js",
+    "src/combat/PredictiveAim.js",
+    "src/config/ColossusAssault.js",
+    "src/config/DiscoveryProgression.js",
+    "src/config/SpaceSnakes.js",
+    "src/effects/ColossusAssaultVfx.js",
+    "src/effects/SpaceSnakeDeath.js",
+    "src/entities/BonusDrone.js",
+    "src/entities/Hijacker.js",
+    "src/entities/Player.js",
+    "src/entities/SpaceSnake.js",
+    "src/game/Game.js",
+    "src/game/LastRunMode.js",
+    "src/managers/EnemyManager.js",
+    "src/progression/BonusCoreRewards.js",
+    "src/scenes/GameOverScene.js",
+    "src/scenes/MenuScene.js",
+    "src/scenes/PlayScene.js",
+    "src/ui/AstraLaunchHome.js",
+    "src/ui/HangarLaunchModeOverlay.js"
+  ],
+  "cleanup": {
+    "completedAtUtc": "2026-09-13T11:56:36.1734827Z",
+    "deleted": [
+      {
+        "path": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\package-source",
+        "bytes": 2454163178.0,
+        "deleted": true
+      },
+      {
+        "path": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\build-dist",
+        "bytes": 7020602.0,
+        "deleted": true
+      },
+      {
+        "path": "E:\\Codex\\tmp\\nova-forum-feedback-20260913",
+        "bytes": 18081002.0,
+        "deleted": true
+      },
+      {
+        "path": "E:\\dev-cache\\vite-nova-feedback",
+        "bytes": 11486555.0,
+        "deleted": true
+      },
+      {
+        "path": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\native-smoke\\userData",
+        "bytes": 6033763.0,
+        "deleted": true
+      },
+      {
+        "path": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\native-controls\\userData",
+        "bytes": 8999456.0,
+        "deleted": true
+      },
+      {
+        "path": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\native-broods\\profile",
+        "bytes": 60249664.0,
+        "deleted": true
+      },
+      {
+        "path": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\native-smoke-online\\userData",
+        "bytes": 1812873.0,
+        "deleted": true
+      },
+      {
+        "path": "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa\\native-broods-isolated\\profile",
+        "bytes": 7172320.0,
+        "deleted": true
+      }
+    ],
+    "removedFileBytes": 2575019413.0,
+    "freeBefore": 220261515264,
+    "freeAfter": 224346243072,
+    "retained": [
+      "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\win-unpacked",
+      "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\qa",
+      "E:\\Codex\\builds\\nova-swarm\\forum-feedback-20260913\\steam-output",
+      "E:\\Codex\\builds\\nova-swarm\\snake-broods\\package\\win-unpacked"
+    ],
+    "sharedCachesPreserved": [
+      "E:\\dev-cache\\steamcmd-nova",
+      "E:\\dev-cache\\npm-nova",
+      "E:\\dev-cache\\ms-playwright"
+    ],
+    "outstanding": []
+  },
+  "publicForumPostsPublished": 0,
+  "drafts": [
+    "docs/steam/drafts/forum-new-build-20260913.txt",
+    "docs/steam/drafts/forum-feedback-replies-build-20260913.txt"
+  ],
+  "rollback": {
+    "source": "git revert b53a036",
+    "privateSteamBuild": 25274613
+  }
+}

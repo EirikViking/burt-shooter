@@ -75,12 +75,12 @@ async function readState(page) {
 }
 
 const expectedIds = ['rift_reprisal', 'drone_constellation', 'aegis_reactor', 'sky_verdict'];
-assert(TACTICAL_FUSION_PROTOCOLS.length === 4, `expected four Fusion Protocols, got ${TACTICAL_FUSION_PROTOCOLS.length}`);
-assert(new Set(TACTICAL_FUSION_PROTOCOLS.map((fusion) => fusion.id)).size === 4, 'Fusion Protocol ids must be unique');
-assert(TACTICAL_FUSION_PROTOCOLS.every((fusion) => fusion.requiredIds.length === 2), 'every Fusion Protocol must require exactly two deliberate picks');
+assert(TACTICAL_FUSION_PROTOCOLS.length === 6, `expected six Fusion Protocols, got ${TACTICAL_FUSION_PROTOCOLS.length}`);
+assert(new Set(TACTICAL_FUSION_PROTOCOLS.map((fusion) => fusion.id)).size === 6, 'Fusion Protocol ids must be unique');
+assert(TACTICAL_FUSION_PROTOCOLS.every((fusion) => fusion.requiredIds.length === (fusion.id==='rift_crossfire'?3:2)), 'Fusion prerequisites must match their deliberate picks');
 assert(TACTICAL_FUSION_PROTOCOLS.every((fusion) => fusion.name && fusion.description && fusion.detail), 'every Fusion Protocol needs complete player-facing metadata');
 assert(!/scoreMult|scoreMultiplier|comboWindow/i.test(JSON.stringify(TACTICAL_FUSION_PROTOCOLS)), 'Fusion Protocol metadata must not grant a score multiplier');
-const allRequiredIds = TACTICAL_FUSION_PROTOCOLS.flatMap((fusion) => fusion.requiredIds);
+const allRequiredIds = TACTICAL_FUSION_PROTOCOLS.filter(fusion=>expectedIds.includes(fusion.id)).flatMap((fusion) => fusion.requiredIds);
 const activeFusions = getActiveTacticalFusionProtocols(allRequiredIds);
 assert(activeFusions.map((fusion) => fusion.id).join(',') === expectedIds.join(','), 'complete augment set did not activate all Fusion Protocols');
 const modifiers = buildTacticalDraftModifiers(allRequiredIds);
@@ -227,8 +227,8 @@ try {
       constellationShots: constellation.length,
       originKinds: constellation.map((bullet) => bullet.tacticalFusionOriginKind),
       originXs: constellation.map((bullet) => Math.round(bullet.x)),
-      dronesBelowHull: player.drones.every((drone) =>
-        player.sprite.getChildIndex(drone) < player.sprite.getChildIndex(player.shipSprite)
+      dronesAboveHull: player.drones.every((drone) =>
+        player.sprite.getChildIndex(drone) > player.sprite.getChildIndex(player.shipSprite)
       ),
       event: structuredClone(player.lastTacticalFusionEvent)
     };
@@ -237,7 +237,7 @@ try {
   assert(droneRuntime.activeDrones >= 1 && droneRuntime.constellationShots >= 2, `Drone Constellation did not create crossfire: ${JSON.stringify(droneRuntime)}`);
   assert(droneRuntime.originKinds.filter((kind) => kind === 'mirrored_echo').length === 2, `one-drone Constellation did not create mirrored origins: ${JSON.stringify(droneRuntime)}`);
   assert(new Set(droneRuntime.originXs).size >= 2, `one-drone Constellation origins did not separate: ${JSON.stringify(droneRuntime)}`);
-  assert(droneRuntime.dronesBelowHull === true, `permanent drones should render below the player hull: ${JSON.stringify(droneRuntime)}`);
+  assert(droneRuntime.dronesAboveHull === true, `approved visible wing drones must render above the hull: ${JSON.stringify(droneRuntime)}`);
   report.states.droneRuntime = droneRuntime;
   report.screenshots.drone = path.join(outputDir, '03-drone-constellation.png');
   await page.screenshot({ path: report.screenshots.drone });
@@ -259,6 +259,10 @@ try {
       manager.addEnemyBullet(new BulletClass(player.x - 45 + index * 18, player.y - 34, 0, 0.1, 1, 0xff3355, false));
     }
     player.activateShield(12000);
+    // The fixture grants two minutes of invulnerability above. A real shield
+    // break must be tested after that protection has ended.
+    player.invulnerableTime = 0;
+    player.invulnerable = false;
     play.debugInvincible = false;
     const tookDamage = player.takeDamage();
     play.debugInvincible = true;

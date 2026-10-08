@@ -23,9 +23,10 @@ export const BootWatchdog = {
         console.log('[BootWatchdog] Watchdog active.');
     },
 
-    checkpoint(step) {
+    checkpoint(step, timeoutMs = BOOT_TIMEOUT) {
         this.currentStep = step;
         this.lastCheckpointTime = Date.now();
+        this.stepTimeout = Math.max(BOOT_TIMEOUT, Math.min(30000, Number(timeoutMs) || BOOT_TIMEOUT));
         window.__BOOT_STEP = step;
         console.log(`[BootWatchdog] CHECKPOINT: ${step}`);
 
@@ -64,8 +65,10 @@ export const BootWatchdog = {
     check() {
         if (this.isReady) return;
 
-        const elapsed = Date.now() - this.bootStartTime;
-        if (elapsed > BOOT_TIMEOUT) {
+        // A responsive, bounded asset preparation phase is not a frozen game.
+        // Each completed boot step supplies real progress and its own deadline.
+        const elapsed = Date.now() - this.lastCheckpointTime;
+        if (elapsed > (this.stepTimeout || BOOT_TIMEOUT) || Date.now() - this.bootStartTime > 60000) {
             this.triggerFreeze('BOOT TIMEOUT - STUCK AT ' + this.currentStep);
         }
     },

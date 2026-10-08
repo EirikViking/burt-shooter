@@ -1,3 +1,4 @@
+import { translateTextForLocale } from '../src/i18n/index.js';
 ﻿import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -232,6 +233,11 @@ async function openFreshMenu(page, code) {
   }
   assert(response?.ok(), `Navigation failed for ${url}: HTTP ${response?.status() || 'no response'}`);
   await waitForScene(page, 'menu');
+  // The menu objects exist before the showroom finishes loading. Do not
+  // mistake translated offscreen controls for a visible Settings capture.
+  await page.waitForFunction(() => document.body?.dataset.menuReady === '1'
+    && (!document.getElementById('loading') || getComputedStyle(document.getElementById('loading')).display === 'none'),
+  null, { timeout: 120000 });
   await page.evaluate((language) => window.__novaI18n?.setLanguagePreference?.(language), code);
   await waitForLanguage(page, code);
 }
@@ -465,9 +471,8 @@ async function captureLanguage(page, language, index) {
   assertSnapshotClean(snaps.menu, language, `${language.slug}.menu`);
   shots.menu = await screenshot(page, `${prefix}-main-menu.png`);
   assert(snaps.menu.menu.settings === language.menuSettings, `${language.slug} menu Settings label mismatch`);
-  const homePlay = {en:'PLAY',de:'SPIELEN',es:'JUGAR',ru:'ИГРАТЬ','zh-CN':'游玩','pt-BR':'JOGAR',ko:'플레이',ja:'プレイ'};
-  assert(snaps.menu.menu.launch === homePlay[language.code], `${language.slug} visible home Play label mismatch`);
-  assert(snaps.menu.menu.primaryRunMode === 'ranked_tactical', `${language.slug} home Play must stay Tactical`);
+  assert(snaps.menu.menu.launch === 'ARCADE', `${language.slug} visible Arcade label mismatch`);
+  assert(snaps.menu.menu.primaryRunMode === 'ranked_tactical', `${language.slug} Arcade always launches Tactical`);
   assert(snaps.menu.menu.homeAlpha === 1, `${language.slug} home must recover brightness after Settings`);
   assert(snaps.menu.menu.duplicateRotateHint === false, `${language.slug} home must have only one rotation hint`);
 
@@ -546,7 +551,8 @@ async function captureLanguage(page, language, index) {
   snaps.leaderboard = await snapshot(page);
   assertSnapshotClean(snaps.leaderboard, language, `${language.slug}.leaderboard`);
   shots.leaderboard = await screenshot(page, `${prefix}-leaderboard.png`);
-  assert(snaps.leaderboard.leaderboard.title === language.leaderboard, `${language.slug} leaderboard title mismatch: ${snaps.leaderboard.leaderboard.title}`);
+  const arcadeTitle = translateTextForLocale(language.code, 'ARCADE TACTICAL DECK');
+  assert(snaps.leaderboard.leaderboard.title === arcadeTitle, `${language.slug} Arcade leaderboard title mismatch: ${snaps.leaderboard.leaderboard.title}`);
   assert(!boxesOverlap(snaps.leaderboard.leaderboard.commentBounds, snaps.leaderboard.leaderboard.stateBounds, 4), `${language.slug} leaderboard empty-state text overlaps`);
   assert(!boxesOverlap(snaps.leaderboard.leaderboard.stateBounds, snaps.leaderboard.leaderboard.firstRowBounds, 4), `${language.slug} leaderboard empty rows overlap state message`);
 

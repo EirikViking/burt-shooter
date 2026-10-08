@@ -9,7 +9,9 @@ try{
   const {ColossusRig,loadColossus}=await import('/src/effects/ColossusRig.js');
   const {COLOSSUS_FAMILIES}=await import('/src/config/BossReinvention.js');
   const {drawColossusAssault,preloadColossusVfx}=await import('/src/effects/ColossusAssaultVfx.js');
+  const {preloadEnergyMaterials,energyTexture}=await import('/src/effects/AstraEnergyMaterial.js');
   await preloadColossusVfx();
+  await preloadEnergyMaterials();
   const {configureColossusAssault}=await import('/src/config/ColossusAssault.js');
   const {setReducedMotionEnabled}=await import('/src/config/AccessibilitySettings.js');
   const {Bullet}=await import('/src/entities/Bullet.js');
@@ -27,14 +29,17 @@ try{
    }
    setReducedMotionEnabled(false);
    for(const family of Object.keys(COLOSSUS_FAMILIES))for(const kind of ['ring','beam','cone','wall']){
-    const points=[];let commands=0;const g=new Proxy({},{get:(_,key)=>(...args)=>{commands++;if(key==='poly')points.push(args[0]);return g;}});
+    const points=[];let commands=0,pending;const g=new Proxy({},{get:(_,key)=>(...args)=>{commands++;if(key==='poly')pending=args[0];if(key==='fill'&&pending){points.push({p:pending,guide:args[0]?.texture===energyTexture('rift')});pending=null;}return g;}});
     const h={kind,sourceX:0,sourceY:0,durationMs:500,armingMs:240,elapsedMs:610,color:0xffaa55,innerRadius:100,outerRadius:220,safeAngle:1.3,safeWedge:.6,angle:1.1,length:800,radius:13,spread:.12,columns:[-60,-30,30,60],startY:20,endY:700,width:24};
+    if(kind!=='wall')delete h.columns;
     configureColossusAssault(h,{profile:{archetype:family},phase:2});drawColossusAssault(g,h);
     let outside=0;
-    for(const p of points)for(let j=0;j<p.length;j+=2){const x=p[j],y=p[j+1];if(!Number.isFinite(x+y)){outside++;continue;}
+    // Route guides straddle the edge by half their 9px width. Every contact
+    // polygon (including textured fire and its floor) keeps strict bounds.
+    for(const {p,guide} of points)for(let j=0;j<p.length;j+=2){const x=p[j],y=p[j+1],margin=guide?4.5:0;if(!Number.isFinite(x+y)){outside++;continue;}
      if(kind==='ring'){const d=Math.hypot(x,y),a=Math.atan2(y,x),diff=Math.atan2(Math.sin(a-h.safeAngle),Math.cos(a-h.safeAngle));if(d<h.innerRadius-.01||d>h.outerRadius+.01||Math.abs(diff)<h.safeWedge-.0001)outside++;}
-     else if(kind==='wall'){if(y<h.startY-.01||y>h.endY+.01||!h.columns.some(c=>Math.abs(x-c)<=h.width*.5+.01))outside++;}
-     else {const along=x*Math.cos(h.angle)+y*Math.sin(h.angle),cross=-x*Math.sin(h.angle)+y*Math.cos(h.angle);if(along<-.01||along>h.length+.01||Math.abs(cross)>Math.max(h.radius,along*Math.tan(h.spread*.41))+.01)outside++;}
+     else if(kind==='wall'){if(y<h.startY-margin-.01||y>h.endY+margin+.01||!h.columns.some(c=>Math.abs(x-c)<=h.width*.5+margin+.01))outside++;}
+     else {const along=x*Math.cos(h.angle)+y*Math.sin(h.angle),cross=-x*Math.sin(h.angle)+y*Math.cos(h.angle);if(along<-margin-.01||along>h.length+margin+.01||Math.abs(cross)>Math.max(h.radius,along*Math.tan(h.spread*.41))+margin*Math.hypot(1,Math.tan(h.spread*.41))+.01)outside++;}
     }
     bounds.push({family,kind,commands,outside});
    }
@@ -53,6 +58,6 @@ try{
  assert.deepEqual(report.released,{moved:true,visible:true,delay:0});
  for(const s of report.states){assert.equal(s.finite,true);if(s.reduced)assert.equal(s.stable,true);}
  for(const b of report.bounds){assert.equal(b.outside,0,`${b.family}/${b.kind}: geometry confined`);assert.ok(b.commands<350,`${b.family}/${b.kind}: bounded drawing`);}
- mkdirSync('test-results/colossus-rendering',{recursive:true});writeFileSync('test-results/colossus-rendering/report.json',JSON.stringify({ok:true,...report},null,2));
+ const out=process.env.CHECK_OUTPUT_DIR||'test-results/colossus-rendering';mkdirSync(out,{recursive:true});writeFileSync(`${out}/report.json`,JSON.stringify({ok:true,...report},null,2));
  console.log('PASS ten textured hulls, Reduced Motion, 40 bounded fields, zero visual RNG, pending projectile collision and pause/release');
 }finally{await browser.close();}

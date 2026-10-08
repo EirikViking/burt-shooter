@@ -6,9 +6,11 @@ import { getReducedMotionEnabled } from '../config/AccessibilitySettings.js';
 export class HullBreakup {
   constructor(container) {
     this.container = container;
+    this.destroyed = false;
     this.active = [];
     this.pool = [];
     this.frames = new WeakMap();
+    this.ownedTextures = new Set();
     this.seen = new WeakSet();
     this.maxFragments = 40;
     this.bossPieces = [];
@@ -28,6 +30,7 @@ export class HullBreakup {
     }
   }
   emit(enemy) {
+    if (this.destroyed) return;
     if (!enemy || this.seen.has(enemy) || getReducedMotionEnabled()) return;
     this.seen.add(enemy);
     if(enemy.colossusRig){
@@ -37,6 +40,7 @@ export class HullBreakup {
         const local=this.container.getGlobalTransform().clone().invert().append(body.getGlobalTransform());
         const sprite=this.pool.pop()||new PIXI.Sprite();
         const ownedTexture=new PIXI.Texture({source:body.texture.source,frame:body.texture.frame.clone()});
+        this.ownedTextures.add(ownedTexture);
         sprite.texture=ownedTexture;sprite.anchor.copyFrom(body.anchor);
         sprite.position.set(local.tx,local.ty);sprite.scale.set(Math.hypot(local.a,local.b),Math.hypot(local.c,local.d));
         sprite.rotation=Math.atan2(local.b,local.a);sprite.alpha=1;sprite.tint=0xffffff;sprite.visible=true;
@@ -56,6 +60,7 @@ export class HullBreakup {
     if (!frames) {
       const w = texture.width / 2, h = texture.height / 2;
       frames = [0, 1, 2, 3].map(i => new PIXI.Texture({ source: texture.source, frame: new PIXI.Rectangle(texture.frame.x + (i % 2) * w, texture.frame.y + Math.floor(i / 2) * h, w, h) }));
+      for (const frame of frames) this.ownedTextures.add(frame);
       this.frames.set(texture, frames);
     }
     const boss = enemy.kind === 'boss';
@@ -98,6 +103,7 @@ export class HullBreakup {
     }
   }
   update(delta) {
+    if (this.destroyed) return;
     for (const p of this.bossPieces) {
       if (!p.active) continue;
       p.age += delta;
@@ -116,7 +122,7 @@ export class HullBreakup {
       f.age += delta;
       if (f.age >= f.lifetime) {
         f.sprite.visible = false;
-        if(f.ownedTexture){f.sprite.texture=PIXI.Texture.EMPTY;f.ownedTexture.destroy(false);}
+        if(f.ownedTexture){f.sprite.texture=PIXI.Texture.EMPTY;f.ownedTexture.destroy(false);this.ownedTextures.delete(f.ownedTexture);}
         this.pool.push(f.sprite); continue;
       }
       const drag = Math.exp(-f.age * 0.04);
@@ -127,5 +133,19 @@ export class HullBreakup {
       this.active[write++] = f;
     }
     this.active.length = write;
+  }
+  destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    for (const sprite of [...this.pool, ...this.active.map(f => f.sprite)]) sprite.destroy();
+    for (const piece of this.bossPieces) {
+      const geometry = piece.mesh.geometry;
+      piece.mesh.destroy();
+      geometry.destroy();
+    }
+    // Frame views are owned here; their cached source hulls survive runback.
+    for (const texture of this.ownedTextures) texture.destroy(false);
+    this.ownedTextures.clear();
+    this.active.length = this.pool.length = this.bossPieces.length = 0;
   }
 }

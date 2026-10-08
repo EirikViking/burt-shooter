@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { sanitizePilotName } = require('./pilotNamePolicy.cjs');
+const { normalizeOnslaughtEvidence } = require('./onslaughtAchievementEvidence.cjs');
 
 const SAVE_VERSION = 2;
 const CLOUD_SUBDIR = 'steam-cloud';
@@ -433,6 +434,10 @@ function sanitizeScoreEntry(entry = {}, fallbackIndex = 0) {
     careerRankExact: normalizedCareerRank && normalizedCareerRank !== '0'
       ? normalizedCareerRank
       : null,
+    levelSource: entry.levelSource || (Number(entry.level ?? entry.levelReached) > 0 ? 'encoded' : 'score_estimate'),
+    runMode: typeof entry.runMode === 'string' ? entry.runMode.slice(0, 40) : null,
+    startSector: Number.isInteger(Number(entry.startSector)) && Number(entry.startSector) > 0 ? Number(entry.startSector) : null,
+    endSector: Number.isInteger(Number(entry.endSector)) && Number(entry.endSector) > 0 ? Number(entry.endSector) : null,
     shipId: entry.shipId ?? entry.ship_id ?? null,
     shipName: entry.shipName ?? entry.ship_name ?? null,
     runTimeSeconds: entry.runTimeSeconds ?? entry.runtimeSeconds ?? null,
@@ -992,6 +997,7 @@ function sanitizeAchievements(raw = {}) {
   return {
     version: Math.max(1, Math.floor(Number(raw?.version) || 1)),
     unlocked,
+    onslaughtRuns: normalizeOnslaughtEvidence(raw?.onslaughtRuns),
     updatedAt: raw?.updatedAt ? String(raw.updatedAt) : null
   };
 }
@@ -1006,9 +1012,11 @@ function sanitizeAudioSettings(audio = {}) {
   if (audio.masterVolume !== undefined) next.masterVolume = clampUnit(audio.masterVolume, 0.3);
   if (audio.musicVolume !== undefined) next.musicVolume = clampUnit(audio.musicVolume, 0.2);
   if (audio.sfxVolume !== undefined) next.sfxVolume = clampUnit(audio.sfxVolume, 0.4);
+  if (audio.uiVolume !== undefined) next.uiVolume = clampUnit(audio.uiVolume, 0.4);
   if (audio.voiceVolume !== undefined) next.voiceVolume = clampUnit(audio.voiceVolume, 0.45);
   if (audio.musicEnabled !== undefined) next.musicEnabled = Boolean(audio.musicEnabled);
   if (audio.voiceEnabled !== undefined) next.voiceEnabled = Boolean(audio.voiceEnabled);
+  if (audio.tacticalVoiceEnabled !== undefined) next.tacticalVoiceEnabled = Boolean(audio.tacticalVoiceEnabled);
   if (audio.bossVoiceEnabled !== undefined) next.bossVoiceEnabled = Boolean(audio.bossVoiceEnabled);
   if (audio.menuVoiceEnabled !== undefined) next.menuVoiceEnabled = Boolean(audio.menuVoiceEnabled);
   if (audio.menuAudioMode !== undefined) next.menuAudioMode = audio.menuAudioMode === 'music' ? 'music' : 'ambient';
@@ -1016,6 +1024,9 @@ function sanitizeAudioSettings(audio = {}) {
   if (audio.musicPack !== undefined) {
     const musicPack = String(audio.musicPack || '').trim();
     if (MUSIC_PACKS.has(musicPack)) next.musicPack = musicPack;
+  }
+  if (audio.chatterFrequency !== undefined && ['full', 'reduced', 'minimal'].includes(audio.chatterFrequency)) {
+    next.chatterFrequency = audio.chatterFrequency;
   }
   return next;
 }
@@ -1133,7 +1144,10 @@ function sanitizeMenuSettings(menu = {}) {
   const showPilotOrders = pilotOrdersValue === false || pilotOrdersValue === 'false' || pilotOrdersValue === '0' || pilotOrdersValue === 0 || pilotOrdersValue === 'off'
     ? false
     : true;
-  return { confirmExit, showPilotOrders };
+  const gameplayBackground = String(raw.gameplayBackground || '').trim().toLowerCase() === 'legacy'
+    ? 'legacy'
+    : 'modern';
+  return { confirmExit, gameplayBackground, showPilotOrders };
 }
 
 function sanitizeControlSettings(controls = {}) {
@@ -1144,21 +1158,37 @@ function sanitizeControlSettings(controls = {}) {
   };
 }
 
+function sanitizeKeyboardBindings(bindings = {}) {
+  const raw = bindings && typeof bindings === 'object' && !Array.isArray(bindings) ? bindings : {};
+  const next = {};
+  for (const action of ['moveLeft', 'moveRight', 'moveUp', 'moveDown', 'focus', 'shoot', 'specialFire', 'dodge', 'pause']) {
+    if (!Object.hasOwn(raw, action)) continue;
+    const values = Array.isArray(raw[action]) ? raw[action] : [raw[action]];
+    const tokens = [...new Set(values.map(value => String(value || '').trim()).filter(value => value && value.length <= 40))].slice(0, 3);
+    if (tokens.length) next[action] = tokens;
+  }
+  return next;
+}
+
 function sanitizeSettings(settings = {}) {
+  const raw = settings && typeof settings === 'object' && !Array.isArray(settings) ? settings : {};
   const clampUnit = (value, fallback) => {
     const number = Number(value);
     if (!Number.isFinite(number)) return fallback;
     return Math.max(0, Math.min(1, number));
   };
-  return {
-    screenShake: clampUnit(settings.screenShake, 1),
-    playerFocus: clampUnit(settings.playerFocus, 0.72),
-    colorAssist: Boolean(settings.colorAssist),
-    audio: sanitizeAudioSettings(settings.audio || {}),
-    display: sanitizeDisplaySettings(settings.display || {}),
-    menu: sanitizeMenuSettings(settings.menu || {}),
-    controls: sanitizeControlSettings(settings.controls || {})
-  };
+  const next = {};
+  if (raw.screenShake !== undefined) next.screenShake = clampUnit(raw.screenShake, 1);
+  if (raw.playerFocus !== undefined) next.playerFocus = clampUnit(raw.playerFocus, 0.72);
+  if (raw.colorAssist !== undefined) next.colorAssist = Boolean(raw.colorAssist);
+  if (raw.flashIntensity !== undefined) next.flashIntensity = clampUnit(raw.flashIntensity, 1);
+  if (raw.reducedMotion !== undefined) next.reducedMotion = Boolean(raw.reducedMotion);
+  if (raw.audio !== undefined) next.audio = sanitizeAudioSettings(raw.audio);
+  if (raw.display !== undefined) next.display = sanitizeDisplaySettings(raw.display);
+  if (raw.menu !== undefined) next.menu = sanitizeMenuSettings(raw.menu);
+  if (raw.controls !== undefined) next.controls = sanitizeControlSettings(raw.controls);
+  if (raw.keyboardBindings !== undefined) next.keyboardBindings = sanitizeKeyboardBindings(raw.keyboardBindings);
+  return next;
 }
 
 function sanitizeShipUsage(rawUsage = {}) {
@@ -1810,6 +1840,14 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
     const shipUsage = hasShipUsage
       ? mergeShipUsage(current.shipUsage, rendererState.shipUsage)
       : current.shipUsage;
+    const incomingSettings = state.settings && typeof state.settings === 'object' && !Array.isArray(state.settings)
+      ? state.settings : {};
+    const mergedSettings = { ...current.settings, ...incomingSettings };
+    for (const category of ['audio', 'display', 'menu', 'controls', 'keyboardBindings']) {
+      if (Object.hasOwn(incomingSettings, category)) {
+        mergedSettings[category] = { ...current.settings?.[category], ...incomingSettings[category] };
+      }
+    }
     return {
       ...current,
       language: Object.hasOwn(state, 'language') || Object.hasOwn(state, 'languagePreference')
@@ -1819,7 +1857,13 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
         ? rendererState.localHighscores
         : current.localHighscores,
       achievements: Object.hasOwn(state, 'achievements') || Object.hasOwn(state, 'achievementMirror')
-        ? rendererState.achievements
+        ? {
+          ...rendererState.achievements,
+          unlocked: mergeStringArray(current.achievements.unlocked, rendererState.achievements.unlocked),
+          onslaughtRuns: normalizeOnslaughtEvidence([
+            ...(current.achievements.onslaughtRuns || []), ...rendererState.achievements.onslaughtRuns
+          ])
+        }
         : current.achievements,
       selectedShipKey: rendererState.selectedShipKey || current.selectedShipKey || null,
       progression: mergeUnlockProgress(current.progression, rendererState.progression),
@@ -1861,7 +1905,9 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
         hasShipUsage ? rendererState.shipUsageTotal : 0,
         sumShipUsage(shipUsage)
       ),
-      settings: rendererState.settings
+      settings: Object.hasOwn(state, 'settings')
+        ? sanitizeSettings(mergedSettings)
+        : current.settings
     };
   }
 

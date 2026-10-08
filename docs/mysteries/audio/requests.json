@@ -1,0 +1,2396 @@
+[
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "glass_widow",
+    "text": "Cinematic sci-fi Glass Widow: Brittle crystalline clicks, stressed glass calls, sharp articulated claw snaps. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "glass_widow",
+    "text": "Cinematic sci-fi Glass Widow: Brittle crystalline clicks, stressed glass calls, sharp articulated claw snaps. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "glass_widow",
+    "text": "Cinematic sci-fi Glass Widow: Brittle crystalline clicks, stressed glass calls, sharp articulated claw snaps. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "glass_widow",
+    "text": "Cinematic sci-fi Glass Widow: Brittle crystalline clicks, stressed glass calls, sharp articulated claw snaps. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "glass_widow",
+    "text": "Cinematic sci-fi Glass Widow: Brittle crystalline clicks, stressed glass calls, sharp articulated claw snaps. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "glass_widow",
+    "text": "Cinematic sci-fi Glass Widow: Brittle crystalline clicks, stressed glass calls, sharp articulated claw snaps. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "cinder_manta",
+    "text": "Cinematic sci-fi Cinder Manta: Deep furnace breath, heavy leathery sail snaps, granular ember surges. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "cinder_manta",
+    "text": "Cinematic sci-fi Cinder Manta: Deep furnace breath, heavy leathery sail snaps, granular ember surges. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "cinder_manta",
+    "text": "Cinematic sci-fi Cinder Manta: Deep furnace breath, heavy leathery sail snaps, granular ember surges. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "cinder_manta",
+    "text": "Cinematic sci-fi Cinder Manta: Deep furnace breath, heavy leathery sail snaps, granular ember surges. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "cinder_manta",
+    "text": "Cinematic sci-fi Cinder Manta: Deep furnace breath, heavy leathery sail snaps, granular ember surges. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "cinder_manta",
+    "text": "Cinematic sci-fi Cinder Manta: Deep furnace breath, heavy leathery sail snaps, granular ember surges. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "needle_saint",
+    "text": "Cinematic sci-fi Needle Saint: Rising bone whistle, cold precision clicks, a powerful clean lance crack. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "needle_saint",
+    "text": "Cinematic sci-fi Needle Saint: Rising bone whistle, cold precision clicks, a powerful clean lance crack. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "needle_saint",
+    "text": "Cinematic sci-fi Needle Saint: Rising bone whistle, cold precision clicks, a powerful clean lance crack. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "needle_saint",
+    "text": "Cinematic sci-fi Needle Saint: Rising bone whistle, cold precision clicks, a powerful clean lance crack. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "needle_saint",
+    "text": "Cinematic sci-fi Needle Saint: Rising bone whistle, cold precision clicks, a powerful clean lance crack. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "needle_saint",
+    "text": "Cinematic sci-fi Needle Saint: Rising bone whistle, cold precision clicks, a powerful clean lance crack. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "blind_leviathan",
+    "text": "Cinematic sci-fi Blind Leviathan: Cavernous growls, deep living sonar, dense armored rushing impacts. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "blind_leviathan",
+    "text": "Cinematic sci-fi Blind Leviathan: Cavernous growls, deep living sonar, dense armored rushing impacts. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "blind_leviathan",
+    "text": "Cinematic sci-fi Blind Leviathan: Cavernous growls, deep living sonar, dense armored rushing impacts. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "blind_leviathan",
+    "text": "Cinematic sci-fi Blind Leviathan: Cavernous growls, deep living sonar, dense armored rushing impacts. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "blind_leviathan",
+    "text": "Cinematic sci-fi Blind Leviathan: Cavernous growls, deep living sonar, dense armored rushing impacts. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "blind_leviathan",
+    "text": "Cinematic sci-fi Blind Leviathan: Cavernous growls, deep living sonar, dense armored rushing impacts. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "lantern_eater",
+    "text": "Cinematic sci-fi Lantern Eater: Wet cavern gulps, delicate electric chirps, muscular jaw claps. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "lantern_eater",
+    "text": "Cinematic sci-fi Lantern Eater: Wet cavern gulps, delicate electric chirps, muscular jaw claps. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "lantern_eater",
+    "text": "Cinematic sci-fi Lantern Eater: Wet cavern gulps, delicate electric chirps, muscular jaw claps. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "lantern_eater",
+    "text": "Cinematic sci-fi Lantern Eater: Wet cavern gulps, delicate electric chirps, muscular jaw claps. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "lantern_eater",
+    "text": "Cinematic sci-fi Lantern Eater: Wet cavern gulps, delicate electric chirps, muscular jaw claps. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "lantern_eater",
+    "text": "Cinematic sci-fi Lantern Eater: Wet cavern gulps, delicate electric chirps, muscular jaw claps. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "scissor_twins",
+    "text": "Cinematic sci-fi Scissor Twins: Two contrasting engine voices, tension creaks, shearing metal snaps. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "scissor_twins",
+    "text": "Cinematic sci-fi Scissor Twins: Two contrasting engine voices, tension creaks, shearing metal snaps. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "scissor_twins",
+    "text": "Cinematic sci-fi Scissor Twins: Two contrasting engine voices, tension creaks, shearing metal snaps. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "scissor_twins",
+    "text": "Cinematic sci-fi Scissor Twins: Two contrasting engine voices, tension creaks, shearing metal snaps. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "scissor_twins",
+    "text": "Cinematic sci-fi Scissor Twins: Two contrasting engine voices, tension creaks, shearing metal snaps. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "scissor_twins",
+    "text": "Cinematic sci-fi Scissor Twins: Two contrasting engine voices, tension creaks, shearing metal snaps. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "red_wake",
+    "text": "Cinematic sci-fi Red Wake: Doppler engine howl, aerodynamic tearing, staccato plasma crackle. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "red_wake",
+    "text": "Cinematic sci-fi Red Wake: Doppler engine howl, aerodynamic tearing, staccato plasma crackle. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "red_wake",
+    "text": "Cinematic sci-fi Red Wake: Doppler engine howl, aerodynamic tearing, staccato plasma crackle. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "red_wake",
+    "text": "Cinematic sci-fi Red Wake: Doppler engine howl, aerodynamic tearing, staccato plasma crackle. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "red_wake",
+    "text": "Cinematic sci-fi Red Wake: Doppler engine howl, aerodynamic tearing, staccato plasma crackle. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "red_wake",
+    "text": "Cinematic sci-fi Red Wake: Doppler engine howl, aerodynamic tearing, staccato plasma crackle. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "foldship",
+    "text": "Cinematic sci-fi Foldship: Heavy articulated locks, layered servo whirs, compact pressure discharges. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "foldship",
+    "text": "Cinematic sci-fi Foldship: Heavy articulated locks, layered servo whirs, compact pressure discharges. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "foldship",
+    "text": "Cinematic sci-fi Foldship: Heavy articulated locks, layered servo whirs, compact pressure discharges. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "foldship",
+    "text": "Cinematic sci-fi Foldship: Heavy articulated locks, layered servo whirs, compact pressure discharges. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "foldship",
+    "text": "Cinematic sci-fi Foldship: Heavy articulated locks, layered servo whirs, compact pressure discharges. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "foldship",
+    "text": "Cinematic sci-fi Foldship: Heavy articulated locks, layered servo whirs, compact pressure discharges. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "doorwraith",
+    "text": "Cinematic sci-fi Doorwraith: Vacuum pressure pops, reversed space echoes, dry portal collapses. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "doorwraith",
+    "text": "Cinematic sci-fi Doorwraith: Vacuum pressure pops, reversed space echoes, dry portal collapses. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "doorwraith",
+    "text": "Cinematic sci-fi Doorwraith: Vacuum pressure pops, reversed space echoes, dry portal collapses. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "doorwraith",
+    "text": "Cinematic sci-fi Doorwraith: Vacuum pressure pops, reversed space echoes, dry portal collapses. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "doorwraith",
+    "text": "Cinematic sci-fi Doorwraith: Vacuum pressure pops, reversed space echoes, dry portal collapses. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "doorwraith",
+    "text": "Cinematic sci-fi Doorwraith: Vacuum pressure pops, reversed space echoes, dry portal collapses. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "tidemason",
+    "text": "Cinematic sci-fi Tidemason: Tectonic groans, heavy rushing fluid fields, stone resonance. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "tidemason",
+    "text": "Cinematic sci-fi Tidemason: Tectonic groans, heavy rushing fluid fields, stone resonance. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "tidemason",
+    "text": "Cinematic sci-fi Tidemason: Tectonic groans, heavy rushing fluid fields, stone resonance. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "tidemason",
+    "text": "Cinematic sci-fi Tidemason: Tectonic groans, heavy rushing fluid fields, stone resonance. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "tidemason",
+    "text": "Cinematic sci-fi Tidemason: Tectonic groans, heavy rushing fluid fields, stone resonance. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "tidemason",
+    "text": "Cinematic sci-fi Tidemason: Tectonic groans, heavy rushing fluid fields, stone resonance. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "parallax_hunter",
+    "text": "Cinematic sci-fi Parallax Hunter: Offset engine pulses, restrained spatial echoes, hard metallic impacts. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "parallax_hunter",
+    "text": "Cinematic sci-fi Parallax Hunter: Offset engine pulses, restrained spatial echoes, hard metallic impacts. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "parallax_hunter",
+    "text": "Cinematic sci-fi Parallax Hunter: Offset engine pulses, restrained spatial echoes, hard metallic impacts. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "parallax_hunter",
+    "text": "Cinematic sci-fi Parallax Hunter: Offset engine pulses, restrained spatial echoes, hard metallic impacts. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "parallax_hunter",
+    "text": "Cinematic sci-fi Parallax Hunter: Offset engine pulses, restrained spatial echoes, hard metallic impacts. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "parallax_hunter",
+    "text": "Cinematic sci-fi Parallax Hunter: Offset engine pulses, restrained spatial echoes, hard metallic impacts. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "clockray",
+    "text": "Cinematic sci-fi Clockray: Precise mechanical ticking, glass resonance, measured bass pulses. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "clockray",
+    "text": "Cinematic sci-fi Clockray: Precise mechanical ticking, glass resonance, measured bass pulses. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "clockray",
+    "text": "Cinematic sci-fi Clockray: Precise mechanical ticking, glass resonance, measured bass pulses. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "clockray",
+    "text": "Cinematic sci-fi Clockray: Precise mechanical ticking, glass resonance, measured bass pulses. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "clockray",
+    "text": "Cinematic sci-fi Clockray: Precise mechanical ticking, glass resonance, measured bass pulses. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "clockray",
+    "text": "Cinematic sci-fi Clockray: Precise mechanical ticking, glass resonance, measured bass pulses. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "horizon_biter",
+    "text": "Cinematic sci-fi Horizon Biter: Straining structural metal, colossal jaw movement, sub-bass bites. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "horizon_biter",
+    "text": "Cinematic sci-fi Horizon Biter: Straining structural metal, colossal jaw movement, sub-bass bites. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "horizon_biter",
+    "text": "Cinematic sci-fi Horizon Biter: Straining structural metal, colossal jaw movement, sub-bass bites. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "horizon_biter",
+    "text": "Cinematic sci-fi Horizon Biter: Straining structural metal, colossal jaw movement, sub-bass bites. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "horizon_biter",
+    "text": "Cinematic sci-fi Horizon Biter: Straining structural metal, colossal jaw movement, sub-bass bites. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "horizon_biter",
+    "text": "Cinematic sci-fi Horizon Biter: Straining structural metal, colossal jaw movement, sub-bass bites. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "rift_surgeon",
+    "text": "Cinematic sci-fi Rift Surgeon: Focused surgical whine, dimensional fabric tearing, sealing snaps. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "rift_surgeon",
+    "text": "Cinematic sci-fi Rift Surgeon: Focused surgical whine, dimensional fabric tearing, sealing snaps. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "rift_surgeon",
+    "text": "Cinematic sci-fi Rift Surgeon: Focused surgical whine, dimensional fabric tearing, sealing snaps. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "rift_surgeon",
+    "text": "Cinematic sci-fi Rift Surgeon: Focused surgical whine, dimensional fabric tearing, sealing snaps. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "rift_surgeon",
+    "text": "Cinematic sci-fi Rift Surgeon: Focused surgical whine, dimensional fabric tearing, sealing snaps. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "rift_surgeon",
+    "text": "Cinematic sci-fi Rift Surgeon: Focused surgical whine, dimensional fabric tearing, sealing snaps. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "bloom_queen",
+    "text": "Cinematic sci-fi Bloom Queen: Wet unfolding petals, woody cracks, visceral reactor breathing. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "bloom_queen",
+    "text": "Cinematic sci-fi Bloom Queen: Wet unfolding petals, woody cracks, visceral reactor breathing. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "bloom_queen",
+    "text": "Cinematic sci-fi Bloom Queen: Wet unfolding petals, woody cracks, visceral reactor breathing. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "bloom_queen",
+    "text": "Cinematic sci-fi Bloom Queen: Wet unfolding petals, woody cracks, visceral reactor breathing. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "bloom_queen",
+    "text": "Cinematic sci-fi Bloom Queen: Wet unfolding petals, woody cracks, visceral reactor breathing. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "bloom_queen",
+    "text": "Cinematic sci-fi Bloom Queen: Wet unfolding petals, woody cracks, visceral reactor breathing. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "brood_ark",
+    "text": "Cinematic sci-fi Brood Ark: Membrane knocks, muffled hatchling chatter, deep nurturing rumbles. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "brood_ark",
+    "text": "Cinematic sci-fi Brood Ark: Membrane knocks, muffled hatchling chatter, deep nurturing rumbles. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "brood_ark",
+    "text": "Cinematic sci-fi Brood Ark: Membrane knocks, muffled hatchling chatter, deep nurturing rumbles. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "brood_ark",
+    "text": "Cinematic sci-fi Brood Ark: Membrane knocks, muffled hatchling chatter, deep nurturing rumbles. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "brood_ark",
+    "text": "Cinematic sci-fi Brood Ark: Membrane knocks, muffled hatchling chatter, deep nurturing rumbles. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "brood_ark",
+    "text": "Cinematic sci-fi Brood Ark: Membrane knocks, muffled hatchling chatter, deep nurturing rumbles. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "carrion_weaver",
+    "text": "Cinematic sci-fi Carrion Weaver: Dragging debris, stretched tendons, clicking graft tools. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "carrion_weaver",
+    "text": "Cinematic sci-fi Carrion Weaver: Dragging debris, stretched tendons, clicking graft tools. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "carrion_weaver",
+    "text": "Cinematic sci-fi Carrion Weaver: Dragging debris, stretched tendons, clicking graft tools. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "carrion_weaver",
+    "text": "Cinematic sci-fi Carrion Weaver: Dragging debris, stretched tendons, clicking graft tools. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "carrion_weaver",
+    "text": "Cinematic sci-fi Carrion Weaver: Dragging debris, stretched tendons, clicking graft tools. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "carrion_weaver",
+    "text": "Cinematic sci-fi Carrion Weaver: Dragging debris, stretched tendons, clicking graft tools. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "spore_monk",
+    "text": "Cinematic sci-fi Spore Monk: Breathy fungal air, soft pressure detonations, hushed organic rasp. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "spore_monk",
+    "text": "Cinematic sci-fi Spore Monk: Breathy fungal air, soft pressure detonations, hushed organic rasp. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "spore_monk",
+    "text": "Cinematic sci-fi Spore Monk: Breathy fungal air, soft pressure detonations, hushed organic rasp. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "spore_monk",
+    "text": "Cinematic sci-fi Spore Monk: Breathy fungal air, soft pressure detonations, hushed organic rasp. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "spore_monk",
+    "text": "Cinematic sci-fi Spore Monk: Breathy fungal air, soft pressure detonations, hushed organic rasp. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "spore_monk",
+    "text": "Cinematic sci-fi Spore Monk: Breathy fungal air, soft pressure detonations, hushed organic rasp. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "husk_parade",
+    "text": "Cinematic sci-fi Husk Parade: Hollow ceramic knocks, a moving heartbeat, brittle empty-shell collapses. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "husk_parade",
+    "text": "Cinematic sci-fi Husk Parade: Hollow ceramic knocks, a moving heartbeat, brittle empty-shell collapses. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "husk_parade",
+    "text": "Cinematic sci-fi Husk Parade: Hollow ceramic knocks, a moving heartbeat, brittle empty-shell collapses. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "husk_parade",
+    "text": "Cinematic sci-fi Husk Parade: Hollow ceramic knocks, a moving heartbeat, brittle empty-shell collapses. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "husk_parade",
+    "text": "Cinematic sci-fi Husk Parade: Hollow ceramic knocks, a moving heartbeat, brittle empty-shell collapses. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "husk_parade",
+    "text": "Cinematic sci-fi Husk Parade: Hollow ceramic knocks, a moving heartbeat, brittle empty-shell collapses. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "magnet_urchin",
+    "text": "Cinematic sci-fi Magnet Urchin: Magnetic rattles, tense metallic harmonics, powerful electrical snaps. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "magnet_urchin",
+    "text": "Cinematic sci-fi Magnet Urchin: Magnetic rattles, tense metallic harmonics, powerful electrical snaps. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "magnet_urchin",
+    "text": "Cinematic sci-fi Magnet Urchin: Magnetic rattles, tense metallic harmonics, powerful electrical snaps. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "magnet_urchin",
+    "text": "Cinematic sci-fi Magnet Urchin: Magnetic rattles, tense metallic harmonics, powerful electrical snaps. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "magnet_urchin",
+    "text": "Cinematic sci-fi Magnet Urchin: Magnetic rattles, tense metallic harmonics, powerful electrical snaps. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "magnet_urchin",
+    "text": "Cinematic sci-fi Magnet Urchin: Magnetic rattles, tense metallic harmonics, powerful electrical snaps. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "chrysalis_hunter",
+    "text": "Cinematic sci-fi Chrysalis Hunter: Layered shell fractures, muscular emergence, explosive wing thunder. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "chrysalis_hunter",
+    "text": "Cinematic sci-fi Chrysalis Hunter: Layered shell fractures, muscular emergence, explosive wing thunder. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "chrysalis_hunter",
+    "text": "Cinematic sci-fi Chrysalis Hunter: Layered shell fractures, muscular emergence, explosive wing thunder. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "chrysalis_hunter",
+    "text": "Cinematic sci-fi Chrysalis Hunter: Layered shell fractures, muscular emergence, explosive wing thunder. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "chrysalis_hunter",
+    "text": "Cinematic sci-fi Chrysalis Hunter: Layered shell fractures, muscular emergence, explosive wing thunder. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "chrysalis_hunter",
+    "text": "Cinematic sci-fi Chrysalis Hunter: Layered shell fractures, muscular emergence, explosive wing thunder. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "rail_cathedral",
+    "text": "Cinematic sci-fi Rail Cathedral: Massive rail impacts, distant machinery, straining carriage couplings. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "rail_cathedral",
+    "text": "Cinematic sci-fi Rail Cathedral: Massive rail impacts, distant machinery, straining carriage couplings. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "rail_cathedral",
+    "text": "Cinematic sci-fi Rail Cathedral: Massive rail impacts, distant machinery, straining carriage couplings. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "rail_cathedral",
+    "text": "Cinematic sci-fi Rail Cathedral: Massive rail impacts, distant machinery, straining carriage couplings. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "rail_cathedral",
+    "text": "Cinematic sci-fi Rail Cathedral: Massive rail impacts, distant machinery, straining carriage couplings. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "rail_cathedral",
+    "text": "Cinematic sci-fi Rail Cathedral: Massive rail impacts, distant machinery, straining carriage couplings. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "siege_orchid",
+    "text": "Cinematic sci-fi Siege Orchid: Servo harmonics, petal locks, distinct heavy cannon reports. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "siege_orchid",
+    "text": "Cinematic sci-fi Siege Orchid: Servo harmonics, petal locks, distinct heavy cannon reports. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "siege_orchid",
+    "text": "Cinematic sci-fi Siege Orchid: Servo harmonics, petal locks, distinct heavy cannon reports. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "siege_orchid",
+    "text": "Cinematic sci-fi Siege Orchid: Servo harmonics, petal locks, distinct heavy cannon reports. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "siege_orchid",
+    "text": "Cinematic sci-fi Siege Orchid: Servo harmonics, petal locks, distinct heavy cannon reports. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "siege_orchid",
+    "text": "Cinematic sci-fi Siege Orchid: Servo harmonics, petal locks, distinct heavy cannon reports. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "bulwark_hauler",
+    "text": "Cinematic sci-fi Bulwark Hauler: Deep towing rumble, chains under load, shielded cargo impacts. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "bulwark_hauler",
+    "text": "Cinematic sci-fi Bulwark Hauler: Deep towing rumble, chains under load, shielded cargo impacts. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "bulwark_hauler",
+    "text": "Cinematic sci-fi Bulwark Hauler: Deep towing rumble, chains under load, shielded cargo impacts. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "bulwark_hauler",
+    "text": "Cinematic sci-fi Bulwark Hauler: Deep towing rumble, chains under load, shielded cargo impacts. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "bulwark_hauler",
+    "text": "Cinematic sci-fi Bulwark Hauler: Deep towing rumble, chains under load, shielded cargo impacts. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "bulwark_hauler",
+    "text": "Cinematic sci-fi Bulwark Hauler: Deep towing rumble, chains under load, shielded cargo impacts. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "bellfoundry",
+    "text": "Cinematic sci-fi Bellfoundry: Foundry roar, molten metal movement, deep bronze bell strikes. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "bellfoundry",
+    "text": "Cinematic sci-fi Bellfoundry: Foundry roar, molten metal movement, deep bronze bell strikes. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "bellfoundry",
+    "text": "Cinematic sci-fi Bellfoundry: Foundry roar, molten metal movement, deep bronze bell strikes. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "bellfoundry",
+    "text": "Cinematic sci-fi Bellfoundry: Foundry roar, molten metal movement, deep bronze bell strikes. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "bellfoundry",
+    "text": "Cinematic sci-fi Bellfoundry: Foundry roar, molten metal movement, deep bronze bell strikes. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "bellfoundry",
+    "text": "Cinematic sci-fi Bellfoundry: Foundry roar, molten metal movement, deep bronze bell strikes. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "prism_bastion",
+    "text": "Cinematic sci-fi Prism Bastion: Dense resonant crystal tones, optical pressure whines, ringing fractures. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "prism_bastion",
+    "text": "Cinematic sci-fi Prism Bastion: Dense resonant crystal tones, optical pressure whines, ringing fractures. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "prism_bastion",
+    "text": "Cinematic sci-fi Prism Bastion: Dense resonant crystal tones, optical pressure whines, ringing fractures. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "prism_bastion",
+    "text": "Cinematic sci-fi Prism Bastion: Dense resonant crystal tones, optical pressure whines, ringing fractures. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "prism_bastion",
+    "text": "Cinematic sci-fi Prism Bastion: Dense resonant crystal tones, optical pressure whines, ringing fractures. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "prism_bastion",
+    "text": "Cinematic sci-fi Prism Bastion: Dense resonant crystal tones, optical pressure whines, ringing fractures. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "cable_kraken",
+    "text": "Cinematic sci-fi Cable Kraken: Cable tension, industrial spool motors, electrical arc lashes. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "cable_kraken",
+    "text": "Cinematic sci-fi Cable Kraken: Cable tension, industrial spool motors, electrical arc lashes. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "cable_kraken",
+    "text": "Cinematic sci-fi Cable Kraken: Cable tension, industrial spool motors, electrical arc lashes. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "cable_kraken",
+    "text": "Cinematic sci-fi Cable Kraken: Cable tension, industrial spool motors, electrical arc lashes. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "cable_kraken",
+    "text": "Cinematic sci-fi Cable Kraken: Cable tension, industrial spool motors, electrical arc lashes. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "cable_kraken",
+    "text": "Cinematic sci-fi Cable Kraken: Cable tension, industrial spool motors, electrical arc lashes. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "switchyard",
+    "text": "Cinematic sci-fi Switchyard: Hard relay clicks, switching motors, charging drone engines. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "switchyard",
+    "text": "Cinematic sci-fi Switchyard: Hard relay clicks, switching motors, charging drone engines. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "switchyard",
+    "text": "Cinematic sci-fi Switchyard: Hard relay clicks, switching motors, charging drone engines. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "switchyard",
+    "text": "Cinematic sci-fi Switchyard: Hard relay clicks, switching motors, charging drone engines. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "switchyard",
+    "text": "Cinematic sci-fi Switchyard: Hard relay clicks, switching motors, charging drone engines. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "switchyard",
+    "text": "Cinematic sci-fi Switchyard: Hard relay clicks, switching motors, charging drone engines. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "false_sun",
+    "text": "Cinematic sci-fi False Sun: Immense solar roar, alien choral resonance, contained jet surges. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "false_sun",
+    "text": "Cinematic sci-fi False Sun: Immense solar roar, alien choral resonance, contained jet surges. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "false_sun",
+    "text": "Cinematic sci-fi False Sun: Immense solar roar, alien choral resonance, contained jet surges. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "false_sun",
+    "text": "Cinematic sci-fi False Sun: Immense solar roar, alien choral resonance, contained jet surges. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "false_sun",
+    "text": "Cinematic sci-fi False Sun: Immense solar roar, alien choral resonance, contained jet surges. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "false_sun",
+    "text": "Cinematic sci-fi False Sun: Immense solar roar, alien choral resonance, contained jet surges. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "mirror_court",
+    "text": "Cinematic sci-fi Mirror Court: Polished glass shimmer, cascading mirrored echoes, sharp fractures. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "mirror_court",
+    "text": "Cinematic sci-fi Mirror Court: Polished glass shimmer, cascading mirrored echoes, sharp fractures. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "mirror_court",
+    "text": "Cinematic sci-fi Mirror Court: Polished glass shimmer, cascading mirrored echoes, sharp fractures. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "mirror_court",
+    "text": "Cinematic sci-fi Mirror Court: Polished glass shimmer, cascading mirrored echoes, sharp fractures. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "mirror_court",
+    "text": "Cinematic sci-fi Mirror Court: Polished glass shimmer, cascading mirrored echoes, sharp fractures. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "mirror_court",
+    "text": "Cinematic sci-fi Mirror Court: Polished glass shimmer, cascading mirrored echoes, sharp fractures. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "signal_thief",
+    "text": "Cinematic sci-fi Signal Thief: Broken radio textures, tuned carrier signals, feedback releases. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "signal_thief",
+    "text": "Cinematic sci-fi Signal Thief: Broken radio textures, tuned carrier signals, feedback releases. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "signal_thief",
+    "text": "Cinematic sci-fi Signal Thief: Broken radio textures, tuned carrier signals, feedback releases. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "signal_thief",
+    "text": "Cinematic sci-fi Signal Thief: Broken radio textures, tuned carrier signals, feedback releases. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "signal_thief",
+    "text": "Cinematic sci-fi Signal Thief: Broken radio textures, tuned carrier signals, feedback releases. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "signal_thief",
+    "text": "Cinematic sci-fi Signal Thief: Broken radio textures, tuned carrier signals, feedback releases. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "lantern_mimic",
+    "text": "Cinematic sci-fi Lantern Mimic: Hollow treasure-like chimes, suspicious breathing, muscular jaw snaps. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "lantern_mimic",
+    "text": "Cinematic sci-fi Lantern Mimic: Hollow treasure-like chimes, suspicious breathing, muscular jaw snaps. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "lantern_mimic",
+    "text": "Cinematic sci-fi Lantern Mimic: Hollow treasure-like chimes, suspicious breathing, muscular jaw snaps. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "lantern_mimic",
+    "text": "Cinematic sci-fi Lantern Mimic: Hollow treasure-like chimes, suspicious breathing, muscular jaw snaps. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "lantern_mimic",
+    "text": "Cinematic sci-fi Lantern Mimic: Hollow treasure-like chimes, suspicious breathing, muscular jaw snaps. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "lantern_mimic",
+    "text": "Cinematic sci-fi Lantern Mimic: Hollow treasure-like chimes, suspicious breathing, muscular jaw snaps. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "afterimage_duelist",
+    "text": "Cinematic sci-fi Afterimage Duelist: Reversed engine harmonics, blade sweeps, short temporal echoes. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "afterimage_duelist",
+    "text": "Cinematic sci-fi Afterimage Duelist: Reversed engine harmonics, blade sweeps, short temporal echoes. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "afterimage_duelist",
+    "text": "Cinematic sci-fi Afterimage Duelist: Reversed engine harmonics, blade sweeps, short temporal echoes. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "afterimage_duelist",
+    "text": "Cinematic sci-fi Afterimage Duelist: Reversed engine harmonics, blade sweeps, short temporal echoes. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "afterimage_duelist",
+    "text": "Cinematic sci-fi Afterimage Duelist: Reversed engine harmonics, blade sweeps, short temporal echoes. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "afterimage_duelist",
+    "text": "Cinematic sci-fi Afterimage Duelist: Reversed engine harmonics, blade sweeps, short temporal echoes. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "surveyor",
+    "text": "Cinematic sci-fi Surveyor: Precision scanner sweeps, measured pulses, observatory motor locks. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "surveyor",
+    "text": "Cinematic sci-fi Surveyor: Precision scanner sweeps, measured pulses, observatory motor locks. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "surveyor",
+    "text": "Cinematic sci-fi Surveyor: Precision scanner sweeps, measured pulses, observatory motor locks. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "surveyor",
+    "text": "Cinematic sci-fi Surveyor: Precision scanner sweeps, measured pulses, observatory motor locks. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "surveyor",
+    "text": "Cinematic sci-fi Surveyor: Precision scanner sweeps, measured pulses, observatory motor locks. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "surveyor",
+    "text": "Cinematic sci-fi Surveyor: Precision scanner sweeps, measured pulses, observatory motor locks. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "cipher_engine",
+    "text": "Cinematic sci-fi Cipher Engine: Three distinct tonal cues, gate actuators, deliberate machine impacts. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "cipher_engine",
+    "text": "Cinematic sci-fi Cipher Engine: Three distinct tonal cues, gate actuators, deliberate machine impacts. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "cipher_engine",
+    "text": "Cinematic sci-fi Cipher Engine: Three distinct tonal cues, gate actuators, deliberate machine impacts. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "cipher_engine",
+    "text": "Cinematic sci-fi Cipher Engine: Three distinct tonal cues, gate actuators, deliberate machine impacts. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "cipher_engine",
+    "text": "Cinematic sci-fi Cipher Engine: Three distinct tonal cues, gate actuators, deliberate machine impacts. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "cipher_engine",
+    "text": "Cinematic sci-fi Cipher Engine: Three distinct tonal cues, gate actuators, deliberate machine impacts. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "rainmaker",
+    "text": "Cinematic sci-fi Rainmaker: Fine electrical rain, rolling thunder, resonant jellyfish pulses. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "rainmaker",
+    "text": "Cinematic sci-fi Rainmaker: Fine electrical rain, rolling thunder, resonant jellyfish pulses. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "rainmaker",
+    "text": "Cinematic sci-fi Rainmaker: Fine electrical rain, rolling thunder, resonant jellyfish pulses. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "rainmaker",
+    "text": "Cinematic sci-fi Rainmaker: Fine electrical rain, rolling thunder, resonant jellyfish pulses. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "rainmaker",
+    "text": "Cinematic sci-fi Rainmaker: Fine electrical rain, rolling thunder, resonant jellyfish pulses. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "rainmaker",
+    "text": "Cinematic sci-fi Rainmaker: Fine electrical rain, rolling thunder, resonant jellyfish pulses. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "comet_shepherd",
+    "text": "Cinematic sci-fi Comet Shepherd: Heavy stone impacts, throaty commands, gravitational rushing. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "comet_shepherd",
+    "text": "Cinematic sci-fi Comet Shepherd: Heavy stone impacts, throaty commands, gravitational rushing. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "comet_shepherd",
+    "text": "Cinematic sci-fi Comet Shepherd: Heavy stone impacts, throaty commands, gravitational rushing. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "comet_shepherd",
+    "text": "Cinematic sci-fi Comet Shepherd: Heavy stone impacts, throaty commands, gravitational rushing. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "comet_shepherd",
+    "text": "Cinematic sci-fi Comet Shepherd: Heavy stone impacts, throaty commands, gravitational rushing. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "comet_shepherd",
+    "text": "Cinematic sci-fi Comet Shepherd: Heavy stone impacts, throaty commands, gravitational rushing. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "thunder_loom",
+    "text": "Cinematic sci-fi Thunder Loom: Traveling electrical arcs, woven metal resonance, thunderous releases. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "thunder_loom",
+    "text": "Cinematic sci-fi Thunder Loom: Traveling electrical arcs, woven metal resonance, thunderous releases. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "thunder_loom",
+    "text": "Cinematic sci-fi Thunder Loom: Traveling electrical arcs, woven metal resonance, thunderous releases. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "thunder_loom",
+    "text": "Cinematic sci-fi Thunder Loom: Traveling electrical arcs, woven metal resonance, thunderous releases. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "thunder_loom",
+    "text": "Cinematic sci-fi Thunder Loom: Traveling electrical arcs, woven metal resonance, thunderous releases. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "thunder_loom",
+    "text": "Cinematic sci-fi Thunder Loom: Traveling electrical arcs, woven metal resonance, thunderous releases. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "avalanche_engine",
+    "text": "Cinematic sci-fi Avalanche Engine: Grinding ice, massive compression, crystalline shattering. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "avalanche_engine",
+    "text": "Cinematic sci-fi Avalanche Engine: Grinding ice, massive compression, crystalline shattering. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "avalanche_engine",
+    "text": "Cinematic sci-fi Avalanche Engine: Grinding ice, massive compression, crystalline shattering. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "avalanche_engine",
+    "text": "Cinematic sci-fi Avalanche Engine: Grinding ice, massive compression, crystalline shattering. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "avalanche_engine",
+    "text": "Cinematic sci-fi Avalanche Engine: Grinding ice, massive compression, crystalline shattering. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "avalanche_engine",
+    "text": "Cinematic sci-fi Avalanche Engine: Grinding ice, massive compression, crystalline shattering. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "ricochet_duchess",
+    "text": "Cinematic sci-fi Ricochet Duchess: Ceramic pings, metallic courtly flourishes, crisp ricochet snaps. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "ricochet_duchess",
+    "text": "Cinematic sci-fi Ricochet Duchess: Ceramic pings, metallic courtly flourishes, crisp ricochet snaps. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "ricochet_duchess",
+    "text": "Cinematic sci-fi Ricochet Duchess: Ceramic pings, metallic courtly flourishes, crisp ricochet snaps. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "ricochet_duchess",
+    "text": "Cinematic sci-fi Ricochet Duchess: Ceramic pings, metallic courtly flourishes, crisp ricochet snaps. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "ricochet_duchess",
+    "text": "Cinematic sci-fi Ricochet Duchess: Ceramic pings, metallic courtly flourishes, crisp ricochet snaps. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "ricochet_duchess",
+    "text": "Cinematic sci-fi Ricochet Duchess: Ceramic pings, metallic courtly flourishes, crisp ricochet snaps. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "lantern_shoal",
+    "text": "Cinematic sci-fi Lantern Shoal: Layered aquatic chirps, coordinated calls, soft luminous pops. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "lantern_shoal",
+    "text": "Cinematic sci-fi Lantern Shoal: Layered aquatic chirps, coordinated calls, soft luminous pops. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "lantern_shoal",
+    "text": "Cinematic sci-fi Lantern Shoal: Layered aquatic chirps, coordinated calls, soft luminous pops. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "lantern_shoal",
+    "text": "Cinematic sci-fi Lantern Shoal: Layered aquatic chirps, coordinated calls, soft luminous pops. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "lantern_shoal",
+    "text": "Cinematic sci-fi Lantern Shoal: Layered aquatic chirps, coordinated calls, soft luminous pops. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "lantern_shoal",
+    "text": "Cinematic sci-fi Lantern Shoal: Layered aquatic chirps, coordinated calls, soft luminous pops. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "nova_anvil",
+    "text": "Cinematic sci-fi Nova Anvil: Heavy hydraulics, suspended hammer tension, stellar pressure rumble. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "nova_anvil",
+    "text": "Cinematic sci-fi Nova Anvil: Heavy hydraulics, suspended hammer tension, stellar pressure rumble. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "nova_anvil",
+    "text": "Cinematic sci-fi Nova Anvil: Heavy hydraulics, suspended hammer tension, stellar pressure rumble. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "nova_anvil",
+    "text": "Cinematic sci-fi Nova Anvil: Heavy hydraulics, suspended hammer tension, stellar pressure rumble. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "nova_anvil",
+    "text": "Cinematic sci-fi Nova Anvil: Heavy hydraulics, suspended hammer tension, stellar pressure rumble. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "nova_anvil",
+    "text": "Cinematic sci-fi Nova Anvil: Heavy hydraulics, suspended hammer tension, stellar pressure rumble. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "gilded_pilgrim",
+    "text": "Cinematic sci-fi Gilded Pilgrim: Ritual bells, deep aerospace engines, heavy gold seal releases. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "gilded_pilgrim",
+    "text": "Cinematic sci-fi Gilded Pilgrim: Ritual bells, deep aerospace engines, heavy gold seal releases. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "gilded_pilgrim",
+    "text": "Cinematic sci-fi Gilded Pilgrim: Ritual bells, deep aerospace engines, heavy gold seal releases. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "gilded_pilgrim",
+    "text": "Cinematic sci-fi Gilded Pilgrim: Ritual bells, deep aerospace engines, heavy gold seal releases. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "gilded_pilgrim",
+    "text": "Cinematic sci-fi Gilded Pilgrim: Ritual bells, deep aerospace engines, heavy gold seal releases. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "gilded_pilgrim",
+    "text": "Cinematic sci-fi Gilded Pilgrim: Ritual bells, deep aerospace engines, heavy gold seal releases. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "vault_crawler",
+    "text": "Cinematic sci-fi Vault Crawler: Heavy scuttling, vault mechanisms, shifting cargo. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "vault_crawler",
+    "text": "Cinematic sci-fi Vault Crawler: Heavy scuttling, vault mechanisms, shifting cargo. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "vault_crawler",
+    "text": "Cinematic sci-fi Vault Crawler: Heavy scuttling, vault mechanisms, shifting cargo. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "vault_crawler",
+    "text": "Cinematic sci-fi Vault Crawler: Heavy scuttling, vault mechanisms, shifting cargo. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "vault_crawler",
+    "text": "Cinematic sci-fi Vault Crawler: Heavy scuttling, vault mechanisms, shifting cargo. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "vault_crawler",
+    "text": "Cinematic sci-fi Vault Crawler: Heavy scuttling, vault mechanisms, shifting cargo. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "oathkeeper",
+    "text": "Cinematic sci-fi Oathkeeper: Distinct challenge call, shield resonance, mechanical release. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "oathkeeper",
+    "text": "Cinematic sci-fi Oathkeeper: Distinct challenge call, shield resonance, mechanical release. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "oathkeeper",
+    "text": "Cinematic sci-fi Oathkeeper: Distinct challenge call, shield resonance, mechanical release. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "oathkeeper",
+    "text": "Cinematic sci-fi Oathkeeper: Distinct challenge call, shield resonance, mechanical release. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "oathkeeper",
+    "text": "Cinematic sci-fi Oathkeeper: Distinct challenge call, shield resonance, mechanical release. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "oathkeeper",
+    "text": "Cinematic sci-fi Oathkeeper: Distinct challenge call, shield resonance, mechanical release. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "courier_zero",
+    "text": "Cinematic sci-fi Courier Zero: Clipped synthetic transmissions, pressured cargo latches, sharp jet snaps. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "courier_zero",
+    "text": "Cinematic sci-fi Courier Zero: Clipped synthetic transmissions, pressured cargo latches, sharp jet snaps. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "courier_zero",
+    "text": "Cinematic sci-fi Courier Zero: Clipped synthetic transmissions, pressured cargo latches, sharp jet snaps. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "courier_zero",
+    "text": "Cinematic sci-fi Courier Zero: Clipped synthetic transmissions, pressured cargo latches, sharp jet snaps. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "courier_zero",
+    "text": "Cinematic sci-fi Courier Zero: Clipped synthetic transmissions, pressured cargo latches, sharp jet snaps. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "courier_zero",
+    "text": "Cinematic sci-fi Courier Zero: Clipped synthetic transmissions, pressured cargo latches, sharp jet snaps. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "debt_collector",
+    "text": "Cinematic sci-fi Debt Collector: Mechanical suction, counting clicks, hard salvage chamber impacts. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "debt_collector",
+    "text": "Cinematic sci-fi Debt Collector: Mechanical suction, counting clicks, hard salvage chamber impacts. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "debt_collector",
+    "text": "Cinematic sci-fi Debt Collector: Mechanical suction, counting clicks, hard salvage chamber impacts. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "debt_collector",
+    "text": "Cinematic sci-fi Debt Collector: Mechanical suction, counting clicks, hard salvage chamber impacts. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "debt_collector",
+    "text": "Cinematic sci-fi Debt Collector: Mechanical suction, counting clicks, hard salvage chamber impacts. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "debt_collector",
+    "text": "Cinematic sci-fi Debt Collector: Mechanical suction, counting clicks, hard salvage chamber impacts. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "mercy_trap",
+    "text": "Cinematic sci-fi Mercy Trap: Soothing low hum that becomes structural strain, soft membrane folds. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "mercy_trap",
+    "text": "Cinematic sci-fi Mercy Trap: Soothing low hum that becomes structural strain, soft membrane folds. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "mercy_trap",
+    "text": "Cinematic sci-fi Mercy Trap: Soothing low hum that becomes structural strain, soft membrane folds. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "mercy_trap",
+    "text": "Cinematic sci-fi Mercy Trap: Soothing low hum that becomes structural strain, soft membrane folds. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "mercy_trap",
+    "text": "Cinematic sci-fi Mercy Trap: Soothing low hum that becomes structural strain, soft membrane folds. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "mercy_trap",
+    "text": "Cinematic sci-fi Mercy Trap: Soothing low hum that becomes structural strain, soft membrane folds. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "fortune_leech",
+    "text": "Cinematic sci-fi Fortune Leech: Low feeding pulses, organic suction tears, host armor impacts. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "fortune_leech",
+    "text": "Cinematic sci-fi Fortune Leech: Low feeding pulses, organic suction tears, host armor impacts. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "fortune_leech",
+    "text": "Cinematic sci-fi Fortune Leech: Low feeding pulses, organic suction tears, host armor impacts. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "fortune_leech",
+    "text": "Cinematic sci-fi Fortune Leech: Low feeding pulses, organic suction tears, host armor impacts. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "fortune_leech",
+    "text": "Cinematic sci-fi Fortune Leech: Low feeding pulses, organic suction tears, host armor impacts. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "fortune_leech",
+    "text": "Cinematic sci-fi Fortune Leech: Low feeding pulses, organic suction tears, host armor impacts. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "constellation_beast",
+    "text": "Cinematic sci-fi Constellation Beast: Immense layered stellar harmonics, living structure movement, deep organ collapses. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "constellation_beast",
+    "text": "Cinematic sci-fi Constellation Beast: Immense layered stellar harmonics, living structure movement, deep organ collapses. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "constellation_beast",
+    "text": "Cinematic sci-fi Constellation Beast: Immense layered stellar harmonics, living structure movement, deep organ collapses. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "constellation_beast",
+    "text": "Cinematic sci-fi Constellation Beast: Immense layered stellar harmonics, living structure movement, deep organ collapses. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "constellation_beast",
+    "text": "Cinematic sci-fi Constellation Beast: Immense layered stellar harmonics, living structure movement, deep organ collapses. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "constellation_beast",
+    "text": "Cinematic sci-fi Constellation Beast: Immense layered stellar harmonics, living structure movement, deep organ collapses. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "cathedral_of_teeth",
+    "text": "Cinematic sci-fi Cathedral of Teeth: Monumental creaks, vast breath, thunderous jaw closures. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "cathedral_of_teeth",
+    "text": "Cinematic sci-fi Cathedral of Teeth: Monumental creaks, vast breath, thunderous jaw closures. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "cathedral_of_teeth",
+    "text": "Cinematic sci-fi Cathedral of Teeth: Monumental creaks, vast breath, thunderous jaw closures. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "cathedral_of_teeth",
+    "text": "Cinematic sci-fi Cathedral of Teeth: Monumental creaks, vast breath, thunderous jaw closures. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "cathedral_of_teeth",
+    "text": "Cinematic sci-fi Cathedral of Teeth: Monumental creaks, vast breath, thunderous jaw closures. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "cathedral_of_teeth",
+    "text": "Cinematic sci-fi Cathedral of Teeth: Monumental creaks, vast breath, thunderous jaw closures. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "dying_star",
+    "text": "Cinematic sci-fi Dying Star: Rising stellar pressure, deep cooling surges, immense final release. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "dying_star",
+    "text": "Cinematic sci-fi Dying Star: Rising stellar pressure, deep cooling surges, immense final release. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "dying_star",
+    "text": "Cinematic sci-fi Dying Star: Rising stellar pressure, deep cooling surges, immense final release. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "dying_star",
+    "text": "Cinematic sci-fi Dying Star: Rising stellar pressure, deep cooling surges, immense final release. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "dying_star",
+    "text": "Cinematic sci-fi Dying Star: Rising stellar pressure, deep cooling surges, immense final release. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "dying_star",
+    "text": "Cinematic sci-fi Dying Star: Rising stellar pressure, deep cooling surges, immense final release. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "worldmolt",
+    "text": "Cinematic sci-fi Worldmolt: Continental cracks, shifting rock masses, subterranean living rumble. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "worldmolt",
+    "text": "Cinematic sci-fi Worldmolt: Continental cracks, shifting rock masses, subterranean living rumble. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "worldmolt",
+    "text": "Cinematic sci-fi Worldmolt: Continental cracks, shifting rock masses, subterranean living rumble. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "worldmolt",
+    "text": "Cinematic sci-fi Worldmolt: Continental cracks, shifting rock masses, subterranean living rumble. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "worldmolt",
+    "text": "Cinematic sci-fi Worldmolt: Continental cracks, shifting rock masses, subterranean living rumble. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "worldmolt",
+    "text": "Cinematic sci-fi Worldmolt: Continental cracks, shifting rock masses, subterranean living rumble. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "choir_unbound",
+    "text": "Cinematic sci-fi Choir Unbound: Seven original contrasting nonverbal alien vocal motifs, physically weighty movement. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "choir_unbound",
+    "text": "Cinematic sci-fi Choir Unbound: Seven original contrasting nonverbal alien vocal motifs, physically weighty movement. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "choir_unbound",
+    "text": "Cinematic sci-fi Choir Unbound: Seven original contrasting nonverbal alien vocal motifs, physically weighty movement. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "choir_unbound",
+    "text": "Cinematic sci-fi Choir Unbound: Seven original contrasting nonverbal alien vocal motifs, physically weighty movement. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "choir_unbound",
+    "text": "Cinematic sci-fi Choir Unbound: Seven original contrasting nonverbal alien vocal motifs, physically weighty movement. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "choir_unbound",
+    "text": "Cinematic sci-fi Choir Unbound: Seven original contrasting nonverbal alien vocal motifs, physically weighty movement. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "eventide_engine",
+    "text": "Cinematic sci-fi Eventide Engine: Vast sail thunder, straining aerospace structure, powerful steering engine pulses. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "eventide_engine",
+    "text": "Cinematic sci-fi Eventide Engine: Vast sail thunder, straining aerospace structure, powerful steering engine pulses. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "eventide_engine",
+    "text": "Cinematic sci-fi Eventide Engine: Vast sail thunder, straining aerospace structure, powerful steering engine pulses. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "eventide_engine",
+    "text": "Cinematic sci-fi Eventide Engine: Vast sail thunder, straining aerospace structure, powerful steering engine pulses. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "eventide_engine",
+    "text": "Cinematic sci-fi Eventide Engine: Vast sail thunder, straining aerospace structure, powerful steering engine pulses. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "eventide_engine",
+    "text": "Cinematic sci-fi Eventide Engine: Vast sail thunder, straining aerospace structure, powerful steering engine pulses. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "arrival",
+    "duration_seconds": 3.5,
+    "direction": "One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail.",
+    "id": "witness",
+    "text": "Cinematic sci-fi Witness: Recognizable motif echoes reframed by ancient alien recording machinery. One commanding arrival reveal. Immediate readable onset, a distinctive creature identity, then a controlled tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "presence",
+    "duration_seconds": 4,
+    "direction": "A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details.",
+    "id": "witness",
+    "text": "Cinematic sci-fi Witness: Recognizable motif echoes reframed by ancient alien recording machinery. A living operational presence phrase: richly evolving movement and character, not a static drone. Space between details. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "warning",
+    "duration_seconds": 2,
+    "direction": "A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet.",
+    "id": "witness",
+    "text": "Cinematic sci-fi Witness: Recognizable motif echoes reframed by ancient alien recording machinery. A clearly anticipatory attack windup, three increasingly tense articulation beats ending in a tight inhale or mechanical lock. No discharge yet. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "attack",
+    "duration_seconds": 2,
+    "direction": "A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence.",
+    "id": "witness",
+    "text": "Cinematic sci-fi Witness: Recognizable motif echoes reframed by ancient alien recording machinery. A strong attack release, immediate punch and clearly articulated high-mid detail with weight beneath it. No windup or long silence. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "break",
+    "duration_seconds": 1.2,
+    "direction": "One precise functional component snapping and failing, a short satisfying material fracture with a very short tail.",
+    "id": "witness",
+    "text": "Cinematic sci-fi Witness: Recognizable motif echoes reframed by ancient alien recording machinery. One precise functional component snapping and failing, a short satisfying material fracture with a very short tail. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "event": "death",
+    "duration_seconds": 4.2,
+    "direction": "A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade.",
+    "id": "witness",
+    "text": "Cinematic sci-fi Witness: Recognizable motif echoes reframed by ancient alien recording machinery. A unique large creature defeat: structural collapse, a recognizable final cry or engine failure, decaying fragments and an elegant final fade. Full-sized weight, tactile material, vivid midrange. No speech, music or UI beeps."
+  },
+  {
+    "id": "choir_unbound",
+    "event": "motif_0",
+    "duration_seconds": 1.2,
+    "text": "Original cinematic alien creature vocal call for Choir Unbound. An airy three-note soprano cry, frost-glass throat resonance, one clear short rising phrase. One nonverbal rhythmic sound effect, immediate onset. No words, percussion, score, accompaniment or background drone."
+  },
+  {
+    "id": "choir_unbound",
+    "event": "motif_1",
+    "duration_seconds": 1.2,
+    "text": "Original cinematic alien creature vocal call for Choir Unbound. A warm contralto descending two-note call, velvet breath and a restrained brass-like chest resonance. One nonverbal rhythmic sound effect, immediate onset. No words, percussion, score, accompaniment or background drone."
+  },
+  {
+    "id": "choir_unbound",
+    "event": "motif_2",
+    "duration_seconds": 1.2,
+    "text": "Original cinematic alien creature vocal call for Choir Unbound. A deep bass throat pulse, two compact articulated notes with resonant stone-like weight. One nonverbal rhythmic sound effect, immediate onset. No words, percussion, score, accompaniment or background drone."
+  },
+  {
+    "id": "choir_unbound",
+    "event": "motif_3",
+    "duration_seconds": 1.2,
+    "text": "Original cinematic alien creature vocal call for Choir Unbound. A whispering alto trill, fluttering silver breath followed by one clear sustained syllable without words. One nonverbal rhythmic sound effect, immediate onset. No words, percussion, score, accompaniment or background drone."
+  },
+  {
+    "id": "choir_unbound",
+    "event": "motif_4",
+    "duration_seconds": 1.2,
+    "text": "Original cinematic alien creature vocal call for Choir Unbound. A hollow tenor call, three gently falling tones with a haunting ceramic-mouth resonance. One nonverbal rhythmic sound effect, immediate onset. No words, percussion, score, accompaniment or background drone."
+  },
+  {
+    "id": "choir_unbound",
+    "event": "motif_5",
+    "duration_seconds": 1.2,
+    "text": "Original cinematic alien creature vocal call for Choir Unbound. A rasping low choral exhalation, one upward bend followed by a tight clean stop. One nonverbal rhythmic sound effect, immediate onset. No words, percussion, score, accompaniment or background drone."
+  },
+  {
+    "id": "choir_unbound",
+    "event": "motif_6",
+    "duration_seconds": 1.2,
+    "text": "Original cinematic alien creature vocal call for Choir Unbound. The conductor: a powerful pure low-to-high vowel swell, luminous layered alien vocal body and a clean release. One nonverbal rhythmic sound effect, immediate onset. No words, percussion, score, accompaniment or background drone."
+  }
+]

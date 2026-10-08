@@ -1,0 +1,62 @@
+{
+  "id": 9,
+  "name": "Arc Striker",
+  "architecture": "arc",
+  "baselineDesign": [
+    "Arc Striker",
+    1.35,
+    0.95,
+    0.71,
+    1.03,
+    "arc",
+    [
+      [
+        0.2,
+        0.53,
+        -1.1,
+        0.15
+      ],
+      [
+        0.73,
+        0.76,
+        -0.63,
+        0.17
+      ],
+      [
+        1.36,
+        1.1,
+        -0.06,
+        0.08
+      ],
+      [
+        1.83,
+        1.06,
+        0.37,
+        0.025
+      ]
+    ]
+  ],
+  "palette": [
+    "075f98",
+    "ffce2e",
+    "ffe126"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false,
+  "bytes": 14758416,
+  "triangles": 197234,
+  "materials": [
+    "Graphite structural composite",
+    "Off-white aerospace polyurethane",
+    "Brushed titanium fittings",
+    "Seals and cabin upholstery",
+    "Dim ion throat and instrument phosphor",
+    "Laminated cockpit glazing",
+    "Cobalt blue painted alloy",
+    "Sooted nozzle liner",
+    "Heat-oxidised exhaust alloy"
+  ],
+  "images": 5,
+  "repaired": 0
+}

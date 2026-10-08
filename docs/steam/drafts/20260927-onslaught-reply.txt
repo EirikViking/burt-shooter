@@ -1,0 +1,41 @@
+Thanks for continuing to test this so carefully, Tyrian. I have gone through your followups individually. I will try to implement most of the changes below during the coming week, with testing before release.
+
+Thanks, Tyrian. I will try to implement most of the improvements below during the coming week, with testing before release.
+
+[quote=Tyrian Mollusk;591816302688098315]all seven popped[/quote]
+Thank you for confirming the Steam unlocks. That is helpful confirmation of that repair. It does not close the separate Serpent Duel problem.
+
+[quote=Tyrian Mollusk;591816302688098315]one life[/quote]
+My explanation was confusing, sorry. The current check uses lives lost across the whole run, rather than just during a snake fight. That can reject a run after a clean snake kill if more lives are lost later. Extra lives collected do not reduce that loss count. I will make the condition clear and check the point at which the achievement should be recorded, so continuing a successful run does not undo a qualifying defeat.
+
+[quote=Tyrian Mollusk;591816302688116852]NONE[/quote]
+Your later tests are specific enough to investigate without asking you to repeat them. I will reproduce the clean kill followed by ending through the menu, the clean kill followed by later deaths, the one life snake fight, and the case with an earlier life lost. I will trace both snake completion and how the run is saved. I should not have treated the earlier checks as sufficient to close this.
+
+[quote=Tyrian Mollusk;591816302688116852]purple dots[/quote]
+I will replace the uncomfortable flickering appearance on Phase Seraph, Violet Feint, and other affected ships with steady projectiles that show their direction and motion clearly. I want enemy bullets to remain easy to read without making friendly fire unpleasant to watch.
+
+[quote=Tyrian Mollusk;591816302688132632]fully random[/quote]
+I will check selection across multiple fresh runs, including the first bosses and their partners. The existing rule against consecutive repeats is not enough to establish good variety across runs. I will improve the selection if it keeps favouring the same small group.
+
+[quote=Tyrian Mollusk;591816302688132632]Small Wings[/quote]
+I checked the eligible hulls. This achievement counts Nova Sparrow, Comet Courier, Pixel Needle, Mint Skater and Crimson Bite. Quasar Fan is outside that group, which explains why that run did not add credit. I am sorry this was unclear. I will show the eligible hulls and which ones have counted, so you do not have to guess or repeat runs unnecessarily.
+
+[quote=Tyrian Mollusk;591816302688132632]Same Hull[/quote]
+The intended requirement is three different starting augment combinations on the same hull, with two sectors cleared for each. They may overlap. Reordering the same three augments does not create a new combination. I will test custom combinations through the real run flow and make the counted progress clearer.
+
+[quote=Tyrian Mollusk;591816302688132632]suggested loadouts[/quote]
+They should not be required. I will review the presets and the slower Tactical opening, especially for weaker ships. I will also look at why wide spread ships feel ineffective, rather than asking you to repeat an unenjoyable Quasar Fan run. The aim is useful choices and an interesting opening while keeping the challenge.
+
+[quote=Tyrian Mollusk;591816302688132632]bullets[/quote]
+Agreed. The source now includes cleanup when an Onslaught sector is completed. I will verify the boss, remaining swarm, Draft, and next sector transitions together, including the moment control returns after the upgrade. Remaining enemies are intentional, but stray projectiles should not survive a completed sector.
+
+[quote=Tyrian Mollusk;591816302688136356]teeny tiny[/quote]
+I will give Rift Shards a clearer silhouette and a readable travel trail again. Seeing the captured shots fly back is part of what makes that fusion satisfying, and I want to preserve that without filling the screen with glare.
+
+[quote=Tyrian Mollusk;591816302688136356]blinding white[/quote]
+I will check Pierce with Phase Seraph and the other affected weapons, reduce the bright white area, and retain a visible coloured body. I will judge this during dense gameplay, together with the purple projectile changes, rather than from a still image alone.
+
+[quote=Tyrian Mollusk;591816302688178444]hardcore[/quote]
+Fair point. I will test stronger and more varied boss attacks in later loops, taking inspiration from the earlier patterns. I will keep warnings accurate and make sure a second boss cannot move an attack away from its announced lane. Harder should still give you enough information to make a good decision.
+
+The settings preservation and delayed second drone reports also have source fixes, and I will include them in the regression checks. Please keep reporting anything that still feels wrong. If an older concern remains important and I have missed it, please remind me. I would rather hear it again than leave it unresolved.

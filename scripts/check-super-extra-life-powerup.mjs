@@ -61,7 +61,7 @@ const managerSource = readFileSync(path.join(root, 'src/managers/PowerupManager.
 assert.match(managerSource, /type = 'super_extra_life'/, 'PowerupManager must select super_extra_life');
 assert.match(managerSource, /BalanceConfig\.powerups\.superExtraLifeChance/, 'super_extra_life must be governed by BalanceConfig.powerups.superExtraLifeChance');
 assert.match(managerSource, /rand < superExtraLifeThreshold/, 'super_extra_life must use its configured rare selection threshold');
-assert.match(managerSource, /scene\.game\.gainLife\(\{\s*count: lifeGrant,\s*source: this\.type/s, 'super_extra_life should grant lives through the shared gainLife path');
+assert.match(managerSource, /scene\.game\.gainLife\(\{\s*\.\.\.this\.lifeGrantOptions,\s*count: lifeGrant,\s*source: this\.type/s, 'super_extra_life should grant lives through the shared gainLife path');
 assert.doesNotMatch(managerSource, /super_extra_life[\s\S]{0,220}addScore/, 'super_extra_life must not award score directly');
 
 const playSource = readFileSync(path.join(root, 'src/scenes/PlayScene.js'), 'utf8');

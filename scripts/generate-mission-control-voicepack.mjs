@@ -162,6 +162,10 @@ const lines = [
     text: 'Number one is on the scope. Bring it home.'
   },
   {
+    file: 'mission_control_known_record_beaten_01.mp3',
+    text: 'You beat the record we started with. Now bring it home.'
+  },
+  {
     file: 'mission_control_top3_highscore_01.mp3',
     text: 'Top three. That is not a score, that is a statement.'
   },

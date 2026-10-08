@@ -1,0 +1,31 @@
+{
+  "models": 30,
+  "newModels": 29,
+  "approvedSparrowUnchanged": true,
+  "totalGLBBytes": 51107764,
+  "minTriangles": 18488,
+  "maxTriangles": 23828,
+  "maxMaterials": 6,
+  "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "meanFrameMsRange": [
+    16.666292134831473,
+    20.77746478873256
+  ],
+  "maxFrameP95Ms": 33.79999999998836,
+  "meanRenderCopyMsRange": [
+    0.5512676056212102,
+    2.3593639578709755
+  ],
+  "finalResources": {
+    "resident": 1,
+    "geometries": 6,
+    "textures": 8,
+    "calls": 12,
+    "triangles": 47656
+  },
+  "errors": [],
+  "warnings": [],
+  "estimatedPerModelTextureMiBWithMipmaps": 21.333,
+  "estimateNotMeasuredGPUAllocation": true,
+  "conditions": "Headless Chrome 1920x1080 with video recording; concurrent asset build and combat QA, not an isolated hardware benchmark"
+}

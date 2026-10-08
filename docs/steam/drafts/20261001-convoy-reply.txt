@@ -1,0 +1,6 @@
+[quote=Tyrian Mollusk]then whooshed right back in as the next wave started[/quote]
+Your follow-up clip helped pin this down. The current test build already keeps the contact present through an ordinary wave briefing. I have now added a local fix for ordinary reinforcement warnings and for interrupted retreat/re-entry, sideways arrival/departure snaps, and late rescues reversing the transport's exit.
+
+The contact's clock, damage acceptance and attacks remain frozen during those ordinary warnings. Bosses, headline storms and other major encounters still take priority, and the rescued wing keeps its existing combat-service budget. The new fix passes the renderer checks across all four convoy and six rival variants; it has not been uploaded yet.
+
+Thank you for confirming Serpent Duel, the overall Onslaught achievement and the softer Graze Break. I have kept those confirmed behaviors intact. Slow-hull positioning and the rescue window still need normal-paced human playtesting; the automated checks establish continuity and cleanup, not whether the encounter feels right.

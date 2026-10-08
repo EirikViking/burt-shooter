@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {createRequire} from 'node:module';
+const store=new Map();globalThis.window={location:{search:'',origin:'http://localhost'},localStorage:{getItem:k=>store.get(k)||null,setItem:(k,v)=>store.set(k,v)},addEventListener(){}};
+const {LocalLeaderboard,LOCAL_LEADERBOARD_KEY}=await import('../src/api/LocalLeaderboard.js');
+const {LocalLeaderboardProvider}=await import('../src/leaderboard/LocalLeaderboardProvider.js');
+const {normalizeLeaderboardEntry}=await import('../src/leaderboard/LeaderboardTypes.js');
+const {getRunHistoryPresentation,getSectorReachedLabel}=await import('../src/leaderboard/RunHistoryPresentation.js');
+const {sanitizeScores}=createRequire(import.meta.url)('../electron/steamCloudSave.cjs');
+const provider=new LocalLeaderboardProvider();
+for(const mode of ['ranked','ranked_tactical','sector_start','overrun_pure']){
+ const input={score:899255,levelReached:99,startSector:mode==='sector_start'?45:1,endSector:99,runMode:mode,submissionId:mode};
+ await provider.submitScore(input,{name:'TEST'});
+ const stored=LocalLeaderboard.getScores(100).find(e=>e.submissionId===mode);
+ const cloud=sanitizeScores([stored])[0], shown=normalizeLeaderboardEntry(cloud,{source:'local'});
+ assert.equal(shown.runMode,mode);assert.equal(shown.startSector,input.startSector);assert.equal(shown.endSector,99);
+ assert.equal(getRunHistoryPresentation(shown).range,`S ${input.startSector}–99`);
+}
+store.set(LOCAL_LEADERBOARD_KEY,JSON.stringify([{name:'OLD',score:899255}]));
+const old=normalizeLeaderboardEntry(sanitizeScores(LocalLeaderboard.getScores())[0],{source:'local'});
+assert.equal(getRunHistoryPresentation(old).start,null);assert.equal(getRunHistoryPresentation(old).end,null);
+assert.equal(getRunHistoryPresentation(old).mode,'Mode unknown');
+assert.equal(getRunHistoryPresentation(old).range,'—');
+assert.equal(getSectorReachedLabel(old),'SECTOR NOT RECORDED');
+assert.equal(getRunHistoryPresentation({level:42}).range,'S —–42');
+assert.equal(getSectorReachedLabel({finalSector:42}),'REACHED SECTOR 42');
+const legacySteamSector=normalizeLeaderboardEntry({source:'steam',leaderboardKind:'sector_start',name:'LEGACY',score:1834961,details:[]},{leaderboardKind:'sector_start'});
+assert.equal(getRunHistoryPresentation(legacySteamSector).range,'—');
+assert.equal(getSectorReachedLabel(legacySteamSector),'SECTOR NOT RECORDED');
+const recordedSteamSector=normalizeLeaderboardEntry({source:'steam',leaderboardKind:'sector_start',name:'RECORDED',score:25566,details:[5,9,9]},{leaderboardKind:'sector_start'});
+assert.equal(getRunHistoryPresentation(recordedSteamSector).range,'S 5–9');
+assert.equal(getSectorReachedLabel(recordedSteamSector),'REACHED SECTOR 9');
+assert.equal(getRunHistoryPresentation({startSector:45,finalSector:99}).range,'S 45–99');
+const {getSpaceSnakeMotionRate,hasSpaceSnakeBreathingRoom}=await import('../src/config/SpaceSnakes.js');
+for(const age of [1,5,20])for(const cooldown of [0,30,60,180])assert.equal(getSpaceSnakeMotionRate(age,cooldown,1),getSpaceSnakeMotionRate(age,cooldown,5)*(age < 3 ? 1 : .5));
+for(const n of [10,11,12])assert.equal(hasSpaceSnakeBreathingRoom(n,10),false);assert.equal(hasSpaceSnakeBreathingRoom(13,10),true);
+const play=fs.readFileSync(new URL('../src/scenes/PlayScene.js',import.meta.url),'utf8');
+const method=play.slice(play.indexOf('  triggerChainLightning('),play.indexOf('  drawLightningArc(')).trim();
+const chain=Function('AudioManager','claimExperimentalChainLightningOrigin','recordExperimentalChainLightningOrigin',`return ({${method}}).triggerChainLightning;`)({playSfx(){}},()=>true,()=>{});
+for(const multipart of [false,true]){const root={},source={x:0,y:0,kind:'enemy'},enemies=[1,2,3].map(i=>({x:i*20,y:0,active:true,kind:multipart?'mystery_part':'enemy',root}));let damage=0;
+ const result=chain.call({game:{},player:{chainLightningActive:true},enemyManager:{enemies},drawLightningArc(){},applyCombatDamage(){damage++;return false;}},source,10);
+ assert.equal(result.hitCount,multipart?1:3);assert.equal(damage,multipart?1:3);
+}
+console.log('PASS history local/cloud roundtrip, unknown legacy values, lone-head motion, shared snake gap and multipart Chain budget');

@@ -1,0 +1,465 @@
+[
+  {
+    "id": "glass_widow",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-f3ed6899-7471-41a2-b5ee-6d62dcc4ee01.png",
+    "runtime": "public/art/mysteries/glass_widow.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "cinder_manta",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-0efaeed0-f88e-4922-ba0f-179f1f6eba6d.png",
+    "runtime": "public/art/mysteries/cinder_manta.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "needle_saint",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-35000996-61be-4f58-8258-bb0e58d48f4c.png",
+    "runtime": "public/art/mysteries/needle_saint.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "blind_leviathan",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-a3672935-70fb-4041-be75-2de51f2656e1.png",
+    "runtime": "public/art/mysteries/blind_leviathan.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "scissor_twins",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-43a48efd-66fa-4e71-8be1-4e983c8fc928.png",
+    "runtime": "public/art/mysteries/scissor_twins.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "red_wake",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-1463c528-0c42-4bf8-a2f3-d09cc2e215a8.png",
+    "runtime": "public/art/mysteries/red_wake.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "lantern_eater",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-639e2d86-9808-48f2-a31f-44d303ebdcfb.png",
+    "runtime": "public/art/mysteries/lantern_eater.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "tidemason",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-446cb162-ff76-47eb-b71f-00cf52d98c43.png",
+    "runtime": "public/art/mysteries/tidemason.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports.",
+    "supersededSources": [
+      "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-50b8f19a-c640-43c6-b8f6-92a979adbdb7.png"
+    ]
+  },
+  {
+    "id": "foldship",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-53cc39a1-de9a-4799-bd69-ce9b0dc3b3b2.png",
+    "runtime": "public/art/mysteries/foldship.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "doorwraith",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-19e4bf4d-b46f-4fa7-84e1-8ea6e92951ce.png",
+    "runtime": "public/art/mysteries/doorwraith.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports.",
+    "supersededSources": [
+      "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-b991aa3c-11d2-4c31-8594-17dfdb87912f.png"
+    ]
+  },
+  {
+    "id": "clockray",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-f8fc17ce-b14d-41eb-b22d-57453a76f22b.png",
+    "runtime": "public/art/mysteries/clockray.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "horizon_biter",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-1eb8b088-1635-4efb-9b8e-9502a00d7f36.png",
+    "runtime": "public/art/mysteries/horizon_biter.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "parallax_hunter",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-569f9832-ef4e-478a-a169-ba3b508e96c5.png",
+    "runtime": "public/art/mysteries/parallax_hunter.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "bloom_queen",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-085e55c8-f6a7-42cb-a621-2dc6579c2674.png",
+    "runtime": "public/art/mysteries/bloom_queen.png",
+    "status": "source inspected; runtime integration pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "rift_surgeon",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-cea148cb-d07f-4a59-a519-eebeaacd82bf.png",
+    "runtime": "public/art/mysteries/rift_surgeon.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports.",
+    "supersededSources": [
+      "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-592784cb-e917-43d6-baf9-473302374da3.png"
+    ]
+  },
+  {
+    "id": "brood_ark",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-1fd54fd8-3dfe-44f0-a31b-b30e475bd956.png",
+    "runtime": "public/art/mysteries/brood_ark.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports.",
+    "supersededSources": [
+      "C:\\Users\\cromk\\.codex\\generated_images\\01a08651-8a75-7912-b016-bdc7cf3e9ea0\\exec-641b275e-c81e-4194-be95-b5f7098e9e11.png"
+    ]
+  },
+  {
+    "id": "carrion_weaver",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-26f5fb41-9c0f-4ac8-bd46-1e1d79fd53f4.png",
+    "runtime": "public/art/mysteries/carrion_weaver.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "spore_monk",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-c4314176-9fef-4e60-b8aa-c18e65330c93.png",
+    "runtime": "public/art/mysteries/spore_monk.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "husk_parade",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-03ce98f7-b95e-4b98-9cda-8512e3d0228a.png",
+    "runtime": "public/art/mysteries/husk_parade.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "magnet_urchin",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-346e3461-b56e-4d0e-afe2-57b4ea253ec6.png",
+    "runtime": "public/art/mysteries/magnet_urchin.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "chrysalis_hunter",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-862915f7-2d6e-4ba9-9710-18f622d2fd64.png",
+    "runtime": "public/art/mysteries/chrysalis_hunter.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "rail_cathedral",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-346999e8-f88e-48a6-bb32-b589bdf89d1a.png",
+    "runtime": "public/art/mysteries/rail_cathedral.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "siege_orchid",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-c7291ed2-0b0c-46d0-a88f-1fce6bf07af7.png",
+    "runtime": "public/art/mysteries/siege_orchid.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "bulwark_hauler",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-b9ff8557-f565-4cd8-82ac-0bc73fc16772.png",
+    "runtime": "public/art/mysteries/bulwark_hauler.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "bellfoundry",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-38b085d9-cd82-4886-bb54-686386ca07c0.png",
+    "runtime": "public/art/mysteries/bellfoundry.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "prism_bastion",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-364bb7dd-afab-45ad-8e1d-11e354781354.png",
+    "runtime": "public/art/mysteries/prism_bastion.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "cable_kraken",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-7a0d5c20-36b4-482a-b669-7c5650d4eff6.png",
+    "runtime": "public/art/mysteries/cable_kraken.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "switchyard",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-31240785-a12e-4bd9-a14c-e378e32020a6.png",
+    "runtime": "public/art/mysteries/switchyard.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "false_sun",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-a3fc6ac1-7c12-4204-89fb-5ad06c5a359c.png",
+    "runtime": "public/art/mysteries/false_sun.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "mirror_court",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-c13cac3f-8606-44f4-b7eb-621be340e8ba.png",
+    "runtime": "public/art/mysteries/mirror_court.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "signal_thief",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-3cdb9ad6-4cd2-4584-ba3b-1cfefe507346.png",
+    "runtime": "public/art/mysteries/signal_thief.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "lantern_mimic",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-3b78a7c1-afef-4f61-9f88-22496e965f5e.png",
+    "runtime": "public/art/mysteries/lantern_mimic.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "afterimage_duelist",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-ae5b0ae7-ef8e-47f4-b480-63c271a846ae.png",
+    "runtime": "public/art/mysteries/afterimage_duelist.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "surveyor",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-24d9ce5b-eeb4-4cbf-a2ee-da1cda26e498.png",
+    "runtime": "public/art/mysteries/surveyor.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "cipher_engine",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-49019461-097d-4686-b191-cf76f5fd6318.png",
+    "runtime": "public/art/mysteries/cipher_engine.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "rainmaker",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-ef22ee92-9cb6-40e2-8f4a-8ca1c1a20079.png",
+    "runtime": "public/art/mysteries/rainmaker.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "comet_shepherd",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-b81ca15e-3a47-491e-81b6-a7fccdbe8442.png",
+    "runtime": "public/art/mysteries/comet_shepherd.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "thunder_loom",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-370585af-f8b4-4e36-8ae8-51f5d600280d.png",
+    "runtime": "public/art/mysteries/thunder_loom.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "avalanche_engine",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-961320e0-cd8d-4af4-a776-74073ef49b0e.png",
+    "runtime": "public/art/mysteries/avalanche_engine.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "ricochet_duchess",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-e6cb5f2c-47eb-4ee8-a24b-ff5747dcf5c5.png",
+    "runtime": "public/art/mysteries/ricochet_duchess.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "lantern_shoal",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-5fc2c6de-2d2a-490a-9ea4-f8c790b34b0c.png",
+    "runtime": "public/art/mysteries/lantern_shoal.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "nova_anvil",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-e3fe888f-3d3b-4cae-af00-22b8747975c5.png",
+    "runtime": "public/art/mysteries/nova_anvil.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "gilded_pilgrim",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-047c7315-e91d-44f9-9bd3-9cf0028a84df.png",
+    "runtime": "public/art/mysteries/gilded_pilgrim.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "vault_crawler",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-aaeedf4a-a271-4ca0-9773-19b9f18d78c5.png",
+    "runtime": "public/art/mysteries/vault_crawler.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "oathkeeper",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-9b6a1a0a-8488-442c-8116-27ffde2efa2e.png",
+    "runtime": "public/art/mysteries/oathkeeper.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "courier_zero",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-fbba5d74-270c-4bbe-9058-51c20dd2c1b5.png",
+    "runtime": "public/art/mysteries/courier_zero.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "debt_collector",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-34226325-507e-4b4a-923c-1e85a3e7652f.png",
+    "runtime": "public/art/mysteries/debt_collector.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "mercy_trap",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-b082acf2-ac76-452b-9da7-1fab9c54db75.png",
+    "runtime": "public/art/mysteries/mercy_trap.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "fortune_leech",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-1b1a3c00-307c-4757-92fa-24aa7981df5f.png",
+    "runtime": "public/art/mysteries/fortune_leech.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "constellation_beast",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-4ba8c96c-583f-4111-95c8-3f4c455b7f3c.png",
+    "runtime": "public/art/mysteries/constellation_beast.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "cathedral_of_teeth",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-238f223d-28b9-4579-ad7c-5442b24dc49d.png",
+    "runtime": "public/art/mysteries/cathedral_of_teeth.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "dying_star",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-fae5684c-83fd-4295-8143-d872933ae16e.png",
+    "runtime": "public/art/mysteries/dying_star.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "worldmolt",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-deec7363-37aa-450f-a154-449138090d7a.png",
+    "runtime": "public/art/mysteries/worldmolt.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "choir_unbound",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-373854fe-8ad8-4d1a-a889-d7cee0f23bf4.png",
+    "runtime": "public/art/mysteries/choir_unbound.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "eventide_engine",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-e048afa2-d545-4d1c-bcc6-df0d96473501.png",
+    "runtime": "public/art/mysteries/eventide_engine.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports."
+  },
+  {
+    "id": "witness",
+    "provider": "OpenAI built-in ImageGen",
+    "source": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-947a989d-72a5-4c65-90ca-ed1fa8fbbc0e.png",
+    "runtime": "public/art/mysteries/witness.png",
+    "status": "source visually inspected; atlas validation and runtime verification pending",
+    "provenance": "Original generated art for this project, no external asset imports.",
+    "supersededSources": [
+      "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-23624c49-96c4-47ca-9f0d-579853ae8d0e.png"
+    ]
+  }
+]

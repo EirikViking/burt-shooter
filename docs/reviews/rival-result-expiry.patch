@@ -1,0 +1,14 @@
+diff --git a/src/game/ArcadeFirstLight.js b/src/game/ArcadeFirstLight.js
+--- a/src/game/ArcadeFirstLight.js
++++ b/src/game/ArcadeFirstLight.js
+@@ -83,7 +83,9 @@
+     if (this.encounter) {
+       this.ordinaryRecovery=0;
+       this.encounter.suspended = !present;
+-      if (safe) this.encounter.age += dt;
++      // Finished rivals have no attacks or remaining choice to suspend.
++      // Let their bounded breakup finish even when the next warning begins.
++      if (safe || this.encounter.won) this.encounter.age += dt;
+       updateConvoySurprise(this.encounter,dt,{safe});
+       if (this.encounter.age >= this.encounter.duration) this.cancel('departed', false);
+       return;

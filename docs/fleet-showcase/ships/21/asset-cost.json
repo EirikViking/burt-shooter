@@ -1,0 +1,62 @@
+{
+  "id": 21,
+  "name": "Chrome Rail",
+  "architecture": "rail",
+  "baselineDesign": [
+    "Chrome Rail",
+    2.35,
+    0.83,
+    0.66,
+    1.02,
+    "rail",
+    [
+      [
+        0.2,
+        0.25,
+        -1.4,
+        0.14
+      ],
+      [
+        0.63,
+        -0.23,
+        -1.42,
+        0.15
+      ],
+      [
+        1.05,
+        -0.59,
+        -1.17,
+        0.06
+      ],
+      [
+        1.21,
+        -0.86,
+        -1.02,
+        0.021
+      ]
+    ]
+  ],
+  "palette": [
+    "dce9ed",
+    "d6a031",
+    "159aff"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false,
+  "bytes": 14816648,
+  "triangles": 197679,
+  "materials": [
+    "Graphite structural composite",
+    "Off-white aerospace polyurethane",
+    "Brushed titanium fittings",
+    "Seals and cabin upholstery",
+    "Dim ion throat and instrument phosphor",
+    "Laminated cockpit glazing",
+    "Cobalt blue painted alloy",
+    "Sooted nozzle liner",
+    "Heat-oxidised exhaust alloy"
+  ],
+  "images": 5,
+  "repaired": 0
+}

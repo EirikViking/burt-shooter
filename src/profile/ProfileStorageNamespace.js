@@ -4,13 +4,21 @@ export const PROFILE_SCOPED_STORAGE_KEYS = Object.freeze([
   'novaSwarm.sectorStartChallengeRecords.v1',
   'novaSwarm.scoutRunRecords.v1',
   'novaSwarm.overrunRunRecords.v1',
+  'novaSwarm.onslaughtRanked.v1',
+  'novaSwarm.onslaughtRanked.v2',
+  'novaSwarm.onslaughtInvitation.v1',
+  'novaSwarm.onslaughtFirstFlight.v1',
   'novaSwarm.dailySignalRecords.v1',
   'nova_swarm_achievements_v1',
   'novaSwarm.localLeaderboard.v2',
   'novaSwarm.pendingSteamLeaderboardSubmits.v1',
+  'novaSwarm.onslaughtSteamRecordsCache.v1',
+  'novaSwarm.onslaughtSteamRecordsCache.v2',
+  'novaSwarm.mayhemModeRecords.v1',
   'burt.shipUnlockProgress.v1',
   'burt.selectedShip.v1',
   'nova.hangarRecommendationAcknowledgement.v1',
+  'nova.careerIntelViewed.v1',
   'burt.shipUsage.v1',
   'burt.shipUsageTotal.v1',
   'burt_season_xp',
@@ -19,6 +27,14 @@ export const PROFILE_SCOPED_STORAGE_KEYS = Object.freeze([
 ]);
 
 const PROFILE_KEY_SET = new Set(PROFILE_SCOPED_STORAGE_KEYS);
+// These keys were written globally before account scoping was added. Their
+// player ownership cannot be recovered safely, so preserve them in place
+// instead of assigning them to whichever Steam account launches next.
+const AMBIGUOUS_LEGACY_PROFILE_KEYS = new Set([
+  'novaSwarm.onslaughtRanked.v2',
+  'novaSwarm.onslaughtSteamRecordsCache.v2',
+  'novaSwarm.mayhemModeRecords.v1'
+]);
 const STORAGE_PREFIX = 'nova.profile.';
 const LEGACY_UNSCOPED_CLAIM_KEY = `${STORAGE_PREFIX}legacyUnscopedClaim.v1`;
 const DEFAULT_CONTEXT = Object.freeze({
@@ -140,6 +156,7 @@ export function migrateLegacyUnscopedProfileStorage(context = activeContext) {
   }
 
   for (const rawKey of PROFILE_SCOPED_STORAGE_KEYS) {
+    if (AMBIGUOUS_LEGACY_PROFILE_KEYS.has(rawKey)) continue;
     const scopedKey = getProfileScopedStorageKey(rawKey, profile);
     const scopedValue = rawGetItem(storage, scopedKey);
     if (scopedValue !== null && scopedValue !== undefined && scopedValue !== '') continue;

@@ -1,3 +1,5 @@
+import { renderOnslaughtRecords, closeOnslaughtLoadoutInspector } from '../ui/OnslaughtRecordsPanel.js';
+import { getRunHistoryPresentation, getSectorReachedLabel } from '../leaderboard/RunHistoryPresentation.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
@@ -5,7 +7,7 @@ import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { BonusAsset } from '../utils/BonusAsset.js';
-import { MAX_RANK_INDEX, getRankFromLevel, getRankTitle } from '../shared/RankPolicy.js';
+import { MAX_RANK_INDEX, formatCareerInteger, getRankFromLevel, getRankTitle } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -17,11 +19,12 @@ import {
   normalizeLeaderboardEntry
 } from '../leaderboard/LeaderboardTypes.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
-import { translateText } from '../i18n/index.js';
+import { t, translateText } from '../i18n/index.js';
 import { tauntDirector } from '../game/TauntDirector.js';
 import { RUN_MODES } from '../game/RunMode.js';
 import { buildLeaderboardPresentationRoster } from '../leaderboard/LeaderboardPresentationRoster.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
+import { getHangarProgressSummary } from '../progression/HangarProgressState.js';
 
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
@@ -100,15 +103,8 @@ function getLeaderboardScoreHeader(view = LeaderboardView.GLOBAL) {
 }
 
 function getLeaderboardLevelDisplay(entry = {}, view = LeaderboardView.GLOBAL) {
-  if (view === LeaderboardView.SECTOR) {
-    const sector = Math.max(0, Math.floor(Number(entry.sectorStart ?? entry.startSector ?? entry.level) || 0));
-    return `${translateText('S')} ${sector || '?'}`;
-  }
   if (!hasLeaderboardLevelColumn(view)) return '';
-  const label = translateText('S');
-  if (entry.levelSource === 'score_estimate') return `${label} ?`;
-  const level = Math.max(0, Math.floor(Number(entry.level ?? entry.levelReached) || 0));
-  return `${label} ${level}`;
+  return getRunHistoryPresentation(entry).range;
 }
 
 function isPostCapCareerRank(entry = {}) {
@@ -122,6 +118,35 @@ function isPostCapCareerRank(entry = {}) {
   const label = String(entry.careerRankLabel || '').trim().toLowerCase();
   if (label.includes('e')) return true;
   return Number(label.replace(/[^0-9]/g, '')) > 40;
+}
+
+function normalizeCareerRankExact(value) {
+  const text = String(value ?? '').trim();
+  return /^\d+$/.test(text) ? text.replace(/^0+(?=\d)/, '') : null;
+}
+
+function compareCareerRankExact(left, right) {
+  const a = normalizeCareerRankExact(left) || '0';
+  const b = normalizeCareerRankExact(right) || '0';
+  if (a.length !== b.length) return a.length < b.length ? -1 : 1;
+  return a === b ? 0 : (a < b ? -1 : 1);
+}
+
+function applyCurrentProfileCareerRank(entry, currentRankExact) {
+  const current = normalizeCareerRankExact(currentRankExact);
+  if (!entry || !current) return entry;
+  const stored = normalizeCareerRankExact(entry.careerRankExact);
+  const effective = stored && compareCareerRankExact(stored, current) > 0 ? stored : current;
+  const numericRank = Number(effective);
+  return {
+    ...entry,
+    careerRankExact: effective,
+    careerRankLabel: formatCareerInteger(effective, { maxPlainDigits: 6 }),
+    careerRankIndex: Number.isFinite(numericRank)
+      ? Math.max(0, Math.min(MAX_RANK_INDEX, Math.floor(numericRank) - 1))
+      : MAX_RANK_INDEX,
+    careerRankStatusSource: effective === current ? 'current_profile' : entry.careerRankStatusSource
+  };
 }
 
 export class HighscoreScene {
@@ -197,6 +222,7 @@ export class HighscoreScene {
     this.tableMetrics = null;
     this.rowLayoutDebug = [];
     this.playerHighlightEffects = [];
+    this.sectorHint = null;
 
     this.boardOpenTime = 0;
   }
@@ -222,6 +248,8 @@ export class HighscoreScene {
     this.status = 'LOADING';
     this.lastError = 'none';
     this.boardOpenTime = Date.now();
+    this.steamRecoveryPending = false;
+    this.nextSteamRecoveryAt = Date.now() + 3000;
     this.leaderboardAdapter = typeof this.game.getLeaderboardAdapter === 'function'
       ? this.game.getLeaderboardAdapter()
       : createLeaderboardAdapter();
@@ -372,7 +400,10 @@ export class HighscoreScene {
     this.globalBtn.zIndex = 5;
     this.container.addChild(this.globalBtn);
 
-    this.tacticalBtn = this.createButton('TACTICAL');
+    this.onslaughtBtn = this.createButton('ONSLAUGHT');
+    this.onslaughtBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.ONSLAUGHT));
+    this.onslaughtBtn.zIndex=5; this.container.addChild(this.onslaughtBtn);
+    this.tacticalBtn = this.createButton('ARCADE');
     this.tacticalBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.TACTICAL));
     this.tacticalBtn.zIndex = 5;
     this.container.addChild(this.tacticalBtn);
@@ -398,6 +429,7 @@ export class HighscoreScene {
     this.nextPageBtn.on('pointerdown', () => this.changeLeaderboardPage(1));
     this.container.addChild(this.nextPageBtn);
     this.tabButtons = {
+      [LeaderboardView.ONSLAUGHT]: this.onslaughtBtn,
       [LeaderboardView.GLOBAL]: this.globalBtn,
       [LeaderboardView.TACTICAL]: this.tacticalBtn,
       [LeaderboardView.SECTOR]: this.sectorBtn,
@@ -406,6 +438,7 @@ export class HighscoreScene {
     };
     this.focusableControls = [
       { id: LeaderboardView.TACTICAL, button: this.tacticalBtn, activate: () => this.setLeaderboardView(LeaderboardView.TACTICAL) },
+      { id: LeaderboardView.ONSLAUGHT, button: this.onslaughtBtn, activate: () => this.setLeaderboardView(LeaderboardView.ONSLAUGHT) },
       { id: LeaderboardView.GLOBAL, button: this.globalBtn, activate: () => this.setLeaderboardView(LeaderboardView.GLOBAL) },
       { id: LeaderboardView.SECTOR, button: this.sectorBtn, activate: () => this.setLeaderboardView(LeaderboardView.SECTOR) },
       { id: LeaderboardView.FRIENDS, button: this.friendsBtn, activate: () => this.setLeaderboardView(LeaderboardView.FRIENDS) },
@@ -555,11 +588,13 @@ export class HighscoreScene {
   }
 
   setLeaderboardView(view) {
+    if (this.onslaughtInspector) closeOnslaughtLoadoutInspector(this);
     const nextView = this.leaderboardAdapter?.normalizeView
       ? this.leaderboardAdapter.normalizeView(view)
       : (view === LeaderboardView.LOCAL ? LeaderboardView.LOCAL : LeaderboardView.GLOBAL);
     if (this.activeLeaderboard === nextView && this.status !== 'ERROR') return;
     this.activeLeaderboard = nextView;
+    this.onslaughtOffset = 0; this.onslaughtHasMore = false; this.onslaughtSelectLastPage = false;
     this.leaderboardPage = 0;
     this.game.leaderboardView = nextView;
     playMenuConfirmSfx(0.18);
@@ -599,7 +634,13 @@ export class HighscoreScene {
           : activeTab?.title || 'SCORE DECK');
     }
     if (this.subtitle) {
-      if (this.activeLeaderboard === LeaderboardView.GLOBAL) {
+      if (this.activeLeaderboard === LeaderboardView.ONSLAUGHT) {
+        this.subtitle.text = translateText('Expert Challenge · Tactical · Sector 51');
+      } else if (this.activeLeaderboard === LeaderboardView.FRIENDS) {
+        this.subtitle.text = translateText('ARCADE RECORDS // STEAM FRIENDS');
+      } else if (this.activeLeaderboard === LeaderboardView.LOCAL) {
+        this.subtitle.text = translateText('ARCADE RECORDS // THIS DEVICE');
+      } else if (this.activeLeaderboard === LeaderboardView.GLOBAL) {
         this.subtitle.text = translateText('STEAM RANK SIGNAL // VERIFIED PILOTS');
       } else {
         const source = (activeTab?.sourceLabel || this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Score Signal').toUpperCase();
@@ -608,8 +649,10 @@ export class HighscoreScene {
     }
     if (this.runAgainBtn?._label) {
       this.runAgainBtn._label.text = translateText(
-        this.activeLeaderboard === LeaderboardView.TACTICAL
-          ? 'ONE MORE TACTICAL RUN'
+        this.activeLeaderboard === LeaderboardView.ONSLAUGHT
+          ? ((this.game?.runSummary?.runMode || this.game?.runMode) === RUN_MODES.OVERRUN_TACTICAL ? 'RETRY ONSLAUGHT' : 'PLAY ONSLAUGHT')
+          : this.activeLeaderboard === LeaderboardView.TACTICAL
+          ? 'RETRY ARCADE'
           : 'ONE MORE PURE RUN'
       );
       this.runAgainBtn._label.style.fontSize = Math.max(12, Math.min(18, (this.runAgainBtn._buttonHeight || 44) * 0.42));
@@ -640,14 +683,20 @@ export class HighscoreScene {
     const isMobile = layout.isMobile || width < 720;
     const deckWidth = isMobile
       ? Math.min(width - 28, 430)
-      : Math.min(Math.max(1040, width * 0.68), 1320);
+      : Math.min(width - 48, Math.max(900, width * 0.68), 1320);
     const deckLeft = isMobile
       ? (width - deckWidth) / 2
       : Math.max(24, Math.min(width * 0.06, width - deckWidth - 28));
-    const deckTop = isMobile ? Math.max(10, layout.padding * 0.55) : Math.max(28, layout.padding * 0.8);
+    const baseDeckTop = isMobile ? Math.max(10, layout.padding * 0.55) : Math.max(28, layout.padding * 0.8);
     const backReserve = isMobile ? 88 : 76;
     const deckBottom = height - backReserve;
-    const deckHeight = Math.max(320, deckBottom - deckTop);
+    const fullDeckHeight = Math.max(320, deckBottom - baseDeckTop);
+    const sparseOnslaught = !isMobile && this.activeLeaderboard === LeaderboardView.ONSLAUGHT
+      && this.status !== 'LOADING' && this.entriesNormalized.length <= 3;
+    const deckHeight = sparseOnslaught
+      ? Math.min(fullDeckHeight, 452 + this.entriesNormalized.length * 42)
+      : fullDeckHeight;
+    const deckTop = baseDeckTop + (fullDeckHeight - deckHeight) / 2;
     this.tableMetrics = {
       x: deckLeft,
       y: deckTop,
@@ -664,10 +713,14 @@ export class HighscoreScene {
     this.title.style.fontSize = Math.min(getResponsiveFontSize(layout, 'title') * (isMobile ? 0.66 : 0.76), isMobile ? 30 : 48);
     this.title.style.stroke = { color: '#031527', width: isMobile ? 5 : 8 };
     this.title.style.dropShadowColor = '#00ffff';
+    this.title.scale.set(1);
+    if (this.title.width > this.tableMetrics.innerWidth) this.title.scale.set(this.tableMetrics.innerWidth / this.title.width);
     this.subtitle.style.fontSize = Math.min(getResponsiveFontSize(layout, 'subtitle') * (isMobile ? 0.88 : 0.96), isMobile ? 15 : 22);
+    this.subtitle.scale.set(1);
+    if (this.subtitle.width > this.tableMetrics.innerWidth) this.subtitle.scale.set(this.tableMetrics.innerWidth / this.subtitle.width);
     this.comment.style.fontSize = Math.min(getResponsiveFontSize(layout, 'body'), isMobile ? 14 : 18);
     this.comment.style.wordWrapWidth = Math.min(clampTextWidth(width * 0.86, layout), this.tableMetrics.innerWidth * 0.74);
-    this.comment.visible = this.status !== 'LOADED';
+    this.comment.visible = this.status !== 'LOADED' && this.activeLeaderboard !== LeaderboardView.ONSLAUGHT;
     this.stateMessage.style.fontSize = getResponsiveFontSize(layout, 'body');
     this.stateMessage.style.wordWrap = true;
     this.stateMessage.style.wordWrapWidth = Math.min(clampTextWidth(width * 0.86, layout), this.tableMetrics.innerWidth * 0.78);
@@ -685,10 +738,10 @@ export class HighscoreScene {
     const visibleTabs = (this.leaderboardTabs || []).filter(tab => this.tabButtons?.[tab.id]?.visible !== false);
     if (visibleTabs.length > 0) {
       const buttonW = isMobile
-        ? Math.min(108, Math.max(68, (deckWidth - 8 * (visibleTabs.length - 1)) / visibleTabs.length))
-        : (visibleTabs.length > 2 ? 150 : 172);
+        ? Math.min(108, Math.max(42, (deckWidth - 5 * (visibleTabs.length - 1)) / visibleTabs.length))
+        : Math.min(150, (deckWidth - 14 * (visibleTabs.length - 1)) / visibleTabs.length);
       const buttonH = isMobile ? 32 : 38;
-      const gap = isMobile ? 8 : 14;
+      const gap = isMobile ? 5 : 14;
       const totalWidth = visibleTabs.length * buttonW + (visibleTabs.length - 1) * gap;
       visibleTabs.forEach((tab, index) => {
         const button = this.tabButtons?.[tab.id];
@@ -706,7 +759,7 @@ export class HighscoreScene {
       this.comment.y = toggleY + 36;
     }
 
-    this.stateMessage.visible = this.status !== 'LOADED';
+    this.stateMessage.visible = this.status !== 'LOADED' && this.activeLeaderboard !== LeaderboardView.ONSLAUGHT;
     let rowsStartY = toggleY + (isMobile ? 39 : 52);
     if (this.stateMessage.visible) {
       this.stateMessage.y = this.comment.visible
@@ -723,7 +776,9 @@ export class HighscoreScene {
     this.drawLeaderboardPanel(width, height, rowsStartY, layout);
 
     await this.renderHighscoreRows(rowsStartY, layout);
-    this.drawStatsDeck(width, height, layout);
+    if (this.statsText) this.statsText.visible = this.activeLeaderboard !== LeaderboardView.ONSLAUGHT;
+    if (this.activeLeaderboard === LeaderboardView.ONSLAUGHT) this.statsDeck.clear();
+    else this.drawStatsDeck(width, height, layout);
 
     // Retry/back & diag
     const panelBottom = this.tableMetrics?.bottom || (height - (isMobile ? 88 : 76));
@@ -759,11 +814,11 @@ export class HighscoreScene {
     const pageButtonY = isMobile ? Math.min(buttonY - 32, panelBottom + 16) : buttonY;
     this.previousPageBtn.y = pageButtonY;
     this.nextPageBtn.y = pageButtonY;
-    this.previousPageBtn.visible = this.leaderboardPageCount > 1;
+    this.previousPageBtn.visible = this.leaderboardPageCount > 1 || (this.activeLeaderboard === LeaderboardView.ONSLAUGHT && this.onslaughtOffset > 0);
     this.nextPageBtn.visible = this.leaderboardPageCount > 1;
-    this.previousPageBtn.eventMode = this.leaderboardPage > 0 ? 'static' : 'none';
+    this.previousPageBtn.eventMode = this.leaderboardPage > 0 || (this.activeLeaderboard === LeaderboardView.ONSLAUGHT && this.onslaughtOffset > 0) ? 'static' : 'none';
     this.nextPageBtn.eventMode = this.leaderboardPage < this.leaderboardPageCount - 1 ? 'static' : 'none';
-    this.previousPageBtn.alpha = this.leaderboardPage > 0 ? 1 : 0.38;
+    this.previousPageBtn.alpha = this.previousPageBtn.eventMode === 'static' ? 1 : 0.38;
     this.nextPageBtn.alpha = this.leaderboardPage < this.leaderboardPageCount - 1 ? 1 : 0.38;
 
     this.statusText.x = layout.padding;
@@ -788,7 +843,8 @@ export class HighscoreScene {
 
     try {
       const result = await this.leaderboardAdapter.getScores(this.activeLeaderboard, {
-        limit: LEADERBOARD_DISPLAY_LIMIT,
+        limit: this.activeLeaderboard === LeaderboardView.ONSLAUGHT ? 100 : LEADERBOARD_DISPLAY_LIMIT,
+        start: this.activeLeaderboard === LeaderboardView.ONSLAUGHT ? (this.onslaughtOffset || 0) + 1 : 1,
         useCache: true, // Fast path: use cached data if available
         onRetry: (attempt, delay) => {
           if (token !== this.fetchToken) return;
@@ -819,11 +875,11 @@ export class HighscoreScene {
 
   applyLeaderboardResult(result = {}) {
     this.activeLeaderboardResult = result;
-    this.entries = Array.isArray(result.entries) ? result.entries.slice(0, LEADERBOARD_DISPLAY_LIMIT) : [];
-    this.entriesNormalized = buildLeaderboardPresentationRoster(this.normalizeEntries(this.entries), {
-      view: this.activeLeaderboard,
-      limit: LEADERBOARD_DISPLAY_LIMIT
-    });
+    this.entries = Array.isArray(result.entries) ? result.entries.slice(0, this.activeLeaderboard === LeaderboardView.ONSLAUGHT ? 100 : LEADERBOARD_DISPLAY_LIMIT) : [];
+    this.entriesNormalized = this.normalizeEntries(this.entries.filter(entry => !entry.isCpuRival && !entry.presentationOnly && !entry.excludedFromCompetition
+      && (this.activeLeaderboard !== LeaderboardView.ONSLAUGHT || Number(entry.rank ?? entry.globalRank ?? entry.m_nGlobalRank) > 0)));
+    this.onslaughtHasMore = this.activeLeaderboard === LeaderboardView.ONSLAUGHT && this.entries.length === 100;
+    if (this.onslaughtSelectLastPage) { this.leaderboardPage = Number.MAX_SAFE_INTEGER; this.onslaughtSelectLastPage = false; }
     const humorCategory = result.status === 'available' && this.entries.length > 0
       ? 'leaderboard_loaded'
       : result.status === 'empty'
@@ -936,10 +992,16 @@ export class HighscoreScene {
   normalizeEntries(entries) {
     if (!Array.isArray(entries)) return [];
 
+    const currentCareerRankExact = getHangarProgressSummary()?.rankProgress?.displayRankExact || null;
     const normalized = [];
-    entries.forEach((entry) => {
-      const normalizedEntry = this.normalizeEntry(entry);
+    entries.forEach((entry, index) => {
+      let normalizedEntry = this.normalizeEntry(entry);
       if (normalizedEntry) {
+        // Steam may briefly return the pre-refresh row after accepting a
+        // force-update. The signed-in pilot's Hangar rank is authoritative for
+        // this presentation, while a higher stored rank is preserved.
+        const isCurrentProfile = normalizedEntry.isCurrentPlayer || this.isFeaturedLeaderboardEntry(normalizedEntry, index);
+        if (isCurrentProfile) normalizedEntry = applyCurrentProfileCareerRank(normalizedEntry, currentCareerRankExact);
         normalized.push(normalizedEntry);
       }
     });
@@ -947,6 +1009,15 @@ export class HighscoreScene {
   }
 
   changeLeaderboardPage(delta = 0) {
+    if (this.activeLeaderboard === LeaderboardView.ONSLAUGHT) {
+      const pages = Math.max(1, Math.ceil(this.entriesNormalized.length / this.leaderboardPageSize));
+      if (delta > 0 && this.leaderboardPage >= pages - 1 && this.onslaughtHasMore) {
+        this.onslaughtOffset = (this.onslaughtOffset || 0) + 100; this.leaderboardPage = 0; void this.fetchHighscores(); return true;
+      }
+      if (delta < 0 && this.leaderboardPage === 0 && this.onslaughtOffset > 0) {
+        this.onslaughtOffset -= 100; this.onslaughtSelectLastPage = true; this.leaderboardPage = 0; void this.fetchHighscores(); return true;
+      }
+    }
     const count = Math.max(1, Number(this.leaderboardPageCount) || 1);
     const next = Math.max(0, Math.min(count - 1, (Number(this.leaderboardPage) || 0) + Math.sign(delta)));
     if (next === this.leaderboardPage) return false;
@@ -965,6 +1036,8 @@ export class HighscoreScene {
       ? (this.game?.lastSectorLeaderboardResult || null)
       : (this.game?.lastLeaderboardResult || null);
     if (!result) return null;
+    const isOnslaught = result.leaderboardKind === 'overrun_tactical';
+    if ((this.activeLeaderboard === LeaderboardView.ONSLAUGHT) !== isOnslaught) return null;
     const resultIsTactical = result.leaderboardKind === 'mayhem_tactical'
       || result.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME;
     if (this.activeLeaderboard === LeaderboardView.TACTICAL && !resultIsTactical) return null;
@@ -985,7 +1058,7 @@ export class HighscoreScene {
   }
 
   startRunAgain() {
-    const runMode = this.activeLeaderboard === LeaderboardView.TACTICAL
+    const runMode = this.activeLeaderboard === LeaderboardView.ONSLAUGHT ? RUN_MODES.OVERRUN_TACTICAL : this.activeLeaderboard === LeaderboardView.TACTICAL
       ? RUN_MODES.MAYHEM_TACTICAL
       : RUN_MODES.RANKED;
     this.game.startGame(this.game.selectedShipSpriteKey, { runMode });
@@ -1106,10 +1179,10 @@ export class HighscoreScene {
   }
 
   async renderHighscoreRows(startY, layout) {
-    this.rowsContainer.removeChildren();
+    if (this.activeLeaderboard === LeaderboardView.ONSLAUGHT) { renderOnslaughtRecords(this, startY, layout); return; }
+    this.clearRenderedLeaderboardRows();
     this.rowLayoutDebug = [];
     this.manifestRanges = [];
-    this.playerHighlightEffects = [];
     this.unrenderedLeaderboardEntries = 0;
     const isMobile = layout.isMobile || layout.width < 720;
     const metrics = this.tableMetrics || {
@@ -1283,7 +1356,7 @@ export class HighscoreScene {
       }
 
       const computeDisplayRank = (entry) => {
-        const fallbackRank = Number(entry?.rank_index ?? entry?.rankIndex ?? entry?.rank);
+        const fallbackRank = Number(entry?.careerRankIndex ?? entry?.rank_index ?? entry?.rankIndex ?? entry?.rank);
         if (Number.isFinite(fallbackRank)) {
           return Math.max(0, Math.min(MAX_RANK_INDEX, Math.floor(fallbackRank)));
         }
@@ -1355,6 +1428,14 @@ export class HighscoreScene {
         rowBg.fill({ color: 0xffffff, alpha: isFeaturedPlayer ? 0.2 : 0.1 });
         rowBg.rect(rowX + 18, rowY + rowHeight - 10, rowW - 36, 1);
         rowBg.fill({ color: isFeaturedPlayer ? 0xfff15c : 0x7fffd8, alpha: isFeaturedPlayer ? 0.38 : (isTop3 ? 0.22 : 0.1) });
+        const sectorDetails = this.activeLeaderboard === LeaderboardView.SECTOR
+          ? getRunHistoryPresentation(score) : null;
+        if (sectorDetails && (sectorDetails.start == null || sectorDetails.end == null)) {
+          rowBg.eventMode = 'static';
+          rowBg.cursor = 'help';
+          rowBg.on('pointerover', () => this.showMissingSectorHint(rowX, rowY, rowW, rowHeight));
+          rowBg.on('pointerout', () => this.hideMissingSectorHint());
+        }
         this.rowsContainer.addChild(rowBg);
 
         const rankStyle = isFeaturedPlayer
@@ -1374,19 +1455,16 @@ export class HighscoreScene {
             }
           : (isTop3 ? { ...rowStyle, fill: '#ffffff' } : (isPending ? { ...rowStyle, fill: '#ffaa44' } : rowStyle));
 
-        const playerRankIndex = (score.rank_index !== null && score.rank_index !== undefined)
-          ? score.rank_index
-          : getRankFromLevel(score.level || 1);
-        const clampedRank = Math.max(0, Math.min(MAX_RANK_INDEX, playerRankIndex));
+        const clampedRank = computeDisplayRank(score);
         const rankTitle = this.activeLeaderboard === LeaderboardView.SECTOR
-          ? translateText('REACHED SECTOR {sector}', {
-            sector: Math.max(1, Math.floor(Number(score.highestSectorReached ?? score.level ?? score.sectorStart) || 1))
-          })
+          ? getSectorReachedLabel(score)
           : getRankTitle(clampedRank);
         const careerRankLabel = String(score.careerRankLabel || (clampedRank + 1));
         const rankStatusText = isCpuRival
           ? rankTitle
-          : `${translateText('Career Rank').toUpperCase()} ${careerRankLabel} // ${rankTitle}`;
+          : this.activeLeaderboard === LeaderboardView.LOCAL
+            ? `${getRunHistoryPresentation(score).mode} // ${translateText('Career Rank')} ${careerRankLabel}`
+            : `${translateText('Career Rank').toUpperCase()} ${careerRankLabel} // ${rankTitle}`;
         const displayName = String(score.name || '??').toUpperCase();
 
         if (isFeaturedPlayer) {
@@ -1588,7 +1666,7 @@ export class HighscoreScene {
       this.nextPageBtn.visible = this.leaderboardPageCount > 1;
       this.previousPageBtn.eventMode = this.leaderboardPage > 0 ? 'static' : 'none';
       this.nextPageBtn.eventMode = this.leaderboardPage < this.leaderboardPageCount - 1 ? 'static' : 'none';
-      this.previousPageBtn.alpha = this.leaderboardPage > 0 ? 1 : 0.38;
+      this.previousPageBtn.alpha = this.previousPageBtn.eventMode === 'static' ? 1 : 0.38;
       this.nextPageBtn.alpha = this.leaderboardPage < this.leaderboardPageCount - 1 ? 1 : 0.38;
     } else {
       this.rowsContainer.alpha = 1;
@@ -1607,6 +1685,55 @@ export class HighscoreScene {
       empty.y = startY;
       this.rowsContainer.addChild(empty);
     }
+  }
+
+  clearRenderedLeaderboardRows({ destroyChildren = false } = {}) {
+    this.hideMissingSectorHint();
+    if (this.rowsFadeTicker && this.game?.app?.ticker) {
+      this.game.app.ticker.remove(this.rowsFadeTicker);
+      this.rowsFadeTicker = null;
+    }
+    this.playerHighlightEffects = [];
+    const children = this.rowsContainer?.removeChildren?.() || [];
+    if (destroyChildren) {
+      children.forEach((child) => child?.destroy?.({ children: true }));
+    }
+    return children;
+  }
+
+  showMissingSectorHint(rowX, rowY, rowW, rowHeight) {
+    this.hideMissingSectorHint();
+    const screen = this.game.app.screen;
+    const width = Math.min(350, screen.width - 24);
+    const label = createText(t('history.sectorUnrecordedHint'), {
+      fontFamily: FONT_ARCADE,
+      fontSize: 14,
+      fill: '#c9e9ef',
+      wordWrap: true,
+      wordWrapWidth: width - 24
+    });
+    label.position.set(12, 10);
+    const height = Math.max(40, label.height + 20);
+    const panel = new PIXI.Graphics();
+    drawAstraPanel(panel, 0, 0, width, height, 6,
+      { color: 0x061825, alpha: 0.96 }, { color: 0x58dbe8, width: 1, alpha: 0.7 });
+    const hint = new PIXI.Container();
+    hint.eventMode = 'none';
+    hint.zIndex = 30;
+    hint.position.set(
+      Math.max(12, Math.min(rowX + rowW - width, screen.width - width - 12)),
+      rowY > height + 16 ? rowY - height - 4 : rowY + rowHeight + 4
+    );
+    hint.addChild(panel, label);
+    this.container.addChild(hint);
+    this.sectorHint = hint;
+  }
+
+  hideMissingSectorHint() {
+    if (!this.sectorHint) return;
+    this.sectorHint.parent?.removeChild(this.sectorHint);
+    this.sectorHint.destroy({ children: true });
+    this.sectorHint = null;
   }
 
   fadeInRows() {
@@ -1962,7 +2089,7 @@ export class HighscoreScene {
     const countLabel = presentationCount ? `${presentationCount} ${translateText('SIGNALS')}` : translateText(this.status);
     const translatedSyncLabel = translateText(syncLabel);
     const bestLabel = translateText('BEST');
-    const rosterLegend = translateText('STEAM PILOTS + CPU RIVALS');
+    const rosterLegend = translateText('STEAM PILOTS');
     const pageLabel = translateText('PAGE {page}/{pages}', {
       page: this.leaderboardPage + 1,
       pages: this.leaderboardPageCount
@@ -2202,7 +2329,7 @@ export class HighscoreScene {
   }
 
   getVisibleControls() {
-    return (this.focusableControls || []).filter((control) =>
+    return [...(this.focusableControls || []), ...(this.activeLeaderboard === LeaderboardView.ONSLAUGHT ? this.onslaughtRowControls || [] : [])].filter((control) =>
       control?.button && control.button.visible !== false && control.button.eventMode !== 'none'
     );
   }
@@ -2223,6 +2350,7 @@ export class HighscoreScene {
       control.button._focused = visible[next]?.button === control.button;
       this.drawButtonChrome(control.button, { active: Boolean(control.button._active) });
     });
+    this.onslaughtRowControls?.forEach((control) => control.button?.drawState?.(visible[next]?.button === control.button));
     this.focusedControlIndex = next;
     if (changed) playMenuFocusSfx(0.09);
   }
@@ -2253,6 +2381,20 @@ export class HighscoreScene {
   setupKeyboardNavigation() {
     if (this.keyHandler) window.removeEventListener('keydown', this.keyHandler, true);
     this.keyHandler = (event) => {
+      if (this.game.onslaughtBriefingOpen) return;
+      if (this.onslaughtInspector) {
+        if (event.key === 'Escape') closeOnslaughtLoadoutInspector(this);
+        else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'].includes(event.key)) {
+          const modal = this.onslaughtInspector;
+          modal.buttons[modal.focus]?.button.setFocused(false);
+          modal.focus = (modal.focus + (event.key === 'ArrowLeft' || event.key === 'ArrowUp' || event.shiftKey ? -1 : 1) + modal.buttons.length) % modal.buttons.length;
+          modal.buttons[modal.focus]?.button.setFocused(true);
+        } else if (event.key === 'Enter' || event.code === 'Space') this.onslaughtInspector.buttons[this.onslaughtInspector.focus]?.action();
+        else return;
+        event.preventDefault();
+        event.stopImmediatePropagation?.();
+        return;
+      }
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopImmediatePropagation?.();
@@ -2284,9 +2426,38 @@ export class HighscoreScene {
   }
 
   update(delta = 1) {
+    if (this.game.onslaughtBriefingOpen) return;
     updateMenuFx(this, delta);
+    // Recover an interrupted Steam session while the pilot stays on this page.
+    // Restore tabs without forcing a switch away from an intentionally local view.
+    if (!this.leavingScene && this.tabButtons && !this.leaderboardAdapter?.isSteamAvailable()
+      && !this.steamRecoveryPending && Date.now() >= this.nextSteamRecoveryAt) {
+      this.steamRecoveryPending = true;
+      this.nextSteamRecoveryAt = Date.now() + 5000;
+      const openedAt = this.boardOpenTime;
+      this.leaderboardAdapter.refreshAvailability().then(() => {
+        if (this.game.currentScene !== this || this.leavingScene || this.boardOpenTime !== openedAt) return;
+        if (this.leaderboardAdapter.isSteamAvailable()) {
+          this.updateLeaderboardChrome();
+          this.layoutHighscore();
+          if (this.activeLeaderboard !== LeaderboardView.LOCAL) this.loadActiveLeaderboard();
+        }
+      }).catch(() => {}).finally(() => { this.steamRecoveryPending = false; });
+    }
+    if (this.game.onslaughtLoadoutPickerOpen) return;
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+    if (this.onslaughtInspector) {
+      const modal = this.onslaughtInspector;
+      if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) closeOnslaughtLoadoutInspector(this);
+      else if (nav.pressed.confirm) modal.buttons[modal.focus]?.action();
+      else if (nav.pressed.left || nav.pressed.up || nav.pressed.right || nav.pressed.down) {
+        modal.buttons[modal.focus]?.button.setFocused(false);
+        modal.focus = (modal.focus + (nav.pressed.left || nav.pressed.up ? -1 : 1) + modal.buttons.length) % modal.buttons.length;
+        modal.buttons[modal.focus]?.button.setFocused(true);
+      }
+      return;
+    }
     if (nav.pressed.lb) this.changeLeaderboardPage(-1);
     if (nav.pressed.rb) this.changeLeaderboardPage(1);
     if (nav.pressed.left || nav.pressed.up) this.moveHighscoreFocus(-1);
@@ -2296,6 +2467,14 @@ export class HighscoreScene {
   }
 
   destroy() {
+    this.hideMissingSectorHint();
+    if (this.onslaughtInspector) closeOnslaughtLoadoutInspector(this);
+    this.leavingScene = true;
+    this.fetchToken += 1;
+    if (this.fetchController) {
+      this.fetchController.abort();
+      this.fetchController = null;
+    }
     if (this.layoutUnsubscribe) {
       this.layoutUnsubscribe();
       this.layoutUnsubscribe = null;

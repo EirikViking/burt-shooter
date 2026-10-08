@@ -1,0 +1,224 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "before": {
+    "used": 5117,
+    "limit": 10000
+  },
+  "creditCeiling": 1800,
+  "cues": [
+    {
+      "id": "glassjaw_leviathan",
+      "request": {
+        "text": "An immense deep-space leviathan slowly opens its crystalline jaw. A very low rounded living throat groan, rough breath moving through a vast hollow mouth, resonant glass cartilage creaks and a faint trembling violet harmonic fading into silence. Huge, beautiful, predatory, tactile cinematic creature Foley. No music, speech, alarms, weapons or sudden loud impact.",
+        "duration_seconds": 4.7,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "26",
+      "sourceSha256": "32ab12008318ec5a8e18004bfb6dc83fe87e54e17529f71a284a0b652d159b37",
+      "master": "public/audio/sfx/cosmic-fauna/glassjaw_leviathan.wav",
+      "masterSha256": "667b87dfe5a7d5fdba5f6780a1e228905d4a1ebaa6d672aea4fd8534ad9477ab",
+      "bytes": 412854
+    },
+    {
+      "id": "ember_cuttle",
+      "request": {
+        "text": "A giant copper-skinned cuttlefish contracts its mantle. Warm low hollow gulp, rolling wet muscular folds, a rapid soft flutter of ribbon fins, crackling organic skin pores and one gravelly breathing exhale. Rich close organic texture, formidable and graceful, restrained space creature Foley. No music, voices, fire explosion, gunshot or alarm.",
+        "duration_seconds": 4.1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "23",
+      "sourceSha256": "24d3045ea76f42f740d7d856c2e44a82437910083644b0f54bf1228202709ea6",
+      "master": "public/audio/sfx/cosmic-fauna/ember_cuttle.wav",
+      "masterSha256": "0fd75144fc88f356d0bb4b1ac43f8b7d686e18bd449da975814cf10bbcc49907",
+      "bytes": 359934
+    },
+    {
+      "id": "crown_nautilus",
+      "request": {
+        "text": "A colossal crowned nautilus exhales through its spiral chamber. Deep conch-like animal resonance with uneven breath, slow dry mineral shell creaks, soft suction clicks from fleshy feelers and a low fluttering jet sigh. Ancient stately unsettling living creature, cinematic organic Foley. No tune, music, speech, horns, weapons or alarm.",
+        "duration_seconds": 4.6,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "25",
+      "sourceSha256": "07e49a6d7b4edda49591316ca8f835fff746c7b9f503796fb21e48fef843f45c",
+      "master": "public/audio/sfx/cosmic-fauna/crown_nautilus.wav",
+      "masterSha256": "4ad02145519d8f54523071be289965836e52ab12f121486feed8407c47281ca7",
+      "bytes": 402270
+    },
+    {
+      "id": "mourning_swan",
+      "request": {
+        "text": "A vast pale alien with a long curved throat sings one breathy mournful call. Low resonant inhale rising into a fragile hoarse overtone, soft silk membranes folding, a distant tremulous chest murmur and a long gentle exhale. Majestic, eerie, physically alive, cinematic creature Foley. No human voice, speech, music, melody, alarm or shriek.",
+        "duration_seconds": 4.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "26",
+      "sourceSha256": "edf7193d5245948116ce5bb5c9e3857cc557061c4f5cb929680f95174f4edca7",
+      "master": "public/audio/sfx/cosmic-fauna/mourning_swan.wav",
+      "masterSha256": "6a483457c771e54f909cbb7d480ea663bc1986abb6e8d701840505d260c02ce7",
+      "bytes": 423438
+    },
+    {
+      "id": "abyssal_ribbon",
+      "request": {
+        "text": "An enormous abyssal ribbon creature undulates past. Continuous soft velvet friction and watery silk swishes moving in a slow wave, a deep narrow breathy moan, sparse fine sensory-whisker ticks and a final airy tail flick. Elegant, eerie organic creature Foley with low body and detailed quiet surface. No music, speech, UI chirps, weapons or alarm.",
+        "duration_seconds": 4.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "87576e4988b17aadaf6c3acd4c88ba758323457901d48374fc13088d0ce562ac",
+      "master": "public/audio/sfx/cosmic-fauna/abyssal_ribbon.wav",
+      "masterSha256": "ee565ef9c4f55b22e4b7203db2a2afe0cbd2afb13b168b6509e37a344c5d7a42",
+      "bytes": 377574
+    },
+    {
+      "id": "bloom_kraken",
+      "request": {
+        "text": "An immense petaled kraken slowly unfurls. Deep moist mantle contraction, heavy smooth tentacles separating with soft suction pops, fleshy petal friction, a restrained hollow rumble from its central throat and a delicate fading wet breath. Beautiful and threatening detailed cinematic creature Foley. No music, speech, gore, weapons, scream or alarm.",
+        "duration_seconds": 4.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "25",
+      "sourceSha256": "b140708aaec243e01b255c056286d214367cc7504056d5115133b54cfcdba6b5",
+      "master": "public/audio/sfx/cosmic-fauna/bloom_kraken.wav",
+      "masterSha256": "62006e07f43e4a9f478e001f2be9d032529e70f56114577e142bc07e9e8bdf43",
+      "bytes": 395214
+    },
+    {
+      "id": "polar_seahorse",
+      "request": {
+        "text": "An immense polar seahorse breathes through feathery gills. Soft frosty chuff over a rounded low chest hum, tiny irregular crystalline cartilage clicks, delicate fluttering gill fans and a curling tail moving with a muted leathery creak. Beautiful cold alien life, intimate cinematic organic Foley. No music, speech, wind storm, weapons or alarm.",
+        "duration_seconds": 4.1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "23",
+      "sourceSha256": "6d3cf10997939e911a98aaab9fbb7567a22d5e640548075df01e574ba846463f",
+      "master": "public/audio/sfx/cosmic-fauna/polar_seahorse.wav",
+      "masterSha256": "5120c39ac9726153c2afffa71487581b28290acdf25b7f19cdae636e20b4a280",
+      "bytes": 359934
+    },
+    {
+      "id": "velvet_angel",
+      "request": {
+        "text": "A huge velvet-winged alien opens six soft webbed arms. A deep hushed chest purr beneath layered fabriclike organic membrane folds, a few delicate wet clicks, warm irregular airy throat tones and a soft long closing sigh. Exquisite ominous living animal, rich cinematic Foley. No music, voice, choir, melody, weapons or alarm.",
+        "duration_seconds": 4.6,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "25",
+      "sourceSha256": "168ccc55a234bcea7f4fcf4cbb98c88316bc96a754a48fc62015fb51ddd5a268",
+      "master": "public/audio/sfx/cosmic-fauna/velvet_angel.wav",
+      "masterSha256": "75c44bb20a25285f6a1b60ea913e086c45f1d6c0ad09d0aed42e4d6aca6245d1",
+      "bytes": 402270
+    },
+    {
+      "id": "cinderback_turtle",
+      "request": {
+        "text": "An ancient giant volcanic-shelled turtle swims past. Deep slow rumbling living breath, huge dry shell plates shifting with stony creaks, four broad leathery flippers pressing softly through space and a subdued throat chuff. Heavy serene and intimidating animal, detailed cinematic creature Foley. No explosion, fire roar, music, speech, weapons or alarm.",
+        "duration_seconds": 4.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "26",
+      "sourceSha256": "c35fc43259daffcba16f7c575ecd47cd888ba7f6853085ef907e920b361ca3dc",
+      "master": "public/audio/sfx/cosmic-fauna/cinderback_turtle.wav",
+      "masterSha256": "16dff80e9f288594dd287c944588759f589b8673564d45e5caa91b37b5be620e",
+      "bytes": 423438
+    }
+  ],
+  "attempts": [
+    {
+      "id": "glassjaw_leviathan",
+      "estimate": 188,
+      "startedAt": "2026-10-02T14:14:47.851Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "ember_cuttle",
+      "estimate": 164,
+      "startedAt": "2026-10-02T14:14:50.807Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "crown_nautilus",
+      "estimate": 184,
+      "startedAt": "2026-10-02T14:14:53.506Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "mourning_swan",
+      "estimate": 192,
+      "startedAt": "2026-10-02T14:14:56.100Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "abyssal_ribbon",
+      "estimate": 172,
+      "startedAt": "2026-10-02T14:14:59.250Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "bloom_kraken",
+      "estimate": 180,
+      "startedAt": "2026-10-02T14:15:02.512Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "polar_seahorse",
+      "estimate": 164,
+      "startedAt": "2026-10-02T14:15:05.772Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "velvet_angel",
+      "estimate": 184,
+      "startedAt": "2026-10-02T14:15:08.588Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "cinderback_turtle",
+      "estimate": 192,
+      "startedAt": "2026-10-02T14:15:11.221Z",
+      "outcome": "source-saved"
+    }
+  ],
+  "startedAt": "2026-10-02T14:14:47.274Z",
+  "after": {
+    "used": 5117,
+    "limit": 10000
+  },
+  "finishedAt": "2026-10-02T14:15:13.809Z",
+  "settledQuota": {
+    "checkedAt": "2026-10-02T14:45:12.699Z",
+    "used": 5340,
+    "limit": 10000,
+    "remaining": 4660,
+    "note": "Immediate counter lagged; not a monetary billing statement"
+  }
+}

@@ -203,8 +203,10 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport });
 const pageErrors = [];
 const consoleErrors = [];
+const resourceFailures = [];
 const checkpoints = [];
 page.on('pageerror', (error) => pageErrors.push(error.message));
+page.on('requestfailed', (request) => resourceFailures.push({ url: request.url(), error: request.failure()?.errorText }));
 page.on('console', (message) => {
   if (message.type() === 'error') consoleErrors.push(message.text());
 });
@@ -521,6 +523,7 @@ try {
     checkpoints,
     pageErrors,
     consoleErrors,
+    resourceFailures,
     outputDir
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
@@ -542,6 +545,7 @@ try {
     state,
     pageErrors,
     consoleErrors,
+    resourceFailures,
     outputDir
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(failure, null, 2));

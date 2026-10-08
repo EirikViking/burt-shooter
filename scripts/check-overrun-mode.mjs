@@ -58,18 +58,18 @@ globalThis.Audio = class {
 const { PowerupManager } = await import('../src/managers/PowerupManager.js');
 
 assert.deepEqual(getOverrunStartState({ bestSector: OVERRUN_UNLOCK_SECTOR - 1 }), {
-  available: false,
-  progressionUnlocked: false,
+  available: true,
+  progressionUnlocked: true,
   previewAccess: false,
-  highestReachedSector: OVERRUN_UNLOCK_SECTOR - 1,
+  highestReachedSector: OVERRUN_UNLOCK_SECTOR,
   requiredSector: OVERRUN_UNLOCK_SECTOR,
   startSector: OVERRUN_START_SECTOR
 });
 assert.equal(getOverrunStartState({ bestSector: OVERRUN_UNLOCK_SECTOR }).available, true);
 assert.deepEqual(getOverrunStartState({ bestSector: 1 }, { previewAccess: true }), {
   available: true,
-  progressionUnlocked: false,
-  previewAccess: true,
+  progressionUnlocked: true,
+  previewAccess: false,
   highestReachedSector: 1,
   requiredSector: OVERRUN_UNLOCK_SECTOR,
   startSector: OVERRUN_START_SECTOR
@@ -85,13 +85,14 @@ assert.equal(isOverrunWebPreviewAccessEnabled({
 
 for (const mode of [RUN_MODES.OVERRUN_PURE, RUN_MODES.OVERRUN_TACTICAL]) {
   assert.equal(isOverrunRunMode(mode), true);
-  assert.equal(canRunModeSubmitGlobalLeaderboard(mode), false);
+  assert.equal(canRunModeSubmitGlobalLeaderboard(mode), mode === RUN_MODES.OVERRUN_TACTICAL);
   assert.equal(canRunModeUnlockAchievements(mode), false);
   assert.equal(canRunModeUpdateCareerProgress(mode), true);
   assert.equal(canRunModeUpdateCompetitiveCareerBests(mode), false);
   assert.equal(getRunModeProfile(mode).unlocksRankedCheckpoints, false);
-  assert.equal(getRunModeProfile(mode).careerXpMultiplier, 0.85);
 }
+assert.equal(getRunModeProfile(RUN_MODES.OVERRUN_PURE).careerXpMultiplier, 0.85);
+assert.equal(getRunModeProfile(RUN_MODES.OVERRUN_TACTICAL).careerXpMultiplier, 1);
 
 assert.equal(getRunModeProfile(RUN_MODES.OVERRUN_PURE).tacticalDraftEnabled, false);
 assert.equal(getRunModeProfile(RUN_MODES.OVERRUN_TACTICAL).tacticalDraftEnabled, true);
@@ -113,7 +114,7 @@ const unlockTransition = applyRunProgression({
   runElapsedSeconds: 300
 });
 assert.equal(unlockTransition.previous.overrunUnlockCelebrationPending, false);
-assert.equal(unlockTransition.next.overrunUnlockCelebrationPending, true, 'crossing Sector 30 should queue the one-time celebration');
+assert.equal(unlockTransition.next.overrunUnlockCelebrationPending, false, 'Onslaught is available from the start and must not queue a retired unlock celebration');
 assert.equal(unlockTransition.next.overrunUnlockCelebrationSeen, false);
 
 assert.equal(
@@ -145,10 +146,7 @@ const overrunCareerXp = calculatePilotXpForRun({
   runMode: RUN_MODES.OVERRUN_TACTICAL
 });
 const overrunCareerRatio = overrunCareerXp / normalCareerXp;
-assert(
-  overrunCareerRatio >= 0.84 && overrunCareerRatio <= 0.85,
-  `representative Overrun activity should pay approximately 85% of normal Career XP, got ${overrunCareerRatio}`
-);
+assert.equal(overrunCareerRatio, 1, 'representative Onslaught Tactical activity should pay full normal Career XP');
 
 const base = writeHangarProgressState({
   ...createDefaultHangarProgress(),

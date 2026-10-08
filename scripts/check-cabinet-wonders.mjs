@@ -99,10 +99,10 @@ assert.match(
 );
 assert.match(
   playSceneSource,
-  /const CABINET_WONDER_WIDTH_RATIO = 0\.76;[\s\S]{0,180}const CABINET_WONDER_HEIGHT_RATIO = 0\.4;[\s\S]{0,180}const CABINET_WONDER_MAX_WIDTH = 1520;[\s\S]{0,180}const CABINET_WONDER_MAX_HEIGHT = 560;/,
-  'Cabinet Wonders must use the approved panoramic footprint: 76% by 40%, capped at 1520 by 560'
+  /const CABINET_WONDER_WIDTH_RATIO = 0\.95;[\s\S]{0,180}const CABINET_WONDER_HEIGHT_RATIO = 0\.5;[\s\S]{0,180}const CABINET_WONDER_MAX_WIDTH = 1900;[\s\S]{0,180}const CABINET_WONDER_MAX_HEIGHT = 700;/,
+  'Cabinet Wonders must use the enlarged panoramic footprint: 95% by 50%, capped at 1900 by 700'
 );
-assert.match(playSceneSource, /const CABINET_WONDER_CENTER_Y_RATIO = 0\.3;[\s\S]{0,180}const CABINET_WONDER_UI_GAP = 16;[\s\S]{0,180}const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0\.65;/, 'the enlarged Wonder must move down while reserving a measured no-overlap UI gap and the lower 35% player lane');
+assert.match(playSceneSource, /const CABINET_WONDER_CENTER_Y_RATIO = 0\.3;[\s\S]{0,180}const CABINET_WONDER_UI_GAP = 16;[\s\S]{0,180}const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0\.75;/, 'the enlarged Wonder must reserve a measured no-overlap UI gap and the lower 25% player lane');
 assert.match(playSceneSource, /const CABINET_WONDER_HOLD_MS = 1500;/, 'Cabinet Wonders must remain fully readable for the user-approved 1.5-second hold');
 assert.match(
   playSceneSource,
@@ -118,8 +118,10 @@ assert.doesNotMatch(playSceneSource, /cabinet_wonder_art_stage_/, 'phenomena mus
 assert.match(playSceneSource, /captionLabel = `\$\{translateText\('Cabinet Wonder'\)\}[\s\S]{0,80}\$\{translateText\('Observed Phenomenon'\)\}`;/, 'the compact cameo needs its localized generic caption');
 assert.match(playSceneSource, /decorativeAccentAlpha = 0\.1;/, 'authored-art decorative accents must stay restrained');
 assert.match(playSceneSource, /prewarmCabinetWonderForTransition\(context = \{\}\)[\s\S]{0,1400}prewarmCabinetWonderVariant\(decision\.variant\.id, 'active_wave_prediction'\)/, 'the deterministic authored Wonder image must warm during the active wave');
-assert.match(enemyManagerSource, /spawnWave\(config\) \{[\s\S]{0,500}prewarmCabinetWonderForTransition\?\.\(\{/, 'wave combat must start the next authored Wonder image prewarm without blocking');
-assert.match(playSceneSource, /beginCabinetWonderOpportunity\(decision = \{\}\)[\s\S]{0,420}getCabinetWonderTexture\?\.\(decision\.variant\.id\)[\s\S]{0,180}recordCabinetWonderAssetSkip\(decision, 'asset_not_ready'\)/, 'a Wonder with unavailable authored art must be skipped before any overlay is created');
+const waveOpening = enemyManagerSource.split('  spawnWave(config) {')[1].split('    this.beginHighSectorProtocolRuntime(config);')[0];
+assert.match(waveOpening, /prewarmCabinetWonderForTransition\?\.\(\{/, 'wave combat must start the next authored Wonder image prewarm without blocking');
+const wonderOpening = playSceneSource.split('  beginCabinetWonderOpportunity(decision = {}) {')[1].split('    const id = ++this.cabinetWonderOpportunitySequence;')[0];
+assert.match(wonderOpening, /getCabinetWonderTexture\?\.\(decision\.variant\.id\)[\s\S]{0,180}recordCabinetWonderAssetSkip\(decision, 'asset_not_ready'\)/, 'a Wonder with unavailable authored art must be skipped before any overlay is created');
 assert.match(playSceneSource, /if \(!generatedTexture\) return null;/, 'the visual builder must fail closed instead of drawing a fallback Wonder');
 assert.match(playSceneSource, /no_overlap_lane_unavailable/, 'the cameo must skip when no collision-free transition lane is available');
 assert.match(playSceneSource, /assetSource: 'authored_art'/, 'live Wonder debug output must identify the authored-art source');

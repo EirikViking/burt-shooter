@@ -7,7 +7,7 @@ import { chromium } from 'playwright';
 const host = '127.0.0.1';
 const port = await findAvailablePort(Number(process.env.CHECK_PORT) || 4536);
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
-const outputDir = path.resolve(`test-results/notification-orchestration-${timestamp()}`);
+const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/notification-orchestration-${timestamp()}`);
 const resolutions = [
   { width: 1280, height: 720 },
   { width: 1366, height: 768 },
@@ -259,6 +259,10 @@ try {
       'ghost_fleet_salute',
       'notification_orchestration'
     );
+    // The opportunity belongs to the actual sector. Admission now rejects a
+    // stale sector even under debugForce, just like production transitions.
+    window.__game.level = 3;
+    play.enemyManager.level = 3;
     const wonderShown = play.maybeShowCabinetWonder({
       debugForce: true,
       forceVariantId: 'ghost_fleet_salute',
@@ -266,6 +270,9 @@ try {
       waveNumber: 3,
       hasUpcomingWave: true
     });
+    // Prewarming textures does not make the async visual install synchronous.
+    // Keep the assertion on the real installed cameo, with a bounded wait.
+    for(let i=0;i<30&&!play.activeCabinetWonder;i++)await wait(16);
     const manager = play.enemyManager;
     const previousProgression = {
       state: manager.state,
@@ -286,6 +293,9 @@ try {
     const wonderDuringWaveClear = {
       shown: wonderShown,
       artReady: wonderArtReady,
+      admission: {currentSector:manager.isCurrentSector(),currentScene:window.__game.currentScene===play,
+        safe:play.isCabinetWonderPresentationSafe(),late:window.__game.lateGameExperiment?.active,
+        bossCard:!!play.activeBossIntroCard?.parent,lastDecision:play.cabinetWonderLastDecision},
       active: Boolean(play.activeCabinetWonder),
       waveTimerHeldBySharedTransition,
       bossTimerHeldBySharedTransition
@@ -293,6 +303,7 @@ try {
     play.dismissToastDisplay(play.activeTopToast, 'top', { reason: 'sequence_probe_exit' });
     await wait(240);
     const wonderAfterWaveClear = play.getCabinetWonderDebugState();
+    wonderAfterWaveClear.viewport={width:play.gameplayGame.getWidth(),height:play.gameplayGame.getHeight()};
     const progressionHoldWithWonder = play.shouldHoldProgressionPresentation();
     play.clearCabinetWonder('sequence_probe_complete');
     const progressionHoldWithoutWonder = play.shouldHoldProgressionPresentation();
@@ -354,6 +365,7 @@ try {
     presentationSequences.sectorToBossSignal.dossierDelayMs >= 1100,
     `Sector Clear did not defer Boss Signal/dossier timing: ${JSON.stringify(presentationSequences.sectorToBossSignal)}`
   );
+  writeFileSync(path.join(outputDir,'presentation-sequences.json'),JSON.stringify(presentationSequences,null,2));
   assert(
     presentationSequences.wonderDuringWaveClear.shown === true &&
     presentationSequences.wonderDuringWaveClear.artReady === true &&
@@ -363,12 +375,18 @@ try {
     Boolean(presentationSequences.wonderAfterWaveClear.active) &&
     presentationSequences.wonderAfterWaveClear.blocking === false &&
     presentationSequences.wonderAfterWaveClear.progressionParity?.equal === true &&
-    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.widthRatio === 0.4416 &&
-    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.heightRatio === 0.3312 &&
-    presentationSequences.wonderAfterWaveClear.last?.presentationTarget?.centerYRatio === 0.3 &&
+    presentationSequences.wonderAfterWaveClear.last?.authoredBounds?.x >= 0 &&
+    presentationSequences.wonderAfterWaveClear.last?.authoredBounds?.y >= 0 &&
+    presentationSequences.wonderAfterWaveClear.last.authoredBounds.x + presentationSequences.wonderAfterWaveClear.last.authoredBounds.width
+      <= presentationSequences.wonderAfterWaveClear.viewport.width + 1 &&
+    presentationSequences.wonderAfterWaveClear.last.authoredBounds.y + presentationSequences.wonderAfterWaveClear.last.authoredBounds.height
+      <= presentationSequences.wonderAfterWaveClear.viewport.height * .75 + 1 &&
+    presentationSequences.wonderAfterWaveClear.active?.playerLaneSafe === true &&
+    presentationSequences.wonderAfterWaveClear.scoreNeutral === true &&
+    presentationSequences.wonderAfterWaveClear.gameplayNeutral === true &&
     presentationSequences.wonderAfterWaveClear.last?.noOverlap === true &&
     presentationSequences.wonderAfterWaveClear.last?.assetSource === 'authored_art',
-    `Cabinet Wonder did not remain an authored, compact, non-blocking transition cameo: ${JSON.stringify(presentationSequences)}`
+    `Cabinet Wonder did not remain within its safe lane, authored and non-blocking: ${JSON.stringify(presentationSequences)}`
   );
   assert(
     presentationSequences.damageFlash?.edgeWeighted === true &&
@@ -528,17 +546,17 @@ try {
     const { sideBounds, cardBounds, cardDebug, gameSize } = report;
     assert(sideBounds.x >= 48 && sideBounds.x + sideBounds.width <= gameSize.width - 48,
       `Side notification violated 48px safe margin at ${resolution.width}x${resolution.height}: ${JSON.stringify(sideBounds)}`);
-    assert(cardBounds.x >= 48 && cardBounds.y >= 48 &&
-      cardBounds.x + cardBounds.width <= gameSize.width - 48 &&
-      cardBounds.y + cardBounds.height <= gameSize.height - 48,
+    assert(cardBounds.x >= 16 && cardBounds.y >= 16 &&
+      cardBounds.x + cardBounds.width <= gameSize.width - 16 &&
+      cardBounds.y + cardBounds.height <= gameSize.height - 16,
     `Overrun modal clipped at ${resolution.width}x${resolution.height}: ${JSON.stringify(cardBounds)}`);
     if (resolution.width === 1920) {
-      assert(cardDebug.cardWidth >= 800 && cardDebug.cardWidth <= 900,
-        `1920 Overrun width outside 800-900 target: ${JSON.stringify(cardDebug)}`);
-      assert(cardDebug.cardHeight >= 430 && cardDebug.cardHeight <= 500,
-        `1920 Overrun height outside 430-500 target: ${JSON.stringify(cardDebug)}`);
+      assert(cardDebug.cardWidth >= 1700 && cardDebug.cardWidth <= 1800,
+        `1920 victory showcase width outside authored 1700-1800 target: ${JSON.stringify(cardDebug)}`);
+      assert(cardDebug.cardHeight >= 900 && cardDebug.cardHeight <= 1050,
+        `1920 victory showcase height outside authored 900-1050 target: ${JSON.stringify(cardDebug)}`);
     }
-    assert(cardDebug.visualLanguage === 'restrained_overrun_command_modal_v2' && cardDebug.paused === true,
+    assert(cardDebug.visualLanguage === 'victory_flythrough_v7' && cardDebug.realShowcase === true && cardDebug.paused === true,
       `Overrun modal contract mismatch: ${JSON.stringify(cardDebug)}`);
     if (resolution.ultrawide) {
       const ambience = report.ultrawideDebug;

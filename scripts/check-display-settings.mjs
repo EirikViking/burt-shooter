@@ -12,11 +12,13 @@ import {
 } from '../src/config/DisplaySettings.js';
 import {
   CONFIRM_EXIT_KEY,
+  GAMEPLAY_BACKGROUND_KEY,
   SHOW_PILOT_ORDERS_KEY,
   getMenuSettings,
   saveMenuSettings
 } from '../src/config/MenuSettings.js';
 import { translateTextForLocale } from '../src/i18n/index.js';
+import { getNewestTyrianFeedbackSourceText } from '../src/i18n/newestTyrianFeedbackSourceText.js';
 
 const require = createRequire(import.meta.url);
 const {
@@ -91,6 +93,7 @@ function checkRendererDefaultsAndPersistence() {
 
   assert.deepEqual(getMenuSettings({ storage }), {
     confirmExit: true,
+    gameplayBackground: 'modern',
     showPilotOrders: true,
     showPilotOrdersStored: false
   });
@@ -99,30 +102,41 @@ function checkRendererDefaultsAndPersistence() {
     defaultShowPilotOrders: false
   }), {
     confirmExit: true,
+    gameplayBackground: 'modern',
     showPilotOrders: false,
     showPilotOrdersStored: false
   });
   const savedMenu = saveMenuSettings({ confirmExit: false }, { storage });
   assert.deepEqual(savedMenu, {
     confirmExit: false,
+    gameplayBackground: 'modern',
     showPilotOrders: true,
     showPilotOrdersStored: false
   });
   assert.equal(storage.getItem(CONFIRM_EXIT_KEY), '0');
   assert.deepEqual(getMenuSettings({ storage }), {
     confirmExit: false,
+    gameplayBackground: 'modern',
     showPilotOrders: true,
     showPilotOrdersStored: false
   });
+  const savedBackground = saveMenuSettings({ gameplayBackground: 'legacy' }, { storage });
+  assert.equal(savedBackground.gameplayBackground, 'legacy');
+  assert.equal(storage.getItem(GAMEPLAY_BACKGROUND_KEY), 'legacy');
+  assert.equal(getMenuSettings({ storage }).gameplayBackground, 'legacy');
+  saveMenuSettings({ gameplayBackground: 'unsupported' }, { storage });
+  assert.equal(getMenuSettings({ storage }).gameplayBackground, 'modern');
   const savedPilotOrders = saveMenuSettings({ showPilotOrders: false }, { storage });
   assert.deepEqual(savedPilotOrders, {
     confirmExit: false,
+    gameplayBackground: 'modern',
     showPilotOrders: false,
     showPilotOrdersStored: true
   });
   assert.equal(storage.getItem(SHOW_PILOT_ORDERS_KEY), '0');
   assert.deepEqual(getMenuSettings({ storage }), {
     confirmExit: false,
+    gameplayBackground: 'modern',
     showPilotOrders: false,
     showPilotOrdersStored: true
   });
@@ -207,6 +221,35 @@ function checkElectronWindowApplication() {
   assert.equal(windowed.ok, true);
   assert.deepEqual(fakeWindow.bounds, { x: 160, y: 70, width: 1600, height: 900 });
 
+  fakeWindow.bounds = { x: -1400, y: 120, width: 1280, height: 720 };
+  const mixedDpiDisplay = {
+    id: 77,
+    bounds: { x: -1707, y: 120, width: 1707, height: 960 },
+    workArea: { x: -1707, y: 120, width: 1707, height: 920 },
+    size: { width: 2560, height: 1440 },
+    workAreaSize: { width: 1707, height: 920 },
+    scaleFactor: 1.5
+  };
+  fakeScreen.getDisplayMatching = () => mixedDpiDisplay;
+  fakeScreen.getAllDisplays = () => [mixedDpiDisplay];
+  const borderless = applyDisplaySettingsToWindow(fakeWindow, fakeScreen, {
+    mode: 'borderless',
+    windowSize: { width: 1600, height: 900 }
+  }, { previousMode: 'windowed' });
+  assert.equal(borderless.ok, true);
+  assert.deepEqual(fakeWindow.bounds, mixedDpiDisplay.bounds, 'borderless must use the full monitor bounds in Electron DIP coordinates');
+  assert.equal(fakeWindow.fullScreen, true, 'borderless must enter native fullscreen so the taskbar cannot cover it');
+  assert(calls.some((call) => call[0] === 'setResizable' && call[1] === false));
+  assert(!calls.some((call) => call[0] === 'setAlwaysOnTop'), 'borderless must not use always-on-top');
+
+  const restored = applyDisplaySettingsToWindow(fakeWindow, fakeScreen, {
+    mode: 'windowed',
+    windowSize: { width: 1600, height: 900 }
+  }, { previousMode: 'borderless' });
+  assert.equal(restored.ok, true);
+  assert.deepEqual(fakeWindow.bounds, { x: -1400, y: 120, width: 1280, height: 720 }, 'windowed placement must survive a borderless round trip');
+  assert.equal(fakeWindow.fullScreen, false);
+
   const info = getDisplayInfo(fakeScreen, fakeWindow, sanitizeDisplaySettings({ mode: 'windowed' }));
   assert(info.sizes.some((size) => size.width === 1920 && size.height === 1080));
   assert(info.modes.some((mode) => mode.id === 'borderless' && mode.supported));
@@ -230,11 +273,15 @@ function checkElectronPersistenceRoundTrip() {
 
 function checkI18nText() {
   for (const locale of ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
+    const newestText = getNewestTyrianFeedbackSourceText(locale);
     assert.notEqual(translateTextForLocale(locale, 'Display Mode'), 'Display Mode', `${locale} display mode translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'Window Size'), 'Window Size', `${locale} window size translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'UI Scale'), 'UI Scale', `${locale} UI scale translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'Confirm Exit'), 'Confirm Exit', `${locale} confirm exit translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'Show Pilot Orders'), 'Show Pilot Orders', `${locale} show pilot orders translation missing`);
+    assert.notEqual(translateTextForLocale(locale, 'Gameplay Background'), 'Gameplay Background', `${locale} gameplay background translation missing`);
+    assert.equal(typeof newestText.Modern, 'string', `${locale} modern background translation missing`);
+    assert.equal(typeof newestText.Legacy, 'string', `${locale} legacy background translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'UI scale applied'), 'UI scale applied', `${locale} UI scale applied translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'Safe display reset applied'), 'Safe display reset applied', `${locale} reset translation missing`);
   }
@@ -247,4 +294,4 @@ checkElectronWindowApplication();
 checkElectronPersistenceRoundTrip();
 checkI18nText();
 
-console.log('[display-settings] PASS defaults, persistence, Electron apply, browser fallback, and i18n');
+console.log('[display-settings] PASS defaults, persistence, monitor-aware fullscreen/borderless/windowed apply, browser fallback, and i18n');

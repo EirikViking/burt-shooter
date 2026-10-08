@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -60,6 +61,33 @@ function optionalDependencyPath() {
   }
 }
 
+function readWindowsExecutableBranding() {
+  const executable = path.join(packageRoot, 'Nova Swarm.exe');
+  if (process.platform !== 'win32' || !existsSync(executable)) {
+    return { checked: false, reason: process.platform !== 'win32' ? 'non_windows_host' : 'missing_executable' };
+  }
+  const powershell = path.join(
+    process.env.SystemRoot || 'C:\\Windows',
+    'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'
+  );
+  try {
+    const script = [
+      '$v=(Get-Item -LiteralPath $env:NOVA_SWARM_BRANDING_EXE).VersionInfo',
+      '[pscustomobject]@{FileDescription=$v.FileDescription;ProductName=$v.ProductName;OriginalFilename=$v.OriginalFilename}|ConvertTo-Json -Compress'
+    ].join(';');
+    return {
+      checked: true,
+      ...JSON.parse(execFileSync(powershell, ['-NoProfile', '-NonInteractive', '-Command', script], {
+        encoding: 'utf8',
+        env: { ...process.env, NOVA_SWARM_BRANDING_EXE: executable },
+        windowsHide: true
+      }).trim())
+    };
+  } catch (error) {
+    return { checked: true, error: error?.message || String(error) };
+  }
+}
+
 const bridge = require('../electron/steamLeaderboardBridge.cjs');
 const bridgeStatus = bridge.createSteamLeaderboardBridge({
   rootDir: root,
@@ -72,6 +100,7 @@ const packagedSteamSdkFiles = listFilesRecursive(packagedSteamSdkRoot)
   .map((file) => path.relative(packagedSteamSdkRoot, file).replaceAll(path.sep, '/'))
   .sort();
 const expectedSteamSdkFiles = sdkRuntimeFiles().sort();
+const executableBranding = readWindowsExecutableBranding();
 
 if (!existsSync(packageRoot)) errors.push(`missing package root: ${rel(packageRoot)}`);
 for (const file of files) {
@@ -86,6 +115,17 @@ if (bridge.DEFAULT_STEAM_APP_ID !== 4765070 || bridgeStatus.appId !== 4765070) {
 if (bridgeStatus.leaderboardName !== 'nova_swarm_global_score_v2') {
   errors.push(`Steam bridge leaderboard must be nova_swarm_global_score_v2, got ${bridgeStatus.leaderboardName || 'missing'}`);
 }
+if (executableBranding.checked) {
+  if (executableBranding.error) {
+    errors.push(`could not inspect packaged executable branding: ${executableBranding.error}`);
+  } else if (
+    executableBranding.ProductName !== 'Nova Swarm' ||
+    executableBranding.FileDescription !== 'Nova Swarm' ||
+    String(executableBranding.OriginalFilename || '').toLowerCase() === 'electron.exe'
+  ) {
+    errors.push(`packaged executable still has Electron branding: ${JSON.stringify(executableBranding)}`);
+  }
+}
 
 const report = {
   status: errors.length ? 'failed' : 'passed',
@@ -93,6 +133,7 @@ const report = {
   appId: bridgeStatus.appId,
   leaderboardName: bridgeStatus.leaderboardName,
   optionalDependencyPath: optionalDependencyPath() ? rel(optionalDependencyPath()) : null,
+  executableBranding,
   packagedSteamSdkFiles,
   files,
   errors

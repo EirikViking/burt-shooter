@@ -1,0 +1,6 @@
+[quote=Tyrian Mollusk]bullet visibility[/quote]
+Delivery update to my previous reply: today's convoy continuity repair is now included in sector-continue-test, BuildID 25650189, v2026-10-01_11-57-51.
+
+The added explosion choreography, harmless planetary scenes and sounds keep the existing movement, Focus, Phase, damage rules and score formulas. These visuals cost more CPU in the matched stress fixture; render-gap p99 stayed near 17.2 ms with no gaps over 50 ms on the tested machine. Hardware and human readability checks remain necessary.
+
+This does not resolve the open weapon-identity, Quasar spread or defensive Tactical balance questions. Those still need comparative playtesting. The public/default build is unchanged.

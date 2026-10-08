@@ -1,0 +1,132 @@
+{
+  "created": "2026-10-02T14:50:39.771Z",
+  "requestedTotal": 42,
+  "batch": "3: forms 13–22",
+  "audioBatchId": "batch3",
+  "audioCreditCeiling": 1800,
+  "commonArtPrompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. ",
+  "definitions": [
+    {
+      "id": "thunder_eel",
+      "anatomy": "eel",
+      "period": 4.7,
+      "amplitude": 0.057,
+      "width": 1.13,
+      "lane": 0.43,
+      "duration": 29,
+      "seconds": 4.2,
+      "brief": "An immense slender deep-space eel in a strong broad S curve, narrow menacing long-jawed head at LEFT, many fine branching sensory whiskers, thick black-blue muscular body tapering to a razor tail on the RIGHT. Segmented translucent dorsal ridge reveals zigzag pale gold vertebrae INSIDE the flesh. Small irregular violet electroreceptor pores, no external lightning or sparks. Fine low continuous fins, large coherent muscle masses, wet graphite skin, restrained gold internal anatomy. Graceful lethal-looking swimming animal, whole curling body and whiskers fit.",
+      "audio": "A colossal electric eel flexes its living spine. A low smooth throat drone with uneven pulsing breath, tiny dry organic electroreceptor crackles, a soft long skin scrape and a descending hollow tail resonance. Huge mysterious animal, detailed tactile cinematic creature Foley. No lightning strike, zaps, weapon fire, alarm, voice or music."
+    },
+    {
+      "id": "cathedral_centipede",
+      "anatomy": "centipede",
+      "period": 5.3,
+      "amplitude": 0.031,
+      "width": 1.14,
+      "lane": 0.42,
+      "duration": 32,
+      "seconds": 4.4,
+      "brief": "A giant alien aquatic centipede, long horizontal segmented body with a powerful small pale armored head facing LEFT, a row of twelve tall ivory rib arches along the dark burgundy back, and twelve PAIRS of large translucent teal swimming paddles fanning outward and downward. Rear narrows to a forked tail at RIGHT. It floats horizontally, no ground contact. Living bone plates join flexible dark muscular segments. Carefully organized readable repeating anatomy and graceful curved paddle edges, not a train, ship, robot or terrestrial crawling bug.",
+      "audio": "An immense many-paddled armored swimmer passes. A slow rolling sequence of soft leathery paddle strokes travels down its body, dry bone arches creak in overlapping rhythm, deep hollow abdominal breath and small joint clicks fade away. Ancient living creature with tactile weight, cinematic Foley. No marching, machinery, music, voices, weapons or alarms."
+    },
+    {
+      "id": "pearl_salamander",
+      "artEdit": {"source":"C:\\Users\\cromk\\.codex\\generated_images\\01a0ec1e-e5fb-7710-98df-2993049c9c09\\exec-e224bf08-e44e-43ac-b34d-f5139eeef896.png","prompt":"Preserve this exact alien pearl salamander, its identity, anatomy, materials, pose and lighting. Repair the composition: the tallest gill fan is clipped at the upper edge. Reconstruct that missing tip naturally and place the entire animal, all six gill fans, feet and tail comfortably inside the frame with a clear TRANSPARENT margin on all four sides. Keep at least 10 percent empty transparent padding around the full silhouette. True transparent cutout only, no background or glow rectangle. Do not change the animal or add objects.","reason":"Reconstruct visibly clipped upper gill tip; retain full silhouette."},
+      "anatomy": "salamander",
+      "period": 6.2,
+      "amplitude": 0.04,
+      "width": 1,
+      "lane": 0.43,
+      "duration": 31,
+      "seconds": 4.1,
+      "brief": "A huge elegant pearl-skinned alien salamander swimming LEFT, broad predatory amphibian head with tiny obsidian eyes, SIX enormous featherlike rose-lavender gill fans projecting from the neck above and below. Long muscular ivory body, four tiny webbed limbs held close and a broad tapered translucent paddle tail trailing RIGHT. Anatomically believable soft subsurface skin, delicate opal freckling, pale pink internal organs. An uncanny mature wild animal, not a cute axolotl mascot. Gill fans clearly separated with fine branching veins and prominent muscular roots.",
+      "audio": "A massive pearl-skinned amphibian breathes through six feathery gills. Gentle low wet throat gulp, delicate airy gill flutter around a warm chest resonance, tiny webbed foot strokes and a smooth liquid exhale. Tender yet uncanny giant living animal, close cinematic organic Foley. No cute chirp, human voice, music, weapon, splash impact or alarm."
+    },
+    {
+      "id": "mirror_moth",
+      "anatomy": "moth",
+      "period": 6.4,
+      "amplitude": 0.045,
+      "width": 0.99,
+      "lane": 0.44,
+      "duration": 32,
+      "seconds": 4.3,
+      "brief": "A vast alien mirror moth flying horizontally LEFT through space. Narrow furry silver thorax and small pointed black head at left, FOUR immense asymmetrical lobed wings spread above and below, made of smoky reflective biological glass facets edged by living black veins. Near wings larger, distant pair narrower; facets reflect muted indigo and pale green, not scenery. Long swept-back antennae, short segmented abdomen at right. Clearly four thin wings with scalloped articulated edges, no butterfly symmetry stamp, no metallic machine. Striking sculptural prismatic insect beauty, dark subtle iridescence.",
+      "audio": "A huge glass-winged alien moth slowly opens its wings. Four layered papery membrane sweeps with delicate irregular mineral ticks, a faint coarse thoracic purr, thin antennae brushing and a soft crystalline breath decay. Beautiful disquieting living insect, spacious cinematic Foley. No bells, melody, music, voices, breaking glass, weapons or alarm."
+    },
+    {
+      "id": "moon_urchin",
+      "anatomy": "urchin",
+      "period": 7.7,
+      "amplitude": 0.031,
+      "width": 0.81,
+      "lane": 0.46,
+      "duration": 34,
+      "seconds": 4.5,
+      "brief": "An immense spherical alien moon urchin with a lumpy cratered alabaster central living body, charcoal sensory pits, a dark fleshy mouth oriented LEFT. A crown of eight long gracefully curved bone spines surrounds the ball, and FOUR broad pearly translucent ribbon sails trail to the RIGHT between spines. Not a moon, rock, mine or weapon: clearly living radial marine anatomy, subtle breathing pores and amethyst tissue connecting each spine. Entire radial silhouette and all ribbon sails inside the frame, strong three-dimensional ball volume.",
+      "audio": "A colossal pale urchin exhales through many small pores. A slow hollow spherical chest hum, staggered soft air whistles, curved mineral spines creaking quietly and thin ribbon sails whispering past. Spacious eerie beautiful biological presence, detailed cinematic creature Foley. No melody, music, mechanical whine, voices, weapons or alarm."
+    },
+    {
+      "id": "rose_anemone",
+      "anatomy": "anemone",
+      "period": 5.9,
+      "amplitude": 0.054,
+      "width": 0.92,
+      "lane": 0.44,
+      "duration": 31,
+      "seconds": 4.3,
+      "brief": "A vast free-swimming alien sea anemone with a broad muscular living coral crown at LEFT, tightly layered fleshy burgundy and coral rose lobes around an uncanny dark circular oral disc. Twenty distinct long tapered flexible rose-red tendrils flow backward to the RIGHT in a low wide curtain, some curling upward, pale translucent edges and tiny golden feeding pores. No pot, stem or floor. Different from an octopus: radial flowerlike crown, many slender unjointed tendrils, no suckers, no separate squid mantle. Rich waxy soft tissue and believable organic weight.",
+      "audio": "A giant rose anemone unfurls its living crown. Close soft fleshy folds opening, many fine tendrils brushing in irregular waves, tiny wet pore clicks and a low breathy circular throat murmur fading gently. Exquisite unsettling organic animal, tactile cinematic Foley. No floral magic, chimes, melody, music, voice, weapon or alarm."
+    },
+    {
+      "id": "spine_shark",
+      "artEdit": {"source":"C:\\Users\\cromk\\.codex\\generated_images\\01a0ec1e-e5fb-7710-98df-2993049c9c09\\exec-14504822-d852-4524-8d84-295905f0f644.png","prompt":"Keep this exact alien armored shark unchanged in identity, anatomy, pose, colors and lighting. Zoom out so its ENTIRE silhouette fits inside the image with 10 percent transparent margin on every side. Restore the tiny clipped tip of its tall dorsal fin at the top to a natural pointed blade. Do not crop any fin, tail or nose. Preserve genuine transparency, no scenery, glow, background or additional objects.","reason":"Restore cropped dorsal tip and preserve full silhouette."},
+      "anatomy": "shark",
+      "period": 5.1,
+      "amplitude": 0.034,
+      "width": 1.1,
+      "lane": 0.42,
+      "duration": 28,
+      "seconds": 4,
+      "brief": "A massive sinister alien shark swimming LEFT: heavy wedge-shaped gunmetal biological head, low partly open predatory jaw with short ivory teeth, narrow orange eyes. Thick muscular torpedo body curves subtly to the RIGHT with a tall backward-swept dorsal blade, a row of five rugged bone spines and a huge asymmetric crescent tail. Two angular pectoral fins spread outward, armored scarred charcoal skin and dark gill cavities with restrained red inner tissue. Powerful clear shark silhouette, not whale, eel, spaceship or metal robot.",
+      "audio": "A huge armored spine shark glides past. A low rough predatory gill rasp under heavy rounded breathing, slow dorsal cartilage creaks, smooth broad fin pressure and one restrained gravelly jaw flex. Dangerous tangible wild animal, rich cinematic creature Foley. No roar jump scare, music, speech, weapon, splash crash or alarm."
+    },
+    {
+      "id": "dawn_koi",
+      "anatomy": "koi",
+      "period": 6,
+      "amplitude": 0.043,
+      "width": 1,
+      "lane": 0.44,
+      "duration": 32,
+      "seconds": 4.3,
+      "brief": "An immense regal alien koi swimming LEFT with a massive deep-bodied torso of individually readable pearl, muted gold and dusky coral scales, six long ivory sensory whiskers around a dignified narrow head. Four magnificent translucent trailing silk fins, high flowing dorsal fin and a very long forked veil tail to the RIGHT. No cute goldfish expression. Fine teal veins within amber fins, dark clear intelligent eyes, substantial powerful fish muscles, aged iridescent scales. Elegant layered fins separated from body for animation, cinematic organic volume.",
+      "audio": "An enormous regal koi breathes softly. Rounded low waterlike throat notes, delicate leathery scale shifts, six whiskers brushing, long silk fins sweeping in slow overlapping waves and a gentle resonant exhale. Majestic serene alien life with tactile detail, cinematic Foley. No melody, music, human voice, cute squeak, weapon or alarm."
+    },
+    {
+      "id": "iron_jelly",
+      "anatomy": "ironjelly",
+      "period": 6.5,
+      "amplitude": 0.043,
+      "width": 0.99,
+      "lane": 0.45,
+      "duration": 33,
+      "seconds": 4.4,
+      "brief": "A giant deep-space iron jellyfish, a thick dark bell at LEFT formed by eight curved iron-gray BIOLOGICAL cartilage ribs over smoky translucent cobalt membrane. Pale yellow sensory organs under the rim. Six long basket-star arms with many jointed branching tips stream to the RIGHT and curl back, thick living dark tendons, pale mineral joints. Bell has strong half-dome geometry, not a robot or helmet. Textured matte shell, wet inner tissue and restrained cobalt organ glow. Arm branches remain sparse and readable, different from silky jellyfish tentacles.",
+      "audio": "A vast heavy-ribbed jelly creature contracts its bell. Deep hollow cartilage thump with long dark breath, many dry jointed arm ticks staggered irregularly, damp membrane flex and a quiet descending chest resonance. Ancient ominous living animal, detailed cinematic Foley. No metal robot, music, speech, alarm, bell ringing or weapon."
+    },
+    {
+      "id": "saffron_seadragon",
+      "anatomy": "seadragon",
+      "period": 5.8,
+      "amplitude": 0.038,
+      "width": 1.05,
+      "lane": 0.43,
+      "duration": 31,
+      "seconds": 4.2,
+      "brief": "A giant leafy alien seadragon swimming LEFT, very long tapered armored snout, small turquoise sensory eyes, gently curved slender ochre body and a spiral tail trailing RIGHT. Numerous large separate saffron-orange leaf-shaped translucent fins grow along its neck, back and belly on flexible fleshy stalks, each veined with deep burgundy. Organic copper-gold bony ridges beneath soft skin, dark fleshy joints. Not a plant branch: unmistakable powerful living fish anatomy and long elegant neck. Leaf fins asymmetrical and clearly separated, sculptural cinematic biological detail.",
+      "audio": "A giant saffron seadragon moves through space. Many soft leaflike fins flutter at staggered speeds, a long narrow hollow snout breath, fine bony cartilage clicks and a warm low chest croon fading into a leathery tail swish. Graceful alien animal, tactile cinematic organic Foley. No wind ambience, music, singing, human voice, weapon or alarm."
+    }
+  ]
+}

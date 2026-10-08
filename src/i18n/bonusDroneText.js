@@ -25,5 +25,7 @@ export function getBonusDroneSourceText(locale='en') {
 export function getBonusDroneText(profile,locale='en') {
  const ui=UI[locale]||UI.en, stories=STORIES[locale]||STORIES.en;
  const legacy={en:'An older bounty frame still carrying sealed cargo through the swarm.',de:'Eine ältere Beutedrohne trägt weiterhin versiegelte Fracht durch den Schwarm.',es:'Un antiguo modelo de recompensa sigue transportando carga sellada entre el enjambre.','pt-BR':'Um antigo modelo de recompensa ainda transporta carga lacrada pelo enxame.',ru:'Старый трофейный дрон всё ещё везёт запечатанный груз сквозь рой.','zh-CN':'老式赏金无人机仍载着密封货物穿行于虫群之中。',ja:'古い賞金ドローンが、封印された貨物を今も群れの中で運び続けている。',ko:'구형 현상금 드론이 아직도 밀봉된 화물을 싣고 군집 사이를 누빈다.'};
- return {name:profile.name,description:profile.legacy?(legacy[locale]||legacy.en):stories[profile.index-4],tip:ui[3].replace('{score}',String(profile.score)),role:ui[2],rarity:ui[0]};
+ const caution={en:'Shoot it; do not try to collect it.',de:'Schieß darauf; versuche nicht, es einzusammeln.',es:'Dispárale; no intentes recogerlo.','pt-BR':'Atire nele; não tente coletá-lo.',ru:'Стреляй по нему; не пытайся подобрать.','zh-CN':'射击它；不要尝试拾取。',ja:'撃て。回収しようとするな。',ko:'쏴라. 수집하려 하지 마라.'};
+ const story=profile.legacy?(legacy[locale]||legacy.en):stories[profile.index-4];
+ return {name:profile.name,description:`${story} ${ui[3].replace('{score}',String(profile.score))}`,tip:caution[locale]||caution.en,role:ui[2],rarity:ui[0]};
 }

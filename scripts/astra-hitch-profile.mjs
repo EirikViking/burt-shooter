@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';import {_electron as electron} from 'playwright';import {mkdirSync,writeFileSync,readFileSync,createWriteStream} from 'node:fs';import path from 'node:path';
 const daily=process.env.ASTRA_PROFILE_MODE==='daily',profileCpu=process.env.ASTRA_PROFILE_CPU!=='0',launchedAt=Date.now();
 const label=process.argv[2]||'before',exe=process.argv[3]||JSON.parse(readFileSync('test-results/astra-build-location.json')).executable;
-const out=path.resolve('test-results',`astra-hitches-${label}`);mkdirSync(out,{recursive:true});
+const out=path.resolve(process.env.ASTRA_PROFILE_OUTPUT_DIR || path.join('test-results',`astra-hitches-${label}`));mkdirSync(out,{recursive:true});
 const report={label,exe,daily,profileCpu,errors:[],warnings:[],scenarios:[]};const log=createWriteStream(path.join(out,'process.log'));
 const app=await electron.launch({executablePath:exe,args:['--nova-fresh-profile','--windowed','--disable-backgrounding-occluded-windows','--disable-renderer-backgrounding','--disable-features=CalculateNativeWinOcclusion'],env:{...process.env,NOVA_SWARM_USER_DATA_DIR:path.join(out,'profile'),NOVA_SWARM_FRESH_PROFILE:'1',NOVA_SWARM_WINDOWED:'1'},timeout:120000});app.process().stdout?.pipe(log,{end:false});app.process().stderr?.pipe(log,{end:false});const page=await app.firstWindow();
 await app.context().route('**/*',r=>new URL(r.request().url()).pathname==='/api/highscores'?r.fulfill({status:200,contentType:'application/json',body:'[]'}):/^(nova-swarm:|data:|blob:)/.test(r.request().url())?r.continue():r.abort());
 page.on('pageerror',e=>report.errors.push(e.message));page.on('console',m=>{if(['warning','error'].includes(m.type()))report.warnings.push(m.text());});
 const cdp=await app.context().newCDPSession(page);const flush=()=>writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));
 try{await page.waitForFunction(()=>window.__game?.scenes?.menu?.astraMenuShip?.ready,null,{timeout:120000});await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows()[0];w.setFullScreen(false);w.setContentSize(1920,1080);w.webContents.setBackgroundThrottling(false);w.show();w.focus();});
-report.menuArtMs=Date.now()-launchedAt;const launchAt=Date.now();
+report.menuArtMs=Date.now()-launchedAt;await page.screenshot({path:path.join(out,'menu.png')});report.nativeBefore=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].nativePresentation?.diagnostics());const launchAt=Date.now();
 await page.evaluate(daily=>{if(daily)window.__game.scenes.menu.startDailySignalRun();else window.__game.startGame(window.__game.selectedShipSpriteKey);},daily);await page.waitForFunction(()=>window.__game?.scenes?.play?.player?.active,null,{timeout:120000});
 report.playerActiveMs=Date.now()-launchAt;report.contract=await page.evaluate(()=>window.__game.dailySignalContract);
 await page.evaluate(()=>{const g=window.__game,p=g.scenes.play;g.markUnrankedRun('astra_profile');p.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;if(p.isPaused)p.setPaused(false);p.player.invulnerable=true;p.player.invulnerableTime=1e9;});await cdp.send('Performance.enable');await cdp.send('Profiler.enable');await cdp.send('Profiler.setSamplingInterval',{interval:1000});
@@ -26,5 +26,5 @@ await page.evaluate(()=>{const g=window.__game,p=g.scenes.play;p.clearPendingEne
 await page.evaluate(()=>{const p=window.__game.scenes.play;p.clearPendingEnemyStart();p.enemyManager.forceBossStart(1);});await page.waitForFunction(()=>window.__game.scenes.play.enemyManager.boss?.active,null,{timeout:60000});
 const kill=page.waitForTimeout(8000).then(()=>page.evaluate(()=>{const b=window.__game.scenes.play.enemyManager.boss;b.invulnerableUntilMs=0;b.firstDamageAtMs=Date.now()-120000;b.finishGateUntilMs=0;b.takeDamage(b.maxHealth+99999);}));await capture('boss-death',15);await kill;
 }
-assert.deepEqual(report.errors,[]);report.status='passed';flush();
+report.nativeAfter=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].nativePresentation?.diagnostics());assert.deepEqual(report.errors,[]);report.status='passed';flush();
 } catch(e){report.status='failed';report.failure=e.stack;flush();throw e;}finally{await app.close();log.end();}

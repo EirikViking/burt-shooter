@@ -18,6 +18,7 @@ steamworks_sdk/
 steamworks_sdk_redist/
 steam_appid.txt
 release/desktop/
+electron/native/
 release/steam-build-output/
 release/steamworks/app_build_LOCAL.vdf
 release/steam-trailer/*/*.webm
@@ -49,3 +50,24 @@ docs/fleet-identity-20260908/renders/
 docs/fleet-identity-20260908/drones/*.png
 docs/fleet-identity-20260908/*.blend1
 docs/fleet-identity-20260908/drones/*.blend1
+
+# Raw ship-art QA captures; curated evidence lives in docs/ship-art-v2/evidence.
+output/playwright/ship-art-v2/
+output/playwright/fleet-art-v2/
+docs/fleet-art-v2/ships/*/export/tangent.glb
+
+# Reproducible Sparrow showcase intermediates; source, maps and final GLB retained.
+docs/sparrow-showcase/export/tangent.glb
+docs/sparrow-showcase/export/optimized.glb
+docs/sparrow-showcase/export/runtime.glb
+docs/sparrow-showcase/video-temp/
+
+docs/fleet-showcase/ships/*/export/tangent.glb
+docs/fleet-showcase/ships/*/export/runtime.glb
+docs/fleet-showcase/video-temp/
+# Local construction iteration logs; final costs and validation are retained.
+docs/fleet-showcase/*build.log
+docs/fleet-showcase/*refinement.log
+docs/fleet-showcase/runtime-captures-*.json
+docs/fleet-showcase/ships/*/*.blend1
+scripts/temp-fleet-framing.mjs

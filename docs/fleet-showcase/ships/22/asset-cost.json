@@ -1,0 +1,62 @@
+{
+  "id": 22,
+  "name": "Verdant Flow",
+  "architecture": "flow",
+  "baselineDesign": [
+    "Verdant Flow",
+    1.45,
+    0.97,
+    0.79,
+    0.97,
+    "flow",
+    [
+      [
+        0.2,
+        0.68,
+        -1.21,
+        0.15
+      ],
+      [
+        0.75,
+        0.88,
+        -1.09,
+        0.17
+      ],
+      [
+        1.36,
+        1,
+        -0.57,
+        0.1
+      ],
+      [
+        1.79,
+        0.84,
+        -0.13,
+        0.027
+      ]
+    ]
+  ],
+  "palette": [
+    "49255c",
+    "b453bc",
+    "e51cff"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false,
+  "bytes": 15031584,
+  "triangles": 199058,
+  "materials": [
+    "Graphite structural composite",
+    "Off-white aerospace polyurethane",
+    "Brushed titanium fittings",
+    "Seals and cabin upholstery",
+    "Dim ion throat and instrument phosphor",
+    "Laminated cockpit glazing",
+    "Cobalt blue painted alloy",
+    "Sooted nozzle liner",
+    "Heat-oxidised exhaust alloy"
+  ],
+  "images": 5,
+  "repaired": 0
+}

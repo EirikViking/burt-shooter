@@ -1,0 +1,17 @@
+
+> nova-swarm@1.0.0 smoke
+> node scripts/smoke-playtest.mjs
+
+[smoke] starting http://127.0.0.1:4173
+[preview] [Vite] Using buildId from version.json: v2026-09-09_17-00-12
+[preview]   ➜  Local:   http://127.0.0.1:4173/
+[smoke] browser launched
+[smoke] menu captured
+[smoke] settings and audio audition captured
+[smoke] credits captured
+[smoke] desktop gameplay captured
+[smoke] powerup HUD captured
+page.waitForFunction: Timeout 30000ms exceeded.
+    at runSmoke (D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\scripts\smoke-playtest.mjs:568:23) {
+  name: 'TimeoutError'
+}

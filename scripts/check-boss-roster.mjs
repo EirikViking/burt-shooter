@@ -50,41 +50,69 @@ if (attacks.size < 10) errors.push(`Expected at least 10 boss attack styles, fou
 if (movements.size < 9) errors.push(`Expected at least 9 boss movement styles, found ${movements.size}.`);
 if (signatures.size < 5) errors.push(`Expected at least 5 boss signature styles, found ${signatures.size}.`);
 
-for (let sector = 1; sector <= 50; sector += 1) {
-  if (getBossProfileForRun(sector, { seed: 'preserve-first-50', seenThroughSector: 30 }) !== BOSS_ROSTER[sector - 1]) {
-    errors.push(`Sector ${sector} must preserve the authored first-50 boss reveal order.`);
+for (let sector = 1; sector <= 20; sector += 1) {
+  if (getBossProfileForRun(sector, { seed: 'preserve-first-20', seenThroughSector: 30 }) !== BOSS_ROSTER[sector - 1]) {
+    errors.push(`Sector ${sector} must preserve the authored first-20 boss reveal order.`);
   }
 }
 
+for (let seedIndex = 0; seedIndex < 64; seedIndex += 1) {
+  let previousProfile = null;
+  for (let sector = 1; sector <= 180; sector += 1) {
+    const profile = getBossProfileForRun(sector, {
+      seed: `no-adjacent-repeat-${seedIndex}`,
+      seenThroughSector: BOSS_ROSTER.length
+    });
+    if (profile?.id === previousProfile?.id) {
+      errors.push(`Boss ${profile.id} repeats in consecutive sectors ${sector - 1} and ${sector}.`);
+      break;
+    }
+    previousProfile = profile;
+  }
+}
+
+const sectorSixtyBoundarySeed = 'boundary-56';
+const sectorSixtyBoss = getBossProfileForRun(60, {
+  seed: sectorSixtyBoundarySeed,
+  seenThroughSector: BOSS_ROSTER.length
+});
+const sectorSixtyOneBoss = getBossProfileForRun(61, {
+  seed: sectorSixtyBoundarySeed,
+  seenThroughSector: BOSS_ROSTER.length
+});
+if (sectorSixtyBoss?.id === sectorSixtyOneBoss?.id) {
+  errors.push(`Boss ${sectorSixtyBoss.id} repeats across the authored/shuffled boundary at sectors 60 and 61.`);
+}
+
 const seenThirtyCycle = Array.from({ length: 30 }, (_entry, index) =>
-  getBossProfileForRun(51 + index, { seed: 'seen-thirty', seenThroughSector: 30 })
+  getBossProfileForRun(61 + index, { seed: 'seen-thirty', seenThroughSector: 30 })
 );
 if (seenThirtyCycle.some((profile) => profile.index > 30)) {
-  errors.push('Sector 51+ pool exposed a boss beyond the profile seen-through limit.');
+  errors.push('Sector 61+ pool exposed a boss beyond the profile seen-through limit.');
 }
 if (new Set(seenThirtyCycle.map((profile) => profile.id)).size !== 30) {
-  errors.push('Sector 51+ first cycle must visit every seen boss exactly once.');
+  errors.push('Sector 61+ first cycle must visit every seen boss exactly once.');
 }
 
 const repeatSeenThirtyCycle = Array.from({ length: 30 }, (_entry, index) =>
-  getBossProfileForRun(51 + index, { seed: 'seen-thirty', seenThroughSector: 30 })
+  getBossProfileForRun(61 + index, { seed: 'seen-thirty', seenThroughSector: 30 })
 );
 if (seenThirtyCycle.map((profile) => profile.id).join(',') !== repeatSeenThirtyCycle.map((profile) => profile.id).join(',')) {
-  errors.push('Sector 51+ boss shuffle must be deterministic for the run seed.');
+  errors.push('Sector 61+ boss shuffle must be deterministic for the run seed.');
 }
 
 const alternateCycle = Array.from({ length: 30 }, (_entry, index) =>
-  getBossProfileForRun(51 + index, { seed: 'alternate-seed', seenThroughSector: 30 })
+  getBossProfileForRun(61 + index, { seed: 'alternate-seed', seenThroughSector: 30 })
 );
 if (seenThirtyCycle.map((profile) => profile.id).join(',') === alternateCycle.map((profile) => profile.id).join(',')) {
-  errors.push('Sector 51+ boss shuffle should vary with the run seed.');
+  errors.push('Sector 61+ boss shuffle should vary with the run seed.');
 }
 
 const secondSeenThirtyCycle = Array.from({ length: 30 }, (_entry, index) =>
-  getBossProfileForRun(81 + index, { seed: 'seen-thirty', seenThroughSector: 30 })
+  getBossProfileForRun(91 + index, { seed: 'seen-thirty', seenThroughSector: 30 })
 );
 if (seenThirtyCycle[29]?.id === secondSeenThirtyCycle[0]?.id) {
-  errors.push('Sector 51+ boss shuffle must avoid an immediate repeat at cycle boundaries.');
+  errors.push('Sector 61+ boss shuffle must avoid an immediate repeat at cycle boundaries.');
 }
 
 if (errors.length) {

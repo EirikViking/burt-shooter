@@ -106,7 +106,11 @@ async function createReadyPage(browser, options = {}) {
   await page.evaluate(() => {
     const play = window.__game?.scenes?.play;
     play?.completeFirstRunOnboarding?.('cabinet_wonder_runtime', { flushAchievements: false });
-    if (play) play.firstRunOnboardingComplete = true;
+    if (play) {
+      play.firstRunOnboardingComplete = true;
+      window.__game.level = 4;
+      if (play.enemyManager) play.enemyManager.level = 4;
+    }
   });
   return { context, page, pageErrors, consoleErrors, viewport, locale, reducedMotion };
 }
@@ -175,13 +179,14 @@ async function runVisualScenario(browser, options) {
         transitionActive,
         inputBefore,
         inputAfter,
+        frameLayout: play.resolveCabinetWonderFrameLayout(game.app.screen.width, game.app.screen.height),
         debug: play.getCabinetWonderDebugState(),
         language: JSON.parse(window.render_game_to_text()).language
       };
     }, variantId);
 
     if (!synchronous.shown) {
-      throw new Error(locale + ' Wonder did not enter the collision-free presentation lane: ' + JSON.stringify(synchronous.debug));
+      throw new Error(locale + ' Wonder did not enter the collision-free presentation lane: ' + JSON.stringify({ debug: synchronous.debug, frameLayout: synchronous.frameLayout }));
     }
 
     await page.waitForFunction((id) => {
@@ -318,6 +323,8 @@ async function runCatalogFitScenario(browser) {
         const artReady = await play.prewarmCabinetWonderVariant(id, 'runtime_catalog_fit');
         play.showWaveBonusEffect?.(500, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 3/5' });
         play.processToastQueue?.();
+        game.level = 100 + index;
+        manager.level = 100 + index;
         const shown = play.maybeShowCabinetWonder({
           debugForce: true,
           forceVariantId: id,
@@ -471,6 +478,8 @@ async function runFixedDeltaScenario(browser, withWonder) {
       };
 
       play.clearCabinetWonder?.('boss_probe_setup');
+      game.level = 5;
+      manager.level = 5;
       manager.forceClearAllEnemies?.();
       manager.hijacker = null;
       manager.state = 'BOSS_GATE';
@@ -506,6 +515,8 @@ async function runFixedDeltaScenario(browser, withWonder) {
       let fallback = null;
       if (showWonder) {
         play.clearCabinetWonder?.('hijacker_probe_setup');
+        game.level = 6;
+        manager.level = 6;
         manager.forceClearAllEnemies?.();
         manager.state = 'TEST_IDLE';
         manager.boss = null;
@@ -541,6 +552,8 @@ async function runFixedDeltaScenario(browser, withWonder) {
         };
 
         manager.hijacker = null;
+        game.level = 9;
+        manager.level = 9;
         const missingVariant = {
           id: 'runtime_missing_asset',
           title: 'UNTRANSLATED INTERNAL TEST TITLE',
@@ -619,6 +632,8 @@ async function runSceneDestructionScenario(browser) {
       play.clearPendingEnemyStart?.();
       play.pendingEnemyStartTimeout = null;
       const artReady = await play.prewarmCabinetWonderVariant('ghost_fleet_salute', 'runtime_scene_destruction');
+      game.level = 10;
+      play.enemyManager.level = 10;
       const shown = play.maybeShowCabinetWonder({
         debugForce: true,
         forceVariantId: 'ghost_fleet_salute',
@@ -660,8 +675,8 @@ function validateVisualScenario(scenario, failures) {
     width: bounds.width * scaleX,
     height: bounds.height * scaleY
   };
-  const maxWidth = Math.min(active.renderedViewport.width * 0.76, 1520 * scaleX);
-  const maxHeight = Math.min(active.renderedViewport.height * 0.4, 560 * scaleY);
+  const maxWidth = Math.min(active.renderedViewport.width * 0.95, 1900 * scaleX);
+  const maxHeight = Math.min(active.renderedViewport.height * 0.5, 700 * scaleY);
   const reservedBounds = debug?.active?.reservedTransitionBounds || [];
   const overlapFindings = reservedBounds.filter((reserved) => (
     bounds.x < reserved.x + reserved.width + 15.5
@@ -712,13 +727,13 @@ function validateVisualScenario(scenario, failures) {
     || debug?.active?.generatedArtReady !== true
     || debug?.active?.visualLanguage !== 'cabinet_wonder_cosmic_cameo_authored_art'
     || debug?.active?.decorativeAccentAlpha > 0.1
-    || debug?.active?.presentationTarget?.widthRatio !== 0.76
-    || debug?.active?.presentationTarget?.heightRatio !== 0.4
-    || debug?.active?.presentationTarget?.maxWidth !== 1520
-    || debug?.active?.presentationTarget?.maxHeight !== 560
+    || debug?.active?.presentationTarget?.widthRatio !== 0.95
+    || debug?.active?.presentationTarget?.heightRatio !== 0.5
+    || debug?.active?.presentationTarget?.maxWidth !== 1900
+    || debug?.active?.presentationTarget?.maxHeight !== 700
     || debug?.active?.presentationTarget?.centerYRatio !== 0.3
     || debug?.active?.presentationTarget?.uiGap !== 16
-    || debug?.active?.presentationTarget?.playerLaneTopRatio !== 0.65
+    || debug?.active?.presentationTarget?.playerLaneTopRatio !== 0.75
     || debug?.active?.noOverlap !== true
     || overlapFindings.length > 0
     || debug?.active?.audioProfile !== 'wonder_revelation'
@@ -730,7 +745,7 @@ function validateVisualScenario(scenario, failures) {
     || debug.active.caption.includes('UNTRANSLATED INTERNAL TEST TITLE')
     || renderedBounds.width > maxWidth + 1
     || renderedBounds.height > maxHeight + 1
-    || renderedBounds.y + renderedBounds.height > active.renderedViewport.height * 0.65 + 1
+    || renderedBounds.y + renderedBounds.height > active.renderedViewport.height * 0.75 + 1
     || Math.abs((renderedBounds.x + renderedBounds.width * 0.5) - active.renderedViewport.width * 0.5) > 1
   ) {
     failures.push(scenario.locale + ' framed cameo mismatch: ' + JSON.stringify(active));

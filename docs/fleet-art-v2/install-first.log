@@ -1,0 +1,85 @@
+INSTALLED 02 1752684 20460
+INSTALLED 03 1683496 19752
+node:internal/errors:985
+  const err = new Error(message);
+              ^
+
+Error: Command failed: C:\Program Files\nodejs\node.exe C:/Users/cromk/AppData/Local/Temp/sparrow-gltf-cache-0909/_npx/9ae6225218f85c19/node_modules/@gltf-transform/cli/bin/cli.js validate docs/fleet-art-v2/ships/04/export/runtime.glb
+    at genericNodeError (node:internal/errors:985:15)
+    at wrappedFn (node:internal/errors:539:14)
+    at checkExecSyncError (node:child_process:925:11)
+    at execFileSync (node:child_process:961:15)
+    at file:///D:/vibe-coding-e/nova-swarm-forum-129-improvements-20260822/scripts/install-fleet-art-v2.mjs:13:13 {
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    '\n' +
+      ' ERROR\n' +
+      ' ────────────────────────────────────────────\n' +
+      '\x1B[90m┌───────────────────────────\x1B[39m\x1B[90m┬────────────────────────────────────────────────────────────────────\x1B[39m\x1B[90m┬──────────\x1B[39m\x1B[90m┬───────────────────────────────────────────┐\x1B[39m\n' +
+      '\x1B[90m│\x1B[39m\x1B[31m code                      \x1B[39m\x1B[90m│\x1B[39m\x1B[31m message                                                            \x1B[39m\x1B[90m│\x1B[39m\x1B[31m severity \x1B[39m\x1B[90m│\x1B[39m\x1B[31m pointer                                   \x1B[39m\x1B[90m│\x1B[39m\n' +
+      '\x1B[90m├───────────────────────────\x1B[39m\x1B[90m┼────────────────────────────────────────────────────────────────────\x1B[39m\x1B[90m┼──────────\x1B[39m\x1B[90m┼───────────────────────────────────────────┤\x1B[39m\n' +
+      '\x1B[90m│\x1B[39m ACCESSOR_VECTOR3_NON_UNIT \x1B[90m│\x1B[39m Vector3 at accessor indices 18884..18886 is not of unit length: 0. \x1B[90m│\x1B[39m 0        \x1B[90m│\x1B[39m /meshes/0/primitives/0/attributes/TANGENT \x1B[90m│\x1B[39m\n' +
+      '\x1B[90m└───────────────────────────\x1B[39m\x1B[90m┴────────────────────────────────────────────────────────────────────\x1B[39m\x1B[90m┴──────────\x1B[39m\x1B[90m┴───────────────────────────────────────────┘\x1B[39m\n' +
+      '\n' +
+      '\n' +
+      '\n' +
+      ' WARNING\n' +
+      ' ────────────────────────────────────────────\n' +
+      'info: No warnings found.\r\n' +
+      '\n' +
+      '\n' +
+      '\n' +
+      ' INFO\n' +
+      ' ────────────────────────────────────────────\n' +
+      'info: No infos found.\r\n' +
+      '\n' +
+      '\n' +
+      '\n' +
+      ' HINT\n' +
+      ' ────────────────────────────────────────────\n' +
+      'info: No hints found.\r\n' +
+      '\n' +
+      '\n' +
+      '\r\n' +
+      'error: Validation detected errors.\r\n' +
+      '\r\n',
+    ''
+  ],
+  pid: 26032,
+  stdout: '\n' +
+    ' ERROR\n' +
+    ' ────────────────────────────────────────────\n' +
+    '\x1B[90m┌───────────────────────────\x1B[39m\x1B[90m┬────────────────────────────────────────────────────────────────────\x1B[39m\x1B[90m┬──────────\x1B[39m\x1B[90m┬───────────────────────────────────────────┐\x1B[39m\n' +
+    '\x1B[90m│\x1B[39m\x1B[31m code                      \x1B[39m\x1B[90m│\x1B[39m\x1B[31m message                                                            \x1B[39m\x1B[90m│\x1B[39m\x1B[31m severity \x1B[39m\x1B[90m│\x1B[39m\x1B[31m pointer                                   \x1B[39m\x1B[90m│\x1B[39m\n' +
+    '\x1B[90m├───────────────────────────\x1B[39m\x1B[90m┼────────────────────────────────────────────────────────────────────\x1B[39m\x1B[90m┼──────────\x1B[39m\x1B[90m┼───────────────────────────────────────────┤\x1B[39m\n' +
+    '\x1B[90m│\x1B[39m ACCESSOR_VECTOR3_NON_UNIT \x1B[90m│\x1B[39m Vector3 at accessor indices 18884..18886 is not of unit length: 0. \x1B[90m│\x1B[39m 0        \x1B[90m│\x1B[39m /meshes/0/primitives/0/attributes/TANGENT \x1B[90m│\x1B[39m\n' +
+    '\x1B[90m└───────────────────────────\x1B[39m\x1B[90m┴────────────────────────────────────────────────────────────────────\x1B[39m\x1B[90m┴──────────\x1B[39m\x1B[90m┴───────────────────────────────────────────┘\x1B[39m\n' +
+    '\n' +
+    '\n' +
+    '\n' +
+    ' WARNING\n' +
+    ' ────────────────────────────────────────────\n' +
+    'info: No warnings found.\r\n' +
+    '\n' +
+    '\n' +
+    '\n' +
+    ' INFO\n' +
+    ' ────────────────────────────────────────────\n' +
+    'info: No infos found.\r\n' +
+    '\n' +
+    '\n' +
+    '\n' +
+    ' HINT\n' +
+    ' ────────────────────────────────────────────\n' +
+    'info: No hints found.\r\n' +
+    '\n' +
+    '\n' +
+    '\r\n' +
+    'error: Validation detected errors.\r\n' +
+    '\r\n',
+  stderr: ''
+}
+
+Node.js v24.12.0

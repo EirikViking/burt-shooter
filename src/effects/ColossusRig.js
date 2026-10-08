@@ -2,6 +2,7 @@ import { Assets, Container, Graphics, Mesh, MeshGeometry, Rectangle, Sprite, Tex
 import { COLOSSUS_FAMILIES } from '../config/BossReinvention.js';
 import { getReducedMotionEnabled, getFlashIntensityScale } from '../config/AccessibilitySettings.js';
 import { preloadColossusVfx } from './ColossusAssaultVfx.js';
+import { sampleBossMechanicalMotion } from './BossMechanicalMotion.js';
 
 const smooth = v => { const x = Math.max(0, Math.min(1, v)); return x*x*(3-2*x); };
 const textures = new Map();
@@ -23,6 +24,7 @@ export class ColossusRig extends Container {
     super(); this.eventMode = 'none'; this.label = 'colossus_hull';
     this.design = COLOSSUS_FAMILIES[archetype]; this.archetype = archetype;
     this.r = radius; this.collisionRadius = collisionRadius; this.ownedTextures = [];
+    this.mechanicalPose={x:0,y:0,rotation:0};
     this.sourceTexture=texture;
     const w = texture.width, h = texture.height;
     this.back = new Graphics(); this.addChild(this.back);
@@ -50,9 +52,13 @@ export class ColossusRig extends Container {
     const t=reduced?0:time,open=smooth(charge*1.5),load=smooth((charge-.55)*2.3);
     const stance=(phase-1)*.09, spread=d.opening*open+stance;
     this.rotation = Math.max(-.32,Math.min(.32,angle-Math.PI/2))*(charge>0?1:.2);
-    if(d.layout==='rotor')this.rotation=t*(this.archetype==='clock'?.07:.20);
+    if(d.layout==='rotor'){
+      const motion=sampleBossMechanicalMotion(this.mechanicalPose,this.archetype,0,t,phase,charge,reduced);
+      this.rotation=t*(this.archetype==='clock'?.07:.20)+motion.rotation;
+    }
     this.alpha=1-death; this.y=-recoil*r*.14;
     this.halves.forEach((s,i)=>{
+      const motion=sampleBossMechanicalMotion(this.mechanicalPose,this.archetype,i,t,phase,charge,reduced);
       if(d.layout==='rotor'){
         s.position.set(Math.cos(s.armAngle)*r*open*.24,Math.sin(s.armAngle)*r*open*.24);
         s.rotation=open*(this.archetype==='clock'?.18:.34)+(i%2?1:-1)*recoil*.04;
@@ -67,6 +73,7 @@ export class ColossusRig extends Container {
       if(this.archetype==='carrier'){s.y+=r*load*.08;s.rotation*=.2;}
       if(this.archetype==='monolith'){s.y+=r*load*.20;s.rotation=side*recoil*.04;}
       if(this.archetype==='choir'){s.y+=side*r*open*.24;s.rotation*=.35;}
+      s.x+=motion.x*r;s.y+=motion.y*r;s.rotation+=motion.rotation;
       s.tint=hurt>.1?0xffdfbf:0xffffff;
     });
     const g=this.back; g.clear();

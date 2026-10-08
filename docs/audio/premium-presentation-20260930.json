@@ -1,0 +1,424 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "approvedCreditCeiling": 4000,
+  "estimatedCredits": 896,
+  "creditsBefore": 4382,
+  "startedAt": "2026-09-30T13:03:28.421Z",
+  "cues": [
+    {
+      "id": "breach_arrive",
+      "request": {
+        "text": "An immense armored spacecraft comes into view. Heavy spatial engine pressure, deep steel structural creak, crisp sequential docking-clamp impacts, imposing mechanical presence. Restrained clean low end, no enormous boom. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "528d848e72a3469b47913113092ab6127524ebce9a7d34ae2de386d556d20c16",
+      "wavSha256": "1cde92792c13b3d1d37f981b912740ae6ed7f41c896ea5bb101e269b6dc23ba3",
+      "wavBytes": 211758
+    },
+    {
+      "id": "battery_charge",
+      "request": {
+        "text": "Heavy twin-barrel spaceship artillery aims and charges. Precise servo grind, brief capacitor tension with an urgent sharp final tick. Immediate recognizable mechanical warning. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 0.95,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "2e87dd440dca3d8ddc68a835f36667ee7aeff31b06c33675708a8239914fed46",
+      "wavSha256": "ab530bf1eef5221a683a15553a23b371897f32033f6fa2fe7a727bccee476107",
+      "wavBytes": 81222
+    },
+    {
+      "id": "battery_fire",
+      "request": {
+        "text": "Heavy twin-barrel space artillery fires. Two compact powerful metallic kinetic thumps, sharp hot transient, short dense tail. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 0.6,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "135805ba45430c6875117b32445ac0ec1850019e318ca8b413bea40fba726881",
+      "wavSha256": "55b13fc6dda9636ad5b94671e14d44302ee89f1a51a49136e8c794932d27c235",
+      "wavBytes": 52998
+    },
+    {
+      "id": "armour_break",
+      "request": {
+        "text": "A thick layered ceramic-steel armor panel snaps under fire. Sharp metallic fracture, torn bolts and brief scattering hard fragments. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 0.85,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "45adfd486c4948cf0366a4d824d7065142f55fa29d6275b13d51d1da8f000a76",
+      "wavSha256": "7561171afcccffcaa473017401ea8f94fd32fafb9c4c08e3396d7a2dd5b51361",
+      "wavBytes": 74166
+    },
+    {
+      "id": "hull_open",
+      "request": {
+        "text": "Huge warship armor doors physically separate on geared rails, sequential clamp release and deep grinding heavy metal with rushing pressure. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "2c034eed66d025b3828ff4eb76752c9dbe96bc37484b59f24de0209c9eb5233c",
+      "wavSha256": "b1d215b4f6fca7d346f3b57cf5a23d384b04fcb391d7b8a8dea5a7c92caedc6d",
+      "wavBytes": 130614
+    },
+    {
+      "id": "reactor_open",
+      "request": {
+        "text": "Six reactor shutters unlock and an exposed power core breathes to life. Mechanical iris release, deep electric pressure and a tightly contained energetic shimmer. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 1.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "01de2f5145d609ec159a491d631960f92c7daeef9919ea0a97cf1174ebc87471",
+      "wavSha256": "4b1b733cd81fd64485269a04591f188f618172e8ac2c7ad0101e810d13783f22",
+      "wavBytes": 112974
+    },
+    {
+      "id": "breach_collapse",
+      "request": {
+        "text": "A capital ship structurally fails in three timed steps: distant internal burst, immense hull shearing apart, dense final contained reactor detonation and falling metal. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "49f883d24b44f12db66e78b218111b0192fcc08e46e2c2e66c94e4d0b4b7bc53",
+      "wavSha256": "6ea712e6023a90210080152d4c493990a703ec2ff61bee55dd0628bc1f9e7625",
+      "wavBytes": 211758
+    },
+    {
+      "id": "molt_fracture",
+      "request": {
+        "text": "A gigantic armored mechanical serpent sheds its shell. Layered hard scale fractures, dry tearing armor cracks, close resonant chitin grinding. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 1.1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "4efa94e14204466f3409552e5ada37e22b44bd2b453f1f760a5fc9b8452d5a5b",
+      "wavSha256": "59acafe1b0c2cd802fe96a4432a22b74891ffafa3d961cd178807d5c9e125513",
+      "wavBytes": 95334
+    },
+    {
+      "id": "molt_emerge",
+      "request": {
+        "text": "A dangerous living mechanical serpent slips free of its broken armored shell, rushing sinewy movement, short breathy creature hiss and crisp falling scale clacks. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 1.1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "eed903233cea30c9e943d2df6f801eb6c5ccf7b1cee4ecd2386438c19b9a10b0",
+      "wavSha256": "952d03c152c1cb74a35cc93131dac7b6aaf7685cd87473024af2abc0a07ebeb1",
+      "wavBytes": 95334
+    },
+    {
+      "id": "cover_break",
+      "request": {
+        "text": "A solid shed armor plate is shattered by a bullet. Crisp layered ceramic crunch with short steel fragments, no bass explosion. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 0.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "3912185f4ac36f3e1434309a37c0bdce0fed8bdef8f8f3c17b93401bc4978385",
+      "wavSha256": "9e2d1d41248127f6f52f7c4db5b916358658d77f283598cd366eda8ce08ebcc3",
+      "wavBytes": 42414
+    },
+    {
+      "id": "weaver_claim",
+      "request": {
+        "text": "An alien salvage machine seizes a wreck with hooked claws, grasping metal clunk, powered tendon tension and dragging hard scrap. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 1.1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "18d290c9cc7b98991197d9043182d4a7d465045883a97ff5352b3599d8ec5e03",
+      "wavSha256": "6513369046c728db42f3e202cd199d7eccba6ee849bd5caf5491f896561c1156",
+      "wavBytes": 95334
+    },
+    {
+      "id": "weaver_assembly",
+      "request": {
+        "text": "Three pieces of wrecked spacecraft are pulled together and mechanically reconstructed: tightening cable, rotating servos, ratcheting parts, three satisfying assembly clicks. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 1.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "97a58a892038ce8893062d2463e246d969b55dc10a4be32108807138f10396a3",
+      "wavSha256": "771ee782acfcf8e6c347c281685baebc8d19fbd59ffe45dff738ab2bf8b63b66",
+      "wavBytes": 155310
+    },
+    {
+      "id": "weaver_arm",
+      "request": {
+        "text": "A newly rebuilt alien scrap cannon arms: heavy breech locks, restrained energized coil and sharp final mechanical latch. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 0.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "72e7239e05a842fb88dadc7e3e76737cf6d96e5e51577b363e57cbdfc55e3eff",
+      "wavSha256": "b5df015380c31927318ceaddd2c456fbb6bc18a9773306fc16ad4bec5a3fc1d6",
+      "wavBytes": 70638
+    },
+    {
+      "id": "tether_snap",
+      "request": {
+        "text": "A thick tensioned robotic salvage cable is shot through: sudden wiry metallic twang, tendon snap and short power-down sputter. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 0.6,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "acf7d92c3eaac89e6fa1d70b9b808957fab25a3ebbc67485b84a708622bd8000",
+      "wavSha256": "6660495a9b7086be5d87b18de38dd303df06f32ff985732bffdc80cda56b26b7",
+      "wavBytes": 52998
+    },
+    {
+      "id": "wing_arrive",
+      "request": {
+        "text": "Two sleek friendly spacecraft arrive in coordinated formation. Closely timed twin engine flybys, confident smooth turbine swells, crisp warm mechanical acceleration. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 1.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "1d6b7d4d193fa2a13c8ae1010d4d66063c1ada5674907da30e8d279d2c375c82",
+      "wavSha256": "4958c7fc826bf93eb213c257f205c37df4f45db6c0fc0816be1806d7b94d04d7",
+      "wavBytes": 105918
+    },
+    {
+      "id": "wing_depart",
+      "request": {
+        "text": "Two friendly fighter engines accelerate away together, paired short turbine surges with graceful fading Doppler. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "aaaa458b24d074fae9c67f3eb4115e7fad1d6ac326c62550b8d8645246ecd425",
+      "wavSha256": "6ee41920d4be92b3f9956dc57cef622d9bdc33344c54dedde7179185e195d2ce",
+      "wavBytes": 88278
+    },
+    {
+      "id": "salvage_capture",
+      "request": {
+        "text": "Friendly drone capture clamps snap around a wreck weapon: precise three metal clicks, short inductive energy lock, satisfying compact machinery. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 0.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "aa4ebe18ab6b61c1f3268ee03d0000fa079053b8693d60f19c49fc6968339dc3",
+      "wavSha256": "2b120fe660d1d1f9c6798abeb2dcf428c37059f1f4dd5841a5cf2640a1ecde8b",
+      "wavBytes": 70638
+    },
+    {
+      "id": "rift_ignite",
+      "request": {
+        "text": "Two small spatial rifts ignite in close succession, crisp glass-like pressure cracks and tightly contained airy electrical rushes. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 0.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "a0c6b0730ea92a115f86f5f6bba69d43975b40defdc080a998b1b967a4ef0db4",
+      "wavSha256": "e98206ebeead8a40c8338cde194d832ccf3c4d4d79368f5a30fd2d27c74f13e2",
+      "wavBytes": 70638
+    },
+    {
+      "id": "orbit_activate",
+      "request": {
+        "text": "A heavy armored orbital hammer deploys from a space fighter: locking collars clack, flywheel accelerates, powerful short mechanical whoosh. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "6bf1337fc33203e8489759ed46fea5da25896f1d0081b132b20eb79f8af5b948",
+      "wavSha256": "19b884d2ccef46fa7f7693f98e868e87b8b8a636faf8f2ff110f30654289ff39",
+      "wavBytes": 88278
+    },
+    {
+      "id": "orbit_hit",
+      "request": {
+        "text": "A very heavy spinning armored hammer smashes a spacecraft hull. Immediate satisfying hard steel crunch, deep compact impact and short metallic tear. One isolated cinematic game sound with immediate onset and clean decay. No voice, music, melody or silence.",
+        "duration_seconds": 0.6,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "requestId": null,
+      "rawSha256": "6832b0686cf5373aab98130e3289b55b3d0f1a7ce267bc5178dc173929a677de",
+      "wavSha256": "90056dd740aa43b975484d7fec14c2c6a6adf07140fb827de0a94f433c0c94da",
+      "wavBytes": 52998
+    }
+  ],
+  "creditsAfter": 4499,
+  "accountCreditDelta": 117,
+  "finishedAt": "2026-09-30T13:18:53.225Z",
+  "validation": {
+    "status": "passed",
+    "rows": [
+      {
+        "file": "armour_break.wav",
+        "seconds": 0.84,
+        "peakDb": -11.326079650795482,
+        "rmsDb": -33.311556349902325,
+        "sha256": "7561171afcccffcaa473017401ea8f94fd32fafb9c4c08e3396d7a2dd5b51361"
+      },
+      {
+        "file": "battery_charge.wav",
+        "seconds": 0.92,
+        "peakDb": -14.724286065677088,
+        "rmsDb": -29.09841850800199,
+        "sha256": "ab530bf1eef5221a683a15553a23b371897f32033f6fa2fe7a727bccee476107"
+      },
+      {
+        "file": "battery_fire.wav",
+        "seconds": 0.6,
+        "peakDb": -14.194904610517069,
+        "rmsDb": -26.934561759695686,
+        "sha256": "55b13fc6dda9636ad5b94671e14d44302ee89f1a51a49136e8c794932d27c235"
+      },
+      {
+        "file": "breach_arrive.wav",
+        "seconds": 2.4,
+        "peakDb": -13.296073995533028,
+        "rmsDb": -24.391199447080112,
+        "sha256": "1cde92792c13b3d1d37f981b912740ae6ed7f41c896ea5bb101e269b6dc23ba3"
+      },
+      {
+        "file": "breach_collapse.wav",
+        "seconds": 2.4,
+        "peakDb": -12.427110152740383,
+        "rmsDb": -29.845025991202732,
+        "sha256": "6ea712e6023a90210080152d4c493990a703ec2ff61bee55dd0628bc1f9e7625"
+      },
+      {
+        "file": "cover_break.wav",
+        "seconds": 0.48,
+        "peakDb": -15.4356682702701,
+        "rmsDb": -40.30419779785794,
+        "sha256": "9e2d1d41248127f6f52f7c4db5b916358658d77f283598cd366eda8ce08ebcc3"
+      },
+      {
+        "file": "hull_open.wav",
+        "seconds": 1.48,
+        "peakDb": -11.363265805638392,
+        "rmsDb": -27.266745958394132,
+        "sha256": "b1d215b4f6fca7d346f3b57cf5a23d384b04fcb391d7b8a8dea5a7c92caedc6d"
+      },
+      {
+        "file": "molt_emerge.wav",
+        "seconds": 1.08,
+        "peakDb": -10.118281166809995,
+        "rmsDb": -30.245469904680114,
+        "sha256": "952d03c152c1cb74a35cc93131dac7b6aaf7685cd87473024af2abc0a07ebeb1"
+      },
+      {
+        "file": "molt_fracture.wav",
+        "seconds": 1.08,
+        "peakDb": -12.319154776431724,
+        "rmsDb": -32.10807071711914,
+        "sha256": "59acafe1b0c2cd802fe96a4432a22b74891ffafa3d961cd178807d5c9e125513"
+      },
+      {
+        "file": "orbit_activate.wav",
+        "seconds": 1,
+        "peakDb": -12.564532071943898,
+        "rmsDb": -31.293287446438157,
+        "sha256": "19b884d2ccef46fa7f7693f98e868e87b8b8a636faf8f2ff110f30654289ff39"
+      },
+      {
+        "file": "orbit_hit.wav",
+        "seconds": 0.6,
+        "peakDb": -15.774454518662912,
+        "rmsDb": -32.49633761421683,
+        "sha256": "90056dd740aa43b975484d7fec14c2c6a6adf07140fb827de0a94f433c0c94da"
+      },
+      {
+        "file": "reactor_open.wav",
+        "seconds": 1.28,
+        "peakDb": -14.100315580740903,
+        "rmsDb": -31.338772110004665,
+        "sha256": "4b1b733cd81fd64485269a04591f188f618172e8ac2c7ad0101e810d13783f22"
+      },
+      {
+        "file": "rift_ignite.wav",
+        "seconds": 0.8,
+        "peakDb": -9.63328836234974,
+        "rmsDb": -30.581648487239303,
+        "sha256": "e98206ebeead8a40c8338cde194d832ccf3c4d4d79368f5a30fd2d27c74f13e2"
+      },
+      {
+        "file": "salvage_capture.wav",
+        "seconds": 0.8,
+        "peakDb": -9.072412553300378,
+        "rmsDb": -33.929267102439276,
+        "sha256": "2b120fe660d1d1f9c6798abeb2dcf428c37059f1f4dd5841a5cf2640a1ecde8b"
+      },
+      {
+        "file": "tether_snap.wav",
+        "seconds": 0.6,
+        "peakDb": -10.15574976844884,
+        "rmsDb": -34.53170461872823,
+        "sha256": "6660495a9b7086be5d87b18de38dd303df06f32ff985732bffdc80cda56b26b7"
+      },
+      {
+        "file": "weaver_arm.wav",
+        "seconds": 0.8,
+        "peakDb": -13.362482083485885,
+        "rmsDb": -29.431418480417335,
+        "sha256": "b5df015380c31927318ceaddd2c456fbb6bc18a9773306fc16ad4bec5a3fc1d6"
+      },
+      {
+        "file": "weaver_assembly.wav",
+        "seconds": 1.76,
+        "peakDb": -10.500445529489088,
+        "rmsDb": -33.36393018001546,
+        "sha256": "771ee782acfcf8e6c347c281685baebc8d19fbd59ffe45dff738ab2bf8b63b66"
+      },
+      {
+        "file": "weaver_claim.wav",
+        "seconds": 1.08,
+        "peakDb": -11.78009174282657,
+        "rmsDb": -27.818457213453705,
+        "sha256": "6513369046c728db42f3e202cd199d7eccba6ee849bd5caf5491f896561c1156"
+      },
+      {
+        "file": "wing_arrive.wav",
+        "seconds": 1.2,
+        "peakDb": -16.819124353267355,
+        "rmsDb": -27.00208843181344,
+        "sha256": "4958c7fc826bf93eb213c257f205c37df4f45db6c0fc0816be1806d7b94d04d7"
+      },
+      {
+        "file": "wing_depart.wav",
+        "seconds": 1,
+        "peakDb": -17.363295798687027,
+        "rmsDb": -28.702515583832767,
+        "sha256": "6ee41920d4be92b3f9956dc57cef622d9bdc33344c54dedde7179185e195d2ce"
+      }
+    ]
+  },
+  "notes": [
+    "Subscription reads hit HTTP429 during the first attempt; later cue generation used one batch reserve.",
+    "The 0.4s orbit_hit request was rejected before generation; corrected duration 0.6s.",
+    "Account counter delta is observed credits, not a dollar cost or proof of perceived audio quality."
+  ]
+}

@@ -54,6 +54,11 @@ export function grantCoreReward(core, scene, player) {
     }
   }
   const applied = scene.game.addBonusScore(score);
+  // A pickup protects a live streak without creating a hit, multiplier, or
+  // achievement milestone. An expired streak cannot be resurrected.
+  if (scene.comboCount > 0 && scene.comboTimerMs > 0) {
+    scene.comboTimerMs = Math.max(scene.comboTimerMs, scene.comboWindowMs);
+  }
   scene.scorePopupManager?.addScorePopup?.(core.x, core.y - 25, applied, { color: profile.color });
   return { score: applied, collected, archiveName, relicUnlocked: profile.reward === 'relic' && collected === 3 };
 }

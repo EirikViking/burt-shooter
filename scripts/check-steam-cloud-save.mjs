@@ -18,6 +18,7 @@ import {
   CONTROL_SETTINGS_KEY,
   DISPLAY_MODE_KEY,
   DISPLAY_WINDOW_SIZE_KEY,
+  GAMEPLAY_BACKGROUND_KEY,
   SHOW_PILOT_ORDERS_KEY,
   collectSteamCloudPersistenceState,
   restoreSteamCloudPersistenceToStorage
@@ -128,6 +129,47 @@ try {
   assert.equal(initialized.language.preference, 'system');
   assert.equal(initialized.achievements.unlocked.length, 0);
 
+  const settingsSaveSystem = createSteamCloudSave(path.join(userData, 'settings-regression'), { warn() {} });
+  settingsSaveSystem.ensureInitialized();
+  const savedPreferences = settingsSaveSystem.mergeRendererState({ settings: {
+    screenShake: 0.35,
+    playerFocus: 0.8,
+    colorAssist: true,
+    flashIntensity: 0.4,
+    reducedMotion: true,
+    audio: { masterVolume: 0.5, uiVolume: 0.25, tacticalVoiceEnabled: false },
+    display: { mode: 'windowed', windowSize: { width: 1600, height: 900 }, uiScale: 1.5 },
+    menu: { confirmExit: false, gameplayBackground: 'legacy', showPilotOrders: false },
+    controls: { fireInput: 'toggle', mouseSteering: true },
+    keyboardBindings: { shoot: ['KeyJ'] }
+  } });
+  assert.equal(savedPreferences.settings.flashIntensity, 0.4, 'Cloud retains flash intensity');
+  assert.equal(savedPreferences.settings.reducedMotion, true, 'Cloud retains reduced motion');
+  assert.equal(savedPreferences.settings.audio.uiVolume, 0.25, 'Cloud retains UI volume');
+  assert.equal(savedPreferences.settings.audio.tacticalVoiceEnabled, false, 'Cloud retains tactical voice choice');
+  assert.deepEqual(savedPreferences.settings.keyboardBindings.shoot, ['KeyJ'], 'Cloud retains keyboard binding');
+  const afterAchievementUpdate = settingsSaveSystem.mergeRendererState({
+    achievements: { unlocked: ['ACH_EARLY_PILOT'] }
+  });
+  assert.deepEqual(afterAchievementUpdate.settings, savedPreferences.settings,
+    'An achievement-only save must not reset settings');
+  const afterPartialSettingsUpdate = settingsSaveSystem.mergeRendererState({ settings: { menu: { confirmExit: true } } });
+  assert.equal(afterPartialSettingsUpdate.settings.menu.confirmExit, true);
+  assert.equal(afterPartialSettingsUpdate.settings.menu.gameplayBackground, 'legacy');
+  assert.equal(afterPartialSettingsUpdate.settings.display.mode, 'windowed');
+  assert.deepEqual(afterPartialSettingsUpdate.settings.keyboardBindings.shoot, ['KeyJ']);
+
+  const settingsPaths = getPaths(path.join(userData, 'settings-regression'));
+  writeFileSync(settingsPaths.cloudSavePath, JSON.stringify({ version: 1, achievements: { unlocked: ['ACH_EARLY_PILOT'] } }));
+  const legacySaveWithoutSettings = settingsSaveSystem.readSave();
+  const existingPreferences = new MemoryStorage([
+    [DISPLAY_MODE_KEY, 'windowed'], [CONFIRM_EXIT_KEY, '0'], [GAMEPLAY_BACKGROUND_KEY, 'legacy']
+  ]);
+  restoreSteamCloudPersistenceToStorage(legacySaveWithoutSettings, { storage: existingPreferences });
+  assert.equal(existingPreferences.getItem(DISPLAY_MODE_KEY), 'windowed', 'Missing cloud settings preserve local display');
+  assert.equal(existingPreferences.getItem(CONFIRM_EXIT_KEY), '0', 'Missing cloud settings preserve local menu preferences');
+  assert.equal(existingPreferences.getItem(GAMEPLAY_BACKGROUND_KEY), 'legacy', 'Missing cloud settings preserve local background');
+
   saveSystem.mirrorLocalHighscores([
     { name: 'ZEN', score: 2400, level: 6, rankIndex: 4, careerRankExact: '123456789012345678901', timestamp: '2026-01-02T00:00:00.000Z' }
   ]);
@@ -169,7 +211,7 @@ try {
         mode: 'windowed',
         windowSize: { width: 1600, height: 900 }
       },
-      menu: { confirmExit: false, showPilotOrders: false },
+      menu: { confirmExit: false, gameplayBackground: 'legacy', showPilotOrders: false },
       controls: { fireInput: 'toggle', mouseSteering: true }
     },
     hangarProgress: {
@@ -287,6 +329,7 @@ try {
   assert.equal(merged.settings.display.mode, 'windowed');
   assert.deepEqual(merged.settings.display.windowSize, { width: 1600, height: 900 });
   assert.equal(merged.settings.menu.confirmExit, false);
+  assert.equal(merged.settings.menu.gameplayBackground, 'legacy');
   assert.equal(merged.settings.menu.showPilotOrders, false);
   assert.deepEqual(merged.settings.controls, { fireInput: 'toggle', mouseSteering: true });
   assert.equal(Object.hasOwn(merged, 'debugFlags'), false);
@@ -363,6 +406,7 @@ try {
       }
     })],
     [CONFIRM_EXIT_KEY, '0'],
+    [GAMEPLAY_BACKGROUND_KEY, 'legacy'],
     [SHOW_PILOT_ORDERS_KEY, '0'],
     [CONTROL_SETTINGS_KEY, JSON.stringify({ fireInput: 'toggle', mouseSteering: true })]
   ]);
@@ -393,7 +437,23 @@ try {
   const collectedSave = saveSystem.mergeRendererState(collected);
   assert.equal(collectedSave.language.preference, 'pt-BR');
   assert.equal(collectedSave.localHighscores[0].score, 4444);
-  assert.deepEqual(collectedSave.achievements.unlocked, ['first_launch']);
+  assert.deepEqual(collectedSave.achievements.unlocked, ['first_launch', 'score_10000'],
+    'an older renderer snapshot must not erase an earned unlock');
+  const snakeEvidence = {
+    runId: 'cloud-snake-roundtrip', completedAt: '2026-09-27T12:00:00.000Z',
+    mode: 'overrun_pure', rulesetVersion: 'overrun_pure', hullId: 'nova_ship_01', startingTriple: null,
+    sectorsCleared: 3, bossesKilled: 3, wavesCleared: 18, elapsedSeconds: 120,
+    noHitWaves: 2, lifeLosses: 4, snakeTypes: ['space_snake_cinder'],
+    snakeDefeats: [{ type: 'space_snake_cinder', lifeLosses: 1, sector: 52 }], earnedAugments: [], earnedFusions: []
+  };
+  saveSystem.mergeRendererState({ achievements: { unlocked: [], onslaughtRuns: [snakeEvidence] } });
+  const staleRendererMerge = saveSystem.mergeRendererState({ achievements: { unlocked: ['first_launch'] } });
+  assert.deepEqual(staleRendererMerge.achievements.onslaughtRuns, [snakeEvidence],
+    'older renderer payloads cannot erase multi-run achievement progress');
+  const restoredSnakeStorage = new MemoryStorage();
+  restoreSteamCloudPersistenceToStorage(staleRendererMerge, { storage: restoredSnakeStorage });
+  assert.deepEqual(JSON.parse(restoredSnakeStorage.getItem(CLOUD_ACHIEVEMENT_KEY)).onslaughtRuns, [snakeEvidence],
+    'Cloud restoration preserves the exact qualifying snake event');
   assert.equal(collectedSave.hangarProgress.pilotXp, 54321, 'Steam Cloud Hangar XP should keep the richer existing value');
   assert.equal(collectedSave.hangarProgress.unlockedShipIds.includes('nova_ship_04'), true);
   assert.equal(collectedSave.hangarProgress.runContracts.completed.boss_breaker.count, 1, 'Steam Cloud should preserve existing Pilot Order completions');
@@ -413,6 +473,7 @@ try {
   assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].highestSectorReached, 12);
   assert.equal(collectedSave.scoutRunRecords.best.score, 130000);
   assert.equal(collectedSave.settings.menu.confirmExit, false);
+  assert.equal(collectedSave.settings.menu.gameplayBackground, 'legacy');
   assert.equal(collectedSave.settings.menu.showPilotOrders, false);
   assert.deepEqual(collectedSave.settings.controls, { fireInput: 'toggle', mouseSteering: true });
 
@@ -634,7 +695,7 @@ try {
       colorAssist: true,
       audio: { musicEnabled: false, bossVoiceEnabled: false, menuVoiceEnabled: false, menuAudioMode: 'ambient', musicPack: 'classic' },
       display: { mode: 'borderless', windowSize: { width: 1920, height: 1080 } },
-      menu: { confirmExit: false, showPilotOrders: false },
+      menu: { confirmExit: false, gameplayBackground: 'legacy', showPilotOrders: false },
       controls: { fireInput: 'toggle', mouseSteering: true }
     }
   }, { storage: restartStorage });
@@ -653,6 +714,7 @@ try {
   assert.equal(restartStorage.getItem(DISPLAY_MODE_KEY), 'borderless');
   assert.deepEqual(JSON.parse(restartStorage.getItem(DISPLAY_WINDOW_SIZE_KEY)), { width: 1920, height: 1080 });
   assert.equal(restartStorage.getItem(CONFIRM_EXIT_KEY), '0');
+  assert.equal(restartStorage.getItem(GAMEPLAY_BACKGROUND_KEY), 'legacy');
   assert.equal(restartStorage.getItem(SHOW_PILOT_ORDERS_KEY), '0');
   assert.deepEqual(JSON.parse(restartStorage.getItem(CONTROL_SETTINGS_KEY)), { fireInput: 'toggle', mouseSteering: true });
   const restoredSectorRecords = JSON.parse(restartStorage.getItem(CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY));

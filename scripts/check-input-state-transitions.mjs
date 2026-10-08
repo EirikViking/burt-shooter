@@ -64,6 +64,39 @@ function setPad({ axes = [0, 0], pressed = [], connected = true } = {}) {
 }
 
 const input = new InputManager();
+const { PlayScene } = await import('../src/scenes/PlayScene.js');
+const bossScene = Object.assign(Object.create(PlayScene.prototype), {
+  inputManager: input,
+  player: Object.assign(Object.create(Player.prototype), {}),
+  cancelNotificationTypes() {}, dismissToastDisplay() {}, processToastQueue() {}
+});
+for (const device of ['keyboard', 'gamepad']) {
+  if (device === 'keyboard') {
+    key('keydown', 'ControlLeft', 'Control');
+    key('keydown', 'Space', ' ');
+  } else {
+    setPad({ pressed: [0, 6] });
+    input.pollGamepad(true);
+  }
+  assert.equal(input.isActionPressed('focus'), true);
+  bossScene.showBossIntro('test boss', 'test attack');
+  assert.equal(input.isActionPressed('focus'), true, `${device} held focus survives actual boss entry/exit`);
+  assert.equal(input.isFiring(), true, `${device} held fire survives actual boss entry/exit`);
+  if (device === 'keyboard') {
+    key('keyup', 'ControlLeft', 'Control');
+    key('keyup', 'Space', ' ');
+  } else {
+    setPad();
+    input.pollGamepad(true);
+  }
+  assert.equal(input.isActionPressed('focus'), false, `${device} focus releases after boss entry`);
+  assert.equal(input.isFiring(), false, `${device} fire releases after boss entry`);
+}
+key('keydown', 'ControlLeft', 'Control');
+window.emit('blur');
+bossScene.showBossIntro('test boss', 'test attack');
+assert.equal(input.isActionPressed('focus'), false, 'boss entry cannot revive focus cleared by external blur');
+key('keyup', 'ControlLeft', 'Control');
 const gameplayCanvas = {};
 let gameplayAcceptsPointer = true;
 input.setGameplaySurface({
@@ -265,5 +298,66 @@ assert.match(gameSource, /prepareGameplayInputFocus\(\)[\s\S]*resetTransientStat
 assert.match(gameSource, /prepareGameplayInputFocus\(\)[\s\S]*preserveFire: false/);
 assert.match(playSource, /recordFrameContinuity/);
 
+// Exercise real pointer handlers with a controlled clock, including sequences
+// that must not turn an ordinary fire restart into a Special Fire press.
+const realPerformance = globalThis.performance;
+let pointerClock = 1000;
+Object.defineProperty(globalThis, 'performance', { configurable: true, value: { now: () => pointerClock } });
+try {
+  setPad();
+  const mouseInput = new InputManager();
+  const surface = { canvas: gameplayCanvas, canAccept: () => gameplayAcceptsPointer };
+  mouseInput.setGameplaySurface(surface);
+  gameplayAcceptsPointer = true;
+  const down = (button = 0, target = gameplayCanvas, pointerType = 'mouse') => mouseInput.handleMouseDown({ button, target, pointerType });
+  const up = () => mouseInput.handleMouseUp({ button: 0, target: gameplayCanvas });
+  const tap = () => { down(); pointerClock += 40; up(); };
+  for (const mode of ['hold', 'toggle']) {
+    mouseInput.controlSettings.fireInput = mode;
+    mouseInput.resetTransientState();
+    tap();
+    assert.equal(mouseInput.consumeSpecialFirePress(), false, `${mode}: single click must not spend Bombs`);
+    pointerClock += 100;
+    down();
+    assert.equal(mouseInput.consumeSpecialFirePress(), true, `${mode}: second quick click requests Special Fire`);
+    assert.equal(mouseInput.consumeSpecialFirePress(), false, 'One pair must produce only one request');
+    up();
+    pointerClock += 40;
+    down();
+    assert.equal(mouseInput.consumeSpecialFirePress(), false, 'A triple click must not reuse the second click');
+    up();
+
+    mouseInput.resetTransientState();
+    down(); pointerClock += 600; up(); pointerClock += 30; down();
+    assert.equal(mouseInput.consumeSpecialFirePress(), false, 'Restarting a held volley must not count as double-tap');
+    up();
+    mouseInput.resetTransientState();
+    tap(); pointerClock += 301; down();
+    assert.equal(mouseInput.consumeSpecialFirePress(), false, 'Separated clicks must remain ordinary fire');
+    up();
+
+    for (const boundary of ['reset', 'cancel', 'surface', 'ui', 'blocked']) {
+      mouseInput.resetTransientState(); tap(); pointerClock += 20;
+      if (boundary === 'reset') mouseInput.resetTransientState({ preserveFire: true });
+      if (boundary === 'cancel') mouseInput.handlePointerCancel();
+      if (boundary === 'surface') mouseInput.setGameplaySurface(surface);
+      if (boundary === 'ui') down(0, {});
+      if (boundary === 'blocked') { gameplayAcceptsPointer = false; down(); gameplayAcceptsPointer = true; }
+      down();
+      assert.equal(mouseInput.consumeSpecialFirePress(), false, `${boundary} must clear a pending first click`);
+      up();
+    }
+    mouseInput.resetTransientState();
+    down(0, gameplayCanvas, 'touch'); up(); down(0, gameplayCanvas, 'touch'); up();
+    assert.equal(mouseInput.consumeSpecialFirePress(), false, 'Touch input must not acquire a mouse double-tap binding');
+    down(2);
+    assert.equal(mouseInput.consumeSpecialFirePress(), true, 'Right-click remains available');
+    assert.equal(mouseInput.consumeSpecialFirePress(), false, 'Right-click is consumed once');
+  }
+  mouseInput.destroy();
+} finally {
+  Object.defineProperty(globalThis, 'performance', { configurable: true, value: realPerformance });
+}
 input.destroy();
+console.log('[mouse-double-tap] PASS Hold/Toggle, single/double/triple click, held-fire restart, transitions, touch isolation and right-click');
 console.log('[input-state-transitions] PASS Hold/Toggle keyboard+canvas edges, UI isolation, mouse steering ownership, controller hold, phase, focus-loss, and transition contracts');

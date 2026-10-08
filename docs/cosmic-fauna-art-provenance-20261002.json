@@ -1,0 +1,1306 @@
+{
+  "created": "2026-10-02",
+  "requestedTotal": 42,
+  "assets": [
+    {
+      "id": "cathedral_ray",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Asset type: production transparent creature sprite for Nova Swarm, a polished top-down space arcade game. Create ONE enormous alien Cathedral Ray, beautiful and unsettling, rendered like a premium cinematic VFX creature with convincing sculpted three-dimensional anatomy. Full creature isolated on TRUE TRANSPARENT background. Horizontal swimming pose, head facing left, entire body and all appendages inside the frame with generous clear margin. Slightly elevated three-quarter side view, wide landscape composition. Anatomy: a broad powerful manta-like central body, towering pale bone arches rising along its spine like an organic cathedral, two enormous translucent opal-blue pectoral fins with visible branching veins and curled thin edges, a small predatory wedge head with several dark glossy eyes, and TWO long separated trailing ribbon tails extending to the right. The closer fin arcs forward/down and the farther fin rises behind the ribbed body, giving depth and a very distinct silhouette. Ivory mineral armor blends naturally into slate-blue leathery flesh, pale cyan bioluminescent pores tucked into the ribs, restrained amber organs visible through the membranes. Soft directional cool key light, warm rim on bone, deep sculptural shadows, physical subsurface scattering and detailed coherent surfaces. Readable body masses at small gameplay scale; delicate details support the silhouette. This is a living animal, not a vessel. No planets, stars, scenery, text, card, border, floor, shadow plane, smoke cloud, particles, weapon glow, motion blur, extra animals or cut-off appendages. Keep fins and tails well separated from the torso so they can be animated later. No cartoon mascot or flat vector style.",
+      "asset": "public/art/cosmic-fauna/cathedral_ray.png",
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain.",
+      "sha256": "e61a1252b5653423d9779d95d719a91544a6ae42a2760fb9a5870b59de7fb20f",
+      "bytes": 1317382
+    },
+    {
+      "id": "lantern_medusa",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "asset": "public/art/cosmic-fauna/lantern_medusa.png",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-e16f1db4-e153-477f-b9e7-c5496ea600e3.png",
+      "prompt": "Use case: stylized-concept. Asset type: production transparent game creature sprite. Create ONE enormous alien Lantern Medusa for a cinematic space arcade game, simultaneously exquisite and frightening. TRUE TRANSPARENT background, no scene. Entire creature isolated, swimming toward the left in a horizontal landscape composition, seen slightly from above in three-quarter side view. A large nested translucent bell occupies the left third: outer glasslike smoky-violet skin, thick amber internal organs and a suspended luminous golden heart, a dark ring of tiny uncanny sensory eyes under the rim. Several overlapping delicate petal mantles flow backward, and a magnificent curtain of approximately twelve LONG separately readable silk-like tentacles trails to the right in graceful S curves at varied lengths, with alternating thick muscular ropes and hair-thin filaments. The silhouette is dominated by the round layered bell and long flowing strands, completely different from a ray or ship. Biologically coherent sculpted tissue, believable wet/specular membranes and subsurface light, tangible cinematic 3D volume, strong soft key light and subtle warm inner glow. Deep violet, pale lavender, amber and champagne; restrained emissive points only, no giant bloom. Detailed enough for close view but organized into clear masses for game scale. Every appendage must fit entirely inside the frame with 10 percent transparent padding. No background, stars, planets, floor, cast shadow plane, text, frame, border, extra animals, particles, weapons, cartoon style, motion blur or cropped tentacles.",
+      "sha256": "ad20e8d99ae2bc79ef191be6e7a42776e947493e078639c2d4a92351701f774f",
+      "bytes": 1950996,
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "obsidian_mantis",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent game creature sprite for Nova Swarm. Create ONE vast alien Obsidian Mantis swimming LEFT in a horizontal landscape composition, slightly elevated three-quarter side view. Exquisite and frightening cinematic VFX creature with tangible dimensional sculpted anatomy, NOT a machine. A compact heavy glossy charcoal chitin head at the left, six small turquoise inset eyes; two long terrifying jointed sickle forelimbs reaching forward and curling under the head, four rear paddle legs folded back; segmented slender armored thorax running horizontally into a long tapered abdomen pointing right. Two magnificent smoky emerald translucent veined sails rise and fall from the rear abdomen, spreading distinctly above and below it like frilled aquatic fins. Coherent anatomy, chitin plates with worn copper edge reflections, teal subsurface organs and restrained tiny bioluminescent seams. Soft cinematic rim lighting, rich deep cavities, readable large masses. Not insect on floor, not ray, jellyfish, spaceship or human. Entire creature and all limbs within frame with generous transparent margins. TRUE TRANSPARENT background, no floor, cast-shadow plane, stars, planets, frame, text, particles, weapon laser, giant glow, cartoon, motion blur or cropped appendages. Organic terrifying beauty suitable to drift distantly behind gameplay.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-efbb66e7-84b6-49e1-8dc9-1ca0f0c6cf43.png",
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain.",
+      "asset": "public/art/cosmic-fauna/obsidian_mantis.png",
+      "sha256": "1a883fe2252dd17f4eaaea62c49b85dd0d0def71627bcdf018fdce43bd2f2ae2",
+      "bytes": 2275229
+    },
+    {
+      "id": "glassjaw_leviathan",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An immense elongated deep-space predator with a colossal translucent smoked-glass lower jaw occupying the left third, black obsidian upper skull and six tiny pearl eyes. Internal violet organ chambers visible through the transparent chin, dark fleshy throat; mouth partly open, curved ivory baleen teeth. Heavy eel-whale torso sweeps right to a broad forked fluke, with two small side fins and spinal gill slits. Jaw, dark back and violet chambers dominate the silhouette. Beautiful ancient biological monster, no mechanical panels.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-04a72f58-cff0-49f0-b569-fbe98a1a2efa.png",
+      "asset": "public/art/cosmic-fauna/glassjaw_leviathan.png",
+      "sha256": "f34e63133445306db160775065a22b5d59487ebf164bc30c54a622954b56cc68",
+      "bytes": 1672872,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1942,
+        "height": 809,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          0,
+          17,
+          1936,
+          809
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "ember_cuttle",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An enormous muscular alien cuttlefish with a thick tapered copper-red mantle extending to the right, scalloped translucent burnt-orange ribbon fins running its full length. At left a blunt strong head with two ember eye sockets and eight thick separate curled arms reaching forward, two longer feelers recurving underneath. Skin with subtle rippling chromatophore mottling, black volcanic pores and thin warm veins, glowing only inside folds. Tactile wet copper flesh rather than metal; dynamic elegant aquatic anatomy.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-e7a8e18a-e94e-4829-86ed-3aa2351d98fe.png",
+      "asset": "public/art/cosmic-fauna/ember_cuttle.png",
+      "sha256": "563e5bc5ecf13fa3976c2b99d8a66887cb73fa9b31ddfc90e46819fc4dc19d67",
+      "bytes": 1842718,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1672,
+        "height": 941,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          0,
+          19,
+          1659,
+          941
+        ],
+        "corners": [
+          0,
+          0,
+          1,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "crown_nautilus",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An enormous ancient alien nautilus: one massive porcelain spiral shell at the center-right with deep pearlescent spiral grooves and a crown of curved ivory spines around its upper rim. At left, fleshy indigo head and two luminous gold eyes, a broad fan of distinct thick tentacles curling left and below the shell. Small translucent blue jet mantle visible below. Worn mineral shell, delicate iridescence, dark organic tissue; a stately living ocean monarch. Shell must be round and visibly rigid with clearly separated waving tentacles to the left.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-1dc8e388-161a-4aa7-b9e8-0cbfda84ac34.png",
+      "asset": "public/art/cosmic-fauna/crown_nautilus.png",
+      "sha256": "03a32e67e27a824f671a68fc5df2a9e592fb12f3ef93f85a0bb45f824ac6a4b9",
+      "bytes": 2728495,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "mourning_swan",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A haunting giant aquatic alien with a long pale S-curved neck reaching LEFT to a narrow uncanny eyeless head, a compact charcoal chest and two very tall folded silk sail fins rising behind it. Translucent ivory membranes with dark branching veins and ragged trailing fringes; two narrow pelvic fins and an elegant long tail trailing right. Not a literal Earth bird: no feathers, feet or beak, clearly aquatic invented biology. Swanlike silhouette, dignified and terrifying, pale ghost flesh against deep violet folds.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-273d993e-1876-4610-870d-084428305d4b.png",
+      "asset": "public/art/cosmic-fauna/mourning_swan.png",
+      "sha256": "7cf8db45aa8b3f5c247039e31b7378570e4935a0ae7a53d3fcd827872136ea6e",
+      "bytes": 2297064,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          9,
+          0,
+          1522,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "abyssal_ribbon",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An impossibly long thin alien ribbon fish undulating in one broad shallow S curve horizontally, small armored wedge head at left, long tapering body to right. One continuous indigo and petrol-blue translucent dorsal veil flows above and below the entire length like living silk, a row of tiny dull gold internal organs and fine backward sensory whiskers at the head. Body 8 times as long as deep; the very large continuous flowing veil is the signature, no separate wing pair. Entire tail fits within transparent margin.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-11b3efb4-fbe2-4af2-968a-c1fe231a8947.png",
+      "asset": "public/art/cosmic-fauna/abyssal_ribbon.png",
+      "sha256": "857d153e062eceeb993e231b3d3570acb4c51041c6e36aaf4f1754fc87cbcd7f",
+      "bytes": 1007436,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1991,
+        "height": 790,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          29,
+          16,
+          1967,
+          790
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "bloom_kraken",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A vast floral cephalopod with a heavy plum-colored mantle on the RIGHT opening into a sculptural fleshy coral-pink petal crown facing LEFT. From the crown extend EIGHT massive individually visible curling muscular arms, long S curves spreading left, upward and downward, with pearl suckers and translucent fin edges. A small ominous dark central mouth among the petals, glints of pale amber organs. Not a flower in a pot, not a jellyfish; real weighty muscular alien anatomy with an unmistakable eight-arm spread. Keep gaps between arms.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-6eb873f1-2ff7-499f-8c4a-369df85b0bbe.png",
+      "asset": "public/art/cosmic-fauna/bloom_kraken.png",
+      "sha256": "dd803c72b84553e64c6b5c2b59f18d0d3b4e6b897e4681e4df349b92c4915e78",
+      "bytes": 2757997,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1536,
+          1024
+        ],
+        "corners": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "polar_seahorse",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A huge icy alien seahorse in a horizontal gliding pose, long prismatic ridged snout at LEFT, arched thick neck, a bony pearl-white torso and a large elegant tightly curling tail to the RIGHT and below. Six feathery branching translucent gill fans spread from its back like frost ferns, a jagged crown along the head. Turquoise internal veins, smoky crystalline shell plates, soft blue membrane, gentle amber eye. High dimensional biological animal with substantial body volume, not an ice sculpture or ornament.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-e4867336-cadd-4ff0-a80b-c9379305f37b.png",
+      "asset": "public/art/cosmic-fauna/polar_seahorse.png",
+      "sha256": "c864b7b498515e653d12c80fa76fc6c0d24c5cf34c8e599c53cdf12f96f8ab9e",
+      "bytes": 2404748,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          30,
+          0,
+          1535,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "velvet_angel",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An enormous indigo deep-sea angel organism, small luminous pearly torpedo body pointed LEFT surrounded by SIX broad webbed muscular arms forming an asymmetric flowing cloak. Deep velvet-purple skin, scalloped transparent lavender web margins, long tips curling gently right. A tiny terrifying circle of dark sensory pits on the head, amber pearl organs nestled in the center. The loose spread webbed arms dominate, visibly different from ray wings or jellyfish strands; luxurious soft dimensional biological folds and dark cavities.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-31c1c938-d750-4f3b-91fb-e5ccb83dcadf.png",
+      "asset": "public/art/cosmic-fauna/velvet_angel.png",
+      "sha256": "829a33df419a730b04a3de5060085fbc7130dfb5dd8d1c796079df454451dc96",
+      "bytes": 2511332,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          33,
+          0,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "cinderback_turtle",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An ancient enormous alien turtle swimming LEFT, massive domed charcoal volcanic shell with broad overlapping basalt-like biological plates, fine subdued orange geothermal seams deep in the cracks. A strong blunt reptilian head with curved ivory tusk ridges, FOUR clearly separated muscular leathery paddle flippers, thick tapering tail to right. Near flippers splayed below, far flippers visible above, shell mostly rigid. Sculptural heavy volume, charcoal skin, copper rim light, not a lava rock with eyes, no active fire or smoke.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-e9c92c4b-061a-421c-8b98-35edfbbcd67e.png",
+      "asset": "public/art/cosmic-fauna/cinderback_turtle.png",
+      "sha256": "c5b7739be001fccc7581ffd0db66666cf1d3df174de2424b9c546f0d8dbb164f",
+      "bytes": 2482308,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          9,
+          1524,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "thunder_eel",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An immense slender deep-space eel in a strong broad S curve, narrow menacing long-jawed head at LEFT, many fine branching sensory whiskers, thick black-blue muscular body tapering to a razor tail on the RIGHT. Segmented translucent dorsal ridge reveals zigzag pale gold vertebrae INSIDE the flesh. Small irregular violet electroreceptor pores, no external lightning or sparks. Fine low continuous fins, large coherent muscle masses, wet graphite skin, restrained gold internal anatomy. Graceful lethal-looking swimming animal, whole curling body and whiskers fit.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-32564e09-8db7-464d-ae5a-b3b227d12285.png",
+      "asset": "public/art/cosmic-fauna/thunder_eel.png",
+      "sha256": "c9bb024e72f0287b076e476e6ba15d82294bf0f4149ee7f8aa75f1b8d229fd96",
+      "bytes": 1414184,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          15,
+          21,
+          1760,
+          865
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "cathedral_centipede",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A giant alien aquatic centipede, long horizontal segmented body with a powerful small pale armored head facing LEFT, a row of twelve tall ivory rib arches along the dark burgundy back, and twelve PAIRS of large translucent teal swimming paddles fanning outward and downward. Rear narrows to a forked tail at RIGHT. It floats horizontally, no ground contact. Living bone plates join flexible dark muscular segments. Carefully organized readable repeating anatomy and graceful curved paddle edges, not a train, ship, robot or terrestrial crawling bug.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-a9cbdb04-bdc3-412a-aa6a-e1d89fabd955.png",
+      "asset": "public/art/cosmic-fauna/cathedral_centipede.png",
+      "sha256": "2575df87a67323a09a7d72a43c37450457b74ffbb0573765e8557946f4ed39d8",
+      "bytes": 1756157,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          15,
+          17,
+          1763,
+          887
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "pearl_salamander",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A huge elegant pearl-skinned alien salamander swimming LEFT, broad predatory amphibian head with tiny obsidian eyes, SIX enormous featherlike rose-lavender gill fans projecting from the neck above and below. Long muscular ivory body, four tiny webbed limbs held close and a broad tapered translucent paddle tail trailing RIGHT. Anatomically believable soft subsurface skin, delicate opal freckling, pale pink internal organs. An uncanny mature wild animal, not a cute axolotl mascot. Gill fans clearly separated with fine branching veins and prominent muscular roots.",
+      "edit": {
+        "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a0ec1e-e5fb-7710-98df-2993049c9c09\\exec-e224bf08-e44e-43ac-b34d-f5139eeef896.png",
+        "prompt": "Preserve this exact alien pearl salamander, its identity, anatomy, materials, pose and lighting. Repair the composition: the tallest gill fan is clipped at the upper edge. Reconstruct that missing tip naturally and place the entire animal, all six gill fans, feet and tail comfortably inside the frame with a clear TRANSPARENT margin on all four sides. Keep at least 10 percent empty transparent padding around the full silhouette. True transparent cutout only, no background or glow rectangle. Do not change the animal or add objects.",
+        "reason": "Reconstruct visibly clipped upper gill tip; retain full silhouette."
+      },
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-2a1df9fe-6a3e-44e2-8897-3ad587e64f93.png",
+      "asset": "public/art/cosmic-fauna/pearl_salamander.png",
+      "sha256": "ba99e77670eba6dc8598865965425b4783e08f61d85b70ef3c14f1f77f00f472",
+      "bytes": 1397160,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          0,
+          32,
+          1762,
+          860
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "mirror_moth",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A vast alien mirror moth flying horizontally LEFT through space. Narrow furry silver thorax and small pointed black head at left, FOUR immense asymmetrical lobed wings spread above and below, made of smoky reflective biological glass facets edged by living black veins. Near wings larger, distant pair narrower; facets reflect muted indigo and pale green, not scenery. Long swept-back antennae, short segmented abdomen at right. Clearly four thin wings with scalloped articulated edges, no butterfly symmetry stamp, no metallic machine. Striking sculptural prismatic insect beauty, dark subtle iridescence.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-132500d3-450f-41cd-921f-e6c2f39f62e9.png",
+      "asset": "public/art/cosmic-fauna/mirror_moth.png",
+      "sha256": "d3e3583372c65486bc02cff935e123116c8013c4ce7bf09a713b8f9eb6a22fef",
+      "bytes": 2506200,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          5,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "moon_urchin",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An immense spherical alien moon urchin with a lumpy cratered alabaster central living body, charcoal sensory pits, a dark fleshy mouth oriented LEFT. A crown of eight long gracefully curved bone spines surrounds the ball, and FOUR broad pearly translucent ribbon sails trail to the RIGHT between spines. Not a moon, rock, mine or weapon: clearly living radial marine anatomy, subtle breathing pores and amethyst tissue connecting each spine. Entire radial silhouette and all ribbon sails inside the frame, strong three-dimensional ball volume.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-cf803de5-77e6-4b46-b9c2-dfe707e653d3.png",
+      "asset": "public/art/cosmic-fauna/moon_urchin.png",
+      "sha256": "a91a096823be153fb6d8a0dccc7e1fb59a1b3faf71fb2f7541102eaefe48b698",
+      "bytes": 2478898,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1535,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "rose_anemone",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A vast free-swimming alien sea anemone with a broad muscular living coral crown at LEFT, tightly layered fleshy burgundy and coral rose lobes around an uncanny dark circular oral disc. Twenty distinct long tapered flexible rose-red tendrils flow backward to the RIGHT in a low wide curtain, some curling upward, pale translucent edges and tiny golden feeding pores. No pot, stem or floor. Different from an octopus: radial flowerlike crown, many slender unjointed tendrils, no suckers, no separate squid mantle. Rich waxy soft tissue and believable organic weight.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-d48a92f4-39b2-4211-8a0e-9dcbc896e21c.png",
+      "asset": "public/art/cosmic-fauna/rose_anemone.png",
+      "sha256": "de23412a91cb30cae9ac3824d42389cc87e65746154c8d6eeb2adeb9e184df2c",
+      "bytes": 2710772,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          10,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          1
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "spine_shark",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A massive sinister alien shark swimming LEFT: heavy wedge-shaped gunmetal biological head, low partly open predatory jaw with short ivory teeth, narrow orange eyes. Thick muscular torpedo body curves subtly to the RIGHT with a tall backward-swept dorsal blade, a row of five rugged bone spines and a huge asymmetric crescent tail. Two angular pectoral fins spread outward, armored scarred charcoal skin and dark gill cavities with restrained red inner tissue. Powerful clear shark silhouette, not whale, eel, spaceship or metal robot.",
+      "edit": {
+        "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a0ec1e-e5fb-7710-98df-2993049c9c09\\exec-14504822-d852-4524-8d84-295905f0f644.png",
+        "prompt": "Keep this exact alien armored shark unchanged in identity, anatomy, pose, colors and lighting. Zoom out so its ENTIRE silhouette fits inside the image with 10 percent transparent margin on every side. Restore the tiny clipped tip of its tall dorsal fin at the top to a natural pointed blade. Do not crop any fin, tail or nose. Preserve genuine transparency, no scenery, glow, background or additional objects.",
+        "reason": "Restore cropped dorsal tip and preserve full silhouette."
+      },
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-792b45ab-5a97-414b-9c24-89c58f96f03d.png",
+      "asset": "public/art/cosmic-fauna/spine_shark.png",
+      "sha256": "aaf02fc86702ca9f9f63d3eca26a9993312f50a4e2d75d70e4fde47695500413",
+      "bytes": 1505599,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          60,
+          50,
+          1717,
+          857
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "dawn_koi",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An immense regal alien koi swimming LEFT with a massive deep-bodied torso of individually readable pearl, muted gold and dusky coral scales, six long ivory sensory whiskers around a dignified narrow head. Four magnificent translucent trailing silk fins, high flowing dorsal fin and a very long forked veil tail to the RIGHT. No cute goldfish expression. Fine teal veins within amber fins, dark clear intelligent eyes, substantial powerful fish muscles, aged iridescent scales. Elegant layered fins separated from body for animation, cinematic organic volume.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-6b63f0a0-caeb-4a74-b6d5-f6addf376e8b.png",
+      "asset": "public/art/cosmic-fauna/dawn_koi.png",
+      "sha256": "a190e2c7d543df5c67f45df98953f297dbd10aeb313543e2195d8833511f4024",
+      "bytes": 2448208,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "iron_jelly",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A giant deep-space iron jellyfish, a thick dark bell at LEFT formed by eight curved iron-gray BIOLOGICAL cartilage ribs over smoky translucent cobalt membrane. Pale yellow sensory organs under the rim. Six long basket-star arms with many jointed branching tips stream to the RIGHT and curl back, thick living dark tendons, pale mineral joints. Bell has strong half-dome geometry, not a robot or helmet. Textured matte shell, wet inner tissue and restrained cobalt organ glow. Arm branches remain sparse and readable, different from silky jellyfish tentacles.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-f72103f1-722c-4729-ab6b-35b1b8f6a16a.png",
+      "asset": "public/art/cosmic-fauna/iron_jelly.png",
+      "sha256": "f6c18a079c7754ec97f98481617d4a2e7ea0ea474a8a90511df338f80aab4f4a",
+      "bytes": 2531650,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "saffron_seadragon",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A giant leafy alien seadragon swimming LEFT, very long tapered armored snout, small turquoise sensory eyes, gently curved slender ochre body and a spiral tail trailing RIGHT. Numerous large separate saffron-orange leaf-shaped translucent fins grow along its neck, back and belly on flexible fleshy stalks, each veined with deep burgundy. Organic copper-gold bony ridges beneath soft skin, dark fleshy joints. Not a plant branch: unmistakable powerful living fish anatomy and long elegant neck. Leaf fins asymmetrical and clearly separated, sculptural cinematic biological detail.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-92e05978-9dcd-4f1d-9bf4-bfe8c9f4f9a1.png",
+      "asset": "public/art/cosmic-fauna/saffron_seadragon.png",
+      "sha256": "0ab4735f00464855c066623d5650c674b0fd614e0f79d52e1c8282160b43587e",
+      "bytes": 2290658,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "quasar_bat",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A huge alien bat-like swimmer facing LEFT, compact muscular horned charcoal body with a long wedge snout, four tiny pale green eyes, and FOUR distinct broad muscular wings spreading above and below. The two front wings are long hooked fingers supporting violet-black translucent membranes; rear wings smaller and deeply scalloped, long tapering tail at RIGHT. Strong bony joints, subtle crimson membrane veins, wet dark chest fur, not a demon, dragon or terrestrial bat mascot. Cinematic terrifying organic mass, all four wings fully inside generous transparent margin.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-ea6e163e-fb75-43f1-808e-5d52ba82f954.png",
+      "asset": "public/art/cosmic-fauna/quasar_bat.png",
+      "sha256": "03a23b267bd76fc639bc268d9ee5b0519fd6836e57f81d55abb2eb6bcffe67b6",
+      "bytes": 2380247,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "fossil_seadrake",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An enormous ancient alien sea drake swimming LEFT. Long narrow head with curved ram horns and dark living eyes, ivory fossil-like external bone armor over deep moss-green muscle, a long sinuous neck and broad ribbed torso tapering to a finned tail on RIGHT. FOUR thick small paddle limbs, tall tattered dorsal fin, worn bone surfaces with rich cavities, tiny amber organs under the rib plates. Alive and powerful, not a skeleton corpse or spaceship. Distinct curled ram-horn silhouette, deeply sculptural organic anatomy; entire creature and horns inside frame.",
+      "edit": {
+        "source": "C:\\Users\\cromk\\.codex\\generated_images\\01a0ec1e-e5fb-7710-98df-2993049c9c09\\exec-7197e5ec-ca35-446a-8086-8586a299fa26.png",
+        "prompt": "Use case: precise-object-edit. Fix framing of this exact full-body transparent alien fossil sea drake sprite. Preserve its identity, anatomy, pose, colors, texture, lighting and transparent background. Zoom out to leave a generous 10% transparent margin on ALL four sides. Reconstruct only any cut-off dorsal-fin and paddle extremities naturally, ensuring the whole silhouette is complete and comfortably inside the frame. Do not add scenery or extra limbs. Do not change the creature design.",
+        "reason": "Generated dorsal/paddle extremities reached image edge; restore full silhouette and padding."
+      },
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-6fb54898-2705-4f66-bb7d-5b0fbb9e0491.png",
+      "asset": "public/art/cosmic-fauna/fossil_seadrake.png",
+      "sha256": "ad4a1ef1db761b84fff66b85a6737b374625f00a7f6bebc951218eb188707633",
+      "bytes": 1663916,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          65,
+          41,
+          1737,
+          861
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "opal_scallop",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A colossal alien scallop swimming LEFT, two broad deeply ribbed opal fan-shell valves open in a dramatic V, hinge near center-right, curved scalloped rim facing LEFT. Layers of luminous pale mint and ivory fleshy mantle emerge between the rigid shells, many tiny dark blue sensory eyes along the mantle rim and long thin lavender fringe cilia flowing RIGHT. Upper valve rises above, lower valve curves below, beautiful thick porcelain mineral surfaces with subtle pink iridescence. A real substantial shellfish, no pearl jewelry, ornament, text or scenery. Entire shells and fringe inside frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-60d2b166-5ebf-400c-ac62-aab65dacdaee.png",
+      "asset": "public/art/cosmic-fauna/opal_scallop.png",
+      "sha256": "396a21f99ebaf217404fd6189f10720a3aa9109cef14027b98d42d287155fb55",
+      "bytes": 2714179,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1522,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "dusk_hydra",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. ONE vast alien dusk hydra with THREE distinct long necks facing LEFT, each ending in a narrow smooth predatory sensory head with tiny amber eyes. All necks visibly join one powerful indigo torso at center-right. Two broad translucent smoky violet swimming wings and one long forked tail trail to RIGHT. Upper neck arcs high, middle neck reaches straight forward, lower neck curls downward, generous clear gaps. Dark blue scaled wet skin, pale bone ridges and restrained rose gill tissue. Coherent three-headed aquatic alien, not three animals, no fire, magic or attack effects.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-6a005a65-053b-4af6-b28f-62bcfdd4d62c.png",
+      "asset": "public/art/cosmic-fauna/dusk_hydra.png",
+      "sha256": "975768a3a6f3f5e0846fe40a1be04cceff322edb4ef3b68592633b4a54d7db0c",
+      "bytes": 2112181,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          21,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "velvet_worm",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A vast soft-bodied alien velvet worm swimming LEFT, long plush deep burgundy segmented body in a shallow S curve. Rounded low head with two branching flexible feelers and tiny black eyes, no enormous toothy jaw. Twelve pairs of short fleshy fringed paddle limbs undulate along its sides, each salmon-gold membrane with delicate comb edges. Broad tail fan trails RIGHT. Velvet suede skin with subtle wet folds at joints, copper freckles and small lavender gill slits. Weighty dimensional wild animal, elegant and uncanny, not cute, not a caterpillar on a branch.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-238caba4-9a9e-4a80-822b-0198005b2a62.png",
+      "asset": "public/art/cosmic-fauna/velvet_worm.png",
+      "sha256": "b91ab8f7318ac4c519e03985deb35c41640bc9539cd70915fca253290dc18c6d",
+      "bytes": 1462358,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          11,
+          19,
+          1760,
+          870
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "halo_stag",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A regal enormous alien aquatic stag swimming LEFT: long smooth charcoal sensory head, a magnificent branching ivory antler-like crown curving around the head into an incomplete halo. Compact muscular cobalt torso, FOUR broad pale blue membranous fins in place of legs, long ridged tail trailing RIGHT. The antlers are living porous sensory bone with tiny amber organs nestled in the branches. NO hooves, fur, deer legs or literal terrestrial stag body. Clearly invented marine animal, ancient beautiful and unnerving, solid sculpted bone and supple translucent fins, all antlers fully in frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-890e863f-5a2a-426c-958b-a5e38e25cb72.png",
+      "asset": "public/art/cosmic-fauna/halo_stag.png",
+      "sha256": "88dd3f84c1889f4b0aa0513163592ece1917201c7ec1542c86818ca38e318431",
+      "bytes": 2321904,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          12,
+          2,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "cryolith_isopod",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An enormous alien polar isopod swimming LEFT, broad low domed body with TEN overlapping icy mineral-blue armor plates, a compact armored head with dark eyes and two long crystalline feelers. Fourteen separate translucent pale cyan paddle legs fan below and to the sides, wide segmented tail fan on RIGHT. Thick frosted semitransparent shell with tiny trapped violet organ channels, soft dark living joints, convincing arthropod anatomy. Different from centipede: compact oval armored pill-shaped shell, short low profile, no tall spines. Whole body and all paddles isolated inside frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-04c97289-b021-4580-8be0-197b433fa418.png",
+      "asset": "public/art/cosmic-fauna/cryolith_isopod.png",
+      "sha256": "b78904dd5422b7461271c7ec4756d3bab47e2599d2ba9ee76a3b35389a44fba4",
+      "bytes": 2432036,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          9,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "solar_butterfly",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A gigantic solar butterfly-like alien gliding LEFT. Slender luminous cream segmented body and small black sensory head with curled twin antennae. FOUR huge rounded translucent amber wings with scalloped tails, the upper pair broad and oval, lower pair smaller and teardrop-shaped. Strong russet branching veins and subdued ivory eye-like organic markings embedded in the membrane. Distinct from glass moth: warm thin honey-colored translucent skin, smooth rounded masses, no faceted glass or dark fur. Soft internal organ warmth, not a sun or fire, no particles. Entire wings and tips inside transparent margin.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-9545a8c2-33d3-4bff-ad51-7150c4fd3fb2.png",
+      "asset": "public/art/cosmic-fauna/solar_butterfly.png",
+      "sha256": "83391cdc60e6474583f69af6a198d4a76202e59abc171390e1eca3ea420a5b25",
+      "bytes": 2399328,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          13,
+          0,
+          1524,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "lantern_angler",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A huge terrifying deep-space anglerfish swimming LEFT with a massive rounded charcoal head and hollow gaping jaw, curved thin ivory teeth and tiny pale blue eyes. One long organic lure arches smoothly forward above the head, ending in a small soft amber fleshy lantern, NO beam or rays. Short muscular body behind the head, broad smoky violet pectoral fins, long fanned tail to RIGHT. Tactile pebbled deep-sea skin, violet gill tissue, amber throat organs, powerful jaw volume. Entire lure and tail fit, lantern clearly attached by curved living stalk, no bright weapon-like glow.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-e96459b3-60aa-4e88-a750-68b0c24c0077.png",
+      "asset": "public/art/cosmic-fauna/lantern_angler.png",
+      "sha256": "1e3ee2fc87a7d9a54b1450dd29acc75f05088179804039bad930e799477edeb4",
+      "bytes": 2478157,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          31,
+          21,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "glass_octopus",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An enormous translucent alien octopus swimming LEFT. Large elongated clear smoky lavender mantle on the LEFT with a visible suspended amber neural organ and thick inner muscle bands, dark glassy sensory eyes at the mantle base. EIGHT long separately readable transparent muscular arms sweep to the RIGHT, each curling at a different depth, small opal suckers and faint cyan nerve strands inside. No round jellyfish bell, no petal crown. Substantial wet glasslike living tissue, not literal glass sculpture, arms have weight and thickness, exquisite layered refraction with restrained glow and all arms in frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-80ce3443-d7f5-4f32-a16b-2a0b353de4bb.png",
+      "asset": "public/art/cosmic-fauna/glass_octopus.png",
+      "sha256": "7f8c51297ce6b590d7ff204c51aade59fc1c34b200f020e3aa2241538cc6a96b",
+      "bytes": 2310607,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1536,
+          1024
+        ],
+        "corners": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "astral_cobra",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A colossal alien hooded serpent swimming LEFT. Broad oval ribbed hood around a narrow smooth predatory head on the LEFT, its interior shows pearlescent violet muscular membranes between ivory radial ribs. The body flows RIGHT into a long slender S-shaped double-curved tail, slate-blue scales and small gold sensory pores. No upright striking pose: a serene horizontal gliding animal, no fangs displayed, no breath attack. Distinct smooth shield-shaped hood, dimensional heavy muscles. Whole hood and long tail fully visible with 8 percent clear padding.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-9f2672f2-d74e-4970-9e1c-a5da85bd706b.png",
+      "asset": "public/art/cosmic-fauna/astral_cobra.png",
+      "sha256": "59caccae8716a9813230ed66f3bf9d2ff843ae8edf85fd969ff666d044c0d989",
+      "bytes": 1054406,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          19,
+          19,
+          1756,
+          887
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "crown_shrimp",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. An enormous alien crown shrimp swimming LEFT: compact armored amber head with a dramatic crown of five long curved ivory spines, two MASSIVE bent muscular claw-bearing forearms projecting forward on LEFT, many small paired translucent paddles beneath a thick segmented copper torso, large rounded fanned tail on RIGHT. Dark glass eyes on short stalks, iridescent teal joints and orange chitin. Clear gaps between forearms and head, strong curved abdomen silhouette. Whole crown, claws, tail and feelers comfortably inside transparent frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-379bd675-e82f-42ec-a1de-7d91ca21aee2.png",
+      "asset": "public/art/cosmic-fauna/crown_shrimp.png",
+      "sha256": "e09db6f52259bbbbb1aa1319063e8787b49639995f3848525e32e9eae5731234",
+      "bytes": 2443565,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1536,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "silt_wraith",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A vast deep-sea alien silt wraith swimming LEFT, broad hooded tadpole-like head with no humanoid face, small widely separated pearl eyes recessed under a muscular slate-gray mantle hood. A single long tapering tail stretches RIGHT. Below the hood and along the tail hang several enormous torn-looking smoky mauve gill veils, layered translucent fleshy ribbons with irregular soft edges. Heavy smooth head, ghostly weighty membranes, visible fine capillaries, restrained amber gill pores. Organic living animal, no cloak, human, ghost face or detached cloth. Entire flowing silhouette in frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-bee88758-d36e-46e1-8dc8-27a271ffbad7.png",
+      "asset": "public/art/cosmic-fauna/silt_wraith.png",
+      "sha256": "576179709abc9b6359ca1c95dc6644a270d9ba6f1ab81684befe8e2df77249ab",
+      "bytes": 1578219,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          0,
+          0,
+          1774,
+          887
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "coral_giant",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. One colossal living alien coral giant swimming LEFT. Broad massive whale-like charcoal-purple body, blunt head with tiny amber eyes, thick muscular lower jaw and two huge rounded pectoral flippers. Entire back supports dense asymmetrical branching living crimson-and-ivory coral ridges, integrated into its skin with fleshy bases. Wide forked horizontal tail on RIGHT. Tactile weathered organic skin and porous branching coral, no buildings, city, ship, windows or machinery. A heavy believable ancient organism, quietly terrifying, fully inside generous transparent margin.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-947a1d3e-1cde-44c1-9e8e-55e8762bccea.png",
+      "asset": "public/art/cosmic-fauna/coral_giant.png",
+      "sha256": "7ae65fd9b8c0a776b81c7cb4c9c904614448c76277a87705b2c14a549a645c37",
+      "bytes": 2178858,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          0,
+          12,
+          1773,
+          887
+        ],
+        "corners": [
+          0,
+          0,
+          1,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "winter_cicada",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A gigantic alien winter cicada swimming LEFT, broad armored pale-blue head with large obsidian compound eyes, stout dark cobalt thorax, long tapered segmented abdomen extending RIGHT. FOUR long narrow transparent icy crystalline wings sweep backward over and below the abdomen in separated overlapping layers, densely branched frost-white veins and jagged mineral edges. Six short fine limbs folded under chest. Distinct from butterflies: long narrow wings parallel to a long horizontal abdomen, low beetle-like head, rigid icy chitin. Entire wings and limbs fully in frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-1a91ff38-e3bd-4c3b-aed7-56be44404a65.png",
+      "asset": "public/art/cosmic-fauna/winter_cicada.png",
+      "sha256": "e2dbe845b16cd492dc33620d628a4ab4e7b322abefceefc011f0f2965636f60a",
+      "bytes": 2276259,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1619,
+        "height": 971,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          0,
+          9,
+          1605,
+          971
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "onyx_hammerhead",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A huge alien onyx hammerhead swimming LEFT in an elevated three-quarter view. Extremely broad lateral T-shaped sensory head on LEFT with eyes at far ends, smooth muscular obsidian body, two broad sweeping slate-blue pectoral fins, a low curved dorsal sail, narrow tail peduncle and tall asymmetrical crescent tail on RIGHT. Pale gold sensory pits line the wide head. No dorsal spikes, no armor plates, no open toothy mouth. Elegant cold dangerous predator with realistic wet sculpted skin and full broad head in frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-9f942f95-4fe6-4a02-babe-8f657ed88de6.png",
+      "asset": "public/art/cosmic-fauna/onyx_hammerhead.png",
+      "sha256": "80e9e2a9ef0273ea944e0c03578df331fca255be9a5d25695e9e8750ecfbf81c",
+      "bytes": 1367446,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          14,
+          0,
+          1763,
+          871
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "choir_siphonophore",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. One vast alien siphonophore colony swimming LEFT. A large clear pear-shaped leading float on LEFT connects through a thick living curved central stem to SEVEN progressively smaller translucent blue-violet swimming bells trailing RIGHT. Each bell has an amber internal organ and a skirt of long hairlike flowing white-lavender filaments. Bells visibly connected into ONE coherent organism, gentle horizontal S silhouette. Beautiful physical gelatinous tissue, subtle wet refraction, ominous floating deep-sea biology, not glowing beads, lantern decorations or a necklace. All filaments fully inside frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-634dc357-352d-40d4-831d-8ee03dbed448.png",
+      "asset": "public/art/cosmic-fauna/choir_siphonophore.png",
+      "sha256": "3873b5ea15a63aea8d2e95f244b0deee60b2e259a0de04b30a26c0dc5d432cc6",
+      "bytes": 1544465,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1774,
+        "height": 887,
+        "alphaExtrema": [
+          0,
+          255
+        ],
+        "alphaBounds": [
+          0,
+          19,
+          1774,
+          887
+        ],
+        "corners": [
+          0,
+          0,
+          1,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "copper_skate",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A colossal alien copper skate swimming LEFT. Very thin broad diamond-shaped body with huge swept triangular razor-like wing fins, tiny pointed head on LEFT, flat muscular copper-brown back with rich hammered organic texture and subtle teal sensory pores. Two long separated whip tails trail RIGHT, each with a thin blade-shaped fin at the end. Wings sharply geometric but clearly living cartilage and translucent burnt-orange membranes; smooth low silhouette, no cathedral ribs, horns or machinery. Elevated view reveals both fins and split tail, entire creature fully inside frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-adaecd06-19cc-4995-a276-490f4de9cd25.png",
+      "asset": "public/art/cosmic-fauna/copper_skate.png",
+      "sha256": "8021033bd5efc615413d95b941a92d02636bada0b4ff807f1f40aaf7c94ef744",
+      "bytes": 1986826,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          13,
+          0,
+          1524,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "eclipse_hydroid",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. One enormous alien eclipse hydroid swimming LEFT. Compact dark plum muscular bell on LEFT encircled by THREE nested living fleshy ring-shaped swimming membranes, offset in depth like a biological gyroscope, with clearly visible thick tendons connecting rings to the central bell. Rings have translucent mauve skin, ivory cartilage ribs and tiny amber pores. SIX long thick ribbon arms trail from the central bell to RIGHT with independently curled tips. Coherent gelatinous animal, not a machine, magical portal, spacecraft or abstract emblem. Whole rings and arms in frame.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-a05fa977-1091-4de8-bf3c-83dc0e8ebc75.png",
+      "asset": "public/art/cosmic-fauna/eclipse_hydroid.png",
+      "sha256": "300ad67be657d7e222c3c143fa078b94f2801f1089cfbd43f649187ee9caf2d6",
+      "bytes": 2658389,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          17,
+          0,
+          1523,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    },
+    {
+      "id": "dream_sailfish",
+      "tool": "built-in image_gen",
+      "transparentBackground": true,
+      "prompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. A huge alien dream sailfish swimming LEFT. Very long fine ivory bill on LEFT, sleek silver-lavender muscular torso, enormous tall fan-shaped dorsal sail with blue-violet translucent membrane and thin gold branching rib veins. The sail rises in a graceful arc along the back, the lower paired fins are long and narrow. Body tapers RIGHT into a deeply forked flowing veil tail, each lobe long and silky. Delicate restrained pearlescent organs below scales, tactile wet dimensional skin, serene and predatory. Whole bill, tall sail and all flowing tail tips safely inside generous transparent padding.",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0ec1e-e5fb-7710-98df-2993049c9c09/exec-ae0b2e57-329a-400a-b20d-561aed45321d.png",
+      "asset": "public/art/cosmic-fauna/dream_sailfish.png",
+      "sha256": "62b757068eac53ddd9935d7bd680b2946fc1f8b80b595ec94b4911aff39139ca",
+      "bytes": 1949951,
+      "inspection": {
+        "mode": "RGBA",
+        "width": 1536,
+        "height": 1024,
+        "alphaExtrema": [
+          0,
+          254
+        ],
+        "alphaBounds": [
+          19,
+          16,
+          1518,
+          1024
+        ],
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "status": "Alpha/art inspected; anatomical motion, actual source runtime, all42 recorded motion/audio, compiled lifecycle/soak and native release verified. Private Steam Build25683581. Human artistic/listening checks remain."
+    }
+  ],
+  "sourceRuntimeVerifiedAt": "2026-10-02T16:59:05.193Z",
+  "fullSetReleaseVerified": true,
+  "releaseBuildId": "25683581",
+  "releaseManifestId": "2117634921635676724",
+  "releaseVerifiedAt": "2026-10-02T18:08:16.587Z"
+}

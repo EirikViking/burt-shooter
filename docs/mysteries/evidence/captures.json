@@ -1,0 +1,52 @@
+[
+  {
+    "id": "glass_widow",
+    "name": "Glass Widow",
+    "source": "test-results/mysteries/desktop/glass_widow.png"
+  },
+  {
+    "id": "doorwraith",
+    "name": "Doorwraith",
+    "source": "test-results/mysteries/ecosystem-spatial/doorwraith-cycle.png"
+  },
+  {
+    "id": "bloom_queen",
+    "name": "Bloom Queen",
+    "source": "test-results/mysteries/ecosystem-spatial/bloom_queen-cycle.png"
+  },
+  {
+    "id": "cable_kraken",
+    "name": "Cable Kraken",
+    "source": "test-results/mysteries/temptations-legends/cable_kraken-cycle.png"
+  },
+  {
+    "id": "surveyor",
+    "name": "Surveyor",
+    "source": "test-results/mysteries/temptations-legends/surveyor-cycle.png"
+  },
+  {
+    "id": "rainmaker",
+    "name": "Rainmaker",
+    "source": "test-results/mysteries/temptations-legends/rainmaker-cycle.png"
+  },
+  {
+    "id": "gilded_pilgrim",
+    "name": "Gilded Pilgrim",
+    "source": "test-results/mysteries/temptations-legends/gilded_pilgrim-cycle.png"
+  },
+  {
+    "id": "cathedral_of_teeth",
+    "name": "Cathedral of Teeth",
+    "source": "test-results/mysteries/final-corrections/cathedral_of_teeth-cycle.png"
+  },
+  {
+    "id": "choir_unbound",
+    "name": "Choir Unbound",
+    "source": "test-results/mysteries/desktop/choir_unbound.png"
+  },
+  {
+    "id": "witness",
+    "name": "Witness",
+    "source": "test-results/mysteries/final-corrections/witness-cycle.png"
+  }
+]

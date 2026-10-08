@@ -14,7 +14,7 @@ import {
   getShipUnlockProgress,
   getShipUnlockRequirementLine,
   getShipUsage,
-  isShipUnlocked,
+  isShipUnlocked as isProgressShipUnlocked,
   isValidShipKey,
   resolveShipKey
 } from '../config/ShipMetadata.js';
@@ -37,8 +37,11 @@ import { getReducedMotionEnabled } from '../config/AccessibilitySettings.js';
 import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
+import { acknowledgeCareerInfo, hasUnseenCareerInfo } from '../progression/CareerSignalState.js';
 import { formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
 import { RUN_MODES } from '../game/RunMode.js';
+import { ONSLAUGHT_RULESET_V2 } from '../../electron/onslaughtContract.cjs';
+import { getBossEncounterTest } from '../config/BossEncounterTest.js';
 import { HangarLaunchModeOverlay } from '../ui/HangarLaunchModeOverlay.js';
 import {
   acknowledgeHangarRecommendation,
@@ -53,6 +56,12 @@ import {
 } from '../ui/ShipMasteryBadgeLayout.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
+// The preload creates an isolated test profile. Loan every valid hull inside
+// that session without writing unlocks or changing normal career requirements.
+function isShipUnlocked(spriteKey, progress) {
+  return (Boolean(getBossEncounterTest()) && isValidShipKey(spriteKey))
+    || isProgressShipUnlocked(spriteKey, progress);
+}
 const DEBUG = false; // Set to true to enable debug logs
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, sans-serif';
@@ -178,6 +187,31 @@ function shipRecommendationScore(ship) {
     hitbox * 0.6;
 }
 
+export function getOnslaughtShipAdvice(ships, currentShip, evidence, isUnlocked) {
+  if (!currentShip || !Array.isArray(evidence)) return null;
+  const recent = evidence.filter(run => run?.mode === RUN_MODES.OVERRUN_TACTICAL
+    && run?.rulesetVersion === ONSLAUGHT_RULESET_V2
+    && run?.hullId === currentShip.baseId
+    && (Number(run.wavesCleared) >= 3 || Number(run.elapsedSeconds) >= 45)).slice(-2);
+  if (recent.length < 2 || recent.some(run => Number(run.sectorsCleared) >= 2)) return null;
+  const currentScore = shipRecommendationScore(currentShip);
+  const current = currentShip.stats || {};
+  const currentFirepower = (Number(current.damage) || 1) * Math.max(1, Number(currentShip.weapon?.bullets) || 1) / Math.max(1, Number(current.fireRate) || 140);
+  const advantage = (ship) => {
+    const proposed = ship.stats || {};
+    const proposedFirepower = (Number(proposed.damage) || 1) * Math.max(1, Number(ship.weapon?.bullets) || 1) / Math.max(1, Number(proposed.fireRate) || 140);
+    if (proposedFirepower > currentFirepower * 1.08) return 'MORE FIREPOWER';
+    if (Number(ship.weapon?.bullets) > Number(currentShip.weapon?.bullets)) return 'WIDER COVERAGE';
+    if (Number(ship.hitbox?.radius) < Number(currentShip.hitbox?.radius)) return 'SMALLER HITBOX';
+    if (Number(proposed.speed) > Number(current.speed) * 1.05) return 'FASTER HANDLING';
+    return null;
+  };
+  const candidate = ships.filter(ship => ship.baseId !== currentShip.baseId && isUnlocked(ship))
+    .filter(ship => shipRecommendationScore(ship) > currentScore * 1.12 && advantage(ship))
+    .sort((a, b) => shipRecommendationScore(b) - shipRecommendationScore(a))[0];
+  return candidate ? { ship: candidate, reason: advantage(candidate) } : null;
+}
+
 export class ShipSelectScene {
   constructor(game, options = {}) {
     this.game = game;
@@ -220,7 +254,15 @@ export class ShipSelectScene {
     this.hangarPointerDeviceHandler = null;
     this.menuFx = null;
     this.exitNoticeTimeout = null;
-    this.recommendedShip = this.getRecommendedShip();
+    this.onslaughtAdvice = this.game?.runMode === RUN_MODES.OVERRUN_TACTICAL
+      ? getOnslaughtShipAdvice(
+        this.ships,
+        this.ships.find(ship => ship.spriteKey === resolveShipKey(this.game?.selectedShipSpriteKey)),
+        this.game?.achievementManager?.onslaughtRuns,
+        ship => isShipUnlocked(ship.spriteKey, this.unlockProgress)
+      ) : null;
+    this.recommendedShip = this.game?.runMode === RUN_MODES.OVERRUN_TACTICAL
+      ? this.onslaughtAdvice?.ship || null : this.getRecommendedShip();
     this.recommendationKey = getHangarRecommendationKey(this.recommendedShip);
     this.recommendationDismissed = isHangarRecommendationAcknowledged(this.recommendedShip);
     this.recommendationBanner = null;
@@ -351,6 +393,12 @@ export class ShipSelectScene {
 
     // Update selection
     this.updateSelection();
+
+    // Game keeps the previous scene visible until create completes.
+    const initialCard = this.shipCards[this.selectedIndex];
+    await this.createCardTurntable(initialCard).promise;
+    initialCard.sprite.visible = false;
+    this.rotatingCard = initialCard;
 
     // Setup input
     this.setupInput();
@@ -490,9 +538,12 @@ export class ShipSelectScene {
     fitDisplayToBox(title, capWidth - 32, this.layout.isMobile ? 38 : 50, { minScale: 0.58 });
     headerContainer.addChild(title);
 
-    const subtitle = createText(translateText(Number(this.unlockProgress?.totalRuns || 0) === 0
-      ? 'Three starter ships. Compare their firepower, then launch.'
-      : 'Pick the hull, read the trait, launch the next run.'), {
+    const test = getBossEncounterTest();
+    const subtitle = createText(test
+      ? translateText('TEST FLIGHT · SECTOR {sector} · CHOOSE ANY SHIP', { sector: test.sector })
+      : translateText(Number(this.unlockProgress?.totalRuns || 0) === 0
+        ? 'Three starter ships. Compare their firepower, then launch.'
+        : 'Pick the hull, read the trait, launch the next run.'), {
       fontFamily: FONT_BODY,
       fontSize: this.layout.isMobile ? 14 : 17,
       fill: '#9ceeff',
@@ -608,7 +659,7 @@ export class ShipSelectScene {
       // A pointer release can arrive immediately after the main-menu Hangar
       // button swaps scenes. Only accept a release that began on this button.
       if (!activatedHere) return;
-      this.openHangarMenu('button');
+      this.returnToMenu('button');
     });
     this.backButton.on('pointerupoutside', () => {
       this.backButton.active = false;
@@ -889,6 +940,8 @@ export class ShipSelectScene {
       this.createCareerInfoOverlay(this.getContentWidth(), this.getContentHeight());
     }
     this.careerInfoOverlay.visible = true;
+    acknowledgeCareerInfo(this.unlockProgress);
+    this.setCareerSignalPulse(false);
     AudioManager.playSfx('powerup', { force: true, volume: source === 'pointer' ? 0.18 : 0.22 });
   }
 
@@ -1887,7 +1940,9 @@ export class ShipSelectScene {
     this.recommendationText.text = [translateText('RECOMMENDED HULL'), this.recommendedShip.name].join(': ');
     this.recommendationReasonText.text = usingRecommended
       ? translateText('USING RECOMMENDED HULL')
-      : [translateText('BEST UNLOCKED'), role, translateText('HANGAR SAYS THIS ONE HAS THE BEST ODDS')].join(' // ');
+      : this.onslaughtAdvice
+        ? [translateText('AFTER TWO LONG FLIGHTS'), translateText(this.onslaughtAdvice.reason), role].join(' // ')
+        : [translateText('BEST UNLOCKED'), role, translateText('HANGAR SAYS THIS ONE HAS THE BEST ODDS')].join(' // ');
     this.recommendationText.scale.set(1);
     this.recommendationReasonText.scale.set(1);
     const textWidth = Number.isFinite(this.recommendationBanner.textWidth)
@@ -2591,11 +2646,10 @@ export class ShipSelectScene {
     container.addChild(lightRays);
     container.lightRays = lightRays;
 
-    const hangarSignature = createHangarSignature(art, heroSize, heroY, accent, glowColor, locked);
-    if (hangarSignature) {
-      container.addChild(hangarSignature);
-      container.hangarSignature = hangarSignature;
-    }
+    // The 3D hull supplies its own lighting and silhouette. No rotating crest
+    // or spokes behind it, including while another hull is being prepared.
+    glowLayers.visible = false;
+    lightRays.visible = false;
 
     // Ship sprite (large for better visibility)
     const display = await GameAssets.ensureShowroomShip(ship.textureIndex);
@@ -2958,6 +3012,9 @@ export class ShipSelectScene {
       shipContainer.alpha = targetAlpha;
       shipContainer.rotation = targetRotation;
       shipContainer.visible = !hidden || targetAlpha > 0.01;
+      // Thumbnails belong only in the side slots. Keep the outgoing live view
+      // while its card is still large, including between animation callbacks.
+      if (shipContainer.sprite) shipContainer.sprite.visible = !isCenter && !shipContainer.turntable;
       shipContainer.zIndex = isCenter ? 10 : Math.max(0, 4 - Math.abs(shipContainer.shipIndex - this.selectedIndex));
       if (shipContainer.nameText) shipContainer.nameText.visible = isCenter;
       const showCenterNarrative = isCenter && !this.compactIntel;
@@ -3007,7 +3064,9 @@ export class ShipSelectScene {
     }
 
     const startTime = Date.now();
+    const carouselRequest = this.showcaseRequest;
     const animateFrame = () => {
+      if (this.showcaseRequest !== carouselRequest) { this.animating = false; return; }
       const elapsed = Date.now() - startTime;
       const t = Math.min(1, elapsed / duration);
       const eased = t < 0.5
@@ -3168,8 +3227,44 @@ export class ShipSelectScene {
     shipContainer.particles = shipContainer.particles.filter(p => p !== null);
   }
 
-  navigateTo(newIndex) {
+  createCardTurntable(card) {
+    if (card.turntable) return card.turntable;
+    const view = card.turntable = new AstraTurntable(card.showroomIndex, card.sprite.texture, {captionRatio:.04,captionY:.35});
+    view.position.copyFrom(card.sprite.position);
+    view.scale.set(Math.min(card.sprite.scale.x * 1.25, (this.layout.isMobile ? 230 : 420) / (view.baseSize * this.centerScale)));
+    view.rotation = card.sprite.rotation;
+    card.addChild(view);
+    for (const overlay of [card.lockPlate, card.lockText]) {
+      if (!overlay) continue;
+      overlay.eventMode = 'none';
+      card.setChildIndex(overlay, card.children.length - 1);
+    }
+    return view;
+  }
+
+  async navigateTo(newIndex) {
     if (newIndex < 0 || newIndex >= this.ships.length || this.animating) return;
+    const request = this.showcaseRequest = (this.showcaseRequest || 0) + 1;
+    const previousPending = this.shipCards[this.pendingIndex];
+    this.pendingIndex = null;
+    if (previousPending && previousPending !== this.rotatingCard) {
+      previousPending.turntable?.destroy();
+      previousPending.turntable = null;
+    }
+    if (newIndex === this.selectedIndex) return;
+    const incoming = this.shipCards[newIndex];
+    const view = this.createCardTurntable(incoming);
+    view.visible = false;
+    this.pendingIndex = newIndex;
+    await view.promise;
+    if (this.showcaseRequest !== request || view.destroyed) return;
+    this.pendingIndex = null;
+    if (!view.ready) {
+      view.destroy();incoming.turntable = null;
+      return; // Keep the current real model if loading fails.
+    }
+    view.visible = true;
+    incoming.sprite.visible = false;
     this.selectedIndex = newIndex;
     const ship = this.ships[this.selectedIndex];
 
@@ -3187,12 +3282,12 @@ export class ShipSelectScene {
   }
 
   navigateLeft() {
-    const next = (this.selectedIndex - 1 + this.ships.length) % this.ships.length;
+    const next = ((this.pendingIndex ?? this.selectedIndex) - 1 + this.ships.length) % this.ships.length;
     this.navigateTo(next);
   }
 
   navigateRight() {
-    const next = (this.selectedIndex + 1) % this.ships.length;
+    const next = ((this.pendingIndex ?? this.selectedIndex) + 1) % this.ships.length;
     this.navigateTo(next);
   }
 
@@ -3262,7 +3357,7 @@ export class ShipSelectScene {
           ? `${translateText('FIRST FLIGHT')} // ${translateText('YOUR LAUNCHES')}: 0`
           : translateText('STATUS: READY FOR LAUNCH'),
         masterySummary,
-        getShipUnlockRequirementLine(ship.spriteKey, { translate: translateText })
+        getBossEncounterTest() ? '' : getShipUnlockRequirementLine(ship.spriteKey, { translate: translateText })
       ].join('\n')
       : `${getShipUnlockRequirementLine(ship.spriteKey, { translate: translateText })}${progressLine ? `\n${translateText('PROGRESS')}: ${progressLine}` : ''}`;
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
@@ -3290,12 +3385,7 @@ export class ShipSelectScene {
         this.leftIntel.rankRail.roundRect(18, 88, 222 * fill, 8, 4);
         this.leftIntel.rankRail.fill({ color: 0xffef7e, alpha: 0.94 });
       }
-      this.setCareerSignalPulse(Boolean(
-        (Number(this.unlockProgress.pilotXp) || 0) > 0 ||
-        (this.unlockProgress.lastNewlyUnlockedShipIds || []).length > 0 ||
-        (this.unlockProgress.newRanksThisRun || []).length > 0 ||
-        (Number(this.unlockProgress.totalCodexDiscoveries) || 0) > 0
-      ));
+      this.setCareerSignalPulse(hasUnseenCareerInfo(this.unlockProgress));
       if (this.leftIntel.stats) {
         this.leftIntel.stats.text = [
           `${translateText('CODEX SCANS')}: ${this.unlockProgress.totalCodexDiscoveries || 0}`,
@@ -3367,7 +3457,7 @@ export class ShipSelectScene {
     if (this.careerSignalTicker) return;
     this.careerSignalTicker = () => {
       if (!this.leftIntel?.alertGlow || !this.leftIntel.careerPulseActive) return;
-      const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
+      const pulse = getReducedMotionEnabled() ? 0 : 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
       const glow = this.leftIntel.alertGlow;
       glow.clear();
       glow.roundRect(4, 4, 252, 328, 7);
@@ -3673,6 +3763,7 @@ export class ShipSelectScene {
     this.hangarPointerDeviceHandler = () => this.setHangarInputDevice('keyboard', 'pointerdown');
     canvas?.addEventListener?.('pointerdown', this.hangarPointerDeviceHandler, true);
     this.keyHandler = (e) => {
+      if (this.game.onslaughtBriefingOpen || this.game.onslaughtLoadoutPickerOpen) return;
       this.setHangarInputDevice('keyboard', 'keydown');
       // Log first key press for debug
       if (DEBUG) console.log(`[ShipSelectInput] key=${e.key} code=${e.code}`);
@@ -3840,6 +3931,7 @@ export class ShipSelectScene {
   }
 
   pollHangarMenuGamepad() {
+    if (this.game.onslaughtBriefingOpen || this.game.onslaughtLoadoutPickerOpen) return;
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     this.setHangarInputDevice('controller', 'gamepad');
@@ -3959,10 +4051,19 @@ export class ShipSelectScene {
   returnToMenu(source = 'unknown') {
     if (this.launchInProgress) return;
 
+    const selected = this.ships[this.selectedIndex];
+    if (selected?.spriteKey && isShipUnlocked(selected.spriteKey, this.unlockProgress)) {
+      this.activeShipSpriteKey = selected.spriteKey;
+      this.game.selectedShipSpriteKey = selected.spriteKey;
+      setSelectedShipKey(selected.spriteKey);
+      this.saveSelection(selected.spriteKey);
+    }
+
     if (DEBUG) console.log(`[ShipSelect] Returning to main menu via ${source}`);
 
     if (this.hangarMenuOverlay) this.hangarMenuOverlay.visible = false;
     if (this.careerInfoOverlay) this.careerInfoOverlay.visible = false;
+    this.game.scenes?.menu?.launchHome?.closeModes?.();
     this.game.showMenu();
   }
 
@@ -3979,6 +4080,11 @@ export class ShipSelectScene {
 
     const spriteKey = ship.spriteKey;
     AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.8 });
+
+    if (getBossEncounterTest()) {
+      this.startSelectedShipInMode({ id: RUN_MODES.UNRANKED });
+      return;
+    }
 
     if (DEBUG) console.log(`[ShipSelect] Opening launch mode choice via ${source}:`, spriteKey);
     this.openLaunchModeOverlay(ship);
@@ -4021,7 +4127,10 @@ export class ShipSelectScene {
     };
     this.closeLaunchModeOverlay();
     if (DEBUG) console.log(`[ShipSelect] Starting game in ${runMode}:`, spriteKey);
-    Promise.resolve(this.game.startGame(spriteKey, launchOptions)).catch((error) => {
+    Promise.resolve(this.game.startGame(spriteKey, launchOptions)).then((started) => {
+      // Cancellation returns false without changing scenes. Let Start and Back recover.
+      if (started === false) this.launchInProgress = false;
+    }).catch((error) => {
       this.launchInProgress = false;
       console.error('[ShipSelect] Failed to start selected ship:', error);
     });
@@ -4054,6 +4163,8 @@ export class ShipSelectScene {
   }
 
   cleanup() {
+    this.showcaseRequest = (this.showcaseRequest || 0) + 1;
+    this.pendingIndex = null;
     for (const card of this.shipCards || []) {
       card.turntable?.destroy();
       card.turntable = null;
@@ -4146,7 +4257,7 @@ export class ShipSelectScene {
       if (item.weaponPreview) item.weaponPreview.visible = item === card && !this.animating;
     }
     if (card?.weaponPreview?.visible) card.weaponPreview.update(delta);
-    if (this.rotatingCard !== card) {
+    if (this.rotatingCard !== card && !this.animating) {
       if (this.rotatingCard?.turntable) {
         this.rotatingCard.turntable.destroy();
         this.rotatingCard.turntable = null;
@@ -4155,20 +4266,11 @@ export class ShipSelectScene {
       this.rotatingCard = card;
     }
     if (card?.sprite && card.showroomEmitters) {
-      if (!card.turntable && !this.animating) {
-        card.turntable = new AstraTurntable(card.showroomIndex, card.sprite.texture, {captionRatio:.04,captionY:.35});
-        // Transparent selection glows are hittable through the carousel. Keep
-        // the viewer above them so a hull drag cannot turn into navigation.
-        card.addChild(card.turntable);
-        for (const overlay of [card.lockPlate, card.lockText]) {
-          if (!overlay) continue;
-          overlay.eventMode = 'none';
-          card.setChildIndex(overlay, card.children.length - 1);
-        }
-      }
+      card.sprite.visible = false;
+      if (!card.turntable && !this.animating) this.createCardTurntable(card);
       if (card.turntable) {
         card.turntable.position.copyFrom(card.sprite.position);
-        card.turntable.scale.set(card.sprite.scale.x * 1.05, card.sprite.scale.y * 1.05);
+        card.turntable.scale.set(Math.min(card.sprite.scale.x * 1.25, (this.layout.isMobile ? 230 : 420) / (card.turntable.baseSize * this.centerScale)));
         card.turntable.rotation = card.sprite.rotation;
         if (card.tierBadge) {
           // Prestige badges occupy the normal hint position. Put the hint

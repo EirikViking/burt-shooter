@@ -75,7 +75,7 @@ try{
   await page.waitForFunction(()=>window.__game.scenes.play.overrunMilestoneInterlude?.effect?.interludeCard?._coronation?.ready,null,{timeout:30000});
   await page.waitForTimeout(1700);
   const state=await page.evaluate(()=>{const p=window.__game.scenes.play,c=p.overrunMilestoneInterlude.effect.interludeCard;return{active:p.overrunMilestoneInterlude.active,texture:c._coronation.hull.texture.width,visible:c._coronation.hull.visible,ready:c._coronation.ready,score:window.__game.score,children:c._coronation.children.length,text:JSON.parse(window.render_game_to_text()).overrunInterlude};});
-  assert.ok(state.ready&&state.visible&&state.texture>1,`Portrait ${sector}`);assert.equal(state.children,3);checks.push({sector,...state});
+  assert.ok(state.ready&&state.visible&&state.texture>1,`Portrait ${sector}`);assert.equal(state.children,2);checks.push({sector,...state});
   await shot(`overrun-${sector}`);
   if(sector%30===20){const b=state.text.buttonBounds;await page.mouse.click(b.x+b.width/2,b.y+b.height/2);}
   else if(sector%30===0){await page.evaluate(()=>{window.__burtGamepadOverride={connected:true,id:'Astra QA',axes:[0,0,0,0],buttons:Array.from({length:17},(_,i)=>({pressed:i===0,value:i===0?1:0}))};});}

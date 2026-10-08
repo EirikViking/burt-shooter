@@ -1,0 +1,146 @@
+{
+  "date": "2026-09-30",
+  "conditions": "Remaster from preserved admitted ElevenLabs WAVs; deterministic sample gain capped at +8 dB and -6.8 dBFS peak. No extra paid generation, duration/sample rate/channels unchanged. Existing user volume preferences unchanged.",
+  "files": [
+    {
+      "file": "armour_break.wav",
+      "initialSHA256": "7561171afcccffcaa473017401ea8f94fd32fafb9c4c08e3396d7a2dd5b51361",
+      "sha256": "58a071e123f79df82dd30a191f73d3e400be6a620ba33cb390268620494be32e",
+      "gainDb": 4.525814574435103,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "battery_charge.wav",
+      "initialSHA256": "ab530bf1eef5221a683a15553a23b371897f32033f6fa2fe7a727bccee476107",
+      "sha256": "cec2921be50ceea5046eee8ea415db24bdacc91a20744cc75aeea25e6833ccfc",
+      "gainDb": 7.924020989316709,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "battery_fire.wav",
+      "initialSHA256": "55b13fc6dda9636ad5b94671e14d44302ee89f1a51a49136e8c794932d27c235",
+      "sha256": "c033a30209625286d7c315bcda18810ed6f502330f2e311517ee71b86a27559e",
+      "gainDb": 7.39463953415669,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "breach_arrive.wav",
+      "initialSHA256": "1cde92792c13b3d1d37f981b912740ae6ed7f41c896ea5bb101e269b6dc23ba3",
+      "sha256": "37898acf98cc0440b0dffa16dae02c665b89b0bc6b7b53fd350f197f570689d2",
+      "gainDb": 6.4958089191726485,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "breach_collapse.wav",
+      "initialSHA256": "6ea712e6023a90210080152d4c493990a703ec2ff61bee55dd0628bc1f9e7625",
+      "sha256": "33f9cfc4668a51f3a8d9ac6fd4b59c3c21dd1ac73055fec58c3107526862c00a",
+      "gainDb": 5.626845076380005,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "cover_break.wav",
+      "initialSHA256": "9e2d1d41248127f6f52f7c4db5b916358658d77f283598cd366eda8ce08ebcc3",
+      "sha256": "4d26495f4342558ab14c0b723fbaa604688de36730ff539cf26f54b1fb5d3b5a",
+      "gainDb": 8,
+      "peakDb": -7.435590029791147
+    },
+    {
+      "file": "hull_open.wav",
+      "initialSHA256": "b1d215b4f6fca7d346f3b57cf5a23d384b04fcb391d7b8a8dea5a7c92caedc6d",
+      "sha256": "d6763fe9a7696dc636199ac5d59f206e27b5e3089494b55efd48f499fd22c862",
+      "gainDb": 4.563000729278012,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "molt_emerge.wav",
+      "initialSHA256": "952d03c152c1cb74a35cc93131dac7b6aaf7685cd87473024af2abc0a07ebeb1",
+      "sha256": "0e50f1cbf2dec3058524baeace4a4082e85490f38dacb7a36843d8a4ff53984b",
+      "gainDb": 3.318016090449618,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "molt_fracture.wav",
+      "initialSHA256": "59acafe1b0c2cd802fe96a4432a22b74891ffafa3d961cd178807d5c9e125513",
+      "sha256": "3b322f87ce7c4622028975698a540662a9fb7e673a0fbbbbf876599493bb2eb9",
+      "gainDb": 5.5188897000713455,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "orbit_activate.wav",
+      "initialSHA256": "19b884d2ccef46fa7f7693f98e868e87b8b8a636faf8f2ff110f30654289ff39",
+      "sha256": "a644787d79774d888eaf30a9fa54257b8578d35557338cd673fd0907f6d51dbd",
+      "gainDb": 5.764266995583519,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "orbit_hit.wav",
+      "initialSHA256": "90056dd740aa43b975484d7fec14c2c6a6adf07140fb827de0a94f433c0c94da",
+      "sha256": "8dedbaa0db8675bfd69b92adee24c6c33f25023a349bded155cd6c3de46ea519",
+      "gainDb": 8,
+      "peakDb": -7.774684625479567
+    },
+    {
+      "file": "reactor_open.wav",
+      "initialSHA256": "4b1b733cd81fd64485269a04591f188f618172e8ac2c7ad0101e810d13783f22",
+      "sha256": "8bf6c97ac2acc01af96d87b49c91d2905947e1138a04be0dbef9282c23470178",
+      "gainDb": 7.300050504380524,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "rift_ignite.wav",
+      "initialSHA256": "e98206ebeead8a40c8338cde194d832ccf3c4d4d79368f5a30fd2d27c74f13e2",
+      "sha256": "06ae32ea36450ced5512722530e78d4f9427dbd1efcc75faad1ad9932e5dabd6",
+      "gainDb": 2.833023285989362,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "salvage_capture.wav",
+      "initialSHA256": "2b120fe660d1d1f9c6798abeb2dcf428c37059f1f4dd5841a5cf2640a1ecde8b",
+      "sha256": "9bf8443d0b09ee871735282d40e19b08a38a3e3e5cc39f0dbf0025afe3c050c9",
+      "gainDb": 2.27214747694,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "tether_snap.wav",
+      "initialSHA256": "6660495a9b7086be5d87b18de38dd303df06f32ff985732bffdc80cda56b26b7",
+      "sha256": "8b5cef2ca520c35321cc9fd208ffe3d76ef4c4c5e4bc31ebb74d175201c7d52d",
+      "gainDb": 3.3554846920884622,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "weaver_arm.wav",
+      "initialSHA256": "b5df015380c31927318ceaddd2c456fbb6bc18a9773306fc16ad4bec5a3fc1d6",
+      "sha256": "989654afc345bb7d92f183c5f9cddba61972b290454c47b71942760828bdcd6f",
+      "gainDb": 6.562217007125507,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "weaver_assembly.wav",
+      "initialSHA256": "771ee782acfcf8e6c347c281685baebc8d19fbd59ffe45dff738ab2bf8b63b66",
+      "sha256": "a0b55b27fc3b963a976d32cd160a0bc79cad08ff7dab84133268949e4b92e778",
+      "gainDb": 3.7001804531287097,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "weaver_claim.wav",
+      "initialSHA256": "6513369046c728db42f3e202cd199d7eccba6ee849bd5caf5491f896561c1156",
+      "sha256": "7cc7834845cb4fa5300e5e91a58a7045774a4b0fced2ed8fc684664a2b0980a2",
+      "gainDb": 4.979826666466193,
+      "peakDb": -6.800502103387922
+    },
+    {
+      "file": "wing_arrive.wav",
+      "initialSHA256": "4958c7fc826bf93eb213c257f205c37df4f45db6c0fc0816be1806d7b94d04d7",
+      "sha256": "6ed27cb50bf67951131df348eefdfbb02c13ee097666c682f8f15af49c003154",
+      "gainDb": 8,
+      "peakDb": -8.819252599480556
+    },
+    {
+      "file": "wing_depart.wav",
+      "initialSHA256": "6ee41920d4be92b3f9956dc57cef622d9bdc33344c54dedde7179185e195d2ce",
+      "sha256": "0209b44eb02801fad0fa696a0101041080bdb2b421a66ce4a6b1869a13349aa5",
+      "gainDb": 8,
+      "peakDb": -9.363501351510768
+    }
+  ]
+}

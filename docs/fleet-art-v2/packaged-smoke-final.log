@@ -1,0 +1,5 @@
+
+> nova-swarm@1.0.0 desktop:smoke:packaged
+> node scripts/smoke-packaged-desktop.mjs
+
+[packaged-smoke] failed to launch: spawnSync D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\release\desktop\win-unpacked\Nova Swarm.exe ETIMEDOUT

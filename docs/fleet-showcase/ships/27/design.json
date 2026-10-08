@@ -1,0 +1,47 @@
+{
+  "id": 27,
+  "name": "Eirik the Viking",
+  "architecture": "viking",
+  "baselineDesign": [
+    "Eirik the Viking",
+    2.1,
+    1.17,
+    0.77,
+    1.16,
+    "viking",
+    [
+      [
+        0.24,
+        1.08,
+        -1.36,
+        0.19
+      ],
+      [
+        0.76,
+        0.99,
+        -1.43,
+        0.23
+      ],
+      [
+        1.16,
+        0.64,
+        -1.28,
+        0.16
+      ],
+      [
+        1.28,
+        0.1,
+        -1.05,
+        0.046
+      ]
+    ]
+  ],
+  "palette": [
+    "572a21",
+    "d4a24d",
+    "29ceff"
+  ],
+  "textureSize": 1536,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false
+}

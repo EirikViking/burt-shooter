@@ -33,6 +33,12 @@ export function createPersistenceScheduler(options = {}) {
   let followUpRequested = false;
   let lastSentSnapshot = null;
   let lastResult = null;
+  let storageFailureReported = false;
+  const notifyStorage = (failed, error = null) => {
+    if (storageFailureReported === failed) return;
+    storageFailureReported = failed;
+    try { globalThis.window?.dispatchEvent(new CustomEvent('nova-storage-status', { detail: { failed, error } })); } catch {}
+  };
   const metrics = {
     dirtyNotifications: 0,
     scheduledFlushes: 0,
@@ -158,6 +164,8 @@ export function createPersistenceScheduler(options = {}) {
       const ipcStartedAt = globalThis.performance?.now?.() ?? Date.now();
       const result = await mergeSnapshot(snapshot, { reason, domains });
       const ipcDurationMs = (globalThis.performance?.now?.() ?? Date.now()) - ipcStartedAt;
+      if (result?.ok === false) throw new Error(result.error || 'persistence_write_rejected');
+      notifyStorage(false);
       if (serialized != null) lastSentSnapshot = serialized;
       metrics.completedFlushes += 1;
       lastResult = result ?? { ok: true };
@@ -187,6 +195,7 @@ export function createPersistenceScheduler(options = {}) {
       metrics.failures += 1;
       lastResult = { ok: false, error: error?.message || String(error), reason, domains };
       emit('persistence.flush_error', lastResult);
+      notifyStorage(true, lastResult.error);
       return lastResult;
     }).finally(() => {
       metrics.activeOperations = Math.max(0, metrics.activeOperations - 1);
@@ -194,7 +203,7 @@ export function createPersistenceScheduler(options = {}) {
       if (dirtyDomains.size > 0 || followUpRequested) {
         followUpRequested = false;
         metrics.followUpFlushes += 1;
-        schedule(0, 'in_flight_follow_up');
+        schedule(lastResult?.ok === false ? combatRetryDelayMs : 0, 'in_flight_follow_up');
       }
     });
     return inFlight;

@@ -1,0 +1,721 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "createdAt": "2026-09-10T11:11:32.220Z",
+  "plan": "creator",
+  "license": "Original nonverbal SFX generated on the user commercial paid plan.",
+  "creditCeiling": 6000,
+  "before": {
+    "tier": "creator",
+    "remaining": 192507
+  },
+  "cues": [
+    {
+      "name": "harpoon-charge",
+      "file": "docs/tractor-fleet/originals/harpoon-charge.mp3",
+      "request": {
+        "text": "Original cinematic science fiction spacecraft sound effect. A heavy electromagnetic harpoon, tight sizzling tungsten cable under enormous tension, sharp metallic resonances and a deep focused power core. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Full bodied, tactile, detailed, prominent at normal game listening levels. No speech, no music, no beeps, no generic laser gun, no long silence, no distorted clipping.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "rejected",
+      "httpStatus": 400,
+      "error": "Invalid text length received for text 'Original cinematic science fiction spacecraft soun ...', expected a maximum number of 450 characters but received 468 characters."
+    },
+    {
+      "name": "harpoon-active",
+      "file": "docs/tractor-fleet/originals/harpoon-active.mp3",
+      "request": {
+        "text": "Original cinematic science fiction spacecraft sound effect. A heavy electromagnetic harpoon, tight sizzling tungsten cable under enormous tension, sharp metallic resonances and a deep focused power core. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Full bodied, tactile, detailed, prominent at normal game listening levels. No speech, no music, no beeps, no generic laser gun, no long silence, no distorted clipping.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "rejected",
+      "httpStatus": 400,
+      "error": "Invalid text length received for text 'Original cinematic science fiction spacecraft soun ...', expected a maximum number of 450 characters but received 513 characters."
+    },
+    {
+      "name": "harpoon-charge",
+      "file": "docs/tractor-fleet/originals/harpoon-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A heavy electromagnetic harpoon, tight sizzling tungsten cable under enormous tension, sharp metallic resonances and a deep focused power core. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "5abfaf9d1e8e485170481ee6f20eec3527abb24aeb2469ebb6cbca2ec359e02a"
+    },
+    {
+      "name": "harpoon-active",
+      "file": "docs/tractor-fleet/originals/harpoon-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A heavy electromagnetic harpoon, tight sizzling tungsten cable under enormous tension, sharp metallic resonances and a deep focused power core. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "c5a9bd5f31522b938607667f2b1af2152f390efba8abcfc8bb4a2cbad4fc209b"
+    },
+    {
+      "name": "harpoon-break",
+      "file": "docs/tractor-fleet/originals/harpoon-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A heavy electromagnetic harpoon, tight sizzling tungsten cable under enormous tension, sharp metallic resonances and a deep focused power core. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "4371ad74fb725b446e254246742907044f320afea556ca5999a273d5b8b35098"
+    },
+    {
+      "name": "tide-charge",
+      "file": "docs/tractor-fleet/originals/tide-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An enormous liquid magnetic tide sweeping sideways, glassy fluid turbulence and rolling subsonic pressure with clear upper harmonic spray. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "688c64c9fe9fee9e72a3d1484dd0540ab16b689502b95dfdb8fcd5e25205636e"
+    },
+    {
+      "name": "tide-active",
+      "file": "docs/tractor-fleet/originals/tide-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An enormous liquid magnetic tide sweeping sideways, glassy fluid turbulence and rolling subsonic pressure with clear upper harmonic spray. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "898b330f4cfb1f9cb4dfdaf1e4d41bd618be40683becfdb5d3354722c869bbff"
+    },
+    {
+      "name": "tide-break",
+      "file": "docs/tractor-fleet/originals/tide-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An enormous liquid magnetic tide sweeping sideways, glassy fluid turbulence and rolling subsonic pressure with clear upper harmonic spray. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "cb8e9d58b788739ca2ab9c40779f5e9e37b57852261d881ffb1900fb78dcf4ed"
+    },
+    {
+      "name": "pulse-charge",
+      "file": "docs/tractor-fleet/originals/pulse-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An industrial gravity hammer with three separated heavy piston suction pulses, mechanical clacks and dense resonant metal pressure. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "5fcf016323c9902781b87985b25e218c0a8f2af2568b127a279fe0dd4e311c38"
+    },
+    {
+      "name": "pulse-active",
+      "file": "docs/tractor-fleet/originals/pulse-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An industrial gravity hammer with three separated heavy piston suction pulses, mechanical clacks and dense resonant metal pressure. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "81802644c7ca022a2a253b83af9a290552fb358540a413b35e060caaa232c4c6"
+    },
+    {
+      "name": "pulse-break",
+      "file": "docs/tractor-fleet/originals/pulse-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An industrial gravity hammer with three separated heavy piston suction pulses, mechanical clacks and dense resonant metal pressure. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "38642fc5218553d684848481b10cd774d994be968e562c0fb9b90ee7ced901b8"
+    },
+    {
+      "name": "twin-charge",
+      "file": "docs/tractor-fleet/originals/twin-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Twin counter rotating electromagnetic spindles, interwoven silky electrical ribbons alternating left and right, crystalline metallic phase beating. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "63b89ba816f79e768fab8c983038b4b49f55455bd817f27a2c8628c22487168b"
+    },
+    {
+      "name": "twin-active",
+      "file": "docs/tractor-fleet/originals/twin-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Twin counter rotating electromagnetic spindles, interwoven silky electrical ribbons alternating left and right, crystalline metallic phase beating. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "7edcdd6214d424e8024ee6128ca6e0b2308df69a916f2d4649395a21477fa3da"
+    },
+    {
+      "name": "twin-break",
+      "file": "docs/tractor-fleet/originals/twin-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Twin counter rotating electromagnetic spindles, interwoven silky electrical ribbons alternating left and right, crystalline metallic phase beating. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "f399d389b1fff37012411ced4d62bf39793561171db1be7e0d3f3273f210a65a"
+    },
+    {
+      "name": "helix-charge",
+      "file": "docs/tractor-fleet/originals/helix-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A corkscrew graviton drill winding through space, thick twisting spectral whorl, toothed magnetic oscillations and restrained mechanical grit. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "6397cce7458287fd9b3a7f95e6623d51f1076670d19587e6acb6fe034bd36eb5"
+    },
+    {
+      "name": "helix-active",
+      "file": "docs/tractor-fleet/originals/helix-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A corkscrew graviton drill winding through space, thick twisting spectral whorl, toothed magnetic oscillations and restrained mechanical grit. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "11b183bca40a5c43de85c3fa3382434443077556d9d906bf961b4312479fa8ad"
+    },
+    {
+      "name": "helix-break",
+      "file": "docs/tractor-fleet/originals/helix-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A corkscrew graviton drill winding through space, thick twisting spectral whorl, toothed magnetic oscillations and restrained mechanical grit. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "f9e34887df6f46a61d0b8b2c996030f8a6a1583d1dd44ed4dbdc5da99988c91d"
+    },
+    {
+      "name": "well-charge",
+      "file": "docs/tractor-fleet/originals/well-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A monumental gravity lens bending spacetime, low architectural metal groan, resonant cathedral sized vacuum pressure and bright glass overtones. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "d655a028438308917264af09559a2f7bc053cc1434ccb467d19de80dbe727b9e"
+    },
+    {
+      "name": "well-active",
+      "file": "docs/tractor-fleet/originals/well-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A monumental gravity lens bending spacetime, low architectural metal groan, resonant cathedral sized vacuum pressure and bright glass overtones. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "a1ce73cf0b3e49ce9029b6a3c3b3357fee09276b8ad84fcad305b81031058147"
+    },
+    {
+      "name": "well-break",
+      "file": "docs/tractor-fleet/originals/well-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A monumental gravity lens bending spacetime, low architectural metal groan, resonant cathedral sized vacuum pressure and bright glass overtones. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "8abfa56b7ced040d56c2d25bd969bf6142b5bf332da1a30e8df773d2fbafcb00"
+    },
+    {
+      "name": "shepherd-charge",
+      "file": "docs/tractor-fleet/originals/shepherd-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A radiant solar magnetic sail parting into two sheets, broad shimmering ion wind and tense golden metallic harmonics moving outward. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "9c6c71826ba6e4e80596c330c7c6c9170180ea5002e93b06d5d2705465b3a7ff"
+    },
+    {
+      "name": "shepherd-active",
+      "file": "docs/tractor-fleet/originals/shepherd-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A radiant solar magnetic sail parting into two sheets, broad shimmering ion wind and tense golden metallic harmonics moving outward. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "e816ccb732a4644e04cf7c875ecc2f9b769002924743e53fa6aa66be9431c9d3"
+    },
+    {
+      "name": "shepherd-break",
+      "file": "docs/tractor-fleet/originals/shepherd-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A radiant solar magnetic sail parting into two sheets, broad shimmering ion wind and tense golden metallic harmonics moving outward. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "213df7600a63dacb0007e4f193f1dd17985123c4068a9a52f4533d1c046d8d17"
+    },
+    {
+      "name": "anchor-charge",
+      "file": "docs/tractor-fleet/originals/anchor-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A massive aerospace docking clamp locking a gravitational anchor, weighty sequential latches, grounded magnetic drone with a taut cable resonance. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "f803abbe4dffa706c979045a7185be6047e132c854ead3f0e60b61a634e14b68"
+    },
+    {
+      "name": "anchor-active",
+      "file": "docs/tractor-fleet/originals/anchor-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A massive aerospace docking clamp locking a gravitational anchor, weighty sequential latches, grounded magnetic drone with a taut cable resonance. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "41446233036941bf63e05a718180d1033f8962c9802b8f5b238a3ff7c5d7f615"
+    },
+    {
+      "name": "anchor-break",
+      "file": "docs/tractor-fleet/originals/anchor-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A massive aerospace docking clamp locking a gravitational anchor, weighty sequential latches, grounded magnetic drone with a taut cable resonance. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "99939f5fcd77d51d676c409117febe9d0a5b4ca36f9ff6bd0163e14904d0d1ca"
+    },
+    {
+      "name": "elevator-charge",
+      "file": "docs/tractor-fleet/originals/elevator-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Travelling gravity rings ascending a deep energy shaft, rising sequential electromagnetic steps, smooth charged metal and distant spatial shimmer. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "72eac00e6718b072529bd26c7f8a392208dadd39e50e59089978fb45d209d3f8"
+    },
+    {
+      "name": "elevator-active",
+      "file": "docs/tractor-fleet/originals/elevator-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Travelling gravity rings ascending a deep energy shaft, rising sequential electromagnetic steps, smooth charged metal and distant spatial shimmer. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "ee356be11975610a19323a2eb637e3e9c2481d0609e6a0861ffbf78f69854643"
+    },
+    {
+      "name": "elevator-break",
+      "file": "docs/tractor-fleet/originals/elevator-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Travelling gravity rings ascending a deep energy shaft, rising sequential electromagnetic steps, smooth charged metal and distant spatial shimmer. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "57718472740394156d385a2cb2b61ed4bd48ac61588dda6d67abfd4bfc424cdb"
+    },
+    {
+      "name": "winch-charge",
+      "file": "docs/tractor-fleet/originals/winch-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An immense industrial winch accelerating from a slow strained motor into a powerful turbine pull, tension rattles and heated copper energy. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "906b62569fd66c655f53d18a20afdcd92d85083d36076575df41618ee76cf839"
+    },
+    {
+      "name": "winch-active",
+      "file": "docs/tractor-fleet/originals/winch-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An immense industrial winch accelerating from a slow strained motor into a powerful turbine pull, tension rattles and heated copper energy. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "dfad21e4f4cee41aa5e6e564de985ed6bb758d4c6bb9b070107810ffd0e47fef"
+    },
+    {
+      "name": "winch-break",
+      "file": "docs/tractor-fleet/originals/winch-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An immense industrial winch accelerating from a slow strained motor into a powerful turbine pull, tension rattles and heated copper energy. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "8309ded866bebce005b2b74fd3b0426797082ecb3ffd96c5610dfd36c90a4ef5"
+    },
+    {
+      "name": "prism-charge",
+      "file": "docs/tractor-fleet/originals/prism-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Three precision prism emitters firing in a deliberate left centre right sequence, distinct chiming magnetic resonances over a heavy coherent laser hum. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "ab30691ae72052e8c3105224a1e64e34084703875f8ab83a5c5c3432b72d8320"
+    },
+    {
+      "name": "prism-active",
+      "file": "docs/tractor-fleet/originals/prism-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Three precision prism emitters firing in a deliberate left centre right sequence, distinct chiming magnetic resonances over a heavy coherent laser hum. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "5baf1617365186af4205c6be659b2e1138f00967237d3ada17267904d7b12667"
+    },
+    {
+      "name": "prism-break",
+      "file": "docs/tractor-fleet/originals/prism-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Three precision prism emitters firing in a deliberate left centre right sequence, distinct chiming magnetic resonances over a heavy coherent laser hum. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "940f15ce2e50c901ae1867c06f6c2b77e845a812bbfa25cf40b62d20ecdcbe41"
+    },
+    {
+      "name": "pendulum-charge",
+      "file": "docs/tractor-fleet/originals/pendulum-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An alien inertial pendulum rocking magnetic weight back and forth, two alternating deep tonal stresses and tactile swinging servo machinery. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "7e20f6029481a97e6b4c137881dfc7927c9755f216a4e7f2d5283d39258c67b9"
+    },
+    {
+      "name": "pendulum-active",
+      "file": "docs/tractor-fleet/originals/pendulum-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An alien inertial pendulum rocking magnetic weight back and forth, two alternating deep tonal stresses and tactile swinging servo machinery. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "f911fb0b1a7e88e8dbaa255fb53c641ebb063f3d894c1752842c2e706cdd1574"
+    },
+    {
+      "name": "pendulum-break",
+      "file": "docs/tractor-fleet/originals/pendulum-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An alien inertial pendulum rocking magnetic weight back and forth, two alternating deep tonal stresses and tactile swinging servo machinery. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "02c52347abfdeda097c3faa3857e069f5d23834c6c7ec24eeb303bb9f169a4f9"
+    },
+    {
+      "name": "zipper-charge",
+      "file": "docs/tractor-fleet/originals/zipper-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Two huge magnetic jaws closing together with converging energy ribbons, zipper like sequential metal catches and a concentrated hot ion hiss. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "464f3c8f63a4bd832d162eb273283d7e3f8c73fce045d26e95f51fd79171ef77"
+    },
+    {
+      "name": "zipper-active",
+      "file": "docs/tractor-fleet/originals/zipper-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Two huge magnetic jaws closing together with converging energy ribbons, zipper like sequential metal catches and a concentrated hot ion hiss. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "dfd3087d88f82c2a91f97f99e8e0cf693649a97070b41422c381011340831bb4"
+    },
+    {
+      "name": "zipper-break",
+      "file": "docs/tractor-fleet/originals/zipper-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. Two huge magnetic jaws closing together with converging energy ribbons, zipper like sequential metal catches and a concentrated hot ion hiss. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "322514853abed26afce850609aafaeb436854b7ec1e9805547e3962a3613a3ff"
+    },
+    {
+      "name": "eclipse-charge",
+      "file": "docs/tractor-fleet/originals/eclipse-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A hollow antimatter corona with a silent centre, two dark resonating pressure walls, eerie rich metallic harmonics and granular electrical fringes. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "9f6bd8762d31084fe8697ab2271501caefceca01a355a4338688c6e954eb343c"
+    },
+    {
+      "name": "eclipse-active",
+      "file": "docs/tractor-fleet/originals/eclipse-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A hollow antimatter corona with a silent centre, two dark resonating pressure walls, eerie rich metallic harmonics and granular electrical fringes. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "ebf1ce93d64910b066ae925eb278428ec728d4343d1dbcd564e0cf96c53e71f4"
+    },
+    {
+      "name": "eclipse-break",
+      "file": "docs/tractor-fleet/originals/eclipse-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. A hollow antimatter corona with a silent centre, two dark resonating pressure walls, eerie rich metallic harmonics and granular electrical fringes. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "bfe29c6207d03f785195a3c7ab225742ca3dcea9fbbf8e0104680e75f706743a"
+    },
+    {
+      "name": "sling-charge",
+      "file": "docs/tractor-fleet/originals/sling-charge.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An enormous magnetic catapult winding a tense energy tether then releasing into an outward sweeping plasma surge, elastic metal stress and a powerful clean release. A distinct anticipatory charging rise, no firing yet. Build warning tension with a clear ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 60,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 17,
+      "sha256": "fa9c8292f3e1e1f495393b87a1bf8a367421848725fee3d83f6b3fcf377003f7"
+    },
+    {
+      "name": "sling-active",
+      "file": "docs/tractor-fleet/originals/sling-active.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An enormous magnetic catapult winding a tense energy tether then releasing into an outward sweeping plasma surge, elastic metal stress and a powerful clean release. The sustained operational tractor field in action. Immediate strong presence, evolving internal movement, no long lead in, controlled ending. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 120,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 33,
+      "sha256": "aedeb660bfc222fdc3e96debc4a05922647061b807578c6d0610da5edf0cdbdc"
+    },
+    {
+      "name": "sling-break",
+      "file": "docs/tractor-fleet/originals/sling-break.mp3",
+      "request": {
+        "text": "Cinematic sci-fi tractor field. An enormous magnetic catapult winding a tense energy tether then releasing into an outward sweeping plasma surge, elastic metal stress and a powerful clean release. The field is abruptly severed: a satisfying short energy snap, mechanical release and dissipating charged tail. Tactile, powerful, detailed. No speech, music, beeps or silence.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.85
+      },
+      "estimatedCredits": 40,
+      "status": "complete",
+      "requestId": null,
+      "billedCredits": 11,
+      "sha256": "adf469078738fa3e5482ff3cc810fd6503ce0807fdfc6a00904a505721668e6a"
+    }
+  ],
+  "after": {
+    "tier": "creator",
+    "remaining": 192385
+  }
+}

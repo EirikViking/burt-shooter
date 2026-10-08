@@ -561,42 +561,50 @@ const RUNTIME_TIP_TEMPLATES = Object.freeze({
 
 const CODEX_UI_COPY = Object.freeze({
   en: {
-    subtitle: 'BLACK-BOX GOSSIP, SURVIVAL RECEIPTS, AND THINGS WITH TEETH',
+    subtitle: 'KNOW THEIR TELLS. CHOOSE YOUR COUNTER. SURVIVE THE NEXT WAVE.',
+    nextNew: 'NEXT NEW SIGNAL',
     lockedDescription: 'The Cabinet has the silhouette and absolutely no useful details. Meet this thing alive, leave it dead, and the drawer will stop hissing.',
     lockedTip: 'MEET IT IN A RUN. KEEP THE RECEIPT.'
   },
   de: {
-    subtitle: 'BLACKBOX-KLATSCH, ÜBERLEBENSQUITTUNGEN UND DINGE MIT ZÄHNEN',
+    subtitle: 'ERKENNE IHRE MANÖVER. FINDE DIE ANTWORT. ÜBERSTEHE DIE NÄCHSTE WELLE.',
+    nextNew: 'NÄCHSTES NEUES SIGNAL',
     lockedDescription: 'Das Cabinet hat die Silhouette und keinerlei nützliche Details. Triff das Ding lebend, hinterlass es tot, dann hört die Schublade auf zu fauchen.',
     lockedTip: 'TRIFF ES IM RUN. BEHALT DIE QUITTUNG.'
   },
   es: {
-    subtitle: 'RUMORES DE CAJA NEGRA, RECIBOS DE SUPERVIVENCIA Y COSAS CON DIENTES',
+    subtitle: 'APRENDE SUS MOVIMIENTOS. ELIGE CÓMO RESPONDER. SOBREVIVE A LA PRÓXIMA OLEADA.',
+    nextNew: 'SIGUIENTE SEÑAL NUEVA',
     lockedDescription: 'El Cabinet tiene la silueta y ningún detalle útil. Encuentra esta cosa viva, déjala muerta y el cajón dejará de sisear.',
     lockedTip: 'ENCUÉNTRALO EN UNA PARTIDA. GUARDA EL RECIBO.'
   },
   ru: {
-    subtitle: 'СПЛЕТНИ ЧЁРНОГО ЯЩИКА, КВИТАНЦИИ О ВЫЖИВАНИИ И ЗУБАСТЫЕ ШТУКИ',
+    subtitle: 'ИЗУЧИ ИХ ПРИЁМЫ. НАЙДИ ОТВЕТ. ПЕРЕЖИВИ СЛЕДУЮЩУЮ ВОЛНУ.',
+    nextNew: 'СЛЕДУЮЩИЙ НОВЫЙ СИГНАЛ',
     lockedDescription: 'У Cabinet есть силуэт и ни одной полезной детали. Встреть эту штуку живой, оставь мёртвой — и ящик перестанет шипеть.',
     lockedTip: 'ВСТРЕТЬ В ЗАБЕГЕ. СОХРАНИ КВИТАНЦИЮ.'
   },
   'pt-BR': {
-    subtitle: 'FOFOCA DE CAIXA-PRETA, RECIBOS DE SOBREVIVÊNCIA E COISAS COM DENTES',
+    subtitle: 'APRENDA OS SINAIS. ESCOLHA SUA RESPOSTA. SOBREVIVA À PRÓXIMA ONDA.',
+    nextNew: 'PRÓXIMO SINAL NOVO',
     lockedDescription: 'O Cabinet tem a silhueta e nenhum detalhe útil. Encontre a coisa viva, deixe-a morta e a gaveta vai parar de chiar.',
     lockedTip: 'ENCONTRE NA PARTIDA. GUARDE O RECIBO.'
   },
   'zh-CN': {
-    subtitle: '黑匣子八卦、生存收据，以及长牙的东西',
+    subtitle: '识破敌人的招式。找到对策。撑过下一波。',
+    nextNew: '下一个新信号',
     lockedDescription: 'Cabinet只拿到了轮廓，完全没有有用细节。见到它时让它活着，离开时别让它活着，抽屉就会停止嘶叫。',
     lockedTip: '在本局遇见它。收好收据。'
   },
   ko: {
-    subtitle: '블랙박스 소문, 생존 영수증, 그리고 이빨 달린 것들',
+    subtitle: '적의 패턴을 읽고 대응하라. 다음 웨이브를 살아남아라.',
+    nextNew: '다음 새 신호',
     lockedDescription: 'Cabinet에는 실루엣만 있고 쓸모 있는 정보는 전혀 없다. 살아 있는 채로 만나고 죽은 채로 남기면 서랍이 쉿쉿대는 걸 멈춘다.',
     lockedTip: '런에서 만나라. 영수증을 챙겨라.'
   },
   ja: {
-    subtitle: 'ブラックボックスの噂、生存の領収書、そして歯のあるもの',
+    subtitle: '敵の動きを見抜き、対策を選び、次のウェーブを生き延びろ。',
+    nextNew: '次の新しいシグナル',
     lockedDescription: 'Cabinetが持っているのは輪郭だけで、役立つ情報は皆無だ。生きた状態で出会い、倒して帰れば、引き出しも威嚇をやめる。',
     lockedTip: 'ランで遭遇しろ。領収書を残せ。'
   }

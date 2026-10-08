@@ -1,4 +1,5 @@
 import { drawAstraPanel } from './AstraConsole.js';
+import { readLastRunMode } from '../game/LastRunMode.js';
 import * as PIXI from 'pixi.js';
 import { deriveDailySignalContract } from '../config/DailyCabinetSignal.js';
 import {
@@ -82,7 +83,7 @@ export function getHangarLaunchModeOptions() {
       accent: 0xa77dff,
       eyebrow: 'ENDLESS CAREER',
       summary: overrunState.available
-        ? 'CAREER // NO LEADERBOARD'
+        ? 'ONSLAUGHT — RANKED CHALLENGE'
         : translateText('REACH SECTOR {sector} TO UNLOCK', { sector: overrunState.requiredSector }),
       enabled: Boolean(overrunState.available)
     },
@@ -214,7 +215,8 @@ export class HangarLaunchModeOverlay {
     hint.position.set(width / 2, panelY + panelHeight - (compact ? 19 : 24));
     fitTextToWidth(hint, panelWidth - 50, 0.55);
     this.container.addChild(hint);
-    this.setFocus(0, { silent: true });
+    const remembered = this.options.findIndex(option => option.id === readLastRunMode() && option.enabled !== false);
+    this.setFocus(Math.max(0, remembered), { silent: true });
   }
 
   createModeButton(option, index, x, y, width, height, compact) {
@@ -287,12 +289,22 @@ export class HangarLaunchModeOverlay {
     launch.anchor.set(0.5);
     launch.position.set(width / 2, height - (compact ? 17 : 20));
     button.addChild(launch);
+    // Draw keyboard/controller focus last so panel fills cannot cover it.
+    const focus = new PIXI.Graphics();
+    focus.label = 'launchModeFocus';
+    focus.eventMode = 'none';
+    button.addChild(focus);
 
     button.redraw = () => {
       const focused = index === this.focusedIndex;
       const hovered = Boolean(button._hovered);
       glow.clear();
       bg.clear();
+      focus.clear();
+      if (focused) {
+        focus.rect(-2, -2, width + 4, height + 4).stroke({ color: 0xffffff, width: 3, alpha: 1 });
+        focus.rect(3, 12, 4, height - 24).fill(0xffffff);
+      }
       if (focused || hovered) {
         drawCutPanel(glow, -6, -6, width + 12, height + 12, option.accent, focused ? 0.19 : 0.11);
       }
@@ -304,7 +316,7 @@ export class HangarLaunchModeOverlay {
         height - (compact ? 31 : 36),
         width - 24,
         compact ? 24 : 28,
-        option.enabled === false ? 0x263442 : option.accent,
+        option.enabled === false ? 0x263442 : focused ? 0xffffff : option.accent,
         focused || hovered ? 0.98 : 0.82
       );
     };

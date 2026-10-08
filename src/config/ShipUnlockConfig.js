@@ -160,7 +160,7 @@ export const ShipUnlockConfig = Object.freeze([
   },
   {
     shipId: 'nova_ship_24',
-    label: 'Clear with 2 lives remaining or score 500,000',
+    label: 'Clear Sector 10 in Mayhem with 2 lives left, or score 500,000 in Mayhem',
     requirementsAny: [{ clearWithLivesRemaining: 2 }, { bestScore: 500000 }],
     legacyLevel: 58
   },

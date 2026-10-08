@@ -1,0 +1,6 @@
+[quote=Tyrian Mollusk]then whooshed right back in as the next wave started[/quote]
+Delivery update: the convoy continuity repair described above is now on sector-continue-test, BuildID 25650189, v2026-10-01_11-57-51.
+
+Ordinary reinforcement warnings keep the transport visible while its clock and attacks freeze. Interrupted retreat/re-entry and late-rescue departure continue from the current position. Headline encounters still take priority. The current build also contains the new explosion choreography, harmless planet scenes and sound work; none adds targets or rewards.
+
+The public/default build is unchanged. Please test the normal rescue window and slow-hull positioning; the regression checks establish continuity and cleanup, not whether those choices feel right.

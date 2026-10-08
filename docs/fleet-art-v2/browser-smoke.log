@@ -1,0 +1,7 @@
+[smoke] starting http://127.0.0.1:5199
+[smoke] browser launched
+[smoke] menu captured
+page.waitForFunction: Timeout 3500ms exceeded.
+    at runSmoke (D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\scripts\smoke-playtest.mjs:469:18) {
+  name: 'TimeoutError'
+}

@@ -4,7 +4,7 @@ const commandMaterials = new Map();
 function commandMaterial(accent) {
   if (!commandMaterials.has(accent)) commandMaterials.set(accent, new PIXI.FillGradient({
     type: 'linear', start: {x: 0, y: 0}, end: {x: 0, y: 1}, textureSpace: 'local',
-    colorStops: [{offset:0,color:0x78949e},{offset:.035,color:0x293d48},{offset:.14,color:0x1b303d},{offset:.52,color:0x0b1b29},{offset:.95,color:0x050d15},{offset:1,color:0x40565e}]
+    colorStops: [{offset:0,color:0x526774},{offset:.025,color:0x182b39},{offset:.14,color:0x11212f},{offset:.52,color:0x081422},{offset:.975,color:0x040b14},{offset:1,color:0x263746}]
   }));
   return commandMaterials.get(accent);
 }
@@ -59,8 +59,8 @@ const FRAME_VARIANTS = Object.freeze({
   persistent: Object.freeze({
     plateRatio: 0.82,
     plateInsetY: 5,
-    surfaceAlpha: 0.34,
-    liftAlpha: 0.16,
+    surfaceAlpha: 0.66,
+    liftAlpha: 0.08,
     railMode: 'calm_bracket',
     motifSize: 4
   }),
@@ -68,7 +68,7 @@ const FRAME_VARIANTS = Object.freeze({
     plateRatio: 0.78,
     plateInsetY: 5,
     surfaceAlpha: 0.68,
-    liftAlpha: 0.22,
+    liftAlpha: 0.12,
     railMode: 'compact_cap',
     motifSize: 4
   }),
@@ -139,7 +139,7 @@ function drawRail(graphics, {
     graphics.lineTo(halfWidth - 10, bottom - 9);
     graphics.lineTo(halfWidth, bottom - 9);
   }
-  graphics.stroke({ color: accent, width: primaryLineWidth, alpha: 0.88 });
+  graphics.stroke({ color: accent, width: primaryLineWidth, alpha: mode === 'alert_step' ? 0.88 : 0.48 });
 
   const inset = Math.max(6, Math.round(halfHeight * 0.2));
   graphics.moveTo(plateHalfWidth + 6, top + inset);
@@ -214,7 +214,7 @@ function buildStructuralHalf({
   primaryEdge.moveTo(0, halfHeight);
   primaryEdge.lineTo(plateHalfWidth - 9, halfHeight);
   primaryEdge.lineTo(plateHalfWidth, halfHeight - 9);
-  primaryEdge.stroke({ color: accent, width: primaryLineWidth, alpha: 0.9 });
+  primaryEdge.stroke({ color: accent, width: primaryLineWidth, alpha: variant === 'warning' ? 0.9 : 0.5 });
   drawRail(primaryEdge, {
     mode: config.railMode,
     plateHalfWidth,
@@ -232,7 +232,7 @@ function buildStructuralHalf({
   secondaryEdge.lineTo(plateHalfWidth - 15, -halfHeight + 7);
   secondaryEdge.moveTo(15, halfHeight - 7);
   secondaryEdge.lineTo(plateHalfWidth - 15, halfHeight - 7);
-  secondaryEdge.stroke({ color: secondaryAccent, width: secondaryLineWidth, alpha: 0.52 });
+  secondaryEdge.stroke({ color: secondaryAccent, width: secondaryLineWidth, alpha: 0.3 });
   half.addChild(secondaryEdge);
 
   let railFill = null;

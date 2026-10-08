@@ -1,0 +1,226 @@
+{
+  "videoMode": true,
+  "measurementNote": "Capture run; timing not used for performance claims",
+  "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "coldReadyMs": 10665,
+  "rows": [
+    {
+      "scene": "menu",
+      "drag": {
+        "yaw": 1.2000000000000002,
+        "pitch": 0.3149997253417968
+      },
+      "canvasPixels": 1536,
+      "frameMs": {
+        "samples": 871,
+        "mean": 16.66716417910448,
+        "p95": 16.799999999999272,
+        "max": 17
+      },
+      "renderAndCopyMs": {
+        "samples": 870,
+        "mean": 1.214597701212798,
+        "p95": 1.9000000059604645,
+        "max": 3.600000001490116
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 11,
+        "textures": 10,
+        "calls": 22,
+        "triangles": 663752
+      }
+    },
+    {
+      "scene": "hangar",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "canvasPixels": 768,
+      "frameMs": {
+        "samples": 871,
+        "mean": 16.667278989667047,
+        "p95": 16.80000000000291,
+        "max": 17.099999999998545
+      },
+      "renderAndCopyMs": {
+        "samples": 870,
+        "mean": 1.1363218391592476,
+        "p95": 1.7000000029802322,
+        "max": 3.7000000029802322
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 11,
+        "textures": 10,
+        "calls": 22,
+        "triangles": 663752
+      }
+    }
+  ],
+  "cycles": [
+    {
+      "key": "nova-player-ship-02.png",
+      "readyMs": 1697,
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 9,
+        "calls": 12,
+        "triangles": 39976
+      }
+    },
+    {
+      "key": "nova-player-ship-01.png",
+      "readyMs": 1739,
+      "resources": {
+        "resident": 1,
+        "geometries": 11,
+        "textures": 10,
+        "calls": 22,
+        "triangles": 663752
+      }
+    },
+    {
+      "key": "nova-player-ship-02.png",
+      "readyMs": 833,
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 9,
+        "calls": 12,
+        "triangles": 39976
+      }
+    },
+    {
+      "key": "nova-player-ship-01.png",
+      "readyMs": 1480,
+      "resources": {
+        "resident": 1,
+        "geometries": 11,
+        "textures": 10,
+        "calls": 22,
+        "triangles": 663752
+      }
+    },
+    {
+      "key": "nova-player-ship-02.png",
+      "readyMs": 753,
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 9,
+        "calls": 12,
+        "triangles": 39976
+      }
+    },
+    {
+      "key": "nova-player-ship-01.png",
+      "readyMs": 1561,
+      "resources": {
+        "resident": 1,
+        "geometries": 11,
+        "textures": 10,
+        "calls": 22,
+        "triangles": 663752
+      }
+    },
+    {
+      "key": "nova-player-ship-02.png",
+      "readyMs": 734,
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 9,
+        "calls": 12,
+        "triangles": 39976
+      }
+    },
+    {
+      "key": "nova-player-ship-01.png",
+      "readyMs": 1424,
+      "resources": {
+        "resident": 1,
+        "geometries": 11,
+        "textures": 10,
+        "calls": 22,
+        "triangles": 663752
+      }
+    },
+    {
+      "key": "nova-player-ship-02.png",
+      "readyMs": 732,
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 9,
+        "calls": 12,
+        "triangles": 39976
+      }
+    },
+    {
+      "key": "nova-player-ship-01.png",
+      "readyMs": 1365,
+      "resources": {
+        "resident": 1,
+        "geometries": 11,
+        "textures": 10,
+        "calls": 22,
+        "triangles": 663752
+      }
+    },
+    {
+      "key": "nova-player-ship-02.png",
+      "readyMs": 678,
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 9,
+        "calls": 12,
+        "triangles": 39976
+      }
+    },
+    {
+      "key": "nova-player-ship-01.png",
+      "readyMs": 1444,
+      "resources": {
+        "resident": 1,
+        "geometries": 11,
+        "textures": 10,
+        "calls": 22,
+        "triangles": 663752
+      }
+    }
+  ],
+  "combat": {
+    "key": "nova-player-ship-01.png",
+    "resources": {
+      "resident": 0,
+      "geometries": 0,
+      "textures": 3,
+      "calls": 22,
+      "triangles": 663752
+    }
+  },
+  "imports": [],
+  "requests": [
+    "http://127.0.0.1:5201/art/sparrow-showcase/model.glb",
+    "http://127.0.0.1:5201/art/sparrow-showcase/model.glb",
+    "http://127.0.0.1:5201/art/solid-fleet-20260908/02.glb",
+    "http://127.0.0.1:5201/art/sparrow-showcase/model.glb",
+    "http://127.0.0.1:5201/art/solid-fleet-20260908/02.glb",
+    "http://127.0.0.1:5201/art/sparrow-showcase/model.glb",
+    "http://127.0.0.1:5201/art/solid-fleet-20260908/02.glb",
+    "http://127.0.0.1:5201/art/sparrow-showcase/model.glb",
+    "http://127.0.0.1:5201/art/solid-fleet-20260908/02.glb",
+    "http://127.0.0.1:5201/art/sparrow-showcase/model.glb",
+    "http://127.0.0.1:5201/art/solid-fleet-20260908/02.glb",
+    "http://127.0.0.1:5201/art/sparrow-showcase/model.glb",
+    "http://127.0.0.1:5201/art/solid-fleet-20260908/02.glb",
+    "http://127.0.0.1:5201/art/sparrow-showcase/model.glb",
+    "http://127.0.0.1:5201/art/sparrow-showcase/model.glb"
+  ],
+  "errors": [],
+  "warnings": []
+}

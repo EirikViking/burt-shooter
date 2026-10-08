@@ -71,6 +71,7 @@ class Powerup {
     this.spawnId = options.spawnId || null;
     this.spawnKey = options.spawnKey || null;
     this.spawnSource = options.source || null;
+    this.lifeGrantOptions = { spawnedSector: options.spawnedSector ?? null, allowEnduranceLife: options.allowEnduranceLife === true };
     this.rewardClaim = options.rewardClaim === true;
     this.rngIsolated = Boolean(options.visualSeed);
     this.randomUnit = this.rngIsolated ? createSeededRandom(options.visualSeed) : Math.random;
@@ -731,6 +732,7 @@ class Powerup {
     const playerY = Number(player?.y);
     const hasPlayer = Number.isFinite(playerX) && Number.isFinite(playerY);
     guide.clear();
+    hideMicroSignals(guide);
     if (!hasPlayer || player?.active === false) {
       guide.visible = false;
       guide.__debugPickupGuide = { visible: false, reason: 'no_player' };
@@ -931,6 +933,7 @@ class Powerup {
   }
 
   collect(player, scene) {
+    if (!this.active) return;
     this.active = false;
     const collectedTypes = [this.type, ...this.bundledPowerupTypes];
     scene?.performanceDiagnostics?.mark?.('gameplay.pickup_collected', {
@@ -947,7 +950,9 @@ class Powerup {
     });
 
     // TASK 1: Premium powerup pickup effects
-    this.showPickupEffect(scene);
+    try { this.showPickupEffect(scene); } catch (error) {
+      console.warn('[Powerup] pickup visual failed; reward continues', this.type, error);
+    }
     // Row Core owns one deliberately mixed four-second ritual. Playing the
     // ordinary pickup sting here used to cover its horn and first chant.
     if (this.type !== 'row_core') this.playPickupSFX(scene);
@@ -975,6 +980,7 @@ class Powerup {
     // Life Powerup Logic
     if (grantsLives) {
       scene.game.gainLife({
+        ...this.lifeGrantOptions,
         count: lifeGrant,
         source: this.type
       });
@@ -996,7 +1002,7 @@ class Powerup {
       }
     } else {
       // Pass type directly to player (Player handles all powerup logic)
-      player.applyPowerup(this.type);
+      player.applyPowerup(this.type, this.lifeGrantOptions);
 
       // shockwave: Also trigger scene effect (player.triggerShockwave handles damage/bullets)
       if (this.type === 'shockwave') {
@@ -1012,12 +1018,12 @@ class Powerup {
         bundledEffect.grantLives || (bundledType === 'life' ? 1 : 0)
       )));
       if (bundledLifeGrant > 0) {
-        scene.game.gainLife({ count: bundledLifeGrant, source: bundledType });
+        scene.game.gainLife({ ...this.lifeGrantOptions, count: bundledLifeGrant, source: bundledType });
         if (Number.isFinite(Number(bundledEffect.invulnMs))) {
           player?.grantInvulnerability?.(Number(bundledEffect.invulnMs), bundledType);
         }
       } else {
-        player.applyPowerup(bundledType);
+        player.applyPowerup(bundledType, this.lifeGrantOptions);
         if (bundledType === 'shockwave') player.lastScene = scene;
       }
     }
@@ -1180,7 +1186,8 @@ export class PowerupManager {
   }
 
   isExtraLifeType(type) {
-    return type === 'life' || type === 'super_extra_life' || type === 'nova_miracle';
+    const effect = getPowerupMeta(type)?.effect || {};
+    return type === 'life' || Number(effect.grantLives) > 0 || Number(effect.repairLives) > 0;
   }
 
   checkLevelReset(level) {
@@ -1352,6 +1359,7 @@ export class PowerupManager {
       const spectaclePowerups = [
         'chain_lightning',
         'orbital_strike',
+        'orbit_breaker',
         'prism_splitter',
         'rail_surge',
         'drone_carousel',
@@ -1388,7 +1396,8 @@ export class PowerupManager {
         'graviton_crown',
         'scrap_vacuum',
         'chrono_jackpot',
-        'dead_sun_dividend'
+        'dead_sun_dividend',
+        'vampire'
       ];
       type = combatPowerups[Math.floor(Math.random() * combatPowerups.length)];
     } else {
@@ -1410,7 +1419,8 @@ export class PowerupManager {
         'phase_dividend',
         'black_ice',
         'second_wind',
-        'afterburner_choir'
+        'afterburner_choir',
+        'vector_boost'
       ];
       type = standardPowerups[Math.floor(Math.random() * standardPowerups.length)];
     }
@@ -1507,6 +1517,8 @@ export class PowerupManager {
     this.nextSpawnSequence += 1;
     const powerup = new Powerup(x, y, type, {
       ...options,
+      spawnedSector: this.currentLevel,
+      allowEnduranceLife: debugOverride,
       spawnId,
       spawnKey
     });

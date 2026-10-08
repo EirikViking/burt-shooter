@@ -1,0 +1,45 @@
+Thanks, Tyrian and Violet. I've worked through this week's feedback. Below I distinguish what the recent public builds already changed from the new repair build I'm testing now.
+
+[b]Tyrian, 8 September — boss identity[/b]
+[quote=Tyrian Mollusk;583933421007657740]It feels far easier and more straightforward[/quote]
+Since this feedback, the public builds have added overlapping encounters, the Veilborn and snake broods. Those additions don't by themselves settle your concern about individual bosses losing personality. In the new test build I've reduced the excessive combined health budget and tightened the attack cadence. Both bosses still need to create pressure. I want to judge their rhythm and openings in play before expanding their mechanics further. The old imagery as an introduction insignia remains an idea for a later art review.
+
+[b]Tyrian, 8 September — ships, pickups and Wonders[/b]
+[quote=Tyrian Mollusk;583933421007657771]colored noise[/quote]
+The recent public builds put companion drones outside and above the hull, made cores reward collection without replacing combat powers, and enlarged the luminous Wonders while removing their opaque card background. This test build also keeps the planet's position and motion continuous when a boss arrives or leaves.
+
+I rechecked Rail Surge, Stasis Net, Void Crown and Chrono Anchor at pickup size. Rail Surge has its distinct illustrated hull; the other three still become dense circular details at small size. I've preserved the illustrated artwork, including the reversal of the earlier flat-symbol experiment. I won't call all four readability concerns resolved. Their silhouettes and the broader preference for older ships/distant backgrounds belong in the next art review; there is no legacy-art toggle in this build.
+
+[b]Tyrian, 8 September — controller and progression[/b]
+[quote=Tyrian Mollusk;583933421007657804]somewhat unusable on controller[/quote]
+Settings already gained clearer selection feedback and controller tab/value controls. Hangar already shows unlock requirements, returns directly with Back/B/Esc and saves your selected unlocked hull. The new build adds a strong white focus outline to the launch-mode cards, makes Play remember your last supported mode, and makes the older experimental launcher honor the saved hull.
+
+The public graze changes, next-volley Phase Reactor boost and scaled five-shard Rift remain. The new Rift leads moving targets. I also bounded additional results-page waits so a delayed leaderboard lookup can fall back instead of holding the screen indefinitely. The automated delayed-service and results checks pass, but I haven't reproduced your exact long-run hang and still want a real late-run retest. Focus Lens remains a Tactical tool.
+
+[b]Tyrian, 9 September — escaping drones and cores[/b]
+[quote=Tyrian Mollusk;568171134404583954]drones/cores could exit differently[/quote]
+The new build gives missed drones and cores a shrinking blue escape shimmer, distinct from a kill or collection. A core can also refresh a combo timer that is already running; it cannot create a combo or raise the multiplier. The graze behavior you liked is preserved, including release-to-prime and immediate re-earning.
+
+[b]Violet, 10 September — more threatening encounters[/b]
+[quote=Violet Chimaera;569297137116975801]more threatening[/quote]
+The recent public build added attacking/supporting broods and bounded overlapping warnings. This repair focuses on less chasing and more useful fighting: a snake briefly commits before firing, the initial head is less inflated, repeated normal snake encounters are spaced further apart, and combined bosses have less health with a tighter attack cadence. Spent fire-lane guides clear behind the actual hazard, and tractor notices are moved/deferred to keep the fight readable.
+
+Your preference for more organic/cybernetic bosses and colorful silhouettes is still useful direction for the art review. This build doesn't replace the fleet or backgrounds wholesale.
+
+[b]Tyrian, 11 September — combos, Pure and overlapping fights[/b]
+[quote=Tyrian Mollusk;569297137117002133]goodbye your combo[/quote]
+I've reduced snake durability and given the head a brief commitment before a shot, lowered the normal snake roll and added spacing between those encounters. Double bosses no longer receive twice ordinary health each. Their combined budget is now smaller, and the existing warning spacing remains.
+
+I compared Sparrow and Skater loadouts in Pure and Tactical, with plain weapons and Chain/Pierce combinations, plus a separate late Phase Seraph encounter. The automated probes completed, but an invulnerable test pilot is not a substitute for how your run feels. My next balance decision will use actual time spent chasing, available attack opportunities and unavoidable combo loss. Core timer refresh is included; blanket combo preservation is not.
+
+The planet transition and stale lane markings have fixes in this build. Creature calls are quieter, the harsh midrange is softened, and hunt calls are less frequent. The music itself is unchanged.
+
+[b]Tyrian, 13 September — remaining problems[/b]
+[quote=Tyrian Mollusk;569297137117213020]You're just waiting to be free.[/quote]
+The missing Redline Ghost achievement has a recovery path in this build. Eligible Mayhem results now reconcile earned ranks even if that run didn't cross a new threshold, and startup recovery uses previous earned awards or accepted Steam evidence. I also included the correction for your specific missing award. It should unlock when you launch this updated build online; I haven't verified a successful award on your account yet. Please check both the game's achievement list and Steam afterward.
+
+Ordinary fire no longer spends a stored Bomb when you start firing again. Deliberate Special Fire keeps that job, including Orbital Fusion. Rift now leads its target while retaining five shards. I reproduced Chain repeatedly damaging attached parts of one Veilborn in a single chain, so it now counts those parts as one creature; it still jumps between separate enemies. I can't identify your exact flower-like enemy solely from the description.
+
+Snake death sounds now stay attached to the defeated creature and stop with its departure, and a late-loading death cue is rejected. The volume/mix still needs listening at ordinary gameplay settings alongside music. The Hangar focus and remembered launch mode are included. I haven't replaced the large-Play menu design or added manual directional Rift controls.
+
+Going forward I want to use the test build to settle encounter pacing, slow-hull/Pure attack opportunities, late-run results reliability and the creature mix. The pickup silhouettes and broader old/new art preferences will get a separate review. The changes above are in the new test build; I am not claiming they are already on the public branch.

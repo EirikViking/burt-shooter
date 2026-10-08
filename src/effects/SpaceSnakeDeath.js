@@ -1,6 +1,8 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { CreatureAudio } from '../audio/CreatureAudio.js';
 import { getReducedMotionEnabled } from '../config/AccessibilitySettings.js';
+import { drawEnergySurface } from './AstraEnergyMaterial.js';
 
 export function celebrateSpaceSnakeDeath(scene, enemy) {
   const chain = enemy.chain;
@@ -9,9 +11,9 @@ export function celebrateSpaceSnakeDeath(scene, enemy) {
   const profile = enemy.snakeProfile, x = enemy.x, y = enemy.y;
   const bounty = scene.game.addScore(900 + Math.min(1100, scene.game.level * 20), 'bonusScore');
   scene.scorePopupManager?.addScorePopup?.(x,y-35,bounty,{color:profile.color});
-  AudioManager.duckMusic(.3, 2500);
-  AudioManager.playSfx(`${profile.voice}_death`, { force:true, volume:.94, minIntervalMs:500, priority:7, priorityHoldMs:1600, preserveGameplayRng:true });
-  AudioManager.playSfx('boss_explode', { volume:.48, minIntervalMs:500 });
+  CreatureAudio.stopOwner(chain);
+  CreatureAudio.play(chain, profile, 'death', { x: x / enemy.game.getWidth() });
+  AudioManager.playSfx('boss_explode', { volume:.25, minIntervalMs:500 });
   scene.screenShake?.shake(12,25);
   const reduced = getReducedMotionEnabled();
   if(!reduced)scene.screenShake?.freezeFrame(2);
@@ -36,7 +38,7 @@ export function celebrateSpaceSnakeDeath(scene, enemy) {
   scene.gameContainer.addChild(root);
   const ticker=scene.game.app.ticker;let elapsed=0,burstIndex=0;
   const anchors=chain.sections.slice(-6).map(section=>({x:section.x,y:section.y}));
-  const dispose=()=>{ticker.remove(tick);if(!root.destroyed)root.destroy({children:true});};
+  const dispose=()=>{CreatureAudio.stopOwner(chain);ticker.remove(tick);if(!root.destroyed)root.destroy({children:true});};
   const tick=t=>{
     if(!root.parent||scene.game.currentScene!==scene||root.destroyed){dispose();return;}
     if(scene.isPaused)return;
@@ -47,8 +49,12 @@ export function celebrateSpaceSnakeDeath(scene, enemy) {
       const at=anchors[burstIndex++];scene.particleManager?.createExplosion(at.x,at.y,profile.color,.65);
     }
     front.clear();
-    for(let i=0;i<2;i++)front.circle(x,y,18+p*(reduced?80:180)+i*18)
-      .stroke({color:i?profile.color:0xffefce,width:(1-p)*(i?4:7),alpha:(1-p)*.65});
+    for(let i=0;i<2;i++){
+      const radius=18+p*(reduced?80:180)+i*18;
+      drawEnergySurface(front,{kind:i?'pressure':'corona',x,y,
+        width:radius*2.5,height:radius*2.1,
+        color:i?profile.color:0xffefce,alpha:(1-p)*.48});
+    }
     shards.forEach((s,i)=>{const a=i*Math.PI*2/shards.length;const r=p*(reduced?55:110+i%4*35);s.position.set(x+Math.cos(a)*r,y+Math.sin(a)*r+p*p*45);s.rotation=p*(i%2?-1:1)*2;s.alpha=1-p;});
   };
   ticker.add(tick);

@@ -17,7 +17,8 @@
     "node_modules/steamworks-ffi-node/**/*",
     "node_modules/koffi/**/*",
     "steam_sdk/sdk/redistributable_bin/**/*",
-    "steamworks_sdk/redistributable_bin/**/*"
+    "steamworks_sdk/redistributable_bin/**/*",
+    "electron/native/**/*"
   ],
   "extraFiles": [
     {

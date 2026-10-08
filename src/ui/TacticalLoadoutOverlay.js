@@ -182,6 +182,7 @@ function normalizeConstructorOptions(options, positionalOnClose) {
 export class TacticalLoadoutOverlay {
   constructor(game, options = {}, positionalOnClose = null) {
     const resolved = normalizeConstructorOptions(options, positionalOnClose);
+    this.options = resolved;
     this.game = game;
     this.onClose = typeof resolved.onClose === 'function' ? resolved.onClose : null;
     this.onInspect = typeof resolved.onInspect === 'function' ? resolved.onInspect : null;
@@ -573,7 +574,8 @@ export class TacticalLoadoutOverlay {
     fitText(body, panelWidth - 56, compact ? 170 : 196, 0.62);
     detail.addChild(body);
 
-    const status = createText(translateText(item.fusion ? 'FUSION PROTOCOL' : item.consumed ? 'CONSUMED' : 'PERMANENT THIS RUN'), {
+    const liveFusion=this.options.fusionState?.[item.id];
+    const status = createText(liveFusion?translateText(liveFusion.label,liveFusion.parameters):translateText(item.fusion ? 'FUSION PROTOCOL' : item.consumed ? 'CONSUMED' : 'PERMANENT THIS RUN'), {
       fontFamily: FONT_DISPLAY, fontSize: compact ? 13 : 16, fontWeight: '900', fill: item.consumed ? '#ffad91' : '#7dffcc'
     });
     status.anchor.set(0.5);

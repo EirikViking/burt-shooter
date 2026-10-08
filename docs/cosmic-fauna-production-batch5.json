@@ -1,0 +1,130 @@
+{
+  "created": "2026-10-02T15:53:11.920Z",
+  "requestedTotal": 42,
+  "batch": "5: final forms 33–42",
+  "audioBatchId": "batch5",
+  "audioCreditCeiling": 1800,
+  "commonArtPrompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. ",
+  "definitions": [
+    {
+      "id": "astral_cobra",
+      "anatomy": "cobra",
+      "period": 6.4,
+      "amplitude": 0.038,
+      "width": 1.04,
+      "lane": 0.43,
+      "duration": 33,
+      "seconds": 4.3,
+      "brief": "A colossal alien hooded serpent swimming LEFT. Broad oval ribbed hood around a narrow smooth predatory head on the LEFT, its interior shows pearlescent violet muscular membranes between ivory radial ribs. The body flows RIGHT into a long slender S-shaped double-curved tail, slate-blue scales and small gold sensory pores. No upright striking pose: a serene horizontal gliding animal, no fangs displayed, no breath attack. Distinct smooth shield-shaped hood, dimensional heavy muscles. Whole hood and long tail fully visible with 8 percent clear padding.",
+      "audio": "An immense hooded alien serpent passes calmly. Deep porous chest hiss, slow ribbed hood membranes stretching with dry leathery creaks, textured scaled body gliding and a low descending throat vibration. Rich physical atmospheric animal Foley. No striking attack, jump scare, speech, music, weapon or alarm."
+    },
+    {
+      "id": "crown_shrimp",
+      "anatomy": "shrimp",
+      "period": 5.5,
+      "amplitude": 0.033,
+      "width": 1.02,
+      "lane": 0.44,
+      "duration": 30,
+      "seconds": 4.2,
+      "brief": "An enormous alien crown shrimp swimming LEFT: compact armored amber head with a dramatic crown of five long curved ivory spines, two MASSIVE bent muscular claw-bearing forearms projecting forward on LEFT, many small paired translucent paddles beneath a thick segmented copper torso, large rounded fanned tail on RIGHT. Dark glass eyes on short stalks, iridescent teal joints and orange chitin. Clear gaps between forearms and head, strong curved abdomen silhouette. Whole crown, claws, tail and feelers comfortably inside transparent frame.",
+      "audio": "A giant crown shrimp flexes its enormous forelimbs. Two deep muffled chitin clacks, thick wet joint creaks, sequenced small swimming paddle ticks and a soft fan-tail pressure sweep. Huge vivid living crustacean, tactile cinematic Foley. No punch impact, attack sting, machinery, speech, music, weapon or alarm."
+    },
+    {
+      "id": "silt_wraith",
+      "anatomy": "wraith",
+      "period": 7.4,
+      "amplitude": 0.051,
+      "width": 1.04,
+      "lane": 0.45,
+      "duration": 34,
+      "seconds": 4.5,
+      "brief": "A vast deep-sea alien silt wraith swimming LEFT, broad hooded tadpole-like head with no humanoid face, small widely separated pearl eyes recessed under a muscular slate-gray mantle hood. A single long tapering tail stretches RIGHT. Below the hood and along the tail hang several enormous torn-looking smoky mauve gill veils, layered translucent fleshy ribbons with irregular soft edges. Heavy smooth head, ghostly weighty membranes, visible fine capillaries, restrained amber gill pores. Organic living animal, no cloak, human, ghost face or detached cloth. Entire flowing silhouette in frame.",
+      "audio": "A vast veiled alien drifts past. Deep hollow slow gill breathing, layers of damp heavy silk-like membrane brushing together, fine granular silt-like throat rasp and an airy fading tail movement. Haunting beautiful tangible animal, cinematic organic Foley. No ghost voice, whispering words, music, horror sting, weapon or alarm."
+    },
+    {
+      "id": "coral_giant",
+      "anatomy": "coral",
+      "period": 8.1,
+      "amplitude": 0.025,
+      "width": 1.13,
+      "lane": 0.42,
+      "duration": 34,
+      "seconds": 4.5,
+      "brief": "One colossal living alien coral giant swimming LEFT. Broad massive whale-like charcoal-purple body, blunt head with tiny amber eyes, thick muscular lower jaw and two huge rounded pectoral flippers. Entire back supports dense asymmetrical branching living crimson-and-ivory coral ridges, integrated into its skin with fleshy bases. Wide forked horizontal tail on RIGHT. Tactile weathered organic skin and porous branching coral, no buildings, city, ship, windows or machinery. A heavy believable ancient organism, quietly terrifying, fully inside generous transparent margin.",
+      "audio": "A colossal coral-backed animal breathes once. Very deep warm rounded chest moan, many tiny porous coral branches creaking softly over its skin, a broad heavy flipper pressure sweep and long coarse airy exhale. Ancient immense living organism, physical cinematic Foley. No whale song melody, music, human voice, ship engine, explosion or alarm."
+    },
+    {
+      "id": "winter_cicada",
+      "anatomy": "cicada",
+      "period": 5.2,
+      "amplitude": 0.029,
+      "width": 0.98,
+      "lane": 0.44,
+      "duration": 31,
+      "seconds": 4.1,
+      "brief": "A gigantic alien winter cicada swimming LEFT, broad armored pale-blue head with large obsidian compound eyes, stout dark cobalt thorax, long tapered segmented abdomen extending RIGHT. FOUR long narrow transparent icy crystalline wings sweep backward over and below the abdomen in separated overlapping layers, densely branched frost-white veins and jagged mineral edges. Six short fine limbs folded under chest. Distinct from butterflies: long narrow wings parallel to a long horizontal abdomen, low beetle-like head, rigid icy chitin. Entire wings and limbs fully in frame.",
+      "audio": "A giant crystalline cicada unfolds its long wings. Slow dry icy wing-sheet flexes, a low brief resonant thoracic tremor, delicate irregular chitin ticks and a soft granular exhale. Large mysterious living insect, detailed restrained cinematic Foley. No high piercing cicada buzz, musical tones, voice, machinery, weapon or alarm."
+    },
+    {
+      "id": "onyx_hammerhead",
+      "anatomy": "hammerhead",
+      "period": 6,
+      "amplitude": 0.032,
+      "width": 1.08,
+      "lane": 0.43,
+      "duration": 31,
+      "seconds": 4.3,
+      "brief": "A huge alien onyx hammerhead swimming LEFT in an elevated three-quarter view. Extremely broad lateral T-shaped sensory head on LEFT with eyes at far ends, smooth muscular obsidian body, two broad sweeping slate-blue pectoral fins, a low curved dorsal sail, narrow tail peduncle and tall asymmetrical crescent tail on RIGHT. Pale gold sensory pits line the wide head. No dorsal spikes, no armor plates, no open toothy mouth. Elegant cold dangerous predator with realistic wet sculpted skin and full broad head in frame.",
+      "audio": "An enormous smooth hammerheaded alien glides past. Deep closed-mouth nasal growl, broad dense fin-pressure whoosh, subtle gill folds breathing and a clean heavy tail sweep fading into a low airy hiss. Controlled dangerous living predator, physical cinematic creature Foley. No sonar, music, human voice, attack roar, weapon or alarm."
+    },
+    {
+      "id": "choir_siphonophore",
+      "anatomy": "siphonophore",
+      "period": 6.3,
+      "amplitude": 0.042,
+      "width": 1.12,
+      "lane": 0.44,
+      "duration": 33,
+      "seconds": 4.4,
+      "brief": "One vast alien siphonophore colony swimming LEFT. A large clear pear-shaped leading float on LEFT connects through a thick living curved central stem to SEVEN progressively smaller translucent blue-violet swimming bells trailing RIGHT. Each bell has an amber internal organ and a skirt of long hairlike flowing white-lavender filaments. Bells visibly connected into ONE coherent organism, gentle horizontal S silhouette. Beautiful physical gelatinous tissue, subtle wet refraction, ominous floating deep-sea biology, not glowing beads, lantern decorations or a necklace. All filaments fully inside frame.",
+      "audio": "A huge colonial alien pulses seven connected chambers in sequence. Rounded low liquid throbs descending gently in size, many fine wet filaments brushing, breathy gelatin membrane creaks and a soft uneven living resonance. Beautiful uncanny coherent organism, cinematic organic Foley. No choir, singing, musical scale, voice, sonar, weapon or alarm."
+    },
+    {
+      "id": "copper_skate",
+      "anatomy": "skate",
+      "period": 5.6,
+      "amplitude": 0.038,
+      "width": 1.07,
+      "lane": 0.43,
+      "duration": 30,
+      "seconds": 4.2,
+      "brief": "A colossal alien copper skate swimming LEFT. Very thin broad diamond-shaped body with huge swept triangular razor-like wing fins, tiny pointed head on LEFT, flat muscular copper-brown back with rich hammered organic texture and subtle teal sensory pores. Two long separated whip tails trail RIGHT, each with a thin blade-shaped fin at the end. Wings sharply geometric but clearly living cartilage and translucent burnt-orange membranes; smooth low silhouette, no cathedral ribs, horns or machinery. Elevated view reveals both fins and split tail, entire creature fully inside frame.",
+      "audio": "A huge thin copper-skinned skate glides with two slow wing strokes. Dense leathery fin folds, delicate dry cartilage tension creaks, low breathing hum and two separate whip-tail swishes. Sleek powerful alien animal, richly textured cinematic Foley. No metallic blade strike, music, speech, engine, weapon or alarm."
+    },
+    {
+      "id": "eclipse_hydroid",
+      "anatomy": "hydroid",
+      "period": 7,
+      "amplitude": 0.039,
+      "width": 1,
+      "lane": 0.45,
+      "duration": 33,
+      "seconds": 4.4,
+      "brief": "One enormous alien eclipse hydroid swimming LEFT. Compact dark plum muscular bell on LEFT encircled by THREE nested living fleshy ring-shaped swimming membranes, offset in depth like a biological gyroscope, with clearly visible thick tendons connecting rings to the central bell. Rings have translucent mauve skin, ivory cartilage ribs and tiny amber pores. SIX long thick ribbon arms trail from the central bell to RIGHT with independently curled tips. Coherent gelatinous animal, not a machine, magical portal, spacecraft or abstract emblem. Whole rings and arms in frame.",
+      "audio": "An immense ring-finned hydroid rolls slowly. Three soft layered membrane pressure breaths with muted cartilage creaks, deep central bell resonance, six smooth arm sweeps and a long airy liquid decay. Strange beautiful physical living animal, cinematic Foley. No portal effect, machinery, melody, human voice, weapon or alarm."
+    },
+    {
+      "id": "dream_sailfish",
+      "anatomy": "sailfish",
+      "period": 6.6,
+      "amplitude": 0.036,
+      "width": 1.15,
+      "lane": 0.42,
+      "duration": 32,
+      "seconds": 4.3,
+      "brief": "A huge alien dream sailfish swimming LEFT. Very long fine ivory bill on LEFT, sleek silver-lavender muscular torso, enormous tall fan-shaped dorsal sail with blue-violet translucent membrane and thin gold branching rib veins. The sail rises in a graceful arc along the back, the lower paired fins are long and narrow. Body tapers RIGHT into a deeply forked flowing veil tail, each lobe long and silky. Delicate restrained pearlescent organs below scales, tactile wet dimensional skin, serene and predatory. Whole bill, tall sail and all flowing tail tips safely inside generous transparent padding.",
+      "audio": "A giant sail-backed alien unfolds its dorsal membrane. Wide silky sail-pressure swell, a soft long rib-tendon creak, low resonant gill breath and two trailing veil-tail whispers. Majestic dreamlike yet physical living predator, detailed cinematic organic Foley. No flute, melody, music, human voice, wind storm, weapon or alarm."
+    }
+  ]
+}

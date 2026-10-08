@@ -1,5 +1,12 @@
 import { hasColossus } from './BossReinvention.js';
+import { expansionText } from '../i18n/encounterExpansionText.js';
+import { expansionLore } from '../i18n/encounterExpansionLore.js';
+import {getPlanetfallCodexText} from '../i18n/planetfallText.js';
 import { SPACE_SNAKES } from './SpaceSnakes.js';
+import { MYSTERIES } from './Mysteries.js';
+import { getMysteryText } from '../i18n/mysteryText.js';
+import { TRACTOR_FLEET } from './TractorFleet.js';
+import { getTractorCodexText } from '../i18n/tractorFleetText.js';
 import { getSpaceSnakeText } from '../i18n/coreSerpentText.js';
 import { BONUS_CORES } from './BonusCoreCatalog.js';
 import { BONUS_DRONES } from './BonusDroneCatalog.js';
@@ -14,13 +21,15 @@ import { ENEMY_WEAPON_PROFILES } from './EnemyWeaponProfiles.js';
 import { BOSS_ROSTER } from './BossRoster.js';
 import { DANGER_MID_SHIPS } from './DangerMidShips.js';
 import { BOSS_SUPPORT_SHIPS } from './BossSupportShips.js';
+import { FIRST_LIGHT_DESIGNS } from './FirstLightDesigns.js';
+import { getFirstLightText } from '../i18n/firstLightText.js';
 import { RARE_CHAOS_VISITOR_VARIANTS } from './RareChaosVisitors.js';
 import { formatSectorLabel, getSectorInfo } from './SectorCatalog.js';
 import { POWERUP_CODEX_ENTRIES as CATALOG_POWERUP_CODEX_ENTRIES } from './PowerupCatalog.js';
 import { TACTICAL_DRAFT_AUGMENTS, getTacticalDraftMeta } from './TacticalDraft.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { getCurrentLanguage, translateTextForLocale } from '../i18n/index.js';
-import { applyCodexLore, getCodexRuntimeDescription, getCodexRuntimeTip } from '../i18n/codexLore.js';
+import { CODEX_LORE_VERSION, applyCodexLore, getCodexRuntimeDescription, getCodexRuntimeTip } from '../i18n/codexLore.js';
 import { SONIA_BOSS_LORE } from '../i18n/soniaBossLore.js';
 import { getCabinetLogEntries } from '../text/phrasePool.js';
 import { CABINET_WONDER_DEFINITIONS } from './CabinetWonderLore.js';
@@ -56,6 +65,7 @@ When its mirror signal fractures, do not follow the brightest reflection. Read t
 export const THREAT_CODEX_CATEGORIES = Object.freeze([
   { id: 'enemies', label: 'Enemies' },
   { id: 'spaceSnakes', label: 'Space Snakes' },
+  { id: 'mysteries', label: 'Veilborn' },
   { id: 'attackPatterns', label: 'Attack Patterns' },
   { id: 'waveTactics', label: 'Wave Tactics' },
   { id: 'powerups', label: 'Powerups' },
@@ -1581,11 +1591,19 @@ export function getThreatCodexCatalog({ locale = getCurrentLanguage() } = {}) {
     locale,
     translate: (value) => translateTextForLocale(locale, value)
   });
+  catalog.bosses.push({id:'planetfall',category:'bosses',...getPlanetfallCodexText(locale),
+    art:'/art/encounter-premium/planetfall.png',rarity:translateTextForLocale(locale,'Rare'),
+    codexBodyMode:'story',loreVersion:CODEX_LORE_VERSION,unlockLevel:14});
   catalog.spaceSnakes = SPACE_SNAKES.map(profile => ({
     id: profile.id, category: 'spaceSnakes', art: profile.art,
     role: translateTextForLocale(locale, 'Segmented predator'),
     rarity: translateTextForLocale(locale, 'Rare'),
     ...getSpaceSnakeText(profile.index, locale), codexBodyMode: 'story'
+  }));
+  catalog.mysteries = MYSTERIES.map(profile => ({
+    id: profile.id, category: 'mysteries', art: `/art/mysteries/${profile.id}.png`,
+    ...getMysteryText(profile, locale), codexBodyMode: 'story',
+    rarity: translateTextForLocale(locale, 'Rare'), unlockLevel: profile.unlockSector
   }));
   catalog.bonusCores = BONUS_CORES.map(core => ({
     id: core.id, category: 'bonusCores', art: core.art,
@@ -1597,6 +1615,34 @@ export function getThreatCodexCatalog({ locale = getCurrentLanguage() } = {}) {
     id:profile.id, category:'bonusDrones', art:profile.art, accent:profile.color,
     ...getBonusDroneText(profile,locale), codexBodyMode:'story'
   }));
+  catalog.enemies.push(...TRACTOR_FLEET.map(profile => ({
+    id:`tractor_${profile.id}`, category:'enemies', art:profile.sprite, accent:profile.color,
+    ...getTractorCodexText(profile,locale), rarity:translateTextForLocale(locale,'Rare'), codexBodyMode:'story'
+  })));
+  for (const [kind, designs] of Object.entries(FIRST_LIGHT_DESIGNS)) {
+    catalog.enemies.push(...designs.map(design=>({
+      id:`first_light_${kind}_${design.id}`, category:'enemies', name:design.name,
+      role:getFirstLightText(locale,kind==='convoy'?'convoyTitle':'rivalTitle'),
+      rarity:translateTextForLocale(locale,'Rare'), accent:design.color,
+      art:`/art/first-light/${design.art}.webp`, codexBodyMode:'story',
+      loreVersion:CODEX_LORE_VERSION,
+      description:`${getFirstLightText(locale,design.id)} ${getFirstLightText(locale,kind==='convoy'?'helpConvoy':'helpRival')}`,
+      tip:getFirstLightText(locale,`${design.id}Tip`)
+    })));
+  }
+  const carrion=catalog.mysteries.find(e=>e.id==='carrion_weaver');
+  if(carrion)carrion.tip=expansionText(locale,1);
+  for(const [index,[id,name,tip,art]] of [
+    ['encounter_crossover','Carrion Weaver',2,'/art/mysteries/carrion_weaver.png'],
+    ['dreadnought_breach','Dreadnought Breach',3,'/assets/astra/colossus/carrier.png'],
+    ['encounter_graveyard',expansionText(locale,4),5,'/art/astra/component/01.png'],
+    ['encounter_siege',expansionText(locale,6),7,'/art/astra/component/03.png'],
+    ['encounter_migration',expansionText(locale,8),9,SPACE_SNAKES[0].art],
+    ['fusion_salvage_crown',expansionText(locale,10),12,'/art/astra/component/01.png'],
+    ['fusion_rift_crossfire',expansionText(locale,13),15,'/art/astra/component/03.png']].entries()){
+    catalog.enemies.push({id,name,category:'enemies',art,description:`${expansionLore(locale,index)} ${expansionText(locale,tip)}`,tip:expansionText(locale,tip),
+      role:translateTextForLocale(locale,'Rare'),rarity:translateTextForLocale(locale,'Rare'),codexBodyMode:'story',loreVersion:CODEX_LORE_VERSION});
+  }
   return catalog;
 }
 

@@ -1,0 +1,62 @@
+{
+  "id": 7,
+  "name": "Quasar Fan",
+  "architecture": "fan",
+  "baselineDesign": [
+    "Quasar Fan",
+    1.5,
+    0.95,
+    0.86,
+    1.03,
+    "fan",
+    [
+      [
+        0.2,
+        0.35,
+        -1.1,
+        0.15
+      ],
+      [
+        0.8,
+        0.35,
+        -1.15,
+        0.14
+      ],
+      [
+        1.5,
+        0.31,
+        -0.99,
+        0.08
+      ],
+      [
+        1.96,
+        0.15,
+        -0.71,
+        0.028
+      ]
+    ]
+  ],
+  "palette": [
+    "b41614",
+    "e2dbbd",
+    "ff331a"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false,
+  "bytes": 14883416,
+  "triangles": 196976,
+  "materials": [
+    "Graphite structural composite",
+    "Off-white aerospace polyurethane",
+    "Brushed titanium fittings",
+    "Seals and cabin upholstery",
+    "Dim ion throat and instrument phosphor",
+    "Laminated cockpit glazing",
+    "Cobalt blue painted alloy",
+    "Sooted nozzle liner",
+    "Heat-oxidised exhaust alloy"
+  ],
+  "images": 5,
+  "repaired": 0
+}

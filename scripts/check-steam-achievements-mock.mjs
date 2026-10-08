@@ -106,6 +106,37 @@ async function waitForAsyncWork() {
 }
 
 const [firstId, secondId, thirdId] = getAchievementIds();
+const publishedOnslaughtId = 'ACH_OS_SPARROW_FIVE';
+
+{
+  const storage = new MemoryStorage();
+  storage.setItem('nova_swarm_steam_achievement_queue_v1', JSON.stringify([publishedOnslaughtId]));
+  const fake = createFakeSteamBridge();
+  const { manager, steamSync } = createLocalManager(fake, storage);
+  manager.importUnlocked([publishedOnslaughtId], { source: 'test' });
+  const result = await steamSync.syncWithLocal(manager);
+  assert.equal(result.ok, true);
+  assert.equal(fake.unlocked.has(publishedOnslaughtId), true,
+    'a previously earned Onslaught unlock must reach a published Steam definition');
+  assert.deepEqual(steamSync.getDebugState().queued, [], 'successful Steam sync clears the retained queue');
+}
+
+{
+  const fake = createFakeSteamBridge();
+  const storage = new MemoryStorage();
+  const sync = createSteamAchievementSync({ storage, bridge: fake.bridge, publishedIds: [firstId] });
+  assert.equal((await sync.unlock(thirdId)).reason, 'awaiting_steam_publication');
+  assert.deepEqual(sync.getDebugState().queued, [thirdId]);
+  assert.equal(fake.calls.length, 0);
+  await sync.retryQueued();
+  assert.deepEqual(sync.getDebugState().queued, [thirdId]);
+  assert.equal(fake.calls.length, 0);
+  const manager = { getUnlocked: () => [firstId, thirdId], importUnlocked() {} };
+  await sync.syncWithLocal(manager);
+  assert.equal(fake.unlocked.has(firstId), true);
+  assert.equal(fake.unlocked.has(thirdId), false);
+  assert.deepEqual(sync.getDebugState().queued, [thirdId]);
+}
 
 {
   const fake = createFakeSteamBridge();

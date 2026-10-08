@@ -1,0 +1,5 @@
+
+> nova-swarm@1.0.0 check:steam-electron-bridge
+> node scripts/check-steam-electron-bridge.mjs
+
+[steam-electron-bridge] PASS native bridge contract, preload surface, renderer isolation

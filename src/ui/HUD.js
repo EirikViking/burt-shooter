@@ -20,10 +20,12 @@ import {
   createNovaCommandFrame
 } from './NovaCommandHud.js';
 import { getShipMetadata, getShipUnlockProgress } from '../config/ShipMetadata.js';
-import { getShipMasteryView, SHIP_MASTERY_TIERS } from '../progression/ShipMastery.js';
+import { getShipMasteryView } from '../progression/ShipMastery.js';
+import { RUN_MODES } from '../game/RunMode.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
+import { getCombatScreenPoints, overlapsCombatPoint } from './CombatOcclusion.js';
 const FIRST_RUN_HUD_RESTORE_DURATION_MS = 160;
 
 function normalizeFontFamily(fontFamily) {
@@ -237,6 +239,10 @@ export class HUD {
     this.livesBg = new PIXI.Graphics();
     this.livesGroup.addChild(this.livesArt);
     this.livesGroup.addChild(this.livesBg);
+    this.livesShip = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.livesShip.anchor.set(.5);
+    this.livesShip.label = "currentShipLivesPortrait";
+    this.livesGroup.addChild(this.livesShip);
     this.livesIcon = createText('\u2665', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 20,
@@ -437,6 +443,10 @@ export class HUD {
   }
 
   update(options = {}) {
+    for (const [display, alpha] of this.combatOcclusionAlphas || []) {
+      if (!display.destroyed) display.alpha = alpha;
+    }
+    this.combatOcclusionAlphas = new Map();
     this.experimentLabelGroup.visible = this.game?.lateGameExperiment?.active === true;
     this.scoreText.text = `SCORE ${this.formatScore(this.game.score)}`;
     const mult = Number(this.game.scoreMultiplier) || 1;
@@ -480,7 +490,7 @@ export class HUD {
     const rankTex = RankAssets.getRankTexture(this.game.rankIndex);
     if (rankTex) {
       this.rankIcon.texture = rankTex;
-      const maxSz = 42 * Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+      const maxSz = (this.compactHud ? 34 : 42) * Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
       if (this.rankIcon.texture?.width > 0) {
         const scale = Math.min(maxSz / this.rankIcon.texture.width, maxSz / this.rankIcon.texture.height);
         this.rankIcon.scale.set(scale);
@@ -491,9 +501,9 @@ export class HUD {
       this.game.getCareerDisplayRankExact?.() || String(Math.max(1, Number(this.game.rankIndex || 0) + 1))
     );
     const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
-    const rankPanelWidth = 164 * uiScale;
-    const rankTextX = 56 * uiScale;
-    const rankTextMaxWidth = 92 * uiScale;
+    const rankPanelWidth = this.compactHud?.rankWidth || 164 * uiScale;
+    const rankTextX = (this.compactHud ? 44 : 56) * uiScale;
+    const rankTextMaxWidth = Math.max(48, rankPanelWidth - rankTextX - 16 * uiScale);
     this.rankText.x = rankTextX;
     this.rankText.y = 8 * uiScale;
     this.rankText.scale.set(1);
@@ -501,7 +511,7 @@ export class HUD {
     if (this.rankText.width > rankTextMaxWidth) {
       this.rankText.scale.set(Math.max(0.58, rankTextMaxWidth / this.rankText.width));
     }
-    this.rankIcon.x = 25 * uiScale;
+    this.rankIcon.x = (this.compactHud ? 20 : 25) * uiScale;
     this.rankIcon.y = 24 * uiScale;
 
     this.rankBadgeBg.clear();
@@ -571,9 +581,10 @@ export class HUD {
     this.locationText._debugPriority = 'primary';
     if (this.sectorTextMaxWidth) this.fitTextToWidth(this.locationText, this.sectorTextMaxWidth, .75);
 
-    this.updateActivePowerup();
     this.updateTacticalAugmentTray();
+    this.updateActivePowerup();
     this.updateTraitMeter();
+    this.layoutSupportPanels();
     const diagnostics = this.game?.scenes?.play?.performanceDiagnostics;
     const measure = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
     if (options.skipHighscoreChase !== true) {
@@ -583,6 +594,26 @@ export class HUD {
     }
     this.updateFirstRunOpeningDisclosure();
     this.updateOpeningCombatReadability();
+    this.updateCombatOcclusion();
+  }
+
+  updateCombatOcclusion() {
+    const points = getCombatScreenPoints(this.game?.scenes?.play);
+    // Occlusion visits top-level HUD children. Lives text is nested in its
+    // panel, and temporary tools/readiness are decisions during combat too.
+    const essential = new Set([this.scoreText, this.livesGroup, this.locationText,
+      this.activePowerupGroup, this.traitGroup]);
+    const faded = [];
+    this.combatOcclusionAlphas ||= new Map();
+    for (const display of this.hudContainer.children) {
+      if (!display.visible || !display.renderable || display.alpha <= 0 || this.combatOcclusionAlphas.has(display)) continue;
+      const bounds = display.getBounds();
+      if (!bounds.width || !bounds.height || !points.some(point => overlapsCombatPoint(bounds, point))) continue;
+      this.combatOcclusionAlphas.set(display, display.alpha);
+      display.alpha *= essential.has(display) ? 0.65 : 0.24;
+      faded.push(display.label || display.constructor.name);
+    }
+    this._debugCombatOcclusion = { faded, threats: points.length };
   }
 
   updateOpeningCombatReadability() {
@@ -757,6 +788,7 @@ export class HUD {
     const sectorKey = Math.max(1, Math.floor(Number(this.game?.level) || 1));
     const targetSector = Math.max(1, Math.floor(Number(chase?.targetSector) || 1));
     const targetTimeSeconds = Math.max(0, Math.floor(Number(chase?.targetTimeSeconds) || 0));
+    const isOnslaughtTactical = chase?.runMode === RUN_MODES.OVERRUN_TACTICAL;
     const isDailyClearGoal = chase?.runMode === 'daily_signal' && chase?.goalMode === 'daily_clear';
     const isDailyScoreGoal = chase?.runMode === 'daily_signal' && chase?.goalMode === 'score';
     const syncingTarget = !isRivalMode && Boolean(chase?.syncingTarget);
@@ -815,9 +847,11 @@ export class HUD {
               ? translateText('DAILY OBJECTIVE')
               : chase?.runMode === 'sector_start'
                 ? translateText('SECTOR RECORD TARGET')
-                : chase?.runMode === 'daily_signal'
-                  ? translateText('BEST CLEAR')
-                  : translateText('HIGH SCORE TARGET');
+              : chase?.runMode === 'daily_signal'
+                ? translateText('BEST CLEAR')
+                : isOnslaughtTactical
+                  ? translateText('YOUR PERSONAL BEST')
+                : translateText('HIGH SCORE TARGET');
     const w = this.highscoreChaseGroup.__w || 178;
     const h = this.highscoreChaseGroup.__h || 52;
     const renderKey = [
@@ -863,6 +897,8 @@ export class HUD {
               ? `${translateText('BEAT')} ${this.formatScore(target)}`
               : syncingTarget
                 ? translateText('CHECKING BOARD')
+                : isOnslaughtTactical
+                  ? translateText('SET YOUR FIRST BEST')
                 : translateText('BEAT THE EMPTY THRONE');
     this.highscoreChaseGap.text = rivalFlashActive
       ? (this.globalRivalFlash?.projectedNumberOne
@@ -899,7 +935,8 @@ export class HUD {
     this.highscoreChaseTitle.updateText?.(false);
     this.highscoreChaseTarget.updateText?.(false);
     this.highscoreChaseGap.updateText?.(false);
-    const narrow = w < 248;
+    const compactStrip = Boolean(this.compactHud);
+    const narrow = w < 248 && !compactStrip;
     const padX = 14;
     const targetMaxWidth = narrow
       ? w - padX * 2
@@ -921,13 +958,19 @@ export class HUD {
       this.highscoreChaseTarget.x = w - padX;
       this.highscoreChaseTarget.y = 6;
       this.fitTextToWidth(this.highscoreChaseTarget, targetMaxWidth, 0.7);
-      const titleMaxWidth = Math.max(92, w - padX * 2 - this.highscoreChaseTarget.width - 14);
+      const titleMaxWidth = Math.max(compactStrip ? 44 : 92, w - padX * 2 - this.highscoreChaseTarget.width - 14);
       this.fitTextToWidth(this.highscoreChaseTitle, titleMaxWidth, 0.68);
     }
     this.highscoreChaseGap.x = padX;
-    this.highscoreChaseGap.y = narrow ? Math.max(21, h - 27) : Math.max(24, h - 28);
+    this.highscoreChaseGap.y = compactStrip ? 19 : narrow ? Math.max(21, h - 27) : Math.max(24, h - 28);
     this.highscoreChaseGap.scale.set(1);
     this.fitTextToWidth(this.highscoreChaseGap, Math.max(44, w - padX * 2), 0.6);
+    const headingBottom = Math.max(
+      this.highscoreChaseTitle.y + this.highscoreChaseTitle.height,
+      this.highscoreChaseTarget.y + this.highscoreChaseTarget.height
+    );
+    this.highscoreChaseGap.y = Math.max(headingBottom + 3,
+      Math.min(this.highscoreChaseGap.y, h - 14 - this.highscoreChaseGap.height));
 
     this.highscoreChaseBg.clear();
     this.highscoreChaseBg.roundRect(0, 0, w, h, 6);
@@ -1474,7 +1517,7 @@ export class HUD {
         accent,
         secondaryAccent: NOVA_COMMAND_HUD_TOKENS.secondaryEdge,
         decorativeAccents: false,
-        surfaceAlpha: critical ? 0.42 : 0.3,
+        surfaceAlpha: critical ? 0.58 : 0.48,
         liftAlpha: critical ? 0.2 : 0.12
       });
       this.missionFrameGeometry.root.position.set(
@@ -1558,11 +1601,13 @@ export class HUD {
     const layout = getCurrentLayout();
     const isMobile = Boolean(layout?.isMobile);
     const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
-    const width = Math.round((isMobile ? 194 : 256) * uiScale);
+    const availableWidth = (this.game.getWidth?.() || layout.width) - 20 * uiScale;
+    const width = Math.round(Math.min(availableWidth, (isMobile ? 194 : 256) * uiScale));
     const paddingX = 7;
     const paddingTop = 6;
     const rowGap = 5;
-    const rowHeight = Math.round((isMobile ? 44 : 48) * uiScale);
+    // Large compact text needs its full size, but not doubled empty row padding.
+    const rowHeight = Math.round((isMobile ? 44 : 48) * uiScale - (this.compactHud ? 16 * (uiScale - 1) : 0));
     const titleHeight = Math.round((isMobile ? 16 : 18) * uiScale);
     const height = paddingTop + titleHeight + activeStates.length * rowHeight + Math.max(0, activeStates.length - 1) * rowGap + 7;
 
@@ -1623,11 +1668,39 @@ export class HUD {
       const locationBottom = this.locationText ? Math.max(this.locationText.y + this.locationText.height, this.sectorPlate?.getBounds?.().maxY || 0) + 6 : 0;
       const groupX = canvasWidth - margin - width;
       const overlayBottom = this.getBlockingToastBottom(groupX, width);
-      const desiredY = Math.max(livesBottom, locationBottom, overlayBottom);
+      const desiredY = Math.max(livesBottom, locationBottom, overlayBottom, this.getSupportTop(groupX, width));
       const canvasHeight = this.game.getHeight ? this.game.getHeight() : 0;
       const maxY = canvasHeight ? Math.max(margin, canvasHeight - height - margin) : desiredY;
       this.activePowerupGroup.x = canvasWidth - margin - width;
       this.activePowerupGroup.y = Math.min(desiredY, maxY);
+    }
+  }
+
+  getSupportTop(x, width) {
+    const mission = this.missionPanel?.__layout;
+    const tray = this.tacticalAugmentGroup;
+    const regions = [mission, tray?.visible ? tray._debugTacticalAugments?.bounds : null];
+    return Math.max(0, ...regions.filter(r => r && x < r.x + r.width && x + width > r.x)
+      .map(r => r.y + r.height + 8));
+  }
+
+  layoutSupportPanels() {
+    if (!this.compactHud) return;
+    const play = this.game?.scenes?.play;
+    const rect = play?.getActivePlayfieldRect?.();
+    if (!rect || rect.y <= 0) return;
+    const panels = [this.activePowerupGroup, this.traitGroup].filter(panel => panel?.visible);
+    const height = panels.reduce((sum, panel) => sum + panel.height + 8, 0);
+    const controls = [play.touchControls?.joystickHint, play.touchControls?.autoFireHint].filter(Boolean);
+    const bottom = Math.min((this.game.getHeight?.() || 0) - 14,
+      ...controls.map(control => control.getBoundingClientRect().top));
+    let y = Math.max(rect.y + rect.height + 8,
+      ...panels.map(panel => this.getSupportTop(panel.x, panel.width)));
+    // Use existing letterbox space only when the entire stack clears the controls.
+    if (y + height > bottom - 8) return;
+    for (const panel of panels) {
+      panel.y = y;
+      y += panel.height + 8;
     }
   }
 
@@ -1882,12 +1955,16 @@ export class HUD {
     const itemHeight = compact ? 26 : 30;
     const gap = compact ? 4 : 5;
     const overflowWidth = compact ? 38 : 44;
-    const columns = 4;
-    const maxVisibleItems = 8;
     const doctrineHeight = doctrine ? (compact ? 19 : 22) : 0;
     const layoutState = this.tacticalAugmentGroup._layout || {};
-    const maxWidth = Math.max(itemWidth * columns, Number(layoutState.maxWidth) || Math.min(canvasWidth - 28, compact ? 430 : 560));
-    const visibleCount = Math.min(entries.length, maxVisibleItems);
+    const maxWidth = Math.max(itemWidth + 8, Number(layoutState.maxWidth) || Math.min(canvasWidth - 28, compact ? 430 : 560));
+    const columns = Math.max(1, Math.min(4, Math.floor((maxWidth - 8 + gap) / (itemWidth + gap))));
+    const playfield = this.game?.scenes?.play?.getActivePlayfieldRect?.();
+    const maxRows = this.compactHud && playfield?.y > 0 &&
+      Number(layoutState.y) + doctrineHeight + 8 + itemHeight * 2 + gap > playfield.y ? 1 : 2;
+    const slots = columns * maxRows;
+    const sideOverflow = 8 + columns * (itemWidth + gap) + overflowWidth <= maxWidth;
+    const visibleCount = Math.min(entries.length, entries.length > slots && !sideOverflow ? slots - 1 : slots);
     const hiddenCount = Math.max(0, entries.length - visibleCount);
     const visibleEntries = entries.slice(0, visibleCount);
     visibleEntries.forEach((entry, index) => {
@@ -1900,18 +1977,19 @@ export class HUD {
     if (hiddenCount > 0) {
       const item = this.getTacticalAugmentItem(visibleEntries.length);
       item.container.visible = true;
-      item.container.x = 4 + columns * (itemWidth + gap);
-      item.container.y = doctrineHeight + 4 + itemHeight + gap;
+      item.container.x = 4 + (sideOverflow ? columns : visibleCount % columns) * (itemWidth + gap);
+      item.container.y = doctrineHeight + 4 + (sideOverflow ? maxRows - 1 : Math.floor(visibleCount / columns)) * (itemHeight + gap);
       this.updateTacticalAugmentItem(item, { hiddenCount, color: 0xffef7e }, overflowWidth, itemHeight, compact, true);
     }
     this.tacticalAugmentItems.slice(visibleEntries.length + (hiddenCount > 0 ? 1 : 0)).forEach((item) => {
       item.container.visible = false;
     });
 
-    const visibleColumns = Math.min(columns, visibleEntries.length);
+    const displayedCount = visibleEntries.length + (hiddenCount > 0 && !sideOverflow ? 1 : 0);
+    const visibleColumns = Math.min(columns, displayedCount);
     const gridWidth = visibleColumns > 0 ? visibleColumns * itemWidth + Math.max(0, visibleColumns - 1) * gap : 0;
-    const trayWidth = 8 + gridWidth + (hiddenCount > 0 ? gap + overflowWidth : 0);
-    const trayRows = Math.max(1, Math.ceil(visibleEntries.length / columns));
+    const trayWidth = 8 + gridWidth + (hiddenCount > 0 && sideOverflow ? gap + overflowWidth : 0);
+    const trayRows = Math.max(1, Math.ceil(displayedCount / columns));
     const trayHeight = doctrineHeight + 8 + trayRows * itemHeight + Math.max(0, trayRows - 1) * gap;
     this.tacticalAugmentBackdrop.clear();
     this.tacticalAugmentBackdrop.roundRect(0, 0, trayWidth, trayHeight, 8);
@@ -2422,15 +2500,14 @@ export class HUD {
     }
 
     const event = this.getTraitMeterEvent(state);
-    const intro = (Number(play?.gameTime) || 0) < 8;
     const pulse = state.experimentalPulse;
     const charging = Boolean(pulse?.available && pulse.remainingMs > 0);
     const now = player.getGameplayClockMs?.() || 0;
     if (this.traitPulseWasCharging && !charging && pulse?.available) this.traitReadyNoticeUntil = now + 1800;
     this.traitPulseWasCharging = charging;
     const readyNotice = Boolean(pulse?.available && now < (this.traitReadyNoticeUntil || 0));
-    const visible = intro || charging || readyNotice;
-    this.traitGroup._debugContext = { visible, intro, charging, readyNotice, reason: intro ? 'introduction' : charging ? 'recharge' : readyNotice ? 'newly_ready' : 'passive_hidden' };
+    const visible = charging || readyNotice;
+    this.traitGroup._debugContext = { visible, intro: false, charging, readyNotice, reason: charging ? 'recharge' : readyNotice ? 'newly_ready' : 'passive_hidden' };
     if (!visible) { this.traitGroup.visible = false; return; }
     const layout = getCurrentLayout();
     const canvasWidth = this.game.getWidth ? this.game.getWidth() : Number(layout?.width) || 0;
@@ -2451,10 +2528,10 @@ export class HUD {
       this.traitText.style.fontSize = Math.round((isLargeDesktop ? 13 : 12) * uiScale);
       this.traitText.style.stroke = { color: '#000000', width: Math.round(3 * uiScale) };
     }
-    const label = `TRAIT: ${this.truncateLabel(state.label, 17)}`;
-    this.traitLabel.text = label;
-    this.traitLabel.visible = intro;
+    this.traitLabel.text = '';
+    this.traitLabel.visible = false;
     this.traitText.text = event.text;
+    this.traitText.scale.set(1);
     this.traitLabel.updateText?.(false);
     this.traitText.updateText?.(false);
     const minWidth = Math.round(154 * uiScale);
@@ -2462,8 +2539,10 @@ export class HUD {
       canvasWidth ? canvasWidth * (layout?.isMobile ? 0.74 : 0.34) : 300 * uiScale,
       (isLargeDesktop ? 300 : 260) * uiScale
     ));
-    const width = Math.max(minWidth, Math.min(maxWidth, Math.max(this.traitLabel.width, this.traitText.width) + authoredInset + paddingX));
-    const labelHeight = intro ? this.traitLabel.height : 0;
+    const width = Math.min(canvasWidth - 20 * Math.min(uiScale, 1.45),
+      Math.max(minWidth, Math.min(maxWidth, this.traitText.width + authoredInset + paddingX)));
+    this.fitTextToWidth(this.traitText, width - authoredInset - paddingX, 0.68);
+    const labelHeight = 0;
     const textHeight = labelHeight + this.traitText.height + 1;
     const height = textHeight + barGap + barHeight + paddingY * 2;
 
@@ -2501,7 +2580,7 @@ export class HUD {
       const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 * uiScale : 0;
       const locationBottom = this.locationText ? Math.max(this.locationText.y + this.locationText.height, this.sectorPlate?.getBounds?.().maxY || 0) + 6 * uiScale : 0;
       this.traitGroup.x = canvasWidth - margin - width;
-      this.traitGroup.y = Math.max(powerupBottom, livesBottom, locationBottom);
+      this.traitGroup.y = Math.max(powerupBottom, livesBottom, locationBottom, this.getSupportTop(this.traitGroup.x, width));
     }
   }
 
@@ -2646,7 +2725,7 @@ export class HUD {
     const configuredComboY = Number.isFinite(Number(this.comboMeterGroup.__fixedY))
       ? Number(this.comboMeterGroup.__fixedY)
       : this.scoreText.y + this.scoreText.height + Math.round(5 * uiScale);
-    this.comboMeterGroup.y = Math.max(
+    this.comboMeterGroup.y = this.compactHud ? configuredComboY : Math.max(
       configuredComboY,
       this.scoreText.y + this.scoreText.height + Math.round(5 * uiScale)
     );
@@ -2779,35 +2858,38 @@ export class HUD {
     const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
     const isLargeDesktop = !layout.isMobile && canvasWidth >= 1920;
     const margin = Math.round((layout.isMobile ? 14 : 16) * Math.min(uiScale, 1.45));
+    const compactHud = canvasWidth < 720;
+    this.compactHud = compactHud ? {rankWidth: Math.min(164 * uiScale, (canvasWidth - margin * 2 - 12) / 2)} : null;
     const blockSpacing = Math.round((layout.isMobile ? 24 : (isLargeDesktop ? 26 : 24)) * uiScale);
     const scoreFont = Math.round((layout.isMobile ? 15 : (isLargeDesktop ? 22 : 20)) * uiScale);
     const livesFont = Math.round((layout.isMobile ? 16 : (isLargeDesktop ? 22 : 20)) * uiScale);
-    const leftPanelWidth = layout.isMobile
+    const leftPanelWidth = compactHud ? canvasWidth - margin * 2 : layout.isMobile
       ? Math.min(286 * uiScale, canvasWidth * 0.72)
       : Math.min(canvasWidth * 0.42, (isLargeDesktop ? 410 : 390) * uiScale);
-    const leftPanelHeight = Math.round((layout.isMobile ? 126 : (isLargeDesktop ? 142 : 136)) * uiScale);
+    const leftPanelHeight = Math.round((compactHud ? 144 : layout.isMobile ? 126 : (isLargeDesktop ? 142 : 136)) * uiScale);
     const rightPanelWidth = Math.round((layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164)) * uiScale);
     const rightPanelHeight = Math.round((layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52)) * uiScale);
     const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : Math.min(canvasWidth * 0.52, (isLargeDesktop ? 480 : 420) * uiScale);
-    const missionPanelHeight = Math.round((layout.isMobile ? 104 : 110) * uiScale);
+    const missionPanelHeight = Math.round((compactHud ? 84 : layout.isMobile ? 104 : 110) * uiScale);
     const missionPanelX = layout.isMobile ? margin : canvasWidth / 2 - missionPanelWidth / 2;
-    const missionPanelY = layout.isMobile || canvasWidth < 1100 ? margin + leftPanelHeight + 7 : margin;
+    const missionPanelY = compactHud ? margin + 150 * uiScale : layout.isMobile || canvasWidth < 1100 ? margin + leftPanelHeight + 7 : margin;
 
     this.scoreText.style.fontSize = scoreFont;
     this.levelText.style.fontSize = scoreFont;
     this.livesText.style.fontSize = livesFont;
-    this.locationText.style.fontSize = Math.round((layout.isMobile ? 20 : (isLargeDesktop ? 24 : 22)) * uiScale);
+    this.locationText.style.fontSize = Math.round((compactHud ? 18 : layout.isMobile ? 20 : (isLargeDesktop ? 24 : 22)) * uiScale);
     this.rankText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 15 : 14)) * uiScale);
     this.missionLabel.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11)) * uiScale);
     this.missionText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 17 : 15)) * uiScale);
     this.directiveText.style.fontSize = Math.round((layout.isMobile ? 9 : 12) * uiScale);
     this.experimentLabelText.style.fontSize = Math.round((layout.isMobile ? 9 : 11) * Math.min(uiScale, 1.35));
 
-    this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, Math.min(leftPanelHeight, Math.round(68 * uiScale)), 0x5fa8bd, 0.035, {
+    this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, Math.round((compactHud ? 86 : 68) * uiScale), 0x5fa8bd, 0.035, {
       fillAlpha: 0.72,
       strokeAlpha: 0.44,
       strokeWidth: 1
     });
+    if (compactHud) this.leftPanel.clear();
     this.rightPanel.clear();
     this.rightPanel.visible = false;
     this.missionPanel.__layout = {
@@ -2839,24 +2921,27 @@ export class HUD {
     this.traitGroup._debugPriority = 'support';
 
     // Rank Position (Top Left)
-    this.rankGroup.x = margin + 10;
-    this.rankGroup.y = margin + 10;
+    this.rankGroup.x = margin + (compactHud ? 5 : 10);
+    this.rankGroup.y = margin + (compactHud ? 3 : 10);
 
     // Shift Score and Level to the right of Rank
     const rankOffset = Math.round((layout.isMobile ? 186 : (isLargeDesktop ? 204 : 198)) * uiScale);
 
-    this.scoreText.x = margin + rankOffset;
-    this.scoreText.y = margin + 10;
-    this.scoreText.__maxWidth = Math.max(92, margin + leftPanelWidth - 14 - this.scoreText.x);
+    this.scoreText.x = margin + (compactHud ? 8 : rankOffset);
+    this.scoreText.y = margin + (compactHud ? 65 * uiScale : 10);
+    this.scoreText.__maxWidth = compactHud ? leftPanelWidth - 112 * uiScale : Math.max(92, margin + leftPanelWidth - 14 - this.scoreText.x);
     this.scoreMultiplierText.x = this.scoreText.x + this.scoreText.width + 10;
     this.scoreMultiplierText.y = this.scoreText.y + 2;
     if (this.comboMeterGroup) {
-      const comboWidth = Math.round((layout.isMobile ? 90 : (isLargeDesktop ? 124 : 108)) * uiScale);
+      const comboWidth = Math.round(Math.min(
+        (layout.isMobile ? 90 : (isLargeDesktop ? 124 : 108)) * uiScale,
+        compactHud ? leftPanelWidth * 0.36 : Infinity
+      ));
       const comboHeight = Math.round((layout.isMobile ? 19 : 22) * uiScale);
       this.comboMeterGroup.__w = comboWidth;
       this.comboMeterGroup.__h = comboHeight;
-      this.comboMeterGroup.__fixedX = this.scoreText.x;
-      this.comboMeterGroup.__fixedY = margin + blockSpacing + Math.round(14 * uiScale);
+      this.comboMeterGroup.__fixedX = compactHud ? canvasWidth - margin - comboWidth - 6 : this.scoreText.x;
+      this.comboMeterGroup.__fixedY = compactHud ? this.scoreText.y : margin + blockSpacing + Math.round(14 * uiScale);
       this.comboMeterGroup.__placement = 'score-lane';
     }
 
@@ -2864,15 +2949,15 @@ export class HUD {
     this.levelText.y = margin + blockSpacing + 8;
 
     if (this.highscoreChaseGroup) {
-      const chaseWidth = Math.min(
+      const chaseWidth = compactHud ? leftPanelWidth : Math.min(
         leftPanelWidth - 24,
         Math.round((layout.isMobile ? 248 : (isLargeDesktop ? 332 : 308)) * uiScale)
       );
-      const chaseHeight = Math.round((layout.isMobile ? 50 : (isLargeDesktop ? 54 : 52)) * uiScale);
+      const chaseHeight = Math.round((compactHud ? 54 : layout.isMobile ? 50 : (isLargeDesktop ? 54 : 52)) * uiScale);
       this.highscoreChaseGroup.__w = chaseWidth;
       this.highscoreChaseGroup.__h = chaseHeight;
-      this.highscoreChaseGroup.x = margin + 12;
-      this.highscoreChaseGroup.y = margin + (layout.isMobile ? 70 : 74);
+      this.highscoreChaseGroup.x = margin + (compactHud ? 0 : 12);
+      this.highscoreChaseGroup.y = margin + (compactHud ? 90 * uiScale : layout.isMobile ? 70 : 74);
       this.highscoreChaseTitle.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11)) * uiScale);
       this.highscoreChaseTarget.style.fontSize = Math.round((layout.isMobile ? 11 : (isLargeDesktop ? 14 : 13)) * uiScale);
       this.highscoreChaseGap.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 11 : 10)) * uiScale);
@@ -2952,7 +3037,7 @@ export class HUD {
 
     this.updateLivesVisuals();
     this.livesGroup.x = canvasWidth - margin - this.livesGroup.width;
-    this.livesGroup.y = margin + 7;
+    this.livesGroup.y = margin + (compactHud ? 0 : 7);
 
     if (this.activePowerupGroup) {
       this.activePowerupGroup.x = canvasWidth - margin - this.activePowerupGroup.width;
@@ -2965,10 +3050,13 @@ export class HUD {
         : this.livesGroup.y + this.livesGroup.height + 6;
     }
     if (this.tacticalAugmentGroup) {
+      const trayY = missionPanelY > margin ? missionPanelY + missionPanelHeight + 8 : margin + leftPanelHeight + Math.round(8 * Math.min(uiScale, 1.4));
+      const sideWidth = missionPanelX - margin - 8;
+      const useSideTray = !compactHud && sideWidth >= 180 && trayY + 84 > (this.game.getHeight?.() || layout.height);
       this.tacticalAugmentGroup._layout = {
         x: margin,
-        y: margin + leftPanelHeight + Math.round(8 * Math.min(uiScale, 1.4)),
-        maxWidth: Math.max(180, Math.min(canvasWidth - margin * 2, (isLargeDesktop ? 720 : 520) * Math.min(uiScale, 1.25))),
+        y: useSideTray ? margin + leftPanelHeight + 8 : trayY,
+        maxWidth: useSideTray ? sideWidth : Math.max(180, Math.min(canvasWidth - margin * 2, (isLargeDesktop ? 720 : 520) * Math.min(uiScale, 1.25))),
         rightHudLeft: canvasWidth - margin - rightPanelWidth - 8
       };
       this.updateTacticalAugmentTray();
@@ -3003,6 +3091,7 @@ export class HUD {
 
   updateLivesVisuals() {
     if (!this.livesGroup || !this.livesText || !this.livesIcon) return;
+    this.livesText.scale.set(1); this.shipMasteryText.scale.set(1);
     const padding = 10;
     const critical = Number(this.game?.lives || 0) === 1;
     const pulse = critical ? 0.5 + Math.sin(Date.now() * 0.014) * 0.5 : 0;
@@ -3012,25 +3101,30 @@ export class HUD {
     this.shipMasteryText.text = translateText('TOURS ×{count}', { count: mastery.tours });
     const height = Math.max(54, this.livesText.height + this.shipMasteryText.height + padding + 7);
     this.livesGroup.pivot.set(0, 0);
-    this.livesText.x = 48;
+    this.livesText.x = this.compactHud ? 38 : 48;
     this.livesText.y = 5;
-    this.shipMasteryText.x = 48;
+    this.shipMasteryText.x = this.livesText.x;
     this.shipMasteryText.y = this.livesText.y + this.livesText.height + 1;
-    const width = Math.max(154, this.livesText.x + Math.max(this.livesText.width, this.shipMasteryText.width) + padding);
+    const maxWidth = this.compactHud?.rankWidth;
+    if (maxWidth) {
+      this.fitTextToWidth(this.livesText, maxWidth - this.livesText.x - padding, 0);
+      this.fitTextToWidth(this.shipMasteryText, maxWidth - this.shipMasteryText.x - padding, 0);
+    }
+    const width = maxWidth || Math.max(154, this.livesText.x + Math.max(this.livesText.width, this.shipMasteryText.width) + padding);
     this.livesBg.clear();
     this.shipMasteryMedals.clear();
-    [SHIP_MASTERY_TIERS.bronze, SHIP_MASTERY_TIERS.silver, SHIP_MASTERY_TIERS.gold].forEach((tier, medalIndex) => {
-      const earned = mastery.tier.rank >= tier.rank;
-      const medalX = 14 + medalIndex * 11;
-      const medalY = height - 14;
-      this.shipMasteryMedals.circle(medalX, medalY, 3.8);
-      this.shipMasteryMedals.fill({ color: earned ? tier.color : 0x173044, alpha: earned ? 0.96 : 0.68 });
-      this.shipMasteryMedals.stroke({ color: earned ? 0xffffff : 0x527084, width: earned ? 1 : 0.7, alpha: earned ? 0.78 : 0.42 });
-    });
-    this.livesArt.width = width;
-    this.livesArt.height = height;
-    this.livesArt.tint = critical ? (pulse > 0.52 ? 0xff6a6a : 0xffd166) : 0xb8ffd0;
-    this.livesArt.alpha = critical ? 0.92 + pulse * 0.08 : 0.82;
+    this.livesArt.visible = false;
+    this.livesBg.roundRect(0, 0, width, height, 8).fill({color:0x051421,alpha:.94});
+    this.livesBg.roundRect(0, 0, width, height, 8).stroke({color:critical?0xff795e:0x56bfc9,width:1.2,alpha:critical?.65+pulse*.3:.55});
+    const dividerX = this.livesText.x - 1;
+    this.livesBg.moveTo(dividerX, 10).lineTo(dividerX, height-10).stroke({color:0x73d7df,width:1,alpha:.3});
+    const player = this.game?.currentScene?.player;
+    const portrait = GameAssets.getRankShipTexture(player?.selectedShipTextureIndex ?? player?.config?.textureIndex ?? 0);
+    if (GameAssets.isValidTexture(portrait)) {
+      this.livesShip.texture = portrait;
+      this.livesShip.scale.set(Math.min((this.compactHud ? 30 : 40)/portrait.width, (height-10)/portrait.height));
+      this.livesShip.position.set(this.livesText.x / 2, height/2);
+    }
     this.livesGroup._debugCritical = critical;
     this.livesGroup._debugPulse = Number(pulse.toFixed(3));
     this.livesGroup._debugPriority = 'critical';
@@ -3044,7 +3138,7 @@ export class HUD {
     this.livesGroup._debugVisual = {
       authoredCapsuleReady: GameAssets.isValidTexture(this.livesArt.texture),
       primitiveOrnamentCount: 0,
-      visualLanguage: 'authored_survival_capsule_v1'
+      visualLanguage: 'current_ship_lives_portrait_v2'
     };
   }
 

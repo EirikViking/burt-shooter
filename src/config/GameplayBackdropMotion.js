@@ -45,6 +45,31 @@ export function resolveGameplayBackdropMode(level = 1, context = {}) {
   return 'base';
 }
 
+export function resolveGameplayBackdropSources(level = 1, style = 'modern', generated = {}) {
+  const normalizedStyle = String(style || '').trim().toLowerCase() === 'legacy' ? 'legacy' : 'modern';
+  if (normalizedStyle === 'legacy') {
+    return {
+      style: 'legacy',
+      usesSectorWorlds: false,
+      worlds: [],
+      base: generated.legacyGameplayArenaBackdrop || generated.gameplayArenaBackdrop || generated.menuBackdrop || null,
+      storm: null,
+      boss: null
+    };
+  }
+
+  const worlds = Array.isArray(generated.sectorWorlds) ? generated.sectorWorlds : [];
+  const worldIndex = Math.floor((Math.max(1, Number(level) || 1) - 1) / 5) % Math.max(1, worlds.length);
+  return {
+    style: 'modern',
+    usesSectorWorlds: worlds.length > 0,
+    worlds,
+    base: worlds[worldIndex] || generated.gameplayArenaBackdrop || generated.menuBackdrop || null,
+    storm: worlds.length ? null : generated.stormGameplayBackdrop || null,
+    boss: worlds.length ? null : generated.bossArenaBackdrop || null
+  };
+}
+
 export function sampleGameplayBackdropMotion(mode, elapsedMs = 0, options = {}) {
   const profile = getGameplayBackdropProfile(mode);
   if (options.reducedMotion) return { x: 0, y: 0 };

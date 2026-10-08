@@ -163,6 +163,14 @@ export const BOSS_ROSTER = CALLSIGNS.map((name, index) => {
   };
 });
 
+export function getBossRegularAttack(profile, { level = 1, phase = 1, releaseIndex = 0 } = {}) {
+  const primary = profile?.attack || 'aimed';
+  if (level < 51 || phase < 2 || releaseIndex % 2 === 0) return primary;
+  const secondary = { conductor: 'split', forge: 'wall', mirror: 'fakeout', needle: 'split',
+    vortex: 'clock', jester: 'fan', carrier: 'burst', monolith: 'sniper', choir: 'spiral', clock: 'chord' };
+  return secondary[profile?.archetype] || primary;
+}
+
 export function getBossProfile(level = 1) {
   const index = Math.max(0, (Math.round(level) - 1) % BOSS_ROSTER.length);
   return BOSS_ROSTER[index];
@@ -189,9 +197,8 @@ function createBossOrderRandom(seed) {
   };
 }
 
-function getShuffledBossPool(poolSize, seed, cycleIndex) {
+function getShuffledBossPool(poolSize, seed, cycleIndex, previousLastId = null) {
   let pool = [];
-  let previousLastId = null;
   for (let currentCycle = 0; currentCycle <= cycleIndex; currentCycle += 1) {
     pool = BOSS_ROSTER.slice(0, poolSize);
     const random = createBossOrderRandom(`${seed}:boss-cycle:${currentCycle}:${poolSize}`);
@@ -209,16 +216,24 @@ function getShuffledBossPool(poolSize, seed, cycleIndex) {
 
 export function getBossProfileForRun(level = 1, {
   seed = 'nova-swarm',
-  seenThroughSector = BOSS_ROSTER.length
+  seenThroughSector = BOSS_ROSTER.length,
+  shuffleFromSector = 61
 } = {}) {
   const sector = Math.max(1, Math.round(Number(level) || 1));
-  if (sector <= BOSS_ROSTER.length) return BOSS_ROSTER[sector - 1];
+  // The opening keeps its familiar bosses. Ten later sectors revisit a boss
+  // between new reveals, leaving the final identity for sector 60.
+  if(sector<shuffleFromSector&&sector<=20)return BOSS_ROSTER[sector-1];
+  if(sector<shuffleFromSector&&sector<=60){
+    const revealIndex=20+Math.floor((sector-21)*29/39);
+    const previousRevealIndex=20+Math.floor((sector-22)*29/39);
+    return BOSS_ROSTER[sector>21&&revealIndex===previousRevealIndex?revealIndex-1:revealIndex];
+  }
   const poolSize = Math.max(1, Math.min(
     BOSS_ROSTER.length,
     Math.floor(Number(seenThroughSector) || BOSS_ROSTER.length)
   ));
-  const offset = sector - BOSS_ROSTER.length - 1;
+  const offset = Math.max(0, sector - shuffleFromSector);
   const cycleIndex = Math.floor(offset / poolSize);
   const cycleOffset = offset % poolSize;
-  return getShuffledBossPool(poolSize, seed, cycleIndex)[cycleOffset];
+  return getShuffledBossPool(poolSize, seed, cycleIndex, BOSS_ROSTER[49]?.id)[cycleOffset];
 }

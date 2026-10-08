@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { getAudioSettingsHelpText } from '../src/i18n/audioSettingsHelpText.js';
 import {
   CHATTER_FREQUENCY_KEY,
   CHATTER_FREQUENCY_OPTIONS,
@@ -50,10 +51,10 @@ const audioSource = read('../src/audio/AudioManager.js');
 const settingsSource = read('../src/ui/SettingsOverlay.js');
 const cloudSource = read('../src/steamCloudPersistence.js');
 
-const muteGate = audioSource.indexOf('if (!this.voiceEnabled && options.ignoreVoiceEnabled !== true) return false;');
+const muteGate = audioSource.indexOf('if (!this.voiceEnabled && !(classification.tacticalWarning && this.tacticalVoiceEnabled)');
 const policyGate = audioSource.indexOf('const classification = classifyVoiceEvent(eventName);');
 const forceGate = audioSource.indexOf('const force = options.force === true;', policyGate);
-assert.ok(muteGate >= 0 && policyGate > muteGate, 'voice mute must remain authoritative before chatter policy');
+assert.ok(policyGate >= 0 && muteGate > policyGate, 'voice mute must remain authoritative for non-warning voices');
 assert.ok(forceGate > policyGate, 'force must not bypass the chatter policy');
 for (const token of [
   'setChatterFrequency(value)',
@@ -65,7 +66,7 @@ for (const token of [
 for (const token of [
   "addChatterFrequencyRow('CHATTER RATE'",
   'CHATTER_FREQUENCY_OPTIONS',
-  'Only non-critical chatter is reduced. Boss warnings and mission updates always play.'
+  'Focus or hover over an Audio control to see what it does.'
 ]) {
   assert.ok(settingsSource.includes(token), `Settings missing chatter contract: ${token}`);
 }
@@ -80,9 +81,13 @@ for (const localePath of ['de.js', 'es.js', 'ja.js', 'ko.js', 'pt-BR.js', 'ru.js
     'Full',
     'Reduced',
     'Minimal',
-    'Only non-critical chatter is reduced. Boss warnings and mission updates always play.'
+    'Focus or hover over an Audio control to see what it does.'
   ]) {
-    assert.ok(locale.includes(`'${key}':`), `${localePath} missing ${key}`);
+    if (key.startsWith('Focus or hover')) {
+      assert.ok(getAudioSettingsHelpText(localePath.replace('.js', ''))[key], `${localePath} missing ${key}`);
+    } else {
+      assert.ok(locale.includes(`'${key}':`), `${localePath} missing ${key}`);
+    }
   }
 }
 

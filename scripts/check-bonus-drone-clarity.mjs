@@ -87,10 +87,10 @@ const server = await startDevServer();
 const browser = await chromium.launch({
   headless: true,
   executablePath: findChrome(),
-  args: ['--disable-gpu', '--no-sandbox', '--autoplay-policy=no-user-gesture-required']
+  args: ['--autoplay-policy=no-user-gesture-required']
 });
 
-const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 const pageErrors = [];
 const consoleErrors = [];
 page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -103,10 +103,13 @@ try {
   await page.waitForFunction(() => window.__game?.scenes?.play?.spawnAmbientBonusDrone, null, { timeout: 30000 });
   await page.waitForTimeout(500);
 
-  const state = await page.evaluate(() => {
+  const state = await page.evaluate(async () => {
     const game = window.__game;
     const play = game?.scenes?.play;
     if (!game || !play) return { ok: false, reason: 'missing play scene' };
+    const { BonusDrone } = await import('/src/entities/BonusDrone.js');
+    const { GameAssets } = await import('/src/utils/GameAssets.js');
+    await GameAssets.ensureBonusCoreTexture();
     play.introActive = false;
     play.introComplete = true;
     play.isPaused = false;
@@ -118,8 +121,11 @@ try {
     play.ambientBonusDrones = [];
 
     const place = (type, x, y, vx, vy) => {
-      play.spawnAmbientBonusDrone(type);
-      const drone = play.ambientBonusDrones[play.ambientBonusDrones.length - 1];
+      // Stage both interactions without bypassing the production spawn budget.
+      // The ordinary scheduler intentionally rejects additional forced pickups.
+      const drone = new BonusDrone(x, y, game, type, 'bonus_core_collector');
+      play.ambientBonusDrones.push(drone);
+      play.gameContainer.addChild(drone.sprite);
       drone.x = x;
       drone.y = y;
       drone.vx = vx;
@@ -129,6 +135,7 @@ try {
         type: drone.type,
         active: drone.active,
         debug: { ...(drone.sprite?._debugBonusClarity || {}) },
+        intentLabel: drone.targetLabel?.text || drone.pickupLabel?.text || '',
         edgeDebug: { ...(drone.edgeMarker?.__debugBonusEdgeMarker || {}) },
         children: (drone.sprite?.children || []).map((child) => child.label || child.constructor?.name || 'node')
       };
@@ -149,8 +156,10 @@ try {
   if (state.count !== 3) failures.push(`expected three drones, saw ${state.count}`);
   if (state.hazard?.debug?.intent !== 'shoot') failures.push(`hazard intent mismatch: ${JSON.stringify(state.hazard)}`);
   if (state.powerup?.debug?.intent !== 'collect') failures.push(`powerup intent mismatch: ${JSON.stringify(state.powerup)}`);
-  if (!state.hazard?.debug?.halo || !state.hazard?.debug?.glyph || !state.hazard?.debug?.trail) failures.push(`hazard clarity missing: ${JSON.stringify(state.hazard)}`);
-  if (!state.powerup?.debug?.halo || !state.powerup?.debug?.glyph || !state.powerup?.debug?.trail) failures.push(`powerup clarity missing: ${JSON.stringify(state.powerup)}`);
+  for (const drone of [state.hazard, state.powerup]) {
+    if (!drone?.debug?.halo || !drone?.debug?.trail || !drone?.intentLabel) failures.push(`intent cue missing: ${JSON.stringify(drone)}`);
+    if (drone?.debug?.glyph || drone?.children?.includes('bonusDroneIntentGlyph')) failures.push(`redundant hull brackets: ${JSON.stringify(drone)}`);
+  }
   if (state.hazard?.debug?.edgeMarker || state.powerup?.debug?.edgeMarker) failures.push(`onscreen drones should not show edge markers: ${JSON.stringify({ hazard: state.hazard, powerup: state.powerup })}`);
   if (!state.offscreen?.debug?.edgeMarker || state.offscreen?.edgeDebug?.reason !== 'offscreen_edge') failures.push(`offscreen bonus drone edge marker missing: ${JSON.stringify(state.offscreen)}`);
   if ((state.offscreen?.edgeDebug?.edgeArrowCount || 0) < 1) failures.push(`offscreen bonus drone edge arrow missing: ${JSON.stringify(state.offscreen?.edgeDebug)}`);

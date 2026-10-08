@@ -350,8 +350,7 @@ export function destroyMenuFx(scene) {
 }
 
 export function playMenuOpenSfx(volume = 0.34) {
-  AudioManager.playSfx('intro_panel_whoosh', { volume, minIntervalMs: 220 });
-  AudioManager.playSfx('computerNoise', { volume: volume * 0.32, minIntervalMs: 260 });
+  void volume;
 }
 
 export function playMenuFocusSfx(volume = 0.12) {
@@ -359,9 +358,9 @@ export function playMenuFocusSfx(volume = 0.12) {
 }
 
 export function playMenuConfirmSfx(volume = 0.28) {
-  AudioManager.playSfx('ui_open', { volume, minIntervalMs: 80 });
+  void volume;
 }
 
 export function playMenuBackSfx(volume = 0.22) {
-  AudioManager.playSfx('ui_close', { volume, minIntervalMs: 90 });
+  void volume;
 }

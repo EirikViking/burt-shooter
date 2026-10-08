@@ -1,8 +1,11 @@
+import { claimOnslaughtInvitation, dismissOnslaughtInvitation, getOnslaughtBest, getFlightTargets, chooseOnslaughtTarget, isConfirmedOnslaughtPersonalBest } from '../progression/OnslaughtChallenge.js';
+import { celebrationSprite } from '../effects/CelebrationArt.js';
 import { settleWithin } from '../utils/settleWithin.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { getGameOverComment } from '../text/phrasePool.js';
+import { getTacticalDraftMeta } from '../config/TacticalDraft.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { generateUUID } from '../utils/uuid.js';
@@ -118,6 +121,7 @@ const RUN_REPORT_SECTION_LABELS = Object.freeze({
 });
 
 const RUN_REPORT_FIELD_LABELS = Object.freeze({
+  encounterHighlight: 'Encounter highlight',
   mode: 'Mode',
   ship: 'Ship',
   score: 'Score',
@@ -389,6 +393,9 @@ export class GameOverScene {
     this.globalStatus = 'idle';
     this.globalPlacement = null;
     this.globalPlacementTier = 'none';
+    this.confirmedOnslaughtPlacement = null;
+    this.confirmedOnslaughtNumberOneAt = 0;
+    this.onslaughtOwnPreviousNumberOne = false;
     this.localPlacement = null;
     this.localPlacementSource = null;
     this.canEnterName = false;
@@ -538,6 +545,9 @@ export class GameOverScene {
     this.globalStatus = 'idle';
     this.globalPlacement = null;
     this.globalPlacementTier = 'none';
+    this.confirmedOnslaughtPlacement = null;
+    this.confirmedOnslaughtNumberOneAt = 0;
+    this.onslaughtOwnPreviousNumberOne = false;
     this.localPlacement = null;
     this.localPlacementSource = null;
     this.canEnterName = false;
@@ -562,7 +572,7 @@ export class GameOverScene {
     this.isRankedRun = typeof this.game.isScoreSubmissionAllowed === 'function'
       ? this.game.isScoreSubmissionAllowed()
       : !this.game.isDebugRun;
-    const tacticalSteamLane = this.game?.runMode === RUN_MODES.MAYHEM_TACTICAL;
+    const tacticalSteamLane = [RUN_MODES.MAYHEM_TACTICAL, RUN_MODES.OVERRUN_TACTICAL].includes(this.game?.runMode);
     this.steamSubmissionMode = Boolean(
       this.isRankedRun
       && (this.leaderboardAdapter.shouldUseSteamSubmission() || tacticalSteamLane)
@@ -591,13 +601,24 @@ export class GameOverScene {
     }
     const previousProgress = this.game.runProgressionResult?.previous || getShipUnlockProgress();
     const previousModeBest = Math.max(0, Number(this.game?.previousMayhemModeBestScore) || 0);
-    this.isPersonalBest = (this.isRankedRun && this.finalScore > previousModeBest)
-      || (this.isOverrunResult() && this.game?.runSummary?.overrunRunNewBest === true);
+    const chase = this.game.highscoreChase;
+    const knownPreviousBest = Math.max(previousModeBest,
+      chase?.runMode === this.game.runMode ? Number(chase.targetScore) || 0 : 0);
+    // The local backup can be lower than Steam. Keep the candidate separate
+    // until the matching board confirms a strict improvement.
+    this.localOnslaughtNewBest = this.game.runMode === RUN_MODES.OVERRUN_TACTICAL && this.game.onslaughtRecord?.isNewBest === true;
+    this.localPersonalBest = this.game.runMode === RUN_MODES.OVERRUN_TACTICAL
+      ? this.localOnslaughtNewBest
+      : this.isRankedRun && this.finalScore > knownPreviousBest;
+    this.isPersonalBest = (!this.steamSubmissionMode && this.localPersonalBest)
+      || (this.game.runMode === RUN_MODES.OVERRUN_PURE && this.game?.runSummary?.overrunRunNewBest === true);
     this.qualificationFanfarePlayed = false;
     this.personalBestVoicePlayed = Boolean(this.game?.personalBestLiveCelebrated);
     this.nearMissVoicePlayed = false;
     const currentProgress = this.game.runProgressionResult?.next || getShipUnlockProgress();
     this.currentProgressForResult = currentProgress;
+    this.onslaughtInvitation = Number(previousProgress?.totalRuns) > 0 && [RUN_MODES.RANKED, RUN_MODES.MAYHEM_TACTICAL].includes(this.game.runMode) && !this.game.isDebugRun && claimOnslaughtInvitation(currentProgress);
+    this.onslaughtInvitationDismissed = false;
     this.firstFlightPreviousRuns = Math.max(0, Math.floor(Number(previousProgress?.totalRuns) || 0));
     this.firstFlightCurrentRuns = Math.max(0, Math.floor(Number(currentProgress?.totalRuns) || 0));
     this.firstFlightResult = Boolean(
@@ -778,6 +799,15 @@ export class GameOverScene {
     });
     this.nextGoalText.anchor.set(0.5);
     this.nextGoalGroup.addChild(this.nextGoalBg, this.nextGoalText);
+    if (this.onslaughtInvitation) {
+      this.nextGoalGroup.eventMode='static'; this.nextGoalGroup.cursor='pointer';
+      this.nextGoalGroup.on('pointertap',()=>this.openOnslaughtInvitation());
+      this.inviteDismissText=createText([translateText('Dismiss'), 'D / RB'].join(' · '),{fontSize:14,fill:0xc5d5dd});
+      this.inviteDismissText.anchor.set(.5);this.inviteDismissText.y=48;
+      this.inviteDismissText.eventMode='static';this.inviteDismissText.cursor='pointer';
+      this.inviteDismissText.on('pointertap',e=>{e.stopPropagation();this.dismissOnslaughtInvitation();});
+      this.nextGoalGroup.addChild(this.inviteDismissText);
+    }
     this.container.addChild(this.nextGoalGroup);
 
     const bodySize = getResponsiveFontSize(layout, 'body');
@@ -860,6 +890,8 @@ export class GameOverScene {
     this.container.addChild(this.mainMenuButton);
     this.createRunReportButton(layout);
     this.container.addChild(this.runReportButton);
+    this.createChangeLoadoutButton(layout);
+    this.container.addChild(this.changeLoadoutButton);
     this.createRunReportOverlay(layout);
     this.container.addChild(this.runReportOverlay);
 
@@ -1074,6 +1106,7 @@ export class GameOverScene {
   clearGlobalPlacement(status = this.globalStatus) {
     this.globalPlacement = null;
     this.globalPlacementTier = 'none';
+    this.confirmedOnslaughtPlacement = null;
     this.globalQualified = false;
     if (status) this.globalStatus = status;
     this.updateLeaderboardStatusText();
@@ -1083,6 +1116,7 @@ export class GameOverScene {
   getGlobalPlacementRank() {
     const result = this.getCurrentLeaderboardResult();
     if (this.isSteamBestUnchangedResult(result)) return null;
+    if (this.isOnslaughtTacticalResult() && !this.confirmedOnslaughtPlacement?.qualified) return null;
     const scenePlacement = this.globalPlacement?.qualified
       ? getValidPlacementNumber(this.globalPlacement?.placement)
       : null;
@@ -1109,8 +1143,20 @@ export class GameOverScene {
     return isOverrunRunMode(this.game?.runSummary?.runMode || this.game?.runMode);
   }
 
+  isOnslaughtTacticalResult() {
+    return (this.game?.runSummary?.runMode || this.game?.runMode) === RUN_MODES.OVERRUN_TACTICAL;
+  }
+
+  canNavigateWhileSubmitting() {
+    return this.isOnslaughtTacticalResult();
+  }
+
   isResultActionStage() {
-    return this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked';
+    return this.state === 'runback'
+      || this.state === 'submitted'
+      || this.state === 'skipped'
+      || this.state === 'unranked'
+      || (this.state === 'submitting' && this.canNavigateWhileSubmitting());
   }
 
   getLocalPlacementLine() {
@@ -1145,6 +1191,7 @@ export class GameOverScene {
   getGlobalPlacementLine() {
     if (this.isDailySignalResult()) return translateText('PUBLIC DAILY BOARD: NOT ENABLED');
     if (this.isSectorStartChallengeResult()) return this.getSectorStartChallengeReachedLine();
+    if (this.game.runMode === RUN_MODES.OVERRUN_TACTICAL) return this.getSteamPlacementLine();
     if (this.isOverrunResult()) return translateText('LEADERBOARD: DISABLED FOR OVERRUN');
     if (!this.isRankedRun) return translateText('Global: Scout unranked - no submission');
     if (this.steamSubmissionMode) return this.getSteamPlacementLine();
@@ -1173,19 +1220,32 @@ export class GameOverScene {
     const result = this.getCurrentLeaderboardResult();
     if (this.isSteamBestUnchangedResult(result) || this.globalStatus === 'steam_best_unchanged') {
       const best = this.getSteamPreviousBestScore(result);
-      return best > 0
-        ? `Steam: Best unchanged\nBest: ${this.formatScoreNumber(best)} | This run: ${this.formatScoreNumber(this.finalScore)}`
-        : 'Steam: Best unchanged';
+      if (this.isOnslaughtTacticalResult()) {
+        return best > 0
+          ? `${translateText('Existing best retained')}\n${translateText('Steam best: {best} · This run: {score}', { best: this.formatScoreNumber(best), score: this.formatScoreNumber(this.finalScore) })}`
+          : translateText('Existing best retained');
+      }
+      return best > 0 ? `Steam: Best unchanged\nBest: ${this.formatScoreNumber(best)} | This run: ${this.formatScoreNumber(this.finalScore)}` : 'Steam: Best unchanged';
     }
     const rank = this.getGlobalPlacementRank();
     if (rank) {
+      if (this.isOnslaughtTacticalResult()) return translateText('Submitted · Steam rank #{rank}', { rank });
       return result?.steamStatus === 'submitted' || this.globalStatus === 'submitted'
         ? `New Steam best: #${rank}`
         : `Steam: #${rank}`;
     }
+    if (this.isOnslaughtTacticalResult()) {
+      if (this.globalStatus === 'submitting') return translateText('Submitting');
+      if (result?.steamStatus === 'submitted' || this.globalStatus === 'submitted') return translateText('Submitted');
+      if (result?.steamPendingQueued && !this.leaderboardAdapter?.isSteamAvailable?.()) return translateText('Queued offline');
+      if (result?.steamPendingQueued) return translateText('Steam: Upload pending');
+      if (this.globalStatus === 'failed' || result?.steamStatus === 'failed') return translateText('Submission failed — Retry');
+      if (this.globalStatus === 'steam_ready' || this.globalStatus === 'idle' || this.globalStatus === 'qualified') return translateText('Saved locally');
+    }
     if (this.globalStatus === 'submitting') return 'Steam: Rank updating...';
-    if (this.globalStatus === 'failed' || result?.steamStatus === 'failed') return 'Steam: Unavailable - local backup saved';
     if (result?.steamStatus === 'submitted' || this.globalStatus === 'submitted') return 'Steam: Score submitted';
+    if (result?.steamPendingQueued) return translateText('Steam: Upload pending');
+    if (this.globalStatus === 'failed' || result?.steamStatus === 'failed') return translateText('Steam: Upload not confirmed');
     if (this.globalStatus === 'steam_ready' || this.globalStatus === 'idle') return 'Steam: Ready';
     return `Steam: ${String(this.globalStatus || 'unknown')}`;
   }
@@ -1196,6 +1256,26 @@ export class GameOverScene {
     }
     if (this.isSectorStartChallengeResult()) {
       return this.getSectorStartChallengeResultLines();
+    }
+    if (this.game.runMode === RUN_MODES.OVERRUN_TACTICAL) {
+      const best = getOnslaughtBest();
+      const visibleBestScore = Math.max(Number(best?.score) || 0, this.getSteamPreviousBestScore());
+      const start = this.game?.competitionStart;
+      const shipName = this.game?.runSummary?.shipName
+        || getShipMetadata(this.game?.selectedShipSpriteKey)?.name
+        || start?.shipId;
+      const startingAugments = Array.isArray(start?.augmentIds)
+        ? start.augmentIds.map((id) => translateText(getTacticalDraftMeta(id)?.name || id))
+        : [];
+      const startingBuild = startingAugments.length === 3
+        ? `${translateText('ONSLAUGHT LOADOUT')}: ${shipName} · ${startingAugments.join(' / ')}`
+        : '';
+      return [
+        translateText('THIS RUN · {score}', { score: this.formatScoreNumber(this.finalScore) }),
+        translateText('ONSLAUGHT BEST · {score}', { score: this.formatScoreNumber(visibleBestScore) }),
+        startingBuild,
+        this.getSteamPlacementLine()
+      ].filter(Boolean);
     }
     if (this.isOverrunResult()) {
       const summary = this.game?.runSummary || {};
@@ -1210,7 +1290,7 @@ export class GameOverScene {
           this.formatScoreNumber(best?.score || this.finalScore)
         ].join(' · '),
         translateText('CAREER XP +{xp}', { xp: gained.toLocaleString('en-US') }),
-        translateText('LEADERBOARDS / ACHIEVEMENTS / CHECKPOINTS OFF')
+        translateText('NO GLOBAL SCORE SUBMISSION · ELIGIBLE ONSLAUGHT ACHIEVEMENTS COUNT')
       ];
     }
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
@@ -1223,6 +1303,7 @@ export class GameOverScene {
   }
 
   getUnrankedScoreBlockedText() {
+    if (this.game.runMode === RUN_MODES.OVERRUN_TACTICAL && !this.game.isDebugRun) return translateText('ONSLAUGHT — RANKED CHALLENGE');
     if (this.isLateGameExperimentResult()) return translateText('EXPERIMENTAL TEST // NO AWARDS');
     return this.isDailySignalResult()
       ? translateText('DAILY SIGNAL - LOCAL UTC CHALLENGE - NO PUBLIC SUBMISSION')
@@ -1341,6 +1422,7 @@ export class GameOverScene {
     const result = this.getCurrentSectorLeaderboardResult();
     const status = this.sectorSteamStatus || result?.sectorSteamStatus || 'idle';
     const rank = getValidPlacementNumber(this.sectorSteamRank || result?.sectorSteamRank);
+    if (result?.sectorSteamPendingQueued && status !== 'submitted' && status !== 'best_unchanged') return translateText('Steam: Upload pending');
     if (!this.leaderboardAdapter?.isSteamAvailable?.() && status !== 'submitted' && status !== 'best_unchanged') {
       return translateText('STEAM SECTOR: OFFLINE');
     }
@@ -1560,6 +1642,7 @@ export class GameOverScene {
 
   getHoldStatusText(reason = this.pendingRunbackReason) {
     if (this.state === 'submitting' || this.globalStatus === 'submitting') return 'Steam: Rank updating...';
+    if (this.steamSubmissionMode && this.getCurrentLeaderboardResult()?.steamPendingQueued) return this.getSteamPlacementLine();
     if (reason === 'global_failed' || this.globalStatus === 'failed') return 'Steam: Unavailable - local backup saved';
     if (reason === 'steam_best_unchanged' || this.isSteamBestUnchangedResult()) return this.getSteamPlacementLine();
     if (reason === 'offline_no_slot') return translateText('Steam leaderboard unavailable. Local score is saved.');
@@ -1659,7 +1742,19 @@ export class GameOverScene {
     return this.getLeaderboardPlacementLines().join('\n');
   }
 
+  openOnslaughtInvitation() {
+    this.clearSceneTimeouts(); this.game.showHighscores({view: LeaderboardView.ONSLAUGHT});
+  }
+
+  dismissOnslaughtInvitation() {
+    dismissOnslaughtInvitation(); this.onslaughtInvitation=false;
+    this.inviteDismissText?.destroy(); this.inviteDismissText=null;
+    this.nextGoalGroup.eventMode='none';
+    this.nextGoalText.text=this.getRunbackNextGoalText();
+  }
+
   getRunbackNextGoalText() {
+    if (this.onslaughtInvitation) return [translateText('Getting comfortable? The cabinet noticed.'),translateText('Start at Sector 51. Choose three augments. Chase your record.'),`${translateText('EXPLORE ONSLAUGHT')} · O / LB`].join('\n');
     if (this.isLateGameExperimentResult()) return translateText('COPY THE TEST SUMMARY AND SHARE ANY FEEDBACK YOU CHOOSE');
     if (this.isDailySignalResult()) {
       const summary = this.game?.runSummary || {};
@@ -1668,13 +1763,17 @@ export class GameOverScene {
         : translateText('NEXT GOAL: CLEAR SECTOR {sector}', { sector: summary.dailySignalContract?.finishSector || 10 });
     }
     if (this.isSectorStartChallengeResult()) return '';
+    if (this.game.runMode === RUN_MODES.OVERRUN_TACTICAL) {
+      const target = chooseOnslaughtTarget(this.game.globalLeaderboardTargets || [], getOnslaughtBest());
+      return target.kind === 'record' ? translateText('Next record: #{rank} · {score}', {rank:target.rank,score:this.formatGoalNumber(target.score)}) : target.kind === 'personal' ? translateText('Next flight: score above {score}', {score:this.formatGoalNumber(target.score)}) : translateText(target.target.text);
+    }
     if (this.isOverrunResult()) return translateText('NEXT GOAL: PUSH ONE SECTOR DEEPER');
     const rivalGoal = this.getGlobalRivalNextGoalText();
     if (rivalGoal) return rivalGoal;
     const rank = this.getGlobalPlacementRank();
     if (rank && rank > 1) return 'Next goal: Climb one global rank';
     if (rank === 1) return 'Next goal: Defend #1';
-    return this.normalizeNextGoalLine(this.nextGoal?.text || '');
+    return translateText(this.normalizeNextGoalLine(this.nextGoal?.text || ''));
   }
 
   getFinalResultScreenLines() {
@@ -1744,6 +1843,8 @@ export class GameOverScene {
     if (this.state !== 'runback') return;
     const finalLines = this.getFinalResultScreenLines();
     const firstFlight = this.isFirstFlightResultStage();
+    const compactChallenge = this.isCompactChallengeResult();
+    const onslaughtResult = this.game.runMode === RUN_MODES.OVERRUN_TACTICAL;
     this.title.text = firstFlight ? translateText('FIRST FLIGHT COMPLETE') : finalLines.title;
     this.scoreText.visible = true;
     if (this.levelText) {
@@ -1758,22 +1859,24 @@ export class GameOverScene {
     }
     if (this.rankProgressText) {
       this.rankProgressText.text = finalLines.rankProgress;
-      this.rankProgressText.visible = Boolean(!firstFlight && finalLines.rankProgress);
+      this.rankProgressText.visible = Boolean(!firstFlight && !compactChallenge && !onslaughtResult && finalLines.rankProgress);
     }
     if (this.endlessRankHalo) {
-      this.endlessRankHalo.visible = Boolean(!firstFlight && finalLines.rankProgress && this.shouldCelebrateEndlessRank());
+      this.endlessRankHalo.visible = Boolean(!firstFlight && !compactChallenge && !onslaughtResult && finalLines.rankProgress && this.shouldCelebrateEndlessRank());
     }
     if (this.shipUnlockProgressText) {
       this.shipUnlockProgressText.text = finalLines.shipProgress;
-      this.shipUnlockProgressText.visible = Boolean(!firstFlight && finalLines.shipProgress);
+      this.shipUnlockProgressText.visible = Boolean(!firstFlight && !compactChallenge && !onslaughtResult && finalLines.shipProgress);
     }
-    if (this.shipUnlockReveal) this.shipUnlockReveal.visible = Boolean(!firstFlight && this.newlyUnlockedShips.length > 0);
+    if (this.shipUnlockReveal) this.shipUnlockReveal.visible = Boolean(!firstFlight && !compactChallenge && this.newlyUnlockedShips.length > 0);
     if (this.comment) {
       this.comment.text = finalLines.leaderboard;
       this.comment.visible = !firstFlight;
     }
     if (this.counterAdviceCard) this.counterAdviceCard.visible = this.shouldShowCounterAdviceCard();
-    if (this.nextGoal) this.nextGoal = { text: finalLines.nextGoal, tone: 'leaderboard' };
+    // Keep the canonical goal; translated presentation must not feed back into
+    // normalization on resize or the next language change.
+    if (this.nextGoal) this.nextGoal = { ...this.nextGoal, tone: 'leaderboard' };
     if (this.nextGoalText) this.nextGoalText.text = finalLines.nextGoal;
     if (this.nextGoalGroup) this.nextGoalGroup.visible = Boolean(!firstFlight && finalLines.nextGoal);
     if (this.leaderboardStatusText) {
@@ -1816,7 +1919,10 @@ export class GameOverScene {
     if (this.isDailySignalResult()) {
       return translateText(this.game?.runSummary?.runCleared ? 'DAILY SIGNAL CLEARED' : 'DAILY SIGNAL ENDED');
     }
-    if (this.isOverrunResult()) return translateText('OVERRUN COMPLETE');
+    if (this.isOnslaughtTacticalResult()) {
+      return translateText(this.game?.runSummary?.runCleared ? 'ONSLAUGHT COMPLETE' : 'ONSLAUGHT — RUN OVER');
+    }
+    if (this.isOverrunResult()) return translateText(this.game?.runSummary?.runCleared ? 'ONSLAUGHT COMPLETE' : 'ONSLAUGHT — RUN OVER');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR RUN');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return translateText('SCOUT RUN COMPLETE');
     if (!this.isRankedRun) return translateText('PRACTICE COMPLETE');
@@ -1852,7 +1958,7 @@ export class GameOverScene {
       }
       if (this.isOverrunResult()) {
         const resultText = this.getLeaderboardPlacementLines().join('\n');
-        const base = translateText('Overrun complete. Career XP and cumulative Pilot Orders advanced; leaderboards, achievements, and checkpoint unlocks stayed off.');
+        const base = translateText(this.game.runMode === RUN_MODES.OVERRUN_TACTICAL ? 'Full career XP for eligible post-launch events. No rewards for skipped sectors or supplied starting upgrades.' : 'Onslaught Pure ended. Earned career XP and eligible Onslaught achievements count; no global score submission or skipped-sector checkpoint credit.');
         return resultText ? `${base}\n${resultText}` : base;
       }
       const resultText = this.getScoutRunResultLines().join('\n');
@@ -1916,7 +2022,13 @@ export class GameOverScene {
     return text ? translateText(text) : '';
   }
 
+  isCompactChallengeResult() {
+    return this.state === 'runback' && this.game.app.screen.height < 820
+      && (this.onslaughtInvitation || this.game.runMode === RUN_MODES.OVERRUN_TACTICAL);
+  }
+
   shouldShowCounterAdviceCard() {
+    if (this.onslaughtInvitation || this.game.runMode === RUN_MODES.OVERRUN_TACTICAL) return false;
     if (this.isLateGameExperimentResult()) return false;
     if (this.state === 'submitting' || this.state === 'submitted_hold' || this.state === 'result_hold') return false;
     return this.isResultActionStage() && Boolean(this.getCounterAdviceText());
@@ -2052,10 +2164,12 @@ export class GameOverScene {
         this.globalStatus = 'offline';
         return;
       }
-      const scores = await this.leaderboardAdapter.getGlobalScoresForPlacement({
-        useCache: false,
-        ...this.getRunLeaderboardQuery()
-      });
+      const scores = await this.withSubmissionTimeout(
+        this.leaderboardAdapter.getGlobalScoresForPlacement({
+          useCache: false,
+          ...this.getRunLeaderboardQuery()
+        }), 3000, 'Global qualification lookup timeout'
+      );
       this.cachedHighscores = Array.isArray(scores) ? [...scores] : [];
       this.cachedHighscores.sort((a, b) => b.score - a.score);
       if (this.cachedHighscores.length === 0) {
@@ -2100,7 +2214,7 @@ export class GameOverScene {
   createPersonalBestCarryBanner() {
     const carry = this.game?.personalBestCelebrationCarry;
     if (
-      !carry
+      !carry || !this.isPersonalBest
       || Math.max(0, Number(carry.previousScore) || 0) <= 0
       || Math.max(0, Number(carry.currentScore) || 0) <= Math.max(0, Number(carry.previousScore) || 0)
     ) return false;
@@ -2361,14 +2475,15 @@ export class GameOverScene {
     this.layoutBackdrop(width, height);
     this.layoutCeremonyVisuals(width, height, layout);
     this.layoutPersonalBestCarryBanner(width, height, responsiveLayout);
-    this.layoutAchievementToast(width, height);
     this.drawCounterAdviceCard(layout);
+    if (this.counterAdviceCard && (this.onslaughtInvitation || this.game.runMode === RUN_MODES.OVERRUN_TACTICAL)) this.counterAdviceCard.visible = false;
     const counterAdviceVisible = Boolean(this.counterAdviceCard?.visible);
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
     this.drawHangarButton(layout);
     this.drawMainMenuButton(layout);
     this.drawRunReportButton(layout);
+    this.drawChangeLoadoutButton(layout);
     this.drawNextGoalStrip(layout);
     this.drawShipUnlockReveal(layout);
     if (counterAdviceVisible && this.state === 'runback' && (layout.isMobile || height < 820)) {
@@ -2428,13 +2543,17 @@ export class GameOverScene {
     const hangarVisible = this.shouldShowHangarButton();
     const mainMenuVisible = this.shouldShowMainMenuButton();
     const runReportVisible = this.shouldShowRunReportButton();
+    const changeLoadoutVisible = this.shouldShowChangeLoadoutButton();
     const secondaryVisibleCount = [leaderboardVisible, hangarVisible, mainMenuVisible].filter(Boolean).length;
     const secondaryButtonsShareRow = secondaryVisibleCount > 1 && !layout.isMobile;
-    const retryHeight = this.retryButtonHeight || (layout.isMobile ? 58 : 66);
-    const rawLeaderboardHeight = this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48);
-    const rawHangarHeight = this.hangarButtonHeight || (layout.isMobile ? 42 : 48);
-    const rawMainMenuHeight = this.mainMenuButtonHeight || (layout.isMobile ? 42 : 48);
-    const rawRunReportHeight = this.runReportButtonHeight || (layout.isMobile ? 48 : 54);
+    // Measure the complete rendered frames, including focus plates and hints.
+    // Nominal hit-area heights undercounted Retry and collapsed the next row.
+    const actionFrameHeight = (node, nominal, fallback) => Math.max(nominal || 0, (node?.height || 0) / (node?.scale?.y || 1), fallback);
+    const retryHeight = actionFrameHeight(this.retryButton, this.retryButtonHeight, layout.isMobile ? 58 : 66);
+    const rawLeaderboardHeight = actionFrameHeight(this.leaderboardButton, this.leaderboardButtonHeight, layout.isMobile ? 42 : 48);
+    const rawHangarHeight = actionFrameHeight(this.hangarButton, this.hangarButtonHeight, layout.isMobile ? 42 : 48);
+    const rawMainMenuHeight = actionFrameHeight(this.mainMenuButton, this.mainMenuButtonHeight, layout.isMobile ? 42 : 48);
+    const rawRunReportHeight = actionFrameHeight(this.runReportButton, this.runReportButtonHeight, layout.isMobile ? 48 : 54);
     const runReportBesideCounter = Boolean(runReportVisible && counterAdviceVisible && !layout.isMobile && width >= 980);
     const counterAdviceRowHeight = counterAdviceVisible
       ? Math.max(counterAdviceHeight, runReportBesideCounter ? rawRunReportHeight : 0)
@@ -2447,9 +2566,13 @@ export class GameOverScene {
       : 0;
     const hangarHeight = hangarVisible && !secondaryButtonsShareRow ? rawHangarHeight : 0;
     const mainMenuHeight = mainMenuVisible && !secondaryButtonsShareRow ? rawMainMenuHeight : 0;
+    const pairedLoadoutActions = runReportVisible && changeLoadoutVisible && !layout.isMobile && width >= 760;
     const runReportHeight = runReportVisible && !runReportBesideCounter ? rawRunReportHeight : 0;
+    const changeLoadoutHeight = changeLoadoutVisible && !pairedLoadoutActions
+      ? actionFrameHeight(this.changeLoadoutButton, this.changeLoadoutButtonHeight, rawRunReportHeight) : 0;
+    const actionRowGap = runReportVisible || changeLoadoutVisible ? Math.max(16, spacing * 1.5) : spacing;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + unlockRevealHeight + nextGoalHeight + commentHeight + counterAdviceRowHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + mainMenuHeight + runReportHeight + nameHeight + spacing * (secondaryVisibleCount || runReportVisible ? 12 : 9) + (counterAdviceVisible ? spacing : 0) + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + unlockRevealHeight + nextGoalHeight + commentHeight + counterAdviceRowHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + mainMenuHeight + runReportHeight + changeLoadoutHeight + nameHeight + spacing * (secondaryVisibleCount || runReportVisible ? 12 : 9) + actionRowGap + (counterAdviceVisible ? spacing : 0) + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -2464,7 +2587,7 @@ export class GameOverScene {
     );
 
     let stackY = startY;
-    const elementHeight = (element, fallback = spacing) => Math.max(1, element?.height || element?.style?.fontSize || fallback);
+    const elementHeight = (element, fallback = spacing) => Math.max(1, (element?.height || 0) / (element?.scale?.y || 1), element?.style?.fontSize || fallback);
     const placeCenteredElement = (element, spacingAfter = spacing, fallback = spacing) => {
       const measuredHeight = Math.max(elementHeight(element, fallback), fallback);
       const y = stackY + measuredHeight / 2;
@@ -2598,17 +2721,30 @@ export class GameOverScene {
       ? (unlockRevealVisible ? (layout.isMobile ? 12 : compactRunbackDesktop ? 8 : 18) : (layout.isMobile ? 30 : compactRunbackDesktop ? 24 : 54))
       : (layout.isMobile ? 8 : 18));
     this.retryButton.x = width / 2;
-    this.retryButton.y = placeCenteredElement(this.retryButton, compactRunbackDesktop ? 0 : spacing, retryHeight);
+    this.retryButton.y = placeCenteredElement(this.retryButton, actionRowGap, retryHeight);
 
     if (this.runReportButton && !runReportBesideCounter) {
       this.runReportButton.visible = runReportVisible;
       if (runReportVisible) {
-        this.runReportButton.x = width / 2;
-        this.runReportButton.y = placeCenteredElement(this.runReportButton, compactRunbackDesktop ? spacing * 0.4 : spacing * 0.85, rawRunReportHeight);
+        const rowY = placeCenteredElement(this.runReportButton, compactRunbackDesktop ? spacing * 0.4 : spacing * 0.85, rawRunReportHeight);
+        if (pairedLoadoutActions) {
+          const gap = Math.max(20, spacing * 2);
+          const rowWidth = this.runReportButtonWidth + this.changeLoadoutButtonWidth + gap;
+          this.runReportButton.x = width / 2 - rowWidth / 2 + this.runReportButtonWidth / 2;
+          this.changeLoadoutButton.x = width / 2 + rowWidth / 2 - this.changeLoadoutButtonWidth / 2;
+          this.changeLoadoutButton.y = rowY;
+        } else {
+          this.runReportButton.x = width / 2;
+        }
+        this.runReportButton.y = rowY;
       } else {
         this.runReportButton.x = width / 2;
         this.runReportButton.y = this.retryButton.y;
       }
+    }
+    if (changeLoadoutVisible && !pairedLoadoutActions) {
+      this.changeLoadoutButton.x = width / 2;
+      this.changeLoadoutButton.y = placeCenteredElement(this.changeLoadoutButton, spacing, changeLoadoutHeight);
     }
 
     const secondaryButtons = [
@@ -2646,6 +2782,24 @@ export class GameOverScene {
       this.nameDisplay.y = stackY + nameHeight / 2;
     }
 
+    // Long result/status text can outgrow the compact stack even when the
+    // nominal height estimate fits. Keep navigation fully on screen first;
+    // the optional next-goal strip returns automatically on a roomy layout.
+    if (compactRunbackDesktop && nextGoalVisible) {
+      const navigationBottom = Math.max(0, ...visibleSecondaryButtons.map(({ node }) => {
+        const bounds = node.getBounds();return bounds.y + bounds.height;
+      }));
+      if (navigationBottom > height - 12) {
+        this.nextGoalGroup.visible = false;
+        const releasedSpace = nextGoalHeight + spacing * 1.15;
+        [this.leaderboardStatusText, this.promptText, this.notQualifiedText, this.nameDisplay,
+          this.retryButton, this.runReportButton, this.changeLoadoutButton,
+          ...visibleSecondaryButtons.map(({ node }) => node)].forEach(node => {
+          if (node?.visible) node.y -= releasedSpace;
+        });
+      }
+    }
+
     this.instructions.x = width / 2;
     this.instructions.y = height - safeMargin.bottom - (layout.isMobile ? 32 : 40);
     this.drawResultSectionCard(this.runSectionBg, this.levelText, layout, 0x37f5ff);
@@ -2653,6 +2807,7 @@ export class GameOverScene {
     this.drawResultSectionCard(this.shipUnlockProgressBg, this.shipUnlockProgressText, layout, 0x37f5ff, { minHeight: layout.isMobile ? 48 : 56, widthRatio: layout.isMobile ? 0.9 : 0.58 });
     this.drawResultSectionCard(this.leaderboardStatusBg, this.leaderboardStatusText, layout, 0xd8a66b);
     this.layoutRunReportOverlay(layout);
+    this.layoutAchievementToast(width, height);
   }
 
   layoutFirstFlightResult(layout, responsiveLayout = getCurrentLayout()) {
@@ -2825,6 +2980,7 @@ export class GameOverScene {
       secondaryCount: secondaryButtons.length
     };
     this.layoutRunReportOverlay(layout);
+    this.layoutAchievementToast(width, height);
   }
 
   drawResultSectionCard(graphics, textNode, layout, accent = 0x37f5ff, options = {}) {
@@ -3068,10 +3224,10 @@ export class GameOverScene {
   }
 
   shouldShowLeaderboardButton() {
-    if (this.isSubmitting) return false;
+    if (this.isSubmitting && !this.canNavigateWhileSubmitting()) return false;
     if (this.isFirstFlightResultStage()) return false;
     if (this.isLateGameExperimentResult()) return false;
-    if (this.game?.runMode === RUN_MODES.SCOUT || this.isDailySignalResult() || this.isOverrunResult()) return false;
+    if (this.game?.runMode === RUN_MODES.SCOUT || this.isDailySignalResult() || this.game.runMode === RUN_MODES.OVERRUN_PURE) return false;
     return this.isResultActionStage() && (
       !this.isSectorStartChallengeResult() ||
       Boolean(this.leaderboardAdapter?.isSteamAvailable?.())
@@ -3080,11 +3236,11 @@ export class GameOverScene {
 
   shouldShowHangarButton() {
     if (this.isLateGameExperimentResult()) return false;
-    return !this.isSubmitting && this.isResultActionStage() && typeof this.game?.showShipSelect === 'function';
+    return (!this.isSubmitting || this.canNavigateWhileSubmitting()) && this.isResultActionStage() && typeof this.game?.showShipSelect === 'function';
   }
 
   shouldShowMainMenuButton() {
-    return !this.isSubmitting && this.isResultActionStage();
+    return (!this.isSubmitting || this.canNavigateWhileSubmitting()) && this.isResultActionStage();
   }
 
   drawLeaderboardButton(layout) {
@@ -3121,7 +3277,7 @@ export class GameOverScene {
     this.leaderboardButtonBg.fill({ color: 0xffd15c, alpha: 0.34 });
 
     if (this.leaderboardButtonLabel) {
-      this.leaderboardButtonLabel.text = translateText(this.isSectorStartChallengeResult() ? 'VIEW SECTOR BOARD' : 'VIEW LEADERBOARD');
+      this.leaderboardButtonLabel.text = translateText(this.isSectorStartChallengeResult() ? 'VIEW SECTOR BOARD' : this.isOnslaughtTacticalResult() ? 'LEADERBOARD' : 'VIEW LEADERBOARD');
       this.leaderboardButtonLabel.style.fontSize = layout.isMobile ? 18 : 22;
       this.leaderboardButtonLabel.y = layout.isMobile ? -7 : -8;
     }
@@ -3133,8 +3289,8 @@ export class GameOverScene {
 
   drawNextGoalStrip(layout) {
     if (!this.nextGoalGroup || !this.nextGoalBg || !this.nextGoalText) return;
-    const canShow = !(this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting');
-    const text = canShow ? String(this.nextGoal?.text || '').trim() : '';
+    const canShow = !(this.state === 'submitted_hold' || this.state === 'result_hold' || (this.state === 'submitting' && !this.canNavigateWhileSubmitting()));
+    const text = canShow ? String(this.state === 'runback' ? this.getRunbackNextGoalText() : this.nextGoal?.text || '').trim() : '';
     this.nextGoalGroup.visible = Boolean(text);
     if (!text) {
       this.nextGoalBg.clear();
@@ -3151,15 +3307,19 @@ export class GameOverScene {
       leaderboard: 0xd8a66b,
       practice: 0xffb35c
     }[tone] || 0x37f5ff;
-    const stripWidth = Math.min(layout.width * (layout.isMobile ? 0.82 : 0.52), layout.isMobile ? 340 : 500);
-    const stripHeight = layout.isMobile ? 34 : 40;
+    const stripWidth = Math.min(layout.width * (layout.isMobile ? 0.86 : this.onslaughtInvitation ? 0.68 : 0.52), layout.isMobile ? 400 : this.onslaughtInvitation ? 800 : 500);
+    this.nextGoalText.text = text;
+    this.nextGoalText.style.fontSize = layout.isMobile ? 14 : 17;
+    this.nextGoalText.style.wordWrapWidth = Math.max(160, stripWidth - 28);
+    const stripHeight = Math.max(layout.isMobile ? 34 : 40, this.nextGoalText.height + (this.onslaughtInvitation ? 38 : 16));
     const halfWidth = stripWidth / 2;
     const halfHeight = stripHeight / 2;
 
     this.nextGoalText.text = text;
     this.nextGoalText.style.fontSize = layout.isMobile ? 14 : 17;
     this.nextGoalText.style.wordWrapWidth = Math.max(160, stripWidth - 28);
-    this.nextGoalText.y = -1;
+    this.nextGoalText.y = this.onslaughtInvitation ? -10 : -1;
+    if (this.inviteDismissText) this.inviteDismissText.y = halfHeight - 14;
 
     this.nextGoalBg.clear();
     this.nextGoalBg.roundRect(-halfWidth, -halfHeight, stripWidth, stripHeight, layout.isMobile ? 8 : 10);
@@ -3224,7 +3384,7 @@ export class GameOverScene {
     if (!this.shipUnlockReveal || !this.shipUnlockRevealBg || !this.shipUnlockRevealGlow) return;
     const canShow = !(this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'submitting');
     const count = canShow ? this.newlyUnlockedShips.length : 0;
-    this.shipUnlockReveal.visible = count > 0;
+    this.shipUnlockReveal.visible = count > 0 && !this.isCompactChallengeResult();
     if (count <= 0) {
       this.shipUnlockRevealBg.clear();
       this.shipUnlockRevealGlow.clear();
@@ -3321,7 +3481,7 @@ export class GameOverScene {
   }
 
   getPrimaryCtaConfig() {
-    if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
+    if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked' || (this.state === 'submitting' && this.canNavigateWhileSubmitting())) {
       if (this.isLateGameExperimentResult()) {
         return {
           mode: 'restart',
@@ -3344,11 +3504,22 @@ export class GameOverScene {
           runback: true
         };
       }
+      if (this.isOnslaughtTacticalResult()) {
+        return {
+          mode: 'restart',
+          label: translateText('RETRY SAME LOADOUT'),
+          hint: this.lastInputDevice === 'controller'
+            ? translateText('A: SAME SHIP + AUGMENTS')
+            : translateText('ENTER / SPACE / CLICK - SAME BUILD'),
+          disabled: false,
+          runback: true
+        };
+      }
       return {
         mode: 'restart',
         label: translateText(getRunModeProfile(this.game?.runMode).oneMoreLabel || 'ONE MORE RUN'),
         hint: this.isSubmitting
-          ? translateText('SAVING SCORE')
+          ? translateText('SUBMITTING · NAVIGATION AVAILABLE')
           : this.isDailySignalResult()
           ? (this.lastInputDevice === 'controller'
               ? translateText('A: SAME DAILY CONTRACT  |  B: MENU')
@@ -3358,7 +3529,7 @@ export class GameOverScene {
               ? translateText('A: SAME CHECKPOINT  |  B: MENU')
               : translateText('SPACE / CLICK - SAME CHECKPOINT'))
           : (this.lastInputDevice === 'controller' ? 'A: SAME SHIP  |  Y: LEADERBOARD' : 'ENTER / SPACE / CLICK - SAME SHIP'),
-        disabled: this.isSubmitting,
+        disabled: this.isSubmitting && !this.canNavigateWhileSubmitting(),
         runback: true
       };
     }
@@ -3572,6 +3743,22 @@ export class GameOverScene {
   }
 
   createCeremonyVisuals() {
+    this.recordMedal = celebrationSprite('personal-best', 160, 160,
+      () => this.isPersonalBest && !getCurrentLayout().isMobile);
+    this.recordMedal.zIndex = -3;
+    this.container.addChild(this.recordMedal);
+    this.recordMedalLabel = createText(translateText('PERSONAL BEST'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 19,
+      fontWeight: '900',
+      fill: '#ffeca8',
+      stroke: '#071523',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    this.recordMedalLabel.anchor.set(0.5);
+    this.recordMedalLabel.zIndex = -2;
+    this.container.addChild(this.recordMedalLabel);
     this.ceremonyGlow = new PIXI.Graphics();
     this.ceremonyGlow.zIndex = -8;
     this.container.addChild(this.ceremonyGlow);
@@ -3733,45 +3920,15 @@ export class GameOverScene {
               ? 0xff9b42
               : 0x23d8ff;
 
-    if (this.ceremonyGlow) {
-      this.ceremonyGlow.clear();
-      this.ceremonyGlow.ellipse(width / 2, y + panelHeight * 0.5, panelWidth * 0.72, panelHeight * 0.56);
-      const celebrationAlpha = holdStage
-        ? (this.globalPlacement?.numberOne ? 0.26 : 0.2)
-        : (this.globalPlacement?.numberOne ? 0.18 : 0.14);
-      this.ceremonyGlow.fill({ color: accent, alpha: this.globalQualified ? celebrationAlpha : 0.08 });
-    }
-
-    if (this.ceremonyBurst) {
-      this.ceremonyBurst.clear();
-      const celebration = resultCelebrationStage && this.globalPlacement?.qualified;
-      if (celebration) {
-        const centerX = width / 2;
-        const centerY = y + panelHeight * (holdStage ? 0.48 : 0.56);
-        const rayCount = this.globalPlacement?.numberOne
-          ? (holdStage ? 34 : 28)
-          : this.globalPlacement?.top10
-            ? (holdStage ? 30 : 24)
-            : (holdStage ? 28 : 22);
-        const inner = panelWidth * (this.globalPlacement?.numberOne ? 0.18 : this.globalPlacement?.top10 ? 0.15 : 0.13);
-        const outer = panelWidth * (this.globalPlacement?.numberOne ? 0.78 : this.globalPlacement?.top10 ? 0.7 : 0.62);
-        const rayAlpha = holdStage
-          ? (this.globalPlacement?.numberOne ? 0.14 : this.globalPlacement?.top10 ? 0.11 : 0.1)
-          : (this.globalPlacement?.numberOne ? 0.065 : this.globalPlacement?.top10 ? 0.052 : 0.045);
-        for (let i = 0; i < rayCount; i += 1) {
-          const a0 = (Math.PI * 2 * i) / rayCount + (this.ceremonyPulse || 0) * 0.004;
-          const a1 = a0 + Math.PI / rayCount * 0.72;
-          this.ceremonyBurst.moveTo(centerX + Math.cos(a0) * inner, centerY + Math.sin(a0) * inner);
-          this.ceremonyBurst.lineTo(centerX + Math.cos(a0) * outer, centerY + Math.sin(a0) * outer);
-          this.ceremonyBurst.lineTo(centerX + Math.cos(a1) * (outer * 0.72), centerY + Math.sin(a1) * (outer * 0.72));
-          this.ceremonyBurst.closePath();
-          this.ceremonyBurst.fill({ color: i % 2 ? 0xfff08a : 0x37f5ff, alpha: rayAlpha });
-        }
-        this.ceremonyBurst.circle(centerX, centerY, panelWidth * (this.globalPlacement?.numberOne ? 0.28 : this.globalPlacement?.top10 ? 0.25 : 0.22));
-        this.ceremonyBurst.stroke({ color: accent, width: this.globalPlacement?.numberOne ? 7 : this.globalPlacement?.top10 ? 6 : 5, alpha: holdStage ? 0.26 : 0.12 });
-        this.ceremonyBurst.circle(centerX, centerY, panelWidth * (this.globalPlacement?.numberOne ? 0.36 : this.globalPlacement?.top10 ? 0.33 : 0.3));
-        this.ceremonyBurst.stroke({ color: 0xffffff, width: 2, alpha: holdStage ? (this.globalPlacement?.numberOne ? 0.22 : this.globalPlacement?.top10 ? 0.18 : 0.16) : 0.08 });
-      }
+    // Physical commendation replaces the oversized flat ellipse and vector rays.
+    this.ceremonyGlow?.clear();
+    this.ceremonyBurst?.clear();
+    if (this.recordMedal) {
+      this.recordMedal.visible = Boolean(this.recordMedal.texture.width > 1 && this.isPersonalBest && !layout.isMobile);
+      this.recordMedal.position.set(Math.max(100,x-110),y+panelHeight*.46);
+      this.recordMedal.rotation = getReducedMotionEnabled() ? 0 : Math.sin(Date.now()*.0005)*.025;
+      this.recordMedalLabel.visible = this.isPersonalBest && !layout.isMobile;
+      this.recordMedalLabel.position.set(this.recordMedal.x, this.recordMedal.y + 94);
     }
 
     if (this.ceremonyFrame) {
@@ -3806,7 +3963,13 @@ export class GameOverScene {
           ? y + panelHeight * (holdStage ? 0.74 : 0.24)
           : y + panelHeight * (holdStage ? 0.48 : 0.44);
         this.ceremonyMedal.position.set(badgeX, badgeY);
-        this.ceremonyMedal.scale.set(1 + pulse * (placement.numberOne ? 0.035 : placement.top3 ? 0.022 : 0.016));
+        const revealMs = getReducedMotionEnabled() ? 2000 : placement.numberOne && this.confirmedOnslaughtNumberOneAt
+          ? Date.now() - this.confirmedOnslaughtNumberOneAt : 2000;
+        const reveal = Math.max(0, Math.min(1, revealMs / 900));
+        const revealEase = 1 - Math.pow(1 - reveal, 3);
+        this.ceremonyMedal.scale.set((0.55 + revealEase * 0.45) *
+          (1 + pulse * (placement.numberOne ? 0.035 : placement.top3 ? 0.022 : 0.016)));
+        this.ceremonyMedal.alpha = 0.3 + revealEase * 0.7;
         this.ceremonyMedalBg.clear();
         this.ceremonyMedalBg.circle(0, 0, badgeRadius + 14);
         this.ceremonyMedalBg.fill({ color: placement.numberOne ? 0xffd75f : placement.top3 ? 0xff9b42 : 0x37f5ff, alpha: placement.numberOne ? 0.28 : placement.top3 ? 0.2 : 0.16 });
@@ -3821,17 +3984,38 @@ export class GameOverScene {
           ? (placement.numberOne ? 66 : placement.top3 ? 54 : 46)
           : (placement.numberOne ? 104 : placement.top3 ? 78 : 66);
         this.ceremonyMedalText.y = placement.numberOne ? -5 : -3;
-        this.ceremonyMedalSubtext.text = translateText('STEAM BEST');
+        this.ceremonyMedalSubtext.text = translateText(placement.numberOne && this.onslaughtOwnPreviousNumberOne
+          ? 'YOUR #1, RAISED' : 'STEAM BEST');
         this.ceremonyMedalSubtext.style.fontSize = layout.isMobile ? 14 : 18;
         this.ceremonyMedalSubtext.y = badgeRadius * 0.46;
+        if (placement.numberOne && revealMs < 1100 && !getReducedMotionEnabled()) {
+          const radius = badgeRadius + 18 + revealEase * 95;
+          this.ceremonyBurst.circle(badgeX, badgeY, radius)
+            .stroke({ color: 0xffe78b, width: 5 - revealEase * 3, alpha: (1 - revealEase) * 0.8 });
+        }
       } else {
         this.ceremonyMedalBg.clear();
       }
     }
   }
 
+  animateConfirmedNumberOneReveal(confirmedAt) {
+    if (getReducedMotionEnabled()) return;
+    const refresh = () => {
+      if (!this.isSceneActive() || this.confirmedOnslaughtNumberOneAt !== confirmedAt) return;
+      this.layoutCeremonyVisuals();
+      if (Date.now() - confirmedAt < 950) this.scheduleSceneTimeout(refresh, 50);
+    };
+    this.scheduleSceneTimeout(refresh, 50);
+  }
+
   setupKeyboard() {
     this.keyHandler = (e) => {
+      if (this.game.onslaughtBriefingOpen) return;
+      if (this.onslaughtInvitation && this.isResultActionStage() && !this.runReportOpen) {
+        if (e.code === 'KeyO') { e.preventDefault(); this.openOnslaughtInvitation(); return; }
+        if (e.code === 'KeyD') { e.preventDefault(); this.dismissOnslaughtInvitation(); return; }
+      }
       const isSubmitKey = e.key === 'Enter' || e.key === 'Return' || e.code === 'NumpadEnter';
       const isRestartKey = e.code === 'KeyR' || e.key === 'r' || e.key === 'R' || e.code === 'Space';
       const isEscape = e.key === 'Escape';
@@ -3866,7 +4050,7 @@ export class GameOverScene {
         return;
       }
 
-      if (this.state === 'submitting' && !isRestartKey && !isEscape) {
+      if (this.state === 'submitting' && !this.canNavigateWhileSubmitting() && !isRestartKey && !isEscape) {
         return;
       }
 
@@ -3912,15 +4096,21 @@ export class GameOverScene {
         return;
       }
 
-      if (this.state === 'runback' && (isRestartKey || isSubmitKey)) {
+      if ((this.state === 'runback' || (this.state === 'submitting' && this.canNavigateWhileSubmitting())) && (isRestartKey || isSubmitKey)) {
         e.preventDefault();
         this.restartRun();
         return;
       }
 
-      if (this.isFirstFlightResultStage() && this.shouldShowRunReportButton() && (e.key === 'v' || e.key === 'V')) {
+      if (this.shouldShowRunReportButton() && (e.key === 'v' || e.key === 'V')) {
         e.preventDefault();
         this.openRunReport();
+        return;
+      }
+
+      if (this.shouldShowChangeLoadoutButton() && (e.key === 'c' || e.key === 'C')) {
+        e.preventDefault();
+        this.changeLoadout();
         return;
       }
 
@@ -4042,6 +4232,11 @@ export class GameOverScene {
   }
 
   handleGamepadNavigation(nav) {
+    if (this.game.onslaughtBriefingOpen || this.game.onslaughtLoadoutPickerOpen) return;
+    if (this.onslaughtInvitation && this.isResultActionStage() && !this.runReportOpen) {
+      if (nav.pressed.lb) { this.openOnslaughtInvitation(); return; }
+      if (nav.pressed.rb) { this.dismissOnslaughtInvitation(); return; }
+    }
     if (this.runReportOpen) {
       if (this.isLateGameExperimentResult() && nav.pressed.x) {
         void this.copyLateGameExperimentSummary();
@@ -4054,7 +4249,16 @@ export class GameOverScene {
       }
       return;
     }
-    if (this.state === 'submitting') return;
+    if (this.state === 'submitting' && !this.canNavigateWhileSubmitting()) return;
+
+    if (nav.pressed.lb && this.isOnslaughtTacticalResult() && this.shouldShowRunReportButton()) {
+      this.openRunReport();
+      return;
+    }
+    if (nav.pressed.rb && this.shouldShowChangeLoadoutButton()) {
+      this.changeLoadout();
+      return;
+    }
     if (this.state === 'submitted_hold') {
       if (nav.pressed.menu || nav.pressed.back || nav.pressed.cancel) {
         this.returnToMenu();
@@ -4438,6 +4642,9 @@ export class GameOverScene {
   }
 
   createNextGoal(previousProgress = {}, currentProgress = {}) {
+    if (this.isOverrunResult()) {
+      return { text: this.getRunbackNextGoalText(), tone: 'leaderboard' };
+    }
     if (!this.isRankedRun) {
       if (this.isDailySignalResult()) {
         return {
@@ -4629,7 +4836,7 @@ export class GameOverScene {
   }
 
   returnToMenu() {
-    if (this.isSubmitting) return;
+    if (this.isSubmitting && !this.canNavigateWhileSubmitting()) return;
     this.clearSceneTimeouts();
     AudioManager.stopVoiceGroup('runback');
     AudioManager.playMusicContext('menu', { resetPlaylist: true });
@@ -4642,7 +4849,7 @@ export class GameOverScene {
   }
 
   restartRun() {
-    if (this.isSubmitting) return;
+    if (this.isSubmitting && !this.canNavigateWhileSubmitting()) return;
     if (this.game?.lateGameExperiment?.active === true) {
       this.returnToMenu();
       return;
@@ -4693,7 +4900,9 @@ export class GameOverScene {
         : this.isOverrunResult()
           ? {
               runMode: this.game?.runMode,
-              inputDevice: this.lastInputDevice
+              inputDevice: this.lastInputDevice,
+              reuseOnslaughtLoadout: this.isOnslaughtTacticalResult(),
+              onslaughtAugmentIds: this.game?.competitionStart?.augmentIds
             }
         : {
             runMode: this.game?.runMode === RUN_MODES.MAYHEM_TACTICAL
@@ -4712,7 +4921,28 @@ export class GameOverScene {
       });
   }
 
+  changeLoadout() {
+    if (!this.shouldShowChangeLoadoutButton()) return;
+    Promise.resolve(this.game.startGame(this.game.selectedShipSpriteKey, {
+      runMode: RUN_MODES.OVERRUN_TACTICAL,
+      inputDevice: this.lastInputDevice,
+      runStartSource: 'game_over_runback'
+    })).then(started => {
+      if (started === false && this.isSceneActive()) {
+        this.refreshPrimaryCta();
+        this.layoutScreen();
+      }
+    }).catch(error => {
+      console.error('[GameOverScene] Loadout selection failed:', error);
+      if (this.isSceneActive()) this.layoutScreen();
+    });
+  }
+
   playGlobalQualificationFanfare() {
+    // A downloaded board is a target snapshot. For Onslaught, current Steam
+    // rank is celebrated only after upload and a fresh placement read.
+    if (this.game?.runMode === RUN_MODES.OVERRUN_TACTICAL
+      && (!this.confirmedOnslaughtPlacement?.qualified || this.isSteamBestUnchangedResult())) return;
     if (this.qualificationFanfarePlayed) return;
     this.qualificationFanfarePlayed = true;
     const placement = this.globalPlacement;
@@ -4721,7 +4951,9 @@ export class GameOverScene {
       : placement?.top3
         ? 'mission_control_top3_highscore'
         : 'mission_control_global_highscore';
-    AudioManager.playMusicContext('victory', { resetPlaylist: true });
+    const isolatedNumberOne = placement?.numberOne && this.game?.runMode === RUN_MODES.OVERRUN_TACTICAL;
+    if (isolatedNumberOne) AudioManager.stopMusic();
+    else AudioManager.playMusicContext('victory', { resetPlaylist: true });
     const fanfareKey = placement?.numberOne
       ? 'nova_number_one_fanfare'
       : placement?.top3
@@ -4730,8 +4962,22 @@ export class GameOverScene {
           ? 'nova_top10_fanfare'
           : 'nova_global_slot_fanfare';
     const fanfareMs = placement?.numberOne ? 10000 : placement?.top3 ? 8000 : placement?.top10 ? 7000 : 6000;
-    AudioManager.duckMusic(placement?.numberOne ? 0.18 : placement?.top3 ? 0.22 : placement?.top10 ? 0.24 : 0.28, fanfareMs);
-    AudioManager.playSfx(fanfareKey, { force: true, volume: placement?.numberOne ? 1.0 : placement?.top3 ? 0.94 : placement?.top10 ? 0.9 : 0.88, minIntervalMs: 0 });
+    if (!isolatedNumberOne) AudioManager.duckMusic(placement?.numberOne ? 0.18 : placement?.top3 ? 0.22 : placement?.top10 ? 0.24 : 0.28, fanfareMs);
+    AudioManager.playSfx(fanfareKey, { force: true, volume: placement?.numberOne ? 1.0 : placement?.top3 ? 0.94 : placement?.top10 ? 0.9 : 0.88, minIntervalMs: 0,
+      sfxGroup: isolatedNumberOne ? 'onslaught_number_one' : undefined });
+    if (isolatedNumberOne) {
+      this.scheduleSceneTimeout(() => {
+        if (!this.isSceneActive()) return;
+        const voicePlayed = AudioManager.playVoice(voiceKey, {
+          force: true, stopOtherVoices: true, exclusiveGroup: 'announcer',
+          cooldownMs: 9000, duckMusic: false, volume: 1.0
+        });
+        this.scheduleSceneTimeout(() => {
+          if (this.isSceneActive()) AudioManager.playMusicContext('victory', { resetPlaylist: true });
+        }, voicePlayed ? 3300 : 0);
+      }, fanfareMs);
+      return;
+    }
     if (placement?.numberOne) {
       this.scheduleSceneTimeout(() => {
         AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.82, minIntervalMs: 0 });
@@ -4768,8 +5014,9 @@ export class GameOverScene {
   showAchievementToast(toast) {
     const achievement = toast?.achievement || toast;
     if (!achievement?.name || !this.container || !this.game?.app?.ticker) return false;
+    const id = achievement.id || toast?.id || achievement.name;
     if (this.achievementToast) {
-      const id = achievement.id || toast?.id || achievement.name;
+      if (this.achievementToast.__achievementId === id) return true;
       const duplicateQueued = this.achievementToastQueue.some((queued) => {
         const queuedAchievement = queued?.achievement || queued;
         return (queuedAchievement?.id || queued?.id || queuedAchievement?.name) === id;
@@ -4786,6 +5033,7 @@ export class GameOverScene {
       : Math.min(width * 0.32, 360);
     const bannerHeight = compact ? (celebrationMode ? 56 : 70) : (celebrationMode ? 58 : 78);
     const banner = new PIXI.Container();
+    banner.__achievementId = id;
     banner.__layoutWidth = bannerWidth;
     banner.__layoutHeight = bannerHeight;
     banner.zIndex = 60;
@@ -4870,6 +5118,7 @@ export class GameOverScene {
     if (this.achievementToast?.parent) {
       this.achievementToast.parent.removeChild(this.achievementToast);
     }
+    this.achievementToast?.destroy?.({ children: true });
     this.achievementToast = null;
     if (showNext && this.achievementToastQueue.length > 0) {
       const next = this.achievementToastQueue.shift();
@@ -4900,7 +5149,9 @@ export class GameOverScene {
       score: result?.score ?? this.finalScore,
       runMode,
       isDebugRun: result?.isDebugRun ?? this.game?.isDebugRun === true,
-      allowAchievements: result?.eligibleForAchievements ?? this.game?.canUnlockAchievementsForCurrentRun?.() ?? false,
+      allowAchievements: runMode === RUN_MODES.OVERRUN_TACTICAL
+        ? true
+        : result?.eligibleForAchievements ?? this.game?.canUnlockAchievementsForCurrentRun?.() ?? false,
       eligibleRun: result?.eligibleForSubmission ?? this.game?.isScoreSubmissionAllowed?.() ?? false,
       submissionAccepted: accepted,
       historicalAccepted: accepted && previousBestScore > 0,
@@ -4959,6 +5210,18 @@ export class GameOverScene {
             : 'none';
     this.globalQualified = Boolean(normalizedPlacement.qualified);
     this.globalStatus = normalizedPlacement.qualified ? 'submitted' : this.globalStatus;
+    if (this.game?.runMode === RUN_MODES.OVERRUN_TACTICAL) {
+      this.confirmedOnslaughtPlacement = normalizedPlacement;
+      if (numberOne && !this.confirmedOnslaughtNumberOneAt) {
+        this.confirmedOnslaughtNumberOneAt = Date.now();
+        this.animateConfirmedNumberOneReveal(this.confirmedOnslaughtNumberOneAt);
+        const snapshot = this.game?.onslaughtRecordSnapshot;
+        const previousLeader = snapshot?.source === 'fresh_steam'
+          ? snapshot.entries?.find(entry => Number(entry?.rank) === 1)
+          : null;
+        this.onslaughtOwnPreviousNumberOne = previousLeader?.isCurrentPlayer === true;
+      }
+    }
     this.unlockConfirmedLeaderboardAchievements(normalizedPlacement, provider);
     this.updateLeaderboardStatusText();
     this.updateCeremonyPresentation();
@@ -5050,7 +5313,7 @@ export class GameOverScene {
     this.hangarButtonBg.fill({ color: 0xffd15c, alpha: 0.26 });
 
     if (this.hangarButtonLabel) {
-      this.hangarButtonLabel.text = translateText(firstFlight ? 'HANGAR' : 'BACK TO HANGAR');
+      this.hangarButtonLabel.text = translateText(firstFlight || this.isOnslaughtTacticalResult() ? 'HANGAR' : 'BACK TO HANGAR');
       this.hangarButtonLabel.style.fontSize = firstFlight ? (layout.height < 700 ? 15 : 17) : layout.isMobile ? 17 : 21;
       this.hangarButtonLabel.y = layout.isMobile ? -7 : -8;
       fitDisplayToBox(this.hangarButtonLabel, buttonWidth - 24, buttonHeight * 0.48, { minScale: 0.68 });
@@ -5143,7 +5406,7 @@ export class GameOverScene {
     this.mainMenuButtonBg.fill({ color: 0x7dffcc, alpha: 0.26 });
 
     if (this.mainMenuButtonLabel) {
-      this.mainMenuButtonLabel.text = translateText(firstFlight ? 'MAIN MENU' : 'BACK TO MAIN MENU');
+      this.mainMenuButtonLabel.text = translateText(firstFlight || this.isOnslaughtTacticalResult() ? 'MAIN MENU' : 'BACK TO MAIN MENU');
       this.mainMenuButtonLabel.style.fontSize = firstFlight ? (layout.height < 700 ? 15 : 17) : layout.isMobile ? 17 : 21;
       this.mainMenuButtonLabel.y = layout.isMobile ? -7 : -8;
       fitDisplayToBox(this.mainMenuButtonLabel, buttonWidth - 24, buttonHeight * 0.48, { minScale: 0.68 });
@@ -5264,6 +5527,60 @@ export class GameOverScene {
     };
   }
 
+  shouldShowChangeLoadoutButton() {
+    return this.isOnslaughtTacticalResult() && this.isResultActionStage()
+      && (!this.isSubmitting || this.canNavigateWhileSubmitting());
+  }
+
+  createChangeLoadoutButton(layout) {
+    this.changeLoadoutButton = new PIXI.Container();
+    this.changeLoadoutButton.zIndex = 8;
+    this.changeLoadoutButtonBg = new PIXI.Graphics();
+    this.changeLoadoutButtonLabel = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 21, fontWeight: 'bold', fill: '#d9fdff', stroke: '#031323',
+      strokeThickness: 3, align: 'center'
+    });
+    this.changeLoadoutButtonLabel.anchor.set(0.5);
+    this.changeLoadoutButtonHint = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 14, fontWeight: 'bold', fill: '#ffd15c', align: 'center'
+    });
+    this.changeLoadoutButtonHint.anchor.set(0.5);
+    this.changeLoadoutButton.addChild(this.changeLoadoutButtonBg, this.changeLoadoutButtonLabel, this.changeLoadoutButtonHint);
+    this.changeLoadoutButton.on('pointerdown', () => { this.setInputDevice('keyboard'); this.changeLoadout(); });
+    this.changeLoadoutButton.on('pointerover', () => this.changeLoadoutButton.scale.set(1.02));
+    this.changeLoadoutButton.on('pointerout', () => this.changeLoadoutButton.scale.set(1));
+    this.drawChangeLoadoutButton(layout);
+  }
+
+  drawChangeLoadoutButton(layout) {
+    if (!this.changeLoadoutButton) return;
+    const visible = this.shouldShowChangeLoadoutButton();
+    const compact = !layout.isMobile && layout.height < 820;
+    const width = Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
+    const height = layout.isMobile ? 48 : compact ? 46 : 54;
+    this.changeLoadoutButtonWidth = width;
+    this.changeLoadoutButtonHeight = height;
+    this.changeLoadoutButton.visible = visible;
+    this.changeLoadoutButton.eventMode = visible ? 'static' : 'none';
+    this.changeLoadoutButton.cursor = visible ? 'pointer' : 'default';
+    this.changeLoadoutButton.hitArea = new PIXI.Rectangle(-width / 2, -height / 2, width, height);
+    this.changeLoadoutButtonBg.clear();
+    this.changeLoadoutButtonBg.roundRect(-width / 2 - 7, -height / 2 - 5, width + 14, height + 10, 12);
+    this.changeLoadoutButtonBg.fill({ color: 0x37f5ff, alpha: visible ? 0.1 : 0 });
+    this.changeLoadoutButtonBg.roundRect(-width / 2, -height / 2, width, height, 9);
+    this.changeLoadoutButtonBg.fill({ color: 0x041323, alpha: 0.92 });
+    this.changeLoadoutButtonBg.roundRect(-width / 2, -height / 2, width, height, 9);
+    this.changeLoadoutButtonBg.stroke({ color: 0x37f5ff, width: 1.8, alpha: visible ? 0.86 : 0 });
+    this.changeLoadoutButtonLabel.text = translateText('CHANGE LOADOUT');
+    this.changeLoadoutButtonLabel.style.fontSize = layout.isMobile ? 18 : 22;
+    this.changeLoadoutButtonLabel.y = layout.isMobile ? -7 : -8;
+    fitDisplayToBox(this.changeLoadoutButtonLabel, width - 24, height * 0.48, { minScale: 0.68 });
+    this.changeLoadoutButtonHint.text = translateText('C / RB');
+    this.changeLoadoutButtonHint.y = layout.isMobile ? 14 : 16;
+  }
+
   getRunReport() {
     return this.game?.lastRunReport || null;
   }
@@ -5353,7 +5670,7 @@ export class GameOverScene {
     this.runReportButtonLabel.y = layout.isMobile ? -7 : -8;
     fitDisplayToBox(this.runReportButtonLabel, buttonWidth - 24, buttonHeight * 0.48, { minScale: 0.68 });
     if (this.runReportButtonHint) {
-      this.runReportButtonHint.text = translateText(firstFlight ? 'V / Y' : experiment ? 'LOCAL TELEMETRY + COPY' : dailySignal ? 'VIEW + SAVE SHARE CARD' : 'Counter advice');
+      this.runReportButtonHint.text = translateText(firstFlight ? 'V / Y' : this.isOnslaughtTacticalResult() ? 'V / LB' : experiment ? 'LOCAL TELEMETRY + COPY' : dailySignal ? 'VIEW + SAVE SHARE CARD' : 'Counter advice');
       this.runReportButtonHint.style.fontSize = firstFlight ? 11 : layout.isMobile ? 13 : 15;
       this.runReportButtonHint.y = layout.isMobile ? 14 : 16;
     }
@@ -5587,6 +5904,7 @@ export class GameOverScene {
   }
 
   formatRunReportValue(row = {}) {
+    if(row.id==='encounterHighlight')return translateText(row.value);
     if (this.isLateGameExperimentResult()) {
       return formatLateGameExperimentReportRow(row, translateText);
     }
@@ -6504,6 +6822,8 @@ export class GameOverScene {
         result.steamPreviousBestScore = previousBestScore;
         this.previousSteamBestScore = previousBestScore;
         this.steamBestUnchanged = true;
+        this.isPersonalBest = false;
+        this.removePersonalBestCarry();
         this.leaderboardResult = result;
         if (this.game) this.game.lastLeaderboardResult = result;
         this.clearGlobalPlacement('steam_best_unchanged');
@@ -6529,10 +6849,14 @@ export class GameOverScene {
     if (provider !== 'cloud') return null;
 
     try {
-      const entries = await this.leaderboardAdapter.getGlobalScoresForPlacement({
-        useCache: false,
-        ...this.getRunLeaderboardQuery()
-      });
+      const entries = await this.withSubmissionTimeout(
+        this.leaderboardAdapter.getGlobalScoresForPlacement({
+          useCache: false,
+          ...this.getRunLeaderboardQuery()
+        }),
+        3000,
+        'Post-submit placement lookup timeout'
+      );
       const placement = getConfirmedGlobalPlacement(this.finalScore, entries);
       result.confirmedGlobalPlacement = placement;
       result.achievementConfirmationStatus = placement.qualified ? 'confirmed' : 'not_qualified_after_submit';
@@ -6549,6 +6873,7 @@ export class GameOverScene {
   playPersonalBestVoice() {
     if (this.personalBestVoicePlayed || this.qualificationFanfarePlayed) return;
     this.personalBestVoicePlayed = true;
+    AudioManager.playSfx("personal_record_premium", {volume:.9});
     this.scheduleSceneTimeout(() => {
       AudioManager.playVoice('mission_control_personal_best', {
         cooldownMs: 7000,
@@ -6611,10 +6936,11 @@ export class GameOverScene {
   }
 
   getRunbackTitle() {
+    if (this.isOnslaughtTacticalResult()) return translateText(this.game?.runSummary?.runCleared ? 'ONSLAUGHT COMPLETE' : 'ONSLAUGHT — RUN OVER');
     if (this.firstFlightResult) return translateText('FIRST FLIGHT COMPLETE');
     if (this.isLateGameExperimentResult()) return translateText('EXPERIMENTAL TEST COMPLETE');
     if (this.isDailySignalResult()) return this.getCeremonyTitle();
-    if (this.isOverrunResult()) return translateText('OVERRUN COMPLETE');
+    if (this.isOverrunResult()) return translateText(this.game?.runSummary?.runCleared ? 'ONSLAUGHT COMPLETE' : 'ONSLAUGHT — RUN OVER');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR RUN');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return translateText('SCOUT RUN');
     if (this.globalPlacement?.qualified && this.globalPlacement?.numberOne) return 'NUMBER ONE';
@@ -6819,6 +7145,32 @@ export class GameOverScene {
       : Math.max(52, height * 0.09);
     banner.x = Math.max(visibleWidth / 2 + 14, Math.min(width - visibleWidth / 2 - 14, preferredX));
     banner.y = Math.max(visibleHeight / 2 + 14, Math.min(height - visibleHeight / 2 - 14, preferredY));
+    // Resolve against final rendered content, including localized titles and
+    // action focus frames. This runs on result layout changes, never in combat.
+    const protectedNodes = [
+      this.title, this.scoreText, this.levelText, this.unlockText,
+      this.rankProgressText, this.shipUnlockProgressText, this.shipUnlockReveal,
+      this.nextGoalGroup, this.comment, this.leaderboardStatusText,
+      this.promptText, this.nameDisplay, this.notQualifiedText, this.instructions,
+      this.counterAdviceCard, this.personalBestCarryBanner, this.retryButton,
+      this.runReportButton, this.changeLoadoutButton, this.leaderboardButton,
+      this.hangarButton, this.mainMenuButton
+    ];
+    const obstacles = protectedNodes.filter(node => node?.visible && node.alpha > 0.02)
+      .map(node => node.getBounds()).filter(bounds => bounds.width > 0 && bounds.height > 0);
+    const xs = [banner.x, visibleWidth / 2 + 14, width / 2];
+    const ys = [banner.y, ...obstacles.map(bounds => bounds.y + bounds.height + 10 + visibleHeight / 2)]
+      .sort((a, b) => Math.abs(a - preferredY) - Math.abs(b - preferredY));
+    for (const x of xs) {
+      for (const y of ys) {
+        const left = x - visibleWidth / 2, top = y - visibleHeight / 2;
+        if (left < 14 || top < 14 || left + visibleWidth > width - 14 || top + visibleHeight > height - 14) continue;
+        if (obstacles.some(bounds => left < bounds.x + bounds.width + 8 && left + visibleWidth + 8 > bounds.x
+          && top < bounds.y + bounds.height + 8 && top + visibleHeight + 8 > bounds.y)) continue;
+        banner.position.set(x, y);
+        return;
+      }
+    }
   }
 
   enterRunbackStage(reason = 'runback') {
@@ -6879,6 +7231,9 @@ export class GameOverScene {
     if (AudioManager.isCtaVoiceEnabled && !AudioManager.isCtaVoiceEnabled()) return false;
     return AudioManager.playVoice(this.selectedCtaLine.id, {
       force: true,
+      ignoreVoiceEnabled: true,
+      ignoreMenuVoiceEnabled: true,
+      ignoreChatterPolicy: true,
       stopOtherVoices: true,
       exclusiveGroup: 'runback',
       cooldownMs: 0,
@@ -6905,21 +7260,27 @@ export class GameOverScene {
   }
 
   openLeaderboard() {
-    if (this.isSubmitting) return;
+    if (this.isSubmitting && !this.canNavigateWhileSubmitting()) return;
     this.clearSceneTimeouts();
     AudioManager.stopVoiceGroup('runback');
     if (this.isSectorStartChallengeResult()) {
       this.game.leaderboardView = LeaderboardView.SECTOR;
     }
-    this.game.showHighscores();
+    const view = this.isSectorStartChallengeResult() ? LeaderboardView.SECTOR
+      : this.game.runMode === RUN_MODES.OVERRUN_TACTICAL ? LeaderboardView.ONSLAUGHT
+        : this.game.runMode === RUN_MODES.MAYHEM_TACTICAL ? LeaderboardView.TACTICAL
+          : this.game.runMode === RUN_MODES.RANKED
+            ? (!this.steamSubmissionMode && this.localQualified && !this.globalQualified ? LeaderboardView.LOCAL : LeaderboardView.GLOBAL)
+            : LeaderboardView.LOCAL;
+    this.game.showHighscores({ view });
   }
 
   openHangar() {
-    if (this.isSubmitting) return;
+    if (this.isSubmitting && !this.canNavigateWhileSubmitting()) return;
     if (!this.shouldShowHangarButton()) return;
     this.clearSceneTimeouts();
     AudioManager.stopVoiceGroup('runback');
-    this.game.showShipSelect();
+    this.game.showShipSelect({ highlightOnslaughtAdvice: this.isOnslaughtTacticalResult() });
   }
 
   updatePromptMessage(text) {
@@ -7325,9 +7686,10 @@ export class GameOverScene {
     });
     let result = null;
     try {
-      result = await this.leaderboardAdapter.submitSectorStartScore(runResult, {
-        name: playerName
-      });
+      result = await this.withSubmissionTimeout(
+        this.leaderboardAdapter.submitSectorStartScore(runResult, { name: playerName }),
+        GLOBAL_SUBMIT_TIMEOUT_MS, 'Sector score submission timeout'
+      );
     } catch (error) {
       result = {
         name: playerName,
@@ -7365,7 +7727,7 @@ export class GameOverScene {
 
   async submitSteamScore() {
     if (!this.steamSubmissionMode || !this.isRankedRun || this.isSubmitting) return;
-    if (this.finalScore <= 0) {
+    if (this.finalScore <= 0 && this.game?.runMode !== RUN_MODES.OVERRUN_TACTICAL) {
       this.game.pendingHighscore = null;
       if (this.state !== 'runback') this.enterRunbackStage('no_slot');
       return;
@@ -7415,6 +7777,17 @@ export class GameOverScene {
 
       this.previousSteamBestScore = this.getSteamPreviousBestScore(result);
       this.steamBestUnchanged = this.isSteamBestUnchangedResult(result);
+      if (this.steamSubmissionMode) {
+        this.isPersonalBest = isConfirmedOnslaughtPersonalBest({
+          localNewBest: this.localPersonalBest,
+          steamStatus: result.steamStatus,
+          steamBestUnchanged: this.steamBestUnchanged,
+          score: this.finalScore,
+          previousSteamBestScore: this.previousSteamBestScore
+        });
+        if (!this.isPersonalBest) this.removePersonalBestCarry();
+        else if (!this.personalBestCarryBanner) this.createPersonalBestCarryBanner();
+      }
       this.globalStatus = result.steamStatus === 'submitted'
         ? (this.steamBestUnchanged ? 'steam_best_unchanged' : 'submitted')
         : 'failed';
@@ -7739,16 +8112,20 @@ export class GameOverScene {
     });
 
     if (this.localQualified) {
-      const localSave = await this.leaderboardAdapter.submitScore(runResult, {
-        target: 'local',
-        saveLocal: true,
-        name
-      });
-      result.localStatus = localSave.localStatus || 'saved';
-      result.localPlacement = localSave.localPlacement;
-      result.localEntry = localSave.localEntry;
-      this.rememberLocalPlacement(localSave.localPlacement, 'saved');
-      if (!this.globalQualified) {
+      const localSave = await this.withSubmissionTimeout(
+        this.leaderboardAdapter.submitScore(runResult, {
+          target: 'local',
+          saveLocal: true,
+          name
+        }),
+        LOCAL_SCORE_BACKUP_TIMEOUT_MS,
+        'Local score save timeout'
+      ).catch(() => ({ localStatus: 'failed' }));
+      result.localStatus = localSave?.localStatus || 'failed';
+      result.localPlacement = localSave?.localPlacement;
+      result.localEntry = localSave?.localEntry;
+      if (result.localStatus === 'saved') this.rememberLocalPlacement(localSave?.localPlacement, 'saved');
+      if (!this.globalQualified && result.localStatus === 'saved') {
         this.playLocalHighscoreVoice();
       }
     }
@@ -7798,7 +8175,7 @@ export class GameOverScene {
         return;
       }
       if (this.globalStatus === 'checking' && this.globalQualificationPromise) {
-        await this.globalQualificationPromise.catch(() => null);
+        await this.withSubmissionTimeout(this.globalQualificationPromise, 3000, 'Global qualification timeout');
       }
 
       if (!this.globalQualified) {
@@ -7867,6 +8244,7 @@ export class GameOverScene {
   destroy() {
     this.steamSubmissionToken += 1;
     this.clearSceneTimeouts();
+    AudioManager.stopSfxGroup('onslaught_number_one');
     if (this.promptText && this.promptPointer) {
       this.promptText.off('pointerdown', this.promptPointer);
       this.promptPointer = null;

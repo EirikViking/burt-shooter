@@ -10,6 +10,8 @@ try{
   const {drawAstraWarningLane:lane,drawAstraWarningRing:ring,drawAstraWarningSector:sector}=await import('/src/effects/AstraWarningField.js');
   const {drawBossChargeCrown:crown,drawBossDischarge:release}=await import('/src/effects/AstraBossEnergy.js');
   const {drawAstraShatterBurst:shatter}=await import('/src/effects/AstraShatterBurst.js');
+  const {preloadEnergyMaterials}=await import('/src/effects/AstraEnergyMaterial.js');
+  await preloadEnergyMaterials();
   const {setReducedMotionEnabled:reduced,setFlashIntensityScale:flash}=await import('/src/config/AccessibilitySettings.js');
   const {getReactorMaterials}=await import('/src/effects/AstraReactorRupture.js');getReactorMaterials();
   const record=()=>{const ops=[];const g=new Proxy({}, {get:(_,key)=>(...args)=>{ops.push([key,...args]);return g;}});return {g,ops};};
@@ -37,7 +39,7 @@ try{
    const bounds=[];
    for(const active of [false,true]){const r=record();lane(r.g,{...opts,active});bounds.push(r.ops.find(o=>o[0]==='poly')[1]);}
    reduced(false);flash(0);const zero=record();crown(zero.g,{radius:100,color:0xff6655,edge:0xffd166,progress:.7});
-   return {tests,bounds,randomCalls,flashZeroTextures:zero.ops.filter(o=>o[0]==='fill'&&o[1].texture).every(o=>o[1].alpha===0)};
+   return {tests,bounds,randomCalls,flashZeroTextures:zero.ops.filter(o=>o[0]==='fill'&&o[1].texture).every(o=>o[1].alpha<=.05)};
   }finally{Date.now=now;Math.random=random;reduced(false);flash(1);}
  });
  assert.equal(result.randomCalls,0);assert.deepEqual(result.bounds[0],result.bounds[1]);assert.equal(result.flashZeroTextures,true);

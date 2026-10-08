@@ -1,3 +1,4 @@
+import { ONSLAUGHT_BOARD, ONSLAUGHT_BOARD_V2, validOnslaughtRun } from '../../electron/onslaughtContract.cjs';
 import {
   LEADERBOARD_DISPLAY_LIMIT,
   STEAM_LEADERBOARD_NAME,
@@ -11,12 +12,24 @@ import {
   normalizeLeaderboardEntries,
   readLeaderboardDetails,
   readExplicitLeaderboardLevel,
+  readCareerRankStatus,
+  preserveHigherCareerRankDetails,
   replaceCareerRankDetails,
   toPublicPilotName
 } from './LeaderboardTypes.js';
 
 const MOCK_STORAGE_KEY = 'novaSwarm.mockSteamLeaderboard.v1';
 const MOCK_PERSONA_KEY = 'novaSwarm.mockSteamPersona.v1';
+const PERSONAL_BEST_FALLBACK_DEADLINE_MS = 250;
+
+// Serialize complete read/modify/write transactions across provider instances.
+// A metadata force-update must never race a new score or an offline score retry.
+let leaderboardWriteTail = Promise.resolve();
+function serializeLeaderboardWrite(operation) {
+  const result = leaderboardWriteTail.then(operation);
+  leaderboardWriteTail = result.catch(() => {});
+  return result;
+}
 
 function safeWindow() {
   try {
@@ -24,6 +37,18 @@ function safeWindow() {
   } catch {
     return null;
   }
+}
+
+function settleWithin(promise, timeoutMs, fallback = null) {
+  let timer = null;
+  return Promise.race([
+    Promise.resolve(promise).catch(() => fallback),
+    new Promise((resolve) => {
+      timer = setTimeout(() => resolve(fallback), timeoutMs);
+    })
+  ]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }
 
 function hasMockSteamFlag(win) {
@@ -134,6 +159,7 @@ function isTacticalLeaderboardName(value) {
 }
 
 function resolveLeaderboardKind({ leaderboardName, leaderboardKind, view } = {}) {
+  if ([ONSLAUGHT_BOARD, ONSLAUGHT_BOARD_V2].includes(leaderboardName) || leaderboardKind === 'overrun_tactical' || view === LeaderboardView.ONSLAUGHT) return 'overrun_tactical';
   const rawKind = String(leaderboardKind || view || '').toLowerCase();
   if (rawKind === 'sector_start' || rawKind === LeaderboardView.SECTOR) return 'sector_start';
   if (rawKind === 'mayhem_tactical' || rawKind === LeaderboardView.TACTICAL) return 'mayhem_tactical';
@@ -370,7 +396,7 @@ export class SteamLeaderboardProvider {
     const limit = Number(options.limit) || LEADERBOARD_DISPLAY_LIMIT;
     const leaderboardName = resolveLeaderboardName(options.leaderboardName || this.leaderboardName);
     const leaderboardKind = resolveLeaderboardKind({ leaderboardName, leaderboardKind: options.leaderboardKind, view: options.view });
-    const sourceLabel = options.sourceLabel || (
+    const sourceLabel = options.sourceLabel || (leaderboardKind === 'overrun_tactical' ? 'Steam Onslaught' :
       leaderboardKind === 'sector_start'
         ? 'Steam Sector'
         : leaderboardKind === 'mayhem_tactical'
@@ -382,8 +408,8 @@ export class SteamLeaderboardProvider {
       leaderboardKind,
       request: 'global',
       limit,
-      start: 1,
-      end: limit
+      start: Math.max(1, Number(options.start) || 1),
+      end: Math.max(1, Number(options.start) || 1) + limit - 1
     };
     const raw = await callFirst(this.bridge, [
       'getTopScores',
@@ -392,10 +418,13 @@ export class SteamLeaderboardProvider {
       'getScores',
       'downloadEntries'
     ], payload);
-    const entries = normalizeLeaderboardEntries(Array.isArray(raw) ? raw : raw?.entries, {
+    if (!Array.isArray(raw) && !Array.isArray(raw?.entries)) throw new Error('Steam read not confirmed');
+    const actualEntries = (Array.isArray(raw) ? raw : raw.entries).filter(entry => !entry.isCpuRival && !entry.presentationOnly && !entry.excludedFromCompetition
+      && (leaderboardKind !== 'overrun_tactical' || Number(entry.rank ?? entry.globalRank ?? entry.m_nGlobalRank) > 0));
+    const entries = normalizeLeaderboardEntries(actualEntries, {
       source: 'steam',
       leaderboardKind,
-      view: leaderboardKind === 'sector_start'
+      view: leaderboardKind === 'overrun_tactical' ? LeaderboardView.ONSLAUGHT : leaderboardKind === 'sector_start'
         ? LeaderboardView.SECTOR
         : leaderboardKind === 'mayhem_tactical'
           ? LeaderboardView.TACTICAL
@@ -406,7 +435,7 @@ export class SteamLeaderboardProvider {
       source: 'steam',
       sourceLabel,
       entries,
-      message: entries.length > 0
+      message: leaderboardKind === 'overrun_tactical' ? (entries.length ? 'RECORDS TO BEAT' : 'Set the first record') : entries.length > 0
         ? (leaderboardKind === 'sector_start'
             ? 'Steam sector run records loaded.'
             : leaderboardKind === 'mayhem_tactical'
@@ -456,7 +485,13 @@ export class SteamLeaderboardProvider {
     };
   }
 
-  async submitScore(runResult = {}) {
+  submitScore(runResult = {}, options = {}) {
+    return serializeLeaderboardWrite(() => this.submitScoreNow(runResult, options));
+  }
+
+  async submitScoreNow(runResult = {}, options = {}) {
+    options.beforeUpload?.();
+    if ((runResult.runMode === 'overrun_tactical' || [ONSLAUGHT_BOARD, ONSLAUGHT_BOARD_V2].includes(runResult.leaderboardName)) && !validOnslaughtRun(runResult)) throw new Error('Invalid Onslaught run');
     if (!await this.isAvailable()) {
       throw new Error('Steam leaderboard unavailable');
     }
@@ -466,15 +501,20 @@ export class SteamLeaderboardProvider {
       leaderboardKind: runResult.leaderboardKind,
       view: runResult.view
     });
-    const details = leaderboardKind === 'sector_start'
+    let details = leaderboardKind === 'sector_start'
       ? encodeSteamSectorLeaderboardDetails(runResult)
       : encodeSteamLeaderboardDetails(runResult);
     const score = Math.max(0, Math.min(2147483647, Math.floor(Number(runResult.score) || 0)));
+    const playerName = runResult.playerName || runResult.name || await this.getPlayerName();
     const previousBest = await this.getPlayerBest({ leaderboardName });
+    details = preserveHigherCareerRankDetails(details, readLeaderboardDetails(previousBest || {}),
+      leaderboardKind === 'sector_start' ? SECTOR_COMPETITIVE_DETAILS_COUNT : GLOBAL_COMPETITIVE_DETAILS_COUNT);
     const previousBestScore = Math.max(0, Math.floor(Number(previousBest?.score ?? previousBest?.m_nScore) || 0));
-    const uploadMethod = resolveSteamUploadMethod({ score, details, previousBest });
+    const uploadMethod = [ONSLAUGHT_BOARD, ONSLAUGHT_BOARD_V2].includes(leaderboardName) ? 'keep_best' : resolveSteamUploadMethod({ score, details, previousBest });
     const payload = {
       leaderboardName,
+      runResult,
+      expectedSteamId: options.expectedSteamId || null,
       score,
       details,
       uploadMethod,
@@ -515,11 +555,17 @@ export class SteamLeaderboardProvider {
     };
     let response = null;
     try {
+      options.beforeUpload?.();
       response = await callFirst(this.bridge, [
         'submitScore',
         'uploadScore',
         'uploadLeaderboardScore'
       ], payload);
+      // The Electron bridge converts the installed wrapper's callback into an
+      // explicit success flag. scoreChanged=false is a successful KeepBest ack.
+      if (response?.success !== true || response?.accepted === false) {
+        throw new Error(response?.interpretedStatus || 'Steam upload was not acknowledged');
+      }
     } catch (error) {
       const [diagnostics, runtimeInfo] = await Promise.all([
         readLastUploadDiagnostics(this.bridge),
@@ -543,9 +589,7 @@ export class SteamLeaderboardProvider {
     );
     const scoreChangedRaw = response?.scoreChanged ?? response?.m_bScoreChanged ?? response?.score_changed ?? null;
     const scoreChangedFalse = scoreChangedRaw === false || scoreChangedRaw === 0 || scoreChangedRaw === '0';
-    const postSubmitBest = previousBestScore > 0
-      ? previousBest
-      : await this.getDownloadedPlayerBest({ leaderboardName, leaderboardKind }).catch(() => null);
+    const postSubmitBest = previousBest;
     const postSubmitBestScore = Math.max(0, Math.floor(Number(postSubmitBest?.score ?? postSubmitBest?.m_nScore) || 0));
     const responseBestScore = responseScore > score ? responseScore : 0;
     const retainedBestScore = Math.max(previousBestScore, postSubmitBestScore, responseBestScore);
@@ -558,12 +602,12 @@ export class SteamLeaderboardProvider {
     return {
       status: 'submitted',
       source: 'steam',
-      sourceLabel: leaderboardKind === 'sector_start'
+      sourceLabel: leaderboardKind === 'overrun_tactical' ? 'Steam Onslaught' : leaderboardKind === 'sector_start'
         ? 'Steam Sector'
         : leaderboardKind === 'mayhem_tactical'
           ? 'Steam Tactical'
           : 'Steam Pure',
-      playerName: await this.getPlayerName(),
+      playerName,
       details,
       levelReached: leaderboardKind === 'sector_start' ? details[1] : details[0],
       leaderboardName,
@@ -582,7 +626,11 @@ export class SteamLeaderboardProvider {
     };
   }
 
-  async refreshCareerRankMetadata(options = {}) {
+  refreshCareerRankMetadata(options = {}) {
+    return serializeLeaderboardWrite(() => this.refreshCareerRankMetadataNow(options));
+  }
+
+  async refreshCareerRankMetadataNow(options = {}) {
     if (!await this.isAvailable()) throw new Error('Steam leaderboard unavailable');
     const leaderboardName = resolveLeaderboardName(options.leaderboardName || this.leaderboardName);
     const leaderboardKind = resolveLeaderboardKind({
@@ -596,7 +644,7 @@ export class SteamLeaderboardProvider {
     let previousBest = await callFirst(this.bridge, ['getPlayerBest', 'getBestScore'], { leaderboardName });
     let previousDetails = readLeaderboardDetails(previousBest || {});
     if (previousBest && previousDetails.length < competitiveDetailsCount) {
-      const downloadedBest = await this.getDownloadedPlayerBest({ leaderboardName, leaderboardKind }).catch(() => null);
+      const downloadedBest = await this.getDownloadedPlayerBest({ leaderboardName, leaderboardKind, requireCurrentPlayerId: true }).catch(() => null);
       const downloadedDetails = readLeaderboardDetails(downloadedBest || {});
       if (downloadedDetails.length >= competitiveDetailsCount) {
         previousBest = downloadedBest;
@@ -615,11 +663,13 @@ export class SteamLeaderboardProvider {
     if (previousDetails.length < competitiveDetailsCount) {
       throw new Error(`Steam ${leaderboardKind} best row is missing competitive details`);
     }
-    const details = replaceCareerRankDetails(
-      previousDetails,
-      options.careerRankExact,
-      competitiveDetailsCount
+    const details = preserveHigherCareerRankDetails(
+      replaceCareerRankDetails(previousDetails, options.careerRankExact, competitiveDetailsCount),
+      previousDetails, competitiveDetailsCount
     );
+    if (details.length === previousDetails.length && details.every((value, index) => value === previousDetails[index])) {
+      return { status: 'skipped', reason: 'rank_already_current', leaderboardName, leaderboardKind, score: storedScore };
+    }
     const payload = {
       leaderboardName,
       score: storedScore,
@@ -631,7 +681,7 @@ export class SteamLeaderboardProvider {
         ...(previousBest?.metadata && typeof previousBest.metadata === 'object' ? previousBest.metadata : {}),
         leaderboardKind,
         leaderboardName,
-        careerRankExact: String(options.careerRankExact || ''),
+        careerRankExact: readCareerRankStatus(details, competitiveDetailsCount)?.exact ?? null,
         careerRankMetadataRefresh: true,
         competitiveDetailsCount,
         oneEntryPerPlayer: true,
@@ -674,12 +724,17 @@ export class SteamLeaderboardProvider {
     const bridge = this.getBridge();
     if (!bridge || !await this.isAvailable()) return null;
     try {
-      return await callFirst(bridge, ['getPlayerBest', 'getBestScore'], {
+      const direct = await callFirst(bridge, ['getPlayerBest', 'getBestScore'], {
         leaderboardName: resolveLeaderboardName(options.leaderboardName || this.leaderboardName)
       });
+      if (direct) return direct;
     } catch {
-      return null;
+      // Some supported wrappers do not expose a direct personal-best call.
     }
+    return settleWithin(this.getDownloadedPlayerBest({
+      ...options,
+      requireCurrentPlayerId: true
+    }), PERSONAL_BEST_FALLBACK_DEADLINE_MS, null);
   }
 
   async getDownloadedPlayerBest(options = {}) {
@@ -699,6 +754,9 @@ export class SteamLeaderboardProvider {
         ? read.value.entries
         : []
     ));
-    return pickBestCurrentPlayerEntry(entries, currentPlayerName);
+    return pickBestCurrentPlayerEntry(
+      options.requireCurrentPlayerId ? entries.filter(entry => entry.isCurrentPlayer) : entries,
+      options.requireCurrentPlayerId ? null : currentPlayerName
+    );
   }
 }

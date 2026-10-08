@@ -1,0 +1,27 @@
+{
+  "id": 1,
+  "name": "Nova Sparrow",
+  "architecture": "sparrow",
+  "palette": [
+    "dce8eb",
+    "1762b0",
+    "ffc126"
+  ],
+  "textureSize": 1536,
+  "spriteGeneration": false,
+  "bytes": 27003304,
+  "triangles": 332172,
+  "materials": [
+    "Graphite structural composite",
+    "Off-white aerospace polyurethane",
+    "Brushed titanium fittings",
+    "Seals and cabin upholstery",
+    "Cobalt blue painted alloy",
+    "Sooted nozzle liner",
+    "Heat-oxidised exhaust alloy",
+    "Dim ion throat and instrument phosphor",
+    "Laminated cockpit glazing"
+  ],
+  "images": 5,
+  "repaired": 4
+}

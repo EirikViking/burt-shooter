@@ -430,6 +430,18 @@ async function runSmoke() {
       return window.__game?.scenes?.menu?.settingsOverlay?.getDebugState?.().activePage === 'audio';
     }, null, { timeout: 5000 });
     await page.waitForTimeout(150);
+    // Menu voices now default OFF. Explicitly enable them through the actual
+    // Settings control before expecting a voice audition to play in this profile.
+    const menuVoices = await page.evaluate(() => {
+      const overlay = window.__game.scenes.menu.settingsOverlay;
+      const control = overlay.controls.find(control => control.id === 'toggle_menu_voices');
+      const bounds = control?.button?.getBounds();
+      const rect = document.querySelector('canvas')?.getBoundingClientRect();
+      const screen = window.__game.app.screen;
+      return bounds && rect ? { x: rect.left + (bounds.x + bounds.width / 2) / screen.width * rect.width, y: rect.top + (bounds.y + bounds.height / 2) / screen.height * rect.height } : null;
+    });
+    if (!menuVoices) throw new Error('Menu voice setting was not exposed');
+    await page.mouse.click(menuVoices.x, menuVoices.y);
     await page.screenshot({ path: path.join(outputDir, '01-settings-audio.png'), fullPage: true });
     let settingsSfxState = null;
     const audioTestButtonState = await page.evaluate(() => {
@@ -622,6 +634,9 @@ async function runSmoke() {
     await page.waitForTimeout(350);
     await page.screenshot({ path: path.join(outputDir, '04-pause.png'), fullPage: true });
     const pauseState = await collectGameState(page);
+    // This tab has completed every assertion/capture. Retire its live renderer
+    // before later independent fixtures; preserve their existing timeouts.
+    await page.close();
     logStep('pause captured');
 
     const storyPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });

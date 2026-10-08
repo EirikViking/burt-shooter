@@ -598,7 +598,8 @@ try {
       }, null, { timeout: 3000 });
       // Hold longer than the normal 2.22s sector-entry timer. This proves the
       // wall-clock callback cannot release combat beneath the manual interlude.
-      await page.waitForTimeout(2450);
+      // The victory presentation deliberately reveals the final line at 2.65s.
+      await page.waitForTimeout(3300);
 
       const held = await readRuntimeSnapshot(page);
       const label = `sector ${testCase.sector} ${viewport.width}x${viewport.height}`;
@@ -626,7 +627,7 @@ try {
       assertTextLayout(held.state, label, viewport, { requireBonus: true });
       const titleNode = held.state.overrunInterlude.textNodes.find(node => node.id === 'ui_overrun_card_title');
       const rewardNode = held.state.overrunInterlude.textNodes.find(node => node.id === 'ui_overrun_card_reward');
-      assert.equal(titleNode?.text, testCase.title, `${label}: wrong title text`);
+      assert.equal(titleNode?.text.replace(/\n/g, ': '), testCase.title, `${label}: wrong title text`);
       assert.match(rewardNode?.text || '', /CREW DROP:/, `${label}: milestone reward was not readable`);
       assert.deepEqual(held.state.overrunInterlude?.milestoneReward?.applied, staged.rewardState.reward.applied, `${label}: reward audit drifted`);
       assert.match(held.state.overrunInterlude?.promptText || '', /.+/, `${label}: empty continue prompt`);

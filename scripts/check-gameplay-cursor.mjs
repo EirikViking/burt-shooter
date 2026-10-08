@@ -180,6 +180,18 @@ try {
   report.screenshots.gameplay = await screenshot(page, '02-gameplay-cursor-hidden');
 
   await page.evaluate(() => {
+    document.documentElement.classList.remove('gameplay-cursor-hidden');
+    document.body.classList.remove('gameplay-cursor-hidden');
+    window.dispatchEvent(new Event('nova-app-window-focus'));
+  });
+  report.states.gameplayAfterFocusReturn = await waitForCursorState(
+    page,
+    state => state.scene === 'play' && state.cursor?.hidden === true && state.dom.canvasCursor === 'none',
+    'gameplay cursor after native focus return'
+  );
+  assertCursorHidden(report.states.gameplayAfterFocusReturn, 'gameplay after native focus return');
+
+  await page.evaluate(() => {
     window.__game?.scenes?.play?.setPaused?.(true);
   });
   report.states.pause = await waitForCursorState(page, state => state.scene === 'play' && state.overlays?.pause && state.cursor?.hidden === false, 'pause cursor');

@@ -18,7 +18,7 @@ function fail(message) {
 const ids = ACHIEVEMENTS.map((achievement) => achievement.id);
 const names = ACHIEVEMENTS.map((achievement) => achievement.name);
 const idPattern = /^ACH_[A-Z0-9]+(?:_[A-Z0-9]+)*$/;
-const expectedTotal = 81;
+const expectedTotal = 100;
 const expectedMilestones = 40;
 const expectedLegendMilestones = 30;
 const allowedMilestoneDifficulties = new Set(['medium', 'hard', 'very_hard', 'legendary']);
@@ -28,7 +28,15 @@ if (ACHIEVEMENTS.length > 100) {
 }
 
 if (ACHIEVEMENTS.length !== expectedTotal) {
-  fail(`Catalog should contain ${expectedTotal} achievements for the Steam launch set; saw ${ACHIEVEMENTS.length}.`);
+  fail(`Catalog should contain ${expectedTotal} achievements; saw ${ACHIEVEMENTS.length}.`);
+}
+if (ACHIEVEMENTS.filter(entry => entry.type === 'onslaught').length !== 19) fail('Exactly 19 Onslaught achievements are required.');
+for (const achievement of ACHIEVEMENTS) {
+  if (!Array.isArray(achievement.allowedModes) || !achievement.allowedModes.length
+    || !Array.isArray(achievement.progressModes) || !Array.isArray(achievement.completeModes)
+    || !achievement.scope || typeof achievement.requiresSubmission !== 'boolean') {
+    fail(`Achievement policy incomplete: ${achievement.id}`);
+  }
 }
 
 for (const achievement of ACHIEVEMENTS) {
@@ -91,11 +99,11 @@ if (!swarmElite) {
   if (swarmElite.name !== 'Swarm Elite') {
     fail(`ACH_GLOBAL_NUMBER_ONE display name should be "Swarm Elite"; saw "${swarmElite.name}".`);
   }
-  if (swarmElite.description !== 'Submit a 750,000-point ranked run.') {
+  if (swarmElite.description !== 'Submit a ranked score of at least 250,000 points. Modes: Arcade Tactical, Arcade Pure, Onslaught Tactical.') {
     fail(`Swarm Elite description drifted: "${swarmElite.description}".`);
   }
-  if (Number(swarmElite.target) !== SWARM_ELITE_SCORE_GATE || SWARM_ELITE_SCORE_GATE !== 750000) {
-    fail(`Swarm Elite score gate must be exactly 750000; saw ${swarmElite.target}.`);
+  if (Number(swarmElite.target) !== SWARM_ELITE_SCORE_GATE || SWARM_ELITE_SCORE_GATE !== 250000) {
+    fail(`Swarm Elite score gate must be exactly 250000; saw ${swarmElite.target}.`);
   }
 }
 
@@ -213,5 +221,5 @@ if (errors.length > 0) {
   }
   process.exitCode = 1;
 } else {
-  console.log(`[check-achievements-catalog] PASS ${ACHIEVEMENTS.length} achievements (${rankNumbers.length} rank, ${milestoneCount} milestone, ${ACHIEVEMENTS.length - rankNumbers.length - milestoneCount} leaderboard).`);
+  console.log(`[check-achievements-catalog] PASS ${ACHIEVEMENTS.length} achievements (${rankNumbers.length} rank, ${milestoneCount} milestone, 2 leaderboard, 19 Onslaught).`);
 }

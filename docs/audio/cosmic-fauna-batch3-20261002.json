@@ -1,0 +1,239 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "before": {
+    "used": 5340,
+    "limit": 10000
+  },
+  "creditCeiling": 1800,
+  "cues": [
+    {
+      "id": "thunder_eel",
+      "request": {
+        "text": "A colossal electric eel flexes its living spine. A low smooth throat drone with uneven pulsing breath, tiny dry organic electroreceptor crackles, a soft long skin scrape and a descending hollow tail resonance. Huge mysterious animal, detailed tactile cinematic creature Foley. No lightning strike, zaps, weapon fire, alarm, voice or music.",
+        "duration_seconds": 4.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "23",
+      "sourceSha256": "bc70a0eaf17ddf1b7e1de491d45c9281ee3e6032d7171ed6a6e8c66f8c4b584f",
+      "master": "public/audio/sfx/cosmic-fauna/thunder_eel.wav",
+      "masterSha256": "6c04de641a61d36a94c24ff4827aeb3b0d8dd5eb5da7aa6d4969fa6bb9279e43",
+      "bytes": 366990
+    },
+    {
+      "id": "cathedral_centipede",
+      "request": {
+        "text": "An immense many-paddled armored swimmer passes. A slow rolling sequence of soft leathery paddle strokes travels down its body, dry bone arches creak in overlapping rhythm, deep hollow abdominal breath and small joint clicks fade away. Ancient living creature with tactile weight, cinematic Foley. No marching, machinery, music, voices, weapons or alarms.",
+        "duration_seconds": 4.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "515b31a4993170dba2d1e494debaa149981c938b32bd087fffadb4e465a54e20",
+      "master": "public/audio/sfx/cosmic-fauna/cathedral_centipede.wav",
+      "masterSha256": "aeeb41d36da550fa712ce71b00e7a5c38c6b932cba1c8d88485d5e46b4a186e0",
+      "bytes": 388158
+    },
+    {
+      "id": "pearl_salamander",
+      "request": {
+        "text": "A massive pearl-skinned amphibian breathes through six feathery gills. Gentle low wet throat gulp, delicate airy gill flutter around a warm chest resonance, tiny webbed foot strokes and a smooth liquid exhale. Tender yet uncanny giant living animal, close cinematic organic Foley. No cute chirp, human voice, music, weapon, splash impact or alarm.",
+        "duration_seconds": 4.1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "23",
+      "sourceSha256": "a82e53415f7a256fa7cc99a8644ba9337935047bae0e0f962add432e604eaaad",
+      "master": "public/audio/sfx/cosmic-fauna/pearl_salamander.wav",
+      "masterSha256": "60a2fee930e09fd6eefe8bf387f366981309539e41e24d322b1ecff8d4b26c69",
+      "bytes": 359934
+    },
+    {
+      "id": "mirror_moth",
+      "request": {
+        "text": "A huge glass-winged alien moth slowly opens its wings. Four layered papery membrane sweeps with delicate irregular mineral ticks, a faint coarse thoracic purr, thin antennae brushing and a soft crystalline breath decay. Beautiful disquieting living insect, spacious cinematic Foley. No bells, melody, music, voices, breaking glass, weapons or alarm.",
+        "duration_seconds": 4.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "806813b11145c39666db6f55fb693532d6c01689644f795ea9e22c03d2584ae3",
+      "master": "public/audio/sfx/cosmic-fauna/mirror_moth.wav",
+      "masterSha256": "764e6f053a5027ec332f8264d889f8aee09a6109632f5bbdd531857305efbb82",
+      "bytes": 377574
+    },
+    {
+      "id": "moon_urchin",
+      "request": {
+        "text": "A colossal pale urchin exhales through many small pores. A slow hollow spherical chest hum, staggered soft air whistles, curved mineral spines creaking quietly and thin ribbon sails whispering past. Spacious eerie beautiful biological presence, detailed cinematic creature Foley. No melody, music, mechanical whine, voices, weapons or alarm.",
+        "duration_seconds": 4.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "25",
+      "sourceSha256": "6ef2a38d71259ac162683f86f3c5cb10804b2cabf0d78b491c443e916e132f0d",
+      "master": "public/audio/sfx/cosmic-fauna/moon_urchin.wav",
+      "masterSha256": "0cccd78e8d0df79f7268328672317c02a0f14f811fc606ec49c6ee6151b88e54",
+      "bytes": 395214
+    },
+    {
+      "id": "rose_anemone",
+      "request": {
+        "text": "A giant rose anemone unfurls its living crown. Close soft fleshy folds opening, many fine tendrils brushing in irregular waves, tiny wet pore clicks and a low breathy circular throat murmur fading gently. Exquisite unsettling organic animal, tactile cinematic Foley. No floral magic, chimes, melody, music, voice, weapon or alarm.",
+        "duration_seconds": 4.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "945e12a8b6573d51a51ad6e50115ba8e564f845a58eac0961e5c68adfb39dfb7",
+      "master": "public/audio/sfx/cosmic-fauna/rose_anemone.wav",
+      "masterSha256": "d67020a505ee6dd382e896c7d16277389f7846f3226c4724df6332dfba6c0918",
+      "bytes": 377574
+    },
+    {
+      "id": "spine_shark",
+      "request": {
+        "text": "A huge armored spine shark glides past. A low rough predatory gill rasp under heavy rounded breathing, slow dorsal cartilage creaks, smooth broad fin pressure and one restrained gravelly jaw flex. Dangerous tangible wild animal, rich cinematic creature Foley. No roar jump scare, music, speech, weapon, splash crash or alarm.",
+        "duration_seconds": 4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "22",
+      "sourceSha256": "836ff4a3f0994565f95c20dee7265ce312b478e0ee62f7fd4e59eccab4d03424",
+      "master": "public/audio/sfx/cosmic-fauna/spine_shark.wav",
+      "masterSha256": "18fde6c95def8c14e6b7c071dced75b54db09bdbf78c3ec1b46a76e497da0716",
+      "bytes": 352878
+    },
+    {
+      "id": "dawn_koi",
+      "request": {
+        "text": "An enormous regal koi breathes softly. Rounded low waterlike throat notes, delicate leathery scale shifts, six whiskers brushing, long silk fins sweeping in slow overlapping waves and a gentle resonant exhale. Majestic serene alien life with tactile detail, cinematic Foley. No melody, music, human voice, cute squeak, weapon or alarm.",
+        "duration_seconds": 4.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "e69a87f01bf4ab7aa1086bbcd6bfa5c88a30459499fae85341e3a0cec5e7d56e",
+      "master": "public/audio/sfx/cosmic-fauna/dawn_koi.wav",
+      "masterSha256": "45cbb0dac65ee6db96b565aabd195cba7750077676f09722e5f234395d4bef52",
+      "bytes": 377574
+    },
+    {
+      "id": "iron_jelly",
+      "request": {
+        "text": "A vast heavy-ribbed jelly creature contracts its bell. Deep hollow cartilage thump with long dark breath, many dry jointed arm ticks staggered irregularly, damp membrane flex and a quiet descending chest resonance. Ancient ominous living animal, detailed cinematic Foley. No metal robot, music, speech, alarm, bell ringing or weapon.",
+        "duration_seconds": 4.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "24",
+      "sourceSha256": "571fc025af542ee18095e025c9f9b72945b1df6ff252c2927c819eecacc3eb20",
+      "master": "public/audio/sfx/cosmic-fauna/iron_jelly.wav",
+      "masterSha256": "7710cbe48d6f7d2f1b6101cce2cbfa6e8dbb595936a432f4e4a1cf31ccab5e60",
+      "bytes": 388158
+    },
+    {
+      "id": "saffron_seadragon",
+      "request": {
+        "text": "A giant saffron seadragon moves through space. Many soft leaflike fins flutter at staggered speeds, a long narrow hollow snout breath, fine bony cartilage clicks and a warm low chest croon fading into a leathery tail swish. Graceful alien animal, tactile cinematic organic Foley. No wind ambience, music, singing, human voice, weapon or alarm.",
+        "duration_seconds": 4.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.9,
+        "loop": false
+      },
+      "requestId": null,
+      "characterCost": "23",
+      "sourceSha256": "0d3ddeaeb093a25a13801997ce31835997a4eb6de09a64da0128ca65eb75de41",
+      "master": "public/audio/sfx/cosmic-fauna/saffron_seadragon.wav",
+      "masterSha256": "be51d074a956f594d07b9658824043f7f139ab829228041026169a4cbc211859",
+      "bytes": 366990
+    }
+  ],
+  "attempts": [
+    {
+      "id": "thunder_eel",
+      "estimate": 168,
+      "startedAt": "2026-10-02T15:12:37.179Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "cathedral_centipede",
+      "estimate": 176,
+      "startedAt": "2026-10-02T15:12:39.841Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "pearl_salamander",
+      "estimate": 164,
+      "startedAt": "2026-10-02T15:12:42.550Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "mirror_moth",
+      "estimate": 172,
+      "startedAt": "2026-10-02T15:12:45.374Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "moon_urchin",
+      "estimate": 180,
+      "startedAt": "2026-10-02T15:12:48.387Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "rose_anemone",
+      "estimate": 172,
+      "startedAt": "2026-10-02T15:12:51.162Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "spine_shark",
+      "estimate": 160,
+      "startedAt": "2026-10-02T15:12:54.724Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "dawn_koi",
+      "estimate": 172,
+      "startedAt": "2026-10-02T15:12:57.824Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "iron_jelly",
+      "estimate": 176,
+      "startedAt": "2026-10-02T15:13:00.739Z",
+      "outcome": "source-saved"
+    },
+    {
+      "id": "saffron_seadragon",
+      "estimate": 168,
+      "startedAt": "2026-10-02T15:13:03.748Z",
+      "outcome": "source-saved"
+    }
+  ],
+  "startedAt": "2026-10-02T15:12:36.609Z",
+  "after": {
+    "used": 5340,
+    "limit": 10000
+  },
+  "finishedAt": "2026-10-02T15:13:06.734Z"
+}

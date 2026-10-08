@@ -12,7 +12,7 @@ import {
 const apiKey = process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_LABS_API_KEY;
 const voiceId = process.env.ELEVENLABS_MENU_BOSS_VOICE_ID || MENU_BOSS_BARK_DEFAULT_VOICE_ID;
 const modelId = process.env.ELEVENLABS_MENU_BOSS_MODEL_ID || process.env.ELEVENLABS_MODEL_ID || MENU_BOSS_BARK_MODEL_ID;
-const outputDir = path.resolve('public/audio/voice/menu-boss-barks');
+const outputDir = path.resolve(process.env.NOVA_SWARM_VOICE_OUTPUT_DIR || 'public/audio/voice/menu-boss-barks');
 const force = process.argv.includes('--force');
 const delayMs = Number(process.env.ELEVENLABS_MENU_BOSS_DELAY_MS || 725);
 const onlyArg = process.argv.find((arg) => arg.startsWith('--only='));

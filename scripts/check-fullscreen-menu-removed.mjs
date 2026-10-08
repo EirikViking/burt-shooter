@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 const settingsOverlay = readFileSync('src/ui/SettingsOverlay.js', 'utf8');
 const displaySettings = readFileSync('src/config/DisplaySettings.js', 'utf8');
+const electronMain = readFileSync('electron/main.cjs', 'utf8');
 
 assert(
   !settingsOverlay.includes("translateText('FULLSCREEN')") &&
@@ -27,5 +28,9 @@ assert(
   releaseCheck.includes('fullscreen launch guard'),
   'release-line guard should continue verifying packaged fullscreen launch safety separately'
 );
+assert(
+  electronMain.includes('Menu.setApplicationMenu(null)') && electronMain.includes('win.removeMenu()'),
+  'Packaged Electron must remove the native application and window menus so Alt cannot reveal them'
+);
 
-console.log('[fullscreen-menu] PASS legacy fullscreen-only menu removed; display mode selector present');
+console.log('[fullscreen-menu] PASS legacy fullscreen-only menu removed; display mode selector present; native Electron menu removed');

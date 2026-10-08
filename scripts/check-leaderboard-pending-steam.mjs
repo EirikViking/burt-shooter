@@ -78,6 +78,7 @@ const globalRun = {
   levelReached: 16,
   rankIndex: 8,
   submissionId: 'global-offline-1',
+  runMode: 'ranked',
   runTimeSeconds: 600,
   kills: 900,
   bossKills: 3,
@@ -96,6 +97,9 @@ assert.equal(pendingEntries().length, 1, 'pending queue should contain one globa
 assertProfileScopedRawKey('76561198000000001');
 
 window.__NOVA_SWARM_MOCK_STEAM_LEADERBOARD__ = true;
+// A retry after restart respects the durable minimum backoff.
+const realNow = Date.now;
+Date.now = () => realNow() + 120000;
 const retryAdapter = new LeaderboardAdapter();
 await retryAdapter.refreshAvailability();
 const retryResult = await retryAdapter.retryPendingSteamSubmissions({ reason: 'test_restart' });
@@ -174,3 +178,4 @@ assert.equal(/No global scores yet/i.test(failedScores.message), false, 'failed 
 assert.ok(syncCount > 0, 'pending queue writes should use existing cloud diagnostics sync hook');
 
 console.log('[leaderboard-pending-steam] PASS pending queue, retry, profile isolation, and unavailable state');
+Date.now = realNow;

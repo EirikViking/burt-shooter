@@ -1,13 +1,14 @@
 import { SWARM_ELITE_SCORE_GATE } from './AchievementCatalog.js';
 import {
   canRunModeSubmitGlobalLeaderboard,
-  canRunModeUnlockAchievements,
   parseRunMode
 } from '../game/RunMode.js';
 
 function wholeScore(value) {
   return Math.max(0, Math.floor(Number(value) || 0));
 }
+
+const APPROVED_SWARM_ELITE_MODES = new Set(['ranked_tactical', 'ranked', 'overrun_tactical']);
 
 export function isAcceptedLeaderboardSubmission(result = {}, provider = null) {
   const normalizedProvider = String(provider || result.globalProvider || '').trim().toLowerCase();
@@ -46,7 +47,7 @@ export function evaluateSwarmEliteEligibility({
   if (
     allowAchievements === false
     || eligibleRun === false
-    || !canRunModeUnlockAchievements(canonicalRunMode, { isDebugRun })
+    || !APPROVED_SWARM_ELITE_MODES.has(canonicalRunMode)
     || !canRunModeSubmitGlobalLeaderboard(canonicalRunMode, { isDebugRun })
   ) {
     return { eligible: false, reason: 'ineligible_run', acceptedScore: 0, runMode: canonicalRunMode };

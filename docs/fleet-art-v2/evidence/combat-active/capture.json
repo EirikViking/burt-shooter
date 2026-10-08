@@ -1,0 +1,455 @@
+{
+  "rows": [
+    {
+      "id": "01",
+      "name": "NOVA SPARROW",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-01.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "02",
+      "name": "COMET COURIER",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-02.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "03",
+      "name": "PIXEL NEEDLE",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-03.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "04",
+      "name": "MINT SKATER",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-04.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "05",
+      "name": "CRIMSON BITE",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-05.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "06",
+      "name": "IRON ORBIT",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-06.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "07",
+      "name": "QUASAR FAN",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-07.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "08",
+      "name": "GLACIER SCOPE",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-08.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "09",
+      "name": "ARC STRIKER",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-09.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "10",
+      "name": "SOLAR HAMMER",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-10.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "11",
+      "name": "CIRCUIT TAP",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-11.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "12",
+      "name": "VIOLET FEINT",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-12.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "13",
+      "name": "AURIC CORE",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-13.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "14",
+      "name": "PLASMA SKATE",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-14.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "15",
+      "name": "RUBY SPIKE",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-15.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "16",
+      "name": "SPECTRAL SLIP",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-16.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "17",
+      "name": "COBALT GUARD",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-17.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "18",
+      "name": "EMBER BURST",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-18.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "19",
+      "name": "NEON STUTTER",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-19.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "20",
+      "name": "QUARTZ NEEDLE",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-20.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "21",
+      "name": "CHROME RAIL",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-21.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "22",
+      "name": "VERDANT FLOW",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-22.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "23",
+      "name": "HAZARD RAM",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-23.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "24",
+      "name": "NOVA OVERDRIVE",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-24.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "25",
+      "name": "ARCADE LEGEND",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-25.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "26",
+      "name": "PHASE SERAPH",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-29.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "27",
+      "name": "EIRIK THE VIKING",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-30.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "28",
+      "name": "AEGIS COMET",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-26.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "29",
+      "name": "RAILBREAKER",
+      "scene": "play",
+      "enemies": 10,
+      "player": {
+        "spriteKey": "nova-player-ship-27.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    },
+    {
+      "id": "30",
+      "name": "DRONE SOVEREIGN",
+      "scene": "play",
+      "enemies": 9,
+      "player": {
+        "spriteKey": "nova-player-ship-28.png",
+        "x": 960,
+        "y": 930,
+        "frameWidth": 74.09999999999991,
+        "frameHeight": 74.09999999999991,
+        "alpha": 1
+      },
+      "level": 1
+    }
+  ],
+  "errors": []
+}

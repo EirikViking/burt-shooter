@@ -1,0 +1,41 @@
+diff --git a/src/managers/ArcadeFirstLightDirector.js b/src/managers/ArcadeFirstLightDirector.js
+--- a/src/managers/ArcadeFirstLightDirector.js
++++ b/src/managers/ArcadeFirstLightDirector.js
+@@ -9,7 +9,7 @@
+ import {convoySurpriseReady,recordConvoySurprise} from '../config/ConvoySurpriseCatalog.js';
+ import {convoyPartPoses,makeConvoySurprise} from '../game/ConvoySurprises.js';
+ import {prewarmConvoySurpriseSounds,playConvoySurpriseSound} from '../audio/ConvoySurpriseAudio.js';
+-import {consumeReactorDischarge,reactorTowPosition} from '../game/ReactorTow.js';
++import {consumeReactorDischarge,reactorTowPosition,updateReactorTow} from '../game/ReactorTow.js';
+ import {consumeCounterweightVolley,counterweightWorldPoses,updateCounterweight} from '../game/Counterweight.js';
+ 
+ export class ArcadeFirstLightDirector {
+@@ -65,7 +65,9 @@
+     if(this.model.encounter?.counterweight&&(s.isPaused||s.tacticalDraft?.active||s.overrunMilestoneInterlude?.active))
+       updateCounterweight(this.model.encounter,0,{paused:true});
+     if(s.isPaused||s.tacticalDraft?.active||s.overrunMilestoneInterlude?.active){
++      if(this.model.encounter?.reactor)updateReactorTow(this.model.encounter,0,{safe:false});
+       AudioManager.stopSfxGroup?.('convoy-surprise');
++      this.reactorChargeCued=false;
+       this.counterweightChargeCued=false;
+     }
+     if(!this.view)return;
+@@ -199,6 +201,6 @@
+     if(!this.reactorChargeCued){
+-      this.reactorChargeCued=true;
+-      AudioManager.playSfx('first_light_rival_charge_mechanical',{preserveGameplayRng:true,sfxGroup:'convoy-surprise'});
++      this.reactorChargeCued=AudioManager.playSfx('first_light_rival_charge_mechanical',
++        {preserveGameplayRng:true,sfxGroup:'convoy-surprise'})!==false;
+     }
+     // Intercept the player's last-frame vent hit before committing this release.
+     if(!consumeReactorDischarge(e))return;
+@@ -216,6 +218,7 @@
+     const warning=safe&&!e.suspended&&['warning','ready'].includes(c.phase);
+     if(!warning){if(this.counterweightChargeCued)AudioManager.stopSfxGroup?.('convoy-surprise');this.counterweightChargeCued=false;return;}
+-    if(!this.counterweightChargeCued){this.counterweightChargeCued=true;
+-      AudioManager.playSfx('first_light_rival_charge_mechanical',{preserveGameplayRng:true,sfxGroup:'convoy-surprise'});}
++    if(!this.counterweightChargeCued){
++      this.counterweightChargeCued=AudioManager.playSfx('first_light_rival_charge_mechanical',
++        {preserveGameplayRng:true,sfxGroup:'convoy-surprise'})!==false;}
+     // Actual player hits resolve before committing a ready volley.
+     const positions=counterweightWorldPoses(e,this.view.pose),shots=consumeCounterweightVolley(e);

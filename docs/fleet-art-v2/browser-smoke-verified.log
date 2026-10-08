@@ -1,0 +1,121 @@
+[smoke] starting http://127.0.0.1:5199
+[smoke] browser launched
+[smoke] menu captured
+[smoke] settings and audio audition captured
+[smoke] credits captured
+[smoke] desktop gameplay captured
+[smoke] powerup HUD captured
+[smoke] gamepad flow captured
+[smoke] pause captured
+[smoke] compact Cabinet Log captured
+[smoke] game-over and return-menu captured
+[smoke] mobile flow captured
+[smoke] level 3 debug start captured
+[smoke] wave transition captured
+[smoke] boss victory captured
+[smoke] report written
+{
+  "status": "failed",
+  "baseUrl": "http://127.0.0.1:5199",
+  "outputDir": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\fleet-art-v2-smoke-verified",
+  "screenshots": [
+    "01-menu.png",
+    "01-settings.png",
+    "01-credits.png",
+    "02-gameplay.png",
+    "02-powerup-hud.png",
+    "03-gamepad-pause.png",
+    "05-cabinet-log-compact.png",
+    "06-game-over.png",
+    "08-mobile-intro.png",
+    "10-level3-gameplay.png",
+    "14a-boss-impact.png",
+    "14-boss-defeated.png",
+    "15-level-2-start.png"
+  ],
+  "scenes": {
+    "menu": {
+      "scene": "menu",
+      "music": "menu / orbital_hangar_ambience",
+      "level": 1,
+      "lives": 3,
+      "enemies": 0
+    },
+    "gameplay": {
+      "scene": "play",
+      "music": "gameplay / bgm_v2.mp3",
+      "level": 1,
+      "lives": 3,
+      "enemies": 8
+    },
+    "gameOver": {
+      "scene": "gameOver",
+      "music": "gameover / Defeated (Game Over Tune).mp3",
+      "level": 1,
+      "lives": 0,
+      "enemies": 0
+    },
+    "mobile": {
+      "scene": "play",
+      "music": "gameplay / bgm_v2.mp3",
+      "level": 1,
+      "lives": 3,
+      "enemies": 0
+    },
+    "level3": {
+      "scene": "play",
+      "music": "gameplay / bgm_v2.mp3",
+      "level": 3,
+      "lives": 3,
+      "enemies": 8
+    },
+    "boss": {
+      "scene": "play",
+      "music": "boss / DeathMatch (Boss Theme).mp3",
+      "level": 1,
+      "lives": 3,
+      "enemies": 1
+    },
+    "postBoss": {
+      "scene": "play",
+      "music": "gameplay / Without Fear.mp3",
+      "level": 2,
+      "lives": 3,
+      "enemies": 9
+    }
+  },
+  "settings": {
+    "overlayVisible": true,
+    "creditsVisible": true,
+    "sfxAudition": "achievement",
+    "voiceAudition": "mission_control_launch",
+    "accessibility": {
+      "screenShake": 1,
+      "playerFocus": 0.72,
+      "playerHitbox": false,
+      "colorAssist": false,
+      "flashIntensity": 1,
+      "reducedMotion": false,
+      "prefersReducedMotion": false
+    }
+  },
+  "coverage": {
+    "gamepadConnected": true,
+    "powerupHud": "RAPID FIRE",
+    "cabinetLog": "cabinet_log",
+    "waveTransition": 2,
+    "bossDefeatMusic": "victory / Victory Tune.mp3"
+  },
+  "failures": [
+    "production routine console output was not quiet (508 messages)"
+  ],
+  "console": {
+    "routineMessages": 508,
+    "warningsOrErrors": 0,
+    "pageErrors": 0,
+    "badResponses": 0
+  },
+  "fullReport": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\fleet-art-v2-smoke-verified\\report.json"
+}
+Error: Smoke playtest failed: production routine console output was not quiet (508 messages)
+    at runSmoke (file:///D:/vibe-coding-e/nova-swarm-forum-129-improvements-20260822/scripts/smoke-playtest.mjs:1010:13)

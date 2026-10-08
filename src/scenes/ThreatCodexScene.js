@@ -1,3 +1,5 @@
+import { VEILBORN_INTRO } from '../i18n/mysteryText.js';
+import { acquireMysteryAtlas } from '../entities/mysteries/MysteryAssets.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
@@ -82,7 +84,7 @@ function createArtMask(parent, x, y, width, height, radius = 8) {
   mask.roundRect(x, y, width, height, radius);
   mask.fill({ color: 0xffffff, alpha: 1 });
   // The clipping shape must not flash white while artwork is still loading.
-  mask.renderable = false;
+  mask.includeInBuild = false;
   parent.addChild(mask);
   return mask;
 }
@@ -193,7 +195,7 @@ function makeSignalSeed(id = '') {
 }
 
 function getCodexStatLabels(categoryId) {
-  if (categoryId === 'enemies' || categoryId === 'elites' || categoryId === 'spaceSnakes') {
+  if (categoryId === 'enemies' || categoryId === 'elites' || categoryId === 'spaceSnakes' || categoryId === 'mysteries') {
     return {
       primary: 'ENCOUNTERS',
       secondary: 'DESTROYED',
@@ -358,14 +360,22 @@ export class ThreatCodexScene {
     this.scrollDrag = null;
     this.scrollDragMoveHandler = null;
     this.scrollDragEndHandler = null;
+    this.sessionUnreadIds = new Set();
   }
 
-  init({ preserveScrollDrag = false } = {}) {
+  init({ preserveScrollDrag = false, retainSession = false } = {}) {
     this.cleanup({ preserveScrollDrag });
     this.container.removeChildren();
     this.container.sortableChildren = true;
     this.catalog = getThreatCodexCatalog();
-    this.discoveryState = this.withLivePilotRankDiscovery(clearThreatCodexUnread());
+    if (!retainSession) {
+      const arrivalState = getThreatCodexState();
+      this.sessionUnreadIds = new Set(arrivalState.unreadIds || []);
+      this.discoveryState = this.withLivePilotRankDiscovery(clearThreatCodexUnread());
+      if (this.sessionUnreadIds.size) this.selectNextNew({ fromStart: true, refresh: false });
+    } else {
+      this.discoveryState = this.withLivePilotRankDiscovery(getThreatCodexState());
+    }
     this.completionCounts = getCodexCompletionCounts(this.catalog, this.discoveryState);
     this.renderToken += 1;
     this.animatedNodes = [];
@@ -401,6 +411,9 @@ export class ThreatCodexScene {
     this.wheelHandler = null;
     if (!preserveScrollDrag) this.endScrollDrag();
     this.animatedNodes = [];
+    this.renderToken += 1;
+    for (const lease of this.mysteryArtLeases || []) lease.release();
+    this.mysteryArtLeases = [];
   }
 
   destroy() {
@@ -490,6 +503,26 @@ export class ThreatCodexScene {
     return entries[Math.max(0, Math.min(entries.length - 1, this.entryIndex))] || null;
   }
 
+  isNewEntry(categoryId, entryId) {
+    return this.sessionUnreadIds.has(`${categoryId}:${entryId}`);
+  }
+
+  selectNextNew({ fromStart = false, refresh = true } = {}) {
+    const matches = THREAT_CODEX_CATEGORIES.flatMap((category, categoryIndex) =>
+      this.getEntriesForCategory(category.id)
+        .map((entry, entryIndex) => ({ categoryIndex, entryIndex, id: entry.id, categoryId: category.id }))
+        .filter((item) => this.isNewEntry(item.categoryId, item.id)));
+    if (!matches.length) return false;
+    const current = this.getSelectedEntry();
+    const currentIndex = matches.findIndex((item) => item.categoryIndex === this.categoryIndex && item.id === current?.id);
+    const next = matches[fromStart || currentIndex < 0 ? 0 : (currentIndex + 1) % matches.length];
+    this.categoryIndex = next.categoryIndex;
+    this.entryIndex = next.entryIndex;
+    this.detailScrollOffset = 0;
+    if (refresh) this.refresh();
+    return true;
+  }
+
   getAccent(entry = null, categoryId = this.getCategory().id) {
     return colorValue(entry?.accent ?? entry?.tint, CATEGORY_ACCENTS[categoryId] || AQUA);
   }
@@ -543,7 +576,16 @@ export class ThreatCodexScene {
     });
   }
 
+  async loadEntryTexture(entry, art, token) {
+    if (entry?.category !== 'mysteries') return PIXI.Assets.load(art);
+    const lease = await acquireMysteryAtlas(entry.id);
+    if (token !== this.renderToken) { lease.release(); return null; }
+    (this.mysteryArtLeases ||= []).push(lease);
+    return lease.frames.topLeft;
+  }
+
   getEntryArt(entry = null, categoryId = this.getCategory().id) {
+    if (categoryId === 'mysteries') return this.isDiscovered(entry, categoryId) ? entry.art : null;
     if (categoryId === 'sectors' && AssetManifest.generated.sectorWorlds?.length) {
       const worlds = AssetManifest.generated.sectorWorlds;
       return worlds[Math.floor((Math.max(1, entry?.sectorNumber || 1) - 1) / 5) % worlds.length];
@@ -718,9 +760,10 @@ export class ThreatCodexScene {
   }
 
   createHeader(width, height, compact) {
-    const counts = this.completionCounts;
-    const total = Object.values(counts).reduce((sum, item) => sum + (item.total || 0), 0);
-    const discovered = Object.values(counts).reduce((sum, item) => sum + (item.discovered || 0), 0);
+    const category = this.getCategory();
+    const counts = this.completionCounts[category.id] || { discovered: 0, total: 0 };
+    const total = counts.total;
+    const discovered = counts.discovered;
     const header = new PIXI.Container();
     header.position.set(width * 0.05, compact ? 20 : 26);
     header.zIndex = 8;
@@ -765,7 +808,7 @@ export class ThreatCodexScene {
     meter.fill({ color: AQUA, alpha: 0.86 });
     this.container.addChild(meter);
 
-    const meterLabel = addText(this.container, `${discovered}/${total}`, {
+    const meterLabel = addText(this.container, `${localize(category.label.toUpperCase())}  ${discovered}/${total}`, {
       fontSize: compact ? 19 : 23,
       fontWeight: '900',
       fill: '#ffffff',
@@ -780,6 +823,23 @@ export class ThreatCodexScene {
     signal.circle(meterX + 26, meterY + 21, 15);
     signal.stroke({ color: discovered ? AQUA : MUTED, width: 1, alpha: 0.36 });
     this.container.addChild(signal);
+
+    if (this.sessionUnreadIds.size) {
+      const next = new PIXI.Container();
+      const nextW = Math.min(310, meterW);
+      next.position.set(width - width * 0.05 - nextW, height - (compact ? 54 : 60));
+      next.eventMode = 'static';
+      next.cursor = 'pointer';
+      next.zIndex = 11;
+      next.on('pointerdown', () => this.selectNextNew());
+      const box = new PIXI.Graphics();
+      drawPanel(box, 0, 0, nextW, compact ? 38 : 44, { fill: 0x211808, alpha: 0.94, stroke: GOLD, strokeAlpha: 0.7, radius: 6 });
+      next.addChild(box);
+      addText(next, `${codexUi('nextNew')}  ${this.sessionUnreadIds.size}  ·  N / Y`, {
+        fontSize: compact ? 12 : 14, fontWeight: '900', fill: '#fff1a5'
+      }, nextW / 2, compact ? 19 : 22, { x: 0.5, y: 0.5 });
+      this.container.addChild(next);
+    }
   }
 
   createCategories(width, height, compact, categoryLayout = getCategoryLayout(width, height, compact)) {
@@ -791,6 +851,7 @@ export class ThreatCodexScene {
       const rowIndex = categoryLayout.twoRows ? Math.floor(index / categoryLayout.columns) : 0;
       const columnIndex = categoryLayout.twoRows ? index % categoryLayout.columns : index;
       const selected = index === this.categoryIndex;
+      const newCount = [...this.sessionUnreadIds].filter((id) => id.startsWith(`${category.id}:`)).length;
       const counts = this.completionCounts[category.id] || { discovered: 0, total: 0 };
       const accent = CATEGORY_ACCENTS[category.id] || AQUA;
       const button = new PIXI.Container();
@@ -821,6 +882,10 @@ export class ThreatCodexScene {
       bg.rect(0, buttonH - 7, buttonWidth - 7, selected ? 3 : 1);
       bg.fill({ color: accent, alpha: selected ? 0.95 : 0.35 });
       button.addChild(bg);
+      if (newCount) {
+        bg.circle(buttonWidth - 17, 11, 4);
+        bg.fill({ color: GOLD, alpha: 0.96 });
+      }
 
       const labelText = addText(button, localize(category.label.toUpperCase()), {
         fontSize: categoryLayout.twoRows ? (height < 740 ? 14 : 16) : compact ? 15 : 17,
@@ -948,33 +1013,55 @@ export class ThreatCodexScene {
       this.drawEntryThumb(row, entry, category.id, 12, 8, rowH - 24, accent, seed, discovered);
 
       const label = discovered ? entry.name.toUpperCase() : localize('UNKNOWN SIGNAL');
-      addText(row, label, {
-        fontSize: compact ? 17 : 19,
+      const labelW = listW - rowH - 65;
+      const labelFontSize = label.length > 30 ? (compact ? 14 : 16) : (compact ? 17 : 19);
+      const maxLabelLength = Math.max(22, Math.floor(labelW / (labelFontSize * 0.57)) * 2 - 2);
+      const labelNode = addText(row, shortSignal(label, maxLabelLength), {
+        fontSize: labelFontSize,
         fontWeight: '900',
         fill: discovered ? '#f3fdff' : '#8fa6b8',
         wordWrap: true,
         breakWords: true,
-        wordWrapWidth: listW - 118,
-        lineHeight: compact ? 18 : 20
+        wordWrapWidth: labelW,
+        lineHeight: labelFontSize + 1
       }, rowH - 2, compact ? 9 : 10);
+      fitTextHeight(labelNode, rowH - 20, 0.78);
 
       const role = discovered ? String(entry.role || entry.rarity || '').toUpperCase() : String(category.label || '').toUpperCase();
-      addText(row, role, {
-        fontSize: compact ? 15 : 16,
-        fontWeight: '800',
-        fill: discovered ? colorCss(accent) : '#53697a',
-        wordWrap: true,
-        wordWrapWidth: listW - 132
-      }, rowH - 1, compact ? 29 : 34);
+      const roleY = labelNode.y + labelNode.height + 2;
+      let roleNode = null;
+      if (roleY + (compact ? 14 : 16) < rowH - 10) {
+        roleNode = addText(row, shortSignal(role, Math.max(12, Math.floor(labelW / ((compact ? 14 : 15) * 0.55)))), {
+          fontSize: compact ? 14 : 15,
+          fontWeight: '800',
+          fill: discovered ? colorCss(accent) : '#53697a',
+          wordWrap: false
+        }, rowH - 1, roleY);
+      }
+      if (this.isNewEntry(category.id, entry.id)) {
+        const newMark = new PIXI.Graphics();
+        newMark.circle(listW - 18, 12, 4);
+        newMark.fill({ color: GOLD, alpha: 0.95 });
+        row.addChild(newMark);
+      }
 
       const stateItem = getStateItem(this.discoveryState, category.id, entry.id);
       const labels = getCodexStatLabels(category.id);
       const countText = getCodexRowCountText(entry, stateItem, labels, discovered);
-      addText(row, countText, {
+      const countNode = addText(row, countText, {
         fontSize: compact ? 15 : 17,
         fontWeight: '900',
         fill: discovered ? '#ffffff' : '#4e6374'
       }, listW - 14, (rowH - 8) / 2, { x: 1, y: 0.5 });
+
+      this.lastEntryRowsDebug.push({
+        id: entry.id,
+        labelBottom: row.y + labelNode.y + labelNode.height,
+        roleTop: roleNode ? row.y + roleNode.y : null,
+        labelRight: row.x + labelNode.x + labelNode.width,
+        countLeft: row.x + countNode.x - countNode.width,
+        rowBottom: row.y + rowH - 8
+      });
 
       this.container.addChild(row);
     }
@@ -1042,7 +1129,7 @@ export class ThreatCodexScene {
     const art = this.getEntryArt(entry, categoryId);
     const token = this.renderToken;
     if (art) {
-      PIXI.Assets.load(art)
+      this.loadEntryTexture(entry, art, token)
         .then((texture) => {
           if (token !== this.renderToken || !texture || thumb.destroyed) return;
           const sprite = new PIXI.Sprite(texture);
@@ -1179,8 +1266,12 @@ export class ThreatCodexScene {
     const chipCount = sideBySide ? 1 : 3;
     const chipW = Math.max(82, Math.min(178, (textW - chipGap * (chipCount - 1)) / chipCount));
     if (discovered) {
+      const signalClass = String(entry.signalClass || '');
+      const publicClass = signalClass.includes('_') || signalClass.startsWith('rare-chaos-')
+        ? category.label
+        : signalClass || category.label;
       const chips = [
-        entry.signalClass || category.label,
+        publicClass,
         entry.rarity || 'Signal',
         entry.unlockLevel ? `${localize('LEVEL')} ${entry.unlockLevel}` : entry.role || category.label
       ];
@@ -1204,13 +1295,13 @@ export class ThreatCodexScene {
         : chipY + (compact ? 38 : 44);
     const bodyText = discovered
       ? (storyBody ? formatCodexStoryParagraphs(localize(entry.description)) : localize(entry.description))
-      : codexUi('lockedDescription');
+      : category.id === 'mysteries' ? localize(VEILBORN_INTRO) : codexUi('lockedDescription');
     const tipY = dossier ? panelH - 92 : panelH - (epicBody ? (veryShortEpic ? 90 : shortPanel ? 96 : compact ? 104 : 116) : compact ? 116 : 138);
     const bodyMaxHeight = Math.max(54, tipY - bodyY - (epicBody ? 14 : 24));
-    const bodyFontSize = dossier ? (epicBody && width >= 1500 ? 16 : 15) : epicBody
+    const bodyFontSize = dossier ? (width >= 1500 ? 18 : 16) : epicBody
       ? (shortPanel ? 14 : compact ? 15 : 16)
       : (shortPanel ? 13 : compact ? 13 : 17);
-    const bodyLineHeight = dossier ? (epicBody && width >= 1500 ? 21 : 19) : epicBody
+    const bodyLineHeight = dossier ? (width >= 1500 ? 24 : 21) : epicBody
       ? (shortPanel ? 18 : compact ? 19 : 21)
       : (shortPanel ? 16 : compact ? 17 : 22);
     if (storyBody || dossier) {
@@ -1235,7 +1326,8 @@ export class ThreatCodexScene {
       breakWords: true,
       wordWrapWidth: textW,
       lineHeight: bodyLineHeight,
-      leading: storyBody ? Math.max(4, Math.round(bodyLineHeight * 0.34)) : 0
+      leading: storyBody ? Math.max(4, Math.round(bodyLineHeight * 0.34)) : 0,
+      padding: 4
     }, textX, bodyY);
     if (storyBody || dossier) {
       const bodyContentHeight = bodyNode.height;
@@ -1260,7 +1352,8 @@ export class ThreatCodexScene {
         scrollable: maxOffset > 1,
         mode: epicBody ? 'epic' : 'story',
         fontSize: bodyFontSize,
-        lineHeight: bodyLineHeight
+        lineHeight: bodyLineHeight,
+        padding: Number(bodyNode.style?.padding) || 0
       };
 
       if (maxOffset > 1) {
@@ -1299,6 +1392,33 @@ export class ThreatCodexScene {
       fitTextHeight(bodyNode, bodyMaxHeight, shortPanel ? 0.72 : 0.78);
     }
 
+    const statLabels = getCodexStatLabels(category.id);
+    const showIntelCards = dossier && discovered && stateItem && statLabels.secondary &&
+      bodyNode.height + 114 < bodyMaxHeight;
+    if (showIntelCards) {
+      const cardY = bodyY + bodyMaxHeight - 92;
+      const cardGap = 10;
+      const cardW = (textW - cardGap) / 2;
+      [
+        [statLabels.primary, stateItem.timesSeen ?? 0],
+        [statLabels.secondary, stateItem.timesDefeated ?? 0]
+      ].forEach(([label, value], index) => {
+        const cardX = textX + index * (cardW + cardGap);
+        const card = new PIXI.Graphics();
+        drawPanel(card, cardX, cardY, cardW, 74, {
+          fill: 0x071b27, alpha: 0.94, stroke: accent, strokeAlpha: 0.46, radius: 8
+        });
+        card.rect(cardX + 11, cardY + 11, 3, 51).fill({ color: accent, alpha: 0.84 });
+        panel.addChild(card);
+        addText(panel, localize(label), {
+          fontSize: 13, fontWeight: '900', fill: '#a7d7e0'
+        }, cardX + 22, cardY + 9);
+        addText(panel, String(value), {
+          fontSize: 31, fontWeight: '900', fill: '#ffffff'
+        }, cardX + 22, cardY + 28);
+      });
+    }
+
     this.lastDetailPanelDebug = {
       x: panelX,
       y: panelY,
@@ -1317,7 +1437,10 @@ export class ThreatCodexScene {
       radius: 8
     });
     panel.addChild(tipBox);
-    const tipText = discovered
+    const counterplayKnown = discovered && (category.id !== 'mysteries' || (stateItem?.timesDefeated || 0) > 0);
+    const tipText = discovered && !counterplayKnown
+      ? localize('Defeat this Veilborn to unlock counterplay.')
+      : counterplayKnown
       ? `${localize('TIP')}: ${localize(entry.tip)}`
       : `${localize('TIP')}: ${codexUi('lockedTip')}`;
     addText(panel, tipText, {
@@ -1330,7 +1453,6 @@ export class ThreatCodexScene {
       lineHeight: compact ? 15 : 19
     }, 32, tipY);
 
-    const statLabels = getCodexStatLabels(category.id);
     const primaryValue = discovered ? (stateItem?.timesSeen ?? 0) : '--';
     const secondaryValue = discovered ? (stateItem?.timesDefeated ?? 0) : '--';
     const statText = statLabels.rowCount === 'reference'
@@ -1338,14 +1460,17 @@ export class ThreatCodexScene {
       : statLabels.secondary
       ? `${localize(statLabels.primary)}: ${primaryValue}    ${localize(statLabels.secondary)}: ${secondaryValue}`
       : `${localize(statLabels.primary)}: ${primaryValue}`;
-    addText(panel, statText, {
-      fontSize: compact ? 12 : 15,
-      fontWeight: '900',
-      fill: '#9cfbff'
-    }, 24, panelH - 42);
+    if (!showIntelCards) {
+      addText(panel, statText, {
+        fontSize: compact ? 12 : 15,
+        fontWeight: '900',
+        fill: '#9cfbff'
+      }, 24, panelH - 42);
+    }
   }
 
   drawDetailArt(parent, entry, discovered, accent, x, y, width, height, token) {
+    this.lastDetailArtState = 'loading';
     const frame = new PIXI.Graphics();
     drawPanel(frame, x, y, width, height, {
       fill: 0x020a12,
@@ -1373,14 +1498,26 @@ export class ThreatCodexScene {
     const art = this.getEntryArt(entry, entry?.category || this.getCategory().id);
     if (!discovered) drawUnknownSignal(parent, x + width * 0.15, y + height * 0.08, width * 0.7, height * 0.75, accent, seed, 0.58);
     if (!art) {
+      this.lastDetailArtState = 'fallback';
       drawUnknownSignal(parent, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, discovered ? 0.86 : 1);
       return;
     }
 
     const shipDossier = ['enemies', 'elites', 'bosses'].includes(entry?.category || this.getCategory().id);
-    Promise.all([PIXI.Assets.load(art), shipDossier ? PIXI.Assets.load(AssetManifest.generated.codexBackdrop) : null])
-      .then(([texture, roomTexture]) => {
+    const loadingMark = new PIXI.Graphics();
+    const markX = x + width * 0.5, markY = y + height * 0.5;
+    const markR = Math.min(width, height) * 0.12;
+    loadingMark.circle(markX, markY, markR * 1.55).stroke({ color: accent, width: 1, alpha: 0.27 });
+    loadingMark.circle(markX, markY, markR).stroke({ color: accent, width: 2, alpha: 0.58 });
+    loadingMark.moveTo(markX - markR * 1.8, markY).lineTo(markX - markR * 0.5, markY);
+    loadingMark.moveTo(markX + markR * 0.5, markY).lineTo(markX + markR * 1.8, markY);
+    loadingMark.stroke({ color: GOLD, width: 1, alpha: 0.42 });
+    loadingMark.mask = artMask;
+    parent.addChild(loadingMark);
+    const renderArtwork = ([texture, roomTexture]) => {
         if (token !== this.renderToken || !texture || !parent || parent.destroyed) return;
+        loadingMark.destroy();
+        this.lastDetailArtState = 'ready';
         if (roomTexture) {
           const room = new PIXI.Sprite(roomTexture);
           room.anchor.set(.5);
@@ -1438,11 +1575,21 @@ export class ThreatCodexScene {
             strokeThickness: 3
           }, x + width * 0.5 + 14, y + height * 0.5, { x: 0.5, y: 0.5 });
         }
-      })
-      .catch(() => {
+    };
+    const cachedArt = entry?.category === 'mysteries' ? null : PIXI.Assets.get(art);
+    const cachedRoom = shipDossier ? PIXI.Assets.get(AssetManifest.generated.codexBackdrop) : null;
+    if (cachedArt) {
+      renderArtwork([cachedArt, cachedRoom]);
+    } else {
+      Promise.all([this.loadEntryTexture(entry, art, token), shipDossier ? PIXI.Assets.load(AssetManifest.generated.codexBackdrop) : null])
+        .then(renderArtwork)
+        .catch(() => {
         if (token !== this.renderToken || !parent || parent.destroyed) return;
+        loadingMark.destroy();
+        this.lastDetailArtState = 'fallback';
         drawUnknownSignal(parent, x + width * 0.08, y + height * 0.05, width * 0.84, height * 0.82, accent, seed, 0.76);
-      });
+        });
+    }
   }
 
   createBackButton(width, height, compact) {
@@ -1487,7 +1634,7 @@ export class ThreatCodexScene {
     this.cleanup({ preserveScrollDrag });
     const entries = this.getEntriesForCategory();
     this.entryIndex = Math.max(0, Math.min(this.entryIndex, Math.max(0, entries.length - 1)));
-    this.init({ preserveScrollDrag });
+    this.init({ preserveScrollDrag, retainSession: true });
   }
 
   moveCategory(direction) {
@@ -1653,6 +1800,9 @@ export class ThreatCodexScene {
     } else if (event.key === 'End') {
       event.preventDefault();
       this.moveEntryTo(this.getEntriesForCategory().length - 1);
+    } else if (event.key.toLowerCase() === 'n') {
+      event.preventDefault();
+      this.selectNextNew();
     }
   }
 
@@ -1673,6 +1823,7 @@ export class ThreatCodexScene {
       this.moveCategory(1);
       return;
     }
+    if (nav.pressed.y && this.selectNextNew()) return;
     if (nav.pressed.left) this.moveCategory(-1);
     if (nav.pressed.right) this.moveCategory(1);
     if (nav.pressed.up) this.moveEntry(-1);

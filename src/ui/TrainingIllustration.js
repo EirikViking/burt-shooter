@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite } from 'pixi.js';
+import { Assets, Container, Graphics, Sprite } from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 
 // Bounded, silent teaching vignettes. They never touch simulation or random state.
@@ -8,6 +8,15 @@ export class TrainingIllustration extends Container {
     this.eventMode = 'none'; this.interactiveChildren = false;
     this.row = row; this.w = width; this.h = height; this.time = 0;
     this.ink = new Graphics(); this.addChild(this.ink);
+    if(['32','33'].includes(row.code)) {
+      const name=row.code==='32'?'prison-transport':'rival-core-hull';
+      Assets.load(`/art/first-light/${name}.webp`).then(texture=>{
+        if(this.destroyed)return;
+        this.encounterShip=new Sprite(texture);this.encounterShip.anchor.set(.5);
+        this.addChild(this.encounterShip);this.encounterParts=new Graphics();this.addChild(this.encounterParts);
+        this.update(0,true);
+      }).catch(()=>{});
+    }
     const texture = GameAssets.playerTexture || GameAssets.rankShipTextures?.[0];
     if (GameAssets.isValidTexture(texture)) {
       this.ship = new Sprite(texture); this.ship.anchor.set(.5);
@@ -57,6 +66,21 @@ export class TrainingIllustration extends Container {
         if (phase) g.circle(sx,sy,radius+5).stroke({color:0xd6faff,width:2,alpha:.25+.2*Math.sin(t*3)});
       }
       if (!this.ship) g.poly([sx,sy-18,sx+12,sy+13,sx,sy+8,sx-12,sy+13]).fill({color:0xdffaff,alpha:.9});
+    } else if(['32','33'].includes(code)) {
+      const hull=this.encounterShip,parts=this.encounterParts;
+      if(hull&&parts){
+        const convoy=code==='32';const bw=Math.min(w*.76,h*(convoy?2.5:1.3));
+        const bh=bw*hull.texture.height/hull.texture.width;
+        hull.position.set(w*.5,h*.46);hull.width=bw;hull.height=bh;
+        parts.clear();const stage=reduced?0:Math.floor(t)%6;
+        for(const side of [-1,1]){
+          const x=w*.5+side*bw*(convoy?.249:.164),y=h*.46+bh*(convoy?.12:-.08);
+          const destroyed=stage>=(side<0?2:4);
+          if(!destroyed)parts.roundRect(x-9,y-7,18,18,3).fill(c);
+          else if(convoy)parts.poly([x,y+16,x+7,y+30,x,y+26,x-7,y+30]).fill(0xbfffea);
+        }
+        if(!convoy&&stage>=4)parts.roundRect(w*.5-7,h*.46-bh*.12-12,14,24,4).fill(0xffda8a);
+      }
     } else {
       // A moving route connects larger holographic nodes for strategy/intel pages.
       for (let j=0;j<4;j++) {

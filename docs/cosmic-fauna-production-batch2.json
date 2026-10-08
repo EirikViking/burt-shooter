@@ -1,0 +1,118 @@
+{
+  "created": "2026-10-02T14:00:38.711Z",
+  "requestedTotal": 42,
+  "batch": "2: anatomy expansion",
+  "audioBatchId": "batch2",
+  "audioCreditCeiling": 1800,
+  "commonArtPrompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. ",
+  "definitions": [
+    {
+      "id": "glassjaw_leviathan",
+      "anatomy": "leviathan",
+      "period": 7.2,
+      "amplitude": 0.034,
+      "width": 1.1,
+      "lane": 0.39,
+      "duration": 34,
+      "brief": "An immense elongated deep-space predator with a colossal translucent smoked-glass lower jaw occupying the left third, black obsidian upper skull and six tiny pearl eyes. Internal violet organ chambers visible through the transparent chin, dark fleshy throat; mouth partly open, curved ivory baleen teeth. Heavy eel-whale torso sweeps right to a broad forked fluke, with two small side fins and spinal gill slits. Jaw, dark back and violet chambers dominate the silhouette. Beautiful ancient biological monster, no mechanical panels.",
+      "seconds": 4.7,
+      "audio": "An immense deep-space leviathan slowly opens its crystalline jaw. A very low rounded living throat groan, rough breath moving through a vast hollow mouth, resonant glass cartilage creaks and a faint trembling violet harmonic fading into silence. Huge, beautiful, predatory, tactile cinematic creature Foley. No music, speech, alarms, weapons or sudden loud impact."
+    },
+    {
+      "id": "ember_cuttle",
+      "anatomy": "cuttle",
+      "period": 4.8,
+      "amplitude": 0.045,
+      "width": 1.03,
+      "lane": 0.43,
+      "duration": 29,
+      "brief": "An enormous muscular alien cuttlefish with a thick tapered copper-red mantle extending to the right, scalloped translucent burnt-orange ribbon fins running its full length. At left a blunt strong head with two ember eye sockets and eight thick separate curled arms reaching forward, two longer feelers recurving underneath. Skin with subtle rippling chromatophore mottling, black volcanic pores and thin warm veins, glowing only inside folds. Tactile wet copper flesh rather than metal; dynamic elegant aquatic anatomy.",
+      "seconds": 4.1,
+      "audio": "A giant copper-skinned cuttlefish contracts its mantle. Warm low hollow gulp, rolling wet muscular folds, a rapid soft flutter of ribbon fins, crackling organic skin pores and one gravelly breathing exhale. Rich close organic texture, formidable and graceful, restrained space creature Foley. No music, voices, fire explosion, gunshot or alarm."
+    },
+    {
+      "id": "crown_nautilus",
+      "anatomy": "nautilus",
+      "period": 6.8,
+      "amplitude": 0.028,
+      "width": 0.86,
+      "lane": 0.4,
+      "duration": 33,
+      "brief": "An enormous ancient alien nautilus: one massive porcelain spiral shell at the center-right with deep pearlescent spiral grooves and a crown of curved ivory spines around its upper rim. At left, fleshy indigo head and two luminous gold eyes, a broad fan of distinct thick tentacles curling left and below the shell. Small translucent blue jet mantle visible below. Worn mineral shell, delicate iridescence, dark organic tissue; a stately living ocean monarch. Shell must be round and visibly rigid with clearly separated waving tentacles to the left.",
+      "seconds": 4.6,
+      "audio": "A colossal crowned nautilus exhales through its spiral chamber. Deep conch-like animal resonance with uneven breath, slow dry mineral shell creaks, soft suction clicks from fleshy feelers and a low fluttering jet sigh. Ancient stately unsettling living creature, cinematic organic Foley. No tune, music, speech, horns, weapons or alarm."
+    },
+    {
+      "id": "mourning_swan",
+      "anatomy": "swan",
+      "period": 7.6,
+      "amplitude": 0.04,
+      "width": 0.91,
+      "lane": 0.42,
+      "duration": 32,
+      "brief": "A haunting giant aquatic alien with a long pale S-curved neck reaching LEFT to a narrow uncanny eyeless head, a compact charcoal chest and two very tall folded silk sail fins rising behind it. Translucent ivory membranes with dark branching veins and ragged trailing fringes; two narrow pelvic fins and an elegant long tail trailing right. Not a literal Earth bird: no feathers, feet or beak, clearly aquatic invented biology. Swanlike silhouette, dignified and terrifying, pale ghost flesh against deep violet folds.",
+      "seconds": 4.8,
+      "audio": "A vast pale alien with a long curved throat sings one breathy mournful call. Low resonant inhale rising into a fragile hoarse overtone, soft silk membranes folding, a distant tremulous chest murmur and a long gentle exhale. Majestic, eerie, physically alive, cinematic creature Foley. No human voice, speech, music, melody, alarm or shriek."
+    },
+    {
+      "id": "abyssal_ribbon",
+      "anatomy": "ribbon",
+      "period": 5.2,
+      "amplitude": 0.065,
+      "width": 1.17,
+      "lane": 0.44,
+      "duration": 30,
+      "brief": "An impossibly long thin alien ribbon fish undulating in one broad shallow S curve horizontally, small armored wedge head at left, long tapering body to right. One continuous indigo and petrol-blue translucent dorsal veil flows above and below the entire length like living silk, a row of tiny dull gold internal organs and fine backward sensory whiskers at the head. Body 8 times as long as deep; the very large continuous flowing veil is the signature, no separate wing pair. Entire tail fits within transparent margin.",
+      "seconds": 4.3,
+      "audio": "An enormous abyssal ribbon creature undulates past. Continuous soft velvet friction and watery silk swishes moving in a slow wave, a deep narrow breathy moan, sparse fine sensory-whisker ticks and a final airy tail flick. Elegant, eerie organic creature Foley with low body and detailed quiet surface. No music, speech, UI chirps, weapons or alarm."
+    },
+    {
+      "id": "bloom_kraken",
+      "anatomy": "kraken",
+      "period": 5.5,
+      "amplitude": 0.054,
+      "width": 1.04,
+      "lane": 0.42,
+      "duration": 31,
+      "brief": "A vast floral cephalopod with a heavy plum-colored mantle on the RIGHT opening into a sculptural fleshy coral-pink petal crown facing LEFT. From the crown extend EIGHT massive individually visible curling muscular arms, long S curves spreading left, upward and downward, with pearl suckers and translucent fin edges. A small ominous dark central mouth among the petals, glints of pale amber organs. Not a flower in a pot, not a jellyfish; real weighty muscular alien anatomy with an unmistakable eight-arm spread. Keep gaps between arms.",
+      "seconds": 4.5,
+      "audio": "An immense petaled kraken slowly unfurls. Deep moist mantle contraction, heavy smooth tentacles separating with soft suction pops, fleshy petal friction, a restrained hollow rumble from its central throat and a delicate fading wet breath. Beautiful and threatening detailed cinematic creature Foley. No music, speech, gore, weapons, scream or alarm."
+    },
+    {
+      "id": "polar_seahorse",
+      "anatomy": "seahorse",
+      "period": 6.1,
+      "amplitude": 0.033,
+      "width": 0.79,
+      "lane": 0.45,
+      "duration": 32,
+      "brief": "A huge icy alien seahorse in a horizontal gliding pose, long prismatic ridged snout at LEFT, arched thick neck, a bony pearl-white torso and a large elegant tightly curling tail to the RIGHT and below. Six feathery branching translucent gill fans spread from its back like frost ferns, a jagged crown along the head. Turquoise internal veins, smoky crystalline shell plates, soft blue membrane, gentle amber eye. High dimensional biological animal with substantial body volume, not an ice sculpture or ornament.",
+      "seconds": 4.1,
+      "audio": "An immense polar seahorse breathes through feathery gills. Soft frosty chuff over a rounded low chest hum, tiny irregular crystalline cartilage clicks, delicate fluttering gill fans and a curling tail moving with a muted leathery creak. Beautiful cold alien life, intimate cinematic organic Foley. No music, speech, wind storm, weapons or alarm."
+    },
+    {
+      "id": "velvet_angel",
+      "anatomy": "angel",
+      "period": 6.7,
+      "amplitude": 0.06,
+      "width": 1.02,
+      "lane": 0.41,
+      "duration": 33,
+      "brief": "An enormous indigo deep-sea angel organism, small luminous pearly torpedo body pointed LEFT surrounded by SIX broad webbed muscular arms forming an asymmetric flowing cloak. Deep velvet-purple skin, scalloped transparent lavender web margins, long tips curling gently right. A tiny terrifying circle of dark sensory pits on the head, amber pearl organs nestled in the center. The loose spread webbed arms dominate, visibly different from ray wings or jellyfish strands; luxurious soft dimensional biological folds and dark cavities.",
+      "seconds": 4.6,
+      "audio": "A huge velvet-winged alien opens six soft webbed arms. A deep hushed chest purr beneath layered fabriclike organic membrane folds, a few delicate wet clicks, warm irregular airy throat tones and a soft long closing sigh. Exquisite ominous living animal, rich cinematic Foley. No music, voice, choir, melody, weapons or alarm."
+    },
+    {
+      "id": "cinderback_turtle",
+      "anatomy": "turtle",
+      "period": 7.1,
+      "amplitude": 0.037,
+      "width": 0.96,
+      "lane": 0.43,
+      "duration": 34,
+      "brief": "An ancient enormous alien turtle swimming LEFT, massive domed charcoal volcanic shell with broad overlapping basalt-like biological plates, fine subdued orange geothermal seams deep in the cracks. A strong blunt reptilian head with curved ivory tusk ridges, FOUR clearly separated muscular leathery paddle flippers, thick tapering tail to right. Near flippers splayed below, far flippers visible above, shell mostly rigid. Sculptural heavy volume, charcoal skin, copper rim light, not a lava rock with eyes, no active fire or smoke.",
+      "seconds": 4.8,
+      "audio": "An ancient giant volcanic-shelled turtle swims past. Deep slow rumbling living breath, huge dry shell plates shifting with stony creaks, four broad leathery flippers pressing softly through space and a subdued throat chuff. Heavy serene and intimidating animal, detailed cinematic creature Foley. No explosion, fire roar, music, speech, weapons or alarm."
+    }
+  ]
+}

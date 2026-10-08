@@ -1,0 +1,9 @@
+[quote=Tyrian Mollusk]from the first five[/quote]
+You are right that this is ambiguous when the Hangar puts initially available ships first. Quasar Fan is initially available but is the seventh hull in the underlying catalog. Small Wings currently counts Nova Sparrow, Comet Courier, Pixel Needle, Mint Skater and Crimson Bite. Its detail panel lists those five hulls and shows which have counted. I have verified that mapping; I have not changed eligibility or granted retroactive achievement credit in this pass.
+
+My previous reply also contradicted itself by promising a Quasar eligibility test after explaining its exclusion. Sorry for the confusion. Same Hull continues to accept distinct overlapping custom triples; reordering one triple is still the same combination.
+
+[quote=Tyrian Mollusk]the Career Signal box on the ship hangar still blinks[/quote]
+The current test build includes the mission-only attention fix, and backing out of the Onslaught loadout picker no longer leaves Hangar Start locked. These changes are not on the public/default branch yet.
+
+I have kept your Quasar lane-coverage criticism open. A wider-looking shot is not useful if its lanes keep missing practical targets; I have not claimed that an art change or this convoy fix solves that balance issue.

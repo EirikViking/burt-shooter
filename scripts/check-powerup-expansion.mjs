@@ -16,7 +16,8 @@ const sfx = new Set();
 const localizedFields = ['duration', 'effectDescription', 'read', 'when', 'tip', 'pickupMessage'];
 const locales = ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja'];
 
-assert.equal(SPECTACLE_EXPANSION_POWERUP_TYPES.length, 20, 'the spectacle expansion must add exactly 20 powerups');
+assert.equal(SPECTACLE_EXPANSION_POWERUP_TYPES.length, 21, 'retain the twenty spectacle pickups plus Orbit Breaker');
+assert(SPECTACLE_EXPANSION_POWERUP_TYPES.includes('orbit_breaker'));
 
 for (const type of SPECTACLE_EXPANSION_POWERUP_TYPES) {
   const meta = POWERUP_META[type];
@@ -26,7 +27,7 @@ for (const type of SPECTACLE_EXPANSION_POWERUP_TYPES) {
   const signature = JSON.stringify(meta.effect);
   assert.ok(!signatures.has(signature), `${type} duplicates another expansion mechanic signature`);
   signatures.add(signature);
-  assert.ok(Object.keys(meta.effect || {}).length >= 3, `${type} needs a multi-part mechanic identity`);
+  assert.ok(Object.keys(meta.effect || {}).length >= (type==='orbit_breaker'?2:3), `${type} needs a multi-part mechanic identity`);
   assert.ok(meta.effectDescription && meta.read && meta.when && meta.tip, `${type} needs complete Codex writing`);
   assert.match(managerSource, new RegExp(`['"]${type}['"]`), `${type} is not present in a random-drop pool`);
   sfx.add(meta.sfx);

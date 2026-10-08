@@ -14,7 +14,8 @@ const viewports = [
   { width: 1920, height: 1080, name: '1920x1080' },
   { width: 1600, height: 900, name: '1600x900' },
   { width: 1366, height: 768, name: '1366x768' },
-  { width: 1280, height: 720, name: '1280x720' }
+  { width: 1280, height: 720, name: '1280x720' },
+  { width: 1280, height: 720, name: '1280x720-150pct', deviceScaleFactor: 1.5 }
 ];
 const categoryShots = [
   { categoryId: 'enemies', entryId: 'rare_chaos_visitor_11', label: 'enemies-long-chaos-name' },
@@ -192,8 +193,10 @@ async function inspectBounds(page) {
       category: scene?.getCategory?.()?.id,
       entryCount: scene?.getEntriesForCategory?.()?.length || 0,
       entryScroll: scene?.lastEntryListDebug || null,
+      entryRows: scene?.lastEntryRowsDebug || [],
       detailScroll: scene?.lastDetailBodyDebug || null,
       detailPanel: scene?.lastDetailPanelDebug || null,
+      detailArtState: scene?.lastDetailArtState || null,
       textCount: texts.length,
       outOfBounds
     };
@@ -220,6 +223,7 @@ function isBossDetailReadable(snapshot, viewport, expectedMode = 'epic') {
       snapshot.detailScroll.mode === 'story' &&
       Number(snapshot.detailScroll.fontSize || 0) >= 13 &&
       Number(snapshot.detailScroll.lineHeight || 0) >= 16 &&
+      Number(snapshot.detailScroll.padding || 0) >= 4 &&
       Number(snapshot.detailScroll.height || 0) > 80;
   }
   const minFontSize = viewport.width >= 1500 ? 16 : 14;
@@ -228,6 +232,7 @@ function isBossDetailReadable(snapshot, viewport, expectedMode = 'epic') {
     snapshot.detailScroll.mode === 'epic' &&
     Number(snapshot.detailScroll.fontSize || 0) >= minFontSize &&
     Number(snapshot.detailScroll.lineHeight || 0) >= minLineHeight &&
+    Number(snapshot.detailScroll.padding || 0) >= 4 &&
     Number(snapshot.detailScroll.width || 0) >= viewport.width * 0.4 &&
     Number(snapshot.detailScroll.height || 0) >= viewport.height * 0.18;
 }
@@ -284,7 +289,10 @@ try {
   const reports = [];
   const screenshots = [];
   for (const viewport of viewports) {
-    const page = await browser.newPage({ viewport });
+    const page = await browser.newPage({
+      viewport: { width: viewport.width, height: viewport.height },
+      deviceScaleFactor: viewport.deviceScaleFactor || 1
+    });
     page.on('pageerror', (error) => pageErrors.push(error.message));
     page.on('console', (message) => {
       if (message.type() === 'error') consoleErrors.push(message.text());
@@ -292,6 +300,7 @@ try {
     await openCodex(page);
     for (const shot of categoryShots) {
       await selectCategory(page, shot);
+      await page.waitForFunction(() => window.__game?.scenes?.threatCodex?.lastDetailArtState !== 'loading', null, { timeout: 10000 });
       const snapshot = await inspectBounds(page);
       const screenshotPath = path.join(outputDir, `codex-after-${viewport.name}-${shot.label}.png`);
       await page.screenshot({ path: screenshotPath, fullPage: true });
@@ -320,6 +329,10 @@ try {
         (!snapshot.detailScroll.scrollable || Number(scrolledSnapshot?.detailScroll?.offset || 0) > Number(snapshot.detailScroll.offset || 0));
       const expectedBossMode = shot.entryId === 'nova_boss_01' ? 'story' : 'epic';
       const bossReadabilityOk = !shot.label.startsWith('bosses-') || isBossDetailReadable(snapshot, viewport, expectedBossMode);
+      const entryRowsOk = snapshot.entryRows.every((row) =>
+        row.labelBottom <= row.rowBottom + 1 &&
+        row.labelRight <= row.countLeft - 4 &&
+        (row.roleTop == null || row.roleTop >= row.labelBottom + 1));
       reports.push({
         viewport,
         categoryId: shot.categoryId,
@@ -334,9 +347,26 @@ try {
           snapshot.textCount > 20 &&
           detailScrollOk &&
           bossReadabilityOk &&
+          entryRowsOk &&
+          snapshot.detailArtState === 'ready' &&
           snapshot.outOfBounds.length === 0
       });
     }
+    const newNavigation = await page.evaluate(() => {
+      const scene = window.__game?.scenes?.threatCodex;
+      const category = scene.getCategory();
+      const entries = scene.getEntriesForCategory(category.id).slice(0, 2);
+      if (entries.length < 2) return { ok: false, reason: 'too few entries' };
+      scene.sessionUnreadIds = new Set(entries.map((entry) => `${category.id}:${entry.id}`));
+      scene.selectNextNew({ fromStart: true });
+      const first = scene.getSelectedEntry()?.id;
+      scene.selectNextNew();
+      const second = scene.getSelectedEntry()?.id;
+      scene.refresh();
+      return { ok: first === entries[0].id && second === entries[1].id &&
+        scene.getSelectedEntry()?.id === second && scene.sessionUnreadIds.size === 2, first, second };
+    });
+    reports.push({ viewport, label: 'new-signal navigation', ...newNavigation });
     await page.close();
   }
   const contactSheet = await makeContactSheet(browser, screenshots);

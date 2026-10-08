@@ -1,0 +1,62 @@
+{
+  "id": 29,
+  "name": "Railbreaker",
+  "architecture": "railbreaker",
+  "baselineDesign": [
+    "Railbreaker",
+    2.5,
+    1.1,
+    0.8,
+    1.2,
+    "railbreaker",
+    [
+      [
+        0.23,
+        0.27,
+        -1.46,
+        0.17
+      ],
+      [
+        0.8,
+        -0.31,
+        -1.56,
+        0.2
+      ],
+      [
+        1.3,
+        -0.59,
+        -1.33,
+        0.06
+      ],
+      [
+        1.4,
+        -0.98,
+        -1.15,
+        0.022
+      ]
+    ]
+  ],
+  "palette": [
+    "601c1b",
+    "cd4631",
+    "ff3021"
+  ],
+  "textureSize": 1536,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false,
+  "bytes": 22238712,
+  "triangles": 206562,
+  "materials": [
+    "Graphite structural composite",
+    "Off-white aerospace polyurethane",
+    "Brushed titanium fittings",
+    "Seals and cabin upholstery",
+    "Dim ion throat and instrument phosphor",
+    "Laminated cockpit glazing",
+    "Cobalt blue painted alloy",
+    "Sooted nozzle liner",
+    "Heat-oxidised exhaust alloy"
+  ],
+  "images": 5,
+  "repaired": 0
+}

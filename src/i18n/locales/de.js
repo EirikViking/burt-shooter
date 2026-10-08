@@ -1,3 +1,10 @@
+import { getGameOverQualitySourceText } from '../gameOverQualityText.js';
+import { getFirstLightSourceText } from '../firstLightText.js';
+import { getOnslaughtText } from '../onslaughtText.js';
+import { getAudioSettingsHelpText } from '../audioSettingsHelpText.js';
+import { getMysterySourceText } from '../mysteryText.js';
+import {getDiscoveryText} from '../discoveryText.js';
+import { getTractorFleetSourceText } from '../tractorFleetText.js';
 import { getMenuAudioSourceText } from '../menuAudioText.js';
 import { getActivePilotingText } from '../activePilotingText.js';
 import { getLaunchHomeSourceText } from '../launchHomeText.js';
@@ -31,6 +38,7 @@ import { getLateGameExperimentSourceText } from '../lateGameExperimentSourceText
 import { getFirstRunRetentionSourceText } from '../firstRunRetentionSourceText.js';
 
 const sourceText = Object.freeze({
+  ...getAudioSettingsHelpText('de'),
   "ROUTE": "ROUTE",
   "ACE CONTACT": "ASS-KONTAKT",
   "ACE CONTRACT": "ASS-AUFTRAG",
@@ -923,6 +931,11 @@ const sourceText = Object.freeze({
   'VOICE': 'STIMME',
   'Boss Voices': 'BOSS-STIMMEN',
   'CTA VOICE': 'RETRY-STIMME',
+  'RETRY VOICE': 'NEUSTART-STIMME',
+  'POST-RUN VOICE': 'STIMME NACH DEM LAUF',
+  'TACTICAL WARNINGS': 'TAKTISCHE WARNUNGEN',
+  'Tactical Warnings play incoming threats even with Voice off. Retry Voice controls retry prompts. Chatter Rate affects optional voices.': 'Taktische Warnungen melden neue Gefahren auch bei ausgeschalteter Stimme. Neustart-Stimme steuert die Aufforderung zum erneuten Versuch. Spruchhäufigkeit betrifft nur optionale Stimmen.',
+  'Tactical Warnings announce incoming threats even with Voice off. Post-Run Voice invites another try on the results screen. Chatter Rate affects optional voices.': 'Taktische Warnungen melden neue Gefahren auch bei ausgeschalteter Stimme. Die Stimme nach dem Lauf lädt auf dem Ergebnisbildschirm zum erneuten Versuch ein. Spruchhäufigkeit betrifft nur optionale Stimmen.',
   'Chatter Frequency': 'SPRUCHRATE',
   'CHATTER RATE': 'SPRUCHRATE',
   'Full': 'Voll',
@@ -1517,6 +1530,7 @@ const sourceText = Object.freeze({
   'Reach sector 15 in overrun and pilot rank 13': 'Erreiche Sektor 15 im Overrun und Pilotenrang 13',
   'Discover 160 Threat Codex entries and reach pilot rank 14': 'Entdecke 160 Gefahrenkodex-Einträge und erreiche Pilotenrang 14',
   'Clear the arcade run 3 times and reach pilot rank 14': 'Schließe den Arcade-Run 3-mal ab und erreiche Pilotenrang 14',
+  "Clear Sector 10 in Mayhem with 2 lives left, or score 500,000 in Mayhem": "Schließe Sektor 10 in Mayhem mit 2 Leben ab oder erziele 500.000 Punkte in Mayhem",
   'Clear with 2 lives remaining or score 500,000': 'Schließe mit 2 Leben ab oder erziele 500.000 Punkte',
   'Clear twice, reach rank 16, and discover 180 threats': 'Schließe zweimal ab, erreiche Rang 16 und entdecke 180 Bedrohungen',
   'Clear 45 total waves': 'Räume 45 Wellen insgesamt',
@@ -1559,6 +1573,7 @@ const sourceText = Object.freeze({
   'Qualify for the global leaderboard.': 'Qualifiziere dich für die globale Bestenliste.',
   'Swarm Elite': 'Schwarm-Elite',
   'Submit a 750,000-point ranked run.': 'Reiche einen gewerteten Run mit 750.000 Punkten ein.',
+  'Submit a ranked score of at least 250,000 points. Modes: Arcade Tactical, Arcade Pure, Onslaught Tactical.': 'Reiche ein gewertetes Ergebnis von mindestens 250.000 Punkten ein. Modi: Arcade Tactical, Arcade Pure, Onslaught Tactical.',
   'Legacy Ranked Run': 'Älterer gewerteter Run',
   'Unknown Run Mode': 'Unbekannter Run-Modus',
   'First Ranked Run': 'Erster gewerteter Run',
@@ -2245,6 +2260,8 @@ const overhaulSourceText = Object.freeze({
 
 export const de = {
   code: 'de',
+  history: { unknownMode: "Modus unbekannt", sectorUnrecorded: "SEKTOR NICHT ERFASST", sectorUnrecordedHint: "Ältere Steam-Einträge haben keine Sektordaten gespeichert." },
+  recovery: {storageHelp:"Speichern fehlgeschlagen. Lass das Spiel geöffnet und gib Speicherplatz frei oder stelle den Zugriff auf den Speicherordner wieder her. Das Spiel versucht es automatisch erneut. Ein Neustart ist erst nach erfolgreichem Speichern möglich.","title":"Spiel nach einem Problem angehalten","help":"Wenn die Grafik wieder funktioniert, kehre ins Pausenmenü zurück. Ein Neustart beendet den laufenden Flug; bereits gespeicherter Fortschritt bleibt erhalten. Gib bei erneutem Auftreten den Build und recovery/recovery-latest.json im Fehlerbericht an.","resume":"Zum Pausenmenü","restart":"Spiel neu starten"},
   name: 'German',
   nativeName: 'Deutsch',
   settings: {
@@ -2266,6 +2283,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText: Object.freeze({ ...getMenuAudioSourceText('de'), ...getActivePilotingText('de'), ...getLaunchHomeSourceText('de'), ...getShipTraitSummarySourceText("de"), ...getBonusCoreSourceText('de'), ...getBonusDroneSourceText('de'), ...getCoreSerpentSourceText('de'), ...getAstraPresentationSourceText('de'), ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getTyrianFeedbackSourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de'), ...getNewestTyrianFeedbackSourceText('de'), ...getSecondPolishSourceText('de'), ...getTyrian112SourceText('de'), ...getHighSectorSourceText('de'), ...getLateGameExperimentSourceText('de'), ...getFirstRunRetentionSourceText('de') }),
+  sourceText: Object.freeze({ ...getFirstLightSourceText('de'), ...getOnslaughtText('de'), "Steam: Upload pending":"Steam: Upload ausstehend","Steam: Upload not confirmed":"Steam: Upload nicht bestätigt", "TEST FLIGHT · SECTOR {sector} · CHOOSE ANY SHIP": "TESTFLUG · SEKTOR {sector} · SCHIFF FREI WÄHLEN", ...getMysterySourceText('de'), ...getDiscoveryText('de'), ...getTractorFleetSourceText('de'), ...getMenuAudioSourceText('de'), ...getActivePilotingText('de'), ...getLaunchHomeSourceText('de'), ...getShipTraitSummarySourceText("de"), ...getBonusCoreSourceText('de'), ...getBonusDroneSourceText('de'), ...getCoreSerpentSourceText('de'), ...getAstraPresentationSourceText('de'), ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getTyrianFeedbackSourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de'), ...getNewestTyrianFeedbackSourceText('de'), ...getSecondPolishSourceText('de'), ...getTyrian112SourceText('de'), ...getHighSectorSourceText('de'), ...getLateGameExperimentSourceText('de'), ...getFirstRunRetentionSourceText('de'), ...getGameOverQualitySourceText('de') }),
   patterns
 };

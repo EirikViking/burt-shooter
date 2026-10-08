@@ -1,0 +1,399 @@
+{
+  "baseline": "70d892edb3fe75ea71367e0af11a7bd6bcc45faf",
+  "targetLUFS": -13.5,
+  "rows": [
+    {
+      "id": "glass_widow",
+      "beforeLUFS": -16.55,
+      "afterLUFS": -13.76,
+      "truePeak": -2.88,
+      "sha256": "721a3b55657227f8e4711ce7a442ff39fd6b3c9317def02553379ba539cd8360"
+    },
+    {
+      "id": "parallax_hunter",
+      "beforeLUFS": -15.93,
+      "afterLUFS": -13.77,
+      "truePeak": -3.67,
+      "sha256": "19ceacd6227bc1202c25899e8cdbfd75752f9505534cecd14690ea4d98cd8d7f"
+    },
+    {
+      "id": "choir_unbound",
+      "beforeLUFS": -16.64,
+      "afterLUFS": -13.76,
+      "truePeak": -2.71,
+      "sha256": "ab64506b07f526266e644f60de8767e06de6c91d0b49f6bdbd850068a2296c1d"
+    },
+    {
+      "id": "cinder_manta",
+      "beforeLUFS": -16.45,
+      "afterLUFS": -13.77,
+      "truePeak": -5.04,
+      "sha256": "5b24d6baa24e07a7222d47ac7b4742f2b5f653425015dfe05fa4aef7c3a98eba"
+    },
+    {
+      "id": "needle_saint",
+      "beforeLUFS": -17.49,
+      "afterLUFS": -13.76,
+      "truePeak": -2.92,
+      "sha256": "23b6d8b8b98e63dc5961f675b23fa8d14469574e8fd96e10b2d691bb9db9b0a1"
+    },
+    {
+      "id": "blind_leviathan",
+      "beforeLUFS": -16.51,
+      "afterLUFS": -13.76,
+      "truePeak": -3.65,
+      "sha256": "40930c1c1c66977d3e0efd325c5a0fc9f7ae590aece05244b3e7068becf64284"
+    },
+    {
+      "id": "lantern_eater",
+      "beforeLUFS": -16.98,
+      "afterLUFS": -13.76,
+      "truePeak": -3.76,
+      "sha256": "377d2839cfaadf54d7a6d9243e017ef6bc64156059cca3106157a657243fdcee"
+    },
+    {
+      "id": "scissor_twins",
+      "beforeLUFS": -16.56,
+      "afterLUFS": -13.77,
+      "truePeak": -3,
+      "sha256": "3527c95a8014bed000ee4e30f50fece8954ab04789ce2925816783cec3ad371c"
+    },
+    {
+      "id": "red_wake",
+      "beforeLUFS": -17.15,
+      "afterLUFS": -13.76,
+      "truePeak": -3.15,
+      "sha256": "1847acb5b878cad79fdaa14e776035a8175d5347f94020571d8c845b01a57d63"
+    },
+    {
+      "id": "foldship",
+      "beforeLUFS": -16.99,
+      "afterLUFS": -13.75,
+      "truePeak": -2.78,
+      "sha256": "513c308f462615b2c5d419724d887c0e0763d7d6e853c90569bc9c5caf8d6e0e"
+    },
+    {
+      "id": "doorwraith",
+      "beforeLUFS": -16.9,
+      "afterLUFS": -13.76,
+      "truePeak": -2.32,
+      "sha256": "cd50f8f0932b3b72c764bea11273206d55c881aa7bed7b648ae88c616d9f9700"
+    },
+    {
+      "id": "tidemason",
+      "beforeLUFS": -16.55,
+      "afterLUFS": -13.77,
+      "truePeak": -4.41,
+      "sha256": "bb561956e7d2d414ce60a8489c6acd3a53fe0e9278bdcdc3b5207983837eeea2"
+    },
+    {
+      "id": "clockray",
+      "beforeLUFS": -16.63,
+      "afterLUFS": -13.76,
+      "truePeak": -2.53,
+      "sha256": "65f9c51b710e4c380027203a74c3d55c8cfce0f604626549c8f1ac104fe0a92c"
+    },
+    {
+      "id": "horizon_biter",
+      "beforeLUFS": -17.25,
+      "afterLUFS": -13.76,
+      "truePeak": -2.68,
+      "sha256": "bd6577b667311d74fa8e53a880cf89c06f6c1f94073ba854657d455cdaaf7792"
+    },
+    {
+      "id": "rift_surgeon",
+      "beforeLUFS": -16.78,
+      "afterLUFS": -13.76,
+      "truePeak": -3.41,
+      "sha256": "3e93d4f4d91415e5bd33f4263a1883d4630ef10425fc2327dfab2d5b59bb1ec2"
+    },
+    {
+      "id": "bloom_queen",
+      "beforeLUFS": -17.08,
+      "afterLUFS": -13.76,
+      "truePeak": -3.56,
+      "sha256": "9b4322b67646fd1b18d4b9997ed55fba7e24629fb9b3c4f9815ac10c5151203a"
+    },
+    {
+      "id": "brood_ark",
+      "beforeLUFS": -17.12,
+      "afterLUFS": -13.76,
+      "truePeak": -4.04,
+      "sha256": "56165d3b9393f1d83f253ef90d7fe5d0e18f2eb6528513846fcc0f74dda6729b"
+    },
+    {
+      "id": "carrion_weaver",
+      "beforeLUFS": -16.52,
+      "afterLUFS": -13.74,
+      "truePeak": -3.1,
+      "sha256": "8e3e4582a5eca4fda782d44c9525384694cc6cec915535d96217e2a6c5a08c85"
+    },
+    {
+      "id": "spore_monk",
+      "beforeLUFS": -16.44,
+      "afterLUFS": -13.76,
+      "truePeak": -4.03,
+      "sha256": "7b618731c85941308e6225040297817a754715f3efb4b6d34b2dffceb02d0468"
+    },
+    {
+      "id": "husk_parade",
+      "beforeLUFS": -17.02,
+      "afterLUFS": -13.75,
+      "truePeak": -2.21,
+      "sha256": "69e34f334ac758f7b8eab344073d4d696cc33dc57a04088548b9044508c578a4"
+    },
+    {
+      "id": "magnet_urchin",
+      "beforeLUFS": -17.12,
+      "afterLUFS": -13.76,
+      "truePeak": -2.57,
+      "sha256": "e2a64c5642186c767703a58a094a223f01ce84d74dbad2f2ea1b779df710ad3e"
+    },
+    {
+      "id": "chrysalis_hunter",
+      "beforeLUFS": -16.49,
+      "afterLUFS": -13.77,
+      "truePeak": -2.58,
+      "sha256": "959c90f4196e5bf8c29e669f1751511b449baf35d81cbcbf7feb2a504358b497"
+    },
+    {
+      "id": "rail_cathedral",
+      "beforeLUFS": -17.24,
+      "afterLUFS": -13.77,
+      "truePeak": -2.11,
+      "sha256": "1ec213c7f9c84b270c5f9b6d3046b2dc838f742d04cd2ee590122e807cfdcae0"
+    },
+    {
+      "id": "siege_orchid",
+      "beforeLUFS": -16.67,
+      "afterLUFS": -13.77,
+      "truePeak": -2.54,
+      "sha256": "ed6ab7327b531080fb1dc57d5003a6dfa3998959733354c2924e37a8c51f525b"
+    },
+    {
+      "id": "bulwark_hauler",
+      "beforeLUFS": -17.5,
+      "afterLUFS": -13.78,
+      "truePeak": -1.8,
+      "sha256": "b238cb6c8d996766e51aa6550f1c561f5986c385035509feba50e4bf736ec0ff"
+    },
+    {
+      "id": "bellfoundry",
+      "beforeLUFS": -17.06,
+      "afterLUFS": -13.76,
+      "truePeak": -3.43,
+      "sha256": "c932da32639d560103aecb0312b13d38021549e28fa403b8166aea5cad49dd7a"
+    },
+    {
+      "id": "prism_bastion",
+      "beforeLUFS": -16.36,
+      "afterLUFS": -13.77,
+      "truePeak": -2.84,
+      "sha256": "54384e94ba7ad3432eeb64e51731379848020d52074ff747a2c5337e217b412e"
+    },
+    {
+      "id": "cable_kraken",
+      "beforeLUFS": -17.06,
+      "afterLUFS": -13.76,
+      "truePeak": -2.13,
+      "sha256": "e5dffa1c898d92aef753135826936e916cea2eb171e42e936277dfcd609a626f"
+    },
+    {
+      "id": "switchyard",
+      "beforeLUFS": -16.56,
+      "afterLUFS": -13.76,
+      "truePeak": -3.59,
+      "sha256": "35a1e519cdf6bb02932803185eaabdec028a7e3006ffe1c1295eb9ac6dd85db9"
+    },
+    {
+      "id": "false_sun",
+      "beforeLUFS": -16.7,
+      "afterLUFS": -13.77,
+      "truePeak": -2.95,
+      "sha256": "0099e88b3bab50dc6d6e07b8b48475f8be449248398c30e18b0aac424e244704"
+    },
+    {
+      "id": "mirror_court",
+      "beforeLUFS": -16.86,
+      "afterLUFS": -13.77,
+      "truePeak": -2.38,
+      "sha256": "730fc2113f6332d2d4b0ffbadb5bc240706da615d41171ad7b43b6c183c78001"
+    },
+    {
+      "id": "signal_thief",
+      "beforeLUFS": -17.08,
+      "afterLUFS": -13.78,
+      "truePeak": -2.12,
+      "sha256": "05b996d868f1311675c1e1e4861da4cc2bb55e3051c33b4df8f457ca1558375a"
+    },
+    {
+      "id": "lantern_mimic",
+      "beforeLUFS": -16.43,
+      "afterLUFS": -13.76,
+      "truePeak": -3.36,
+      "sha256": "19058cdeafac7cbc3a8b4ffb76f2fb8f64cff89e4d47513844862aeb5c642bd5"
+    },
+    {
+      "id": "afterimage_duelist",
+      "beforeLUFS": -16.71,
+      "afterLUFS": -13.75,
+      "truePeak": -3.32,
+      "sha256": "41584cfa1c3620fb54f27c68a47619772e3eb56d8e4e9672de2411c03dd8d842"
+    },
+    {
+      "id": "surveyor",
+      "beforeLUFS": -16.49,
+      "afterLUFS": -13.77,
+      "truePeak": -5.87,
+      "sha256": "529e09b2c4772b65124042dca438d7f159078c53e26730ed309863cc49bcfc66"
+    },
+    {
+      "id": "cipher_engine",
+      "beforeLUFS": -16.43,
+      "afterLUFS": -13.76,
+      "truePeak": -4.36,
+      "sha256": "19f2c1d18fba8b09f4afad24b0c1d8e219c3ce750e40e5e95f6df15bab51c6f1"
+    },
+    {
+      "id": "rainmaker",
+      "beforeLUFS": -17.11,
+      "afterLUFS": -13.76,
+      "truePeak": -3.54,
+      "sha256": "deba969467b1a6d2cb21d02648c0de2178e013e0cd32f61789dc93c3e42f2b8d"
+    },
+    {
+      "id": "comet_shepherd",
+      "beforeLUFS": -16.59,
+      "afterLUFS": -13.76,
+      "truePeak": -2.62,
+      "sha256": "8da4573708479a048a2911e0f564d7c2fd1ee7649845c726d0c3decf604ef1dc"
+    },
+    {
+      "id": "thunder_loom",
+      "beforeLUFS": -17.02,
+      "afterLUFS": -13.77,
+      "truePeak": -3.05,
+      "sha256": "5ef4f44ae3e7059b3bc3f55a8a64fe7dc719e5658420f99365ebe81c1b858dff"
+    },
+    {
+      "id": "avalanche_engine",
+      "beforeLUFS": -17.12,
+      "afterLUFS": -13.78,
+      "truePeak": -2.88,
+      "sha256": "2e7bdab716fe11543033dc55451aa18935c39234808096b08cf966279122e5ff"
+    },
+    {
+      "id": "ricochet_duchess",
+      "beforeLUFS": -17.3,
+      "afterLUFS": -13.76,
+      "truePeak": -1.99,
+      "sha256": "df3853521bbb19ff36df67c58b667459baa5e4dfd91725e5a291c3e60ec64b65"
+    },
+    {
+      "id": "lantern_shoal",
+      "beforeLUFS": -16.86,
+      "afterLUFS": -13.76,
+      "truePeak": -2.36,
+      "sha256": "978324f8d3d9610175b5cac520925805d38f8d76cc7be15ed90d4ff55b38d007"
+    },
+    {
+      "id": "nova_anvil",
+      "beforeLUFS": -16.9,
+      "afterLUFS": -13.78,
+      "truePeak": -2.65,
+      "sha256": "953dc1757910f717798f03ccd7e368e0bb69d39cc052eb1c61bc49a2f5fd8d7f"
+    },
+    {
+      "id": "gilded_pilgrim",
+      "beforeLUFS": -16.88,
+      "afterLUFS": -13.77,
+      "truePeak": -2.34,
+      "sha256": "72b5f624af4c041e6ed133f3c20149301f9213248fa09694b2647308be3e37da"
+    },
+    {
+      "id": "vault_crawler",
+      "beforeLUFS": -17.69,
+      "afterLUFS": -13.77,
+      "truePeak": -1.97,
+      "sha256": "19271c4e19c9f91c5b07453eaa4f05618b3e6582c8226c289a0f8da8a571d06b"
+    },
+    {
+      "id": "oathkeeper",
+      "beforeLUFS": -16.29,
+      "afterLUFS": -13.77,
+      "truePeak": -3.15,
+      "sha256": "69fbb953e47bf85442b71b26779f7c62e5934d9f2906d88cda712b28b5813e3d"
+    },
+    {
+      "id": "courier_zero",
+      "beforeLUFS": -17.71,
+      "afterLUFS": -13.76,
+      "truePeak": -1.96,
+      "sha256": "6f6f524a9fce689d7207419fc06316954fd0f44f6aed54b2e93e0c72db364bd6"
+    },
+    {
+      "id": "debt_collector",
+      "beforeLUFS": -16.99,
+      "afterLUFS": -13.75,
+      "truePeak": -3.32,
+      "sha256": "c43df5beeb8155a3db5b89fb42579486b5c23633c1183412ffe301c03701a3b3"
+    },
+    {
+      "id": "mercy_trap",
+      "beforeLUFS": -17,
+      "afterLUFS": -13.78,
+      "truePeak": -2.22,
+      "sha256": "9519eec3c1c0047ccb2fa2e3e99c76f9e47eab184169592106c377789594a100"
+    },
+    {
+      "id": "fortune_leech",
+      "beforeLUFS": -17.22,
+      "afterLUFS": -13.78,
+      "truePeak": -4.03,
+      "sha256": "574ab677412a7abe6f19a04065377ec47b874e77870880f9c7339c713ba00806"
+    },
+    {
+      "id": "constellation_beast",
+      "beforeLUFS": -16.87,
+      "afterLUFS": -13.75,
+      "truePeak": -2.32,
+      "sha256": "fa91d57cbbc82eb134c4a25e2b6b9bab30db17b5ddcbb7aa37b04e614d683135"
+    },
+    {
+      "id": "cathedral_of_teeth",
+      "beforeLUFS": -15.33,
+      "afterLUFS": -13.78,
+      "truePeak": -3.83,
+      "sha256": "5b3948b2c5253cc482f6c3bf629c7e72b18a9acc6a456b0431a69f80ea26943f"
+    },
+    {
+      "id": "dying_star",
+      "beforeLUFS": -17.06,
+      "afterLUFS": -13.77,
+      "truePeak": -3.14,
+      "sha256": "9a81a2d69468a17d028b7cb07e760217f18888604e182618cd5da98808f32329"
+    },
+    {
+      "id": "worldmolt",
+      "beforeLUFS": -16.69,
+      "afterLUFS": -13.76,
+      "truePeak": -4.62,
+      "sha256": "c14dbde356e8544e5d1e1f0ee6cbfa07907040213144cffa9e7aa0c996a45cda"
+    },
+    {
+      "id": "eventide_engine",
+      "beforeLUFS": -16.88,
+      "afterLUFS": -13.76,
+      "truePeak": -2.34,
+      "sha256": "79cf8b75847443e9a78be877b2ef61423e6ed277e45c37b9eab3b1a040fab151"
+    },
+    {
+      "id": "witness",
+      "beforeLUFS": -16.59,
+      "afterLUFS": -13.75,
+      "truePeak": -3.57,
+      "sha256": "6ff2c343fee65216b82ed51c73602e2a2b3c5a08965426715bb6d48e6906f5e6"
+    }
+  ],
+  "process": "Measured linear gain with peak limiting; original timing, performances and voice queue retained. Music/SFX remain unducked."
+}

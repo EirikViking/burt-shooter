@@ -1,3 +1,5 @@
+import { readLastRunMode } from '../game/LastRunMode.js';
+import { MenuAudioTip } from '../ui/MenuAudioTip.js';
 import { AstraCoronation } from '../ui/AstraCoronation.js';
 import { AstraLaunchHome } from '../ui/AstraLaunchHome.js';
 import { AstraTurntable } from '../ui/AstraTurntable.js';
@@ -48,7 +50,6 @@ import {
 } from '../config/RunModeNarration.js';
 import {
   RUN_MODES,
-  OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
   SECTOR_START_CHECKPOINT_INTERVAL,
   getOverrunStartState,
   getRunModeProfile,
@@ -56,6 +57,7 @@ import {
   getSectorStartState
 } from '../game/RunMode.js';
 import { getTacticalDraftMeta } from '../config/TacticalDraft.js';
+import { getSavedOnslaughtLoadout } from '../game/OnslaughtLoadout.js';
 import {
   applyScoutAnomalyToProfile,
   SCOUT_ANOMALIES,
@@ -429,6 +431,8 @@ export class MenuScene {
   }
 
   init() {
+    if (this.launchAudioTip && !this.launchAudioTip.destroyed) this.launchAudioTip.destroy({children:true});
+    this.launchAudioTip = null;
     this.launchHome?.destroy({children:true}); this.launchHome=null;
     const previousLegacyMenu=this.legacyMenuLayer; this.legacyMenuLayer=null;
     // Cached controls belong to the old layer, not the rebuilt menu.
@@ -457,7 +461,7 @@ export class MenuScene {
     this.scheduleNextIdleBossBark({ initial: true });
     this.container.sortableChildren = true;
     this.createStarfield();
-    this.initBackdrop();
+    this.presentationReady = this.initBackdrop();
     this.initMissionConsole();
     installMenuFx(this, {
       label: 'ui_menuFxMain',
@@ -484,6 +488,8 @@ export class MenuScene {
     }
     this.container.addChild(this.legacyMenuLayer);
     this.launchHome=new AstraLaunchHome(this);this.container.addChild(this.launchHome);
+    this.launchAudioTip = new MenuAudioTip();
+    this.container.addChild(this.launchAudioTip);
     this.buildMenuNavigation();
     const menuTypographyReady = this.warmMenuFonts();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutMenu());
@@ -981,6 +987,11 @@ export class MenuScene {
       this.container.addChild(this.backdropShade);
 
       this.layoutBackdrop();
+      // Boot keeps the existing loading screen until this actual 3D frame is
+      // ready, including GPU upload and the Pixi canvas texture preparation.
+      await this.astraMenuShip.promise;
+      if (request !== this.astraBackdropRequest) return;
+      await this.game.app.renderer.prepare?.upload(this.astraMenuShip);
     } catch (error) {
       console.warn('[MenuScene] Generated menu backdrop failed to load:', error);
     }
@@ -1735,13 +1746,13 @@ export class MenuScene {
       subLabel: 'ALTERNATIVE RANKED MODE'
     });
     this.configureRunModeCard(this.startBtn, { id: 'mayhem', secondary: 0xffef7e, role: 'alternative' });
-    this.startBtn.alpha = 0;  // Start invisible
+    this.startBtn.alpha = 1;
     this.startBtn.on('pointerdown', () => {
       this.setInputDevice('keyboard');
       this.quickStartRun(RUN_MODES.RANKED);
     });
     this.startBtn.visible = false;
-    this.startBtn.eventMode = 'none';
+    this.startBtn.eventMode = 'static';
     this.container.addChild(this.startBtn);
 
     this.tacticalStartBtn = this.createButton('MAYHEM TACTICAL', layout, {
@@ -2254,14 +2265,12 @@ export class MenuScene {
 
     this.refreshSectorStartState();
     this.overrunStartState = getOverrunStartState(readHangarProgressState());
-    this.layoutOverrunUnlockCelebration(width, height);
+    // Onslaught is available immediately; milestone discovery must never seize focus.
+    this.overrunUnlockCelebrationVisible = false;
+    if (this.overrunUnlockCelebration) this.overrunUnlockCelebration.visible = false;
     this.updateSectorStartButton({ forceGpuRefresh: forceLabelGpuRefresh });
     const runModeCards = [
-      this.tacticalStartBtn,
-      this.dailySignalBtn,
-      this.scoutRunBtn,
-      this.sectorStartBtn,
-      this.overrunStartBtn
+      ...(this.launchHome ? [this.startBtn, this.overrunStartBtn, this.scoutRunBtn, this.sectorStartBtn, this.dailySignalBtn] : [this.tacticalStartBtn, this.dailySignalBtn, this.scoutRunBtn, this.sectorStartBtn, this.overrunStartBtn])
     ].filter(Boolean);
     const dockButtons = [
       this.highscoreBtn,
@@ -3260,24 +3269,24 @@ export class MenuScene {
     g.fill({ color: 0x37f5ff, alpha: 0.62 });
 
     overlay._title.text = [
-      translateText('OVERRUN'),
+      translateText('ONSLAUGHT'),
       translateText('UNLOCKED')
     ].join(' · ');
     overlay._title.x = width / 2;
     overlay._title.y = panelY + 84;
     fitTextToWidth(overlay._title, panelWidth - 64, { minScale: 0.68 });
-    overlay._milestone.text = translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.');
+    overlay._milestone.text = translateText('Available from the start.');
     overlay._milestone.style.wordWrapWidth = panelWidth - 96;
     overlay._milestone.x = width / 2;
     overlay._milestone.y = panelY + 146;
     overlay._modes.text = [
-      translateText('OVERRUN TACTICAL'),
-      translateText('OVERRUN PURE')
+      translateText('ONSLAUGHT TACTICAL'),
+      translateText('ONSLAUGHT PURE')
     ].join('  //  ');
     overlay._modes.x = width / 2;
     overlay._modes.y = panelY + 202;
     overlay._rewards.text = [
-      translateText('SECTOR 51 // 85% NORMAL CAREER XP'),
+      translateText('SECTOR 51 // TACTICAL: FULL CAREER XP // PURE: 85%'),
       translateText('Career XP and cumulative Pilot Orders stay active.')
     ].join('\n');
     overlay._rewards.x = width / 2;
@@ -3320,7 +3329,8 @@ export class MenuScene {
       overrunUnlockCelebrationSeen: true
     });
     this.overrunUnlockCelebrationVisible = false;
-    if (this.overrunUnlockCelebration) this.overrunUnlockCelebration.visible = false;
+    this.overrunUnlockCelebration?.destroy({children:true});
+    this.overrunUnlockCelebration=null;
     AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.72 });
   }
 
@@ -3417,6 +3427,7 @@ export class MenuScene {
   getRunModeVariantOptions() {
     const focused = this.getSelectedMenuOptionId();
     if (focused === 'launchTactical') {
+      if (this.launchHome?.surface === 'modes') return [];
       return [
         {
           id: RUN_MODES.MAYHEM_TACTICAL,
@@ -3541,7 +3552,7 @@ export class MenuScene {
   }
 
   getOverrunStartingUpgradeBriefingItems() {
-    return OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS
+    return getSavedOnslaughtLoadout(this.getQuickStartShipKey())
       .map((id) => {
         const meta = getTacticalDraftMeta(id);
         if (!meta) return null;
@@ -3796,16 +3807,16 @@ export class MenuScene {
           ];
       return {
         id: 'overrun',
-        title: translateText('OVERRUN'),
-        variantTitle: translateText(tactical ? 'OVERRUN TACTICAL' : 'OVERRUN PURE'),
-        status: state.available ? 'UNRANKED' : 'LOCKED',
+        title: translateText('ONSLAUGHT'),
+        variantTitle: translateText(tactical ? 'ONSLAUGHT TACTICAL' : 'ONSLAUGHT PURE'),
+        status: tactical ? 'RANKED' : 'UNRANKED',
         locked: !state.available,
         accent: 0xff6b45,
         secondary: 0xffd15c,
         summary: state.available
           ? tactical
             ? [
-                'Start at Sector 51 with five fixed upgrades.',
+                'Start at Sector 51 with three chosen augments.',
                 'Boss victories still offer new upgrade choices.'
               ]
             : [
@@ -3813,32 +3824,34 @@ export class MenuScene {
                 'No Tactical upgrades or Boss Drafts are offered.'
               ]
           : [
-              'Reach Sector 30 in Mayhem Tactical to unlock the Sector 51 start.'
+              'Available from the start.'
             ],
         tiles: state.available
           ? [
               { label: 'START', value: 'SECTOR 51' },
               { label: 'SCORE', value: 'STARTS AT 0' },
-              { label: 'CAREER XP', value: '85% OF NORMAL' },
+              { label: 'CAREER XP', value: tactical ? '100% OF NORMAL' : '85% OF NORMAL' },
               { label: 'BOSS DRAFTS', value: tactical ? 'CONTINUE' : 'OFF' }
             ]
           : [
               { label: 'MAYHEM BEST', value: translateText('SECTOR {sector}', { sector: state.highestReachedSector }) },
-              { label: 'REQUIRED', value: 'SECTOR 30', tone: 'warning' }
+              { label: 'ACCESS', value: 'AVAILABLE NOW' }
             ],
         restriction: state.available
-          ? 'No skipped-sector rewards, achievements, or checkpoint unlocks.'
-          : 'Progress is based on the highest Sector reached, not Pilot Rank.',
+          ? tactical
+            ? 'Full XP and eligible post-launch achievements. No skipped-sector or checkpoint credit.'
+            : 'No skipped-sector rewards, achievements, leaderboard submission, or checkpoint unlocks.'
+          : 'Available from the start.',
         personalBest: state.available
           ? `${translateText('BEST')} — ${personalBest ? formatNumber(personalBest.score) : translateText('NOT ATTEMPTED')}`
           : '',
         details: {
-          title: translateText(tactical ? 'OVERRUN TACTICAL' : 'OVERRUN PURE'),
+          title: translateText(tactical ? 'ONSLAUGHT TACTICAL' : 'ONSLAUGHT PURE'),
           intro: state.available
             ? tactical
-              ? 'Skip the opening sectors and enter the fight at Sector 51 with a prepared tactical build.'
+              ? 'Choose your ship and three augments before entering Sector 51.'
               : 'Skip the opening sectors and enter the fight at Sector 51 on the Pure ship baseline.'
-            : 'Reach Sector 30 in Mayhem Tactical to unlock the Sector 51 start.',
+            : 'Available from the start.',
           sections: [
             {
               id: 'conditions',
@@ -3847,7 +3860,7 @@ export class MenuScene {
               tiles: [
                 { label: 'START', value: 'SECTOR 51' },
                 { label: 'SCORE', value: 'STARTS AT 0' },
-                { label: 'RANKING', value: 'UNRANKED', tone: 'warning' }
+                { label: 'RANKING', value: tactical ? 'RANKED' : 'UNRANKED', tone: 'warning' }
               ]
             },
             ...(tactical
@@ -3856,7 +3869,7 @@ export class MenuScene {
                   title: 'STARTING LOADOUT',
                   span: 2,
                   upgrades: this.getOverrunStartingUpgradeBriefingItems(),
-                  body: 'You begin with these five upgrades. After that, Boss Drafts continue normally: boss victories still let you choose additional upgrades.'
+                  body: 'These are the saved choices for your quick-start ship. You can change all three before launch; boss victories still offer new upgrades.'
                 }]
               : [{
                   id: 'loadout',
@@ -3868,7 +3881,7 @@ export class MenuScene {
               id: 'active',
               title: 'PROGRESSION ACTIVE',
               items: [
-                '85% of normal Career XP',
+                tactical ? '100% of normal Career XP' : '85% of normal Career XP',
                 'Cumulative Pilot Orders remain active'
               ]
             },
@@ -3878,8 +3891,8 @@ export class MenuScene {
               tone: 'warning',
               items: [
                 'Rewards from skipped sectors',
-                'Leaderboard submission',
-                'Achievements',
+                ...(tactical ? [] : ['Leaderboard submission']),
+                ...(tactical ? ['Sector-1 journey and skipped-sector achievements'] : ['Achievements']),
                 'Checkpoint unlocks'
               ]
             },
@@ -3888,38 +3901,36 @@ export class MenuScene {
               title: 'UNLOCK REQUIREMENT',
               span: 2,
               body: state.available
-                ? 'Unlocked by reaching Sector 30 in Mayhem Tactical.'
-                : 'Reach Sector 30 in Mayhem Tactical to unlock the Sector 51 start.'
+                ? 'Available from the start.'
+                : 'Available from the start.'
             }
           ]
         },
         menuBody: state.available
           ? [
-              translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.'),
-              translateText('SECTOR 51 · UNRANKED'),
+              translateText('Available from the start.'),
+              translateText(tactical ? 'ONSLAUGHT — RANKED CHALLENGE' : 'SECTOR 51 · UNRANKED'),
               ...availableModeLines,
               translateText('Starts at zero score. No skipped-sector rewards.'),
               [
-                translateText('SECTOR 51 // 85% NORMAL CAREER XP'),
+                translateText(tactical ? 'SECTOR 51 // 100% NORMAL CAREER XP' : 'SECTOR 51 // 85% NORMAL CAREER XP'),
                 translateText('Career XP and cumulative Pilot Orders stay active.')
               ].join(' // '),
               personalBestLine,
-              translateText('No leaderboard submission, achievements, or checkpoint unlocks.')
+              translateText(tactical ? 'Separate global records. Eligible post-launch achievements only; no skipped-sector or checkpoint credit.' : 'Eligible Onslaught achievements count. No leaderboard submission or checkpoint credit.')
             ].join('\n')
           : [
-              translateText('LOCKED · REACH SECTOR 30'),
-              translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.'),
-              translateText('This is a Sector milestone, not Pilot Rank 30.'),
-              translateText('After unlock: zero starting score and 85% of normal Career XP.'),
-              translateText('No leaderboard shortcut. Career rewards begin only after unlock.')
+              translateText('Available from the start.'),
+              translateText('Start at Sector 51 with zero starting score.'),
+              translateText('Tactical earns full career XP; Pure earns 85%.')
             ].join('\n'),
         body: state.available
-          ? translateText('Starts at zero score with no skipped-sector rewards. Earns 85% of normal Career XP (15% less), advances cumulative Pilot Orders, and leaves leaderboards, achievements, checkpoints, and competitive bests untouched.')
-          : translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start. This is based on the highest Sector reached, not Pilot Rank.')
+          ? translateText(tactical ? 'Choose a ship and three augments, then launch at Sector 51 with full earned career XP and separate global records. Skipped sectors and starting equipment grant no rewards.' : 'Start at Sector 51 without Tactical augments or boss Drafts. Earn 85% career XP from play and eligible Onslaught achievements. Skipped sectors grant no rewards or checkpoint credit; Pure has no global score submission.')
+          : translateText('Available from the start.')
       };
     }
-    if (focused === 'launchTactical') {
-      const tactical = this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL;
+    if (focused === 'launchTactical' || focused === 'mayhemPure') {
+      const tactical = focused !== 'mayhemPure' && this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL;
       return {
         id: 'launchTactical',
         title: translateText('MAYHEM'),
@@ -5519,6 +5530,7 @@ export class MenuScene {
   }
 
   getBossMenuBarkEvent(menuId) {
+    if (menuId === 'onslaught') return getRunModeNarrationSpec('onslaught')?.event || null;
     if (menuId === 'launchTactical' && this.mayhemRunMode === RUN_MODES.RANKED) {
       return getRunModeNarrationSpec('launch')?.event || null;
     }
@@ -5666,6 +5678,16 @@ export class MenuScene {
   playBossMenuBark(menuId, { target = null, intent = 'focus', force = false, immediate = false, requireHover = false } = {}) {
     const eventName = this.getBossMenuBarkEvent(menuId);
     if (!eventName) return false;
+    const narrationSpec = getRunModeNarrationSpecByEvent(eventName);
+    if (narrationSpec?.audioEnabled === false) {
+      this.recordModeNarrationDispatch(menuId, eventName, {
+        decision: 'suppressed_incorrect_audio',
+        intent,
+        played: false,
+        reason: 'localized_text_updated_audio_pending'
+      });
+      return false;
+    }
     if (menuId !== 'idle') this.markMenuActivity();
     const isActivate = intent === 'activate' || force;
     if (!isActivate && !immediate && menuId !== 'idle') {
@@ -6874,6 +6896,7 @@ export class MenuScene {
     const previousFocusedId = this.getSelectedMenuOptionId();
     this.menuOptions = [
       { id: 'launchTactical', button: this.tacticalStartBtn, activate: () => this.quickStartRun(this.mayhemRunMode) },
+      ...(this.launchHome ? [{ id: 'mayhemPure', button: this.startBtn, activate: () => this.quickStartRun(RUN_MODES.RANKED) }] : []),
       { id: 'dailySignal', button: this.dailySignalBtn, activate: () => this.startDailySignalRun() },
       { id: 'scout', button: this.scoutRunBtn, activate: () => this.quickStartRun(RUN_MODES.SCOUT) },
       ...(this.sectorStartBtn?.visible
@@ -6944,7 +6967,7 @@ export class MenuScene {
     if(this.launchHome) {
       if(this.launchHome.surface==='home')this.menuOptions=this.launchHome.options;
       else {
-        this.menuOptions=this.menuOptions.filter(o=>o.id!=='music').map(o=>this.launchHome.buttons[o.id]?{...o,button:this.launchHome.buttons[o.id]}:o);
+        this.menuOptions=this.menuOptions.filter(o=>!['music','launchTactical'].includes(o.id)).sort((a,b)=>{const order=['mayhemPure','overrun','scout','sectorStart','dailySignal','hangar','highscores','threatCodex','achievements','settings','howToPlay','exit'];return order.indexOf(a.id)-order.indexOf(b.id);}).map(o=>o.id!=='launchTactical'&&this.launchHome.buttons[o.id]?{...o,button:this.launchHome.buttons[o.id]}:o);
         this.menuOptions.push({id:'backHome',button:this.launchHome.buttons.backHome,activate:()=>this.launchHome.closeModes()});
       }
     }
@@ -6953,9 +6976,12 @@ export class MenuScene {
       option.button._menuVoiceId = option.id;
       option.button.activate = option.activate;
     });
-    const restoredIndex = this.menuOptions.findIndex((option) => option.id === previousFocusedId);
+    const remembered = readLastRunMode();
+    const homeChoice = remembered === RUN_MODES.OVERRUN_TACTICAL ? 'onslaught' : remembered === RUN_MODES.MAYHEM_TACTICAL ? 'launchTactical' : 'otherModes';
+    const restoredIndex = this.menuOptions.findIndex((option) => option.id === (this.launchHome?.surface === 'home' && !this.launchHome.initialFocusSet ? homeChoice : previousFocusedId));
+    if (this.launchHome?.surface === 'home') this.launchHome.initialFocusSet = true;
     const tacticalIndex = this.menuOptions.findIndex((option) => option.id === 'launchTactical');
-    this.setMenuFocus(this.isNewPilot ? Math.max(0, tacticalIndex) : (restoredIndex >= 0 ? restoredIndex : Math.max(0, tacticalIndex)));
+    this.setMenuFocus(restoredIndex >= 0 ? restoredIndex : Math.max(0, tacticalIndex));
     this.runModeLaunchFocused = Boolean(this.isNewPilot);
     this.runModeDetailsFocused = false;
     this.drawRunModeLaunchButton();
@@ -7024,6 +7050,7 @@ export class MenuScene {
   }
 
   processMenuGamepad() {
+    if (this.game.onslaughtBriefingOpen || this.game.onslaughtLoadoutPickerOpen) return;
     const nav = this.menuGamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     this.setInputDevice('controller');
@@ -7161,6 +7188,7 @@ export class MenuScene {
   }
 
   cycleMayhemRunMode(delta, { force = false } = {}) {
+    if (this.launchHome?.surface === 'modes') return false; // Both rulesets have their own visible card.
     if (!force && this.getSelectedMenuOptionId() !== 'launchTactical') return false;
     this.mayhemRunMode = this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL
       ? RUN_MODES.RANKED
@@ -7183,7 +7211,7 @@ export class MenuScene {
 
   getOverrunMenuSubLabel() {
     const state = this.overrunStartState || getOverrunStartState(readHangarProgressState());
-    if (!state.available) return translateText('LOCKED · REACH SECTOR 30');
+    if (!state.available) return translateText('AVAILABLE FROM THE START');
     return translateText(
       this.overrunRunMode === RUN_MODES.OVERRUN_PURE
         ? 'PURE · S51 · CAREER'
@@ -7192,6 +7220,7 @@ export class MenuScene {
   }
 
   cycleOverrunRunMode(delta, { force = false } = {}) {
+    if (this.launchHome?.surface === 'modes') return false;
     if (!force && this.getSelectedMenuOptionId() !== 'overrun') return false;
     this.overrunRunMode = this.overrunRunMode === RUN_MODES.OVERRUN_TACTICAL
       ? RUN_MODES.OVERRUN_PURE
@@ -7223,11 +7252,11 @@ export class MenuScene {
     try {
       AudioManager.init();
       AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.78 });
-      this.game.startGame(this.getQuickStartShipKey(), {
+      Promise.resolve(this.game.startGame(this.getQuickStartShipKey(), {
         runMode,
         scoutAnomalyId: runMode === RUN_MODES.SCOUT ? this.scoutAnomaly?.id : null,
         inputDevice: this.lastInputDevice
-      });
+      })).then(started => { if (!started) this.launchingRun = false; }).catch(error => { this.launchingRun = false; console.error(error); });
     } catch (e) {
       console.error('[MenuScene] Quick Start Error:', e);
       this.launchingRun = false;
@@ -7718,9 +7747,7 @@ export class MenuScene {
       title: 'SETTINGS',
       allowExperimentLaunch: true,
       onStartExperiment: (lateGameExperiment) => {
-        const selectedSpriteKey = isValidShipKey(this.game?.selectedShipSpriteKey)
-          ? resolveShipKey(this.game.selectedShipSpriteKey)
-          : getDefaultShipKey();
+        const selectedSpriteKey = this.getQuickStartShipKey();
         this.closeSettingsOverlay();
         Promise.resolve(this.game.startGame(selectedSpriteKey, { lateGameExperiment }))
           .then((started) => {
@@ -7749,6 +7776,11 @@ export class MenuScene {
       onClose: () => {
         this.howToPlayOverlay = null;
         this.menuGamepadNavigator.suppressUntilReleased();
+      },
+      onViewAchievements: (mode) => {
+        this.game.achievementBrowserMode = mode;
+        this.game.achievementBrowserAvailableOnly = true;
+        this.game.showAchievements();
       }
     });
     this.container.addChild(this.howToPlayOverlay.container);
@@ -7865,6 +7897,21 @@ export class MenuScene {
   }
 
   update(delta) {
+    if (this.launchAudioTip && !this.launchAudioTip.destroyed && this.astraMenuShip?.ready) {
+      const tipObstructed = Boolean(
+        this.launchHome?.surface !== 'home'
+        || this.settingsOverlay
+        || this.howToPlayOverlay
+        || this.modeBriefingOverlay
+        || this.quitConfirmOpen
+        || this.sectorSelectorOpen
+        || this.overrunUnlockCelebrationVisible
+      );
+      this.launchAudioTip.update(this.game.getWidth(), this.game.getHeight(), {
+        obstructed: tipObstructed,
+        deltaMs: Math.max(0, Number(delta) || 0) * 16.667
+      });
+    }
     const ceremony = this.overrunUnlockCelebration;
     if (ceremony?.visible && ceremony._coronationLayout) {
       const layout = ceremony._coronationLayout;

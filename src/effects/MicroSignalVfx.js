@@ -24,6 +24,13 @@ function getMount(host) {
     mount.eventMode = 'none';
     parent.addChild(mount);
     host.__novaMicroSignalMount = mount;
+    // Graphics signals are siblings, so the host's normal child teardown cannot
+    // dispose them. Tie their lifetime to the host, including detach/reparent.
+    if (!host.__novaMicroSignalCleanupBound) {
+      host.__novaMicroSignalCleanupBound = true;
+      host.on('removed', () => destroyMicroSignals(host));
+      host.once('destroyed', () => destroyMicroSignals(host));
+    }
   }
 
   mount.position.copyFrom(host.position);
@@ -80,7 +87,7 @@ export function presentDirectionalSignal(host, key, {
   const sprite = ensureMicroSignalSprite(host, key, 'direction');
   if (!sprite) return null;
   const dx = Number(directionX) || 0;
-  const dy = Number(directionY) || -1;
+  const dy = Number.isFinite(Number(directionY)) ? Number(directionY) : -1;
   sprite.position.set(Number(x) || 0, Number(y) || 0);
   sprite.rotation = Math.atan2(dy, dx) + Math.PI / 2;
   sprite.tint = color;

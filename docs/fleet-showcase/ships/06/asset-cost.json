@@ -1,0 +1,56 @@
+{
+  "id": 6,
+  "name": "Iron Orbit",
+  "architecture": "orbit",
+  "baselineDesign": [
+    "Iron Orbit",
+    1.35,
+    1.3,
+    0.72,
+    1.1,
+    "orbit",
+    [
+      [
+        0.25,
+        0.2,
+        -1.22,
+        0.18
+      ],
+      [
+        0.7,
+        -0.3,
+        -1.32,
+        0.18
+      ],
+      [
+        1.1,
+        -0.65,
+        -1.14,
+        0.08
+      ]
+    ]
+  ],
+  "palette": [
+    "dde9f0",
+    "17446a",
+    "28e8ff"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false,
+  "bytes": 16053620,
+  "triangles": 217214,
+  "materials": [
+    "Graphite structural composite",
+    "Off-white aerospace polyurethane",
+    "Brushed titanium fittings",
+    "Seals and cabin upholstery",
+    "Dim ion throat and instrument phosphor",
+    "Laminated cockpit glazing",
+    "Cobalt blue painted alloy",
+    "Sooted nozzle liner",
+    "Heat-oxidised exhaust alloy"
+  ],
+  "images": 5,
+  "repaired": 0
+}

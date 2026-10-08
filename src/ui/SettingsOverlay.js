@@ -171,11 +171,13 @@ export class SettingsOverlay {
     this.rows = [];
     this.draggingSlider = null;
     this.audioTestButtons = {};
+    this.audioHelpText = null;
     this.musicPackButton = null;
     this.displayModeButton = null;
     this.displaySizeButton = null;
     this.uiScaleButton = null;
     this.confirmExitButton = null;
+    this.gameplayBackgroundButton = null;
     this.pilotOrdersButton = null;
     this.displayStatusText = null;
     this.displayOptions = {
@@ -354,6 +356,8 @@ export class SettingsOverlay {
     const nextSectionGap = Math.round((dense ? 34 : 42) * this.uiScale);
     const renderGameplayRows = (start) => {
       let y = start;
+      this.addGameplayBackgroundRow(menuSettings.gameplayBackground, y);
+      y += rowGap;
       this.addToggleRow('Confirm Exit', menuSettings.confirmExit, y, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
         id: 'confirm_exit',
         onButton: (button) => { this.confirmExitButton = button; }
@@ -368,19 +372,24 @@ export class SettingsOverlay {
       this.addKeyboardBindingsRow('KEYBOARD', y);
       return y;
     };
-    const renderAudioPlaybackRows = (start, { includeAudioTest = true } = {}) => {
+    const renderAudioPlaybackRows = (start, { includeAudioTest = true, includeMusicPack = true } = {}) => {
       let y = start;
+      this.addMenuAudioRow(y);
+      y += tighterGap;
       this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
       y += tighterGap;
       this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
+      y += tighterGap;
+      this.addToggleRow('TACTICAL WARNINGS', settings.tacticalVoiceEnabled, y, (enabled) => AudioManager.setTacticalVoiceEnabled(enabled), { id: 'tactical_warnings' });
       y += tighterGap;
       this.addToggleRow('MENU VOICES', settings.menuVoiceEnabled, y, (enabled) => AudioManager.setMenuVoiceEnabled(enabled), { id: 'menu_voices' });
       y += tighterGap;
       this.addToggleRow('Boss Voices', settings.bossVoiceEnabled, y, (enabled) => AudioManager.setBossVoiceEnabled(enabled));
       y += tighterGap;
-      this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
+      this.addToggleRow('POST-RUN VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled), { id: 'post_run_voice' });
       y += tighterGap;
       const chatterRow = this.addChatterFrequencyRow('CHATTER RATE', settings.chatterFrequency, y);
+      this.audioHelpText = chatterRow?._description || null;
       // Flow from the rendered safety note rather than an assumed line count;
       // accessibility scale and localized copy can make it wrap.
       const chatterHelperHeight = Math.ceil(
@@ -393,10 +402,9 @@ export class SettingsOverlay {
         Math.round((dense ? 72 : 76) * this.uiScale),
         chatterHelperTop + chatterHelperHeight + Math.round(28 * this.uiScale)
       );
-      this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
+      if (includeMusicPack) this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
       if (includeAudioTest) {
         y += tighterGap;
-        this.addMenuAudioRow(y);
         y = Math.min(
           y + Math.round((dense ? 38 : 42) * this.uiScale),
           contentBottom - Math.round(18 * this.uiScale)
@@ -446,7 +454,7 @@ export class SettingsOverlay {
     if (this.activePage === 'audio') {
       setFormColumn(leftX);
       this.addSectionLabel('PLAYBACK', startY);
-      let y = renderAudioPlaybackRows(startY + sectionGap, { includeAudioTest: !twoColumn });
+      let y = renderAudioPlaybackRows(startY + sectionGap, { includeAudioTest: !twoColumn, includeMusicPack: !twoColumn });
       if (!twoColumn) {
         y += nextSectionGap;
         this.addSectionLabel('VOLUME', y);
@@ -455,12 +463,12 @@ export class SettingsOverlay {
         setFormColumn(rightX);
         this.addSectionLabel('VOLUME', startY);
         const volumeEndY = renderVolumeRows(startY + sectionGap);
-        this.addMenuAudioRow(volumeEndY + rowGap);
         const audioTestY = Math.min(
           volumeEndY + rowGap + Math.round((dense ? 48 : 54) * this.uiScale),
           contentBottom - Math.round(18 * this.uiScale)
         );
         this.addAudioTestRow('TEST', audioTestY);
+        this.addMusicPackRow('MUSIC SET', settings.musicPack, audioTestY + tighterGap + Math.round(20 * this.uiScale));
       }
     } else if (this.activePage === 'accessibility') {
       setFormColumn(leftX);
@@ -1234,7 +1242,7 @@ export class SettingsOverlay {
       {
         id: 'chatter_frequency',
         buttonWidth: 190,
-        description: 'Only non-critical chatter is reduced. Boss warnings and mission updates always play.',
+        description: 'Focus or hover over an Audio control to see what it does.',
         descriptionLines: 3,
         onButton: (button) => {
           buttonRef = button;
@@ -1245,9 +1253,11 @@ export class SettingsOverlay {
 
   addMenuAudioRow(y) {
     let buttonRef;
-    const value = () => translateText(AudioManager.menuAudioMode === 'music' ? 'MUSIC' : 'AMBIENCE');
+    const modes = ['ambient', 'music', 'legacy'];
+    const labels = { ambient: 'HANGAR TRACK', music: 'PLAYLIST', legacy: 'LEGACY AMBIENCE' };
+    const value = () => translateText(labels[AudioManager.menuAudioMode] || labels.ambient);
     return this.addChoiceRow('MENU AUDIO', value(), y, () => {
-      AudioManager.setMenuAudioMode(AudioManager.menuAudioMode === 'music' ? 'ambient' : 'music');
+      AudioManager.setMenuAudioMode(modes[(modes.indexOf(AudioManager.menuAudioMode) + 1) % modes.length]);
       if (buttonRef?._label) { buttonRef._label.text = value(); buttonRef._fitLabel?.(); }
     }, { id: 'menu_audio_mode', onButton: button => { buttonRef = button; } });
   }
@@ -1390,12 +1400,20 @@ export class SettingsOverlay {
     knob.eventMode = 'static';
     knob.cursor = 'pointer';
     const startDrag = (event) => {
+      const index = this.controls.findIndex((control) => control === sliderEntry);
+      if (index >= 0) this.setControlFocus(index);
       this.draggingSlider = { setFromGlobal };
       setFromGlobal(event.global.x);
       AudioManager.playSfx('ui_open', { volume: 0.12, minIntervalMs: 120 });
     };
     track.on('pointerdown', startDrag);
     knob.on('pointerdown', startDrag);
+    const focusSlider = () => {
+      const index = this.controls.findIndex((control) => control === sliderEntry);
+      if (index >= 0) this.setControlFocus(index);
+    };
+    track.on('pointerover', focusSlider);
+    knob.on('pointerover', focusSlider);
     this.container.on('pointermove', (event) => {
       if (this.draggingSlider?.setFromGlobal === setFromGlobal) {
         setFromGlobal(event.global.x);
@@ -1743,6 +1761,27 @@ export class SettingsOverlay {
     });
   }
 
+  addGameplayBackgroundRow(initialStyle, y) {
+    const styles = ['modern', 'legacy'];
+    let style = initialStyle === 'legacy' ? 'legacy' : 'modern';
+    const labelForStyle = () => translateText(style === 'legacy' ? 'Legacy' : 'Modern');
+    this.addChoiceRow('Gameplay Background', labelForStyle(), y, (direction = 1) => {
+      const currentIndex = styles.indexOf(style);
+      style = styles[(currentIndex + (direction < 0 ? -1 : 1) + styles.length) % styles.length];
+      saveMenuSettings({ gameplayBackground: style });
+      if (this.gameplayBackgroundButton?._label) {
+        this.gameplayBackgroundButton._label.text = labelForStyle();
+        this.gameplayBackgroundButton._fitLabel?.();
+      }
+      this.game?.currentScene?.reloadGameplayBackdropPreference?.();
+    }, {
+      id: 'gameplay_background',
+      onButton: (button) => {
+        this.gameplayBackgroundButton = button;
+      }
+    });
+  }
+
   addFooterButton(key, label, x, y, onPress, options) {
     const button = this.createButton(label, x, y, onPress, options);
     button.label = `ui_settingsFooter_${key}`;
@@ -1819,7 +1858,39 @@ export class SettingsOverlay {
       }
     });
     this.focusedControlIndex = next;
+    this.updateAudioHelp(this.controls[next]);
     if (changed) playMenuFocusSfx(0.08);
+  }
+
+  updateAudioHelp(control) {
+    if (this.activePage !== 'audio' || !this.audioHelpText) return;
+    const explanations = {
+      page_general: 'General settings for display and controls.',
+      page_audio: 'Choose which sounds play and set their volume.',
+      page_accessibility: 'Adjust visual comfort and accessibility.',
+      page_prototype: 'Experimental options for test flights.',
+      menu_audio_mode: 'Choose the soundscape used in the menus.',
+      toggle_music: 'Turn background music on or off.',
+      toggle_voice: 'Turn optional gameplay narration on or off.',
+      toggle_tactical_warnings: 'Warns of incoming threats, even when Voice is off.',
+      toggle_menu_voices: 'Turn spoken lines in the menus on or off.',
+      toggle_boss_voices: 'Turn boss narration on or off.',
+      toggle_post_run_voice: 'Turn spoken retry prompts on the results screen on or off.',
+      chatter_frequency: 'Choose how often optional voice lines play.',
+      slider_master: 'Set the overall game volume.',
+      slider_music: 'Set the background music volume.',
+      slider_sfx: 'Set the volume of gameplay sound effects.',
+      slider_ui: 'Set the volume of menu and button sounds.',
+      slider_voice: 'Set the volume of all spoken lines, including warnings.',
+      test_sfx: 'Play a sample sound effect at the current volume.',
+      test_voice: 'Play a sample voice line at the current volume.',
+      music_pack: 'Choose the soundtrack used during play.',
+      footer_credits: 'View the people who made Nova Swarm.',
+      footer_close: 'Close Settings and return to the game.'
+    };
+    const source = explanations[control?.id] || 'Focus or hover over an Audio control to see what it does.';
+    this.audioHelpText.text = translateText(source);
+    fitTextToWidth(this.audioHelpText, Math.max(210, this.getFormColumnWidth() - 44), { minScale: 0.45 });
   }
 
   getFocusedControl() {
@@ -2140,11 +2211,13 @@ export class SettingsOverlay {
     this.rows = [];
     this.draggingSlider = null;
     this.audioTestButtons = {};
+    this.audioHelpText = null;
     this.musicPackButton = null;
     this.displayModeButton = null;
     this.displaySizeButton = null;
     this.uiScaleButton = null;
     this.confirmExitButton = null;
+    this.gameplayBackgroundButton = null;
     this.pilotOrdersButton = null;
     this.footerButtons = {};
     this.pageButtons = {};
@@ -3051,6 +3124,8 @@ export class SettingsOverlay {
         windowSize: displaySettings.windowSize,
         uiScale: displaySettings.uiScale,
         uiScaleLabel: this.uiScaleButton?._label?.text || getUiScaleLabel(displaySettings.uiScale),
+        gameplayBackground: this.getMenuSettingsForOverlay().gameplayBackground,
+        gameplayBackgroundLabel: this.gameplayBackgroundButton?._label?.text || null,
         confirmExit: this.getMenuSettingsForOverlay().confirmExit,
         confirmExitLabel: this.confirmExitButton?._label?.text || (this.getMenuSettingsForOverlay().confirmExit ? 'ON' : 'OFF'),
         showPilotOrders: this.getMenuSettingsForOverlay().showPilotOrders,

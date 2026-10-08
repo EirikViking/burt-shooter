@@ -120,9 +120,9 @@ try {
       focusDriftActive: player.focusDriftActive
     };
 
-    const captureVolley = (profile, focused) => {
+    const captureVolley = (profile, focused, augments = ['focus_lens']) => {
       player.weaponProfile = { ...profile.ship.weapon };
-      player.runAugmentIds = ['focus_lens'];
+      player.runAugmentIds = augments;
       player.consumedRunAugmentIds = [];
       player.rankBoost = { type: null, expiresAt: 0 };
       player.synergyState = { type: null, expiresAt: 0, label: '' };
@@ -158,13 +158,16 @@ try {
       const travel = 600;
       const unfocusedOuter = outer(unfocused.angles);
       const focusedOuter = outer(focused.angles);
+      const focusSpreadMult = player.runAugmentModifiers.focusSpreadMult;
+      const extraShots = [0, 1, 2, 3].map(level => captureVolley(profile, false, Array(level).fill('double_shot')));
       return {
         lane: profile.lane,
         shipId: profile.ship.id,
         shipName: profile.ship.name,
         weaponSpread: profile.ship.weapon.spread,
         weaponBullets: profile.ship.weapon.bullets,
-        focusSpreadMult: player.runAugmentModifiers.focusSpreadMult,
+        focusSpreadMult,
+        extraShots,
         unfocused,
         focused,
         outerAngleRatio: unfocusedOuter > 0 ? focusedOuter / unfocusedOuter : 1,
@@ -235,6 +238,16 @@ try {
     `Friendly projectile alpha restored to ${clarity.restoredFriendlyAlpha}`);
 
   for (const sample of samples) {
+    for (let level = 1; level <= 3; level += 1) {
+      const previous = sample.extraShots[level - 1];
+      const current = sample.extraShots[level];
+      assert(current.projectileCount === Math.min(8, previous.projectileCount + 1),
+        `${sample.shipName}: level ${level} did not emit its extra projectile`);
+      if (previous.projectileCount > 1) {
+        assert(Math.max(...current.angles.map(Math.abs)) <= Math.max(...previous.angles.map(Math.abs)) + 0.000001,
+          `${sample.shipName}: level ${level} widened the volley instead of adding coverage within it`);
+      }
+    }
     assert(sample.focusSpreadMult === 0.6, `${sample.shipName}: Focus Lens multiplier was ${sample.focusSpreadMult}`);
     assert(sample.focused.projectileCount === sample.unfocused.projectileCount,
       `${sample.shipName}: Focus changed projectile count`);

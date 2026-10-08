@@ -1,3 +1,10 @@
+import { getGameOverQualitySourceText } from '../gameOverQualityText.js';
+import { getFirstLightSourceText } from '../firstLightText.js';
+import { getOnslaughtText } from '../onslaughtText.js';
+import { getAudioSettingsHelpText } from '../audioSettingsHelpText.js';
+import { getMysterySourceText } from '../mysteryText.js';
+import {getDiscoveryText} from '../discoveryText.js';
+import { getTractorFleetSourceText } from '../tractorFleetText.js';
 import { getMenuAudioSourceText } from '../menuAudioText.js';
 import { getActivePilotingText } from '../activePilotingText.js';
 import { getLaunchHomeSourceText } from '../launchHomeText.js';
@@ -33,6 +40,7 @@ import { getHighSectorSourceText } from '../highSectorSourceText.js';
 import { getLateGameExperimentSourceText } from '../lateGameExperimentSourceText.js';
 
 const sourceText = Object.freeze({
+  ...getAudioSettingsHelpText('ru'),
   'MOVE — WASD / ARROWS  •  SHOOT — SPACE': 'ДВИЖЕНИЕ — WASD / СТРЕЛКИ  •  ОГОНЬ — ПРОБЕЛ',
   'MOVE — STICK / D-PAD  •  SHOOT — A / RT': 'ДВИЖЕНИЕ — СТИК / D-PAD  •  ОГОНЬ — A / RT',
   'PHASE — SHIFT': 'ФАЗА — SHIFT',
@@ -956,6 +964,11 @@ const sourceText = Object.freeze({
   'VOICE': 'ГОЛОС',
   'Boss Voices': 'ГОЛОС БОССА',
   'CTA VOICE': 'ГОЛОС ПОВТ.',
+  'RETRY VOICE': 'ГОЛОС ПОВТОРА',
+  'POST-RUN VOICE': 'ГОЛОС ПОСЛЕ ЗАБЕГА',
+  'TACTICAL WARNINGS': 'ТАКТИЧЕСКИЕ ПРЕДУПРЕЖДЕНИЯ',
+  'Tactical Warnings play incoming threats even with Voice off. Retry Voice controls retry prompts. Chatter Rate affects optional voices.': 'Тактические предупреждения сообщают об угрозах даже при выключенном голосе. Голос повтора управляет предложениями начать заново. Частота реплик влияет на необязательные голоса.',
+  'Tactical Warnings announce incoming threats even with Voice off. Post-Run Voice invites another try on the results screen. Chatter Rate affects optional voices.': 'Тактические предупреждения сообщают об угрозах даже при выключенном голосе. Голос после забега предлагает попробовать снова на экране результатов. Частота реплик влияет на необязательные голоса.',
   'Chatter Frequency': 'ЧАСТОТА ФРАЗ',
   'CHATTER RATE': 'ЧАСТОТА ФРАЗ',
   'Full': 'Полная',
@@ -1524,6 +1537,7 @@ const sourceText = Object.freeze({
   'Reach sector 15 in overrun and pilot rank 13': 'Доберись до сектора 15 в оверране и ранга пилота 13',
   'Discover 160 Threat Codex entries and reach pilot rank 14': 'Открой 160 записей Codex угроз и достигни ранга пилота 14',
   'Clear the arcade run 3 times and reach pilot rank 14': 'Пройди аркадный забег 3 раза и достигни ранга пилота 14',
+  "Clear Sector 10 in Mayhem with 2 lives left, or score 500,000 in Mayhem": "Пройдите сектор 10 в Mayhem с 2 жизнями или наберите 500 000 очков в Mayhem",
   'Clear with 2 lives remaining or score 500,000': 'Пройди с 2 жизнями в запасе или набери 500 000 очков',
   'Clear twice, reach rank 16, and discover 180 threats': 'Пройди дважды, достигни ранга 16 и открой 180 угроз',
   'HULLS READY': 'КОРПУСА ГОТОВЫ',
@@ -1544,6 +1558,7 @@ const sourceText = Object.freeze({
   'Qualify for the global leaderboard.': 'Попади в глобальную таблицу лидеров.',
   'Swarm Elite': 'Элита роя',
   'Submit a 750,000-point ranked run.': 'Отправь результат 750 000 очков в рейтинговом забеге.',
+  'Submit a ranked score of at least 250,000 points. Modes: Arcade Tactical, Arcade Pure, Onslaught Tactical.': 'Отправьте рейтинговый результат не менее 250 000 очков. Режимы: Arcade Tactical, Arcade Pure, Onslaught Tactical.',
   'Legacy Ranked Run': 'Старый рейтинговый забег',
   'Unknown Run Mode': 'Неизвестный режим',
   'First Ranked Run': 'Pervyy reytingovyy zabeg',
@@ -1857,6 +1872,8 @@ const overhaulSourceText = Object.freeze({
 
 export const ru = {
   code: 'ru',
+  history: { unknownMode: "Режим неизвестен", sectorUnrecorded: "СЕКТОР НЕ ЗАПИСАН", sectorUnrecordedHint: "В старых записях Steam данные о секторах не сохранялись." },
+  recovery: {storageHelp:"Не удалось сохранить. Оставьте игру открытой и освободите место на диске или восстановите доступ к папке сохранений. Попытки повторяются автоматически. Перезапуск доступен после успешного сохранения.","title":"Игра приостановлена из-за ошибки","help":"Если графика восстановится, вернитесь в меню паузы. Перезапуск завершит текущий полёт; ранее сохранённый прогресс останется. Если ошибка повторится, укажите сборку и приложите recovery/recovery-latest.json к отчёту.","resume":"В меню паузы","restart":"Перезапустить игру"},
   name: 'Russian',
   nativeName: 'Русский',
   settings: {
@@ -1878,6 +1895,6 @@ export const ru = {
   diagnostics: {
     interfaceLanguage: 'Язык интерфейса'
   },
-  sourceText: Object.freeze({ ...getMenuAudioSourceText('ru'), ...getActivePilotingText('ru'), ...getLaunchHomeSourceText('ru'), ...getShipTraitSummarySourceText("ru"), ...getBonusCoreSourceText('ru'), ...getBonusDroneSourceText('ru'), ...getCoreSerpentSourceText('ru'), ...getAstraPresentationSourceText('ru'), ...getFirstRunRetentionSourceText('ru'), ...getModeBriefingReviewSourceText('ru'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getTyrianFeedbackSourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru'), ...getWonderCodexSourceText('ru'), ...getHangarLaunchModeSourceText('ru'), ...getNewestTyrianFeedbackSourceText('ru'), ...getSecondPolishSourceText('ru'), ...getTyrian112SourceText('ru'), ...getHighSectorSourceText('ru'), ...getLateGameExperimentSourceText('ru') }),
+  sourceText: Object.freeze({ ...getFirstLightSourceText('ru'), ...getOnslaughtText('ru'), "Steam: Upload pending":"Steam: Отправка ожидается","Steam: Upload not confirmed":"Steam: Отправка не подтверждена", "TEST FLIGHT · SECTOR {sector} · CHOOSE ANY SHIP": "ТЕСТОВЫЙ ПОЛЁТ · СЕКТОР {sector} · ВЫБЕРИТЕ ЛЮБОЙ КОРАБЛЬ", ...getMysterySourceText('ru'), ...getDiscoveryText('ru'), ...getTractorFleetSourceText('ru'), ...getMenuAudioSourceText('ru'), ...getActivePilotingText('ru'), ...getLaunchHomeSourceText('ru'), ...getShipTraitSummarySourceText("ru"), ...getBonusCoreSourceText('ru'), ...getBonusDroneSourceText('ru'), ...getCoreSerpentSourceText('ru'), ...getAstraPresentationSourceText('ru'), ...getFirstRunRetentionSourceText('ru'), ...getModeBriefingReviewSourceText('ru'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getTyrianFeedbackSourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru'), ...getWonderCodexSourceText('ru'), ...getHangarLaunchModeSourceText('ru'), ...getNewestTyrianFeedbackSourceText('ru'), ...getSecondPolishSourceText('ru'), ...getTyrian112SourceText('ru'), ...getHighSectorSourceText('ru'), ...getLateGameExperimentSourceText('ru'), ...getGameOverQualitySourceText('ru') }),
   patterns
 };

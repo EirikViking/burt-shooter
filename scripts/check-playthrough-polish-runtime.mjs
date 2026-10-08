@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';import {mkdirSync,writeFileSync}from'node:fs';import {chromium}from'playwright';
+const out=process.env.CHECK_OUTPUT_DIR;assert(out?.startsWith('E:'));mkdirSync(out,{recursive:true});
+const browser=await chromium.launch({channel:'chrome',headless:true}),errors=[];
+try{const page=await browser.newPage({viewport:{width:1280,height:720}});page.on('pageerror',e=>errors.push(e.message));page.on('console',e=>{if(e.type()==='error')errors.push(e.text());});
+ await page.goto(`${process.env.CHECK_URL}/?encounterEvolution=orbit-breaker&autostart=1&offlineLeaderboard=1`);
+ await page.waitForFunction(()=>window.__game?.scenes.play?.encounterExpansionTestReady,null,{timeout:90000});
+ const result=await page.evaluate(async()=>{const g=window.__game,s=g.scenes.play,p=s.player;g.app.ticker.stop();s.enemyManager.clearEnemies();s.bulletManager.clearAll('polish-test');
+  const {setReducedMotionEnabled,setFlashIntensityScale}=await import('/src/config/AccessibilitySettings.js');
+  const {combatFinishTexture}=await import('/src/effects/CombatFinish.js');
+  p.x=640;p.y=500;p.sprite.position.set(p.x,p.y);const hammer=p.orbitBreaker;hammer.model.clear();hammer.ribbon.length=0;hammer.update(1/60);
+  const headRegistered=hammer.hammer.x===hammer.model.position.x&&hammer.hammer.y===hammer.model.position.y&&hammer.hammer.anchor.x===.8;
+  const pool=s.particleManager.premiumImpacts;pool.clear();for(let i=0;i<100;i++)pool.emit(640,400,900,'impact');
+  pool.update(1);const capped=pool.slots.filter(x=>x.active).length===24&&pool.slots.every(x=>x.accent.width<=66);
+  const cache=pool.slots.every(x=>x.accent.texture===combatFinishTexture('shock'))&&combatFinishTexture()===combatFinishTexture();
+  setFlashIntensityScale(0);hammer.update(1/60);pool.update(1);const zeroFlash=hammer.headLight.alpha===0&&pool.slots.every(x=>x.accent.alpha===0);
+  setReducedMotionEnabled(true);setFlashIntensityScale(.25);pool.update(1);const reducedWidth=pool.slots[0].accent.width;pool.update(1);const reduced=pool.slots[0].accent.width===reducedWidth;
+  for(let i=0;i<60;i++)pool.update(1);const finite=pool.slots.every(x=>!x.active&&!x.sprite.visible&&!x.accent.visible);
+  setReducedMotionEnabled(false);setFlashIntensityScale(1);hammer.update(1/60);g.app.render();
+  return{prototype:g.runPolicy.prototype,headRegistered,capped,cache,zeroFlash,reduced,finite};});
+ for(const [key,value]of Object.entries(result))assert(value,key);await page.screenshot({path:`${out}/orbit-polished.png`});
+ const disposed=await page.evaluate(()=>{const s=window.__game.scenes.play,h=s.player.orbitBreaker,p=s.particleManager.premiumImpacts;s.destroy();return{hammer:h.root.destroyed,accents:p.slots.every(x=>!x.active&&!x.accent.visible)};});assert(disposed.hammer&&disposed.accents);assert.deepEqual(errors,[]);
+ writeFileSync(`${out}/report.json`,JSON.stringify({status:'passed',result,disposed,errors},null,2));console.log('[playthrough-polish-runtime] PASS registered head, shared fixed pool, accessibility, expiry and scene cleanup');
+}finally{await browser.close();}

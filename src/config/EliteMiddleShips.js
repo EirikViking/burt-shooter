@@ -1,13 +1,14 @@
+import {discoverySector} from './DiscoveryProgression.js';
 import { getNormalWavePressureTuning } from './BalanceConfig.js';
 import { ELITE_MIDDLE_SHIP_EXPANSION } from './EliteMiddleShipExpansion.js';
 
-export const ELITE_MIDDLE_SHIP_FULL_UNLOCK_LEVEL = 40;
+export const ELITE_MIDDLE_SHIP_FULL_UNLOCK_LEVEL = 60;
 export const ELITE_MIDDLE_SHIP_ASSET_COUNT = 50;
 
 const assetPath = (index, slug) =>
   `/art/generated/nova-swarm/elites/nova-elite-middle-${String(index).padStart(2, '0')}-${slug}-20260523.png`;
 
-export const ELITE_MIDDLE_SHIPS = [
+const AUTHORED_ELITES = [
   {
     id: 'nova_elite_tractor_puller',
     type: 'nova_elite_tractor_puller',
@@ -770,6 +771,12 @@ export const ELITE_MIDDLE_SHIPS = [
   },
   ...ELITE_MIDDLE_SHIP_EXPANSION
 ];
+
+const revealOrder=[...AUTHORED_ELITES].sort((a,b)=>a.minLevel-b.minLevel);
+export const ELITE_MIDDLE_SHIPS=AUTHORED_ELITES.map(profile=>{
+  const unlockLevel=Math.max(profile.minLevel,discoverySector(revealOrder.indexOf(profile),AUTHORED_ELITES.length,3));
+  return {...profile,minLevel:unlockLevel,unlockLevel};
+});
 
 export const ELITE_MIDDLE_SHIP_IDS = ELITE_MIDDLE_SHIPS.map((profile) => profile.id);
 export const ELITE_MIDDLE_SHIP_ASSETS = ELITE_MIDDLE_SHIPS.map((profile) => profile.asset);

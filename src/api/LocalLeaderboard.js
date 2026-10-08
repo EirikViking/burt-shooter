@@ -56,6 +56,10 @@ function normalizeEntry(raw, fallbackIndex = 0) {
     careerRankExact: raw.careerRankExact == null
       ? null
       : normalizePilotXpExact(raw.careerRankExact, String(rankIndex + 1)),
+    runMode: typeof raw.runMode === 'string' ? raw.runMode.slice(0, 40) : null,
+    startSector: Number.isInteger(Number(raw.startSector)) && Number(raw.startSector) > 0 ? Number(raw.startSector) : null,
+    endSector: Number.isInteger(Number(raw.endSector)) && Number(raw.endSector) > 0 ? Number(raw.endSector) : null,
+    levelSource: raw.levelSource || (Number(raw.level ?? raw.levelReached) > 0 ? 'encoded' : 'score_estimate'),
     shipId: raw.shipId ?? raw.ship_id ?? null,
     shipName: raw.shipName ?? raw.ship_name ?? null,
     runTimeSeconds: raw.runTimeSeconds ?? raw.runtimeSeconds ?? null,
@@ -136,6 +140,10 @@ export const LocalLeaderboard = {
       level: readLeaderboardLevel(entry, estimateLeaderboardLevelFromScore(score)),
       rankIndex: entry.rankIndex ?? entry.rank_index ?? getRankFromLevel(readLeaderboardLevel(entry, estimateLeaderboardLevelFromScore(score))),
       careerRankExact: entry.careerRankExact,
+      runMode: typeof entry.runMode === 'string' ? entry.runMode.slice(0, 40) : null,
+    startSector: Number.isInteger(Number(entry.startSector)) && Number(entry.startSector) > 0 ? Number(entry.startSector) : null,
+    endSector: Number.isInteger(Number(entry.endSector)) && Number(entry.endSector) > 0 ? Number(entry.endSector) : null,
+      levelSource: entry.levelSource || (Number(entry.level ?? entry.levelReached) > 0 ? 'encoded' : 'score_estimate'),
       shipId: entry.shipId,
       shipName: entry.shipName,
       runTimeSeconds: entry.runTimeSeconds,

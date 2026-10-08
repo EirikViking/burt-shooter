@@ -1,0 +1,107 @@
+[
+  {
+    "id": "harpoon",
+    "source": "docs\\tractor-fleet\\sprite-originals\\harpoon.png",
+    "runtime": "public\\art\\tractor-fleet\\harpoon.png",
+    "bytes": 124829,
+    "sha256": "38c8b479f95b010436bfad2380e778b441b6c50d15d0a17487ce4f24c2e48f45"
+  },
+  {
+    "id": "tide",
+    "source": "docs\\tractor-fleet\\sprite-originals\\tide.png",
+    "runtime": "public\\art\\tractor-fleet\\tide.png",
+    "bytes": 267893,
+    "sha256": "fdaa87ec65170ef4a978f2fba42c1e0f72f61da4af5a6dd9e3d29bd2e2be380b"
+  },
+  {
+    "id": "pulse",
+    "source": "docs\\tractor-fleet\\sprite-originals\\pulse.png",
+    "runtime": "public\\art\\tractor-fleet\\pulse.png",
+    "bytes": 258084,
+    "sha256": "21d85447a5fc420f526de1a6ed00bb11ee6bb2e275ded16f31ba0b04e6092fb3"
+  },
+  {
+    "id": "twin",
+    "source": "docs\\tractor-fleet\\sprite-originals\\twin.png",
+    "runtime": "public\\art\\tractor-fleet\\twin.png",
+    "bytes": 188420,
+    "sha256": "036c6bc8a26f9429da146f7780a8b208fe1ff04a4c8b8083de86058507836282"
+  },
+  {
+    "id": "helix",
+    "source": "docs\\tractor-fleet\\sprite-originals\\helix.png",
+    "runtime": "public\\art\\tractor-fleet\\helix.png",
+    "bytes": 213059,
+    "sha256": "04f9ba8b24142a1379e0e97e531bc5026fe47250b5f1b044b440ec47080ee5c2"
+  },
+  {
+    "id": "well",
+    "source": "docs\\tractor-fleet\\sprite-originals\\well.png",
+    "runtime": "public\\art\\tractor-fleet\\well.png",
+    "bytes": 410375,
+    "sha256": "c64cb5e981bb3df763eb343b4c05ad3d15c30f3d60314e8e873be03ac734e611"
+  },
+  {
+    "id": "shepherd",
+    "source": "docs\\tractor-fleet\\sprite-originals\\shepherd.png",
+    "runtime": "public\\art\\tractor-fleet\\shepherd.png",
+    "bytes": 307873,
+    "sha256": "fce587f8cfc8dfe3841ccf56a18507d83d8f6f839822932793088e835e06d5a9"
+  },
+  {
+    "id": "anchor",
+    "source": "docs\\tractor-fleet\\sprite-originals\\anchor.png",
+    "runtime": "public\\art\\tractor-fleet\\anchor.png",
+    "bytes": 222988,
+    "sha256": "2a24f401ea5b5e726ba0ba7ecdfe97b8465f6076e97a586a821c26b0fd5f24b0"
+  },
+  {
+    "id": "elevator",
+    "source": "docs\\tractor-fleet\\sprite-originals\\elevator.png",
+    "runtime": "public\\art\\tractor-fleet\\elevator.png",
+    "bytes": 252668,
+    "sha256": "13d8b8a2a4bdb8bd6a56318a8046e23d9ba6c7e1347160db2315fd057ac902ab"
+  },
+  {
+    "id": "winch",
+    "source": "docs\\tractor-fleet\\sprite-originals\\winch.png",
+    "runtime": "public\\art\\tractor-fleet\\winch.png",
+    "bytes": 342489,
+    "sha256": "56d0991aaa67f271cb108d9be585a1c2d33f7287f9619744176ab9580d028740"
+  },
+  {
+    "id": "prism",
+    "source": "docs\\tractor-fleet\\sprite-originals\\prism.png",
+    "runtime": "public\\art\\tractor-fleet\\prism.png",
+    "bytes": 202949,
+    "sha256": "07e6e2c6407cff6bc385fc438d224cc490e9709dea8561586954f5924a21083d"
+  },
+  {
+    "id": "pendulum",
+    "source": "docs\\tractor-fleet\\sprite-originals\\pendulum.png",
+    "runtime": "public\\art\\tractor-fleet\\pendulum.png",
+    "bytes": 246741,
+    "sha256": "4a6004ba38819f3bca9ccc7dee5581b5206c721ed476161a01eb321718f07338"
+  },
+  {
+    "id": "zipper",
+    "source": "docs\\tractor-fleet\\sprite-originals\\zipper.png",
+    "runtime": "public\\art\\tractor-fleet\\zipper.png",
+    "bytes": 259431,
+    "sha256": "bd315257fb925fd3cf8e273b839c0e3f5908d9e5a2aad3ff5622f501f501493d"
+  },
+  {
+    "id": "eclipse",
+    "source": "docs\\tractor-fleet\\sprite-originals\\eclipse.png",
+    "runtime": "public\\art\\tractor-fleet\\eclipse.png",
+    "bytes": 318188,
+    "sha256": "344f7053b0cf4d480aff0a2b9099f23a547d50c5a034ec3703c848639eec14c8"
+  },
+  {
+    "id": "sling",
+    "source": "docs\\tractor-fleet\\sprite-originals\\sling.png",
+    "runtime": "public\\art\\tractor-fleet\\sling.png",
+    "bytes": 284305,
+    "sha256": "f872cded7b5e6c4b19d88f7e97ec2bc9e453ee1ae380d6af8051e3d21341481e"
+  }
+]

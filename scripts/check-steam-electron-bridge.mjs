@@ -206,6 +206,13 @@ async function checkNativeBridgeHappyPath() {
     isDestroyed: () => false,
     webContents
   };
+  const captureScreenshot = bridge.captureElectronScreenshot.bind(bridge);
+  let physicalScreenshot = null;
+  bridge.captureElectronScreenshot = (window, options) => {
+    const pending = captureScreenshot(window, options);
+    if (options?.source === 'f12') physicalScreenshot = pending;
+    return pending;
+  };
   const screenshotOutputDir = mkdtempSync(path.join(tmpdir(), 'nova-swarm-screenshot-test-'));
   const captureSurface = bridge.enableElectronScreenshotCapture(captureWindow, {
     outputDir: screenshotOutputDir
@@ -236,7 +243,9 @@ async function checkNativeBridgeHappyPath() {
     key: 'F12',
     isAutoRepeat: false
   });
-  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.ok(physicalScreenshot, 'physical F12 must start a screenshot capture');
+  const physicalResult = await physicalScreenshot;
+  assert.equal(physicalResult.ok, true, 'physical F12 must finish the frame capture');
   assert.equal(prevented, true);
   assert.equal(
     nativeModule.fakeSteam.calls.filter(call => call[0] === 'addScreenshotToLibrary').length,
@@ -259,6 +268,19 @@ async function checkNativeBridgeHappyPath() {
   assert.equal(globalScores[0].isCurrentPlayer, true);
   assert.equal(globalScores[0].metadata.levelReached, 8);
   assert.equal(globalScores[0].level, 8, 'Steam hex details must override stale LV1 fields');
+
+  const ownBest = await bridge.getPlayerBest({ leaderboardName: STEAM_LEADERBOARD_NAME });
+  assert.equal(ownBest.steamId, '76561198000000001');
+  assert.equal(ownBest.score, 44000);
+  assert.deepEqual(ownBest.details, globalScores[0].details);
+  assert.deepEqual(nativeModule.fakeSteam.calls.filter(call => call[0] === 'downloadLeaderboardEntries').at(-1),
+    ['downloadLeaderboardEntries', '55', 1, 0, 0], 'own record lookup must use GlobalAroundUser without a top-100 cutoff');
+  const originalDownload = nativeModule.fakeSteam.leaderboards.downloadLeaderboardEntries;
+  nativeModule.fakeSteam.leaderboards.downloadLeaderboardEntries = async () => [
+    { steamId: '76561198000000002', score: 999999, details: [99, 1, 190, 80, 1, 12] }
+  ];
+  assert.equal(await bridge.getPlayerBest(), null, 'never use another Steam ID as the current player row');
+  nativeModule.fakeSteam.leaderboards.downloadLeaderboardEntries = originalDownload;
 
   const friendsScores = await bridge.getFriendsScores({
     leaderboardName: STEAM_LEADERBOARD_NAME,
@@ -366,7 +388,7 @@ function checkPreloadSurface() {
   assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaPerformanceDiagnostics'/);
   assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaApp'/);
   assert.doesNotMatch(preload, /fs\.|child_process|shell|process\.env/);
-  for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getFriendsScores', 'submitScore', 'submitScoreDetailed', 'requestCurrentStats', 'getLastUploadDiagnostics', 'getRuntimeInfo']) {
+  for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getPlayerBest', 'getFriendsScores', 'submitScore', 'submitScoreDetailed', 'requestCurrentStats', 'getLastUploadDiagnostics', 'getRuntimeInfo']) {
     assert.match(preload, new RegExp(`${method}:`));
   }
   for (const method of ['getSettings', 'getInfo', 'applySettings']) {

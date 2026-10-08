@@ -1,17 +1,22 @@
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {mkdirSync,writeFileSync} from 'node:fs';
+import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {chromium} from 'playwright';
-const out='test-results/astra-detonation-integrity';mkdirSync(out,{recursive:true});
-const transformed=await (await fetch('http://127.0.0.1:4399/src/effects/ParticleManager.js')).text();
+const out=process.env.CHECK_OUTPUT_DIR;if(!out?.startsWith('E:'))throw Error('E: output required');mkdirSync(out,{recursive:true});
+const url=process.env.CHECK_URL||'http://127.0.0.1:4399';
+const transformed=await (await fetch(url+'/src/effects/ParticleManager.js')).text();
 const pixiUrl=transformed.match(/from\s+["']([^"']*pixi__js[^"']*)/)[1];
-const old=execFileSync('git',['show','682264e:src/effects/ParticleManager.js'],{encoding:'utf8'}).replaceAll("'../","'/src/").replaceAll("'./","'/src/effects/").replace("'pixi.js'",JSON.stringify(pixiUrl));
+// A dirty delivered build can have a verified source snapshot newer than the
+// historical Git reference. Callers must retain its delivery/hash provenance.
+const baseline=process.env.ASTRA_PARTICLE_BASELINE_FILE||'git:682264e:src/effects/ParticleManager.js';
+const baselineSource=process.env.ASTRA_PARTICLE_BASELINE_FILE?readFileSync(baseline,'utf8'):execFileSync('git',['show','682264e:src/effects/ParticleManager.js'],{encoding:'utf8'});
+const old=baselineSource.replaceAll("'../","'/src/").replaceAll("'./","'/src/effects/").replace("'pixi.js'",JSON.stringify(pixiUrl));
 const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
 const errors=[],warnings=[];
 try{
  const page=await browser.newPage();await page.route('**/*',r=>r.request().url().endsWith('/astra-old-particles.js')?r.fulfill({contentType:'text/javascript',body:old}):/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(r.request().url())||/^(data|blob):/.test(r.request().url())?r.continue():r.abort());
  page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['error','warning'].includes(m.type()))warnings.push(m.text());});
- await page.goto('http://127.0.0.1:4399/?offlineLeaderboard=1');
+ await page.goto(url+'/?offlineLeaderboard=1');
  await page.waitForFunction(()=>window.__game?.scenes?.menu?.backdrop?.texture,null,{timeout:120000});
  const results=await page.evaluate(async(pixiUrl)=>{
   const {ParticleManager:Old}=await import('/astra-old-particles.js'),{ParticleManager:New}=await import('/src/effects/ParticleManager.js');
@@ -24,7 +29,7 @@ try{
   const before=run(Old),after=run(New);
   const d=new AstraDetonation(new Container());let calls=0;Math.random=()=>{calls++;throw Error('Detonation consumed gameplay RNG');};
   let peak=0,duplicate=0,reduced=false,cleared=false;
-  try{d.emit(200,200,1,true);d.emit(201,201,1,true);duplicate=d.active.length;for(let i=0;i<100;i++){d.emit(400,400,1);d.update(.1);peak=Math.max(peak,d.active.length+d.pool.length);}setReducedMotionEnabled(true);d.clear();d.emit(300,300,1,true);reduced=d.active[0].reduced&&d.active[0].display.front.context.instructions.length===0;d.update(100);cleared=d.active.length===0;d.clear();}finally{Math.random=rng;setReducedMotionEnabled(false);}
+  try{d.emit(200,200,1,true);d.emit(201,201,1,true);duplicate=d.active.length;for(let i=0;i<100;i++){d.emit(400,400,1);d.update(.1);peak=Math.max(peak,d.active.length+d.pool.length);}setReducedMotionEnabled(true);d.clear();d.emit(300,300,1,true);reduced=d.active[0].reduced&&d.active[0].display.front.context.instructions.length===0;if(d.active[0].lifetime>120)throw Error('Boss explosion exceeded two-second visual budget');d.update(d.active[0].lifetime);cleared=d.active.length===0;d.clear();}finally{Math.random=rng;setReducedMotionEnabled(false);}
   const PIXI=await import(pixiUrl),{HullBreakup}=await import('/src/effects/HullBreakup.js');
   const stage=new Container(),hullParent=new Container(),debrisParent=new Container();stage.addChild(hullParent,debrisParent);
   hullParent.position.set(380,240);hullParent.scale.set(1.4);hullParent.rotation=.22;
@@ -42,8 +47,8 @@ try{
   }finally{Math.random=rng;setReducedMotionEnabled(false);stage.destroy({children:true});}
   return {before,after,calls,peak,duplicate,reduced,cleared,meshPeak,meshError};
  },pixiUrl);
- writeFileSync(`${out}/report.json`,JSON.stringify({results,errors,warnings},null,2));
- assert.deepEqual(results.after,results.before,'Original RNG stream, particle state, pressure allocator and retirement must match the previous committed version');
+ writeFileSync(`${out}/report.json`,JSON.stringify({baseline,results,errors,warnings},null,2));
+ assert.deepEqual(results.after,results.before,'RNG stream, particle state, pressure allocator and retirement must match the selected verified baseline');
  assert.equal(results.calls,0);assert.equal(results.duplicate,1);assert.ok(results.peak<=18);assert.equal(results.meshPeak,8);assert.ok(results.meshError<.001,'Boss fragments must preserve the complete hull transform');assert.ok(results.reduced&&results.cleared);assert.deepEqual(errors,[]);assert.deepEqual(warnings,[]);
- writeFileSync(`${out}/report.json`,JSON.stringify({ok:true,results,errors,warnings},null,2));console.log('PASS: exact legacy RNG and allocator parity, 18-effect bound, boss dedupe, reduced motion and retirement');
+ writeFileSync(`${out}/report.json`,JSON.stringify({ok:true,baseline,results,errors,warnings},null,2));console.log('PASS: exact selected-baseline RNG and allocator parity, 18-effect bound, boss dedupe, reduced motion and retirement');
 }finally{await browser.close();}

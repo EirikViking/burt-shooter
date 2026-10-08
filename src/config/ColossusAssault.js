@@ -37,6 +37,13 @@ export function assaultSectors(h) {
   const start=h.safeAngle+h.safeWedge,span=Math.PI*2-h.safeWedge*2;
   return Array.from({length:n},(_,i)=>({start:start+span*i/n,end:start+span*(i+1)/n,slot:i}));
 }
+// Only preview space ahead of the travelling front. Behind its tail the
+// collision test is already clear, including the pause before a repeat pulse.
+export function assaultGuideStart(h, span = 1, slot = 0) {
+  if ((h.elapsedMs || 0) < h.armingMs) return 0;
+  const windows = assaultWindows(h, span, slot);
+  return windows.length ? windows[0][0] : span;
+}
 export function isInsideColossusFront(h, x, y, margin=0) {
   if ((h.elapsedMs||0)<h.armingMs) return false;
   const dx=x-h.sourceX,dy=y-h.sourceY;

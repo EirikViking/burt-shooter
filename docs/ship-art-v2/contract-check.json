@@ -1,0 +1,58 @@
+{
+  "baseline": "0439b1f1064416416d255bc1fef881412c568927",
+  "onlySparrow": true,
+  "gameplayUntouched": true,
+  "sprite": {
+    "before": {
+      "width": 512,
+      "height": 512,
+      "bounds": {
+        "minX": 47,
+        "minY": 62,
+        "maxX": 464,
+        "maxY": 449
+      },
+      "center": [
+        255.5,
+        255.5
+      ]
+    },
+    "after": {
+      "width": 512,
+      "height": 512,
+      "bounds": {
+        "minX": 47,
+        "minY": 60,
+        "maxX": 464,
+        "maxY": 451
+      },
+      "center": [
+        255.5,
+        255.5
+      ]
+    }
+  },
+  "asset": {
+    "before": {
+      "bytes": 2216520,
+      "triangles": 51916,
+      "materials": 9,
+      "images": 0,
+      "primitives": 9,
+      "extensions": [
+        "KHR_materials_emissive_strength"
+      ]
+    },
+    "after": {
+      "bytes": 1856220,
+      "triangles": 23828,
+      "materials": 6,
+      "images": 4,
+      "primitives": 6,
+      "extensions": [
+        "KHR_materials_clearcoat",
+        "KHR_materials_emissive_strength"
+      ]
+    }
+  }
+}

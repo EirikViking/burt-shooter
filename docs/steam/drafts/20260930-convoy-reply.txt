@@ -1,0 +1,8 @@
+Thanks, Tyrian, and thank you for confirming Serpent Duel and the overall Onslaught achievement.
+
+[quote=Tyrian Mollusk]whooshed right back in as the next wave started[/quote]
+I traced this to ordinary wave briefings hiding the same unfinished encounter, then showing it again when combat resumed. Its health survived, but the departure and arrival presentation made that look like a different event.
+
+The local development build now keeps the convoy or rival visibly present through an ordinary wave briefing, without using up its combat time or firing into the break. A boss, snake, challenge or other incompatible major encounter still suspends it. I have not released this fix yet.
+
+The suggestion to make a passing convoy's remaining opportunity clearer is good. This fix addresses the misleading repeated entrances; a more deliberate travel pattern and timing read still need a separate playtest. I am also preserving the improvements you liked in the moving targets and calmer Graze Break effect.

@@ -1,0 +1,19 @@
+[2026-09-09 17:59:54]: Starting build for depot 4765071, content path is "D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\release\\desktop\\win-unpacked\", build flags 0x0
+[2026-09-09 17:59:54]: Building file listing for depot 4765071 ...
+[2026-09-09 17:59:54]: Found 470 files for mapping: D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\release\desktop\win-unpacked * -> .
+[2026-09-09 17:59:55]: Found 470 files (1888 MB) for depot 4765071
+[2026-09-09 17:59:58]: Building depot 4765071, baseline manifest 9091888197591386203 (470 files)
+[2026-09-09 18:07:38]: Found 2221 new chunks ( 2249 used previously ) for depot 4765071, took 7 minutes, 40 seconds
+[2026-09-09 18:07:38]: Changes to baseline manifest 9091888197591386203 :
+[2026-09-09 18:07:38]: Changed: "Nova Swarm.exe" 221386 KB size, 1024 KB changed
+[2026-09-09 18:07:38]: Changed: "resources\app.asar" 1544851 KB size, 96413 KB changed
+[2026-09-09 18:07:38]: Summary: 0 files added (0 bytes), 2 files changed (95.15 MB), 0 files removed (0 bytes)
+[2026-09-09 18:07:38]: Uploading new manifest to depot-ingest.discovery.steamserver.net (handle 10912503644146541394, 139842 bytes).
+[2026-09-09 18:07:40]: Uploading 99 out of 99 missing chunks.
+[2026-09-09 18:08:08]: Retrying chunk for URL "https://depot-ingest.discovery.steamserver.net/chunkupload/1f8578765e2ffcf8deeae67a6273d93a47c5370b?appid=4765070&depotid=4765071&buildid=10912503644146541394&compressed_crc=836275097&compressed_size=1048656".  HTTP 0.  (from 205.196.6.230:443)
+[2026-09-09 18:08:08]: Retrying chunk for URL "https://depot-ingest.discovery.steamserver.net/chunkupload/b86895bfef6893eac9b7c6664e02698d8d98702e?appid=4765070&depotid=4765071&buildid=10912503644146541394&compressed_crc=443343008&compressed_size=1048656".  HTTP 0.  (from 205.196.6.230:443)
+[2026-09-09 18:08:08]: Retrying chunk for URL "https://depot-ingest.discovery.steamserver.net/chunkupload/4eaef817fbd74c432e5626a77e13ccc731cdc24a?appid=4765070&depotid=4765071&buildid=10912503644146541394&compressed_crc=525362305&compressed_size=754064".  HTTP 408.  (from 205.196.6.230:443)
+[2026-09-09 18:08:08]: Retrying chunk for URL "https://depot-ingest.discovery.steamserver.net/chunkupload/35cd442b370ee22f8a3495ab391e559baf596092?appid=4765070&depotid=4765071&buildid=10912503644146541394&compressed_crc=3276730968&compressed_size=1030128".  HTTP 408.  (from 205.196.6.230:443)
+[2026-09-09 18:08:08]: Retrying chunk for URL "https://depot-ingest.discovery.steamserver.net/chunkupload/95cc9077a5be1a9d0b899b75379784c6ebdb4179?appid=4765070&depotid=4765071&buildid=10912503644146541394&compressed_crc=1971169303&compressed_size=747280".  HTTP 408.  (from 205.196.6.230:443)
+[2026-09-09 18:08:16]: Uploading 5 out of 5 missing chunks.
+[2026-09-09 18:08:24]: Success! New manifestID 2158365288715815294 created and 99 new chunks uploaded.

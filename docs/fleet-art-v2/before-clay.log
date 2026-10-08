@@ -1,0 +1,1627 @@
+16:51:16 | INFO: Data are loaded, start creating Blender stuff
+16:51:16 | INFO: Blender create Mesh node Deep structural fuselage
+16:51:16 | INFO: glTF import finished in 0.39s
+Blender 4.5.13 LTS (hash daeeeca98fb0 built 2026-08-25 01:50:50)
+Fra:1 Mem:16.32M (Peak 16.32M) | Time:00:00.42 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_02
+Fra:1 Mem:25.64M (Peak 25.64M) | Time:00:00.44 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:25.64M (Peak 25.64M) | Time:00:00.44 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:22.99M (Peak 29.20M) | Time:00:00.47 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:22.41M (Peak 29.20M) | Time:00:00.47 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:22.41M (Peak 29.20M) | Time:00:00.47 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:22.41M (Peak 29.20M) | Time:00:00.47 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:22.41M (Peak 29.20M) | Time:00:00.47 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:22.49M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.71 | Mem:0.66M, Peak:0.66M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.71 | Mem:0.66M, Peak:0.66M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.71 | Mem:0.66M, Peak:0.66M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.71 | Mem:0.66M, Peak:0.66M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.71 | Mem:0.66M, Peak:0.66M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage 4/4 | Building BVH
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.71 | Mem:0.66M, Peak:0.66M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.71 | Mem:1.85M, Peak:5.87M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.71 | Mem:1.85M, Peak:5.87M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.72 | Mem:1.85M, Peak:5.87M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:23.14M (Peak 49.78M) | Time:00:00.72 | Mem:1.85M, Peak:5.87M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:25.17M (Peak 49.78M) | Time:00:00.72 | Mem:1.85M, Peak:5.87M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:25.17M (Peak 49.78M) | Time:00:00.72 | Mem:3.89M, Peak:5.87M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:25.17M (Peak 49.78M) | Time:00:00.72 | Mem:3.89M, Peak:5.87M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:25.17M (Peak 49.78M) | Time:00:00.72 | Mem:3.89M, Peak:5.87M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:25.17M (Peak 49.78M) | Time:00:00.72 | Mem:3.89M, Peak:5.87M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:25.17M (Peak 49.78M) | Time:00:00.72 | Mem:3.89M, Peak:5.87M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:25.17M (Peak 49.78M) | Time:00:00.72 | Mem:3.97M, Peak:5.87M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:25.17M (Peak 49.78M) | Time:00:00.72 | Mem:3.97M, Peak:5.87M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:25.18M (Peak 49.78M) | Time:00:00.72 | Mem:3.97M, Peak:5.87M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:25.18M (Peak 49.78M) | Time:00:00.72 | Mem:3.97M, Peak:5.87M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:25.18M (Peak 49.78M) | Time:00:00.72 | Mem:3.89M, Peak:5.87M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:25.18M (Peak 49.78M) | Time:00:00.72 | Mem:3.97M, Peak:5.87M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:25.18M (Peak 49.78M) | Time:00:00.72 | Mem:3.97M, Peak:5.87M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:25.18M (Peak 49.78M) | Time:00:00.72 | Mem:3.97M, Peak:5.87M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:29.18M (Peak 49.78M) | Time:00:00.74 | Mem:355.98M, Peak:355.98M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:76.15M (Peak 76.15M) | Time:00:00.75 | Remaining:00:00.40 | Mem:402.94M, Peak:402.94M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:95.94M (Peak 125.60M) | Time:00:04.53 | Mem:402.95M, Peak:402.95M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:95.94M (Peak 125.60M) | Time:00:04.53 | Mem:402.95M, Peak:402.95M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\02\before-clay.png'
+Time: 00:05.27 (Saving: 00:00.60)
+
+BEFORE_CLAY 2
+16:51:22 | INFO: Data are loaded, start creating Blender stuff
+16:51:22 | INFO: Blender create Mesh node Deep structural fuselage
+16:51:22 | INFO: glTF import finished in 0.28s
+Fra:1 Mem:27.27M (Peak 27.27M) | Time:00:00.21 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:27.27M (Peak 27.27M) | Time:00:00.22 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:32.30M (Peak 39.04M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:31.72M (Peak 39.04M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:31.72M (Peak 39.04M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:31.72M (Peak 39.04M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:31.72M (Peak 39.04M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.37 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:31.81M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:32.51M (Peak 59.10M) | Time:00:00.38 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:32.51M (Peak 59.10M) | Time:00:00.38 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:32.51M (Peak 59.10M) | Time:00:00.38 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:32.51M (Peak 59.10M) | Time:00:00.38 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:32.51M (Peak 59.10M) | Time:00:00.38 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.001 4/4 | Building BVH
+Fra:1 Mem:32.51M (Peak 59.10M) | Time:00:00.38 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.001 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:32.51M (Peak 59.10M) | Time:00:00.38 | Mem:2.00M, Peak:6.36M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:32.51M (Peak 59.10M) | Time:00:00.38 | Mem:2.00M, Peak:6.36M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:32.51M (Peak 59.10M) | Time:00:00.38 | Mem:2.00M, Peak:6.36M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:32.51M (Peak 59.10M) | Time:00:00.38 | Mem:2.00M, Peak:6.36M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:2.00M, Peak:6.36M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:4.20M, Peak:6.36M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:4.20M, Peak:6.36M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:4.20M, Peak:6.36M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:4.20M, Peak:6.36M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:4.20M, Peak:6.36M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:4.28M, Peak:6.36M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:4.28M, Peak:6.36M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:4.28M, Peak:6.36M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:4.28M, Peak:6.36M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.38 | Mem:4.20M, Peak:6.36M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.39 | Mem:4.28M, Peak:6.36M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:34.70M (Peak 59.10M) | Time:00:00.39 | Mem:4.28M, Peak:6.36M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:34.71M (Peak 59.10M) | Time:00:00.39 | Mem:4.28M, Peak:6.36M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:38.71M (Peak 59.10M) | Time:00:00.41 | Mem:356.29M, Peak:356.29M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:85.68M (Peak 85.68M) | Time:00:00.42 | Remaining:00:00.36 | Mem:403.25M, Peak:403.25M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:105.46M (Peak 135.13M) | Time:00:04.06 | Mem:403.26M, Peak:403.26M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:105.46M (Peak 135.13M) | Time:00:04.06 | Mem:403.26M, Peak:403.26M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\03\before-clay.png'
+Time: 00:04.40 (Saving: 00:00.19)
+
+BEFORE_CLAY 3
+16:51:27 | INFO: Data are loaded, start creating Blender stuff
+16:51:27 | INFO: Blender create Mesh node Deep structural fuselage
+16:51:27 | INFO: glTF import finished in 0.22s
+Fra:1 Mem:35.58M (Peak 35.58M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_04
+Fra:1 Mem:35.68M (Peak 35.68M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:35.68M (Peak 35.68M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:40.10M (Peak 46.14M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:39.52M (Peak 46.14M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:39.52M (Peak 46.14M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:39.52M (Peak 46.14M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:39.52M (Peak 46.14M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:39.60M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:40.23M (Peak 66.89M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:40.23M (Peak 66.89M) | Time:00:00.61 | Mem:0.63M, Peak:0.63M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:40.23M (Peak 66.89M) | Time:00:00.61 | Mem:0.63M, Peak:0.63M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:40.23M (Peak 66.89M) | Time:00:00.61 | Mem:0.63M, Peak:0.63M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.002 4/4 | Building BVH
+Fra:1 Mem:40.23M (Peak 66.89M) | Time:00:00.61 | Mem:0.63M, Peak:0.63M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.002 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:41.60M (Peak 66.89M) | Time:00:00.62 | Mem:5.72M, Peak:5.72M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:41.60M (Peak 66.89M) | Time:00:00.62 | Mem:5.72M, Peak:5.72M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:41.60M (Peak 66.89M) | Time:00:00.62 | Mem:5.72M, Peak:5.72M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:41.60M (Peak 66.89M) | Time:00:00.62 | Mem:5.72M, Peak:5.72M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:40.23M (Peak 66.89M) | Time:00:00.65 | Mem:1.82M, Peak:5.72M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:40.23M (Peak 66.89M) | Time:00:00.65 | Mem:1.82M, Peak:5.72M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:40.23M (Peak 66.89M) | Time:00:00.66 | Mem:1.82M, Peak:5.72M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:40.23M (Peak 66.89M) | Time:00:00.66 | Mem:1.82M, Peak:5.72M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:42.19M (Peak 66.89M) | Time:00:00.66 | Mem:1.82M, Peak:5.72M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:42.19M (Peak 66.89M) | Time:00:00.68 | Mem:3.78M, Peak:5.72M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:42.19M (Peak 66.89M) | Time:00:00.68 | Mem:3.78M, Peak:5.72M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:42.19M (Peak 66.89M) | Time:00:00.68 | Mem:3.78M, Peak:5.72M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:42.19M (Peak 66.89M) | Time:00:00.68 | Mem:3.78M, Peak:5.72M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:42.19M (Peak 66.89M) | Time:00:00.68 | Mem:3.78M, Peak:5.72M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:42.19M (Peak 66.89M) | Time:00:00.68 | Mem:3.86M, Peak:5.72M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:42.19M (Peak 66.89M) | Time:00:00.68 | Mem:3.86M, Peak:5.72M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:42.19M (Peak 66.89M) | Time:00:00.68 | Mem:3.87M, Peak:5.72M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:42.19M (Peak 66.89M) | Time:00:00.68 | Mem:3.87M, Peak:5.72M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:42.20M (Peak 66.89M) | Time:00:00.68 | Mem:3.78M, Peak:5.72M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:42.20M (Peak 66.89M) | Time:00:00.68 | Mem:3.87M, Peak:5.72M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:42.20M (Peak 66.89M) | Time:00:00.68 | Mem:3.87M, Peak:5.72M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:42.20M (Peak 66.89M) | Time:00:00.68 | Mem:3.87M, Peak:5.72M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:46.20M (Peak 66.89M) | Time:00:00.81 | Mem:355.87M, Peak:355.87M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:93.17M (Peak 93.17M) | Time:00:00.83 | Remaining:00:00.46 | Mem:402.84M, Peak:402.84M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:112.95M (Peak 142.62M) | Time:00:04.47 | Mem:402.84M, Peak:402.84M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:112.95M (Peak 142.62M) | Time:00:04.47 | Mem:402.84M, Peak:402.84M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\04\before-clay.png'
+Time: 00:04.72 (Saving: 00:00.13)
+
+BEFORE_CLAY 4
+16:51:31 | INFO: Data are loaded, start creating Blender stuff
+16:51:31 | INFO: Blender create Mesh node Deep structural fuselage
+16:51:32 | INFO: glTF import finished in 0.32s
+Fra:1 Mem:46.09M (Peak 46.09M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_05
+Fra:1 Mem:47.25M (Peak 47.25M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:47.25M (Peak 47.25M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:52.29M (Peak 60.23M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:51.71M (Peak 60.23M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:51.71M (Peak 60.23M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:51.71M (Peak 60.23M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:51.71M (Peak 60.23M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:51.79M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:51.79M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:51.79M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:51.79M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:51.79M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:51.79M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:51.80M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:51.80M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:51.80M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:51.80M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:51.80M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:52.67M (Peak 79.09M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:52.67M (Peak 79.09M) | Time:00:00.52 | Mem:0.88M, Peak:0.88M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:52.67M (Peak 79.09M) | Time:00:00.52 | Mem:0.88M, Peak:0.88M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:52.67M (Peak 79.09M) | Time:00:00.52 | Mem:0.88M, Peak:0.88M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.003 4/4 | Building BVH
+Fra:1 Mem:52.67M (Peak 79.09M) | Time:00:00.52 | Mem:0.88M, Peak:0.88M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.003 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:53.39M (Peak 79.09M) | Time:00:00.53 | Mem:4.31M, Peak:7.70M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:53.39M (Peak 79.09M) | Time:00:00.53 | Mem:4.31M, Peak:7.70M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:53.39M (Peak 79.09M) | Time:00:00.53 | Mem:4.31M, Peak:7.70M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:53.39M (Peak 79.09M) | Time:00:00.53 | Mem:4.31M, Peak:7.70M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:52.67M (Peak 79.09M) | Time:00:00.53 | Mem:2.42M, Peak:7.70M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:52.67M (Peak 79.09M) | Time:00:00.53 | Mem:2.42M, Peak:7.70M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:52.67M (Peak 79.09M) | Time:00:00.53 | Mem:2.42M, Peak:7.70M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:52.67M (Peak 79.09M) | Time:00:00.53 | Mem:2.42M, Peak:7.70M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:55.38M (Peak 79.09M) | Time:00:00.53 | Mem:2.42M, Peak:7.70M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:55.38M (Peak 79.09M) | Time:00:00.53 | Mem:5.13M, Peak:7.70M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:55.38M (Peak 79.09M) | Time:00:00.53 | Mem:5.13M, Peak:7.70M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:55.38M (Peak 79.09M) | Time:00:00.53 | Mem:5.13M, Peak:7.70M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:55.38M (Peak 79.09M) | Time:00:00.53 | Mem:5.13M, Peak:7.70M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:55.38M (Peak 79.09M) | Time:00:00.53 | Mem:5.13M, Peak:7.70M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:55.38M (Peak 79.09M) | Time:00:00.53 | Mem:5.21M, Peak:7.70M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:55.38M (Peak 79.09M) | Time:00:00.53 | Mem:5.21M, Peak:7.70M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:55.38M (Peak 79.09M) | Time:00:00.53 | Mem:5.21M, Peak:7.70M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:55.38M (Peak 79.09M) | Time:00:00.53 | Mem:5.21M, Peak:7.70M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:55.39M (Peak 79.09M) | Time:00:00.53 | Mem:5.13M, Peak:7.70M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:55.39M (Peak 79.09M) | Time:00:00.53 | Mem:5.22M, Peak:7.70M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:55.39M (Peak 79.09M) | Time:00:00.53 | Mem:5.22M, Peak:7.70M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:55.39M (Peak 79.09M) | Time:00:00.54 | Mem:5.22M, Peak:7.70M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:59.39M (Peak 79.09M) | Time:00:00.57 | Mem:357.22M, Peak:357.22M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:106.36M (Peak 106.36M) | Time:00:00.61 | Remaining:00:00.90 | Mem:404.19M, Peak:404.19M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:126.15M (Peak 155.81M) | Time:00:04.80 | Mem:404.19M, Peak:404.19M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:126.15M (Peak 155.81M) | Time:00:04.80 | Mem:404.19M, Peak:404.19M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\05\before-clay.png'
+Time: 00:05.09 (Saving: 00:00.15)
+
+BEFORE_CLAY 5
+16:51:37 | INFO: Data are loaded, start creating Blender stuff
+16:51:37 | INFO: Blender create Mesh node Deep structural fuselage
+16:51:37 | INFO: glTF import finished in 0.26s
+Fra:1 Mem:56.28M (Peak 56.28M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:56.28M (Peak 56.28M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:62.01M (Peak 69.42M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:61.47M (Peak 69.42M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:61.47M (Peak 69.42M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:61.47M (Peak 69.42M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:61.47M (Peak 69.42M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:61.56M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:62.36M (Peak 88.85M) | Time:00:00.61 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:62.36M (Peak 88.85M) | Time:00:00.61 | Mem:0.81M, Peak:0.81M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/1 | Building BVH
+Fra:1 Mem:62.36M (Peak 88.85M) | Time:00:00.61 | Mem:0.81M, Peak:0.81M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:62.36M (Peak 88.85M) | Time:00:00.61 | Mem:0.81M, Peak:0.81M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.004 4/4 | Building BVH
+Fra:1 Mem:62.36M (Peak 88.85M) | Time:00:00.61 | Mem:0.81M, Peak:0.81M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.004 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:62.36M (Peak 88.85M) | Time:00:00.61 | Mem:2.23M, Peak:7.16M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:62.36M (Peak 88.85M) | Time:00:00.61 | Mem:2.23M, Peak:7.16M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:62.36M (Peak 88.85M) | Time:00:00.61 | Mem:2.23M, Peak:7.16M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:62.36M (Peak 88.85M) | Time:00:00.61 | Mem:2.23M, Peak:7.16M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:64.85M (Peak 88.85M) | Time:00:00.62 | Mem:2.23M, Peak:7.16M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:64.85M (Peak 88.85M) | Time:00:00.62 | Mem:4.73M, Peak:7.16M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:64.85M (Peak 88.85M) | Time:00:00.62 | Mem:4.73M, Peak:7.16M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:64.85M (Peak 88.85M) | Time:00:00.62 | Mem:4.73M, Peak:7.16M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:64.85M (Peak 88.85M) | Time:00:00.62 | Mem:4.73M, Peak:7.16M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:64.85M (Peak 88.85M) | Time:00:00.62 | Mem:4.73M, Peak:7.16M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:64.85M (Peak 88.85M) | Time:00:00.62 | Mem:4.81M, Peak:7.16M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:64.85M (Peak 88.85M) | Time:00:00.62 | Mem:4.81M, Peak:7.16M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:64.85M (Peak 88.85M) | Time:00:00.62 | Mem:4.81M, Peak:7.16M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:64.85M (Peak 88.85M) | Time:00:00.62 | Mem:4.81M, Peak:7.16M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:64.86M (Peak 88.85M) | Time:00:00.62 | Mem:4.73M, Peak:7.16M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:64.86M (Peak 88.85M) | Time:00:00.62 | Mem:4.82M, Peak:7.16M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:64.86M (Peak 88.85M) | Time:00:00.62 | Mem:4.82M, Peak:7.16M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:64.86M (Peak 88.85M) | Time:00:00.62 | Mem:4.82M, Peak:7.16M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:68.86M (Peak 88.85M) | Time:00:00.65 | Mem:356.82M, Peak:356.82M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:115.83M (Peak 115.83M) | Time:00:00.67 | Remaining:00:00.45 | Mem:403.78M, Peak:403.78M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:135.62M (Peak 165.28M) | Time:00:04.31 | Mem:403.79M, Peak:403.79M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:135.62M (Peak 165.28M) | Time:00:04.31 | Mem:403.79M, Peak:403.79M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\06\before-clay.png'
+Time: 00:04.62 (Saving: 00:00.18)
+
+BEFORE_CLAY 6
+16:51:42 | INFO: Data are loaded, start creating Blender stuff
+16:51:42 | INFO: Blender create Mesh node Deep structural fuselage
+16:51:42 | INFO: glTF import finished in 0.28s
+Fra:1 Mem:66.25M (Peak 66.25M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_07
+Fra:1 Mem:74.88M (Peak 75.13M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:74.88M (Peak 75.13M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:71.70M (Peak 78.80M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:71.11M (Peak 78.80M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:71.11M (Peak 78.80M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:71.11M (Peak 78.80M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:71.11M (Peak 78.80M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:71.20M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:71.95M (Peak 98.49M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:71.95M (Peak 98.49M) | Time:00:00.59 | Mem:0.76M, Peak:0.76M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:71.95M (Peak 98.49M) | Time:00:00.59 | Mem:0.76M, Peak:0.76M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:71.95M (Peak 98.49M) | Time:00:00.59 | Mem:0.76M, Peak:0.76M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.005 4/4 | Building BVH
+Fra:1 Mem:71.95M (Peak 98.49M) | Time:00:00.59 | Mem:0.76M, Peak:0.76M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.005 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:73.60M (Peak 98.49M) | Time:00:00.61 | Mem:6.89M, Peak:6.89M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:73.60M (Peak 98.49M) | Time:00:00.61 | Mem:6.89M, Peak:6.89M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:73.60M (Peak 98.49M) | Time:00:00.61 | Mem:6.89M, Peak:6.89M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:73.60M (Peak 98.49M) | Time:00:00.61 | Mem:6.89M, Peak:6.89M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:71.95M (Peak 98.49M) | Time:00:00.62 | Mem:2.17M, Peak:6.89M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:71.95M (Peak 98.49M) | Time:00:00.62 | Mem:2.17M, Peak:6.89M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:71.95M (Peak 98.49M) | Time:00:00.62 | Mem:2.17M, Peak:6.89M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:71.95M (Peak 98.49M) | Time:00:00.62 | Mem:2.17M, Peak:6.89M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.62 | Mem:2.17M, Peak:6.89M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.62 | Mem:4.54M, Peak:6.89M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.63 | Mem:4.54M, Peak:6.89M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.63 | Mem:4.54M, Peak:6.89M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.63 | Mem:4.54M, Peak:6.89M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.63 | Mem:4.54M, Peak:6.89M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.63 | Mem:4.62M, Peak:6.89M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.63 | Mem:4.62M, Peak:6.89M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.63 | Mem:4.62M, Peak:6.89M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.63 | Mem:4.62M, Peak:6.89M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.64 | Mem:4.54M, Peak:6.89M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.64 | Mem:4.62M, Peak:6.89M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:74.32M (Peak 98.49M) | Time:00:00.64 | Mem:4.62M, Peak:6.89M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:74.33M (Peak 98.49M) | Time:00:00.64 | Mem:4.62M, Peak:6.89M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:78.33M (Peak 98.49M) | Time:00:00.67 | Mem:356.63M, Peak:356.63M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:125.30M (Peak 125.30M) | Time:00:00.69 | Remaining:00:00.51 | Mem:403.59M, Peak:403.59M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:145.08M (Peak 174.75M) | Time:00:04.38 | Mem:403.60M, Peak:403.60M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:145.08M (Peak 174.75M) | Time:00:04.38 | Mem:403.60M, Peak:403.60M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\07\before-clay.png'
+Time: 00:04.74 (Saving: 00:00.18)
+
+BEFORE_CLAY 7
+16:51:47 | INFO: Data are loaded, start creating Blender stuff
+16:51:47 | INFO: Blender create Mesh node Deep structural fuselage
+16:51:47 | INFO: glTF import finished in 0.35s
+Fra:1 Mem:75.46M (Peak 75.46M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_08
+Fra:1 Mem:83.66M (Peak 83.66M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:83.66M (Peak 83.66M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:80.52M (Peak 87.29M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:79.94M (Peak 87.29M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:79.94M (Peak 87.29M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:79.94M (Peak 87.29M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:79.94M (Peak 87.29M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:80.02M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:80.73M (Peak 107.31M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:80.73M (Peak 107.31M) | Time:00:00.53 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:80.73M (Peak 107.31M) | Time:00:00.53 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:80.73M (Peak 107.31M) | Time:00:00.53 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.006 4/4 | Building BVH
+Fra:1 Mem:80.73M (Peak 107.31M) | Time:00:00.53 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.006 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:82.26M (Peak 107.31M) | Time:00:00.54 | Mem:6.38M, Peak:6.38M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:82.26M (Peak 107.31M) | Time:00:00.54 | Mem:6.38M, Peak:6.38M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:82.26M (Peak 107.31M) | Time:00:00.54 | Mem:6.38M, Peak:6.38M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:82.26M (Peak 107.31M) | Time:00:00.54 | Mem:6.38M, Peak:6.38M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:80.73M (Peak 107.31M) | Time:00:00.55 | Mem:2.01M, Peak:6.38M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:80.73M (Peak 107.31M) | Time:00:00.55 | Mem:2.01M, Peak:6.38M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:80.73M (Peak 107.31M) | Time:00:00.55 | Mem:2.01M, Peak:6.38M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:80.73M (Peak 107.31M) | Time:00:00.55 | Mem:2.01M, Peak:6.38M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:82.93M (Peak 107.31M) | Time:00:00.55 | Mem:2.01M, Peak:6.38M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:82.93M (Peak 107.31M) | Time:00:00.55 | Mem:4.22M, Peak:6.38M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:82.93M (Peak 107.31M) | Time:00:00.55 | Mem:4.22M, Peak:6.38M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:82.93M (Peak 107.31M) | Time:00:00.55 | Mem:4.22M, Peak:6.38M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:82.93M (Peak 107.31M) | Time:00:00.55 | Mem:4.22M, Peak:6.38M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:82.93M (Peak 107.31M) | Time:00:00.55 | Mem:4.22M, Peak:6.38M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:82.93M (Peak 107.31M) | Time:00:00.55 | Mem:4.30M, Peak:6.38M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:82.93M (Peak 107.31M) | Time:00:00.55 | Mem:4.30M, Peak:6.38M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:82.93M (Peak 107.31M) | Time:00:00.55 | Mem:4.30M, Peak:6.38M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:82.93M (Peak 107.31M) | Time:00:00.55 | Mem:4.30M, Peak:6.38M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:82.94M (Peak 107.31M) | Time:00:00.55 | Mem:4.22M, Peak:6.38M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:82.94M (Peak 107.31M) | Time:00:00.55 | Mem:4.30M, Peak:6.38M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:82.94M (Peak 107.31M) | Time:00:00.55 | Mem:4.30M, Peak:6.38M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:82.94M (Peak 107.31M) | Time:00:00.55 | Mem:4.30M, Peak:6.38M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:86.94M (Peak 107.31M) | Time:00:00.59 | Mem:356.30M, Peak:356.30M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:133.91M (Peak 133.91M) | Time:00:00.65 | Remaining:00:01.33 | Mem:403.27M, Peak:403.27M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:153.69M (Peak 183.36M) | Time:00:03.65 | Mem:403.28M, Peak:403.28M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:153.69M (Peak 183.36M) | Time:00:03.65 | Mem:403.28M, Peak:403.28M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\08\before-clay.png'
+Time: 00:03.95 (Saving: 00:00.18)
+
+BEFORE_CLAY 8
+16:51:51 | INFO: Data are loaded, start creating Blender stuff
+16:51:51 | INFO: Blender create Mesh node Deep structural fuselage
+16:51:52 | INFO: glTF import finished in 0.40s
+Fra:1 Mem:84.51M (Peak 84.51M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_09
+Fra:1 Mem:85.65M (Peak 85.65M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:85.65M (Peak 85.65M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:89.54M (Peak 96.27M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:88.96M (Peak 96.27M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:88.96M (Peak 96.27M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:88.96M (Peak 96.27M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:88.96M (Peak 96.27M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:89.05M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:89.75M (Peak 116.34M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:89.75M (Peak 116.34M) | Time:00:00.63 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:89.75M (Peak 116.34M) | Time:00:00.63 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:89.75M (Peak 116.34M) | Time:00:00.63 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.007 4/4 | Building BVH
+Fra:1 Mem:89.75M (Peak 116.34M) | Time:00:00.63 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.007 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:91.28M (Peak 116.34M) | Time:00:00.64 | Mem:6.34M, Peak:6.34M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:91.28M (Peak 116.34M) | Time:00:00.64 | Mem:6.34M, Peak:6.34M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:91.28M (Peak 116.34M) | Time:00:00.64 | Mem:6.34M, Peak:6.34M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:91.28M (Peak 116.34M) | Time:00:00.64 | Mem:6.34M, Peak:6.34M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:89.75M (Peak 116.34M) | Time:00:00.73 | Mem:2.00M, Peak:6.34M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:89.75M (Peak 116.34M) | Time:00:00.73 | Mem:2.00M, Peak:6.34M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:89.75M (Peak 116.34M) | Time:00:00.73 | Mem:2.00M, Peak:6.34M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:89.75M (Peak 116.34M) | Time:00:00.73 | Mem:2.00M, Peak:6.34M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:91.94M (Peak 116.34M) | Time:00:00.73 | Mem:2.00M, Peak:6.34M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:91.94M (Peak 116.34M) | Time:00:00.74 | Mem:4.19M, Peak:6.34M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:91.94M (Peak 116.34M) | Time:00:00.74 | Mem:4.19M, Peak:6.34M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:91.94M (Peak 116.34M) | Time:00:00.74 | Mem:4.19M, Peak:6.34M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:91.94M (Peak 116.34M) | Time:00:00.74 | Mem:4.19M, Peak:6.34M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:91.94M (Peak 116.34M) | Time:00:00.74 | Mem:4.19M, Peak:6.34M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:91.94M (Peak 116.34M) | Time:00:00.74 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:91.94M (Peak 116.34M) | Time:00:00.74 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:91.94M (Peak 116.34M) | Time:00:00.74 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:91.94M (Peak 116.34M) | Time:00:00.74 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:91.95M (Peak 116.34M) | Time:00:00.74 | Mem:4.19M, Peak:6.34M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:91.95M (Peak 116.34M) | Time:00:00.74 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:91.95M (Peak 116.34M) | Time:00:00.74 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:91.95M (Peak 116.34M) | Time:00:00.74 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:95.95M (Peak 116.34M) | Time:00:00.99 | Mem:356.28M, Peak:356.28M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:142.92M (Peak 142.92M) | Time:00:01.02 | Remaining:00:00.71 | Mem:403.25M, Peak:403.25M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:162.71M (Peak 192.37M) | Time:00:04.44 | Mem:403.25M, Peak:403.25M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:162.71M (Peak 192.37M) | Time:00:04.44 | Mem:403.25M, Peak:403.25M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\09\before-clay.png'
+Time: 00:04.76 (Saving: 00:00.18)
+
+BEFORE_CLAY 9
+16:51:56 | INFO: Data are loaded, start creating Blender stuff
+16:51:56 | INFO: Blender create Mesh node Deep structural fuselage
+16:51:57 | INFO: glTF import finished in 0.22s
+Fra:1 Mem:93.45M (Peak 93.45M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_10
+Fra:1 Mem:100.44M (Peak 100.44M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:100.44M (Peak 100.44M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:98.43M (Peak 105.07M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:97.85M (Peak 105.07M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:97.85M (Peak 105.07M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:97.85M (Peak 105.07M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:97.85M (Peak 105.07M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:97.94M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:98.64M (Peak 125.23M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:98.64M (Peak 125.23M) | Time:00:00.56 | Mem:0.70M, Peak:0.70M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:98.64M (Peak 125.23M) | Time:00:00.56 | Mem:0.70M, Peak:0.70M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:98.64M (Peak 125.23M) | Time:00:00.56 | Mem:0.70M, Peak:0.70M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.008 4/4 | Building BVH
+Fra:1 Mem:98.64M (Peak 125.23M) | Time:00:00.56 | Mem:0.70M, Peak:0.70M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.008 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:100.15M (Peak 125.23M) | Time:00:00.58 | Mem:6.26M, Peak:6.26M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:100.15M (Peak 125.23M) | Time:00:00.58 | Mem:6.26M, Peak:6.26M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:100.15M (Peak 125.23M) | Time:00:00.58 | Mem:6.26M, Peak:6.26M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:100.15M (Peak 125.23M) | Time:00:00.58 | Mem:6.26M, Peak:6.26M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:98.64M (Peak 125.23M) | Time:00:00.59 | Mem:1.98M, Peak:6.26M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:98.64M (Peak 125.23M) | Time:00:00.59 | Mem:1.98M, Peak:6.26M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:98.64M (Peak 125.23M) | Time:00:00.59 | Mem:1.98M, Peak:6.26M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:98.64M (Peak 125.23M) | Time:00:00.59 | Mem:1.98M, Peak:6.26M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:1.98M, Peak:6.26M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.15M, Peak:6.26M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.15M, Peak:6.26M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.15M, Peak:6.26M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.15M, Peak:6.26M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.15M, Peak:6.26M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.23M, Peak:6.26M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.23M, Peak:6.26M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.23M, Peak:6.26M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.23M, Peak:6.26M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.15M, Peak:6.26M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.24M, Peak:6.26M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:100.81M (Peak 125.23M) | Time:00:00.60 | Mem:4.24M, Peak:6.26M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:100.82M (Peak 125.23M) | Time:00:00.60 | Mem:4.24M, Peak:6.26M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:104.82M (Peak 125.23M) | Time:00:00.69 | Mem:356.24M, Peak:356.24M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:151.79M (Peak 151.79M) | Time:00:00.72 | Remaining:00:00.75 | Mem:403.21M, Peak:403.21M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:171.57M (Peak 201.24M) | Time:00:06.50 | Mem:403.21M, Peak:403.21M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:171.57M (Peak 201.24M) | Time:00:06.50 | Mem:403.21M, Peak:403.21M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\10\before-clay.png'
+Time: 00:06.73 (Saving: 00:00.11)
+
+BEFORE_CLAY 10
+16:52:03 | INFO: Data are loaded, start creating Blender stuff
+16:52:03 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:04 | INFO: glTF import finished in 0.14s
+Fra:1 Mem:101.97M (Peak 101.97M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:101.97M (Peak 101.97M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_11
+Fra:1 Mem:106.59M (Peak 112.85M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:106.01M (Peak 112.85M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:106.01M (Peak 112.85M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:106.01M (Peak 112.85M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:106.01M (Peak 112.85M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:106.10M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:106.73M (Peak 133.39M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:106.73M (Peak 133.39M) | Time:00:00.47 | Mem:0.64M, Peak:0.64M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:106.73M (Peak 133.39M) | Time:00:00.47 | Mem:0.64M, Peak:0.64M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:106.73M (Peak 133.39M) | Time:00:00.47 | Mem:0.64M, Peak:0.64M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.009 4/4 | Building BVH
+Fra:1 Mem:106.73M (Peak 133.39M) | Time:00:00.47 | Mem:0.64M, Peak:0.64M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.009 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:108.13M (Peak 133.39M) | Time:00:00.47 | Mem:5.08M, Peak:5.08M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:108.13M (Peak 133.39M) | Time:00:00.47 | Mem:5.08M, Peak:5.08M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:106.73M (Peak 133.39M) | Time:00:00.47 | Mem:1.85M, Peak:5.89M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:106.73M (Peak 133.39M) | Time:00:00.47 | Mem:1.85M, Peak:5.89M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:106.73M (Peak 133.39M) | Time:00:00.47 | Mem:1.85M, Peak:5.89M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:106.73M (Peak 133.39M) | Time:00:00.47 | Mem:1.85M, Peak:5.89M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.47 | Mem:1.85M, Peak:5.89M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.86M, Peak:5.89M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.86M, Peak:5.89M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.86M, Peak:5.89M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.86M, Peak:5.89M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.86M, Peak:5.89M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.94M, Peak:5.89M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.94M, Peak:5.89M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.94M, Peak:5.89M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.94M, Peak:5.89M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.86M, Peak:5.89M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.94M, Peak:5.89M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:108.74M (Peak 133.39M) | Time:00:00.48 | Mem:3.94M, Peak:5.89M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:108.75M (Peak 133.39M) | Time:00:00.48 | Mem:3.94M, Peak:5.89M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:112.75M (Peak 133.39M) | Time:00:00.54 | Mem:355.94M, Peak:355.94M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:159.72M (Peak 159.72M) | Time:00:00.57 | Remaining:00:00.81 | Mem:402.91M, Peak:402.91M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:179.50M (Peak 209.17M) | Time:00:04.08 | Mem:402.92M, Peak:402.92M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:179.50M (Peak 209.17M) | Time:00:04.08 | Mem:402.92M, Peak:402.92M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\11\before-clay.png'
+Time: 00:04.35 (Saving: 00:00.12)
+
+BEFORE_CLAY 11
+16:52:08 | INFO: Data are loaded, start creating Blender stuff
+16:52:08 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:08 | INFO: glTF import finished in 0.25s
+Fra:1 Mem:110.12M (Peak 110.12M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_12
+Fra:1 Mem:117.16M (Peak 117.16M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:117.16M (Peak 117.16M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:114.57M (Peak 119.55M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:113.99M (Peak 119.55M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:113.99M (Peak 119.55M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:113.99M (Peak 119.55M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:113.99M (Peak 119.55M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:114.07M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:114.07M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:114.07M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:114.07M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:114.07M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:114.07M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:114.08M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:114.08M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:114.08M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:114.08M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:114.08M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:114.69M (Peak 141.37M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:114.69M (Peak 141.37M) | Time:00:00.67 | Mem:0.62M, Peak:0.62M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:114.69M (Peak 141.37M) | Time:00:00.67 | Mem:0.62M, Peak:0.62M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:114.69M (Peak 141.37M) | Time:00:00.67 | Mem:0.62M, Peak:0.62M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.010 4/4 | Building BVH
+Fra:1 Mem:114.69M (Peak 141.37M) | Time:00:00.67 | Mem:0.62M, Peak:0.62M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.010 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:116.04M (Peak 141.37M) | Time:00:00.68 | Mem:4.86M, Peak:4.86M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:116.04M (Peak 141.37M) | Time:00:00.68 | Mem:4.86M, Peak:4.86M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:116.04M (Peak 141.37M) | Time:00:00.68 | Mem:4.86M, Peak:4.86M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:116.04M (Peak 141.37M) | Time:00:00.68 | Mem:4.86M, Peak:4.86M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:114.69M (Peak 141.37M) | Time:00:00.76 | Mem:1.78M, Peak:5.64M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:114.69M (Peak 141.37M) | Time:00:00.77 | Mem:1.78M, Peak:5.64M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:114.69M (Peak 141.37M) | Time:00:00.77 | Mem:1.78M, Peak:5.64M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:114.69M (Peak 141.37M) | Time:00:00.77 | Mem:1.78M, Peak:5.64M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.78 | Mem:1.78M, Peak:5.64M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.78 | Mem:3.72M, Peak:5.64M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.78 | Mem:3.72M, Peak:5.64M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.78 | Mem:3.72M, Peak:5.64M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.82 | Mem:3.72M, Peak:5.64M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.82 | Mem:3.72M, Peak:5.64M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.82 | Mem:3.80M, Peak:5.64M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.82 | Mem:3.80M, Peak:5.64M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.82 | Mem:3.80M, Peak:5.64M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.82 | Mem:3.80M, Peak:5.64M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.82 | Mem:3.72M, Peak:5.64M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.83 | Mem:3.80M, Peak:5.64M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:116.63M (Peak 141.37M) | Time:00:00.83 | Mem:3.80M, Peak:5.64M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:116.64M (Peak 141.37M) | Time:00:00.83 | Mem:3.80M, Peak:5.64M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:120.64M (Peak 141.37M) | Time:00:01.01 | Mem:355.81M, Peak:355.81M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:167.61M (Peak 167.61M) | Time:00:01.04 | Remaining:00:00.62 | Mem:402.77M, Peak:402.77M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:187.39M (Peak 217.06M) | Time:00:05.18 | Mem:402.78M, Peak:402.78M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:187.39M (Peak 217.06M) | Time:00:05.18 | Mem:402.78M, Peak:402.78M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\12\before-clay.png'
+Time: 00:05.45 (Saving: 00:00.13)
+
+BEFORE_CLAY 12
+16:52:14 | INFO: Data are loaded, start creating Blender stuff
+16:52:14 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:14 | INFO: glTF import finished in 0.29s
+Fra:1 Mem:118.70M (Peak 118.70M) | Time:00:00.22 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_13
+Fra:1 Mem:123.65M (Peak 123.65M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:123.65M (Peak 123.65M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:123.48M (Peak 129.93M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:122.90M (Peak 129.93M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:122.90M (Peak 129.93M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:122.90M (Peak 129.93M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:122.90M (Peak 129.93M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:122.98M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:123.64M (Peak 150.27M) | Time:00:00.60 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:123.64M (Peak 150.27M) | Time:00:00.60 | Mem:0.66M, Peak:0.66M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:123.64M (Peak 150.27M) | Time:00:00.60 | Mem:0.66M, Peak:0.66M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:123.64M (Peak 150.27M) | Time:00:00.60 | Mem:0.66M, Peak:0.66M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.011 4/4 | Building BVH
+Fra:1 Mem:123.64M (Peak 150.27M) | Time:00:00.60 | Mem:0.66M, Peak:0.66M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.011 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:125.09M (Peak 150.27M) | Time:00:00.61 | Mem:2.11M, Peak:2.11M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:125.09M (Peak 150.27M) | Time:00:00.61 | Mem:2.11M, Peak:2.11M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:125.09M (Peak 150.27M) | Time:00:00.61 | Mem:6.08M, Peak:6.08M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:125.09M (Peak 150.27M) | Time:00:00.61 | Mem:6.08M, Peak:6.08M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:123.64M (Peak 150.27M) | Time:00:00.63 | Mem:1.91M, Peak:6.08M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:123.64M (Peak 150.27M) | Time:00:00.63 | Mem:1.91M, Peak:6.08M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:123.64M (Peak 150.27M) | Time:00:00.63 | Mem:1.91M, Peak:6.08M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:123.64M (Peak 150.27M) | Time:00:00.63 | Mem:1.91M, Peak:6.08M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.63 | Mem:1.91M, Peak:6.08M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.63 | Mem:3.99M, Peak:6.08M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:3.99M, Peak:6.08M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:3.99M, Peak:6.08M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:3.99M, Peak:6.08M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:3.99M, Peak:6.08M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:4.07M, Peak:6.08M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:4.07M, Peak:6.08M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:4.07M, Peak:6.08M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:4.07M, Peak:6.08M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:3.99M, Peak:6.08M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:4.08M, Peak:6.08M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:125.72M (Peak 150.27M) | Time:00:00.64 | Mem:4.08M, Peak:6.08M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:125.73M (Peak 150.27M) | Time:00:00.64 | Mem:4.08M, Peak:6.08M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:129.73M (Peak 150.27M) | Time:00:00.69 | Mem:356.08M, Peak:356.08M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:176.70M (Peak 176.70M) | Time:00:00.71 | Remaining:00:00.66 | Mem:403.05M, Peak:403.05M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:196.48M (Peak 226.15M) | Time:00:03.75 | Mem:403.05M, Peak:403.05M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:196.48M (Peak 226.15M) | Time:00:03.75 | Mem:403.05M, Peak:403.05M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\13\before-clay.png'
+Time: 00:04.04 (Saving: 00:00.16)
+
+BEFORE_CLAY 13
+16:52:18 | INFO: Data are loaded, start creating Blender stuff
+16:52:18 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:18 | INFO: glTF import finished in 0.25s
+Fra:1 Mem:127.61M (Peak 127.61M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:127.61M (Peak 127.61M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_14
+Fra:1 Mem:127.61M (Peak 127.61M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:132.56M (Peak 139.19M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:131.97M (Peak 139.19M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:131.97M (Peak 139.19M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:131.97M (Peak 139.19M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:131.97M (Peak 139.19M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:132.06M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:132.74M (Peak 159.35M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:132.74M (Peak 159.35M) | Time:00:00.53 | Mem:0.69M, Peak:0.69M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:132.74M (Peak 159.35M) | Time:00:00.53 | Mem:0.69M, Peak:0.69M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:132.74M (Peak 159.35M) | Time:00:00.53 | Mem:0.69M, Peak:0.69M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.012 4/4 | Building BVH
+Fra:1 Mem:132.74M (Peak 159.35M) | Time:00:00.53 | Mem:0.69M, Peak:0.69M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.012 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:134.24M (Peak 159.35M) | Time:00:00.54 | Mem:6.25M, Peak:6.25M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:134.24M (Peak 159.35M) | Time:00:00.54 | Mem:6.25M, Peak:6.25M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:134.24M (Peak 159.35M) | Time:00:00.54 | Mem:6.25M, Peak:6.25M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:134.24M (Peak 159.35M) | Time:00:00.54 | Mem:6.25M, Peak:6.25M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:132.74M (Peak 159.35M) | Time:00:00.54 | Mem:1.97M, Peak:6.25M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:132.74M (Peak 159.35M) | Time:00:00.54 | Mem:1.97M, Peak:6.25M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:132.74M (Peak 159.35M) | Time:00:00.54 | Mem:1.97M, Peak:6.25M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:132.74M (Peak 159.35M) | Time:00:00.54 | Mem:1.97M, Peak:6.25M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.54 | Mem:1.97M, Peak:6.25M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.54 | Mem:4.12M, Peak:6.25M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.54 | Mem:4.12M, Peak:6.25M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.54 | Mem:4.12M, Peak:6.25M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.54 | Mem:4.12M, Peak:6.25M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.54 | Mem:4.12M, Peak:6.25M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.55 | Mem:4.20M, Peak:6.25M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.55 | Mem:4.20M, Peak:6.25M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.55 | Mem:4.20M, Peak:6.25M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.55 | Mem:4.20M, Peak:6.25M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.55 | Mem:4.12M, Peak:6.25M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.55 | Mem:4.21M, Peak:6.25M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.55 | Mem:4.21M, Peak:6.25M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:134.90M (Peak 159.35M) | Time:00:00.55 | Mem:4.21M, Peak:6.25M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:138.91M (Peak 159.35M) | Time:00:00.59 | Mem:356.21M, Peak:356.21M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:185.87M (Peak 185.87M) | Time:00:00.61 | Remaining:00:00.58 | Mem:403.18M, Peak:403.18M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:205.66M (Peak 235.32M) | Time:00:04.38 | Mem:403.18M, Peak:403.18M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:205.66M (Peak 235.32M) | Time:00:04.38 | Mem:403.18M, Peak:403.18M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\14\before-clay.png'
+Time: 00:04.63 (Saving: 00:00.13)
+
+BEFORE_CLAY 14
+16:52:23 | INFO: Data are loaded, start creating Blender stuff
+16:52:23 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:23 | INFO: glTF import finished in 0.11s
+Fra:1 Mem:136.01M (Peak 136.01M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_15
+Fra:1 Mem:140.65M (Peak 140.65M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:140.65M (Peak 140.65M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:140.61M (Peak 146.74M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:140.03M (Peak 146.74M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:140.03M (Peak 146.74M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:140.03M (Peak 146.74M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:140.03M (Peak 146.74M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:140.11M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:140.75M (Peak 167.40M) | Time:00:00.45 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:140.75M (Peak 167.40M) | Time:00:00.45 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:140.75M (Peak 167.40M) | Time:00:00.45 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:140.75M (Peak 167.40M) | Time:00:00.45 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.013 4/4 | Building BVH
+Fra:1 Mem:140.75M (Peak 167.40M) | Time:00:00.45 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.013 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:142.15M (Peak 167.40M) | Time:00:00.46 | Mem:5.00M, Peak:5.00M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:142.15M (Peak 167.40M) | Time:00:00.46 | Mem:5.00M, Peak:5.00M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:142.15M (Peak 167.40M) | Time:00:00.46 | Mem:5.00M, Peak:5.00M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:140.75M (Peak 167.40M) | Time:00:00.46 | Mem:1.82M, Peak:5.78M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:140.75M (Peak 167.40M) | Time:00:00.46 | Mem:1.82M, Peak:5.78M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:140.75M (Peak 167.40M) | Time:00:00.46 | Mem:1.82M, Peak:5.78M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:140.75M (Peak 167.40M) | Time:00:00.46 | Mem:1.82M, Peak:5.78M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.46 | Mem:1.82M, Peak:5.78M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:142.76M (Peak 167.40M) | Time:00:00.47 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:142.77M (Peak 167.40M) | Time:00:00.47 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:146.77M (Peak 167.40M) | Time:00:00.62 | Mem:355.91M, Peak:355.91M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:193.74M (Peak 193.74M) | Time:00:00.66 | Remaining:00:00.85 | Mem:402.88M, Peak:402.88M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:213.52M (Peak 243.19M) | Time:00:06.16 | Mem:402.89M, Peak:402.89M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:213.52M (Peak 243.19M) | Time:00:06.16 | Mem:402.89M, Peak:402.89M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\15\before-clay.png'
+Time: 00:06.40 (Saving: 00:00.09)
+
+BEFORE_CLAY 15
+16:52:30 | INFO: Data are loaded, start creating Blender stuff
+16:52:30 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:30 | INFO: glTF import finished in 0.14s
+Fra:1 Mem:144.16M (Peak 144.16M) | Time:00:00.20 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:144.16M (Peak 144.16M) | Time:00:00.20 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_16
+Fra:1 Mem:148.65M (Peak 154.65M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:148.07M (Peak 154.65M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:148.07M (Peak 154.65M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:148.07M (Peak 154.65M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:148.07M (Peak 154.65M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:148.15M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:148.77M (Peak 175.44M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:148.77M (Peak 175.44M) | Time:00:00.36 | Mem:0.63M, Peak:0.63M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:148.77M (Peak 175.44M) | Time:00:00.36 | Mem:0.63M, Peak:0.63M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:148.77M (Peak 175.44M) | Time:00:00.36 | Mem:0.63M, Peak:0.63M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:148.77M (Peak 175.44M) | Time:00:00.36 | Mem:0.63M, Peak:0.63M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.014 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:148.77M (Peak 175.44M) | Time:00:00.36 | Mem:1.78M, Peak:5.66M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:148.77M (Peak 175.44M) | Time:00:00.36 | Mem:1.78M, Peak:5.66M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:148.77M (Peak 175.44M) | Time:00:00.37 | Mem:1.79M, Peak:5.66M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:148.77M (Peak 175.44M) | Time:00:00.37 | Mem:1.79M, Peak:5.66M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:150.72M (Peak 175.44M) | Time:00:00.37 | Mem:1.79M, Peak:5.66M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:150.72M (Peak 175.44M) | Time:00:00.37 | Mem:3.74M, Peak:5.66M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:150.72M (Peak 175.44M) | Time:00:00.37 | Mem:3.74M, Peak:5.66M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:150.72M (Peak 175.44M) | Time:00:00.37 | Mem:3.74M, Peak:5.66M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:150.72M (Peak 175.44M) | Time:00:00.37 | Mem:3.74M, Peak:5.66M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:150.72M (Peak 175.44M) | Time:00:00.37 | Mem:3.74M, Peak:5.66M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:150.72M (Peak 175.44M) | Time:00:00.37 | Mem:3.82M, Peak:5.66M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:150.72M (Peak 175.44M) | Time:00:00.37 | Mem:3.82M, Peak:5.66M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:150.73M (Peak 175.44M) | Time:00:00.37 | Mem:3.82M, Peak:5.66M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:150.73M (Peak 175.44M) | Time:00:00.37 | Mem:3.82M, Peak:5.66M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:150.73M (Peak 175.44M) | Time:00:00.37 | Mem:3.74M, Peak:5.66M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:150.73M (Peak 175.44M) | Time:00:00.37 | Mem:3.82M, Peak:5.66M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:150.73M (Peak 175.44M) | Time:00:00.37 | Mem:3.82M, Peak:5.66M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:150.73M (Peak 175.44M) | Time:00:00.37 | Mem:3.82M, Peak:5.66M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:154.73M (Peak 175.44M) | Time:00:00.40 | Mem:355.83M, Peak:355.83M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:201.70M (Peak 201.70M) | Time:00:00.42 | Remaining:00:00.44 | Mem:402.79M, Peak:402.79M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:221.49M (Peak 251.15M) | Time:00:04.31 | Mem:402.80M, Peak:402.80M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:221.49M (Peak 251.15M) | Time:00:04.31 | Mem:402.80M, Peak:402.80M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\16\before-clay.png'
+Time: 00:04.53 (Saving: 00:00.09)
+
+BEFORE_CLAY 16
+16:52:34 | INFO: Data are loaded, start creating Blender stuff
+16:52:34 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:34 | INFO: glTF import finished in 0.13s
+Fra:1 Mem:152.93M (Peak 152.93M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_17
+Fra:1 Mem:155.06M (Peak 155.06M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:155.06M (Peak 155.06M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:157.88M (Peak 164.47M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:157.30M (Peak 164.47M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:157.30M (Peak 164.47M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:157.30M (Peak 164.47M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:157.30M (Peak 164.47M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:157.38M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:158.07M (Peak 184.67M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:158.07M (Peak 184.67M) | Time:00:00.57 | Mem:0.70M, Peak:0.70M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:158.07M (Peak 184.67M) | Time:00:00.57 | Mem:0.70M, Peak:0.70M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:158.07M (Peak 184.67M) | Time:00:00.57 | Mem:0.70M, Peak:0.70M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.015 4/4 | Building BVH
+Fra:1 Mem:158.07M (Peak 184.67M) | Time:00:00.57 | Mem:0.70M, Peak:0.70M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.015 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:159.58M (Peak 184.67M) | Time:00:00.57 | Mem:2.61M, Peak:2.61M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:159.58M (Peak 184.67M) | Time:00:00.57 | Mem:2.61M, Peak:2.61M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:159.58M (Peak 184.67M) | Time:00:00.57 | Mem:2.61M, Peak:2.61M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:159.58M (Peak 184.67M) | Time:00:00.57 | Mem:2.61M, Peak:2.61M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:158.07M (Peak 184.67M) | Time:00:00.69 | Mem:1.95M, Peak:6.21M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:158.07M (Peak 184.67M) | Time:00:00.69 | Mem:1.95M, Peak:6.21M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:158.07M (Peak 184.67M) | Time:00:00.69 | Mem:1.96M, Peak:6.21M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:158.07M (Peak 184.67M) | Time:00:00.69 | Mem:1.96M, Peak:6.21M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:1.96M, Peak:6.21M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.11M, Peak:6.21M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.11M, Peak:6.21M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.11M, Peak:6.21M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.11M, Peak:6.21M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.11M, Peak:6.21M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.19M, Peak:6.21M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.19M, Peak:6.21M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.19M, Peak:6.21M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.19M, Peak:6.21M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.11M, Peak:6.21M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.20M, Peak:6.21M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:160.23M (Peak 184.67M) | Time:00:00.69 | Mem:4.20M, Peak:6.21M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:160.24M (Peak 184.67M) | Time:00:00.69 | Mem:4.20M, Peak:6.21M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:164.24M (Peak 184.67M) | Time:00:01.03 | Mem:356.20M, Peak:356.20M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:211.21M (Peak 211.21M) | Time:00:01.05 | Remaining:00:00.47 | Mem:403.17M, Peak:403.17M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:230.99M (Peak 260.66M) | Time:00:05.32 | Mem:403.17M, Peak:403.17M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:230.99M (Peak 260.66M) | Time:00:05.32 | Mem:403.17M, Peak:403.17M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\17\before-clay.png'
+Time: 00:05.69 (Saving: 00:00.22)
+
+BEFORE_CLAY 17
+16:52:40 | INFO: Data are loaded, start creating Blender stuff
+16:52:40 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:41 | INFO: glTF import finished in 0.37s
+Fra:1 Mem:164.72M (Peak 164.72M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_18
+Fra:1 Mem:166.30M (Peak 166.30M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:166.30M (Peak 166.30M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:171.57M (Peak 180.60M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:170.99M (Peak 180.60M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:170.99M (Peak 180.60M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:170.99M (Peak 180.60M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:170.99M (Peak 180.60M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:171.07M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:172.00M (Peak 198.36M) | Time:00:00.63 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:172.00M (Peak 198.36M) | Time:00:00.63 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:172.00M (Peak 198.36M) | Time:00:00.63 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:172.00M (Peak 198.36M) | Time:00:00.63 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.016 4/4 | Building BVH
+Fra:1 Mem:172.00M (Peak 198.36M) | Time:00:00.63 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.016 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:174.08M (Peak 198.36M) | Time:00:00.63 | Mem:7.54M, Peak:7.54M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:174.08M (Peak 198.36M) | Time:00:00.63 | Mem:7.54M, Peak:7.54M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:174.08M (Peak 198.36M) | Time:00:00.63 | Mem:7.54M, Peak:7.54M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:174.08M (Peak 198.36M) | Time:00:00.63 | Mem:7.54M, Peak:7.54M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:172.00M (Peak 198.36M) | Time:00:00.69 | Mem:2.73M, Peak:8.75M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:172.00M (Peak 198.36M) | Time:00:00.69 | Mem:2.73M, Peak:8.75M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:172.00M (Peak 198.36M) | Time:00:00.69 | Mem:2.74M, Peak:8.75M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:172.00M (Peak 198.36M) | Time:00:00.69 | Mem:2.74M, Peak:8.75M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.69 | Mem:2.74M, Peak:8.75M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.71 | Mem:5.71M, Peak:8.75M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.71M, Peak:8.75M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.71M, Peak:8.75M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.71M, Peak:8.75M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.71M, Peak:8.75M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.79M, Peak:8.75M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.79M, Peak:8.75M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.79M, Peak:8.75M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.79M, Peak:8.75M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.71M, Peak:8.75M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.79M, Peak:8.75M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.79M, Peak:8.75M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:174.98M (Peak 198.36M) | Time:00:00.75 | Mem:5.79M, Peak:8.75M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:178.99M (Peak 198.36M) | Time:00:00.80 | Mem:357.80M, Peak:357.80M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:225.96M (Peak 225.96M) | Time:00:00.83 | Remaining:00:00.51 | Mem:404.76M, Peak:404.76M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:245.74M (Peak 275.41M) | Time:00:04.58 | Mem:404.77M, Peak:404.77M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:245.74M (Peak 275.41M) | Time:00:04.58 | Mem:404.77M, Peak:404.77M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\18\before-clay.png'
+Time: 00:05.05 (Saving: 00:00.32)
+
+BEFORE_CLAY 18
+16:52:46 | INFO: Data are loaded, start creating Blender stuff
+16:52:46 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:46 | INFO: glTF import finished in 0.11s
+Fra:1 Mem:173.66M (Peak 173.66M) | Time:00:00.21 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_19
+Fra:1 Mem:180.11M (Peak 180.11M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:180.11M (Peak 180.11M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:178.23M (Peak 184.34M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:177.64M (Peak 184.34M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:177.64M (Peak 184.34M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:177.64M (Peak 184.34M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:177.64M (Peak 184.34M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.48 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.48 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.48 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.48 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.48 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:177.73M (Peak 205.02M) | Time:00:00.48 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:178.36M (Peak 205.02M) | Time:00:00.48 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:178.36M (Peak 205.02M) | Time:00:00.48 | Mem:0.64M, Peak:0.64M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:178.36M (Peak 205.02M) | Time:00:00.48 | Mem:0.64M, Peak:0.64M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:178.36M (Peak 205.02M) | Time:00:00.48 | Mem:0.64M, Peak:0.64M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.017 4/4 | Building BVH
+Fra:1 Mem:178.36M (Peak 205.02M) | Time:00:00.48 | Mem:0.64M, Peak:0.64M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.017 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:179.75M (Peak 205.02M) | Time:00:00.51 | Mem:5.77M, Peak:5.77M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:179.75M (Peak 205.02M) | Time:00:00.51 | Mem:5.77M, Peak:5.77M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:179.75M (Peak 205.02M) | Time:00:00.51 | Mem:5.77M, Peak:5.77M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:179.75M (Peak 205.02M) | Time:00:00.51 | Mem:5.77M, Peak:5.77M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:178.36M (Peak 205.02M) | Time:00:00.56 | Mem:1.82M, Peak:5.77M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:178.36M (Peak 205.02M) | Time:00:00.56 | Mem:1.82M, Peak:5.77M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:178.36M (Peak 205.02M) | Time:00:00.56 | Mem:1.82M, Peak:5.77M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:178.36M (Peak 205.02M) | Time:00:00.56 | Mem:1.82M, Peak:5.77M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:180.35M (Peak 205.02M) | Time:00:00.56 | Mem:1.82M, Peak:5.77M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:180.35M (Peak 205.02M) | Time:00:00.57 | Mem:3.81M, Peak:5.77M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:180.35M (Peak 205.02M) | Time:00:00.57 | Mem:3.81M, Peak:5.77M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:180.35M (Peak 205.02M) | Time:00:00.57 | Mem:3.81M, Peak:5.77M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:180.35M (Peak 205.02M) | Time:00:00.57 | Mem:3.81M, Peak:5.77M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:180.35M (Peak 205.02M) | Time:00:00.57 | Mem:3.81M, Peak:5.77M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:180.35M (Peak 205.02M) | Time:00:00.57 | Mem:3.89M, Peak:5.77M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:180.35M (Peak 205.02M) | Time:00:00.57 | Mem:3.89M, Peak:5.77M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:180.35M (Peak 205.02M) | Time:00:00.57 | Mem:3.89M, Peak:5.77M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:180.35M (Peak 205.02M) | Time:00:00.57 | Mem:3.89M, Peak:5.77M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:180.36M (Peak 205.02M) | Time:00:00.57 | Mem:3.81M, Peak:5.77M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:180.36M (Peak 205.02M) | Time:00:00.57 | Mem:3.89M, Peak:5.77M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:180.36M (Peak 205.02M) | Time:00:00.57 | Mem:3.89M, Peak:5.77M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:180.36M (Peak 205.02M) | Time:00:00.57 | Mem:3.89M, Peak:5.77M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:184.36M (Peak 205.02M) | Time:00:00.86 | Mem:355.90M, Peak:355.90M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:231.33M (Peak 231.33M) | Time:00:00.88 | Remaining:00:00.54 | Mem:402.86M, Peak:402.86M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:251.11M (Peak 280.78M) | Time:00:05.10 | Mem:402.87M, Peak:402.87M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:251.11M (Peak 280.78M) | Time:00:05.10 | Mem:402.87M, Peak:402.87M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\19\before-clay.png'
+Time: 00:05.37 (Saving: 00:00.12)
+
+BEFORE_CLAY 19
+16:52:51 | INFO: Data are loaded, start creating Blender stuff
+16:52:51 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:52 | INFO: glTF import finished in 0.13s
+Fra:1 Mem:182.57M (Peak 182.57M) | Time:00:00.19 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:182.58M (Peak 182.58M) | Time:00:00.19 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_20
+Fra:1 Mem:187.60M (Peak 194.32M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:187.02M (Peak 194.32M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:187.02M (Peak 194.32M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:187.02M (Peak 194.32M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:187.02M (Peak 194.32M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:187.11M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:187.81M (Peak 214.40M) | Time:00:00.50 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:187.81M (Peak 214.40M) | Time:00:00.50 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:187.81M (Peak 214.40M) | Time:00:00.50 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:187.81M (Peak 214.40M) | Time:00:00.50 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.018 4/4 | Building BVH
+Fra:1 Mem:187.81M (Peak 214.40M) | Time:00:00.50 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.018 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:189.33M (Peak 214.40M) | Time:00:00.50 | Mem:6.34M, Peak:6.34M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:189.33M (Peak 214.40M) | Time:00:00.50 | Mem:6.34M, Peak:6.34M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:189.33M (Peak 214.40M) | Time:00:00.50 | Mem:6.34M, Peak:6.34M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:189.33M (Peak 214.40M) | Time:00:00.50 | Mem:6.34M, Peak:6.34M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:187.81M (Peak 214.40M) | Time:00:00.54 | Mem:2.00M, Peak:6.34M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:187.81M (Peak 214.40M) | Time:00:00.54 | Mem:2.00M, Peak:6.34M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:187.81M (Peak 214.40M) | Time:00:00.54 | Mem:2.01M, Peak:6.34M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:187.81M (Peak 214.40M) | Time:00:00.54 | Mem:2.01M, Peak:6.34M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:2.01M, Peak:6.34M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.20M, Peak:6.34M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.20M, Peak:6.34M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.20M, Peak:6.34M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.20M, Peak:6.34M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.20M, Peak:6.34M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.20M, Peak:6.34M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:190.00M (Peak 214.40M) | Time:00:00.54 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:190.01M (Peak 214.40M) | Time:00:00.54 | Mem:4.28M, Peak:6.34M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:194.01M (Peak 214.40M) | Time:00:00.68 | Mem:356.28M, Peak:356.28M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:240.98M (Peak 240.98M) | Time:00:00.70 | Remaining:00:00.43 | Mem:403.25M, Peak:403.25M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:260.76M (Peak 290.43M) | Time:00:06.56 | Mem:403.26M, Peak:403.26M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:260.76M (Peak 290.43M) | Time:00:06.56 | Mem:403.26M, Peak:403.26M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\20\before-clay.png'
+Time: 00:06.85 (Saving: 00:00.11)
+
+BEFORE_CLAY 20
+16:52:58 | INFO: Data are loaded, start creating Blender stuff
+16:52:58 | INFO: Blender create Mesh node Deep structural fuselage
+16:52:59 | INFO: glTF import finished in 0.18s
+Fra:1 Mem:191.60M (Peak 191.60M) | Time:00:00.22 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:191.60M (Peak 191.60M) | Time:00:00.22 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_21
+Fra:1 Mem:196.63M (Peak 203.33M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:196.05M (Peak 203.33M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:196.05M (Peak 203.33M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:196.05M (Peak 203.33M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:196.05M (Peak 203.33M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:196.14M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:196.84M (Peak 223.43M) | Time:00:00.41 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:196.84M (Peak 223.43M) | Time:00:00.42 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:196.84M (Peak 223.43M) | Time:00:00.42 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:196.84M (Peak 223.43M) | Time:00:00.42 | Mem:0.71M, Peak:0.71M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.019 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:196.84M (Peak 223.43M) | Time:00:00.43 | Mem:1.98M, Peak:6.31M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:196.84M (Peak 223.43M) | Time:00:00.43 | Mem:1.98M, Peak:6.31M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:196.84M (Peak 223.43M) | Time:00:00.43 | Mem:1.98M, Peak:6.31M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:196.84M (Peak 223.43M) | Time:00:00.43 | Mem:1.98M, Peak:6.31M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.43 | Mem:1.98M, Peak:6.31M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.44 | Mem:4.18M, Peak:6.31M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.44 | Mem:4.18M, Peak:6.31M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.44 | Mem:4.18M, Peak:6.31M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.44 | Mem:4.18M, Peak:6.31M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.44 | Mem:4.18M, Peak:6.31M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.44 | Mem:4.26M, Peak:6.31M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.44 | Mem:4.26M, Peak:6.31M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.45 | Mem:4.26M, Peak:6.31M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.45 | Mem:4.26M, Peak:6.31M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.45 | Mem:4.18M, Peak:6.31M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.45 | Mem:4.26M, Peak:6.31M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:199.03M (Peak 223.43M) | Time:00:00.45 | Mem:4.26M, Peak:6.31M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:199.04M (Peak 223.43M) | Time:00:00.45 | Mem:4.26M, Peak:6.31M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:203.04M (Peak 223.43M) | Time:00:00.48 | Mem:356.26M, Peak:356.26M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:250.01M (Peak 250.01M) | Time:00:00.50 | Remaining:00:00.45 | Mem:403.23M, Peak:403.23M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:269.79M (Peak 299.46M) | Time:00:04.28 | Mem:403.24M, Peak:403.24M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:269.79M (Peak 299.46M) | Time:00:04.28 | Mem:403.24M, Peak:403.24M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\21\before-clay.png'
+Time: 00:04.55 (Saving: 00:00.13)
+
+BEFORE_CLAY 21
+16:53:03 | INFO: Data are loaded, start creating Blender stuff
+16:53:03 | INFO: Blender create Mesh node Deep structural fuselage
+16:53:03 | INFO: glTF import finished in 0.27s
+Fra:1 Mem:199.99M (Peak 199.99M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_22
+Fra:1 Mem:202.12M (Peak 202.12M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:202.12M (Peak 202.12M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:204.58M (Peak 210.71M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:204.00M (Peak 210.71M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:204.00M (Peak 210.71M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:204.00M (Peak 210.71M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:204.00M (Peak 210.71M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:204.09M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:204.73M (Peak 231.38M) | Time:00:00.55 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:204.73M (Peak 231.38M) | Time:00:00.55 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:204.73M (Peak 231.38M) | Time:00:00.55 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:204.73M (Peak 231.38M) | Time:00:00.55 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.020 4/4 | Building BVH
+Fra:1 Mem:204.73M (Peak 231.38M) | Time:00:00.55 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.020 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:206.12M (Peak 231.38M) | Time:00:00.56 | Mem:2.43M, Peak:2.43M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:206.12M (Peak 231.38M) | Time:00:00.56 | Mem:2.43M, Peak:2.43M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:204.73M (Peak 231.38M) | Time:00:00.57 | Mem:1.82M, Peak:5.78M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:204.73M (Peak 231.38M) | Time:00:00.57 | Mem:1.82M, Peak:5.78M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:204.73M (Peak 231.38M) | Time:00:00.58 | Mem:1.82M, Peak:5.78M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:204.73M (Peak 231.38M) | Time:00:00.58 | Mem:1.82M, Peak:5.78M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:206.73M (Peak 231.38M) | Time:00:00.58 | Mem:1.82M, Peak:5.78M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:206.73M (Peak 231.38M) | Time:00:00.58 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:206.73M (Peak 231.38M) | Time:00:00.58 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:206.73M (Peak 231.38M) | Time:00:00.58 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:206.73M (Peak 231.38M) | Time:00:00.58 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:206.73M (Peak 231.38M) | Time:00:00.58 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:206.73M (Peak 231.38M) | Time:00:00.58 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:206.73M (Peak 231.38M) | Time:00:00.58 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:206.73M (Peak 231.38M) | Time:00:00.58 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:206.73M (Peak 231.38M) | Time:00:00.58 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:206.74M (Peak 231.38M) | Time:00:00.58 | Mem:3.83M, Peak:5.78M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:206.74M (Peak 231.38M) | Time:00:00.58 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:206.74M (Peak 231.38M) | Time:00:00.58 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:206.74M (Peak 231.38M) | Time:00:00.58 | Mem:3.91M, Peak:5.78M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:210.74M (Peak 231.38M) | Time:00:00.63 | Mem:355.91M, Peak:355.91M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:257.71M (Peak 257.71M) | Time:00:00.65 | Remaining:00:00.46 | Mem:402.88M, Peak:402.88M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:277.49M (Peak 307.16M) | Time:00:04.79 | Mem:402.89M, Peak:402.89M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:277.49M (Peak 307.16M) | Time:00:04.79 | Mem:402.89M, Peak:402.89M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\22\before-clay.png'
+Time: 00:05.15 (Saving: 00:00.22)
+
+BEFORE_CLAY 22
+16:53:09 | INFO: Data are loaded, start creating Blender stuff
+16:53:09 | INFO: Blender create Mesh node Deep structural fuselage
+16:53:09 | INFO: glTF import finished in 0.33s
+Fra:1 Mem:208.30M (Peak 208.30M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_23
+Fra:1 Mem:215.01M (Peak 215.01M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:215.01M (Peak 215.01M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:212.92M (Peak 219.09M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:212.34M (Peak 219.09M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:212.34M (Peak 219.09M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:212.34M (Peak 219.09M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:212.34M (Peak 219.09M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.65 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.65 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.65 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:212.43M (Peak 239.72M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:213.07M (Peak 239.72M) | Time:00:00.66 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:213.07M (Peak 239.72M) | Time:00:00.66 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:213.07M (Peak 239.72M) | Time:00:00.66 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:213.07M (Peak 239.72M) | Time:00:00.66 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.021 4/4 | Building BVH
+Fra:1 Mem:213.07M (Peak 239.72M) | Time:00:00.66 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.021 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:214.48M (Peak 239.72M) | Time:00:00.66 | Mem:5.83M, Peak:5.83M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:214.48M (Peak 239.72M) | Time:00:00.66 | Mem:5.83M, Peak:5.83M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:214.48M (Peak 239.72M) | Time:00:00.66 | Mem:5.83M, Peak:5.83M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:214.48M (Peak 239.72M) | Time:00:00.66 | Mem:5.83M, Peak:5.83M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:213.07M (Peak 239.72M) | Time:00:00.68 | Mem:1.84M, Peak:5.83M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:213.07M (Peak 239.72M) | Time:00:00.68 | Mem:1.84M, Peak:5.83M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:213.07M (Peak 239.72M) | Time:00:00.68 | Mem:1.85M, Peak:5.83M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:213.07M (Peak 239.72M) | Time:00:00.68 | Mem:1.85M, Peak:5.83M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.68 | Mem:1.85M, Peak:5.83M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.68 | Mem:3.86M, Peak:5.83M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.86M, Peak:5.83M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.86M, Peak:5.83M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.86M, Peak:5.83M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.86M, Peak:5.83M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.94M, Peak:5.83M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.94M, Peak:5.83M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.94M, Peak:5.83M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.94M, Peak:5.83M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.86M, Peak:5.83M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.95M, Peak:5.83M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.95M, Peak:5.83M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:215.09M (Peak 239.72M) | Time:00:00.69 | Mem:3.95M, Peak:5.83M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:219.10M (Peak 239.72M) | Time:00:00.95 | Mem:355.95M, Peak:355.95M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:266.07M (Peak 266.07M) | Time:00:01.00 | Remaining:00:00.98 | Mem:402.92M, Peak:402.92M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:285.85M (Peak 315.52M) | Time:00:05.17 | Mem:402.92M, Peak:402.92M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:285.85M (Peak 315.52M) | Time:00:05.17 | Mem:402.92M, Peak:402.92M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\23\before-clay.png'
+Time: 00:05.81 (Saving: 00:00.24)
+
+BEFORE_CLAY 23
+16:53:15 | INFO: Data are loaded, start creating Blender stuff
+16:53:15 | INFO: Blender create Mesh node Deep structural fuselage
+16:53:15 | INFO: glTF import finished in 0.26s
+Fra:1 Mem:216.78M (Peak 216.78M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_24
+Fra:1 Mem:224.44M (Peak 224.44M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:224.44M (Peak 224.44M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:221.46M (Peak 227.78M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:220.88M (Peak 227.78M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:220.88M (Peak 227.78M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:220.88M (Peak 227.78M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:220.88M (Peak 227.78M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:220.96M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:221.60M (Peak 248.25M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:221.60M (Peak 248.25M) | Time:00:00.58 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:221.60M (Peak 248.25M) | Time:00:00.58 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:221.60M (Peak 248.25M) | Time:00:00.58 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.022 4/4 | Building BVH
+Fra:1 Mem:221.60M (Peak 248.25M) | Time:00:00.58 | Mem:0.65M, Peak:0.65M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.022 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:223.02M (Peak 248.25M) | Time:00:00.60 | Mem:5.95M, Peak:5.95M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:223.02M (Peak 248.25M) | Time:00:00.60 | Mem:5.95M, Peak:5.95M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:223.02M (Peak 248.25M) | Time:00:00.60 | Mem:5.95M, Peak:5.95M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:223.02M (Peak 248.25M) | Time:00:00.60 | Mem:5.95M, Peak:5.95M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:221.60M (Peak 248.25M) | Time:00:00.62 | Mem:1.87M, Peak:5.95M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:221.60M (Peak 248.25M) | Time:00:00.62 | Mem:1.87M, Peak:5.95M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:221.60M (Peak 248.25M) | Time:00:00.62 | Mem:1.87M, Peak:5.95M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:221.60M (Peak 248.25M) | Time:00:00.62 | Mem:1.87M, Peak:5.95M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.62 | Mem:1.87M, Peak:5.95M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.91M, Peak:5.95M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.91M, Peak:5.95M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.91M, Peak:5.95M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.91M, Peak:5.95M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.91M, Peak:5.95M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.99M, Peak:5.95M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.99M, Peak:5.95M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.99M, Peak:5.95M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.99M, Peak:5.95M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.91M, Peak:5.95M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.99M, Peak:5.95M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.99M, Peak:5.95M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:223.64M (Peak 248.25M) | Time:00:00.63 | Mem:3.99M, Peak:5.95M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:227.65M (Peak 248.25M) | Time:00:00.78 | Mem:355.99M, Peak:355.99M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:274.62M (Peak 274.62M) | Time:00:00.82 | Remaining:00:00.86 | Mem:402.96M, Peak:402.96M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:294.40M (Peak 324.07M) | Time:00:04.35 | Mem:402.97M, Peak:402.97M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:294.40M (Peak 324.07M) | Time:00:04.35 | Mem:402.97M, Peak:402.97M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\24\before-clay.png'
+Time: 00:04.69 (Saving: 00:00.21)
+
+BEFORE_CLAY 24
+16:53:20 | INFO: Data are loaded, start creating Blender stuff
+16:53:20 | INFO: Blender create Mesh node Deep structural fuselage
+16:53:20 | INFO: glTF import finished in 0.30s
+Fra:1 Mem:226.44M (Peak 226.44M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_25
+Fra:1 Mem:235.10M (Peak 235.10M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:235.10M (Peak 235.10M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:232.01M (Peak 239.15M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:231.43M (Peak 239.15M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:231.43M (Peak 239.15M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:231.43M (Peak 239.15M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:231.43M (Peak 239.15M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:231.52M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:232.30M (Peak 258.81M) | Time:00:00.57 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:232.30M (Peak 258.81M) | Time:00:00.57 | Mem:0.79M, Peak:0.79M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:232.30M (Peak 258.81M) | Time:00:00.57 | Mem:0.79M, Peak:0.79M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:232.30M (Peak 258.81M) | Time:00:00.57 | Mem:0.79M, Peak:0.79M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.023 4/4 | Building BVH
+Fra:1 Mem:232.30M (Peak 258.81M) | Time:00:00.57 | Mem:0.79M, Peak:0.79M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.023 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:233.99M (Peak 258.81M) | Time:00:00.58 | Mem:6.01M, Peak:6.01M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:233.99M (Peak 258.81M) | Time:00:00.58 | Mem:6.01M, Peak:6.01M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:233.99M (Peak 258.81M) | Time:00:00.58 | Mem:6.01M, Peak:6.01M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:233.99M (Peak 258.81M) | Time:00:00.58 | Mem:6.01M, Peak:6.01M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:232.30M (Peak 258.81M) | Time:00:00.62 | Mem:2.18M, Peak:6.93M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:232.30M (Peak 258.81M) | Time:00:00.62 | Mem:2.18M, Peak:6.93M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:232.30M (Peak 258.81M) | Time:00:00.62 | Mem:2.18M, Peak:6.93M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:232.30M (Peak 258.81M) | Time:00:00.62 | Mem:2.18M, Peak:6.93M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:234.73M (Peak 258.81M) | Time:00:00.62 | Mem:2.18M, Peak:6.93M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:234.73M (Peak 258.81M) | Time:00:00.62 | Mem:4.61M, Peak:6.93M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:234.73M (Peak 258.81M) | Time:00:00.62 | Mem:4.61M, Peak:6.93M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:234.73M (Peak 258.81M) | Time:00:00.62 | Mem:4.61M, Peak:6.93M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:234.73M (Peak 258.81M) | Time:00:00.62 | Mem:4.61M, Peak:6.93M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:234.73M (Peak 258.81M) | Time:00:00.62 | Mem:4.61M, Peak:6.93M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:234.73M (Peak 258.81M) | Time:00:00.62 | Mem:4.69M, Peak:6.93M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:234.73M (Peak 258.81M) | Time:00:00.62 | Mem:4.69M, Peak:6.93M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:234.73M (Peak 258.81M) | Time:00:00.62 | Mem:4.69M, Peak:6.93M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:234.73M (Peak 258.81M) | Time:00:00.62 | Mem:4.69M, Peak:6.93M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:234.74M (Peak 258.81M) | Time:00:00.62 | Mem:4.61M, Peak:6.93M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:234.74M (Peak 258.81M) | Time:00:00.62 | Mem:4.70M, Peak:6.93M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:234.74M (Peak 258.81M) | Time:00:00.62 | Mem:4.70M, Peak:6.93M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:234.74M (Peak 258.81M) | Time:00:00.62 | Mem:4.70M, Peak:6.93M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:238.74M (Peak 258.81M) | Time:00:00.85 | Mem:356.70M, Peak:356.70M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:285.71M (Peak 285.71M) | Time:00:00.95 | Remaining:00:02.22 | Mem:403.67M, Peak:403.67M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:305.50M (Peak 335.16M) | Time:00:05.95 | Mem:403.67M, Peak:403.67M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:305.50M (Peak 335.16M) | Time:00:05.95 | Mem:403.67M, Peak:403.67M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\25\before-clay.png'
+Time: 00:06.22 (Saving: 00:00.13)
+
+BEFORE_CLAY 25
+16:53:26 | INFO: Data are loaded, start creating Blender stuff
+16:53:26 | INFO: Blender create Mesh node Deep structural fuselage
+16:53:27 | INFO: glTF import finished in 0.35s
+Fra:1 Mem:239.00M (Peak 239.00M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_26
+Fra:1 Mem:242.15M (Peak 242.15M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:242.15M (Peak 242.15M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:246.46M (Peak 255.98M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:245.88M (Peak 255.98M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:245.88M (Peak 255.98M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:245.88M (Peak 255.98M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:245.88M (Peak 255.98M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:245.97M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:247.03M (Peak 273.26M) | Time:00:00.73 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:247.03M (Peak 273.26M) | Time:00:00.73 | Mem:1.07M, Peak:1.07M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:247.03M (Peak 273.26M) | Time:00:00.73 | Mem:1.07M, Peak:1.07M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:247.03M (Peak 273.26M) | Time:00:00.73 | Mem:1.07M, Peak:1.07M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.024 4/4 | Building BVH
+Fra:1 Mem:247.03M (Peak 273.26M) | Time:00:00.73 | Mem:1.07M, Peak:1.07M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.024 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:249.30M (Peak 273.26M) | Time:00:00.75 | Mem:8.01M, Peak:8.01M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:249.30M (Peak 273.26M) | Time:00:00.75 | Mem:8.01M, Peak:8.01M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:249.30M (Peak 273.26M) | Time:00:00.75 | Mem:8.01M, Peak:8.01M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:249.30M (Peak 273.26M) | Time:00:00.75 | Mem:8.01M, Peak:8.01M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:247.03M (Peak 273.26M) | Time:00:00.75 | Mem:2.91M, Peak:9.24M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:247.03M (Peak 273.26M) | Time:00:00.75 | Mem:2.91M, Peak:9.24M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:247.03M (Peak 273.26M) | Time:00:00.75 | Mem:2.91M, Peak:9.24M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:247.03M (Peak 273.26M) | Time:00:00.75 | Mem:2.91M, Peak:9.24M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:2.91M, Peak:9.24M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.17M, Peak:9.24M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.17M, Peak:9.24M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.17M, Peak:9.24M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.17M, Peak:9.24M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.17M, Peak:9.24M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.26M, Peak:9.24M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.26M, Peak:9.24M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.26M, Peak:9.24M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.26M, Peak:9.24M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.18M, Peak:9.24M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.26M, Peak:9.24M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.26M, Peak:9.24M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:250.30M (Peak 273.26M) | Time:00:00.76 | Mem:6.26M, Peak:9.24M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:254.31M (Peak 273.26M) | Time:00:00.85 | Mem:358.26M, Peak:358.26M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:301.27M (Peak 301.27M) | Time:00:00.88 | Remaining:00:00.62 | Mem:405.23M, Peak:405.23M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:321.06M (Peak 350.72M) | Time:00:04.87 | Mem:405.23M, Peak:405.23M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:321.06M (Peak 350.72M) | Time:00:04.87 | Mem:405.23M, Peak:405.23M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\26\before-clay.png'
+Time: 00:05.21 (Saving: 00:00.19)
+
+BEFORE_CLAY 26
+16:53:32 | INFO: Data are loaded, start creating Blender stuff
+16:53:32 | INFO: Blender create Mesh node Deep structural fuselage
+16:53:32 | INFO: glTF import finished in 0.27s
+Fra:1 Mem:249.46M (Peak 249.46M) | Time:00:00.21 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_27
+Fra:1 Mem:258.33M (Peak 258.57M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:258.33M (Peak 258.57M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:254.94M (Peak 262.45M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:254.36M (Peak 262.45M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:254.36M (Peak 262.45M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:254.36M (Peak 262.45M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:254.36M (Peak 262.45M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:254.45M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:255.18M (Peak 281.74M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:255.18M (Peak 281.74M) | Time:00:00.52 | Mem:0.74M, Peak:0.74M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:255.18M (Peak 281.74M) | Time:00:00.52 | Mem:0.74M, Peak:0.74M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:255.18M (Peak 281.74M) | Time:00:00.52 | Mem:0.74M, Peak:0.74M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.025 4/4 | Building BVH
+Fra:1 Mem:255.18M (Peak 281.74M) | Time:00:00.52 | Mem:0.74M, Peak:0.74M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.025 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:256.84M (Peak 281.74M) | Time:00:00.55 | Mem:7.06M, Peak:7.06M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:256.84M (Peak 281.74M) | Time:00:00.55 | Mem:7.06M, Peak:7.06M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:256.84M (Peak 281.74M) | Time:00:00.55 | Mem:7.06M, Peak:7.06M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:256.84M (Peak 281.74M) | Time:00:00.55 | Mem:7.06M, Peak:7.06M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:255.18M (Peak 281.74M) | Time:00:00.57 | Mem:2.21M, Peak:7.06M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:255.18M (Peak 281.74M) | Time:00:00.57 | Mem:2.21M, Peak:7.06M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:255.18M (Peak 281.74M) | Time:00:00.57 | Mem:2.21M, Peak:7.06M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:255.18M (Peak 281.74M) | Time:00:00.57 | Mem:2.21M, Peak:7.06M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.57 | Mem:2.21M, Peak:7.06M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.59M, Peak:7.06M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.59M, Peak:7.06M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.59M, Peak:7.06M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.59M, Peak:7.06M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.59M, Peak:7.06M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.67M, Peak:7.06M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.67M, Peak:7.06M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.67M, Peak:7.06M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.67M, Peak:7.06M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.59M, Peak:7.06M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.67M, Peak:7.06M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.67M, Peak:7.06M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:257.56M (Peak 281.74M) | Time:00:00.58 | Mem:4.67M, Peak:7.06M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:261.57M (Peak 281.74M) | Time:00:00.62 | Mem:356.67M, Peak:356.67M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:308.54M (Peak 308.54M) | Time:00:00.64 | Remaining:00:00.62 | Mem:403.64M, Peak:403.64M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:328.32M (Peak 357.98M) | Time:00:04.52 | Mem:403.65M, Peak:403.65M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:328.32M (Peak 357.98M) | Time:00:04.52 | Mem:403.65M, Peak:403.65M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\27\before-clay.png'
+Time: 00:04.79 (Saving: 00:00.13)
+
+BEFORE_CLAY 27
+16:53:37 | INFO: Data are loaded, start creating Blender stuff
+16:53:37 | INFO: Blender create Mesh node Deep structural fuselage
+16:53:37 | INFO: glTF import finished in 0.24s
+Fra:1 Mem:258.33M (Peak 258.33M) | Time:00:00.20 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_28
+Fra:1 Mem:263.48M (Peak 263.48M) | Time:00:00.20 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:263.48M (Peak 263.48M) | Time:00:00.20 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:263.22M (Peak 269.73M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:262.68M (Peak 269.73M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:262.68M (Peak 269.73M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:262.68M (Peak 269.73M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:262.68M (Peak 269.73M) | Time:00:00.25 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:262.76M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:263.45M (Peak 290.05M) | Time:00:00.47 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:263.45M (Peak 290.05M) | Time:00:00.47 | Mem:0.69M, Peak:0.69M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:263.45M (Peak 290.05M) | Time:00:00.47 | Mem:0.69M, Peak:0.69M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:263.45M (Peak 290.05M) | Time:00:00.47 | Mem:0.69M, Peak:0.69M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.026 4/4 | Building BVH
+Fra:1 Mem:263.45M (Peak 290.05M) | Time:00:00.47 | Mem:0.69M, Peak:0.69M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.026 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:264.93M (Peak 290.05M) | Time:00:00.48 | Mem:5.31M, Peak:5.31M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:264.93M (Peak 290.05M) | Time:00:00.48 | Mem:5.31M, Peak:5.31M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:264.93M (Peak 290.05M) | Time:00:00.48 | Mem:5.31M, Peak:5.31M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:264.93M (Peak 290.05M) | Time:00:00.48 | Mem:5.31M, Peak:5.31M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:263.45M (Peak 290.05M) | Time:00:00.48 | Mem:1.94M, Peak:6.15M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:263.45M (Peak 290.05M) | Time:00:00.48 | Mem:1.94M, Peak:6.15M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:263.45M (Peak 290.05M) | Time:00:00.48 | Mem:1.94M, Peak:6.15M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:263.45M (Peak 290.05M) | Time:00:00.48 | Mem:1.94M, Peak:6.15M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.48 | Mem:1.94M, Peak:6.15M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.07M, Peak:6.15M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.07M, Peak:6.15M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.07M, Peak:6.15M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.07M, Peak:6.15M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.07M, Peak:6.15M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.15M, Peak:6.15M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.15M, Peak:6.15M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.15M, Peak:6.15M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.15M, Peak:6.15M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.07M, Peak:6.15M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.16M, Peak:6.15M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.16M, Peak:6.15M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:265.58M (Peak 290.05M) | Time:00:00.49 | Mem:4.16M, Peak:6.15M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:269.59M (Peak 290.05M) | Time:00:00.54 | Mem:356.16M, Peak:356.16M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:316.56M (Peak 316.56M) | Time:00:00.56 | Remaining:00:00.53 | Mem:403.12M, Peak:403.12M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:336.34M (Peak 366.00M) | Time:00:03.66 | Mem:403.13M, Peak:403.13M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:336.34M (Peak 366.00M) | Time:00:03.66 | Mem:403.13M, Peak:403.13M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\28\before-clay.png'
+Time: 00:04.02 (Saving: 00:00.20)
+
+BEFORE_CLAY 28
+16:53:42 | INFO: Data are loaded, start creating Blender stuff
+16:53:42 | INFO: Blender create Mesh node Deep structural fuselage
+16:53:42 | INFO: glTF import finished in 0.31s
+Fra:1 Mem:267.82M (Peak 267.82M) | Time:00:00.19 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_29
+Fra:1 Mem:273.16M (Peak 273.16M) | Time:00:00.22 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:273.16M (Peak 273.16M) | Time:00:00.22 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:273.23M (Peak 280.10M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:272.65M (Peak 280.10M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:272.65M (Peak 280.10M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:272.65M (Peak 280.10M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:272.65M (Peak 280.10M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:272.73M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:273.50M (Peak 300.02M) | Time:00:00.54 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:273.50M (Peak 300.02M) | Time:00:00.54 | Mem:0.78M, Peak:0.78M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:273.50M (Peak 300.02M) | Time:00:00.54 | Mem:0.78M, Peak:0.78M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:273.50M (Peak 300.02M) | Time:00:00.54 | Mem:0.78M, Peak:0.78M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.027 4/4 | Building BVH
+Fra:1 Mem:273.50M (Peak 300.02M) | Time:00:00.54 | Mem:0.78M, Peak:0.78M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.027 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:274.12M (Peak 300.02M) | Time:00:00.56 | Mem:3.77M, Peak:6.70M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:274.12M (Peak 300.02M) | Time:00:00.56 | Mem:3.77M, Peak:6.70M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:274.12M (Peak 300.02M) | Time:00:00.56 | Mem:3.77M, Peak:6.70M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:274.12M (Peak 300.02M) | Time:00:00.56 | Mem:3.77M, Peak:6.70M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:273.50M (Peak 300.02M) | Time:00:00.57 | Mem:2.13M, Peak:6.70M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:273.50M (Peak 300.02M) | Time:00:00.57 | Mem:2.13M, Peak:6.70M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:273.50M (Peak 300.02M) | Time:00:00.57 | Mem:2.13M, Peak:6.70M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:273.50M (Peak 300.02M) | Time:00:00.57 | Mem:2.13M, Peak:6.70M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:2.13M, Peak:6.70M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.49M, Peak:6.70M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.49M, Peak:6.70M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.49M, Peak:6.70M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.49M, Peak:6.70M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.49M, Peak:6.70M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.57M, Peak:6.70M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.58M, Peak:6.70M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.58M, Peak:6.70M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.58M, Peak:6.70M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.49M, Peak:6.70M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.58M, Peak:6.70M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.58M, Peak:6.70M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:275.87M (Peak 300.02M) | Time:00:00.58 | Mem:4.58M, Peak:6.70M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:279.88M (Peak 300.02M) | Time:00:00.72 | Mem:356.58M, Peak:356.58M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:326.85M (Peak 326.85M) | Time:00:00.75 | Remaining:00:00.78 | Mem:403.55M, Peak:403.55M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:346.63M (Peak 376.29M) | Time:00:04.07 | Mem:403.55M, Peak:403.55M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:346.63M (Peak 376.29M) | Time:00:04.07 | Mem:403.55M, Peak:403.55M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\29\before-clay.png'
+Time: 00:04.32 (Saving: 00:00.13)
+
+BEFORE_CLAY 29
+16:53:46 | INFO: Data are loaded, start creating Blender stuff
+16:53:46 | INFO: Blender create Mesh node Deep structural fuselage
+16:53:47 | INFO: glTF import finished in 0.42s
+Fra:1 Mem:278.53M (Peak 278.53M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area
+Fra:1 Mem:278.53M (Peak 278.53M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | SolidHull_30
+Fra:1 Mem:278.53M (Peak 278.53M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral area.001
+Fra:1 Mem:284.78M (Peak 292.72M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:284.20M (Peak 292.72M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:284.20M (Peak 292.72M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:284.20M (Peak 292.72M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:284.20M (Peak 292.72M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.71 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.72 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.72 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.72 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:284.29M (Peak 311.58M) | Time:00:00.72 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:285.18M (Peak 311.58M) | Time:00:00.72 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:285.18M (Peak 311.58M) | Time:00:00.72 | Mem:0.90M, Peak:0.90M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:285.18M (Peak 311.58M) | Time:00:00.72 | Mem:0.90M, Peak:0.90M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building OptiX acceleration structure
+Fra:1 Mem:285.18M (Peak 311.58M) | Time:00:00.72 | Mem:0.90M, Peak:0.90M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.028 4/4 | Building BVH
+Fra:1 Mem:285.18M (Peak 311.58M) | Time:00:00.72 | Mem:0.90M, Peak:0.90M | Scene, ViewLayer | Updating Geometry BVH Deep structural fuselage.028 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:287.09M (Peak 311.58M) | Time:00:00.75 | Mem:0.90M, Peak:0.90M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building BVH
+Fra:1 Mem:287.09M (Peak 311.58M) | Time:00:00.75 | Mem:0.90M, Peak:0.90M | Scene, ViewLayer | Updating Geometry BVH Neutral area 2/4 | Building OptiX acceleration structure
+Fra:1 Mem:287.09M (Peak 311.58M) | Time:00:00.75 | Mem:0.90M, Peak:0.90M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building BVH
+Fra:1 Mem:287.09M (Peak 311.58M) | Time:00:00.75 | Mem:0.90M, Peak:0.90M | Scene, ViewLayer | Updating Geometry BVH Neutral area.001 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:285.18M (Peak 311.58M) | Time:00:00.80 | Mem:2.41M, Peak:7.69M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:285.18M (Peak 311.58M) | Time:00:00.80 | Mem:2.41M, Peak:7.69M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:285.18M (Peak 311.58M) | Time:00:00.80 | Mem:2.42M, Peak:7.69M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:285.18M (Peak 311.58M) | Time:00:00.80 | Mem:2.42M, Peak:7.69M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.80 | Mem:2.42M, Peak:7.69M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.15M, Peak:7.69M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.15M, Peak:7.69M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.15M, Peak:7.69M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.15M, Peak:7.69M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.15M, Peak:7.69M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.23M, Peak:7.69M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.24M, Peak:7.69M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.24M, Peak:7.69M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.24M, Peak:7.69M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.15M, Peak:7.69M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.24M, Peak:7.69M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:287.92M (Peak 311.58M) | Time:00:00.81 | Mem:5.24M, Peak:7.69M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:287.93M (Peak 311.58M) | Time:00:00.81 | Mem:5.24M, Peak:7.69M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:291.93M (Peak 311.58M) | Time:00:01.03 | Mem:357.24M, Peak:357.24M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:338.90M (Peak 338.90M) | Time:00:01.05 | Remaining:00:00.53 | Mem:404.21M, Peak:404.21M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:358.68M (Peak 388.35M) | Time:00:05.74 | Mem:404.21M, Peak:404.21M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:358.68M (Peak 388.35M) | Time:00:05.74 | Mem:404.21M, Peak:404.21M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\30\before-clay.png'
+Time: 00:05.99 (Saving: 00:00.12)
+
+BEFORE_CLAY 30
+
+Blender quit

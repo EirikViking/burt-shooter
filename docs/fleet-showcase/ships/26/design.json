@@ -1,0 +1,41 @@
+{
+  "id": 26,
+  "name": "Phase Seraph",
+  "architecture": "seraph",
+  "baselineDesign": [
+    "Phase Seraph",
+    1.6,
+    0.84,
+    0.61,
+    0.94,
+    "seraph",
+    [
+      [
+        0.19,
+        0.63,
+        -1.25,
+        0.13
+      ],
+      [
+        0.6,
+        0.78,
+        -1.14,
+        0.16
+      ],
+      [
+        0.99,
+        1.0,
+        -0.62,
+        0.07
+      ]
+    ]
+  ],
+  "palette": [
+    "dddce9",
+    "966edf",
+    "87e9ff"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false
+}

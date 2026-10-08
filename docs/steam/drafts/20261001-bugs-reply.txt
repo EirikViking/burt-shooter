@@ -1,0 +1,15 @@
+[quote=Tyrian Mollusk]Very weird convoy behavior.[/quote]
+I watched the whole clip and reproduced several discontinuities in the current renderer. Ordinary reinforcement warnings were making the transport leave and return; interrupted re-entry could jump or blink; and freeing both fighters after departure began could pull the transport back into the arena.
+
+The local fix keeps the hull present through ordinary wave briefings and reinforcement warnings, with its encounter clock and attacks frozen. Headline storms, bosses and other major encounters still take priority. Arrival, retreat and departure now continue smoothly, and a late rescue continues the transport's exit from its current position. The rescued fighters still launch and serve normally. This convoy repair is now in the sector-continue-test build.
+
+[quote=Tyrian Mollusk]you can't see your highlight[/quote]
+The current test build includes visible controller focus and recovery after backing out of the Onslaught picker, including reopening Start from the Hangar.
+
+[quote=Tyrian Mollusk]left-right-next-row order[/quote]
+That scrolling repair is also in the test build, together with the Career attention change: routine XP and completed runs no longer trigger it; mission information does.
+
+Offline and Steam-account profiles remain separate. Your report that switching back no longer disturbs Steam settings is useful confirmation; I have not merged those profiles or reset any progress. These test-build changes are not on the public/default branch yet.
+
+
+Test-branch delivery: sector-continue-test, BuildID 25650189, v2026-10-01_11-57-51. The public/default build is unchanged.

@@ -1,0 +1,22 @@
+
+> nova-swarm@1.0.0 check:i18n-ui
+> node scripts/check-i18n-ui.mjs
+
+{
+  "outputDir": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\output\\playwright\\fleet-art-v2\\i18n",
+  "status": "passed",
+  "languages": [
+    "en",
+    "de",
+    "zh-CN",
+    "ru",
+    "es",
+    "pt-BR",
+    "ko",
+    "ja"
+  ],
+  "consoleEvents": [],
+  "pageErrors": [],
+  "placeholderHits": [],
+  "englishLeakHits": []
+}

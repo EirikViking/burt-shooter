@@ -1,3 +1,7 @@
+import { overlapsCombatPoint } from '../ui/CombatOcclusion.js';
+import {drawEnergyShell} from '../effects/AstraEnergyMaterial.js';
+import { celebrationSprite, VictoryAtmosphere } from '../effects/CelebrationArt.js';
+import {preloadEnergyMaterials,drawEnergySurface,drawEnergyArc,drawEnergyLink,energyClock} from '../effects/AstraEnergyMaterial.js';
 import { BOSS_ARSENAL_ENABLED, getBossArsenalDangerColor } from '../config/BossArsenal.js';
 import { coreRunState, recordCoreWaveKill } from '../progression/BonusCoreRewards.js';
 import { makeCoreCadence, spendCoreCadence } from '../config/BonusCoreCadence.js';
@@ -13,6 +17,8 @@ import { AstraCoronation } from '../ui/AstraCoronation.js';
 import { usesOpeningCombatReadability, isSecondaryCombatNotice } from '../config/OpeningCombatReadability.js';
 import { drawAstraWarningLane, drawAstraWarningSector, drawAstraWarningRing } from '../effects/AstraWarningField.js';
 import { drawAstraPanel } from '../ui/AstraConsole.js';
+import { ArcadeFirstLightDirector } from '../managers/ArcadeFirstLightDirector.js';
+import { CosmicFauna } from '../effects/CosmicFauna.js';
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { RankAssets } from '../utils/RankAssets.js';
@@ -43,6 +49,8 @@ import { InputManager } from '../input/InputManager.js';
 import { TouchControls } from '../input/TouchControls.js';
 import { NullTouchControls } from '../input/NullTouchControls.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { CreatureAudio } from '../audio/CreatureAudio.js';
+import { MysteryAudio } from '../audio/MysteryAudio.js';
 import { SFX_MIX } from '../audio/SoundCatalog.js';
 import { HUD } from '../ui/HUD.js';
 import {
@@ -53,7 +61,9 @@ import {
 } from '../ui/NovaCommandHud.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
+import { AchievementsScene } from './AchievementsScene.js';
 import { TacticalLoadoutOverlay } from '../ui/TacticalLoadoutOverlay.js';
+import {recordExpansionEvent} from '../game/EncounterExpansionEvents.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import {
   MenuFxLayer,
@@ -90,9 +100,11 @@ import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
 import { getControlSettings } from '../config/ControlSettings.js';
+import { getMenuSettings } from '../config/MenuSettings.js';
 import {
   getGameplayBackdropCoverScale,
   getGameplayBackdropProfile,
+  resolveGameplayBackdropSources,
   resolveGameplayBackdropMode,
   sampleGameplayBackdropMotion
 } from '../config/GameplayBackdropMotion.js';
@@ -192,6 +204,7 @@ import {
 } from '../game/RunMode.js';
 import {
   CABINET_WONDER_VARIANT_COUNT,
+  getCabinetWonderChance,
   evaluateCabinetWonder
 } from '../game/CabinetWonders.js';
 import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDiagnostics.js';
@@ -237,13 +250,13 @@ const CABINET_WONDER_HOLD_MS = 1500;
 const CABINET_WONDER_FADE_OUT_MS = 300;
 const CABINET_WONDER_REDUCED_FADE_IN_MS = 100;
 const CABINET_WONDER_REDUCED_FADE_OUT_MS = 200;
-const CABINET_WONDER_WIDTH_RATIO = 0.76;
-const CABINET_WONDER_HEIGHT_RATIO = 0.4;
-const CABINET_WONDER_MAX_WIDTH = 1520;
-const CABINET_WONDER_MAX_HEIGHT = 560;
+const CABINET_WONDER_WIDTH_RATIO = 0.95;
+const CABINET_WONDER_HEIGHT_RATIO = 0.5;
+const CABINET_WONDER_MAX_WIDTH = 1900;
+const CABINET_WONDER_MAX_HEIGHT = 700;
 const CABINET_WONDER_CENTER_Y_RATIO = 0.3;
 const CABINET_WONDER_UI_GAP = 16;
-const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0.65;
+const CABINET_WONDER_PLAYER_LANE_TOP_RATIO = 0.75;
 const CABINET_WONDER_CAPTION_BAND_RATIO = 0.15;
 const GAME_OVER_DEATH_HOLD_MS = 620;
 const GAME_OVER_SKIP_DEBOUNCE_MS = 600;
@@ -330,6 +343,7 @@ export class PlayScene {
     this.tacticalDraftNavigator = new GamepadNavigator();
     this.settingsOverlay = null;
     this.howToPlayOverlay = null;
+    this.pauseAchievementScene = null;
     this.tacticalLoadoutOverlay = null;
     this.hadGameplayGamepadConnection = false;
     this.lastGameplayGamepadConnected = false;
@@ -614,6 +628,8 @@ export class PlayScene {
     this.damageTakenThisSector = 0;
     this.discoveryBonus = 0;
     this.defeatedBossIds = [];
+    this.defeatedSnakeIds = [];
+    this.snakeDefeats = [];
     this.lifeLossesThisRun = 0;
     this.respawnsThisRun = 0;
     this.extraLivesEarnedThisRun = 0;
@@ -755,6 +771,9 @@ export class PlayScene {
     this.clearCabinetWonder('scene_init');
     this.spectacleDirector?.destroy?.();
     this.spectacleDirector = null;
+    this.firstLightDirector?.destroy();
+    this.firstLightDirector = null;
+    this.particleManager?.destroy();
     this.gameContainer.removeChildren();
     this.decorativeOverlay.removeChildren();
     this.uiContainer.removeChildren();
@@ -882,6 +901,8 @@ export class PlayScene {
     this.damageTakenThisSector = 0;
     this.discoveryBonus = 0;
     this.defeatedBossIds = [];
+    this.defeatedSnakeIds = [];
+    this.snakeDefeats = [];
     this.lifeLossesThisRun = 0;
     this.respawnsThisRun = 0;
     this.extraLivesEarnedThisRun = 0;
@@ -1061,6 +1082,7 @@ export class PlayScene {
     this.particleManager = new ParticleManager(this.gameContainer, capHandler);
     this.particleManager.prewarm?.(520);
     this.combatMaterialWarmup = this.particleManager.detonations.prepare(this.game?.app?.renderer)
+      .then(() => preloadEnergyMaterials())
       .then(() => GameAssets.ensureTacticalDraftFieldTexture())
       .then(texture => this.prepareTextureForRender(texture, 'tactical_draft_field'))
       .catch(() => {});
@@ -1126,9 +1148,19 @@ export class PlayScene {
       const currentRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : initialRank;
       this._lastRankUpSeen = currentRank;
       this.player.setRank(currentRank, source);
-      this.applySeasonCosmetics();
+      if (this.game.runMode === 'overrun_tactical') {
+      this.game.competitionStart = Object.freeze({
+        runId: this.game.runId, shipId: this.player.config.id,
+        startSector: this.game.runStartSector, startScore: this.game.score,
+        loadoutVersion: 'overrun_tactical_custom_three_v2',
+        rulesetVersion: this.game.rulesetVersion,
+        augmentIds: Object.freeze([...this.overrunBaselineAugmentIds]),
+        checkpoint: this.game.sectorStartCheckpoint, prototype: this.game.runPolicy?.prototype === true
+      });
+    }
+    this.applySeasonCosmetics();
       logShipDebug();
-      if (controlSmoke) {
+      if (controlSmoke || this.game.encounterTest) {
         this.introActive = false;
         this.introComplete = true;
         this.setShipIntroAgencyState('complete', 'controlSmoke');
@@ -1193,10 +1225,13 @@ export class PlayScene {
     if (this.player.setRank) {
       this.player.setRank(initialRank, 'init_placeholder');
     }
-    const tacticalBaselineAugmentIds = this.game?.getRunModeProfile?.()?.tacticalBaselineAugmentIds || [];
+    const tacticalBaselineAugmentIds = this.game?.runMode === 'overrun_tactical'
+      ? (this.game.onslaughtAugmentIds || [])
+      : (this.game?.getRunModeProfile?.()?.tacticalBaselineAugmentIds || []);
     const prototypeBaselineAugmentIds = this.game?.lateGameExperiment?.baselineAugmentIds || [];
     const runBaselineAugmentIds = [...new Set([
       ...tacticalBaselineAugmentIds,
+      ...(this.game.encounterTest?.baselineAugmentIds || []),
       ...prototypeBaselineAugmentIds
     ])];
     this.overrunBaselineAugmentIds = runBaselineAugmentIds
@@ -1207,6 +1242,7 @@ export class PlayScene {
 
     // Create enemy manager
     this.enemyManager = new EnemyManager(this.gameContainer, this.gameplayGame, capHandler);
+    this.firstLightDirector = new ArcadeFirstLightDirector(this);
     this.game.flushAchievementToasts?.(this);
 
     this.initBalanceDebug(params);
@@ -2277,6 +2313,7 @@ export class PlayScene {
       });
     }
     burstLayer.blendMode = 'add';
+    burstLayer.visible = false;
     container.addChild(burstLayer);
 
     const waveLayer = new PIXI.Graphics();
@@ -2288,6 +2325,7 @@ export class PlayScene {
       waveLayer.stroke({ color: lane === 0 ? 0xffe66d : 0x4ef8ff, width: lane === 0 ? 2.4 : 1.5, alpha: lane === 0 ? 0.5 : 0.34 });
     }
     waveLayer.blendMode = 'add';
+    waveLayer.visible = false;
     container.addChild(waveLayer);
 
     const sparkLayer = new PIXI.Container();
@@ -2327,12 +2365,8 @@ export class PlayScene {
     panelBg.stroke({ color: 0x4ef8ff, width: 2, alpha: 0.72 });
     panel.addChild(panelBg);
 
-    const crown = new PIXI.Graphics();
-    crown.poly([-54, 18, -43, -19, -15, 5, 0, -31, 15, 5, 43, -19, 54, 18]);
-    crown.fill({ color: 0xffe66d, alpha: 0.92 });
-    crown.stroke({ color: 0xffffff, width: 2, alpha: 0.84 });
-    crown.position.set(0, -panelHeight / 2 - (compact ? 19 : 25));
-    crown.blendMode = 'add';
+    const crown = celebrationSprite('personal-best', compact ? 116 : 150);
+    crown.position.set(0, -panelHeight / 2 - (compact ? 22 : 30));
     panel.addChild(crown);
 
     const title = createText(translateText(source === 'daily_signal_local_best' ? 'NEW DAILY SIGNAL BEST' : 'NEW PERSONAL BEST'), {
@@ -2433,7 +2467,7 @@ export class PlayScene {
       startedAt: Date.now()
     };
 
-    AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.98, minIntervalMs: 0 });
+    AudioManager.playSfx('personal_record_premium', { force: true, volume: 1, minIntervalMs: 0 });
     AudioManager.playSfx('achievement', { force: true, volume: 0.68, minIntervalMs: 0 });
     AudioManager.playVoice('mission_control_personal_best', {
       force: true,
@@ -2987,6 +3021,7 @@ export class PlayScene {
   }
 
   maybeShowCabinetWonder(context = {}) {
+    if (context.sector !== this.game?.level || !this.enemyManager?.isCurrentSector()) return false;
     if (this.cabinetWonderOpportunity || this.activeCabinetWonder) return false;
     if (this.game?.lateGameExperiment?.active === true) return false;
     const debugForce = context.debugForce === true;
@@ -3015,6 +3050,9 @@ export class PlayScene {
 
   beginCabinetWonderOpportunity(decision = {}) {
     if (!decision?.variant || this.game?.currentScene !== this) return false;
+    if (decision.sector !== this.game.level || !this.enemyManager?.isCurrentSector()) return false;
+    if (decision.reason !== 'debug_force'
+      && (!getCabinetWonderChance(decision) || decision.waveNumber < 2)) return false;
     if (this.cabinetWonderOpportunity || this.activeCabinetWonder) return false;
     if (!this.isCabinetWonderPresentationSafe()) return false;
     if (!GameAssets.getCabinetWonderTexture?.(decision.variant.id)) {
@@ -5188,7 +5226,7 @@ export class PlayScene {
       this.game.level = this.debugStartLevel;
       this.debugStartLevel = null;
     }
-    const startAtBoss = this.debugStartAtBoss;
+    const startAtBoss = this.debugStartAtBoss || (!this.game.encounterTest?.mysteryId && this.game.encounterTest?.sector === this.game.level);
     this.debugStartAtBoss = false;
 
     // GUARD: specific level start
@@ -5239,7 +5277,7 @@ export class PlayScene {
       });
     });
     const showingFirstRunControls = Boolean(
-      this.game.level === this.getRunStartSector() && this.getFirstRunControlsNudge()
+      !this.game.encounterTest && this.game.level === this.getRunStartSector() && this.getFirstRunControlsNudge()
     );
     const showArrivalStinger = !showingFirstRunControls && this.shouldShowSectorArrivalStinger(this.game.level);
     const enemyStartDelayMs = showArrivalStinger
@@ -5646,6 +5684,9 @@ export class PlayScene {
   update(delta) {
     if (!Number.isFinite(delta) || delta > 100 || delta < 0) return;
     if (!this.isReady) return;
+    this.firstLightDirector?.syncVisibility();
+    this.cosmicFauna?.sync();
+    this.enemyManager?.boss?.syncInterruption?.();
     if (this.game?.lateGameExperiment?.active === true && this.cabinetWonderOpportunity) {
       this.cancelCabinetWonderOpportunity('experimental_mode', this.cabinetWonderOpportunity);
     }
@@ -5925,6 +5966,7 @@ export class PlayScene {
             specialFireMode: specialFireMode || null
           });
           recordCombatVolley(this.combatTelemetry, launchedBullets);
+          if (launchedBullets.length) this.firstLightDirector?.onPlayerVolley();
           if (specialFireRequested) {
             this.specialFireQueuedUntil = 0;
             if (this.lastSpecialFireIntent) {
@@ -5953,6 +5995,7 @@ export class PlayScene {
       measure('enemies', () => {
         if (this.enemyManager) this.enemyManager.update(delta);
       });
+      measure('first_light', () => this.firstLightDirector?.update(delta));
       measure('post_wave_rewards', () => this.maybeFlushPendingWaveTransitionRewards());
       measure('boss_priority_edge', () => this.updateBossPriorityEdge(delta));
       measure('straggler_beacon', () => this.updateStragglerBeacon(delta));
@@ -6020,6 +6063,7 @@ export class PlayScene {
       this.flushPendingRankUpPresentation('level_progression');
       if (this.enemyManager.isLevelComplete() && !this.enemyManager.spawning && !this.levelAdvancePending) {
         this.levelAdvancePending = true;
+        this.clearOnslaughtSectorBullets();
 
         AudioManager.playSfx('levelComplete');
         const rewardConfig = BalanceConfig.rewards || {};
@@ -6172,6 +6216,7 @@ export class PlayScene {
       }
       if (!perfOptions?.noStarfield) {
         measure('starfield', () => this.updateStarfield(delta)); // TASK D: Animate background stars
+        measure('cosmic_fauna', () => this.cosmicFauna?.tick(delta));
         measure('ultrawide_ambience', () => this.updateUltrawideSideAmbience(delta));
       }
       measure('ambient_bonus_drones', () => this.updateAmbientBonusDrones(delta)); // Handles hazard drones and collectible power cores
@@ -7837,6 +7882,10 @@ export class PlayScene {
     const x = Number.isFinite(bullet.x) ? bullet.x : this.player?.x || gameplayWidth / 2;
     const y = Number.isFinite(bullet.y) ? bullet.y : this.player?.y || gameplayHeight * 0.45;
 
+    this.firstLightDirector?.hitBombBlast(x, y, radius, damage, bullet);
+    for(const molt of this.enemyManager?.serpentMolts||[])molt.hitBombBlast(x,y,radius,damage,bullet);
+    this.enemyManager?.environment?.hitBombBlast(x,y,radius,damage,bullet);
+
     if (this.particleManager) {
       const burstCount = this.game.getWidth() < 620 ? 6 : 9;
       for (let i = 0; i < burstCount; i += 1) {
@@ -8082,6 +8131,7 @@ export class PlayScene {
   }
 
   getCollisionRadius(entity) {
+    if(entity?.untargetable)return 0;
     const radius = Number(entity?.radius) || 10;
     const pickupAssistRadius = Number(entity?.pickupAssistRadius ?? entity?.collectionRadius);
     if (entity?.effect && Number.isFinite(pickupAssistRadius) && pickupAssistRadius > radius) {
@@ -8210,6 +8260,9 @@ export class PlayScene {
     this.isCollisionHotPathActive = true;
     try {
 
+    for(const molt of this.enemyManager.serpentMolts||[])molt.intercept();
+    this.enemyManager.environment?.intercept();
+
     // Bomb detonation check
     measure('collision.bomb_apex', () => {
     const screenHeight = this.gameplayGame.getHeight();
@@ -8249,7 +8302,7 @@ export class PlayScene {
 
     measure('collision.player_bullets_enemies.build_proxies', () => {
       for (const bullet of this.bulletManager.playerBullets) {
-        if (!bullet?.active) continue;
+        if (!bullet?.active || bullet.firstLightPayback) continue;
         bulletProxies.push({
           ref: bullet,
           x: Number(bullet.x) || 0,
@@ -8265,7 +8318,7 @@ export class PlayScene {
       }
       let enemyIndex = 0;
       for (const enemy of this.enemyManager.enemies) {
-        if (!enemy?.active) {
+        if (!enemy?.active || enemy.untargetable || (enemy.kind === 'snake_baby' && (enemy.isDeparting?.() || enemy.brood?.orphanAt != null))) {
           enemyIndex += 1;
           continue;
         }
@@ -8398,6 +8451,7 @@ export class PlayScene {
         this.recordCombatProjectileHit(bullet);
         this.recordRiftShardHit(bullet, enemy);
         const destroyed = this.applyCombatDamage(enemy, event.damage, getCombatDamageSourceForBullet(bullet), {
+          isSalvageShot: bullet.tacticalFusionId === 'salvage_crown',
           impactX: event.impactX,
           impactY: event.impactY
         });
@@ -8736,8 +8790,10 @@ export class PlayScene {
     measure('collision.enemies_player', () => {
     this.enemyManager.enemies.forEach(enemy => {
       if (enemy.active && this.player.active) {
-        if (enemy.challengeFlightTarget) return;
-        if (enemy.contactSafeDuringEntry && enemy.state === 'ENTRY') return;
+        if(enemy.untargetable||enemy.noContactDamage)return;
+        if (enemy.challengeFlightTarget || (enemy.kind === 'snake_baby' && enemy.isDeparting?.())) return;
+        if (enemy.contactSafeDuringEntry &&
+          (enemy.state === 'ENTRY' || Date.now() < (enemy.contactSafeUntil || 0))) return;
         collisionStats.enemyPlayerChecks += 1;
         if (this.tryApplyEnemyShipGraze(enemy)) {
           collisionStats.enemyPlayerShipGrazes = (collisionStats.enemyPlayerShipGrazes || 0) + 1;
@@ -8747,7 +8803,12 @@ export class PlayScene {
           // Feature: Ghost Ship prevents hit
           if (this.player.isGhostActive?.()) return;
 
-          const isBossContact = enemy.kind === 'boss';
+          // Intangible contact must not bypass segmented health or mother ownership.
+          // Explicit Phase Pulse/Rift damage still uses the normal damage path.
+          if ((enemy.kind === 'space_snake' || enemy.kind === 'snake_baby')
+            && (this.player.invulnerable || this.player.isDodging)) return;
+
+          const isBossContact = enemy.kind === 'boss' || enemy.kind === 'mystery' || enemy.kind === 'mystery_part';
           if (isBossContact) {
             this.handleBossCausedPlayerHit('boss_contact', enemy, {
               balanceSource: 'boss_contact',
@@ -8919,10 +8980,11 @@ export class PlayScene {
     };
     pulse.hits.push(hit);
     pulse.hitCount = pulse.hits.length;
-    if (this.player?.lastTacticalFusionEvent?.id === 'rift_reprisal'
+    if (['rift_reprisal','rift_crossfire'].includes(this.player?.lastTacticalFusionEvent?.id)
       && Number(this.player.lastTacticalFusionEvent.token) === token) {
       this.player.lastTacticalFusionEvent.hitCount = pulse.hits.length;
     }
+    if(bullet.tacticalFusionId === 'rift_crossfire')recordExpansionEvent(this.game,'rift');
     bullet.riftHitRecorded = true;
     return true;
   }
@@ -8932,12 +8994,13 @@ export class PlayScene {
   }
 
   applyCombatDamage(target, amount, sourceId = 'other', options = undefined) {
-    if (!target || typeof target.takeDamage !== 'function') return false;
+    if (!target || target.untargetable || typeof target.takeDamage !== 'function') return false;
     const requestedDamage = Math.max(0, Number(amount) || 0);
     const healthBefore = Number(target.health ?? target.hp);
     const damageOptions = target.kind === 'hijacker'
       ? { ...(options && typeof options === 'object' ? options : {}), sourceId }
       : options;
+    target.lastDamageWasSalvage=options?.isSalvageShot===true;
     const destroyed = target.takeDamage(requestedDamage, damageOptions);
     const healthAfter = Number(target.health ?? target.hp);
     let effectiveDamage = 0;
@@ -8946,6 +9009,7 @@ export class PlayScene {
     } else if (destroyed === true) {
       effectiveDamage = requestedDamage;
     }
+    this.enemyManager?.encounterScorePacing?.noteDamage(target, effectiveDamage);
     recordCombatDamage(this.combatTelemetry, {
       sourceId,
       amount: effectiveDamage,
@@ -8969,6 +9033,10 @@ export class PlayScene {
     this.gameContainer.addChild(this.starfieldContainer);
     this.gameContainer.sortableChildren = true;
     this.initGameplayBackdrop(width, height);
+    if (!getNovaPerformanceFlags().disableDecorativeBackgrounds) {
+      this.cosmicFauna = new CosmicFauna(this);
+      this.gameContainer.addChild(this.cosmicFauna);
+    }
 
     // Layered travel field: quiet depth at the horizon, obvious velocity near the pilot.
     this.starLayers = [];
@@ -9085,16 +9153,26 @@ export class PlayScene {
 
   async initGameplayBackdrop(width, height) {
     if (getNovaPerformanceFlags().disableDecorativeBackgrounds) return;
+    // Capture ownership before the first await: reset/retry and newer requests
+    // invalidate queued work before it can load or attach to the reused scene.
+    const generation = ++this.gameplayBackdropLoadGeneration;
+    const targetContainer = this.starfieldContainer;
+    const current = () => generation === this.gameplayBackdropLoadGeneration
+      && targetContainer === this.starfieldContainer && Boolean(targetContainer?.parent);
     await this.sectorWorldLoadQueue;
-    const worlds = AssetManifest.generated?.sectorWorlds || [];
-    const worldIndex = Math.floor((Math.max(1, this.game?.level || 1) - 1) / 5) % Math.max(1, worlds.length);
-    const baseBackdrop = worlds[worldIndex] || AssetManifest.generated?.gameplayArenaBackdrop || AssetManifest.generated?.menuBackdrop;
+    if (!current()) return;
+    const sources = resolveGameplayBackdropSources(
+      this.game?.level || 1,
+      getMenuSettings().gameplayBackground,
+      AssetManifest.generated || {}
+    );
+    const { worlds, base: baseBackdrop, storm: stormSource, boss: bossSource } = sources;
+    this.gameplayBackgroundStyle = sources.style;
+    this.gameplayBackdropUsesSectorWorlds = sources.usesSectorWorlds;
     this.sectorWorldSource = baseBackdrop;
     this.sectorWorldActiveSource = baseBackdrop;
     if (!baseBackdrop) return;
 
-    const generation = ++this.gameplayBackdropLoadGeneration;
-    const targetContainer = this.starfieldContainer;
     const loadTexture = (alias, src) => src
       ? PIXI.Assets.load({ alias, src })
       : Promise.resolve(null);
@@ -9102,19 +9180,16 @@ export class PlayScene {
     try {
       const [texture, stormTexture, bossTexture] = await Promise.all([
         PIXI.Assets.load(baseBackdrop),
-        loadTexture('generated_storm_gameplay_backdrop', worlds.length ? null : AssetManifest.generated.stormGameplayBackdrop),
-        loadTexture('generated_boss_gameplay_backdrop', worlds.length ? null : AssetManifest.generated.bossArenaBackdrop)
+        loadTexture('generated_storm_gameplay_backdrop', stormSource),
+        loadTexture('generated_boss_gameplay_backdrop', bossSource)
       ]);
+      if (!current()) return;
       await Promise.all([
         texture ? this.prepareTextureForRender(texture, 'generated_gameplay_backdrop') : null,
         stormTexture ? this.prepareTextureForRender(stormTexture, 'generated_storm_gameplay_backdrop') : null,
         bossTexture ? this.prepareTextureForRender(bossTexture, 'generated_boss_gameplay_backdrop') : null
       ]);
-      if (
-        generation !== this.gameplayBackdropLoadGeneration
-        || targetContainer !== this.starfieldContainer
-        || !targetContainer?.parent
-      ) return;
+      if (!current()) return;
 
       const backdrop = new PIXI.Sprite(texture);
       backdrop.anchor.set(0.5);
@@ -9219,12 +9294,20 @@ export class PlayScene {
   }
 
   resetGameplayBackdropState() {
+    this.cosmicFauna?.destroy();
+    this.cosmicFauna = null;
+    AudioManager.stopSfxGroup('planet_ambience');
+    if(this.planetVignettes&&!this.planetVignettes.destroyed)this.planetVignettes.destroy({children:true});
+    this.planetVignettes=null;
     this.gameplayBackdropLoadGeneration += 1;
     const retiredWorld = this.sectorWorldActiveSource;
+    const retiredUsesSectorWorlds = this.gameplayBackdropUsesSectorWorlds;
     this.sectorWorldActiveSource = null;
     this.sectorWorldSource = null;
     this.sectorWorldLoadQueue = Promise.resolve(this.sectorWorldLoadQueue).then(async () => {
-      if (retiredWorld && retiredWorld !== AssetManifest.generated.sectorWorlds?.[0]) await PIXI.Assets.unload(retiredWorld);
+      if (retiredUsesSectorWorlds && retiredWorld && retiredWorld !== AssetManifest.generated.sectorWorlds?.[0]) {
+        await PIXI.Assets.unload(retiredWorld);
+      }
     }).catch((error) => console.warn('[PlayScene] World cleanup failed:', error));
     this.gameplayBackdrop = null;
     this.gameplayStormBackdrop = null;
@@ -9236,6 +9319,8 @@ export class PlayScene {
     this.gameplayBackdropWidth = 0;
     this.gameplayBackdropHeight = 0;
     this.gameplayBackdropRawAlphas = null;
+    this.gameplayBackgroundStyle = 'modern';
+    this.gameplayBackdropUsesSectorWorlds = false;
     this.cosmicNebulaHaze = null;
     this.combatBackdropClarity = {
       level: 0,
@@ -9248,12 +9333,101 @@ export class PlayScene {
     this.gameplayBackdropReducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
   }
 
+  showKnownBoardRecordCelebration({ ownPreviousRecord = false } = {}) {
+    if (!this.uiOverlay || this.game?.currentScene !== this) return false;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const badge = new PIXI.Container();
+    badge.label = 'ui_known_board_record_celebration';
+    badge.position.set(width / 2, Math.min(height * 0.2, 160));
+    badge.zIndex = 9700;
+    badge.eventMode = 'none';
+    const halo = new PIXI.Graphics();
+    halo.circle(0, 0, 72).stroke({ color: 0xffdf72, width: 3, alpha: 0.9 });
+    halo.circle(0, 0, 54).fill({ color: 0x1c2430, alpha: 0.86 });
+    halo.circle(0, 0, 54).stroke({ color: 0x69eaff, width: 2, alpha: 0.8 });
+    badge.addChild(halo);
+    const number = createText('#1', { fontFamily: FONT_DISPLAY, fontSize: 58, fontWeight: '900', fill: '#fff2a9',
+      stroke: '#402300', strokeThickness: 5 });
+    number.anchor.set(0.5);
+    badge.addChild(number);
+    const caption = createText(translateText(ownPreviousRecord ? 'YOUR #1, RAISED' : 'KNOWN BOARD RECORD BEATEN'), {
+      fontFamily: FONT_DISPLAY, fontSize: 18, fontWeight: '900', fill: '#fff3b8', stroke: '#06111c', strokeThickness: 3
+    });
+    caption.anchor.set(0.5);
+    caption.y = 82;
+    badge.addChild(caption);
+    this.uiOverlay.addChild(badge);
+    this.uiOverlay.sortChildren?.();
+    let elapsed = 0;
+    const duration = reducedMotion ? 1300 : 2400;
+    const tick = delta => {
+      elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+      if (elapsed >= duration || this.game?.currentScene !== this || badge.destroyed) {
+        this.game.app.ticker.remove(tick);
+        badge.parent?.removeChild(badge);
+        if (!badge.destroyed) badge.destroy({ children: true });
+        return;
+      }
+      const reveal = Math.min(1, elapsed / (reducedMotion ? 100 : 360));
+      badge.alpha = Math.min(reveal, (duration - elapsed) / 450);
+      badge.scale.set(reducedMotion ? 0.72 : 0.58 + reveal * 0.2 + Math.sin(elapsed * 0.012) * 0.012);
+      if (!reducedMotion) halo.rotation = elapsed * 0.00028;
+    };
+    this.game.app.ticker.add(tick);
+    return true;
+  }
+
+  retireGameplayBackdropVisuals() {
+    AudioManager.stopSfxGroup('planet_ambience');
+    if(this.planetVignettes&&!this.planetVignettes.destroyed)this.planetVignettes.destroy({children:true});
+    this.planetVignettes=null;
+    const displays = [
+      this.gameplayBackdrop,
+      this.gameplayStormBackdrop,
+      this.gameplayBossBackdrop,
+      this.gameplayBackdropShade
+    ];
+    for (const display of displays) {
+      display?.parent?.removeChild?.(display);
+      display?.destroy?.();
+    }
+    this.gameplayBackdrop = null;
+    this.gameplayStormBackdrop = null;
+    this.gameplayBossBackdrop = null;
+    this.gameplayBackdropShade = null;
+  }
+
+  reloadGameplayBackdropPreference() {
+    const requestedStyle = getMenuSettings().gameplayBackground;
+    if (requestedStyle === this.gameplayBackgroundStyle && this.gameplayBackdrop) return false;
+
+    this.gameplayBackdropLoadGeneration += 1;
+    const retiredWorld = this.sectorWorldActiveSource;
+    const retiredUsesSectorWorlds = this.gameplayBackdropUsesSectorWorlds;
+    this.sectorWorldActiveSource = null;
+    this.sectorWorldSource = null;
+    this.sectorWorldLoadQueue = Promise.resolve(this.sectorWorldLoadQueue).then(async () => {
+      if (retiredUsesSectorWorlds && retiredWorld && retiredWorld !== AssetManifest.generated.sectorWorlds?.[0]) {
+        await PIXI.Assets.unload(retiredWorld);
+      }
+    }).catch((error) => console.warn('[PlayScene] World cleanup failed:', error));
+    this.retireGameplayBackdropVisuals();
+    this.gameplayBackdropMode = 'base';
+    this.gameplayBackdropTransition = null;
+    this.gameplayBackdropElapsedMs = 0;
+    this.gameplayBackdropRawAlphas = null;
+    void this.initGameplayBackdrop(this.game.getWidth(), this.game.getHeight());
+    return true;
+  }
+
   applyGameplayBackdropAlphas(alphas = getGameplayBackdropProfile(this.gameplayBackdropMode).alphas) {
     this.gameplayBackdropRawAlphas = { ...alphas };
     const treatment = this.combatBackdropClarity?.treatment || getCombatClarityBackdropTreatment(0);
     const decorativeAlphaScale = treatment.decorativeAlphaScale;
     if (this.gameplayBackdrop) {
-      const worldAlpha = AssetManifest.generated.sectorWorlds?.length
+      const worldAlpha = (this.gameplayBackdropUsesSectorWorlds || this.gameplayBackgroundStyle === 'legacy')
         ? Math.min(0.82, alphas.base + alphas.storm + alphas.boss + 0.25)
         : alphas.base;
       this.gameplayBackdrop.alpha = worldAlpha * decorativeAlphaScale;
@@ -9268,7 +9442,7 @@ export class PlayScene {
       this.gameplayBossBackdrop.renderable = this.gameplayBossBackdrop.alpha > 0.005;
     }
     if (this.gameplayBackdropShade) {
-      const shade = AssetManifest.generated.sectorWorlds?.length ? alphas.shade * 0.42 : alphas.shade;
+      const shade = this.gameplayBackdropUsesSectorWorlds ? alphas.shade * 0.42 : alphas.shade;
       this.gameplayBackdropShade.alpha = Math.min(1, shade + (1 - shade) * treatment.shadeLift);
     }
   }
@@ -9283,7 +9457,7 @@ export class PlayScene {
       ? { ...this.gameplayBackdropRawAlphas }
       : { ...target };
     this.gameplayBackdropMode = nextMode;
-    this.layoutGameplayBackdrops();
+    // Mode transitions change atmosphere, not the world's camera position.
     if (immediate || this.gameplayBackdropReducedMotion || !this.gameplayBackdrop) {
       this.gameplayBackdropTransition = null;
       this.applyGameplayBackdropAlphas(target);
@@ -9309,6 +9483,7 @@ export class PlayScene {
   }
 
   updateSectorWorld(level) {
+    if (!this.gameplayBackdropUsesSectorWorlds) return;
     const worlds = AssetManifest.generated.sectorWorlds || [];
     if (!worlds.length || !this.gameplayBackdrop) return;
     const index = Math.floor((Math.max(1, Number(level) || 1) - 1) / 5) % worlds.length;
@@ -9344,7 +9519,7 @@ export class PlayScene {
     }
   }
 
-  fitBackdropToScreen(sprite, width, height, mode = this.gameplayBackdropMode) {
+  fitBackdropToScreen(sprite, width, height, mode = 'boss') {
     if (!sprite) return;
     const scale = getGameplayBackdropCoverScale({
       textureWidth: sprite.texture?.width || width,
@@ -9388,7 +9563,7 @@ export class PlayScene {
       }
     }
 
-    const motion = sampleGameplayBackdropMotion(this.gameplayBackdropMode, this.gameplayBackdropElapsedMs, {
+    const motion = sampleGameplayBackdropMotion('base', this.gameplayBackdropElapsedMs, {
       reducedMotion: this.gameplayBackdropReducedMotion
     });
     const width = this.gameplayBackdropWidth || this.gameplayGame?.getWidth?.() || 1920;
@@ -9851,6 +10026,20 @@ export class PlayScene {
   }
 
   destroy() {
+    if(typeof window!=='undefined')for(const hook of ['render_game_to_text','advanceTime'])if(window[hook]?.playScene===this)delete window[hook];
+    this.player?.orbitBreaker?.destroy();
+    if(this.player)this.player.orbitBreaker=null;
+    this.particleManager?.premiumImpacts.clear();
+    this.firstLightDirector?.destroy();
+    this.firstLightDirector = null;
+    // The scene/container is reused on runback. Retire every pending encounter
+    // before a new manager can draw into that same container.
+    this.enemyManager?.dispose();
+    for (const brood of this.enemyManager?.snakeBroods || []) brood.dispose();
+    this.enemyManager?.snakeBroods?.clear();
+    this.particleManager?.destroy();
+    CreatureAudio.stopAll({ unload: true });
+    MysteryAudio.stopAll({ unload: true });
     this.flushBalanceDebugSummary('scene_destroy');
     this.flushRunPersistenceAtSafePoint('scene_destroy');
     this.performanceDiagnostics?.destroy?.();
@@ -9976,6 +10165,9 @@ export class PlayScene {
     this.achievementToastQueue = [];
     this.clearGameOverInterlude();
     this.clearOverrunConfirmationHandlers();
+    for(const effect of this.overrunClearEffects||[])effect.container?.destroy({children:true});
+    this.overrunClearEffects=[];
+    this.overrunMilestoneInterlude=null;
 
     // Music continues to next scene
   }
@@ -10070,12 +10262,9 @@ export class PlayScene {
     overlay.addChild(rays);
 
     const shock = new PIXI.Graphics();
-    shock.circle(0, 0, Math.min(width, height) * 0.16);
-    shock.stroke({ color: 0xffd15c, width: compact ? 5 : 8, alpha: 0.95 });
-    shock.circle(0, 0, Math.min(width, height) * 0.25);
-    shock.stroke({ color: 0x37f5ff, width: compact ? 3 : 5, alpha: 0.68 });
-    shock.circle(0, 0, Math.min(width, height) * 0.34);
-    shock.stroke({ color: 0xffffff, width: compact ? 1 : 2, alpha: 0.38 });
+    drawEnergyShell(shock, 0, 0, Math.min(width, height) * 0.16, { color: 0xffd15c, width: compact ? 5 : 8, alpha: 0.95 });
+    drawEnergyShell(shock, 0, 0, Math.min(width, height) * 0.25, { color: 0x37f5ff, width: compact ? 3 : 5, alpha: 0.68 });
+    drawEnergyShell(shock, 0, 0, Math.min(width, height) * 0.34, { color: 0xffffff, width: compact ? 1 : 2, alpha: 0.38 });
     shock.position.set(centerX, centerY);
     overlay.addChild(shock);
 
@@ -10308,7 +10497,7 @@ export class PlayScene {
     if (!enemy || enemy.active === false || enemy.destroyed === true || enemy.waitingForEntry) return false;
     if (!Number.isFinite(enemy.x) || !Number.isFinite(enemy.y)) return false;
     const kind = enemy.kind || 'enemy';
-    if (kind === 'boss' || kind === 'boss_fuel_ship' || kind === 'bonus_drone') return false;
+    if (kind === 'boss' || kind === 'boss_fuel_ship' || kind === 'bonus_drone' || kind === 'mystery' || kind === 'mystery_part') return false;
     return true;
   }
 
@@ -10367,10 +10556,8 @@ export class PlayScene {
       const ringRadius = radius * (isElite ? 2.0 : 1.7) + 8 + pulse * 4 + index * 1.5;
       const outerRadius = ringRadius + 8 + safeDelta * 0.4;
 
-      layer.circle(x, y, ringRadius);
-      layer.stroke({ color, width: isElite ? 2.2 : 1.8, alpha: baseAlpha });
-      layer.circle(x, y, outerRadius);
-      layer.stroke({ color: accent, width: 1, alpha: 0.22 + pulse * 0.16 });
+      drawEnergyShell(layer, x, y, ringRadius, { color, width: isElite ? 2.2 : 1.8, alpha: baseAlpha });
+      drawEnergyShell(layer, x, y, outerRadius, { color: accent, width: 1, alpha: 0.22 + pulse * 0.16 });
       ringCount += 2;
 
       const pipTotal = isElite || isDurable ? 6 : 4;
@@ -10475,11 +10662,14 @@ export class PlayScene {
         const preview = this.player.getRunAugmentStatPreview(augment.id);
         return preview?.kind === 'stat'
           && preview.capped === true
-          && !(preview.projectedFusionIds?.length > 0);
+          && !preview.projectedFusionIds?.some(id => !(this.player.runAugmentModifiers?.fusionIds || []).includes(id));
       })
       .map((augment) => augment.id);
   }
 
+  rememberTacticalDraftOffers(offers = []) {
+    this.tacticalDraftRecentOfferIds = [...(this.tacticalDraftRecentOfferIds || []), ...offers.map(offer => offer.id)].slice(-9);
+  }
   formatTacticalDraftStatPreview(preview = null) {
     if (preview?.kind !== 'stat' || !preview.metric) {
       return { kind: 'contextual', label: translateText('CONTEXTUAL EFFECT'), value: '' };
@@ -10707,6 +10897,7 @@ export class PlayScene {
     const ineffectiveIds = this.getIneffectiveTacticalDraftOfferIds();
     if (ineffectiveIds.includes(this.tacticalDraftHeldId)) this.tacticalDraftHeldId = null;
     const offers = this.decorateTacticalDraftOffers(buildTacticalDraftOffers({
+      preferBuildProgress: this.game?.runMode !== RUN_MODES.DAILY_SIGNAL,
       openingLoadoutChoice: this.game?.runMode !== 'daily_signal',
       seed: this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`,
       sectorCleared,
@@ -12284,6 +12475,7 @@ export class PlayScene {
     if (this.tacticalDraftHeldId === offer.id) this.tacticalDraftHeldId = null;
     const previousIds = state.offers.map((entry) => entry.id);
     const offers = this.decorateTacticalDraftOffers(buildTacticalDraftOffers({
+      preferBuildProgress: this.game?.runMode !== RUN_MODES.DAILY_SIGNAL,
       seed: `${this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`}:ban:${this.tacticalDraftBannedIds.length}`,
       sectorCleared: state.sectorCleared,
       selectedIds: this.player?.runAugmentIds || [],
@@ -12308,6 +12500,7 @@ export class PlayScene {
       card.destroy?.({ children: true });
     });
     state.offers = offers;
+    if (this.game?.runMode !== RUN_MODES.DAILY_SIGNAL) this.rememberTacticalDraftOffers(offers);
     state.cards = offers.map((entry, index) => this.createTacticalDraftCard(entry, index));
     state.cards.forEach((card) => state.overlay.addChild(card));
     state.bansRemaining -= 1;
@@ -12450,6 +12643,7 @@ export class PlayScene {
     const previousIds = state.offers.map((offer) => offer.id);
     const nextRescanCount = state.rescanCount + 1;
     const offers = this.decorateTacticalDraftOffers(buildTacticalDraftOffers({
+      preferBuildProgress: this.game?.runMode !== RUN_MODES.DAILY_SIGNAL,
       seed: `${this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`}:rescan:${nextRescanCount}`,
       sectorCleared: state.sectorCleared,
       selectedIds: this.player?.runAugmentIds || [],
@@ -12471,6 +12665,7 @@ export class PlayScene {
       card.destroy?.({ children: true });
     });
     state.offers = offers;
+    if (this.game?.runMode !== RUN_MODES.DAILY_SIGNAL) this.rememberTacticalDraftOffers(offers);
     state.cards = offers.map((offer, index) => this.createTacticalDraftCard(offer, index));
     state.cards.forEach((card) => state.overlay.addChild(card));
     state.rescanCount = nextRescanCount;
@@ -12869,6 +13064,7 @@ export class PlayScene {
       category: offer.category,
       stacks: result.stacks,
       consumed: result.consumed === true,
+      newFusionIds: Array.isArray(result.newFusionIds) ? result.newFusionIds.slice() : [],
       fixedScoreRoute: Boolean(offer.fixedScoreRoute),
       scoreRouteDecision: state.scoreRouteDecision || null,
       source
@@ -12992,7 +13188,22 @@ export class PlayScene {
     graphics.clear();
     graphics.blendMode = 'add';
 
-    if (id === 'rift_reprisal') {
+    if (id === 'salvage_crown') {
+      // Three recovered barrels inside a wing-shaped mount.
+      graphics.poly([-32,18,-25,-12,-12,0,0,-31,12,0,25,-12,32,18].map(v=>v*scale))
+        .stroke({color:accent,width:2.6*scale,alpha:.92});
+      for(const x of [-14,0,14])graphics.moveTo(x*scale,12*scale).lineTo(x*scale,-9*scale)
+        .stroke({color:0xffffff,width:3*scale,alpha:.85});
+      graphics.moveTo(-22*scale,25*scale).lineTo(22*scale,25*scale).stroke({color:accent,width:3*scale,alpha:.8});
+    } else if (id === 'rift_crossfire') {
+      // Two separated Phase origins converge on a single earned opening.
+      for(const side of [-1,1]){
+        graphics.moveTo(side*32*scale,-24*scale).lineTo(side*22*scale,-24*scale).lineTo(side*22*scale,24*scale)
+          .lineTo(side*32*scale,24*scale).stroke({color:accent,width:3*scale,alpha:.9});
+        graphics.moveTo(side*22*scale,18*scale).lineTo(0,-17*scale).stroke({color:0xffffff,width:2*scale,alpha:.85});
+      }
+      graphics.poly([0,-25,6,-17,0,-9,-6,-17].map(v=>v*scale)).fill({color:accent,alpha:.9});
+    } else if (id === 'rift_reprisal') {
       for (const side of [-1, 1]) {
         graphics.moveTo(side * 23 * scale, -31 * scale);
         graphics.bezierCurveTo(
@@ -13468,11 +13679,12 @@ export class PlayScene {
 
   resetTransientGameplayInput(
     reason = 'gameplay_transition',
-    { preserveFire = true, preserveMovement = false } = {}
+    { preserveFire = true, preserveMovement = false, preserveFocus = false } = {}
   ) {
     const input = this.inputManager?.resetTransientState?.({
       preserveFire,
       preserveMovement,
+      preserveFocus,
       suppressUntilReleased: true
     }) || null;
     if (/pause|tactical_draft|boss_intro|interlude/.test(String(reason))) {
@@ -13484,6 +13696,7 @@ export class PlayScene {
       reason,
       preserveFire: Boolean(preserveFire),
       preserveMovement: Boolean(preserveMovement),
+      preserveFocus: Boolean(preserveFocus),
       at: Date.now(),
       input
     };
@@ -13491,6 +13704,7 @@ export class PlayScene {
   }
 
   handlePauseToggle() {
+    if (this.pauseAchievementScene) return;
     const pressed = this.inputManager.consumeKeyPress
       ? this.inputManager.consumeKeyPress('KeyP', 'p', 'P', 'Escape')
       : this.inputManager.isKeyPressed('KeyP') ||
@@ -13504,6 +13718,9 @@ export class PlayScene {
 
   setPaused(paused) {
     if (this.isPaused === paused) return;
+    if (paused) AudioManager.stopSfxGroup('planet_ambience');
+    if (paused) CreatureAudio.stopAll();
+    if (paused) MysteryAudio.stopAll();
     this.resetTransientGameplayInput(paused ? 'pause_enter' : 'pause_exit', { preserveFire: true, preserveMovement: true });
     this.isPaused = paused;
     this.hud?.updateOpeningCombatReadability?.();
@@ -13514,6 +13731,7 @@ export class PlayScene {
     } else {
       this.closeSettingsOverlay();
       this.closeHowToPlayOverlay();
+      this.closePauseAchievementBrowser();
       this.closeTacticalLoadoutOverlay();
       this.hidePauseOverlay();
       AudioManager.setPauseDucked(false);
@@ -13917,7 +14135,8 @@ export class PlayScene {
       this.createPauseButton(translateText('RESUME'), centerX, panelY + 358, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
       this.createPauseButton(translateText('Tactical upgrades'), centerX, panelY + 410, () => this.openTacticalLoadoutOverlay(), { accent: 0xffef7e }),
       this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 462, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
-      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 514, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
+      this.createPauseButton(translateText('HOW TO PLAY'), centerX - 87 * uiScale, panelY + 514, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8, width: 164 * uiScale, compact: true }),
+      this.createPauseButton(translateText('ACHIEVEMENTS'), centerX + 87 * uiScale, panelY + 514, () => this.openPauseAchievementBrowser(), { accent: 0xb39cff, width: 164 * uiScale, compact: true }),
       this.createPauseButton(translateText(this.game?.lateGameExperiment?.active ? 'RETIRE TEST & OPEN REPORT' : 'QUIT TO MENU'), centerX, panelY + 566, () => {
         this.closeSettingsOverlay();
         this.closeHowToPlayOverlay();
@@ -13932,7 +14151,7 @@ export class PlayScene {
           });
           return;
         }
-        this.game.switchScene('menu');
+        this.game.quitRunToMenu();
       })
     ];
     this.pauseButtons.forEach((button) => {
@@ -14136,15 +14355,44 @@ export class PlayScene {
       onClose: () => {
         this.howToPlayOverlay = null;
         this.pauseGamepadNavigator.suppressUntilReleased();
-      }
+      },
+      onViewAchievements: (mode) => this.openPauseAchievementBrowser(mode)
     });
     this.uiOverlay.addChild(this.howToPlayOverlay.container);
+  }
+
+  openPauseAchievementBrowser(mode = this.game.runMode) {
+    if (!this.isPaused || this.pauseAchievementScene) return;
+    this.game.achievementBrowserMode = mode;
+    this.game.achievementBrowserAvailableOnly = true;
+    const scene = new AchievementsScene(this.game, {
+      overlay: true,
+      onClose: () => this.closePauseAchievementBrowser()
+    });
+    scene.container.zIndex = 1000002;
+    scene.container.eventMode = 'static';
+    scene.container.hitArea = new PIXI.Rectangle(0, 0, this.game.getWidth(), this.game.getHeight());
+    this.pauseAchievementScene = scene;
+    this.container.addChild(scene.container);
+    scene.init();
+  }
+
+  closePauseAchievementBrowser() {
+    const scene = this.pauseAchievementScene;
+    if (!scene) return;
+    this.pauseAchievementScene = null;
+    scene.destroy();
+    scene.container.parent?.removeChild(scene.container);
+    scene.container.destroy({ children: true });
+    this.resetTransientGameplayInput('achievement_browser_close', { preserveFire: true, preserveMovement: true });
+    this.pauseGamepadNavigator.suppressUntilReleased();
   }
 
   openTacticalLoadoutOverlay() {
     this.closeTacticalLoadoutOverlay();
     this.tacticalLoadoutOverlay = new TacticalLoadoutOverlay(this.game, {
       title: 'Tactical upgrades',
+      fusionState:this.enemyManager?.behavioralFusions.snapshot(),
       selectedIds: this.player?.runAugmentIds || [],
       consumedIds: this.player?.consumedRunAugmentIds || [],
       onInspect: (item, { reason } = {}) => {
@@ -14205,7 +14453,7 @@ export class PlayScene {
     button.cursor = 'pointer';
     button.activate = onPress;
 
-    const width = 312 * uiScale;
+    const width = options.width || 312 * uiScale;
     const height = 44 * uiScale;
     const accent = options.accent || 0x00eaff;
     const hot = options.hot === true;
@@ -14251,12 +14499,12 @@ export class PlayScene {
 
     const text = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 18,
+      fontSize: options.compact ? 16 : 18,
       fontWeight: 'bold',
       fill: '#ffffff',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: width - 76
+      wordWrapWidth: width - (options.compact ? 24 : 76)
     });
     text.anchor.set(0.5);
     button.addChild(text);
@@ -14318,6 +14566,10 @@ export class PlayScene {
   }
 
   updatePauseMenuControls(delta) {
+    if (this.pauseAchievementScene) {
+      this.pauseAchievementScene.update?.(delta);
+      return;
+    }
     if (this.tacticalLoadoutOverlay) {
       this.updatePauseMenuMotion(delta);
       this.tacticalLoadoutOverlay.update?.(delta);
@@ -14355,6 +14607,7 @@ export class PlayScene {
   }
 
   destroyPauseOverlay() {
+    this.closePauseAchievementBrowser();
     this.closeTacticalLoadoutOverlay();
     if (this.pauseMenuFx?.container?.parent) {
       this.pauseMenuFx.container.parent.removeChild(this.pauseMenuFx.container);
@@ -14594,8 +14847,7 @@ export class PlayScene {
     const px = Math.max(edge, Math.min(width - edge, Number(this.player?.x) || width / 2));
     const py = Math.max(edge, Math.min(height - edge, Number(this.player?.y) || height / 2));
     const beaconRadius = Math.max(34, Math.min(width, height) * 0.052 + pulse * 5);
-    overlay.circle(px, py, beaconRadius);
-    overlay.stroke({ color: 0xffd15c, width: 2, alpha: 0.24 + pulse * 0.2 });
+    drawEnergyShell(overlay, px, py, beaconRadius, { color: 0xffd15c, width: 2, alpha: 0.24 + pulse * 0.2 });
     const beaconTickCount = 4;
     for (let i = 0; i < beaconTickCount; i += 1) {
       const angle = pulse * 0.4 + i * Math.PI * 0.5;
@@ -14671,8 +14923,7 @@ export class PlayScene {
     const fieldAlpha = reducedMotion ? 0.045 : 0.055 + pulse * 0.025;
     field.circle(px, py, radius);
     field.fill({ color: 0x574dff, alpha: fieldAlpha });
-    field.circle(px, py, radius);
-    field.stroke({
+    drawEnergyShell(field, px, py, radius, {
       color: 0x62efff,
       width: 1.7,
       alpha: reducedMotion ? 0.3 : 0.32 + pulse * 0.16
@@ -14847,10 +15098,8 @@ export class PlayScene {
       const pulse = reducedMotion ? 0 : 0.5 + Math.sin(elapsedMs * 0.022) * 0.5;
       const baseRadius = 34 + visualT * 16;
       layer.clear();
-      layer.circle(0, 0, baseRadius);
-      layer.stroke({ color, width: 3.1, alpha: 0.62 * fade });
-      layer.circle(0, 0, baseRadius + 13 + pulse * 3);
-      layer.stroke({ color: 0xffffff, width: 1.6, alpha: 0.34 * fade });
+      drawEnergyShell(layer, 0, 0, baseRadius, { color, width: 3.1, alpha: 0.62 * fade });
+      drawEnergyShell(layer, 0, 0, baseRadius + 13 + pulse * 3, { color: 0xffffff, width: 1.6, alpha: 0.34 * fade });
       layer.arc(0, 0, baseRadius + 24, angle - 0.42, angle + 0.42);
       layer.stroke({ color: 0xffffff, width: 3.2, alpha: 0.3 * fade });
       layer.moveTo(nx * (baseRadius + 5), ny * (baseRadius + 5));
@@ -14878,8 +15127,7 @@ export class PlayScene {
       layer.stroke({ color, width: 3.2, alpha: 0.92 * fade });
       layer.circle(nx * (baseRadius + 8), ny * (baseRadius + 8), 4.2 + pulse * 1.4);
       layer.fill({ color: 0xffffff, alpha: 0.72 * fade });
-      layer.circle(nx * (baseRadius + 42), ny * (baseRadius + 42), 5.6 + pulse * 1.1);
-      layer.stroke({ color: 0xffffff, width: 1.9, alpha: 0.55 * fade });
+      drawEnergyShell(layer, nx * (baseRadius + 42), ny * (baseRadius + 42), 5.6 + pulse * 1.1, { color: 0xffffff, width: 1.9, alpha: 0.55 * fade });
       layer.visible = true;
       setDebug(true, elapsedMs, { baseRadius, pulse });
     };
@@ -16216,8 +16464,7 @@ export class PlayScene {
         ring.clear();
         if (t <= 0 || t >= 1) return;
         const radius = 24 + t * (72 + index * 14);
-        ring.circle(0, 0, radius);
-        ring.stroke({
+        drawEnergyShell(ring, 0, 0, radius, {
           color: index % 2 === 1 ? 0xffffff : 0x7dffcc,
           width: 4 - t * 2,
           alpha: 0.92 * (1 - t)
@@ -16493,22 +16740,16 @@ export class PlayScene {
     const target = Math.max(before, Math.min(maxLives, Math.round(targetLives)));
     if (target <= before) return 0;
 
-    this.game.lives = target;
+    const granted = this.game.gainLife({ count: target - before, source: 'life_repair' });
+    if (!granted) return 0;
     this.lowLivesShownFor = null;
-    this.onLifeGained(target, {
-      before,
-      after: target,
-      maxLives,
-      source: 'life_repair',
-      reachedMax: target >= maxLives
-    });
 
     if (this.player) {
       this.player.grantInvulnerability?.(invulnerabilityMs, 'life_repair');
     }
 
     AudioManager.playSfx('powerup', { force: true, volume: 0.72, minIntervalMs: 250 });
-    return target - before;
+    return granted;
   }
 
   applyBossClearRecovery(level = this.game?.level || 1) {
@@ -16673,79 +16914,17 @@ export class PlayScene {
     const startY = effect.playerY;
     const endX = effect.sourceX;
     const endY = effect.sourceY;
-    const now = Date.now();
-    const pulse = 1 + Math.sin(now * 0.04) * 0.08;
-    const dx = endX - startX;
-    const dy = endY - startY;
-    const length = Math.max(1, Math.hypot(dx, dy));
-    const nx = -dy / length;
-    const ny = dx / length;
-    const drawSegment = (offset, width, color, strokeAlpha) => {
-      const wobble = Math.sin(now * 0.015 + offset * 0.4) * Math.min(18, length * 0.018);
-      layer.moveTo(startX + nx * (offset + wobble * 0.3), startY + ny * (offset + wobble * 0.3));
-      layer.lineTo(endX + nx * (offset - wobble), endY + ny * (offset - wobble));
-      layer.stroke({ color, width, alpha: strokeAlpha * alpha });
-    };
-
-    drawSegment(0, 26 * pulse, 0x00f6ff, 0.11);
-    drawSegment(0, 17 * pulse, 0xff55d9, 0.12);
-    drawSegment(0, 11 * pulse, 0xffffff, 0.22);
-    drawSegment(-9, 4.2 * pulse, 0x66ffff, 0.58);
-    drawSegment(9, 4.2 * pulse, 0xff66ff, 0.48);
-    drawSegment(0, 3.2 * pulse, 0xffffff, 0.78);
-
-    for (let strand = -2; strand <= 2; strand++) {
-      if (strand === 0) continue;
-      const strandOffset = strand * 6 + Math.sin(now * 0.01 + strand) * 4;
-      drawSegment(strandOffset, 1.6, strand > 0 ? 0xffe066 : 0x66ffff, 0.34);
+    const time=energyClock(),dx=endX-startX,dy=endY-startY;
+    const length=Math.max(1,Math.hypot(dx,dy)),nx=-dy/length,ny=dx/length;
+    layer.blendMode='normal';
+    for(const side of [-1,0,1])drawEnergyLink(layer,{x:startX+nx*side*9,y:startY+ny*side*9,toX:endX,toY:endY,width:side?22:36,color:side<0?0x76e9ff:side>0?0xf79dff:0xffe1a0,alpha:alpha*(side?.40:.58)});
+    for(let i=0;i<4;i++) {
+      const u=(time*.65+i/4)%1;
+      drawEnergySurface(layer,{kind:'corona',x:startX+dx*u,y:startY+dy*u,width:28,height:42,angle:Math.atan2(dy,dx)-Math.PI/2,color:0xbefaff,alpha:alpha*Math.sin(u*Math.PI)*.48});
     }
-
-    const ringCount = effect.triggered ? 8 : 5;
-    for (let i = 1; i <= ringCount; i++) {
-      const t = i / (ringCount + 1);
-      const x = startX + (endX - startX) * t;
-      const y = startY + (endY - startY) * t;
-      const radius = (16 + 32 * t + progress * 20 + Math.sin(now * 0.012 + i) * 5) * pulse;
-      layer.circle(x, y, radius);
-      layer.stroke({ color: i % 2 ? 0x66ffff : 0xffffff, width: 2.5, alpha: 0.38 * alpha });
-      layer.circle(x, y, Math.max(3, radius * 0.08));
-      layer.fill({ color: i % 2 ? 0xff66ff : 0x66ffff, alpha: 0.2 * alpha });
-    }
-
-    const chevronCount = effect.triggered ? 7 : 4;
-    for (let i = 0; i < chevronCount; i += 1) {
-      const t = (progress * 1.25 + i / chevronCount) % 1;
-      const x = startX + dx * t;
-      const y = startY + dy * t;
-      const size = (10 + t * 8) * pulse;
-      const forwardX = dx / length;
-      const forwardY = dy / length;
-      layer.moveTo(x - forwardX * size - nx * size * 0.62, y - forwardY * size - ny * size * 0.62);
-      layer.lineTo(x + forwardX * size * 0.7, y + forwardY * size * 0.7);
-      layer.lineTo(x - forwardX * size + nx * size * 0.62, y - forwardY * size + ny * size * 0.62);
-    }
-    layer.stroke({ color: 0xffffff, width: 2.2, alpha: 0.28 * alpha });
-
-    effect.captured?.forEach((target, index) => {
-      const r = 20 + index * 3 + progress * 28;
-      layer.circle(target.x, target.y, r);
-      layer.stroke({ color: 0xffe066, width: 4, alpha: 0.62 * alpha });
-      layer.circle(target.x, target.y, r * 0.62);
-      layer.stroke({ color: 0xff66ff, width: 2, alpha: 0.38 * alpha });
-      layer.circle(target.x, target.y, Math.max(5, r * 0.28));
-      layer.fill({ color: 0x66ffff, alpha: 0.22 * alpha });
-      for (let spoke = 0; spoke < 4; spoke++) {
-        const a = now * 0.006 + index + spoke * Math.PI * 0.5;
-        layer.moveTo(target.x + Math.cos(a) * r * 0.28, target.y + Math.sin(a) * r * 0.28);
-        layer.lineTo(target.x + Math.cos(a) * r, target.y + Math.sin(a) * r);
-      }
-      layer.stroke({ color: 0xffffff, width: 1.4, alpha: 0.3 * alpha });
-    });
-
-    layer.circle(startX, startY, 18 + Math.sin(now * 0.03) * 5);
-    layer.fill({ color: 0x66ffff, alpha: 0.18 * alpha });
-    layer.circle(endX, endY, 22 + Math.cos(now * 0.026) * 6);
-    layer.fill({ color: 0xff66ff, alpha: 0.16 * alpha });
+    effect.captured?.forEach(target=>drawEnergySurface(layer,{kind:'membrane',x:target.x,y:target.y,width:55+progress*38,height:55+progress*38,color:0xffd987,alpha:alpha*.52}));
+    drawEnergySurface(layer,{kind:'corona',x:startX,y:startY,width:66,height:48,color:0x66ffff,alpha:alpha*.62});
+    drawEnergySurface(layer,{kind:'corona',x:endX,y:endY,width:78,height:60,color:0xffb8eb,alpha:alpha*.65});
   }
 
   getBossHazardSfxFamily(hazard) {
@@ -17208,6 +17387,12 @@ export class PlayScene {
     return cleared;
   }
 
+  clearOnslaughtSectorBullets() {
+    return isOverrunRunMode(this.game?.runMode)
+      ? this.clearEnemyBullets('onslaught_sector_clear')
+      : 0;
+  }
+
   clearBossHazards(reason = 'cleanup') {
     const hazards = Array.isArray(this.bossHazards) ? this.bossHazards : [];
     const cleared = hazards.length;
@@ -17524,6 +17709,10 @@ export class PlayScene {
     milestoneReward = null,
     onComplete = null
   } = {}) {
+    // Re-entrant debug/resize paths must also retire the owned 3D model.
+    this.clearOverrunConfirmationHandlers();
+    for(const old of this.overrunClearEffects||[])old.container?.destroy({children:true});
+    this.overrunClearEffects=[];
     this.applyNotificationSupersession?.('overrun_unlocked', { channel: 'major' });
     this.dismissToastDisplay?.(this.activeCenterToast, 'center');
     this.hud?.setNotificationFocus?.('major');
@@ -17540,6 +17729,13 @@ export class PlayScene {
     container.zIndex = 9600 + this.overrunClearEffects.length;
     container.sortableChildren = true;
     container.label = 'ui_overrun_clear_celebration';
+    const victoryArt = celebrationSprite('overrun-victory', width, height);
+    victoryArt.zIndex = -1;
+    victoryArt.position.set(width/2, height/2);
+    container.addChild(victoryArt);
+    const victoryAtmosphere = new VictoryAtmosphere();
+    victoryAtmosphere.zIndex = 2;
+    container.addChild(victoryAtmosphere);
 
     const flash = new PIXI.Graphics();
     flash.zIndex = 0;
@@ -17585,6 +17781,8 @@ export class PlayScene {
       seal,
       interludeCard,
       shards,
+      victoryArt,
+      victoryAtmosphere,
       simpleModal: true
     };
     this.overrunClearLayer?.addChild(container);
@@ -17618,7 +17816,7 @@ export class PlayScene {
     AudioManager.playSfx('overrun_clear_coronation', { force: true, volume: 1.0, minIntervalMs: 0 });
     const voiceCue = resolveOverrunMilestoneVoiceCue({ milestoneSector, eventKind, celebration });
     setTimeout(() => {
-      if (this.game?.currentScene !== this) return;
+      if (this.game?.currentScene !== this || this.overrunMilestoneInterlude?.effect !== effect || effect.confirmed) return;
       AudioManager.playVoice(voiceCue, {
         force: true,
         stopOtherVoices: true,
@@ -17646,8 +17844,8 @@ export class PlayScene {
   }) {
     const compact = width < 720;
     const portraitLayout = width >= 1050;
-    const cardWidth = Math.min(width - (compact ? 32 : 96), compact ? 560 : (portraitLayout ? 1040 : 860));
-    const cardHeight = Math.min(height - (compact ? 42 : 96), compact ? 350 : (portraitLayout ? 520 : 460));
+    const cardWidth = Math.min(width * .94, 1800);
+    const cardHeight = Math.min(height * .90, 1050);
     const visual = celebration?.visual || {};
     const primaryColor = visual.primaryColor || 0xffd15c;
     const accentColor = visual.accentColor || 0x61f6ff;
@@ -17664,13 +17862,13 @@ export class PlayScene {
     const card = new PIXI.Container();
     card.label = 'ui_overrun_interlude';
     card.x = width / 2;
-    card.y = height * (compact ? 0.44 : 0.5);
+    card.y = height * .5;
     card.alpha = 0;
     card.scale.set(0.92);
 
     const bg = new PIXI.Graphics();
     bg.roundRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, compact ? 12 : 16);
-    bg.fill({ color: backgroundColor, alpha: 0.94 });
+    bg.fill({ color: backgroundColor, alpha: 0.86 });
     bg.stroke({ color: frameColor, width: compact ? 2 : 2.5, alpha: 0.92 });
     card.addChild(bg);
 
@@ -17869,33 +18067,58 @@ export class PlayScene {
       visualLanguage: 'astra_coronation_v6'
     };
 
-    // Keep the existing translated report, rewards and confirmation contract.
-    // The new portrait occupies its own column, so it cannot obscure those cues.
-    dais.visible = false;
-    bg.clear();
-    drawAstraPanel(bg, -cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 20,
-      { color: backgroundColor, alpha: 0.96 }, { color: frameColor, width: 1.4, alpha: 0.72 });
-    const trim = new PIXI.Graphics();
-    trim.rect(-cardWidth / 2 + 20, -cardHeight / 2 + 12, cardWidth - 40, 2).fill({color: primaryColor, alpha: 0.8});
-    trim.rect(-cardWidth / 2 + 20, cardHeight / 2 - 14, cardWidth - 40, 1).fill({color: accentColor, alpha: 0.38});
-    for (let i = 0; i < 8; i++) {
-      trim.poly([-cardWidth/2+25+i*13,-cardHeight/2+20,-cardWidth/2+32+i*13,-cardHeight/2+20,-cardWidth/2+28+i*13,-cardHeight/2+27,-cardWidth/2+21+i*13,-cardHeight/2+27]).fill({color:primaryColor,alpha:.34});
+    // Open, cinematic staging. The palace remains visible; reward math and
+    // translated input contracts still belong to PlayScene.
+    dais.visible=false; bg.clear();
+    const shadeCanvas=document.createElement('canvas');shadeCanvas.width=128;shadeCanvas.height=2;
+    const shadeContext=shadeCanvas.getContext('2d'),shade=shadeContext.createLinearGradient(0,0,128,0);
+    for(const [stop,alpha] of [[0,.05],[.3,.32],[.55,.92],[1,.75]])shade.addColorStop(stop,`rgba(2,9,18,${alpha})`);
+    shadeContext.fillStyle=shade;shadeContext.fillRect(0,0,128,2);
+    const shadeTexture=PIXI.Texture.from(shadeCanvas),veil=new PIXI.Sprite(shadeTexture);veil.anchor.set(.5);
+    veil.width=width;veil.height=height;card.addChildAt(veil,0);
+    card.on('destroyed',()=>shadeTexture.destroy(true));
+    const landscape=width>=960, contentX=landscape?cardWidth*.245:0;
+    const contentWidth=landscape?cardWidth*.45:cardWidth*.9;
+    const coronation=new AstraCoronation({visual,milestone:milestoneSector,shipIndex:this.player?.selectedShipTextureIndex});
+    card.addChildAt(coronation,1);
+    coronation.position.set(landscape?-cardWidth*.25:0,landscape?cardHeight*.015:-cardHeight*.17);
+    card._coronation=coronation;
+    card._coronationLayout={width:landscape?cardWidth*.53:cardWidth*.65,height:cardHeight*(landscape?.72:.34),compact:false};
+    const numeral=createText(String(milestoneSector).padStart(2,'0'),{
+      fontFamily:'Orbitron, Rajdhani, sans-serif',fontSize:landscape?cardHeight*.31:cardHeight*.18,
+      fontWeight:'900',fill:primaryColor,stroke:'#060c16',strokeThickness:2
+    });
+    numeral.anchor.set(.5);numeral.position.set(landscape?-cardWidth*.25:0,-cardHeight*(landscape?.32:.34));numeral.alpha=.28;
+    card.addChildAt(numeral,1);
+    const rows=landscape
+      ? [[title,-.33,Math.min(64,width*.034),.16],[flavorText,-.19,22,.10],[reportText,-.10,17,.06],
+         [bonusText,.08,30,.13],[rewardText,.23,23,.12],[sectorText,.34,19,.07],[warning,.43,14,.05]]
+      : [[title,-.435,compact?26:32,.09],[flavorText,.075,compact?14:17,.055],[reportText,.145,compact?13:15,.055],
+         [bonusText,.235,compact?20:24,.10],[rewardText,.33,compact?15:18,.07],[sectorText,.40,compact?13:15,.055],[warning,.455,11,.04]];
+    if(landscape&&eventKind!=='run_clear')title.text=title.text.replace(/[:：]\s*/,'\n');
+    card._victoryReveals=[];
+    for(const [i,[item,y,fontSize,maxHeight]] of rows.entries()){
+      item.position.set(contentX,y*cardHeight);item.style.wordWrapWidth=contentWidth;
+      item.style.fontSize=fontSize;item.style.lineHeight=fontSize*1.14;
+      item.style.fill=item===title?'#fff4cb':item===bonusText?'#ffffff':item===rewardText?'#bdf5df':'#bdd7e1';
+      // Long localized titles keep their allocated space instead of colliding.
+      while(item.height>cardHeight*maxHeight&&item.style.fontSize>10){item.style.fontSize-=1;item.style.lineHeight=item.style.fontSize*1.14;}
+      card._victoryReveals.push({item,y:item.y,delay:[100,500,750,1250,1900,2450,2650][i]});
     }
-    card.addChildAt(trim, 1);
-    const coronation = new AstraCoronation({visual, milestone:milestoneSector, shipIndex:this.player?.selectedShipTextureIndex, getShipTexture:()=>this.player?.shipSprite?.texture});
-    card.addChildAt(coronation, 2);
-    coronation.x = portraitLayout ? -cardWidth * .32 : 0;
-    card._coronation = coronation;
-    card._coronationLayout = {width:portraitLayout ? cardWidth*.33 : cardWidth*.7, height:cardHeight*.9, compact:!portraitLayout};
-    if (portraitLayout) {
-      trim.moveTo(-cardWidth*.13,-cardHeight*.34).lineTo(-cardWidth*.13,cardHeight*.34).stroke({color:accentColor,width:1,alpha:.23});
-      const contentX = cardWidth * .165;
-      for (const item of [title,flavorText,reportText,sectorText,bonusText,rewardText,warning,button]) {
-        item.x = contentX;
-        if (item.style) item.style.wordWrapWidth = cardWidth * .56;
-      }
-      title.style.fontSize = 34;
-    }
+    const score=createText(Number(this.game.score||0).toLocaleString('en-US'),{
+      fontFamily:'Orbitron, Rajdhani, sans-serif',fontSize:Math.min(68,width*.045),fontWeight:'900',fill:'#ffe1a0',
+      stroke:'#07111b',strokeThickness:3,align:'center'
+    });
+    score.anchor.set(.5);score.position.set(contentX,-cardHeight*.015);score.visible=landscape;
+    card.addChild(score);card._victoryScore={node:score,value:Number(this.game.score||0)};
+    // A broad, authored button sits below the ship, clear of the report column.
+    button.position.set(landscape?-cardWidth*.25:0,cardHeight*(landscape?.395:.51));
+    if(!landscape){warning.visible=false;button.y=cardHeight*.46;sectorText.y=cardHeight*.395;}
+    buttonBg.width=Math.min(landscape?cardWidth*.44:cardWidth*.86,600);buttonBg.height=landscape?64:48;
+    button.hitArea=new PIXI.Rectangle(-buttonBg.width/2,-buttonBg.height/2,buttonBg.width,buttonBg.height);
+    confirmText.style.wordWrapWidth=buttonBg.width-40;confirmText.style.fontSize=landscape?21:15;
+    card._victoryViewport={width,height};
+    card._debugOverrunVisual={...card._debugOverrunVisual,visualLanguage:'victory_flythrough_v7',realShowcase:true};
 
     return card;
   }
@@ -17973,10 +18196,24 @@ export class PlayScene {
         const layout = card._coronationLayout;
         card._coronation.update(elapsed, layout.width, layout.height, {compact:layout.compact});
       }
+      if(card?._victoryReveals){
+        const motion=!getAccessibilitySettings().prefersReducedMotion;
+        for(const {item,y,delay} of card._victoryReveals){
+          const reveal=motion?Math.max(0,Math.min(1,(elapsed-delay)/550)):1;
+          item.alpha=reveal;item.y=y+(motion?(1-reveal)*14:0);
+        }
+        const score=card._victoryScore;
+        if(score){const progress=motion?Math.max(0,Math.min(1,(elapsed-700)/1100)):1;
+          score.node.text=Math.round(score.value*(1-(1-progress)**3)).toLocaleString('en-US');score.node.alpha=progress;}
+      }
+
       const intro = Math.min(1, progress * 5.2);
       const outro = !waitingForConfirm && progress > 0.82 ? Math.max(0, 1 - (progress - 0.82) / 0.18) : 1;
       card.alpha = (1 - Math.pow(1 - intro, 3)) * outro;
-      card.scale.set(0.98 + intro * 0.02);
+      const viewport=card._victoryViewport;
+      const fit=viewport?Math.min(this.game.getWidth()/viewport.width,this.game.getHeight()/viewport.height):1;
+      card.position.set(this.game.getWidth()/2,this.game.getHeight()/2);
+      card.scale.set((0.98 + intro * 0.02)*fit);
       const confirmPrompt = this.findOverrunInterludeNode(card, 'ui_overrun_confirm_prompt');
       const confirmButton = this.findOverrunInterludeNode(card, 'ui_overrun_confirm_button');
       if (confirmPrompt) {
@@ -18042,13 +18279,15 @@ export class PlayScene {
           ? 1
           : Math.max(0, 1 - (rawProgress - 0.82) / 0.18);
         effect.flash.rect(0, 0, width, height);
-        effect.flash.fill({ color: 0x01040a, alpha: 0.62 * intro * outro });
-        const color = effect.visual?.primaryColor || 0xffd15c;
+        effect.flash.fill({ color: 0x01040a, alpha: 0.25 * intro * outro });
         const motion = !getAccessibilitySettings().prefersReducedMotion;
-        const t = motion ? elapsed / 1000 : 3;
-        for (let i = 0; i < 12; i++) {
-          const x = width * (i / 11), sway = Math.sin(t * .12 + i) * width * .02;
-          effect.flash.poly([width*.5,height*.52,x+sway,0,x+sway+width*.018,0]).fill({color,alpha:.018*intro*outro});
+        effect.victoryAtmosphere?.update(elapsed,width,height,!motion,intro*outro,effect.visual);
+        if (effect.victoryArt?.texture?.width > 1) {
+          const art = effect.victoryArt;
+          const zoom = motion ? 1.05 - .05 * Math.min(1,elapsed/5000) : 1;
+          art.scale.set(Math.max(width/art.texture.width,height/art.texture.height)*zoom);
+          art.position.set(width/2,height/2);
+          art.alpha = intro*outro;
         }
         return true;
       }
@@ -18092,8 +18331,7 @@ export class PlayScene {
         const local = (progress * 1.7 + i * 0.22) % 1;
         const radius = 48 + local * maxRadius;
         const alpha = Math.max(0, 1 - local) * 0.34 * lateFade;
-        effect.rings.circle(effect.centerX, effect.centerY, radius * pulse);
-        effect.rings.stroke({ color: i % 2 ? accentColor : primaryColor, width: Math.max(1.2, 4 - i * 0.45), alpha });
+        drawEnergyShell(effect.rings, effect.centerX, effect.centerY, radius * pulse, { color: i % 2 ? accentColor : primaryColor, width: Math.max(1.2, 4 - i * 0.45), alpha });
       }
 
       for (let i = 0; i < rayCount; i += 1) {
@@ -18122,8 +18360,7 @@ export class PlayScene {
       const coreRadius = 18 + burst * 92 + Math.sin(now * 0.018) * 5;
       effect.rings.circle(effect.centerX, effect.centerY, coreRadius);
       effect.rings.fill({ color: 0xffffff, alpha: 0.08 * fade });
-      effect.rings.circle(effect.centerX, effect.centerY, coreRadius * 1.34);
-      effect.rings.stroke({ color: secondaryColor, width: 6, alpha: 0.2 * fade * lateFade });
+      drawEnergyShell(effect.rings, effect.centerX, effect.centerY, coreRadius * 1.34, { color: secondaryColor, width: 6, alpha: 0.2 * fade * lateFade });
 
       return true;
     });
@@ -18658,7 +18895,7 @@ export class PlayScene {
       enemy?.active !== false && enemy.waitingForEntry !== true && enemy.visible !== false
     );
     const activeBullet = enemyBullets.some(bullet => bullet?.active !== false && bullet.visible !== false);
-    return activeEnemy || activeBullet;
+    return activeEnemy || activeBullet || this.enemyManager?.hijacker?.active === true;
   }
 
   shouldRelocateCenterToastForCombat(entryOrMeta) {
@@ -18734,13 +18971,13 @@ export class PlayScene {
   }
 
   deferOpeningCombatNotices(now) {
-    if (!usesOpeningCombatReadability(this.game) || this.isPaused || this.introActive) return;
+    if ((!usesOpeningCombatReadability(this.game) && !this.enemyManager?.hijacker?.active) || this.isPaused || this.introActive) return;
     const boss = this.enemyManager?.boss;
     let hostileCount = 0;
     for (const bullet of this.bulletManager?.enemyBullets || []) {
       if (bullet.active && ++hostileCount >= 8) break;
     }
-    const urgent = Boolean(boss?.telegraph || boss?.regularTelegraph ||
+    const urgent = Boolean(this.enemyManager?.hijacker?.active || boss?.telegraph || boss?.regularTelegraph ||
       this.bossHazards?.length ||
       this.enemyManager?.enemies?.some(e => e.active && e.eliteAbility?.state === 'telegraph') ||
       hostileCount >= 8);
@@ -20482,6 +20719,18 @@ export class PlayScene {
         if (commandFx) display.scale.set(1);
       }
 
+      if (!this.isPaused && this.hud?.combatScreenPoints?.length && display.visible) {
+        const bounds = display.getBounds();
+        if (this.hud.combatScreenPoints.some(point => overlapsCombatPoint(bounds, point))) display.alpha *= 0.24;
+      }
+      if (slot === 'corner' && options.avoidHud !== false) {
+        this.updateCornerToastLayout(display, {
+          message,
+          fontSize,
+          type: options.type || 'generic',
+          requestedY
+        });
+      }
       if (elapsed >= duration) {
         this.dismissToastDisplay(display, slot, { reason: 'completed' });
         this.processToastQueue();
@@ -20492,9 +20741,8 @@ export class PlayScene {
     return display;
   }
 
-  getCornerToastSafeY(message = '', fontSize = 16, type = 'generic') {
+  getRightHudBottom() {
     const width = Math.max(1, Number(this.game?.getWidth?.()) || Number(this.game?.app?.screen?.width) || 1280);
-    const height = Math.max(1, Number(this.game?.getHeight?.()) || Number(this.game?.app?.screen?.height) || 720);
     const rightHudNodes = [
       this.hud?.livesGroup,
       this.hud?.locationText,
@@ -20512,6 +20760,12 @@ export class PlayScene {
         // A destroyed HUD node should not block the toast queue.
       }
     }
+    return rightHudBottom;
+  }
+
+  getCornerToastSafeY(message = '', fontSize = 16, type = 'generic', measuredHalfHeight = null) {
+    const height = Math.max(1, Number(this.game?.getHeight?.()) || Number(this.game?.app?.screen?.height) || 720);
+    const rightHudBottom = this.getRightHudBottom();
     const lineCount = Math.max(1, String(message || '').split('\n').length);
     const estimatedHalfHeight = lineCount * (Math.max(10, Number(fontSize) || 16) + 6) * 0.5;
     const authoredHalfHeight = ['boss', 'powerup', 'bonus', 'level_clear', 'level_up', 'rank_up', 'run_clear', 'unlock'].includes(type)
@@ -20519,7 +20773,7 @@ export class PlayScene {
       : type === 'flawlessWave'
         ? 42
         : estimatedHalfHeight;
-    const safeHalfHeight = Math.max(36, estimatedHalfHeight, authoredHalfHeight);
+    const safeHalfHeight = Math.max(36, estimatedHalfHeight, authoredHalfHeight, Number(measuredHalfHeight) || 0);
     const activeTopBounds = this.getToastDisplayBounds(this.activeTopToast);
     const topToastBottom = activeTopBounds ? activeTopBounds.y + activeTopBounds.height : 0;
     return Math.min(
@@ -20530,6 +20784,26 @@ export class PlayScene {
         topToastBottom + safeHalfHeight + 18
       )
     );
+  }
+
+  updateCornerToastLayout(display, { message = '', fontSize = 16, type = 'generic', requestedY = 0 } = {}) {
+    if (!display || display.destroyed || !display.getBounds) return;
+    const height = Math.max(1, Number(this.game?.getHeight?.()) || Number(this.game?.app?.screen?.height) || 720);
+    let halfHeight = 36;
+    try {
+      const bounds = display.getBounds();
+      halfHeight = Math.max(18, Number(bounds?.height) / 2 || 0);
+    } catch {
+      // Keep the conservative fallback while a display is entering or leaving.
+    }
+    const safeY = this.getCornerToastSafeY(message, fontSize, type, halfHeight);
+    const maximumY = Math.max(halfHeight + 18, height - halfHeight - 18);
+    display.y = Math.min(maximumY, Math.max(Number(requestedY) || 0, safeY, halfHeight + 18));
+    display._debugHudAvoidance = {
+      rightHudBottom: Math.round(this.getRightHudBottom()),
+      halfHeight: Math.round(halfHeight),
+      y: Math.round(display.y)
+    };
   }
 
   getTopToastSafeY(fontSize = 18, type = 'generic') {
@@ -20657,6 +20931,22 @@ export class PlayScene {
     this.synergyBadge.visible = true;
   }
 
+  announceMystery(enemy) {
+    const bonus = 2500 + Math.min(7500, Math.max(0, this.game.level - 11) * 100);
+    this.enqueueToast(`${translateText('VEILBORN CONTACT: {name}', { name: enemy.definition.name })}\n${translateText('DEFEAT BONUS +{score}', { score: bonus.toLocaleString() })}`, {
+      slot: 'corner', type: 'mystery', duration: 3400, priority: 3,
+      fontSize: this.game.getWidth() < 720 ? 15 : 20, fill: '#b8f5ff',
+      maxWidth: this.game.getWidth() * .44
+    });
+  }
+
+  showMysteryTestComplete() {
+    this.enqueueToast(`${translateText('VEILBORN TEST COMPLETE')}\n${translateText('RESTART THE GAME TO RETRY')}`, {
+      slot: 'corner', type: 'mystery', duration: 30000, priority: 3,
+      fontSize: 20, fill: '#b8f5ff', maxWidth: this.game.getWidth() * .5
+    });
+  }
+
   recordThreatDiscovery(id, category, metadata = {}, options = {}) {
     if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
     if (this.areRunRewardsSuppressed()) {
@@ -20708,7 +20998,7 @@ export class PlayScene {
     if (!RunPacingConfig.threatCodexEnabled || !this.game?.isRankedRun?.()) return seen;
     try {
       const items = readThreatDiscoveryState()?.items || {};
-      for (const category of ['enemies', 'elites', 'bosses', 'spaceSnakes']) {
+      for (const category of ['enemies', 'elites', 'bosses', 'spaceSnakes', 'mysteries']) {
         const bucket = items[category] || {};
         for (const [id, item] of Object.entries(bucket)) {
           if ((Number(item?.timesDefeated) || 0) > 0) seen.add(`${category}:${id}`);
@@ -21426,12 +21716,9 @@ export class PlayScene {
         layer.clear();
         layer.rect(0, 0, width, height);
         layer.fill({ color: 0xffffff, alpha: 0.14 * intro * fade });
-        layer.circle(sourceX, sourceY, waveRadius);
-        layer.stroke({ color: 0xffffff, width: 13 - t * 8, alpha: 0.82 * fade });
-        layer.circle(sourceX, sourceY, waveRadius * 0.82);
-        layer.stroke({ color: 0x43f7ff, width: 7 - t * 3, alpha: 0.64 * fade });
-        layer.circle(sourceX, sourceY, waveRadius * 0.65);
-        layer.stroke({ color: 0xff45dd, width: 5 - t * 2, alpha: 0.52 * fade });
+        drawEnergyShell(layer, sourceX, sourceY, waveRadius, { color: 0xffffff, width: 13 - t * 8, alpha: 0.82 * fade });
+        drawEnergyShell(layer, sourceX, sourceY, waveRadius * 0.82, { color: 0x43f7ff, width: 7 - t * 3, alpha: 0.64 * fade });
+        drawEnergyShell(layer, sourceX, sourceY, waveRadius * 0.65, { color: 0xff45dd, width: 5 - t * 2, alpha: 0.52 * fade });
         const rayLength = Math.min(maxRadius, 110 + t * maxRadius);
         for (let i = 0; i < 16; i += 1) {
           const angle = i * Math.PI / 8 + elapsedMs * 0.00065;
@@ -21660,8 +21947,7 @@ export class PlayScene {
 
       for (let i = 0; i < ringCount; i += 1) {
         const radius = baseRadius + i * 10 + pulse * (i === 0 ? 2.4 : 1.2);
-        layer.circle(0, 0, radius);
-        layer.stroke({
+        drawEnergyShell(layer, 0, 0, radius, {
           color: i === 0 ? 0xffffff : color,
           width: i === 0 ? 1.4 : 2.1,
           alpha: (i === 0 ? 0.38 : 0.48) * fade * intro
@@ -21684,8 +21970,7 @@ export class PlayScene {
       const sourceAngle = Math.atan2(ny, nx);
       const sourceLocalX = sourceX - currentX;
       const sourceLocalY = sourceY - currentY;
-      layer.circle(sourceLocalX, sourceLocalY, major ? 17 + pulse * 2 : 13 + pulse * 1.5);
-      layer.stroke({ color, width: major ? 1.8 : 1.3, alpha: 0.18 * fade * intro });
+      drawEnergyShell(layer, sourceLocalX, sourceLocalY, major ? 17 + pulse * 2 : 13 + pulse * 1.5, { color, width: major ? 1.8 : 1.3, alpha: 0.18 * fade * intro });
       for (let i = 0; i < landingTickCount; i += 1) {
         const angle = orbitSpin * 0.35 + i * Math.PI * 0.5;
         const inner = baseRadius - 6;
@@ -21856,7 +22141,7 @@ export class PlayScene {
     setTimeout(() => {
       if (enemy?.active) AudioManager.playSfx('rare_visitor_theme_sting', { force: true, volume: 0.72, minIntervalMs: 0 });
     }, 320);
-    if (AudioManager.isBossVoiceEnabled?.() !== false) {
+    if (AudioManager.tacticalVoiceEnabled || AudioManager.isBossVoiceEnabled?.() !== false) {
       AudioManager.playVoice('boss_rare_chaos_visitor_warning', {
         force: true,
         bypassGlobalCooldown: true,
@@ -21993,14 +22278,45 @@ export class PlayScene {
     }
   }
 
+  recordSpaceSnakeDefeat(enemy) {
+    const chain = enemy?.chain;
+    if (enemy?.kind !== 'space_snake' || !chain?.sections?.length
+      || chain.sections.some(section => section.active) || chain.achievementDefeatRecorded) return false;
+    chain.achievementDefeatRecorded = true;
+    const type = String(enemy.type || '');
+    if (!type) return false;
+    this.defeatedSnakeIds = [...new Set([...(this.defeatedSnakeIds || []), type])];
+    this.snakeDefeats ||= [];
+    this.snakeDefeats.push({ type, lifeLosses: this.lifeLossesThisRun, sector: this.game.level });
+    if (isOverrunRunMode(this.game.runMode)) {
+      this.game.achievementManager?.recordOnslaughtSnakeDefeat?.(this.game.buildRunSummary());
+    }
+    return true;
+  }
+
   onEnemyKilled(enemy, options = {}) {
+    if (enemy?.kind === 'mystery_part') return;
+    this.enemyManager?.combatWrecks.record(enemy);
+    if (enemy?.kind === 'mystery') {
+      if (enemy.mysteryKillRecorded || enemy.stats.outcome !== 'defeated') return;
+      enemy.mysteryKillRecorded = true;
+      if(enemy.crossoverMolt){
+        // The builder spends the snake slot's shared budget. Its separate
+        // body is counterplay, not another kill, XP/drop or discovery bonus.
+        this.queueThreatDefeat(enemy.type,'mysteries',{sector:this.game.level},{scoreBonus:false});
+        return;
+      }
+    }
     if (enemy?.droneProfile) {
       this.queueThreatDefeat(enemy.droneProfile.id, 'bonusDrones', {
         name:enemy.droneProfile.name, sector:this.game.level
       }, {scoreBonus:false});
     }
     recordCoreWaveKill(this);
-    if (enemy?.kind === 'space_snake') celebrateSpaceSnakeDeath(this, enemy);
+    if (enemy?.kind === 'space_snake') {
+      this.recordSpaceSnakeDefeat(enemy);
+      celebrateSpaceSnakeDeath(this, enemy);
+    }
     const now = Date.now();
     this.particleManager?.hullBreakup?.emit(enemy);
     this.enemyManager?.recordCombatReadabilityDeath?.(enemy);
@@ -22018,9 +22334,9 @@ export class PlayScene {
         role: enemy?.profile?.title || 'boss',
         sector: this.game.level
       });
-    } else if (enemy?.kind !== 'space_snake' || enemy.chain.sections.every(section => !section.active)) {
+    } else if (enemy?.kind !== 'snake_baby' && (enemy?.kind !== 'space_snake' || enemy.chain.sections.every(section => !section.active))) {
       const isEliteMiddleShip = enemy?.kind === 'elite_middle_ship' || enemy?.isEliteMiddleShip || Boolean(enemy?.middleShipProfile);
-      const threatCategory = enemy?.kind === 'space_snake' ? 'spaceSnakes' : isEliteMiddleShip ? 'elites' : 'enemies';
+      const threatCategory = enemy?.kind === 'mystery' ? 'mysteries' : enemy?.kind === 'space_snake' ? 'spaceSnakes' : isEliteMiddleShip ? 'elites' : 'enemies';
       const threatId = enemy?.isRareChaosVisitor
         ? enemy?.rareChaosVisitorVariant?.id
         : isEliteMiddleShip
@@ -22031,14 +22347,14 @@ export class PlayScene {
           ? (enemy?.rareChaosVisitorVariant?.displayName || threatId)
           : isEliteMiddleShip
             ? (enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || threatId)
-            : (enemy?.generatedProfile?.displayName || enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || threatId),
+            : (enemy?.definition?.name || enemy?.generatedProfile?.displayName || enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || threatId),
         role: enemy?.isRareChaosVisitor
           ? translateText('RARE CHAOS VISITOR')
           : isEliteMiddleShip
             ? (enemy?.middleShipProfile?.role || 'elite')
             : (enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy'),
         sector: this.game.level
-      });
+      }, { scoreBonus: enemy?.kind !== 'mystery' });
       for (const entry of getBossSupportCodexDefeatEntries(enemy, this.game.level)) {
         this.queueThreatDefeat(entry.threatId, entry.category, entry.metadata, { scoreBonus: false });
       }
@@ -22278,13 +22594,11 @@ export class PlayScene {
 
   updateGrazeBreakFireIntent(firePressed = false) {
     const pressed = Boolean(firePressed);
-    const justPressed = pressed && !this.fireInputWasPressed;
     if (this.grazeBreakReady && this.grazeBreakNeedsFireRelease && this.fireInputWasPressed && !pressed) {
       this.primeGrazeBreakAfterRelease();
     }
-    if (justPressed) {
-      this.player?.queueBombTriggerIntent?.(this.getGameplayClockMs());
-    }
+    // Ordinary fire release still primes Graze Break. Stocked Bombs are
+    // deliberately queued by Special Fire, never by resuming this control.
     this.currentFirePressed = pressed;
     this.fireInputWasPressed = pressed;
   }
@@ -22370,8 +22684,7 @@ export class PlayScene {
     if (eligible.core) eligible.core.tint = 0xff66ff;
     if (eligible.sprite) {
       const ring = new PIXI.Graphics();
-      ring.circle(0, 0, eligible.radius + 9);
-      ring.stroke({ color: 0xff66ff, width: 3, alpha: 0.85 });
+      drawEnergyShell(ring, 0, 0, eligible.radius + 9, { color: 0xff66ff, width: 3, alpha: 0.85 });
       eligible.sprite.addChild(ring);
     }
     this.grazeBreakReady = false;
@@ -22408,17 +22721,17 @@ export class PlayScene {
     const height = Math.max(1, Number(this.gameplayGame?.getHeight?.() || this.game?.getHeight?.()) || 720);
     const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
     const radius = Math.max(1, Number(mechanicalRadius) || 110);
-    const visualRadius = Math.max(radius, Math.min(Math.max(width, height) * 0.42, radius * 3));
+    const visualRadius = Math.max(radius, Math.min(Math.max(width, height) * 0.3, radius * 2.1));
     const visualScale = visualRadius / radius;
-    const ringCount = reducedMotion ? 3 : 5;
-    const sparkleCount = reducedMotion ? 14 : (width < 620 ? 22 : 32);
-    const filamentCount = reducedMotion ? 8 : 16;
-    const durationMs = reducedMotion ? 900 : 1180;
+    const ringCount = reducedMotion ? 2 : 3;
+    const sparkleCount = reducedMotion ? 8 : (width < 620 ? 12 : 16);
+    const filamentCount = reducedMotion ? 5 : 8;
+    const durationMs = reducedMotion ? 650 : 820;
     const sparkleProfiles = Array.from({ length: sparkleCount }, (_, index) => ({
       angle: (Math.PI * 2 * index) / sparkleCount + (index % 5) * 0.07,
       lane: 0.48 + (index % 6) * 0.09,
       phase: index * 1.73,
-      size: 2.8 + (index % 4) * 0.85
+      size: 2.3 + (index % 4) * 0.65
     }));
 
     const layer = new PIXI.Container();
@@ -22428,7 +22741,7 @@ export class PlayScene {
     layer.eventMode = 'none';
 
     const graphics = new PIXI.Graphics();
-    graphics.blendMode = 'add';
+    graphics.blendMode = 'normal';
     layer.addChild(graphics);
     host.addChild(layer);
     host.sortChildren?.();
@@ -22474,19 +22787,17 @@ export class PlayScene {
 
       if (coreFade > 0) {
         graphics.circle(0, 0, Math.max(8, radius * (0.22 + intro * 0.18)));
-        graphics.fill({ color: 0xffffff, alpha: 0.7 * coreFade * intro });
-        graphics.circle(0, 0, Math.max(14, radius * (0.44 + intro * 0.16)));
-        graphics.stroke({ color: 0xff55dd, width: 5, alpha: 0.86 * coreFade * intro });
+        graphics.fill({ color: 0xd7a5db, alpha: 0.24 * coreFade * intro });
+        drawEnergyShell(graphics, 0, 0, Math.max(14, radius * (0.44 + intro * 0.16)), { color: 0xff55dd, width: 3, alpha: 0.42 * coreFade * intro });
       }
 
       for (let index = 0; index < ringCount; index += 1) {
         const ringProgress = Math.max(0, Math.min(1, expansion + index * 0.055));
         const ringRadius = visualRadius * (0.18 + ringProgress * (0.72 + index * 0.025));
-        graphics.circle(0, 0, ringRadius);
-        graphics.stroke({
-          color: index % 3 === 0 ? 0xffffff : index % 2 === 0 ? 0x42f6ff : 0xff55dd,
-          width: Math.max(1.2, 4.2 - index * 0.58),
-          alpha: (0.48 - index * 0.055) * fade * intro
+        drawEnergyShell(graphics, 0, 0, ringRadius, {
+          color: index % 2 === 0 ? 0x64c9d6 : 0xd475c2,
+          width: Math.max(1.1, 3 - index * 0.45),
+          alpha: (0.27 - index * 0.04) * fade * intro
         });
       }
 
@@ -22499,7 +22810,7 @@ export class PlayScene {
         graphics.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
         graphics.lineTo(Math.cos(bend) * outer, Math.sin(bend) * outer);
       }
-      graphics.stroke({ color: 0xff79e8, width: reducedMotion ? 1.2 : 1.8, alpha: 0.22 * fade * intro });
+      graphics.stroke({ color: 0xc471bc, width: reducedMotion ? 1 : 1.4, alpha: 0.12 * fade * intro });
 
       for (let index = 0; index < sparkleProfiles.length; index += 1) {
         const profile = sparkleProfiles[index];
@@ -22511,13 +22822,12 @@ export class PlayScene {
           Math.sin(angle) * sparkleRadius,
           angle,
           size,
-          index % 4 === 0 ? 0xffffff : index % 2 === 0 ? 0x42f6ff : 0xff55dd,
-          (0.5 + (index % 3) * 0.1) * fade * intro
+          index % 2 === 0 ? 0x64c9d6 : 0xd475c2,
+          (0.28 + (index % 3) * 0.06) * fade * intro
         );
       }
 
-      graphics.circle(0, 0, Math.max(radius * 0.72, outerRadius * 0.34));
-      graphics.stroke({ color: 0xffd45c, width: 1.6, alpha: 0.2 * fade * intro });
+      drawEnergyShell(graphics, 0, 0, Math.max(radius * 0.72, outerRadius * 0.34), { color: 0xffd45c, width: 1.4, alpha: 0.14 * fade * intro });
 
       this.lastGrazeBreakVisualDebug = {
         active: true,
@@ -22554,22 +22864,22 @@ export class PlayScene {
     draw();
 
     this.particleManager?.createRadialBurst?.(x, y, 0xff55dd, {
-      count: reducedMotion ? 24 : 52,
-      intensity: reducedMotion ? 0.82 : 1.1,
+      count: reducedMotion ? 12 : 22,
+      intensity: reducedMotion ? 0.58 : 0.72,
       minSpeed: 1.8,
       maxSpeed: 7.2,
-      size: reducedMotion ? 2.2 : 2.9,
-      lifetime: reducedMotion ? 38 : 58,
-      alternateColor: 0xffffff,
+      size: reducedMotion ? 1.8 : 2.3,
+      lifetime: reducedMotion ? 30 : 42,
+      alternateColor: 0xd7a5db,
       upwardBias: 0
     });
     this.particleManager?.createRadialBurst?.(x, y, 0x42f6ff, {
-      count: reducedMotion ? 14 : 30,
-      intensity: reducedMotion ? 0.68 : 0.88,
+      count: reducedMotion ? 7 : 10,
+      intensity: reducedMotion ? 0.48 : 0.62,
       minSpeed: 0.8,
       maxSpeed: 4.6,
-      size: reducedMotion ? 1.6 : 2.1,
-      lifetime: reducedMotion ? 44 : 68,
+      size: reducedMotion ? 1.3 : 1.7,
+      lifetime: reducedMotion ? 32 : 48,
       alternateColor: 0xffd45c,
       upwardBias: 0
     });
@@ -22802,7 +23112,9 @@ export class PlayScene {
   }
 
   applyShipTraitBulletImpact(bullet, sourceEnemy) {
+    if(bullet?.isBehavioralFusionShot)return;
     if (!bullet?.isPlayer || !sourceEnemy || sourceEnemy.__traitImpactSource) return;
+    if (sourceEnemy.kind === 'snake_baby' && (sourceEnemy.isDeparting?.() || sourceEnemy.brood?.orphanAt != null)) return;
     const combat = this.player?.traitCombat || {};
     const accent = this.player?.visualVariant?.accent || this.player?.visualVariant?.glow || 0x66ffff;
 
@@ -22866,11 +23178,12 @@ export class PlayScene {
       const wingScore = Math.max(2, Math.round(5 * Math.max(1, this.comboMultiplier || 1)));
       const appliedWingScore = this.game.addScore(wingScore);
       if (this.scorePopupManager) this.scorePopupManager.addScorePopup(sourceEnemy.x, sourceEnemy.y - 18, appliedWingScore);
-      AudioManager.playSfx('trait_wing_hit', { volume: 0.68 });
+      // Catalog owns gain and cadence; repeated impacts still award every earned point.
+      AudioManager.playSfx('trait_wing_hit');
       const now = Date.now();
-      if (now - this.lastTraitImpactToastAt > 900) {
+      if (now - this.lastTraitImpactToastAt > 4000) {
         this.lastTraitImpactToastAt = now;
-        this.enqueueToast(`WING HIT +${appliedWingScore}`, { fontSize: 14, fill: '#66ff99', slot: 'top', type: 'trait', duration: 650 });
+        this.enqueueToast(translateText('WING HIT +{score}', { score: appliedWingScore }), { fontSize: 13, fill: '#66ff99', slot: 'top', type: 'trait', duration: 500 });
       }
       this.triggerCabinetLog('wing-trait-hit', {
         source: 'trait_wing_hit'
@@ -22902,6 +23215,7 @@ export class PlayScene {
   }
 
   triggerChainLightning(sourceEnemy, baseDamage, sourceProjectile = null) {
+    if(sourceProjectile?.isBehavioralFusionShot)return;
     if (!this.player?.chainLightningActive || !sourceEnemy) {
       this.lastChainLightning = {
         triggered: false,
@@ -22928,6 +23242,8 @@ export class PlayScene {
 
     const chainedEnemies = [sourceEnemy];
     const chainedEnemySet = new Set(chainedEnemies);
+    const chainOwner = enemy => enemy.kind === 'mystery_part' && enemy.root ? enemy.root : enemy;
+    const chainedOwners = new Set([chainOwner(sourceEnemy)]);
     const targetPool = (this.enemyManager?.enemies || []).filter(Boolean);
     const hijacker = this.enemyManager?.hijacker;
     if (hijacker?.active && !targetPool.includes(hijacker)) targetPool.push(hijacker);
@@ -22940,7 +23256,7 @@ export class PlayScene {
       let nearestDist = chainRange;
 
       targetPool.forEach(enemy => {
-        if (enemy.active && !chainedEnemySet.has(enemy)) {
+        if (enemy.active && !enemy.untargetable && !chainedEnemySet.has(enemy) && !chainedOwners.has(chainOwner(enemy))) {
           const dist = Math.hypot(enemy.x - currentEnemy.x, enemy.y - currentEnemy.y);
           if (dist < nearestDist) {
             nearest = enemy;
@@ -22988,6 +23304,7 @@ export class PlayScene {
 
       chainedEnemies.push(nearest);
       chainedEnemySet.add(nearest);
+      chainedOwners.add(chainOwner(nearest));
       currentEnemy = nearest;
     }
 
@@ -23277,12 +23594,9 @@ export class PlayScene {
 
     // A faint truthful boundary plus a compact near-hull field keeps the effect
     // readable without painting the entire combat lane.
-    this.magnetFieldVisual.circle(px, py, range);
-    this.magnetFieldVisual.stroke({ color: palette.primary, width: 1, alpha: boundaryAlpha });
-    this.magnetFieldVisual.circle(px, py, coreRadius + pulse * 5);
-    this.magnetFieldVisual.stroke({ color: palette.secondary, width: 1.8, alpha: 0.12 + pulse * 0.08 });
-    this.magnetFieldVisual.circle(px, py, coreRadius * 0.62);
-    this.magnetFieldVisual.stroke({ color: palette.primary, width: 1.2, alpha: 0.16 + pulse * 0.1 });
+    drawEnergyShell(this.magnetFieldVisual, px, py, range, { color: palette.primary, width: 1, alpha: boundaryAlpha });
+    drawEnergyShell(this.magnetFieldVisual, px, py, coreRadius + pulse * 5, { color: palette.secondary, width: 1.8, alpha: 0.12 + pulse * 0.08 });
+    drawEnergyShell(this.magnetFieldVisual, px, py, coreRadius * 0.62, { color: palette.primary, width: 1.2, alpha: 0.16 + pulse * 0.1 });
 
     const segmentCount = 8;
     const spin = now * 0.0018;
@@ -23366,8 +23680,7 @@ export class PlayScene {
       const intensity = Math.max(0, Math.min(1, target.intensity || 0));
       const lineAlpha = 0.16 + intensity * 0.34;
       const targetColor = target.kind === 'bonus' ? 0xffe56d : palette.secondary;
-      this.magnetFieldVisual.circle(target.x, target.y, 7 + intensity * 8);
-      this.magnetFieldVisual.stroke({ color: targetColor, width: 1.4 + intensity * 1.2, alpha: 0.18 + intensity * 0.34 });
+      drawEnergyShell(this.magnetFieldVisual, target.x, target.y, 7 + intensity * 8, { color: targetColor, width: 1.4 + intensity * 1.2, alpha: 0.18 + intensity * 0.34 });
       captureHaloCount += 1;
       this.magnetFieldVisual.moveTo(target.x, target.y);
       this.magnetFieldVisual.lineTo(px, py);
@@ -23495,7 +23808,7 @@ export class PlayScene {
 
   triggerOrbitalStrike(options = {}) {
     // Find a random active enemy to target
-    const activeEnemies = this.enemyManager.enemies.filter(e => e.active);
+    const activeEnemies = this.enemyManager.enemies.filter(e => e.active && !e.untargetable);
     const fusionId = options.fusionId || null;
     const trackTarget = fusionId === 'sky_verdict' && options.trackTarget === true;
     if (activeEnemies.length === 0 && !(trackTarget && isSkyVerdictTargetEligible(options.target))) return false;
@@ -23814,7 +24127,7 @@ export class PlayScene {
     return true;
   }
 
-  spawnAmbientBonusDrone(type, position = {}) {
+  spawnAmbientBonusDrone(type, position = {}, options = {}) {
     if (type === 'POWERUP') {
       this.bonusCoreCadence ||= makeCoreCadence(this.game.level);
       if (this.hasActiveBonusCore || this.game.level < this.bonusCoreCadence.nextLevel) return null;
@@ -23824,7 +24137,7 @@ export class PlayScene {
     const x = Number.isFinite(position.x) ? position.x : Math.random() * (this.gameplayGame.getWidth() - 100) + 50;
     const y = Number.isFinite(position.y) ? position.y : -50;
 
-    const bonusDrone = new BonusDrone(x, y, this.gameplayGame, type);
+    const bonusDrone = new BonusDrone(x, y, this.gameplayGame, type, null, options);
     if (bonusDrone.droneProfile) this.recordThreatDiscovery(bonusDrone.droneProfile.id, 'bonusDrones', {
       name:bonusDrone.droneProfile.name, sector:this.game.level
     }, {scoreBonus:false,silent:true});
@@ -23848,7 +24161,7 @@ export class PlayScene {
 
     // Collect ambient bonus drones from PlayScene.
     const ambientBonusDrones = this.ambientBonusDrones.filter(b =>
-      b.active && b.kind === 'bonus_drone' && b.type !== 'POWERUP'
+      b.active && b.kind === 'bonus_drone' && b.type !== 'POWERUP' && !b.firstLightReward
     );
     targets.push(...ambientBonusDrones);
 
@@ -23980,10 +24293,8 @@ export class PlayScene {
       burst.lineTo(Math.cos(angle) * outer, -24 + Math.sin(angle) * outer);
       burst.stroke({ color: i % 2 ? accentColor : primaryColor, width: i % 4 === 0 ? 3 : 1.5, alpha: spectacular ? 0.24 : 0.12 });
     }
-    burst.circle(0, -24, 246);
-    burst.stroke({ color: primaryColor, width: 5, alpha: spectacular ? 0.24 : 0.1 });
-    burst.circle(0, -24, 188);
-    burst.stroke({ color: accentColor, width: 3, alpha: spectacular ? 0.34 : 0.14 });
+    drawEnergyShell(burst, 0, -24, 246, { color: primaryColor, width: 5, alpha: spectacular ? 0.24 : 0.1 });
+    drawEnergyShell(burst, 0, -24, 188, { color: accentColor, width: 3, alpha: spectacular ? 0.34 : 0.14 });
     if (!spectacular) poster.addChild(burst);
 
     const bg = new PIXI.Graphics();
@@ -24236,8 +24547,7 @@ export class PlayScene {
       return;
     }
     for (let i = 0; i < 4; i += 1) {
-      graphics.circle(0, -18, 68 + i * 32);
-      graphics.stroke({ color: i % 2 ? accentColor : primaryColor, width: 2, alpha: 0.24 });
+      drawEnergyShell(graphics, 0, -18, 68 + i * 32, { color: i % 2 ? accentColor : primaryColor, width: 2, alpha: 0.24 });
     }
   }
 
@@ -24569,6 +24879,7 @@ export class PlayScene {
     this.deferSideToastsForTacticalAlert(duration + 40, 'tactical_reinforcement');
     this.deferRoutineFocusLaneForActionWarning(duration + 40, 'tactical_reinforcement');
     let root = null;
+    let entryEdge = null;
     let ticker = null;
     let cleaned = false;
     const cleanup = (reason = 'completed') => {
@@ -24577,6 +24888,8 @@ export class PlayScene {
       if (ticker) appTicker.remove?.(ticker);
       if (root?.parent) root.parent.removeChild(root);
       if (root && !root.destroyed) root.destroy?.({ children: true });
+      if (entryEdge?.parent) entryEdge.parent.removeChild(entryEdge);
+      if (entryEdge && !entryEdge.destroyed) entryEdge.destroy?.();
       const currentHandle = stormPresentation
         ? this.activeMayhemReinforcementWarning
         : this.activeMayhemRoutineWarning;
@@ -24706,6 +25019,7 @@ export class PlayScene {
           (elapsed - exitStart) / NOVA_COMMAND_HUD_TOKENS.motion.warning.exitMs));
         const pulse = reducedMotion ? 0.5 : (Math.sin(elapsed * 0.018) + 1) * 0.5;
         root.alpha = Math.min(1, reveal) * (1 - exitProgress);
+        if (entryEdge) entryEdge.alpha = root.alpha * (reducedMotion ? 0.82 : 0.6 + pulse * 0.35);
         root.scale.set(reducedMotion ? 1 : 0.978 + reveal * 0.022);
         for (const side of [frame.left, frame.right]) {
           side.half.alpha = 0.36 + reveal * 0.64;
@@ -24727,6 +25041,22 @@ export class PlayScene {
       };
 
       host.addChild(root);
+      if (cueMode === 'bottom' && !stormPresentation) {
+        entryEdge = new PIXI.Graphics();
+        entryEdge.label = 'onslaught_bottom_entry_warning';
+        entryEdge.eventMode = 'none';
+        const edgeY = height - (compact ? 25 : 34);
+        entryEdge.moveTo(width * 0.14, edgeY).lineTo(width * 0.86, edgeY)
+          .stroke({ color: warningAccent, width: 3, alpha: 0.9 });
+        for (const ratio of [0.25, 0.5, 0.75]) {
+          const laneX = width * ratio;
+          entryEdge.moveTo(laneX - 12, edgeY + 8).lineTo(laneX, edgeY - 5)
+            .lineTo(laneX + 12, edgeY + 8)
+            .stroke({ color: warningAccent, width: 3, alpha: 0.95 });
+        }
+        entryEdge.alpha = 0;
+        host.addChild(entryEdge);
+      }
       host.sortChildren?.();
       const bounds = {
         x: Math.round(root.x - componentWidth / 2),
@@ -25018,16 +25348,13 @@ export class PlayScene {
 
       const halo = new PIXI.Graphics();
       halo.blendMode = 'add';
-      halo.circle(0, 0, gateRadius * 1.28);
-      halo.stroke({ color: index % 2 ? secondary : primary, width: compactHud ? 4 : 7, alpha: 0.24 });
-      halo.circle(0, 0, gateRadius * 0.84);
-      halo.stroke({ color: primary, width: 2, alpha: 0.66 });
+      drawEnergyShell(halo, 0, 0, gateRadius * 1.28, { color: index % 2 ? secondary : primary, width: compactHud ? 4 : 7, alpha: 0.24 });
+      drawEnergyShell(halo, 0, 0, gateRadius * 0.84, { color: primary, width: 2, alpha: 0.66 });
       gate.addChild(halo);
 
       const rotor = new PIXI.Graphics();
       rotor.blendMode = 'add';
-      rotor.circle(0, 0, gateRadius);
-      rotor.stroke({ color: secondary, width: compactHud ? 2 : 3, alpha: 0.74 });
+      drawEnergyShell(rotor, 0, 0, gateRadius, { color: secondary, width: compactHud ? 2 : 3, alpha: 0.74 });
       for (let spoke = 0; spoke < 8; spoke += 1) {
         const angle = (Math.PI * 2 * spoke) / 8;
         const inner = gateRadius * 0.62;
@@ -25231,6 +25558,7 @@ export class PlayScene {
   showMayhemReinforcementEntryBurst({
     groupIndex = 0,
     groupCount = 1,
+    route = '',
     laneOffsetPx = 0,
     boss = false,
     superStorm = false,
@@ -25250,9 +25578,11 @@ export class PlayScene {
     const secondary = 0x43efff;
     const laneX = (width / (count + 1)) * (index + 1);
     const x = Math.max(52, Math.min(width - 52, laneX + (Number(laneOffsetPx) || 0) * 0.12));
-    const y = compact
-      ? Math.min(height * 0.5, Math.max(220, height * 0.4))
-      : Math.min(height * 0.38, Math.max(260, height * 0.255));
+    const y = route === 'bottom'
+      ? height - (compact ? 80 : 110)
+      : compact
+        ? Math.min(height * 0.5, Math.max(220, height * 0.4))
+        : Math.min(height * 0.38, Math.max(260, height * 0.255));
     const radius = compact ? 46 : 66;
     const activeDuration = reducedMotion ? 720 : 1180;
     const previewTexture = this.getMayhemReinforcementPreviewTextures(count)[index] ||
@@ -25548,10 +25878,8 @@ export class PlayScene {
       const outerRadius = maxRadius - (maxRadius - 48) * easeIn;
       const innerRadius = maxRadius * 0.72 - (maxRadius * 0.72 - 28) * easeIn;
       geometry.clear();
-      geometry.circle(0, 0, outerRadius);
-      geometry.stroke({ color: primary, width: 2, alpha: 0.34 * fade });
-      geometry.circle(0, 0, innerRadius);
-      geometry.stroke({ color: secondary, width: 1.4, alpha: 0.3 * fade });
+      drawEnergyShell(geometry, 0, 0, outerRadius, { color: primary, width: 2, alpha: 0.34 * fade });
+      drawEnergyShell(geometry, 0, 0, innerRadius, { color: secondary, width: 1.4, alpha: 0.3 * fade });
       const railLength = Math.max(18, outerRadius * 0.24);
       for (const side of [-1, 1]) {
         const x = side * outerRadius * 0.82;
@@ -25618,7 +25946,8 @@ export class PlayScene {
   showBossIntro(name, taunt) {
     this.resetTransientGameplayInput('boss_intro_enter', {
       preserveFire: true,
-      preserveMovement: true
+      preserveMovement: true,
+      preserveFocus: true
     });
     this.cancelNotificationTypes(['boss_warning', 'boss_intro'], 'boss_active');
     this.dismissToastDisplay(this.activeBossIntroCard, 'center', { reason: 'redundant_boss_nameplate_removed' });
@@ -25630,7 +25959,8 @@ export class PlayScene {
     };
     this.resetTransientGameplayInput('boss_intro_exit', {
       preserveFire: true,
-      preserveMovement: true
+      preserveMovement: true,
+      preserveFocus: true
     });
     this.processToastQueue();
     return true;
@@ -25872,20 +26202,7 @@ export class PlayScene {
     const detonation = this.particleManager?.detonations?.lastBoss;
     if (detonation && detonation.age < 60 && Math.hypot(x - detonation.x, y - detonation.y) < 240) return;
     const wave = new PIXI.Graphics();
-    const paths = [
-      [-12, 2, -5, -12, 7, -10, 14, -2],
-      [-10, 7, -2, 14, 8, 10, 12, 4],
-      [-4, -11, 3, -15, 11, -7, 13, 1]
-    ];
-    paths.forEach((path, index) => {
-      wave.moveTo(path[0], path[1]);
-      wave.bezierCurveTo(path[2], path[3], path[4], path[5], path[6], path[7]);
-      wave.stroke({
-        color: index === 1 ? 0xffffff : color,
-        width: index === 1 ? 1.1 : 2.2,
-        alpha: index === 1 ? 0.42 : 0.74
-      });
-    });
+    drawEnergySurface(wave,{kind:'pressure',width:38,height:31,color,alpha:.68});
     wave.blendMode = 'add';
     wave.x = x;
     wave.y = y;
@@ -25893,6 +26210,7 @@ export class PlayScene {
     this.uiOverlay.addChild(wave);
     let radius = 10;
     const ticker = (delta) => {
+      if(wave.destroyed||this.game?.currentScene!==this){this.game.app.ticker.remove(ticker);if(!wave.destroyed)wave.destroy();return;}
       radius += delta.deltaTime * 2.4;
       wave.scale.set(radius / 10, radius / 11.8);
       wave.rotation += 0.003 * delta.deltaTime;
@@ -25989,6 +26307,7 @@ export class PlayScene {
     };
 
     this.emitSpectacle('boss_death', {
+      audio: !CreatureAudio.identity(boss?.profile),
       x: bossX,
       y: bossY,
       color: baseColor,
@@ -26003,10 +26322,17 @@ export class PlayScene {
     this.createBossDeathFlash(baseColor);
     this.createBossDeathSigil(bossX, bossY, style, palette);
     this.screenShake?.shake(22, 34);
-    AudioManager.playSfx('boss_death_cascade', { force: true, volume: 0.84, minIntervalMs: 0 });
-    AudioManager.playSfx(style.sfx || 'boss_death_cascade', { force: true, volume: 0.82, minIntervalMs: 0 });
-    AudioManager.playSfx('boss_explode', { force: true, volume: 0.72, minIntervalMs: 0 });
-    AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.42, minIntervalMs: 0 });
+    const hasCreatureIdentity = Boolean(CreatureAudio.identity(boss?.profile));
+    if (hasCreatureIdentity) {
+      CreatureAudio.stopOwner(boss);
+      CreatureAudio.play({}, boss.profile, 'death', { x: bossX / this.game.getWidth() });
+      AudioManager.playSfx('boss_explode', { force: true, volume: 0.28, minIntervalMs: 0 });
+    } else {
+      AudioManager.playSfx('boss_death_cascade', { force: true, volume: 0.84, minIntervalMs: 0 });
+      AudioManager.playSfx(style.sfx || 'boss_death_cascade', { force: true, volume: 0.82, minIntervalMs: 0 });
+      AudioManager.playSfx('boss_explode', { force: true, volume: 0.72, minIntervalMs: 0 });
+      AudioManager.playSfx('boss_phase_surge', { force: true, volume: 0.42, minIntervalMs: 0 });
+    }
     if (AudioManager.isBossVoiceEnabled?.() !== false) {
       AudioManager.reserveVoiceLock?.('boss_death_agony', {
         durationMs: BOSS_DEATH_VOICE_LOCK_MS,
@@ -26028,7 +26354,7 @@ export class PlayScene {
           cooldownMs: 0,
           eventCooldownMs: 0,
           volume: 2.6,
-          duckFactor: 0.22,
+          duckFactor: 1,
           duckMs: 2300
         });
       }, 70);
@@ -26544,3 +26870,6 @@ export class PlayScene {
     return true;
   }
 }
+
+// Backdrop request ownership is captured before asynchronous work.
+// Reset, preference changes and retries invalidate older requests.

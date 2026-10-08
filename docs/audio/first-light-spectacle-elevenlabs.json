@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "generatedAt": "2026-09-28T09:33:49.273Z",
+  "sourceRoot": "E:/Codex/builds/nova-swarm/first-light-spectacle/audio-source",
+  "outputRoot": "public/audio/sfx/first-light",
+  "requestsLimit": 11,
+  "planTier": "payg",
+  "creditsBefore": 4382,
+  "creditLimit": 10000,
+  "cues": [
+    {
+      "id": "convoy_bastion_rescue",
+      "request": {
+        "text": "A massive armored prison transporter lock tears open and a rescued fighter launches, close heavy steel claw snap, powerful turbine ignition, rushing air, heroic mechanical acceleration. One cinematic game sound, punchy immediate onset and clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "082e3c3acb428dac1995451432e6c217651c887e386223161b5ddc0420564fc2",
+      "wavSha256": "b4065163e3d1a92741cb3be229be28956e06d446e44d8d1aebb771a907b1f97c",
+      "wavBytes": 130614,
+      "measuredPremasterPeakDb": -10.9,
+      "appliedGainDb": 2.9000000000000004
+    },
+    {
+      "id": "convoy_talon_rescue",
+      "request": {
+        "text": "A sleek military prison transporter magnetic clamp disengages and a rescued interceptor shoots free, precision metallic latch, sharp electric rail whine, twin engine ignition and fast aerodynamic surge. One cinematic game sound, clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "70db6a07f2739fc37f2aca9e4a2b35ca900690175b9677e6ff0cd583a6cfbd97",
+      "wavSha256": "d77946fa1797a1f493b7171e484764b4f50405e5167f3ef4392b4ca58ced52c0",
+      "wavBytes": 130614,
+      "measuredPremasterPeakDb": -10.4,
+      "appliedGainDb": 2.4000000000000004
+    },
+    {
+      "id": "convoy_pearl_rescue",
+      "request": {
+        "text": "A polished pearl-white transport releases a captive starfighter, crystalline locking plates separate with a shimmering resonant crack, smooth ion engines swell into a quick confident escape. One cinematic game sound, clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "34ea8a7e30b32c8834e516f22fc940452d68acaa4f74e61aaf8ec2e0e57e4d68",
+      "wavSha256": "c369e2d312b997305000d2b0c818a058d232e85ceb3bebb81f1b2b3c16e2f1db",
+      "wavBytes": 130614,
+      "measuredPremasterPeakDb": -8.2,
+      "appliedGainDb": 0.1999999999999993
+    },
+    {
+      "id": "convoy_ark_rescue",
+      "request": {
+        "text": "An immense verdant bio-mechanical ark releases a captive fighter, thick organic metal petals split, deep resonant chamber pressure, bright layered thrusters ignite and rush outward. One cinematic game sound, clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 1.5,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "e708dc0a867fbbeaba1c102fcc2007aa73339e34536041907634a42ac690abcb",
+      "wavSha256": "240d141a01aa191d5d1d72c0c9e55d00f362cb83ccdcbd228516b3c54993438a",
+      "wavBytes": 130614,
+      "measuredPremasterPeakDb": -8.2,
+      "appliedGainDb": 0.1999999999999993
+    },
+    {
+      "id": "rival_ravager_destroy",
+      "request": {
+        "text": "A brutal industrial space raider reactor is destroyed in three steps, heavy armored plates buckle, staggered internal detonations, core ruptures with a dense low mechanical blast and rattling wreckage. One cinematic game sound, clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "56a958a54e48d85bc087d2a96c8c659ef59670d228bb560e561e1d608243e940",
+      "wavSha256": "7eb33b450c29b77a25ce3ee72c5378823e3251529a366d280aab828e0dade3d8",
+      "wavBytes": 194118,
+      "measuredPremasterPeakDb": -24,
+      "appliedGainDb": 12
+    },
+    {
+      "id": "rival_lancer_destroy",
+      "request": {
+        "text": "A high-voltage lance warship breaks apart in three steps, spear weapon mounts shear away, electric arcs rip through a reactor, sharp energetic core burst and falling armor debris. One cinematic game sound, clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "7bc4f82a84b6f74c75ec59f4582027574092a8a3f2c14aed716e9914fb16e33d",
+      "wavSha256": "5ea4ab08ccb8578470e59c0435f795c074f1da4e8640042cdb09f6279deb8c74",
+      "wavBytes": 194118,
+      "measuredPremasterPeakDb": -16,
+      "appliedGainDb": 8
+    },
+    {
+      "id": "rival_forge_destroy",
+      "request": {
+        "text": "A molten foundry warship ruptures in three steps, furnace metal warps and tears, pressurized fire roars outward, dense reactor blast and heavy cooling wreck debris. One cinematic game sound, clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "b51f4ac9b7b828cfd6977edcc6d981b50a1bfcb2383c2d41405ac03f46d18a55",
+      "wavSha256": "dfe970b99d88d62c6c61e29d6272feb1f86607450405dc9b1f781832784db7c6",
+      "wavBytes": 194118,
+      "measuredPremasterPeakDb": -12.2,
+      "appliedGainDb": 4.199999999999999
+    },
+    {
+      "id": "rival_vortex_destroy",
+      "request": {
+        "text": "A violet gravity warship reactor fractures in three steps, warped metallic shear, deep implosive suction, cascading exotic energy collapse then a weighty final rupture and wreck debris. One cinematic game sound, clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "edb51f5deb63083b6d3622e70b30e059aec436270a0c3d5c566c9fca09f021f4",
+      "wavSha256": "d0146be78a7f78bc0b3b3730ae23571281d4dc3c2f704e8db80a85f47e95c1a0",
+      "wavBytes": 194118,
+      "measuredPremasterPeakDb": -13.9,
+      "appliedGainDb": 5.9
+    },
+    {
+      "id": "rival_wasp_destroy",
+      "request": {
+        "text": "An insectoid dart warship is destroyed in three steps, turbine wings snap and spin away, chittering machinery buckles, compact reactor burst and hard shards fall through space. One cinematic game sound, clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "aa7bb32b2d81341a1d2c4c2f06028c62899e89f2cc74e64db1a22156efdc3f21",
+      "wavSha256": "2b9cb55515ad53e59c22ffae08e3652391aacf8303fa145badb658337616111e",
+      "wavBytes": 194118,
+      "measuredPremasterPeakDb": -13.4,
+      "appliedGainDb": 5.4
+    },
+    {
+      "id": "rival_oracle_destroy",
+      "request": {
+        "text": "An ornate crystalline warship breaks apart in three steps, resonant faceted armor fractures, charged core shatters with an elegant bright transient and deep final blast, falling glass-metal debris. One cinematic game sound, clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "ed5a76e669144e3701741ad2bbe57894a642c5d40e8b81c994336d19520922cb",
+      "wavSha256": "06880928a190305b4cf7e8d7bd558c2a1c3b32d138fcaefa63c91af0c5151c4e",
+      "wavBytes": 194118,
+      "measuredPremasterPeakDb": -13.6,
+      "appliedGainDb": 5.6
+    },
+    {
+      "id": "rival_weapon_break",
+      "request": {
+        "text": "One space warship weapon mount is severed under fire, a sharp layered armor crack, sparking machinery, heavy mechanical piece tears loose and tumbles away. One short punchy game sound, immediate onset and clean decay. No voice, music, melody, beeps, simple oscillator tones or silence.",
+        "duration_seconds": 1.1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "rawSha256": "4cbcbf6ac9eeb2c9124f6caf2618c2d0abee29ec949fa6f2878dc6417781a926",
+      "wavSha256": "b532062846c99062e51087aab3af493a52326285e0d595a5af6827115695a9f7",
+      "wavBytes": 95334,
+      "measuredPremasterPeakDb": -9.4,
+      "appliedGainDb": 1.4000000000000004
+    }
+  ],
+  "creditsAfter": 4382
+}

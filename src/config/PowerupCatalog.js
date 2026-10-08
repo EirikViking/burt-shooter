@@ -1,3 +1,4 @@
+import {ORBIT_BREAKER_TEXT} from '../i18n/orbitBreakerText.js';
 const BASE_POWERUPS = [
   {
     id: 'triple_beam',
@@ -662,6 +663,9 @@ const NEW_POWERUPS = [
 ];
 
 const SPECTACLE_EXPANSION_POWERUPS = [
+  {id:'orbit_breaker',name:ORBIT_BREAKER_TEXT[0],shortLabel:ORBIT_BREAKER_TEXT[1],color:0xffb45d,duration:'12 second',
+    effectDescription:ORBIT_BREAKER_TEXT[2],read:ORBIT_BREAKER_TEXT[3],when:ORBIT_BREAKER_TEXT[4],tip:ORBIT_BREAKER_TEXT[5],
+    pickupMessage:ORBIT_BREAKER_TEXT[6],sfx:'premium_orbit_activate',effect:{durationMs:12000,orbitalHammer:true}},
   {
     id: 'helix_array', name: 'HELIX ARRAY', shortLabel: 'HELIX', color: 0x54eaff,
     duration: '9 second', effectDescription: 'five fast bolts braided into a rotating lane fan',
@@ -865,6 +869,7 @@ const OFFENSE_EFFECT_KEYS = Object.freeze([
   'pierce',
   'bombShots',
   'orbitalCharges',
+  'orbitalHammer',
   'chainMax',
   'droneCount'
 ]);

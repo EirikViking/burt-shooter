@@ -1,14 +1,24 @@
+import { validOnslaughtRun } from '../../electron/onslaughtContract.cjs';
+import {
+  getRecoverableOnslaughtSubmissions,
+  markOnslaughtSteamAccepted,
+  recordOnslaughtRun
+} from '../progression/OnslaughtChallenge.js';
 import { CloudLeaderboardProvider } from './CloudLeaderboardProvider.js';
 import { LocalLeaderboardProvider } from './LocalLeaderboardProvider.js';
 import { SteamLeaderboardProvider } from './SteamLeaderboardProvider.js';
+import { getHangarProgressSummary } from '../progression/HangarProgressState.js';
+import { getActiveProfileStorageContext, getProfileScopedStorageKey } from '../profile/ProfileStorageNamespace.js';
 import {
   LEADERBOARD_DISPLAY_LIMIT,
   STEAM_LEADERBOARD_NAME,
   STEAM_TACTICAL_LEADERBOARD_NAME,
+  STEAM_ONSLAUGHT_LEADERBOARD_NAME,
   STEAM_SECTOR_LEADERBOARD_NAME,
   LeaderboardView,
   createSectorStartRunResultFromGame,
   createRunResultFromGame,
+  getLeaderboardDescriptorForRunMode,
   normalizeLeaderboardEntries
 } from './LeaderboardTypes.js';
 import {
@@ -22,9 +32,70 @@ import {
 } from '../shared/RankPolicy.js';
 
 const STEAM_UPLOAD_DIAGNOSTICS_KEY = 'novaSwarm.lastSteamUploadDiagnostics.v1';
+const ONSLAUGHT_RECORDS_CACHE_KEY = 'novaSwarm.onslaughtSteamRecordsCache.v2';
 export const PENDING_STEAM_SUBMISSIONS_KEY = 'novaSwarm.pendingSteamLeaderboardSubmits.v1';
 export const PENDING_CAREER_RANK_METADATA_KEY = 'novaSwarm.pendingCareerRankMetadata.v1';
-const MAX_PENDING_STEAM_SUBMISSIONS = 8;
+const PENDING_RETRY_MIN_MS = 60000;
+const pendingUploads = new Map();
+let pendingRecordSequence = 0;
+
+function eligibleSteamRun(run = {}) {
+  if (run.isDebugRun || run.prototype || run.eligibleForSubmission === false) return false;
+  if (run.runMode === 'overrun_tactical' && !validOnslaughtRun(run)) return false;
+  if (pendingBoardKind(run) === 'sector_start') {
+    return (!run.runMode || run.runMode === 'sector_start') && Number(run.startSector ?? run.sectorStart) >= 1
+      && (!run.leaderboardName || run.leaderboardName === STEAM_SECTOR_LEADERBOARD_NAME)
+      && (!run.leaderboardKind || run.leaderboardKind === 'sector_start');
+  }
+  if (!canRunModeSubmitGlobalLeaderboard(run.runMode, { isDebugRun: run.isDebugRun })) return false;
+  const board = getLeaderboardDescriptorForRunMode(run.runMode, run.rulesetVersion);
+  return (!run.leaderboardName || run.leaderboardName === board.leaderboardName)
+    && (!run.leaderboardKind || run.leaderboardKind === board.leaderboardKind);
+}
+
+function pendingStorageKey() {
+  return getProfileScopedStorageKey(PENDING_STEAM_SUBMISSIONS_KEY);
+}
+
+function onslaughtRecordsCacheKey() {
+  return getProfileScopedStorageKey(ONSLAUGHT_RECORDS_CACHE_KEY);
+}
+
+function readOnslaughtRecordsCache(options = {}) {
+  if (options.useCache === false) return null;
+  const cached = readJsonStorage(onslaughtRecordsCacheKey(), null);
+  if (!cached || cached.version !== 2 || cached.leaderboardName !== STEAM_ONSLAUGHT_LEADERBOARD_NAME
+    || !Array.isArray(cached.entries)) return null;
+  const requestedStart = Math.max(1, Math.floor(Number(options.start) || 1));
+  if (Math.max(1, Math.floor(Number(cached.start) || 1)) !== requestedStart) return null;
+  return {
+    status: cached.status === 'empty' ? 'empty' : 'available',
+    entries: cached.entries,
+    source: 'steam',
+    sourceLabel: 'Steam Onslaught',
+    cached: true,
+    offline: true,
+    cachedAt: cached.updatedAt || null,
+    message: 'Cached Steam records · Offline'
+  };
+}
+
+function writeOnslaughtRecordsCache(result = {}, options = {}) {
+  if (result.status !== 'available' && result.status !== 'empty') return false;
+  return writeJsonStorage(onslaughtRecordsCacheKey(), {
+    version: 2,
+    leaderboardName: STEAM_ONSLAUGHT_LEADERBOARD_NAME,
+    status: result.status,
+    start: Math.max(1, Math.floor(Number(options.start) || 1)),
+    limit: Math.max(1, Math.floor(Number(options.limit) || LEADERBOARD_DISPLAY_LIMIT)),
+    entries: Array.isArray(result.entries) ? result.entries : [],
+    updatedAt: new Date().toISOString()
+  });
+}
+
+function pendingRecordId(entry) {
+  return entry.recordId || `${entry.key}:${entry.runResult?.submissionId || entry.queuedAt}:${entry.score}`;
+}
 
 function safeWindow() {
   try {
@@ -70,7 +141,8 @@ function writeJsonStorage(key, value) {
   const win = safeWindow();
   if (!win) return false;
   try {
-    win.localStorage?.setItem(key, JSON.stringify(value));
+    if (!win.localStorage) return false;
+    win.localStorage.setItem(key, JSON.stringify(value));
     win.__novaSteamCloudDiagnostics?.sync?.()?.catch?.(() => {});
     return true;
   } catch {
@@ -85,6 +157,9 @@ function clampScore(value) {
 function sanitizePendingRunResult(runResult = {}) {
   const runMode = runResult.runMode || null;
   const isDebugRun = runResult.isDebugRun === true;
+  const board = pendingBoardKind(runResult) === 'sector_start'
+    ? { leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME, leaderboardKind: 'sector_start' }
+    : canRunModeSubmitGlobalLeaderboard(runMode, { isDebugRun }) ? getLeaderboardDescriptorForRunMode(runMode, runResult.rulesetVersion) : {};
   return {
     name: runResult.playerName || runResult.name || null,
     playerName: runResult.playerName || runResult.name || null,
@@ -107,19 +182,25 @@ function sanitizePendingRunResult(runResult = {}) {
     highestSectorReached: runResult.highestSectorReached ?? null,
     finalSector: runResult.finalSector ?? null,
     runMode,
+    runId: runResult.runId || null,
+    rulesetVersion: runResult.rulesetVersion || null,
+    competitionStart: runResult.competitionStart ? JSON.parse(JSON.stringify(runResult.competitionStart)) : null,
+    prototype: runResult.prototype === true,
     runModeSource: runResult.runModeSource || null,
     isDebugRun,
-    eligibleForSubmission: runResult.eligibleForSubmission ?? canRunModeSubmitGlobalLeaderboard(runMode, { isDebugRun }),
+    eligibleForSubmission: runResult.eligibleForSubmission ?? (pendingBoardKind(runResult) === 'sector_start'
+      ? !isDebugRun : canRunModeSubmitGlobalLeaderboard(runMode, { isDebugRun })),
     eligibleForAchievements: runResult.eligibleForAchievements ?? canRunModeUnlockAchievements(runMode, { isDebugRun }),
     submissionEligibilityVersion: Math.max(0, Math.floor(Number(runResult.submissionEligibilityVersion) || 0)),
-    leaderboardName: runResult.leaderboardName || null,
-    leaderboardKind: runResult.leaderboardKind || null,
+    leaderboardName: runResult.leaderboardName || board.leaderboardName || null,
+    leaderboardKind: runResult.leaderboardKind || board.leaderboardKind || null,
     buildId: runResult.buildId || null,
     source: runResult.source || null
   };
 }
 
 function pendingBoardKind(runResult = {}) {
+  if (runResult.runMode === 'overrun_tactical' || runResult.leaderboardName === STEAM_ONSLAUGHT_LEADERBOARD_NAME) return 'overrun_tactical';
   if (runResult.leaderboardKind === 'sector_start' || runResult.leaderboardName === STEAM_SECTOR_LEADERBOARD_NAME) {
     return 'sector_start';
   }
@@ -131,6 +212,10 @@ function pendingBoardKind(runResult = {}) {
 
 function pendingDedupeKey(runResult = {}) {
   const kind = pendingBoardKind(runResult);
+  if (kind === 'overrun_tactical') {
+    const runIdentity = runResult.runId || runResult.submissionId;
+    if (runIdentity) return `${runResult.leaderboardName || getLeaderboardDescriptorForRunMode(runResult.runMode, runResult.rulesetVersion).leaderboardName}:${kind}:run-${runIdentity}`;
+  }
   if (kind === 'sector_start') {
     const start = Math.max(1, Math.floor(Number(runResult.startSector ?? runResult.sectorStart) || 1));
     return `${STEAM_SECTOR_LEADERBOARD_NAME}:start-${start}`;
@@ -152,9 +237,11 @@ function normalizePendingQueue(raw) {
       updatedAt: entry.updatedAt || entry.queuedAt || new Date().toISOString(),
       runResult: sanitizePendingRunResult(entry.runResult || entry)
     }))
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, MAX_PENDING_STEAM_SUBMISSIONS);
+    .filter((entry) => entry.score > 0 || (
+      pendingBoardKind(entry.runResult) === 'overrun_tactical'
+      && eligibleSteamRun(entry.runResult)
+    ))
+    .sort((a, b) => b.score - a.score);
 }
 
 function personalBestCandidate(source, value) {
@@ -202,32 +289,66 @@ export class LeaderboardAdapter {
       local: true
     };
     this.refreshed = false;
+    this.availabilityCheckedAt = 0;
+    this.availabilityRefresh = null;
+    this.careerRankMetadataRefresh = null;
+    this.lastCareerRankMetadataQueuedExact = null;
+    this.canRetryPendingSteam = options.canRetryPendingSteam || (() => true);
+    this.pendingSteamRetry = null;
+    this.pendingSteamRecoveryTimer = null;
   }
 
-  async refreshAvailability() {
+  refreshAvailability() {
+    if (this.availabilityRefresh) return this.availabilityRefresh;
+    this.availabilityRefresh = this.readAvailability().finally(() => {
+      this.availabilityRefresh = null;
+    });
+    return this.availabilityRefresh;
+  }
+
+  async readAvailability() {
     const [steam, cloud, local] = await Promise.all([
       this.steamProvider.isAvailable().catch(() => false),
       this.cloudProvider.isAvailable().catch(() => false),
       this.localProvider.isAvailable().catch(() => true)
     ]);
-    const steamFriends = steam
-      ? await this.steamProvider.hasFriendLeaderboardEntries({ limit: LEADERBOARD_DISPLAY_LIMIT }).catch(() => false)
-      : false;
-    this.availability = { steam, steamFriends, cloud, local };
+    // Optional friends downloads can take longer than the Game Over deadline.
+    // Publish Steam readiness immediately; a slow friends list must not hide
+    // the Pure/Tactical boards or send a valid run down the local-only path.
+    this.availability = { steam, steamFriends: steam && this.availability.steamFriends, cloud, local };
     this.refreshed = true;
+    this.availabilityCheckedAt = Date.now();
+    if (steam && !this.friendsAvailabilityRefresh) {
+      this.friendsAvailabilityRefresh = this.steamProvider.hasFriendLeaderboardEntries({ limit: LEADERBOARD_DISPLAY_LIMIT })
+        .then(available => { this.availability.steamFriends = this.availability.steam && available; })
+        .catch(() => {})
+        .finally(() => { this.friendsAvailabilityRefresh = null; });
+    }
+    this.queueCurrentCareerRankMetadataRefresh();
     if (steam) {
       this.retryPendingSteamSubmissions({ reason: 'availability' }).catch((error) => {
         console.warn('[LeaderboardAdapter] pending Steam retry failed:', error?.message || error);
       });
-      this.retryPendingCareerRankMetadata({ reason: 'availability' }).catch((error) => {
+      this.startPendingCareerRankMetadataRefresh({ reason: 'availability' }).catch((error) => {
         console.warn('[LeaderboardAdapter] pending Career Rank refresh failed:', error?.message || error);
       });
+    }
+    // Keep the complete result for callers building the optional Friends tab,
+    // while deadline-bound callers can already read the published Steam state.
+    if (this.friendsAvailabilityRefresh) {
+      let timer;
+      await Promise.race([
+        this.friendsAvailabilityRefresh,
+        new Promise(resolve => { timer = setTimeout(resolve, 1000); })
+      ]).finally(() => clearTimeout(timer));
     }
     return this.availability;
   }
 
   async ensureAvailability() {
-    if (!this.refreshed) await this.refreshAvailability();
+    // A failed first check is transient, not a permanent session-wide verdict.
+    const retryAfterMs = this.availability.steam ? 60000 : 3000;
+    if (!this.refreshed || Date.now() - this.availabilityCheckedAt >= retryAfterMs) await this.refreshAvailability();
     return this.availability;
   }
 
@@ -236,7 +357,8 @@ export class LeaderboardAdapter {
   }
 
   shouldUseSteamSubmission() {
-    return this.isSteamAvailable();
+    // The preload transport exists even while the Steam client is offline.
+    return Boolean(this.steamProvider.getBridge()) || this.isSteamAvailable();
   }
 
   getRuntimeSummary() {
@@ -250,10 +372,11 @@ export class LeaderboardAdapter {
   }
 
   getTabs() {
-    if (this.availability.steam) {
+    if (this.availability.steam || this.shouldUseSteamSubmission()) {
       return [
-        { id: LeaderboardView.TACTICAL, label: 'TACTICAL', title: 'MAYHEM TACTICAL DECK', sourceLabel: 'Steam Tactical' },
-        { id: LeaderboardView.GLOBAL, label: 'PURE', title: 'MAYHEM PURE DECK', sourceLabel: 'Steam Pure' },
+        { id: LeaderboardView.TACTICAL, label: 'ARCADE', title: 'ARCADE TACTICAL DECK', sourceLabel: 'Steam Tactical' },
+        { id: LeaderboardView.ONSLAUGHT, label: 'ONSLAUGHT', title: 'ONSLAUGHT — CUSTOM LOADOUTS', sourceLabel: 'Steam Onslaught' },
+        { id: LeaderboardView.GLOBAL, label: 'ARCADE PURE', title: 'ARCADE PURE DECK', sourceLabel: 'Steam Pure' },
         { id: LeaderboardView.SECTOR, label: 'SECTOR', title: 'SECTOR RUN DECK', sourceLabel: 'Steam Sector' },
         { id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' },
         { id: LeaderboardView.LOCAL, label: 'LOCAL', title: 'LOCAL SCORE DECK', sourceLabel: 'Local Memory' }
@@ -261,11 +384,15 @@ export class LeaderboardAdapter {
     }
     if (this.availability.cloud) {
       return [
+        { id: LeaderboardView.TACTICAL, label: 'ARCADE', title: 'ARCADE TACTICAL DECK', sourceLabel: 'Steam Tactical' },
+        { id: LeaderboardView.ONSLAUGHT, label: 'ONSLAUGHT', title: 'ONSLAUGHT — CUSTOM LOADOUTS', sourceLabel: 'Steam Onslaught' },
         { id: LeaderboardView.GLOBAL, label: 'GLOBAL', title: 'GLOBAL SCORE DECK', sourceLabel: 'Cloud Global' },
         { id: LeaderboardView.LOCAL, label: 'LOCAL', title: 'LOCAL SCORE DECK', sourceLabel: 'Local Memory' }
       ];
     }
     return [
+        { id: LeaderboardView.TACTICAL, label: 'ARCADE', title: 'ARCADE TACTICAL DECK', sourceLabel: 'Steam Tactical' },
+      { id: LeaderboardView.ONSLAUGHT, label: 'ONSLAUGHT', title: 'ONSLAUGHT — CUSTOM LOADOUTS', sourceLabel: 'Steam Onslaught' },
       { id: LeaderboardView.LOCAL, label: 'LOCAL', title: 'LOCAL SCORE DECK', sourceLabel: 'Local Memory' }
     ];
   }
@@ -284,13 +411,28 @@ export class LeaderboardAdapter {
   }
 
   async getScores(view = LeaderboardView.GLOBAL, options = {}) {
+    // Catch up old score records using saved career progress, even when no run
+    // or new personal best has been completed in this session.
+    this.queueCurrentCareerRankMetadataRefresh();
     await this.ensureAvailability();
     if (this.availability.steam && this.getPendingCareerRankMetadata()) {
-      await this.retryPendingCareerRankMetadata({ reason: 'leaderboard_read' }).catch(() => null);
+      // The current pilot's row is corrected from saved Hangar progress during
+      // presentation. Repair the Steam metadata in the background so opening a
+      // board never waits for three read/write/verification transactions.
+      this.startPendingCareerRankMetadataRefresh({ reason: 'leaderboard_read' }).catch((error) => {
+        console.warn('[LeaderboardAdapter] pending Career Rank refresh failed:', error?.message || error);
+      });
     }
     const normalizedView = this.normalizeView(view);
     const limit = Number(options.limit) || LEADERBOARD_DISPLAY_LIMIT;
     try {
+      if (normalizedView === LeaderboardView.ONSLAUGHT) {
+        if (!this.availability.steam) return readOnslaughtRecordsCache(options)
+          || { status: 'unavailable', entries: [], source: 'steam', sourceLabel: 'Steam Onslaught', message: 'Records unavailable. Flight Targets work offline.' };
+        const result = await this.steamProvider.getTopScores({ ...options, limit, leaderboardName: STEAM_ONSLAUGHT_LEADERBOARD_NAME, leaderboardKind: 'overrun_tactical', view: LeaderboardView.ONSLAUGHT, sourceLabel: 'Steam Onslaught' });
+        writeOnslaughtRecordsCache(result, { ...options, limit });
+        return result;
+      }
       if (normalizedView === LeaderboardView.LOCAL) {
         return await this.localProvider.getLocalScores({ ...options, limit });
       }
@@ -360,6 +502,10 @@ export class LeaderboardAdapter {
       return await this.localProvider.getLocalScores({ ...options, limit });
     } catch (error) {
       console.warn(`[LeaderboardAdapter] ${normalizedView} provider failed:`, error?.message || error);
+      if (normalizedView === LeaderboardView.ONSLAUGHT) {
+        const cached = readOnslaughtRecordsCache(options);
+        if (cached) return { ...cached, requestError: error?.message || 'unknown' };
+      }
       return {
         status: 'failed',
         source: normalizedView,
@@ -380,10 +526,11 @@ export class LeaderboardAdapter {
   }
 
   async submitScore(runResult = {}, options = {}) {
-    await this.ensureAvailability();
-    const steamOnlyBoard = runResult.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME
+    const steamOnlyBoard = runResult.runMode === 'overrun_tactical' || runResult.leaderboardName === STEAM_ONSLAUGHT_LEADERBOARD_NAME || runResult.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME
       || runResult.leaderboardKind === 'mayhem_tactical';
-    const target = options.target || (this.availability.steam || steamOnlyBoard ? 'steam' : 'cloud');
+    const target = options.target || (this.shouldUseSteamSubmission() || steamOnlyBoard ? 'steam' : 'cloud');
+    // Persist before any availability, persona, local HTTP or upload awaits.
+    const pending = target === 'steam' ? this.enqueuePendingSteamSubmission(runResult) : null;
     const levelReached = runResult.levelReached ?? runResult.level;
     const result = {
       name: options.name || runResult.playerName || runResult.name || null,
@@ -405,16 +552,18 @@ export class LeaderboardAdapter {
       updatedAt: new Date().toISOString()
     };
 
-    if (target === 'steam' && !result.name) {
-      result.name = await this.steamProvider.getPlayerName().catch(() => null);
-    }
-
     if (options.saveLocal) {
       try {
+        if (runResult.runMode === 'overrun_tactical') {
+          const local = recordOnslaughtRun(runResult);
+          result.localStatus = local.stored ? 'saved' : 'failed';
+          result.localEntry = local.best;
+        } else {
         const local = await this.localProvider.submitScore(runResult, { name: options.name || result.name });
         result.localStatus = 'saved';
         result.localPlacement = local.placement;
         result.localEntry = local.entry;
+        }
       } catch (error) {
         result.localStatus = 'failed';
         result.localError = error?.message || 'unknown';
@@ -423,7 +572,7 @@ export class LeaderboardAdapter {
 
     if (target === 'local') return result;
 
-    if (result.eligibleForSubmission === false) {
+    if (result.eligibleForSubmission === false || !eligibleSteamRun(runResult) || (steamOnlyBoard && target !== 'steam')) {
       result.globalStatus = 'blocked';
       result.globalProvider = target;
       result.submissionBlockedReason = 'ineligible_run_mode';
@@ -432,7 +581,9 @@ export class LeaderboardAdapter {
 
     if (target === 'steam') {
       try {
-        const steam = await this.steamProvider.submitScore(runResult);
+        if (!pending?.queued) throw new Error(pending?.reason || 'pending_persistence_failed');
+        const steam = await this.attemptPendingSteamSubmission(pending.entry, pending.storageKey);
+        if (!steam) throw new Error('pending_retry_scheduled');
         result.name = steam.playerName || result.name;
         result.globalStatus = 'submitted';
         result.globalProvider = 'steam';
@@ -453,17 +604,14 @@ export class LeaderboardAdapter {
         result.globalProvider = 'steam';
         result.steamStatus = 'failed';
         result.steamError = error?.message || 'unknown';
-        const pending = this.enqueuePendingSteamSubmission(runResult, {
-          reason: result.steamError,
-          target: pendingBoardKind(runResult)
-        });
-        result.steamPendingQueued = pending.queued;
-        result.steamPendingCount = pending.pendingCount;
+        result.steamPendingQueued = pending?.queued === true;
+        result.steamPendingCount = this.getPendingSteamSubmissions(pending?.storageKey).length;
       }
-      result.steamPostSubmitDownload = await this.getSteamPostSubmitDownloadSnapshot({
-        leaderboardName: result.leaderboardName,
-        leaderboardKind: result.leaderboardKind
-      });
+      // A slow/failed display refresh is not an upload failure or an ack gate.
+      this.getSteamPostSubmitDownloadSnapshot({ leaderboardName: result.leaderboardName,
+        leaderboardKind: result.leaderboardKind }).then(postSubmitDownload => {
+        mergeSteamUploadDiagnostics({ postSubmitDownload });
+      }).catch(() => {});
       mergeSteamUploadDiagnostics({
         source: 'LeaderboardAdapter.submitScore',
         steamSubmissionResult: {
@@ -501,7 +649,10 @@ export class LeaderboardAdapter {
   }
 
   async submitSectorStartScore(runResult = {}, options = {}) {
-    await this.ensureAvailability();
+    runResult = { ...runResult, leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME, leaderboardKind: 'sector_start' };
+    const pending = this.enqueuePendingSteamSubmission(runResult, { target: 'sector_start' });
+    if (!pending.queued) return { sectorSteamStatus: 'failed', sectorSteamError: pending.reason, sectorSteamPendingQueued: false };
+    this.availability.steam = await this.steamProvider.isAvailable().catch(() => false);
     const result = {
       name: options.name || runResult.playerName || runResult.name || null,
       score: runResult.score,
@@ -535,13 +686,8 @@ export class LeaderboardAdapter {
       result.name = await this.steamProvider.getPlayerName().catch(() => null);
     }
     try {
-      const steam = await this.steamProvider.submitScore({
-        ...runResult,
-        playerName: result.name,
-        name: result.name,
-        leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
-        leaderboardKind: 'sector_start'
-      });
+      const steam = await this.attemptPendingSteamSubmission(pending.entry, pending.storageKey);
+      if (!steam) throw new Error('pending_retry_scheduled');
       result.name = steam.playerName || result.name;
       result.sectorSteamStatus = 'submitted';
       result.sectorSteamRank = steam.rank;
@@ -590,7 +736,8 @@ export class LeaderboardAdapter {
   }
 
   async getGlobalScoresForPlacement(options = {}) {
-    const view = options.view === LeaderboardView.TACTICAL
+    const view = options.view === LeaderboardView.ONSLAUGHT || options.leaderboardKind === 'overrun_tactical'
+      ? LeaderboardView.ONSLAUGHT : options.view === LeaderboardView.TACTICAL
       || options.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME
       || options.leaderboardKind === 'mayhem_tactical'
       ? LeaderboardView.TACTICAL
@@ -664,8 +811,8 @@ export class LeaderboardAdapter {
     return createRunResultFromGame(game, overrides);
   }
 
-  getPendingSteamSubmissions() {
-    return normalizePendingQueue(readJsonStorage(PENDING_STEAM_SUBMISSIONS_KEY, { version: 1, entries: [] }));
+  getPendingSteamSubmissions(storageKey = pendingStorageKey()) {
+    return normalizePendingQueue(readJsonStorage(storageKey, { version: 1, entries: [] }));
   }
 
   getPendingCareerRankMetadata() {
@@ -697,6 +844,9 @@ export class LeaderboardAdapter {
   queueCareerRankMetadataRefresh(careerRankExact, options = {}) {
     const existing = this.getPendingCareerRankMetadata();
     const requested = normalizePilotXpExact(careerRankExact, '1');
+    this.lastCareerRankMetadataQueuedExact = this.lastCareerRankMetadataQueuedExact
+      ? maxPilotXpExact(this.lastCareerRankMetadataQueuedExact, requested)
+      : requested;
     const latest = existing
       ? maxPilotXpExact(existing.careerRankExact, requested)
       : requested;
@@ -712,8 +862,19 @@ export class LeaderboardAdapter {
     return value;
   }
 
+  queueCurrentCareerRankMetadataRefresh() {
+    const current = getHangarProgressSummary().rankProgress.displayRankExact;
+    if (
+      !this.getPendingCareerRankMetadata() &&
+      this.lastCareerRankMetadataQueuedExact &&
+      comparePilotXpExact(current, this.lastCareerRankMetadataQueuedExact) <= 0
+    ) return null;
+    return this.queueCareerRankMetadataRefresh(current);
+  }
+
   async refreshCareerRankMetadata(careerRankExact, options = {}) {
-    const requested = normalizePilotXpExact(careerRankExact, '1');
+    // Persist before any asynchronous work, and retain a higher offline request.
+    const requested = this.queueCareerRankMetadataRefresh(careerRankExact).careerRankExact;
     await this.ensureAvailability();
     if (!this.availability.steam) {
       const pending = this.queueCareerRankMetadataRefresh(requested, {
@@ -773,40 +934,57 @@ export class LeaderboardAdapter {
     return result;
   }
 
-  writePendingSteamSubmissions(entries = []) {
+  startPendingCareerRankMetadataRefresh(options = {}) {
+    if (this.careerRankMetadataRefresh) return this.careerRankMetadataRefresh;
+    const refresh = Promise.resolve().then(() => this.retryPendingCareerRankMetadata(options));
+    const tracked = refresh.finally(() => {
+      if (this.careerRankMetadataRefresh === tracked) this.careerRankMetadataRefresh = null;
+    });
+    this.careerRankMetadataRefresh = tracked;
+    return tracked;
+  }
+
+  writePendingSteamSubmissions(entries = [], storageKey = pendingStorageKey()) {
     const normalized = normalizePendingQueue({ entries });
     const current = normalizePendingQueue(
-      readJsonStorage(PENDING_STEAM_SUBMISSIONS_KEY, { version: 1, entries: [] })
+      readJsonStorage(storageKey, { version: 1, entries: [] })
     );
     if (JSON.stringify(current) === JSON.stringify(normalized)) {
       return normalized;
     }
-    writeJsonStorage(PENDING_STEAM_SUBMISSIONS_KEY, {
+    if (!writeJsonStorage(storageKey, {
       version: 1,
       updatedAt: new Date().toISOString(),
       entries: normalized
-    });
+    })) throw new Error('pending_persistence_failed');
     return normalized;
   }
 
   enqueuePendingSteamSubmission(runResult = {}, options = {}) {
     const sanitized = sanitizePendingRunResult(runResult);
-    if (sanitized.score <= 0) {
+    if (!eligibleSteamRun(sanitized)) {
+      return { queued: false, reason: 'ineligible_run', pendingCount: this.getPendingSteamSubmissions().length };
+    }
+    if (sanitized.score <= 0 && pendingBoardKind(sanitized) !== 'overrun_tactical') {
       return { queued: false, reason: 'no_score', pendingCount: this.getPendingSteamSubmissions().length };
     }
     const key = pendingDedupeKey(sanitized);
+    const storageKey = pendingStorageKey();
     const now = new Date().toISOString();
     const queue = this.getPendingSteamSubmissions();
     const existing = queue.find((entry) => entry.key === key);
-    if (existing && existing.score > sanitized.score) {
-      return { queued: false, reason: 'existing_pending_is_better', pendingCount: queue.length };
+    if (existing && (existing.score > sanitized.score ||
+      (existing.score === sanitized.score && existing.runResult.submissionId === sanitized.submissionId))) {
+      return { queued: true, reason: 'existing_pending_covers_score', pendingCount: queue.length, entry: existing, storageKey };
     }
     const nextEntry = {
       key,
+      recordId: `${Date.now()}:${++pendingRecordSequence}:${sanitized.submissionId || ''}`,
       score: sanitized.score,
       target: options.target || pendingBoardKind(sanitized),
       reason: options.reason || 'steam_unavailable',
       attempts: existing?.attempts || 0,
+      nextAttemptAt: existing?.nextAttemptAt || 0,
       queuedAt: existing?.queuedAt || now,
       updatedAt: now,
       runResult: sanitized
@@ -815,33 +993,98 @@ export class LeaderboardAdapter {
       nextEntry,
       ...queue.filter((entry) => entry.key !== key)
     ];
-    const written = this.writePendingSteamSubmissions(next);
-    return { queued: true, reason: nextEntry.reason, pendingCount: written.length, key };
+    try {
+      const written = this.writePendingSteamSubmissions(next, storageKey);
+      return { queued: true, reason: nextEntry.reason, pendingCount: written.length, key, entry: nextEntry, storageKey };
+    } catch {
+      return { queued: false, reason: 'pending_persistence_failed', pendingCount: queue.length, storageKey };
+    }
   }
 
-  clearPendingSteamSubmission(key) {
-    const queue = this.getPendingSteamSubmissions();
-    const next = this.writePendingSteamSubmissions(queue.filter((entry) => entry.key !== key));
+  clearPendingSteamSubmission(entry, storageKey = pendingStorageKey()) {
+    const queue = this.getPendingSteamSubmissions(storageKey);
+    const next = this.writePendingSteamSubmissions(queue.filter(current => pendingRecordId(current) !== pendingRecordId(entry)), storageKey);
     return { pendingCount: next.length };
   }
 
-  async retryPendingSteamSubmissions(options = {}) {
+  attemptPendingSteamSubmission(entry, storageKey = pendingStorageKey()) {
+    const lockKey = `${storageKey}:${entry.key}`;
+    const active = pendingUploads.get(lockKey);
+    if (active) return active.id === pendingRecordId(entry) ? active.promise : Promise.resolve(null);
+    const current = this.getPendingSteamSubmissions(storageKey).find(item => pendingRecordId(item) === pendingRecordId(entry));
+    if (!current || !eligibleSteamRun(current.runResult) || storageKey !== pendingStorageKey() ||
+      !this.canRetryPendingSteam() || Number(current.nextAttemptAt) > Date.now()) return Promise.resolve(null);
+    const operation = Promise.resolve().then(async () => {
+      // Persist backoff before starting, so interruption/restart cannot hot-loop.
+      const attempts = current.attempts + 1;
+      const attempted = { ...current, attempts,
+        nextAttemptAt: Date.now() + Math.min(600000, PENDING_RETRY_MIN_MS * 2 ** Math.min(attempts - 1, 4)) };
+      this.writePendingSteamSubmissions(this.getPendingSteamSubmissions(storageKey).map(item =>
+        pendingRecordId(item) === pendingRecordId(current) ? attempted : item), storageKey);
+      const profile = getActiveProfileStorageContext();
+      try {
+        const steam = await this.steamProvider.submitScore(current.runResult, {
+          beforeUpload: () => {
+            if (pendingStorageKey() !== storageKey || !this.canRetryPendingSteam()) throw new Error('pending_context_changed');
+          },
+          expectedSteamId: profile.steamId
+        });
+        if (current.runResult.runMode === 'overrun_tactical') {
+          markOnslaughtSteamAccepted(current.runResult, steam);
+        }
+        // Only this acknowledged revision is removed, never a snapshot of the queue.
+        try { this.clearPendingSteamSubmission(current, storageKey); }
+        catch { /* Acceptance remains true if cleanup fails; KeepBest retry is safe. */ }
+        return steam;
+      } catch (error) {
+        this.writePendingSteamSubmissions(this.getPendingSteamSubmissions(storageKey).map(item =>
+          pendingRecordId(item) === pendingRecordId(current) ? { ...item, lastError: error?.message || 'unknown' } : item), storageKey);
+        throw error;
+      }
+    }).finally(() => pendingUploads.delete(lockKey));
+    pendingUploads.set(lockKey, { id: pendingRecordId(entry), promise: operation });
+    return operation;
+  }
+
+  retryPendingSteamSubmissions(options = {}) {
+    if (this.pendingSteamRetry) return this.pendingSteamRetry;
+    this.pendingSteamRetry = this.retryPendingSteamSubmissionsNow(options).finally(() => { this.pendingSteamRetry = null; });
+    return this.pendingSteamRetry;
+  }
+
+  recoverOnslaughtBestSubmission() {
+    const records = getRecoverableOnslaughtSubmissions();
+    if (!records.length) return { queued: false, reason: 'no_recoverable_onslaught_record', pendingCount: this.getPendingSteamSubmissions().length };
+    const results = records.map(runResult => this.enqueuePendingSteamSubmission(runResult, {
+      reason: 'recovered_pre_queue_onslaught_record',
+      target: 'overrun_tactical'
+    }));
+    return { queued: results.some(result => result.queued), pendingCount: this.getPendingSteamSubmissions().length, recovered: results.length };
+  }
+
+  async retryPendingSteamSubmissionsNow(options = {}) {
+    const storageKey = pendingStorageKey();
+    if (!this.canRetryPendingSteam()) return { attempted: 0, submitted: 0, reason: 'combat_deferred' };
     await this.ensureAvailability();
     if (!this.availability.steam) {
       return { attempted: 0, submitted: 0, remaining: this.getPendingSteamSubmissions().length, reason: 'steam_unavailable' };
     }
-    const queue = this.getPendingSteamSubmissions();
+    const queue = this.getPendingSteamSubmissions(storageKey);
     if (queue.length === 0) {
       return { attempted: 0, submitted: 0, remaining: 0, reason: 'empty_queue' };
     }
     let submitted = 0;
-    const remaining = [];
+    let attempted = 0;
     for (const entry of queue) {
+      if (storageKey !== pendingStorageKey() || !this.canRetryPendingSteam()) break;
+      if (!eligibleSteamRun(entry.runResult) || Number(entry.nextAttemptAt) > Date.now()) continue;
       try {
-        const steam = await this.steamProvider.submitScore(entry.runResult);
+        attempted += 1;
+        const steam = await this.attemptPendingSteamSubmission(entry, storageKey);
+        if (!steam) continue;
         submitted += 1;
         try {
-          this.onAcceptedPendingSteamSubmission?.({
+          if (storageKey === pendingStorageKey()) this.onAcceptedPendingSteamSubmission?.({
             entry,
             runResult: entry.runResult,
             steam
@@ -850,25 +1093,34 @@ export class LeaderboardAdapter {
           console.warn('[LeaderboardAdapter] accepted pending Steam callback failed:', error?.message || error);
         }
       } catch (error) {
-        remaining.push({
-          ...entry,
-          attempts: Math.max(0, Number(entry.attempts) || 0) + 1,
-          lastError: error?.message || 'unknown',
-          updatedAt: new Date().toISOString()
-        });
+        // The attempted record and its backoff remain durable.
       }
     }
-    const written = this.writePendingSteamSubmissions(remaining);
+    const written = this.getPendingSteamSubmissions(storageKey);
     mergeSteamUploadDiagnostics({
       source: 'LeaderboardAdapter.retryPendingSteamSubmissions',
       pendingRetry: {
         reason: options.reason || null,
-        attempted: queue.length,
+        attempted,
         submitted,
         remaining: written.length
       }
     });
-    return { attempted: queue.length, submitted, remaining: written.length };
+    return { attempted, submitted, remaining: written.length };
+  }
+
+  startPendingSteamRecovery() {
+    if (this.pendingSteamRecoveryTimer) return;
+    const recover = () => {
+      // No storage reads, writes, Steam calls or timers per frame during combat.
+      if (!this.canRetryPendingSteam()) return;
+      this.recoverOnslaughtBestSubmission();
+      if (!this.getPendingSteamSubmissions().length) return;
+      this.retryPendingSteamSubmissions({ reason: 'startup_or_recovery' }).catch(() => {});
+    };
+    recover();
+    this.pendingSteamRecoveryTimer = setInterval(recover, PENDING_RETRY_MIN_MS);
+    this.pendingSteamRecoveryTimer.unref?.();
   }
 
   createSectorStartRunResult(game, overrides = {}) {

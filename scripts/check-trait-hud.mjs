@@ -130,13 +130,8 @@ try {
   const report = {
     ok: Boolean(
       result.traitLabel &&
-      result.traitVisible &&
-      result.hudLabel?.startsWith('TRAIT: ') &&
-      result.hudText &&
-      !/WING BURST/.test(result.hudText) &&
-      (!/ IN \d+/.test(result.hudText) || / SHOTS$/.test(result.hudText)) &&
-      result.width >= 120 &&
-      result.height >= 30 &&
+      !result.traitVisible &&
+      (result.hudLabel === '' || result.hudLabel === null) &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
@@ -152,7 +147,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[trait-hud] PASS ${result.hudLabel} ${result.hudText} screenshot=${screenshot}`);
+    console.log(`[trait-hud] PASS passive trait introduction stays hidden; screenshot=${screenshot}`);
   }
 } finally {
   await browser.close();

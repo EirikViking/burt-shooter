@@ -1,0 +1,54 @@
+
+> nova-swarm@1.0.0 prebuild:current
+> npm run check:codex-copy && npm run check:powerup-expansion && npm run check:global-score-tuning && npm run check:gameplay-backdrop-motion && npm run check:tactical-directives && npm run check:nova-humor && npm run check:challenge-flight && npm run check:chatter-frequency && npm run check:ship-mastery-readout && npm run check:cabinet-powerup-reachability
+
+
+> nova-swarm@1.0.0 check:codex-copy
+> node scripts/check-codex-copy.mjs
+
+[codex-copy] PASS locales=8 categories=11 entries=2408 unique=name+description+tip lore=nova-cabinet-black-box-v1
+
+> nova-swarm@1.0.0 check:powerup-expansion
+> node scripts/check-powerup-expansion.mjs
+
+[powerup-expansion] PASS powerups=20 uniqueNames=20 audioTreatments=11 localizedLocales=7
+
+> nova-swarm@1.0.0 check:global-score-tuning
+> node scripts/check-global-score-tuning.mjs
+
+[global-score-tuning] PASS exact 15% multiplier and score-breakdown accounting
+
+> nova-swarm@1.0.0 check:gameplay-backdrop-motion
+> node scripts/check-gameplay-backdrop-motion.mjs
+
+[gameplay-backdrop-motion] PASS modes, visible camera travel, coverage, reduced motion, lifecycle guards
+
+> nova-swarm@1.0.0 check:tactical-directives
+> node scripts/check-tactical-directives.mjs
+
+[tactical-directives] PASS variants=1000 campaign=50 minimumFinalSector=50 exhaustiveCompletions=1000
+
+> nova-swarm@1.0.0 check:nova-humor
+> node scripts/check-nova-humor-everywhere.mjs
+
+Nova humor check passed: 37 unique lines across 7 surfaces and 7 translated locales.
+
+> nova-swarm@1.0.0 check:challenge-flight
+> node scripts/check-challenge-flight.mjs
+
+[challenge-flight] PASS patterns=5 grades=PERFECT,A,B,C,MISS locales=7
+
+> nova-swarm@1.0.0 check:chatter-frequency
+> node scripts/check-chatter-frequency.mjs
+
+[chatter-frequency] PASS critical warnings protected, chatter throttled, settings/cloud/locales wired
+
+> nova-swarm@1.0.0 check:ship-mastery-readout
+> node scripts/check-ship-mastery-readout.mjs
+
+[ship-mastery-readout] PASS Hangar medals and cockpit Tour tally are visible and reward-neutral
+
+> nova-swarm@1.0.0 check:cabinet-powerup-reachability
+> node scripts/check-cabinet-powerup-reachability.mjs
+
+[cabinet-powerup-reachability] PASS Hull Surplus retargeted; life=EXTRA LIFE; super_extra_life=SUPER EXTRA LIFE

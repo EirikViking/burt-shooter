@@ -268,8 +268,13 @@ async function renderShipCase(browser, viewport, shipSource) {
   });
   page.on('pageerror', (error) => pageErrors.push(error.message));
 
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForFunction(() => Boolean(window.__game?.switchScene), null, { timeout: 30000 });
+  // Configure accessibility before its runtime cache is warmed during boot.
+  await page.addInitScript(() => {
+    localStorage.setItem('burt_accessibility_player_focus', '1');
+    localStorage.setItem('nova_accessibility_player_hitbox', '1');
+  });
+  await page.goto(`${baseUrl}/?skipIntro=1&offlineLeaderboard=1`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.menu?.astraMenuShip?.ready), null, { timeout: 120000 });
   await page.evaluate((shipKey) => {
     localStorage.setItem('burt_accessibility_player_focus', '1');
     localStorage.setItem('nova_accessibility_player_hitbox', '1');
@@ -311,6 +316,9 @@ async function renderShipCase(browser, viewport, shipSource) {
       player.shipSprite.rotation = 0;
       player.shipSprite.alpha = 1;
     }
+    // Alignment is checked where the optional focus circle is drawn. Sectors
+    // 1-3 intentionally no longer draw permanent side brackets.
+    game.level = 6;
     player.updateFocusRing(1 / 60);
     player.updateHitboxReticle?.(1 / 60);
     const ship = player.shipSprite;

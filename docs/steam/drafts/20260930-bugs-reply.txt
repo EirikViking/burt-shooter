@@ -1,0 +1,13 @@
+Thanks, Tyrian. Your follow-ups made these much easier to pin down. The fixes below are in my local development build; they have not been released yet.
+
+[quote=Tyrian Mollusk]without Steam running[/quote]
+That explains why the earlier settings report was difficult to reproduce. Steam accounts and the offline profile currently use separate save namespaces. I have kept that separation so another account cannot inherit the wrong player's unlocks. Thank you for confirming that switching between them no longer disturbs your Steam settings. I have not changed offline profile sharing in this pass.
+
+[quote=Tyrian Mollusk]left-right-next-row order[/quote]
+You were right: checking for duplicate IDs missed the actual problem. Scrolling the column-first layout moved achievements from one column into the other. I changed it to row order, with scrolling aligned to complete rows and matching keyboard/controller navigation. This changes the display, not earned achievements.
+
+[quote=Tyrian Mollusk]just because I got some XP?[/quote]
+Yes. The attention check included XP and completed run totals. I have removed those routine triggers. New or completed pilot missions can still signal a change; ordinary mission progress, score, rank and XP changes do not restart the blinking. Opening Career Signal acknowledges it.
+
+[quote=Tyrian Mollusk]esc and B were unresponsive[/quote]
+I found two problems: cancelling the loadout picker left Hangar's launch lock set, and Hangar could consume Escape before the picker received it. Both are fixed locally. The loadout picker also gets a clearer controller focus outline. I checked B, Escape, closing the inner augment chooser, reopening Start, and returning to Hangar through the actual screens. A physical controller playtest is still needed for feel.

@@ -12,11 +12,11 @@ const scores=await p.evaluate(async()=>{
  const expectedNormal=g.getScoreAward(1000),normal=g.addScore(1000);g.finalScoreLocked=true;const locked=g.addBonusScore(1000);return{rows,expectedNormal,normal,locked,breakdown:g.scoreBreakdown};
 });for(const r of scores.rows){assert.equal(r.applied,r.prize);assert.equal(r.delta,r.prize);}assert.equal(scores.normal,scores.expectedNormal);assert.equal(scores.locked,0);
 await p.evaluate(async()=>{window.a=(await import('/src/audio/AudioManager.js')).AudioManager;a.init();await a.context.resume();a.setMusicEnabled(true);a.setSceneContext('menu');});assert.equal(await p.evaluate(()=>a.menuAudioMode),'ambient');
-await p.waitForFunction(()=>a.hangarAmbience?.layers.length===4,null,{timeout:120000});
+await p.waitForFunction(()=>a.hangarAmbience?.layers.length===1&&!a.hangarAmbience.audio.paused,null,{timeout:120000});
 await p.evaluate(()=>a.setMenuAudioMode('music'));await p.waitForFunction(()=>!a.musicAudio.paused&&a.musicTransitionFactor>.95&&!a.hangarAmbience.active,null,{timeout:120000});
 const track=await p.evaluate(()=>a.musicAudio.src);await p.evaluate(()=>window.__game.scenes.menu.openShipSelect());await p.waitForFunction(()=>window.__game.currentSceneName==='shipSelect');await p.evaluate(()=>window.__game.showMenu());await p.waitForFunction(()=>window.__game.currentSceneName==='menu');assert.equal(await p.evaluate(()=>a.musicAudio.src),track);assert.equal(await p.evaluate(()=>a.musicAudio.paused),false);
 await p.evaluate(()=>{a.setMenuAudioMode('ambient');a.setMenuAudioMode('music');});await p.waitForTimeout(2000);assert.equal(await p.evaluate(()=>a.musicAudio.paused),false);
-await p.evaluate(()=>a.setMenuAudioMode('ambient'));await p.waitForFunction(()=>a.hangarAmbience.active&&a.musicAudio.paused&&a.hangarAmbience.output.gain.value>.001,null,{timeout:60000});
+await p.evaluate(()=>a.setMenuAudioMode('ambient'));await p.waitForFunction(()=>a.hangarAmbience.active&&!a.hangarAmbience.audio.paused&&a.musicAudio.paused&&a.hangarAmbience.output.gain.value>.001,null,{timeout:60000});
 await p.setViewportSize({width:1280,height:720});const layouts=[];
 for(const language of ['en','de','zh-CN','ru','es','pt-BR','ko','ja']){
  await p.evaluate(language=>window.__novaI18n.setLanguagePreference(language),language);await p.evaluate(()=>{window.__game.scenes.menu.openSettingsOverlay();window.__game.scenes.menu.settingsOverlay.setActiveSettingsPage('audio');});await p.waitForTimeout(300);

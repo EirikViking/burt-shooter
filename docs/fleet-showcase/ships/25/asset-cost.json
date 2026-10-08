@@ -1,0 +1,62 @@
+{
+  "id": 25,
+  "name": "Arcade Legend",
+  "architecture": "siege",
+  "baselineDesign": [
+    "Arcade Legend",
+    1.2,
+    1.34,
+    1.03,
+    1.32,
+    "siege",
+    [
+      [
+        0.29,
+        0.78,
+        -1.29,
+        0.24
+      ],
+      [
+        0.8,
+        1.01,
+        -1.34,
+        0.26
+      ],
+      [
+        1.42,
+        0.92,
+        -1.2,
+        0.17
+      ],
+      [
+        1.66,
+        0.54,
+        -0.82,
+        0.055
+      ]
+    ]
+  ],
+  "palette": [
+    "322e29",
+    "bd211b",
+    "ff2713"
+  ],
+  "textureSize": 1536,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false,
+  "bytes": 22660920,
+  "triangles": 198760,
+  "materials": [
+    "Graphite structural composite",
+    "Off-white aerospace polyurethane",
+    "Brushed titanium fittings",
+    "Seals and cabin upholstery",
+    "Dim ion throat and instrument phosphor",
+    "Laminated cockpit glazing",
+    "Cobalt blue painted alloy",
+    "Sooted nozzle liner",
+    "Heat-oxidised exhaust alloy"
+  ],
+  "images": 5,
+  "repaired": 0
+}

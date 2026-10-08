@@ -43,7 +43,7 @@ export function createRunPolicy({
   }
 
   const ranked = isRankedRunMode(mode, { isDebugRun });
-  const allowGlobalLeaderboardSubmission = canRunModeSubmitGlobalLeaderboard(mode, { isDebugRun });
+  const allowGlobalLeaderboardSubmission = canRunModeSubmitGlobalLeaderboard(runMode, { isDebugRun });
   const allowLocalLeaderboardSubmission = ranked && profile.submitsLocalLeaderboard === true;
   const allowCareerProgress = canRunModeUpdateCareerProgress(mode, { isDebugRun });
   const allowPersonalBests = canRunModeUpdateCompetitiveCareerBests(mode, { isDebugRun });

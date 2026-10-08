@@ -13,6 +13,24 @@ const CHATTER_PREFIXES = Object.freeze([
   'one_more_run_'
 ]);
 
+// Only actionable in-flight callouts use the independent tactical announcer.
+// Keep this explicit: a new flavor line must not become audible with Voice off.
+const TACTICAL_WARNING_EVENTS = new Set([
+  'mission_control_reinforcements_incoming',
+  'boss_mayhem_super_storm_warning',
+  'mission_control_boss_inbound',
+  'mission_control_life_low',
+  'mission_control_hijacker',
+  'mission_control_tractor_hijack',
+  'mission_control_row_core',
+  'boss_rare_chaos_visitor_warning'
+]);
+
+export function isTacticalWarningVoiceEvent(eventName) {
+  const id = String(eventName || '').trim();
+  return TACTICAL_WARNING_EVENTS.has(id) || id.startsWith('mystery_arrival_');
+}
+
 export function normalizeChatterFrequency(value, fallback = 'full') {
   const normalized = String(value || '').trim().toLowerCase();
   return CHATTER_FREQUENCY_OPTIONS.includes(normalized)
@@ -33,6 +51,7 @@ export function classifyVoiceEvent(eventName) {
     category: chatter ? 'chatter' : 'critical',
     critical: !chatter,
     chatter,
+    tacticalWarning: isTacticalWarningVoiceEvent(id),
     reason: chatter ? 'explicit_chatter_allowlist' : 'critical_by_default'
   };
 }

@@ -1,0 +1,9 @@
+[quote=Tyrian Mollusk]every snake segment that touched the phased ship was insta-killed[/quote]
+I reproduced that contact exploit. The current test build preserves snake health and normal damage credit when Phase or respawn protection carries the ship across its body. It does not add a phase-joust kill rule.
+
+[quote=Tyrian Mollusk]Still have never seen either of these pickups.[/quote]
+Vector Boost and Vampire Drain had fallen out of their random-drop pools. Their existing drops are restored in the test build, and the actual selection code passes the regression check.
+
+I also understand the distinction in your defense-upgrade feedback: a pickup can work correctly while being a weak Tactical choice, and Point Defense can remove opportunities for Rift Shards and grazing. I have not changed those interactions or added low-score-triggered assistance. That needs a separate comparison of useful choices, survival and scoring opportunities.
+
+Starting with Phase Wake/Reactor is also an opening-balance change, so I have left the three first-level Onslaught selections intact while checking it. The earlier display and Graze Break improvements you confirmed are preserved. These test-build fixes are not on the public/default branch yet.

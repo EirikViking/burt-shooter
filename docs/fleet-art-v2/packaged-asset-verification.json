@@ -1,0 +1,760 @@
+{
+  "archive": "release/desktop/win-unpacked/resources/app.asar",
+  "version": {
+    "version": "v2026-09-09_17-00-12",
+    "timestamp": "2026-09-09T15:00:12.113Z"
+  },
+  "assets": [
+    {
+      "path": "art/solid-fleet-20260908/01.glb",
+      "bytes": 1856220,
+      "sha256": "d2b448441a35b24c67471c86ef493fb001e0536e9e2e91d880e9047d83c6e147"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/01.png",
+      "bytes": 189532,
+      "sha256": "d07c8c86ad1d82218df654f6629004e60b953258cbdaf9c9cb49649276e185f5"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/01.png",
+      "bytes": 651725,
+      "sha256": "07ef74c60d286cf48abd5b8e91bc0620c467ee71200a58598f0a592c4c4ceae4"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/01.webp",
+      "bytes": 204616,
+      "sha256": "cd7b82e2cf09202f3a751b54a970426bda1821c74e76e607e72dad9531054614"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/01.json",
+      "bytes": 179,
+      "sha256": "642c109b9bbd68d0e11d555b667eb1903e1a53349efd5c7979a383738c8ba26d"
+    },
+    {
+      "path": "art/solid-fleet-20260908/02.glb",
+      "bytes": 1729664,
+      "sha256": "6dbd16ca122c4858b509574548037c9002d8cb08805a1d0b4565a7c87312a9eb"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/02.png",
+      "bytes": 191541,
+      "sha256": "9a7c127acf1b30564458db5fb3dc3daf084883ba2ca2d348a6b86d6c151667d5"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/02.png",
+      "bytes": 657856,
+      "sha256": "38be0940d063d7563b10685fb0113439803732ae99a385eaa1c85b72ed401aef"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/02.webp",
+      "bytes": 204768,
+      "sha256": "6d325b7368f9e3cad410bb2acdd029830d7d79d21c331d5bc93fb8ffa62c413c"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/02.json",
+      "bytes": 179,
+      "sha256": "0cad7723240934b66b1f58b7272b19e67ac2dce142f9fc8748f4d370a643988d"
+    },
+    {
+      "path": "art/solid-fleet-20260908/03.glb",
+      "bytes": 1667036,
+      "sha256": "7c8a96ebf656eb083a7f777fd678011ef3bb79de1ec8006c75d044f694518f5c"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/03.png",
+      "bytes": 155057,
+      "sha256": "ba920172cd4ec4c1eac059f96c2a8eea5103f7b3dd3fc7947429a1c02cce1955"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/03.png",
+      "bytes": 529013,
+      "sha256": "dd2f2d3b60af3ec3c64a829ef5b4d1d8e0902891eb9d1927d305b9777d46a3c8"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/03.webp",
+      "bytes": 126516,
+      "sha256": "a50f1f1c9c923c92edd08de971007e93900b74909ec56d38e8a5ec9e5772a5dd"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/03.json",
+      "bytes": 179,
+      "sha256": "44a8589eec1f930e2dd8f9f285d0afbdcfff76f4c0d2b3a35dc31b6d6a01cd5c"
+    },
+    {
+      "path": "art/solid-fleet-20260908/04.glb",
+      "bytes": 1634588,
+      "sha256": "e7ffa95cb2c0d2478298ee7ea07efbc25e9b253b33b680091773c416447f33de"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/04.png",
+      "bytes": 189858,
+      "sha256": "1d82fbe25a8ea44a89584bfd59133acd8c6ebf3ea804d2280c322723eeb1dafc"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/04.png",
+      "bytes": 634751,
+      "sha256": "eb6c53846862ff94647c4b987587776b040e4e1069fb6fc620f3722b0268aaf0"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/04.webp",
+      "bytes": 202666,
+      "sha256": "8a7e7eff0bf61b885bec414db4dc2e213d38450608de7353c8e2f557aa84905f"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/04.json",
+      "bytes": 181,
+      "sha256": "2a80d0d91f352b722176455a6892678c6dcef8fc2a0903045da4b29fec5339c3"
+    },
+    {
+      "path": "art/solid-fleet-20260908/05.glb",
+      "bytes": 1681744,
+      "sha256": "9b12cc676594b9cc287e48e84aa9dcba60745c8ae1a68f69d951d1ab11456240"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/05.png",
+      "bytes": 246084,
+      "sha256": "c3b51c9a09c6f7b8838d6e383079695e8dc47da51bb62bc06c1327c452a1bb63"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/05.png",
+      "bytes": 832348,
+      "sha256": "62052a08ed8623783fbcf1406f1c1ca05758228452b76b62c0e24059d7d7fbdd"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/05.webp",
+      "bytes": 330502,
+      "sha256": "cb927faa276d899297d20edc1c0dbcf3d98c5b7d5d37cc7268d107e387f95f04"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/05.json",
+      "bytes": 177,
+      "sha256": "25431bad08c039e58c76c36920f19ac9b14924454f802f181cf1fb3c1ec92563"
+    },
+    {
+      "path": "art/solid-fleet-20260908/06.glb",
+      "bytes": 1809476,
+      "sha256": "3bc95290bedf590eed6c81a1ce4b5f63741fc211bef4f6f447be169e8e677e38"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/06.png",
+      "bytes": 225652,
+      "sha256": "38cce1e5468f1e8de78d047100313fa31634da4280b448b2d6d151a9d4aed1fd"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/06.png",
+      "bytes": 746528,
+      "sha256": "301e7622fe57760c8d1140f1e2deff51dbfea4c1d3eabc1fade99d7261a2db97"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/06.webp",
+      "bytes": 258924,
+      "sha256": "c8682871a39258e47748287c991791fd83ae5b53f01af73425d0275afb89e57f"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/06.json",
+      "bytes": 181,
+      "sha256": "0d9928a32528a8e7d8648a36bd3a6a70b01d875b05cf2fad845b26201a7c76aa"
+    },
+    {
+      "path": "art/solid-fleet-20260908/07.glb",
+      "bytes": 1653280,
+      "sha256": "028e6e667c98ae9f3ea1778e8d7c64f072aee5b91ff8ccb998e56650b53e0394"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/07.png",
+      "bytes": 176993,
+      "sha256": "9020233d2f04b53922e0c6b33397b433cd19e969b9ab3a1ae4cff730c0fef324"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/07.png",
+      "bytes": 602320,
+      "sha256": "9103b482849bb8ae924b805ca00b08fea2cf8d993477cfbf5346ed393e37ab50"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/07.webp",
+      "bytes": 194576,
+      "sha256": "aa8496e79359be7aa9fd84dd36c0d09a3a5b79dcce11eef12ce03c37791e0ee4"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/07.json",
+      "bytes": 181,
+      "sha256": "cb232a403fd43646f26f10cfc3e04f76dcfc6a29f5fe4e07d8fe4fcd5553cea5"
+    },
+    {
+      "path": "art/solid-fleet-20260908/08.glb",
+      "bytes": 1675460,
+      "sha256": "dbb21c38a3341736060409e2f10d00e4e320b1ae578078d86a6d59cb2634e387"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/08.png",
+      "bytes": 176755,
+      "sha256": "6f192a77d8556078989fc4baf2b820e270d22ca3307583b0789a7f3d9846ee65"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/08.png",
+      "bytes": 608477,
+      "sha256": "58eb134ca629e32f68b67ca4af6d1d66d57aa7aab7755234877f64e0a7c0f99b"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/08.webp",
+      "bytes": 175340,
+      "sha256": "da61e757fbf1ed52a96cd17ab7a9d0d5e8529e5777ae0a0d8b98ca4f0171690c"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/08.json",
+      "bytes": 179,
+      "sha256": "7b41ed7d171b2aeebedb525ac2f52509751bf500621322d01a7adaa95f0647e7"
+    },
+    {
+      "path": "art/solid-fleet-20260908/09.glb",
+      "bytes": 1659128,
+      "sha256": "65ba714b2e381bffd4b79e677d1efee4a3a0dd8d84c1036a570b5f8a61384151"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/09.png",
+      "bytes": 193690,
+      "sha256": "21d84d96eeb8782666c65ea1ddbc186f08b2cd5f48b64adfcc5932c30a436cdf"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/09.png",
+      "bytes": 640945,
+      "sha256": "32b779ab8e5d71aa07cb3cbb0ff993527cef6fc58d15e3a6cccb5d0be32ae3e5"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/09.webp",
+      "bytes": 215110,
+      "sha256": "a034b0adb133192d7ef1d47c8976cff2a98376a60886a660af1454ca7fcc3743"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/09.json",
+      "bytes": 179,
+      "sha256": "4af3bda5bf89a87e0319f089f9e194bc6876152259cba529fe6bf8e774037944"
+    },
+    {
+      "path": "art/solid-fleet-20260908/10.glb",
+      "bytes": 1686196,
+      "sha256": "b35576df7f483703324caa36d7ac56583a92ea7bf8fa6f65cadd1d1e16e26acd"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/10.png",
+      "bytes": 198379,
+      "sha256": "5e1d36e21c4de210727dda81671e9a74d18d3e0c7585971c442cb750de17665b"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/10.png",
+      "bytes": 670217,
+      "sha256": "533e1bfdbe01ee93303fb7d7cc314b7f9b290a44c716c41c804be657ba6b6795"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/10.webp",
+      "bytes": 226794,
+      "sha256": "0da8765d5ed5277b99dcfc2c55c6ba0b362a5e14fc72319660a2fc7285b4ed25"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/10.json",
+      "bytes": 181,
+      "sha256": "6e3f70d53d06c045725edc843faf21a409e19e67a49b8e2020c7d347b843b926"
+    },
+    {
+      "path": "art/solid-fleet-20260908/11.glb",
+      "bytes": 1674936,
+      "sha256": "4f931c13b5ca675c37bf46803b71f5765703a31000495269db88da075d95f2c6"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/11.png",
+      "bytes": 197386,
+      "sha256": "da32caf72b1641c103029f5915ab3adb5b455cf1f1698e8e4fb99c80e427953c"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/11.png",
+      "bytes": 677857,
+      "sha256": "f4811e2d5cba2b780cadbd4f16f060439cbbae036f4cc0602c15d972b4f65232"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/11.webp",
+      "bytes": 217458,
+      "sha256": "974aa3a0115a1e3ff52a71f1024efce88fe33411393c960622e5b10ac49fc23d"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/11.json",
+      "bytes": 179,
+      "sha256": "2408cefa6df8c626dcc7b2fb79d2e10e8640340e5dfec3bbf831f4dba8bfb448"
+    },
+    {
+      "path": "art/solid-fleet-20260908/12.glb",
+      "bytes": 1630816,
+      "sha256": "c598fc1cf8bc0ce2fd00ff1ed0d2e7319d7d408e9968e18be1160e7200a22e4f"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/12.png",
+      "bytes": 201140,
+      "sha256": "42ff7ef53444b34f43f9f2a0c10807f0c9d117c5f57e286248438b73c1e33f8a"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/12.png",
+      "bytes": 671064,
+      "sha256": "db1f424fc0251888be3fdb7b405b0836cd9804a1df6a2d96a81e4da98d2ceb3a"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/12.webp",
+      "bytes": 222060,
+      "sha256": "62f228eb78fd6ca6489cd2966a719d96e0fdc6eefbc67d1dec5c948297c3ada7"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/12.json",
+      "bytes": 179,
+      "sha256": "097fe3270f5ffbcb160de1884486271edf44e1310dc43da893e9c4044d85cbc5"
+    },
+    {
+      "path": "art/solid-fleet-20260908/13.glb",
+      "bytes": 1679188,
+      "sha256": "8b6699e2c4e0eeeacb9fad23f581d33da91cc1cd116e50cedbaa0386e487c6fd"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/13.png",
+      "bytes": 203219,
+      "sha256": "230a2774b583027ddfd725cd9ef474cd1ec374c97ff8de218eee0a30dd054b55"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/13.png",
+      "bytes": 694901,
+      "sha256": "7cf783cfddbc4c2c78898be58bc4f1a4b1b7eebd4aaa6c9188fe3fe8ac0f4f8b"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/13.webp",
+      "bytes": 232204,
+      "sha256": "01f8b0a9597d54f39b3b9c690df1b9cafc079e61e9d1d06e58f81a6394fd7ed9"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/13.json",
+      "bytes": 180,
+      "sha256": "2949394d49718de0260785f968f666139ea1516e35be35dcfac848d8291769df"
+    },
+    {
+      "path": "art/solid-fleet-20260908/14.glb",
+      "bytes": 1653132,
+      "sha256": "d9bad2ba070d866b3afaa1d3e49b824008f671ff4f665b629be54b1ecfdf467e"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/14.png",
+      "bytes": 198823,
+      "sha256": "da7aa36b5d6c6dd07d0bac898f54ccccfaf9b3bcb7009cb6142e53b33ee079ba"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/14.png",
+      "bytes": 683508,
+      "sha256": "4be32044f27cdca17ba47a8559de2884a14e0f102ed8b566f023acd35b16001f"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/14.webp",
+      "bytes": 234968,
+      "sha256": "88e05cd4c3392db1ff70b3489598f802899ddd2a5a08de13ade1ab1b0676a4a9"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/14.json",
+      "bytes": 179,
+      "sha256": "c2c228dc8f87f1b07cc6e6f703993e618350b93c8ac7e17511411bf86239ba79"
+    },
+    {
+      "path": "art/solid-fleet-20260908/15.glb",
+      "bytes": 1665368,
+      "sha256": "9a61abf36a7b5d7aa3099a1c24c131e9fb79c08ee0409484b29229090400591b"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/15.png",
+      "bytes": 160377,
+      "sha256": "369605c371a3c9d5742b1d39b837117372c99d353538fbbe5fc7cec14ddc56e4"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/15.png",
+      "bytes": 548528,
+      "sha256": "d4187449377212d13ecc7114d81dedce7fdb36b9351b7d62f2b62f720f37dfc4"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/15.webp",
+      "bytes": 135266,
+      "sha256": "59292e082311e24a17412cdea1691cefe2b5eb4735976898cc7e3de6480e1f35"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/15.json",
+      "bytes": 179,
+      "sha256": "1129d09b12942f0b09f81ad57f4995a23d5378900bc1a57b6cf2a992bfbfdfc5"
+    },
+    {
+      "path": "art/solid-fleet-20260908/16.glb",
+      "bytes": 1635348,
+      "sha256": "4f66e3fb6f7615dec68f2bdb36379fde543e57229f1b35bdc19937cc3f6d39f7"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/16.png",
+      "bytes": 183400,
+      "sha256": "34c000ce37dbe93032415615f6bded36d490805b4ea9c7494c1819a6be2e94d7"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/16.png",
+      "bytes": 627072,
+      "sha256": "eb8b9cc6749f1d50cd5d9d4138116101a0c0531571d16c91390f1b4a41940fe0"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/16.webp",
+      "bytes": 184358,
+      "sha256": "36b1e60e5bbf660e02c90c39e28f7bf9667ead3a1cf9342647471fc49659649d"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/16.json",
+      "bytes": 179,
+      "sha256": "3d37a1f38d10e0de5699e9cfbc80624948d21607ee0193ef233e67d9023fe2a9"
+    },
+    {
+      "path": "art/solid-fleet-20260908/17.glb",
+      "bytes": 1676076,
+      "sha256": "be11e0339307f31d0264e513651d35f6deea3b354ddccffcefbfbec06b4270d5"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/17.png",
+      "bytes": 225751,
+      "sha256": "7ec77979000eee2e879aeb994f846a2048a8fcf83faa824a9e32eca0cbd48e93"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/17.png",
+      "bytes": 762640,
+      "sha256": "dc2e3f1f0115234ae316afe2b993d16774af7ea91c55b21dcbee31083dd8a40d"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/17.webp",
+      "bytes": 286078,
+      "sha256": "b982c18c355a6890b1b1dbff48a64625de338dc41a7d1135586faf48b0fa859e"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/17.json",
+      "bytes": 179,
+      "sha256": "d34051c43b631997ad747ed29ac0bd92cf226e731a4088f686759e5a2381072e"
+    },
+    {
+      "path": "art/solid-fleet-20260908/18.glb",
+      "bytes": 1833380,
+      "sha256": "d668d2505f69c69a601ba4d03bd6edf4ed0068dfafb089578a2bb162f432397d"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/18.png",
+      "bytes": 195738,
+      "sha256": "9c48aee030ea4e31e7270b045f9ad6c34b31111cf8c6ab08cd3fad5c705bf79f"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/18.png",
+      "bytes": 677752,
+      "sha256": "69d03d3a672eca8d5aafc887125ae707b3710dda659bd8e79de7e8c8806e2b0f"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/18.webp",
+      "bytes": 224842,
+      "sha256": "07aad4f19b0246730682048441007928b2eb4840d61c862bfaf56f34189f4029"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/18.json",
+      "bytes": 343,
+      "sha256": "b9527a8e2bfb32cb0e009d3df1b64a8286b7132784a3ae5ca439c5163f96900e"
+    },
+    {
+      "path": "art/solid-fleet-20260908/19.glb",
+      "bytes": 1664316,
+      "sha256": "3109ee130da2c62b8d9c5f51894733d24f53775b5939070b2cc96f5ae8517531"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/19.png",
+      "bytes": 207310,
+      "sha256": "f2e5f09fccee15ebd0765f6627618e07780f28c6de4641624524275447035cea"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/19.png",
+      "bytes": 698689,
+      "sha256": "a13e6e756806832d37bfc70cda5dd944297e91db7a71b2ae3e818455198299b9"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/19.webp",
+      "bytes": 229544,
+      "sha256": "5a04f064b4f7caf8fc34a4c196832cb8870b4dfbede2502f3ebff1d0988d59eb"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/19.json",
+      "bytes": 178,
+      "sha256": "e54afb5f2eb48546576412daad7e0ad77ab3a2613dd540e916e2d54e7a9038da"
+    },
+    {
+      "path": "art/solid-fleet-20260908/20.glb",
+      "bytes": 1687836,
+      "sha256": "351b80a55faf57bf6b41523f27b2474519eec75b35d6cd0b3af4766a50112746"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/20.png",
+      "bytes": 155798,
+      "sha256": "2b851f5d4902eb234440b1175d632a288bae4bef263a2cd857565fb2b94d2b47"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/20.png",
+      "bytes": 535549,
+      "sha256": "5072bdb709879cf51a9e56b7f71f692c13fc258690d345c7cdb3a2d67102811d"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/20.webp",
+      "bytes": 128522,
+      "sha256": "5d294f694a06f867ff127f76b3af544057aadaf84aa4675a828285ee5d89d3f7"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/20.json",
+      "bytes": 177,
+      "sha256": "2a03d7532dbd596546791cdd92bdbf2916221ceefc94d4a2a3aa5bd25f949a18"
+    },
+    {
+      "path": "art/solid-fleet-20260908/21.glb",
+      "bytes": 1687632,
+      "sha256": "1495f82c36122b076fbbd9ed304890f3345643f37121f299cd02c6fdc45ca42f"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/21.png",
+      "bytes": 161629,
+      "sha256": "178ac242454b6f4c4fc8cae06729626bab0ec5e664e5612bcf3507c363ba6c74"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/21.png",
+      "bytes": 554852,
+      "sha256": "961a247b930db7bfafc708bb0acde13b1bf010ea4f03a3b1057afb3ffadd3460"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/21.webp",
+      "bytes": 136960,
+      "sha256": "6f450424f70efe4a0616974cf3a7fda350aeaa9510333ad33ca9c28a105a60ec"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/21.json",
+      "bytes": 179,
+      "sha256": "3e40a3d7a4e63e86aa5cdd4587e8de3eb0655f5e44b6426927ebbef7ffa3d769"
+    },
+    {
+      "path": "art/solid-fleet-20260908/22.glb",
+      "bytes": 1664488,
+      "sha256": "8ba3d1ce583f7bac6ab3c9ffec92eeebec2a29d39318cf5ea845941e4bc4e47c"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/22.png",
+      "bytes": 191668,
+      "sha256": "9196cbc17c887d0ed6616588cc4dd6d9275303070af542cd579d56f9e540decf"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/22.png",
+      "bytes": 650003,
+      "sha256": "435932e896335c9ff79a4b66ebd9e38412912b6766f6161ca7db4dcc0a04d45d"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/22.webp",
+      "bytes": 214258,
+      "sha256": "57ddc7121cea9cc4ab416982dd2bc6d235c8feadd9c062a52ac38ec92eb29596"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/22.json",
+      "bytes": 181,
+      "sha256": "01a461c0ef55f3eb270c7cbd4de168dcc63186e821520d7a4eaf928c7b153d72"
+    },
+    {
+      "path": "art/solid-fleet-20260908/23.glb",
+      "bytes": 1686664,
+      "sha256": "bc03b08965d77d034fdc311a8b5a8b8584f0aab98f79c276d2044a7062b71fbd"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/23.png",
+      "bytes": 217886,
+      "sha256": "1accebf6ee5a11fc28fc4adbb5e22e7ca98d09cf0de1d3234b7b7e2fe65bf943"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/23.png",
+      "bytes": 751452,
+      "sha256": "17c609a005feda3d66e79551fd2f2114a8beb9833c7a288a4d122c899587b434"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/23.webp",
+      "bytes": 267790,
+      "sha256": "72bc6a148c28bf5057dff081fcd815b0ddbbcd33ca943421f9995a71fec8f6ac"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/23.json",
+      "bytes": 179,
+      "sha256": "e1c0938b433eaa8fe24431f9a31df0c1c6223edc360e40d845692fa38a75bbdc"
+    },
+    {
+      "path": "art/solid-fleet-20260908/24.glb",
+      "bytes": 1672444,
+      "sha256": "873e16b82b2179b8d2a4853d5089c2621a788f499ca2b46a8b061bbcbd879c82"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/24.png",
+      "bytes": 191454,
+      "sha256": "726ba75720094b498a74ad46c53f2339bf82bd27d5f6dd905728ad8815bb0314"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/24.png",
+      "bytes": 646897,
+      "sha256": "ee484372f3447423c64628b3aa157dc640995f291c57926b01630bbeb2b06c2a"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/24.webp",
+      "bytes": 203890,
+      "sha256": "f8e97be364ba9dd89442aa4f8e8e3b7b2c74cc14e53ed9393d0392420e5d60fc"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/24.json",
+      "bytes": 177,
+      "sha256": "fc85060a35faf84f88c3ce19942c869fd37832a891269e155b5615143ee3c758"
+    },
+    {
+      "path": "art/solid-fleet-20260908/25.glb",
+      "bytes": 1706996,
+      "sha256": "e61f6d38e108bd56659259b40e7aff18cd54b86684fa84374c6dfff64589d48b"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/25.png",
+      "bytes": 215655,
+      "sha256": "76b59a67263b19148189f88eb3a3ed7a7d914fcd7beda51b7f023bd37d2d5b70"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/25.png",
+      "bytes": 729122,
+      "sha256": "c52cc8583b24751f9bc53e4c7d4dabbf11ecee1bd5ebb5a30d66c579b8aaef11"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/25.webp",
+      "bytes": 269144,
+      "sha256": "760183754ebc3d7398d418216cb43e01a0a79e14e195a8888a838b9f340cc98a"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/25.json",
+      "bytes": 181,
+      "sha256": "5eb8b6438175c5cd06a007a46702a36fcaf457d5ca8af09028bd8f0c80a7826e"
+    },
+    {
+      "path": "art/solid-fleet-20260908/26.glb",
+      "bytes": 1756304,
+      "sha256": "32f09e854edd24e1160e128a165fe41f93eb0fb59d3dab5a3f6b97c8543f3a09"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/26.png",
+      "bytes": 192830,
+      "sha256": "061d9c96f95547d8db15ac2a0edc65759ab2d5c1ca7dded295d76b58de49186e"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/26.png",
+      "bytes": 662248,
+      "sha256": "6e1facec803a14d45f780179e3fe39d1c1925d67b41edbfb4728573175f01c13"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/26.webp",
+      "bytes": 223442,
+      "sha256": "b528f68ce3b6002a63294577a6a6e97d8d7a0dfd6761268cf5c3b3d9f2aa9480"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/26.json",
+      "bytes": 179,
+      "sha256": "60b1728f46820517b84af4c589e5ef5e4bd90bad34a2f8acf66c5ab884d1ec21"
+    },
+    {
+      "path": "art/solid-fleet-20260908/27.glb",
+      "bytes": 1716720,
+      "sha256": "151e6b831926a748cdefcf5d759c6d59ecf9c3f4e62f9c6706b59969bd8983d0"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/27.png",
+      "bytes": 205092,
+      "sha256": "c9c73958f7a7150c28de630a4025a0df2c2948e7da8f0a333ea534888f890adb"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/27.png",
+      "bytes": 689146,
+      "sha256": "633707f4d266aba3538a8a6cbe4f01e560f7a3f20b801930dccd56ef8fb08c28"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/27.webp",
+      "bytes": 233018,
+      "sha256": "efe41d9409dd470ca767c1f463555b69bcea07bf607a8957d548ad8a90e9459f"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/27.json",
+      "bytes": 179,
+      "sha256": "cdd65c9055a676cb68c0d10077ceef1dc37e2defb6b3085de16d1e2363c2949a"
+    },
+    {
+      "path": "art/solid-fleet-20260908/28.glb",
+      "bytes": 1817344,
+      "sha256": "b6fbb95bdfd65f39d43cf63c0d55fb6f00ce54256350080f41dafbc2450ab552"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/28.png",
+      "bytes": 222274,
+      "sha256": "21ed707f31c7f42361fc658a04f153e7a191e776ce1c2bbc5197b1397fbe8e82"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/28.png",
+      "bytes": 739346,
+      "sha256": "5f35f7f8759a2a502e842f131fa6b071c369c9f54bbc2209831566ae3a065723"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/28.webp",
+      "bytes": 259712,
+      "sha256": "74339ddf7174fa8f92df58a5388e1dd617e956608bf99b1fdc8822863c53570f"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/28.json",
+      "bytes": 179,
+      "sha256": "7110a48225f518c93664f95b065dc8936818486fc2e36f430b6d6e37075f4eb9"
+    },
+    {
+      "path": "art/solid-fleet-20260908/29.glb",
+      "bytes": 1716956,
+      "sha256": "8b12fb7002044ef15a95886a3a1f96840cdb83322c48ec92d7ee68450979abf1"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/29.png",
+      "bytes": 182651,
+      "sha256": "646bffbd3f980ed072cfc31390087c4b62bbf3ae8af9699d3688cd59582e312e"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/29.png",
+      "bytes": 615010,
+      "sha256": "acddfbd690af3bd26d0745fb94d197305dce91f621164ce92786951a857ea56a"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/29.webp",
+      "bytes": 179008,
+      "sha256": "9754c57c37da2818b21e2f62c62b52f91af1057dfefc0355460d980cd4932b3a"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/29.json",
+      "bytes": 179,
+      "sha256": "e65c1cf163eded8efeb250981b02ed120f16878678b560ebe8a10dc7338b1595"
+    },
+    {
+      "path": "art/solid-fleet-20260908/30.glb",
+      "bytes": 1829028,
+      "sha256": "7b646ca8ffb423fa95078099f0df8f28c1b379cc2d5dfee3637b1e4462fafa07"
+    },
+    {
+      "path": "art/solid-fleet-20260908/player/30.png",
+      "bytes": 224649,
+      "sha256": "9b38c859a8abc262e729e46bfe9e6b3dea3de10cc1e52f64649651a500fe5f05"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/30.png",
+      "bytes": 755686,
+      "sha256": "c6a1d4a64af7b24b5066a4d9e6097258267d136842ca89d1ff4c9a92a2a02e49"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/30.webp",
+      "bytes": 281206,
+      "sha256": "2023781c82e77c1fb4b81ca5b92c9842951caa714a3b8b01b2a37923ddeccb36"
+    },
+    {
+      "path": "art/solid-fleet-20260908/showroom/30.json",
+      "bytes": 179,
+      "sha256": "77d43bb0199fe820b3d84cff3186cdef276afa530e435adfa3d1cad4eb1c72db"
+    }
+  ],
+  "all150FilesMatch": true
+}

@@ -26,26 +26,6 @@ export class EnemyOrbitRig extends PIXI.Container {
     const count = this.familyIndex === 2 ? 2 : 3;
     for(let j=0;j<count;j++) {
       const ring = new PIXI.Container();
-      const g = new PIXI.Graphics();
-      const radius = this.radius + j * 5;
-      const blades = [3,5,6,2,4,8][this.familyIndex];
-      for(let i=0;i<blades;i++) {
-        const a = i * Math.PI*2/blades;
-        const sweep = Math.PI*2/blades * [.62,.5,.25,.83,.3,.62][this.familyIndex];
-        const r = radius;
-        g.moveTo(Math.cos(a)*r,Math.sin(a)*r).arc(0,0,r,a,a+sweep)
-          .stroke({color:0x09131d,width:6.5,alpha:.94});
-        g.moveTo(Math.cos(a)*r,Math.sin(a)*r).arc(0,0,r,a,a+sweep)
-          .stroke({color:j%2?0x9bbacb:0x426079,width:3.8,alpha:.92});
-        g.moveTo(Math.cos(a)*r,Math.sin(a)*r).arc(0,0,r,a,a+sweep*.7)
-          .stroke({color:this.accent,width:1.7,alpha:.92});
-        const x=Math.cos(a+sweep)*r,y=Math.sin(a+sweep)*r;
-        const tip=this.familyIndex===1?12:this.familyIndex===4?9:5;
-        g.poly([x,y,x+Math.cos(a)*tip,y+Math.sin(a)*tip,x-Math.sin(a)*4,y+Math.cos(a)*4])
-          .fill({color:j%2?0xc2dce4:this.accent,alpha:.92});
-        g.circle(x,y,2.4).fill({color:0xffffff,alpha:.92});
-      }
-      ring.addChild(g);
       this.rings.push(ring);this.addChild(ring);
     }
     preloadEnemyOrbitMaterial().then(texture => {
@@ -56,17 +36,17 @@ export class EnemyOrbitRig extends PIXI.Container {
         armor.width=armor.height=(this.radius+i*5)*2.9;
         armor.tint=[0xd6f3ff,0xffd3ac,0xc9b7ff,0xffd98c,0xceffbe,0xaaffee][this.familyIndex];
         ring.addChildAt(armor,0);
-        // Existing arcs become tight internal energy tracks, framed by armor.
+        // The authored assembly is the entire visible ring; no wire overlay.
       }
     });
     const satellites = [3,5,4,2,6,8][this.familyIndex];
     for(let i=0;i<satellites;i++) {
-      const shard = new PIXI.Graphics();
-      const long = this.familyIndex === 1 ? 15 : this.familyIndex === 4 ? 12 : 7;
-      shard.poly([0,-long,5,0,0,long,-4,0]).fill({color:0x27465a,alpha:1})
-        .stroke({color:this.accent,width:1.8,alpha:.95});
-      shard.poly([0,-long,2,0,0,long,0,0]).fill({color:0xe7faff,alpha:.9});
-      shard.circle(0,0,2.5).fill({color:0xffffff,alpha:1});
+      const shard = new PIXI.Sprite(PIXI.Texture.EMPTY);shard.anchor.set(.5);
+      PIXI.Assets.load('/art/astra/component/03.png').then(texture=>{
+        if(shard.destroyed)return;
+        shard.texture=texture;shard.width=11;shard.height=this.familyIndex===1?25:18;
+        shard.tint=this.accent;
+      }).catch(()=>{});
       this.addChild(shard);this.satellites.push(shard);
     }
     this._debugOrbit = { family:this.family, layers:count, cachedGeometry:true, decorative:true };

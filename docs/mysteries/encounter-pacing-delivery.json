@@ -1,0 +1,283 @@
+{
+  "buildID": "25272660",
+  "appID": 4765070,
+  "depotID": 4765071,
+  "manifestID": "5407957262436884377",
+  "targetBranch": "sector-continue-test",
+  "sourceBranch": "codex/discovery-encounter-pacing-20260912",
+  "baseline": "0e7a2ae",
+  "runtimeCommit": "bf0f741",
+  "buildStamp": "v2026-09-12_17-13-12",
+  "branches": {
+    "before": {
+      "public": "25237042",
+      "sector-continue-test": "25271583",
+      "test-build": "23782673"
+    },
+    "after": {
+      "public": "25237042",
+      "sector-continue-test": "25272660",
+      "test-build": "23782673"
+    }
+  },
+  "package": {
+    "runtimeCommit": "bf0f741",
+    "root": "E:/Codex/builds/nova-swarm/encounter-pacing/package",
+    "payload": "E:/Codex/builds/nova-swarm/encounter-pacing/package/win-unpacked",
+    "baseline": "E:/Codex/builds/nova-swarm/mystery-v2/package/win-unpacked",
+    "retained": 15401,
+    "playerAssets": 64,
+    "changed": [
+      "dist/index.html",
+      "dist/assets/index-d1rBsAlU.css",
+      "dist/assets/index-BVw31Am7.js",
+      "dist/assets/vendor-pixi-Kn5eMiJA.js",
+      "dist/assets/vendor-BkbZGUfW.js",
+      "dist/version.json",
+      "dist/sw.js"
+    ],
+    "bytes": 2310936149
+  },
+  "nativePerformance": {
+    "environment": {
+      "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "width": 1920,
+      "height": 1080,
+      "runtime": {
+        "appIsPackaged": true,
+        "defaultApp": false,
+        "executable": "E:\\Codex\\builds\\nova-swarm\\encounter-pacing\\package\\win-unpacked\\Nova Swarm.exe",
+        "cwd": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822",
+        "currentGameLanguage": null,
+        "steamLanguage": null,
+        "appLocale": "nb",
+        "systemLocale": "nb-NO",
+        "launchedBySteamHint": false,
+        "steamEnv": {
+          "SteamAppId": null,
+          "SteamGameId": null,
+          "SteamOverlayGameId": null,
+          "SteamLanguage": null,
+          "STEAM_LANGUAGE": null
+        },
+        "freshProfile": true,
+        "bossEncounterTest": "mystery:all",
+        "steamIntegrationIsolated": true,
+        "achievements": {
+          "available": false,
+          "reason": "fresh_profile_isolated",
+          "isolated": true,
+          "freshProfile": true,
+          "surface": "achievements",
+          "appId": null,
+          "sdkPathConfigured": false,
+          "nativeModuleLoaded": false
+        }
+      },
+      "profile": {
+        "type": "local",
+        "id": "fresh-test-profile",
+        "steamId": null,
+        "personaName": null,
+        "reason": "explicit_fresh_profile_test"
+      },
+      "mode": "unranked"
+    },
+    "mode": "Native 1080p performance fixtures: QA invulnerability, no outgoing fire, ordinary companion waves. Ten-second RAF samples after 2.5 seconds warmup; no build or parallel capture.",
+    "rows": [
+      {
+        "id": "glass_widow",
+        "attacks": 13,
+        "age": 12.550233333333352,
+        "frames": 600,
+        "meanMs": 16.667,
+        "p95Ms": 17.19999999999709,
+        "maxMs": 17.599999999998545,
+        "above33Ms": 0,
+        "ordinary": 17,
+        "bullets": 68,
+        "audio": {
+          "cached": 1,
+          "voices": 1,
+          "bytes": 3532800
+        },
+        "arrival": {
+          "voice": {
+            "url": "nova-swarm://app/audio/voice/mysteries-v2/glass_widow.mp3?v=v2026-09-12_17-13-12",
+            "others": [],
+            "at": 7225.5,
+            "played": true,
+            "ended": 10563.70000000298
+          },
+          "at": 10606.40000000596,
+          "age": 0.033600000000000366
+        }
+      },
+      {
+        "id": "rail_cathedral",
+        "attacks": 21,
+        "age": 12.550400000000021,
+        "frames": 600,
+        "meanMs": 16.66700000000001,
+        "p95Ms": 17.19999999999709,
+        "maxMs": 17.599999999998545,
+        "above33Ms": 0,
+        "ordinary": 17,
+        "bullets": 56,
+        "audio": {
+          "cached": 2,
+          "voices": 2,
+          "bytes": 7065600
+        },
+        "arrival": {
+          "voice": {
+            "url": "nova-swarm://app/audio/voice/mysteries-v2/rail_cathedral.mp3?v=v2026-09-12_17-13-12",
+            "others": [],
+            "at": 23824.70000000298,
+            "played": true,
+            "ended": 27263.30000000447
+          },
+          "at": 27289,
+          "age": 0.0165
+        }
+      },
+      {
+        "id": "choir_unbound",
+        "attacks": 12,
+        "age": 12.549700000000009,
+        "frames": 600,
+        "meanMs": 16.666666666666668,
+        "p95Ms": 17.099999999998545,
+        "maxMs": 17.5,
+        "above33Ms": 0,
+        "ordinary": 17,
+        "bullets": 61,
+        "audio": {
+          "cached": 3,
+          "voices": 1,
+          "bytes": 12748800
+        },
+        "arrival": {
+          "voice": {
+            "url": "nova-swarm://app/audio/voice/mysteries-v2/choir_unbound.mp3?v=v2026-09-12_17-13-12",
+            "others": [],
+            "at": 40474.60000000149,
+            "played": true,
+            "ended": 45081.20000000298
+          },
+          "at": 45107.20000000298,
+          "age": 0.016200000000004364
+        }
+      }
+    ],
+    "errors": []
+  },
+  "scoreRuntime": {
+    "result": {
+      "earned": 15340,
+      "receipt": {
+        "sector": 20,
+        "seconds": 40.00000000000057,
+        "engagedSeconds": 20.000000000000284,
+        "referenceRate": 599.9999999999995,
+        "compensation": 11940,
+        "totalEarned": 15340,
+        "progress": 1,
+        "enemies": [
+          "needle_saint"
+        ]
+      }
+    },
+    "errors": []
+  },
+  "filesChanged": [
+    "scripts/check-boss-encounter-balance.mjs",
+    "scripts/check-encounter-pacing-runtime.mjs",
+    "scripts/check-encounter-pacing.mjs",
+    "scripts/check-encounter-score-pacing.mjs",
+    "scripts/check-encounter-score-runtime.mjs",
+    "scripts/check-mystery-coexistence.mjs",
+    "scripts/check-mystery-policy.mjs",
+    "scripts/check-mystery-v2-desktop.mjs",
+    "scripts/check-mystery-v2.mjs",
+    "scripts/check-veilborn-codex.mjs",
+    "scripts/check-veilborn-durability.mjs",
+    "scripts/data/veilborn-codex-copy.json",
+    "scripts/package-encounter-pacing.mjs",
+    "scripts/update-veilborn-copy.mjs",
+    "scripts/vite-encounter-pacing.config.mjs",
+    "src/config/DiscoveryProgression.js",
+    "src/config/EncounterPacing.js",
+    "src/config/Mysteries.js",
+    "src/config/MysteryDurability.js",
+    "src/config/ThreatCodexCatalog.js",
+    "src/effects/MysteryEffects.js",
+    "src/entities/Boss.js",
+    "src/entities/mysteries/MysteryActor.js",
+    "src/entities/mysteries/MysteryCombat.js",
+    "src/entities/mysteries/createMysteryEncounter.js",
+    "src/game/Game.js",
+    "src/i18n/mysteries/de.json",
+    "src/i18n/mysteries/en.json",
+    "src/i18n/mysteries/es.json",
+    "src/i18n/mysteries/ja.json",
+    "src/i18n/mysteries/ko.json",
+    "src/i18n/mysteries/pt-BR.json",
+    "src/i18n/mysteries/ru.json",
+    "src/i18n/mysteries/zh-CN.json",
+    "src/i18n/mysteryText.js",
+    "src/managers/BossDiscoveryEncounter.js",
+    "src/managers/EncounterScorePacing.js",
+    "src/managers/EnemyManager.js",
+    "src/managers/MysteryEncounterDirector.js",
+    "src/scenes/PlayScene.js",
+    "src/scenes/ThreatCodexScene.js"
+  ],
+  "checks": [
+    "release-line",
+    "build:current",
+    "i18n and 8-language i18n-ui",
+    "controller-flow",
+    "steam-electron-bridge",
+    "56 combat/component/retreat/resource fixtures",
+    "mixed ordinary/snake/boss coexistence",
+    "56 ordered test identities",
+    "2000 seeded pacing runs",
+    "guest lifecycle and exposed cores",
+    "score pace and anti-farming",
+    "actual game scoring-path fixture",
+    "Codex discovery/defeat/8-locales/resource cleanup",
+    "native dual-boss and boss-snake using ordinary controls",
+    "native mixed-tour normal-input smoke",
+    "native announcement completion and no overlapping voices",
+    "all retained-file hashes",
+    "Steam branch before/after comparison"
+  ],
+  "cleanup": {
+    "status": "blocked",
+    "reason": "Automatic approval review rejected the removal command: blocked by policy. No removal command executed. No alternate deletion route attempted.",
+    "remaining": [
+      "E:\\Codex\\builds\\nova-swarm\\encounter-pacing\\package\\source",
+      "E:\\Codex\\builds\\nova-swarm\\encounter-pacing\\build-dist",
+      "E:\\Codex\\builds\\nova-swarm\\encounter-pacing\\all-mysteries",
+      "E:\\Codex\\builds\\nova-swarm\\encounter-pacing\\steam-output",
+      "E:\\Codex\\tmp\\encounter-pacing",
+      "E:\\dev-cache\\vite-nova-pacing"
+    ],
+    "remainingDisposableBytes": 2625655288.0,
+    "retained": "Current verified win-unpacked deliverable, current QA receipts/screenshots, and committed sources. Prior shared rollback build untouched."
+  },
+  "limits": [
+    "No full human balance playthrough or measured retention improvement.",
+    "Score rate protection was validated through controlled fixtures; exact human time to one million is not claimed.",
+    "Ten-second performance samples are bounded tests, not worst-case guarantees.",
+    "No new subjective audio listening review; original approved audio is retained."
+  ],
+  "steamworksSettingsChanged": false,
+  "publicBranchChanged": false,
+  "gitPushed": false,
+  "rollback": {
+    "source": "git revert bf0f741",
+    "previousPrivateBuild": "25271583"
+  }
+}

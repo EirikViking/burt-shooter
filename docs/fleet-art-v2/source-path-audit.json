@@ -1,0 +1,353 @@
+{
+  "status": "passed",
+  "rows": [
+    {
+      "id": 2,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\02\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\02\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\02\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\02\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\02\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 17,
+      "curveObjects": 27
+    },
+    {
+      "id": 3,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\03\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\03\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\03\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\03\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\03\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 4,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\04\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\04\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\04\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\04\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\04\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 13,
+      "curveObjects": 27
+    },
+    {
+      "id": 5,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\05\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\05\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\05\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\05\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\05\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 6,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\06\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\06\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\06\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\06\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\06\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 35
+    },
+    {
+      "id": 7,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\07\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\07\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\07\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\07\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\07\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 8,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\08\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\08\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\08\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\08\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\08\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 9,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\09\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\09\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\09\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\09\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\09\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 10,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\10\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\10\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\10\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\10\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\10\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 11,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\11\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\11\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\11\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\11\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\11\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 29
+    },
+    {
+      "id": 12,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\12\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\12\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\12\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\12\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\12\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 13,
+      "curveObjects": 27
+    },
+    {
+      "id": 13,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\13\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\13\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\13\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\13\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\13\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 29
+    },
+    {
+      "id": 14,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\14\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\14\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\14\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\14\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\14\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 15,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\15\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\15\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\15\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\15\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\15\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 16,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\16\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\16\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\16\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\16\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\16\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 13,
+      "curveObjects": 27
+    },
+    {
+      "id": 17,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\17\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\17\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\17\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\17\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\17\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 18,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\18\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\18\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\18\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\18\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\18\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 23,
+      "curveObjects": 51
+    },
+    {
+      "id": 19,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\19\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\19\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\19\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\19\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\19\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 20,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\20\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\20\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\20\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\20\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\20\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 21,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\21\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\21\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\21\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\21\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\21\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 29
+    },
+    {
+      "id": 22,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\22\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\22\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\22\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\22\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\22\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 23,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\23\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\23\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\23\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\23\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\23\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 24,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\24\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\24\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\24\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\24\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\24\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 29
+    },
+    {
+      "id": 25,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\25\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\25\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\25\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\25\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\25\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 17,
+      "curveObjects": 27
+    },
+    {
+      "id": 26,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\26\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\26\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\26\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\26\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\26\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 19,
+      "curveObjects": 27
+    },
+    {
+      "id": 27,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\27\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\27\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\27\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\27\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\27\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 27
+    },
+    {
+      "id": 28,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\28\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\28\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\28\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\28\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\28\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 15,
+      "curveObjects": 35
+    },
+    {
+      "id": 29,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\29\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\29\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\29\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\29\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\29\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 17,
+      "curveObjects": 31
+    },
+    {
+      "id": 30,
+      "source": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\30\\source.blend",
+      "texturePaths": [
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\30\\export\\textures\\cobalt-basecolor.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\30\\export\\textures\\paint-orm.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\30\\export\\textures\\panel-normal.png",
+        "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\fleet-art-v2\\ships\\30\\export\\textures\\white-basecolor.png"
+      ],
+      "meshObjects": 27,
+      "curveObjects": 33
+    }
+  ]
+}

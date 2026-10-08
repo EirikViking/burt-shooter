@@ -1,9 +1,14 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+contextBridge.exposeInMainWorld('__novaEncounterTest', Object.freeze({
+  getPreset: () => ipcRenderer.invoke('nova-encounter-test:getPreset')
+}));
+
 const CHANNELS = {
   isAvailable: 'nova-steam-leaderboard:isAvailable',
   getPersonaName: 'nova-steam-leaderboard:getPersonaName',
   getTopScores: 'nova-steam-leaderboard:getTopScores',
+  getPlayerBest: 'nova-steam-leaderboard:getPlayerBest',
   getFriendsScores: 'nova-steam-leaderboard:getFriendsScores',
   submitScore: 'nova-steam-leaderboard:submitScore',
   submitScoreDetailed: 'nova-steam-leaderboard:submitScoreDetailed',
@@ -81,6 +86,7 @@ const leaderboards = Object.freeze({
     }
   },
   getTopScores: (payload) => invoke(CHANNELS.getTopScores, payload),
+  getPlayerBest: (payload) => invoke(CHANNELS.getPlayerBest, payload),
   getFriendsScores: (payload) => invoke(CHANNELS.getFriendsScores, payload),
   submitScore: (payload) => invoke(CHANNELS.submitScore, payload),
   submitScoreDetailed: (payload) => invoke(CHANNELS.submitScoreDetailed, payload),
@@ -110,6 +116,7 @@ contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
 }));
 
 contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
+  writeRecoveryReport: (payload) => invoke('nova-app:writeRecoveryReport', payload),
   exitGame: (payload) => invoke(APP_CHANNELS.exitGame, payload),
   saveSignalCard: (payload) => invoke(APP_CHANNELS.saveSignalCard, payload),
   copyText: (payload) => invoke(APP_CHANNELS.copyText, payload)
@@ -130,6 +137,14 @@ ipcRenderer.on('nova-app:window-blur', () => {
     window.dispatchEvent(new Event('nova-app-window-blur'));
   } catch {
     // Best-effort focus-loss bridge for gameplay auto-pause.
+  }
+});
+
+ipcRenderer.on('nova-app:window-focus', () => {
+  try {
+    window.dispatchEvent(new Event('nova-app-window-focus'));
+  } catch {
+    // Best-effort focus-return bridge for gameplay cursor recovery.
   }
 });
 
@@ -166,3 +181,22 @@ contextBridge.exposeInMainWorld('__novaNativeGamepads', Object.freeze({
   getGamepads: () => safePayload(nativeGamepadCache),
   getStatus: () => safePayload(nativeGamepadStatus)
 }));
+
+// Native host owns foreground state; hidden Chromium must not decide game input.
+let nativeInputActive = true;
+contextBridge.exposeInMainWorld('__novaNativePresentation', Object.freeze({
+  isInputActive: () => nativeInputActive
+}));
+ipcRenderer.on('nova-native:focus', (_event, active) => {
+  nativeInputActive = active === true;
+});
+window.addEventListener('DOMContentLoaded', () => {
+  let last = null;
+  const sync = () => {
+    const hidden = document.documentElement.classList.contains('gameplay-cursor-hidden')
+      || document.documentElement.classList.contains('controller-input-active');
+    if (hidden !== last) { last = hidden; ipcRenderer.send('nova-native:cursor', hidden); }
+  };
+  new MutationObserver(sync).observe(document.documentElement, {attributes:true,attributeFilter:['class']});
+  sync();
+});

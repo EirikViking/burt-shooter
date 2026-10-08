@@ -31,7 +31,7 @@ if (!/cooldownMs:\s*24000/.test(options)) {
   fail('hijacker warning should keep its long event cooldown');
 }
 
-if (!audioManagerSource.includes('stopAllVoices(\'exclusive_voice_request\')')) {
+if (!audioManagerSource.includes('stopAllVoices(\'admitted_voice_replacement\')')) {
   fail('AudioManager stopOtherVoices path is missing');
 }
 

@@ -1,3 +1,6 @@
+import { claimMajorTelegraph } from '../config/EncounterPacing.js';
+import {drawEnergySurface,drawEnergyLink,energyClock} from '../effects/AstraEnergyMaterial.js';
+import {drawEnergyShell} from '../effects/AstraEnergyMaterial.js';
 import { ARCADE_FLIGHT_ENABLED, sampleBossFlight } from '../config/ArcadeFlight.js';
 import { BOSS_ARSENAL_ENABLED, getBossArsenal } from '../config/BossArsenal.js';
 import { hasColossus } from '../config/BossReinvention.js';
@@ -16,12 +19,12 @@ import { GameAssets } from '../utils/GameAssets.js';
 import { Bullet } from './Bullet.js';
 import { extendBossNames } from '../text/phrasePool.js';
 import { createBossVisual } from '../game/BossFactory.js';
-import { BalanceConfig } from '../config/BalanceConfig.js';
+import { BalanceConfig, GLOBAL_CHALLENGE_TUNING, getSectorAttackPressure } from '../config/BalanceConfig.js';
 import { createText } from '../utils/pixiText.js';
-import { getBossProfile } from '../config/BossRoster.js';
+import { getBossProfile, getBossRegularAttack } from '../config/BossRoster.js';
 import { getBossSignatureWeaponProfile, getBossWeaponProfile, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
 import { AudioManager } from '../audio/AudioManager.js';
-import { getBossMonsterVoice } from '../audio/PredatorSounds.js';
+import { CreatureAudio } from '../audio/CreatureAudio.js';
 import { translateText } from '../i18n/index.js';
 import {
   hideMicroSignals,
@@ -120,6 +123,7 @@ export class Boss {
       this.difficultyScalar *
       firstBossHealthScalar *
       this.getRunModeBossDifficultyMultiplier() *
+      GLOBAL_CHALLENGE_TUNING.bossHealth *
       Math.max(1, Number(this.game?.threatResponse?.bossHealthMult) || 1)
     ));
     this.maxHealth = this.health;
@@ -145,6 +149,8 @@ export class Boss {
     this.scoreValue = 1000;
     this.phase = 1;
     this.profile = profile || getBossProfile(level);
+    CreatureAudio.prepare(this.profile);
+    this.playMonsterVoice('arrival');
     this.color = this.profile?.palette || 0xff00ff;
     this.signatureCooldown = 0;
     this.telegraph = null;
@@ -555,11 +561,19 @@ export class Boss {
       this.applyBossMovement(delta, playerX, playerY);
     }
 
+    if(!this.discoveryCoordinator?.getBossMovementBounds && !this.attackWarningToken?.movementLocked && Number.isFinite(this.discoveryLane)){
+      const width=this.game.getWidth();
+      this.x=clamp(this.x,width*(this.discoveryLane-.13),width*(this.discoveryLane+.13));
+    }
     this.sprite.x = this.x;
     this.sprite.y = this.y;
     const animationAim = this.getSignatureAimPoint(playerX, playerY);
     this.updateBossAnimation(delta, animationAim.x, animationAim.y);
 
+    if(Date.now()<(this.discoveryHoldUntil||0)){
+      if(this.attackWarningToken)this.cancelAttackWarning('discovery_attack_handoff');
+      return;
+    }
     if (this.signatureCooldown > 0) {
       this.signatureCooldown -= delta;
     }
@@ -971,14 +985,12 @@ export class Boss {
     playScene?.particleManager?.createBossEntranceBurst?.(this.x, this.y, color, accent);
     playScene?.triggerShockwave?.(this.x, this.y, accent);
     playScene?.screenShake?.shake(6, 16);
-    AudioManager.playSfx('boss_spawn', { force: true, volume: 0.36, minIntervalMs: 700 });
-    AudioManager.playSfx('boss_entrance_impact', { force: true, volume: 0.72, minIntervalMs: 900 });
-    this.playMonsterVoice();
+    AudioManager.playSfx('boss_spawn', { force: true, volume: 0.20, minIntervalMs: 700 });
+    AudioManager.playSfx('boss_entrance_impact', { force: true, volume: 0.32, minIntervalMs: 900 });
   }
 
-  playMonsterVoice() {
-    const voice = getBossMonsterVoice(this.profile, this.level, this.phase);
-    AudioManager.playSfx(voice.event, { volume: .76, playbackRate: voice.rate, minIntervalMs: 2600, priority: 5, priorityHoldMs: 750, preserveGameplayRng: true });
+  playMonsterVoice(event = 'hunt') {
+    CreatureAudio.play(this, this.profile, event, { x: this.x / this.game.getWidth() });
     this.lastMonsterPhase = this.phase;
     this.monsterVoiceClock = 0;
   }
@@ -988,7 +1000,7 @@ export class Boss {
     this.monsterVoiceClock = (this.monsterVoiceClock || 0) + delta / 60;
     const phaseChanged = this.phase !== this.lastMonsterPhase;
     const interval = 15 - Math.min(3, this.phase) * 2 + this.level % 3;
-    if ((phaseChanged && this.monsterVoiceClock > 2.8) || this.monsterVoiceClock > interval) this.playMonsterVoice();
+    if ((phaseChanged && this.monsterVoiceClock > 2.8) || this.monsterVoiceClock > interval) this.playMonsterVoice(phaseChanged ? (this.phase >= 3 ? 'rage' : 'phase') : 'hunt');
   }
 
   getPresentationState(now = Date.now()) {
@@ -1076,7 +1088,9 @@ export class Boss {
     const value = Math.max(0, Number(amount) || 0);
     if (value <= 0) return 0;
     const before = this.health;
-    this.health = Math.min(this.maxHealth, this.health + value);
+    const supportFuel = source === 'boss_fuel_ship' || source === 'boss_support';
+    const ceiling = supportFuel ? this.maxHealth * 0.6 : this.maxHealth;
+    this.health = before >= ceiling ? before : Math.min(ceiling, before + value);
     const healed = Math.max(0, this.health - before);
     if (healed <= 0) return 0;
     if (source === 'boss_fuel_ship' || source === 'boss_support') {
@@ -1219,8 +1233,7 @@ export class Boss {
     const ringCount = archetype === 'vortex' || archetype === 'clock' ? 2 : 1;
     for (let i = 0; i < ringCount; i += 1) {
       const ringRadius = radius * (0.76 + i * 0.2 + Math.sin(t + i) * 0.008 + telegraphProgress * 0.025);
-      rig.backLayer.circle(0, 0, ringRadius);
-      rig.backLayer.stroke({
+      drawEnergyShell(rig.backLayer, 0, 0, ringRadius, {
         color: i % 2 ? palette : accent,
         width: i === 0 ? 2 : 1,
         alpha: (0.11 + telegraphProgress * 0.1) / (i + 1)
@@ -1231,8 +1244,7 @@ export class Boss {
     const coreRadius = radius * (0.12 + Math.max(0, Math.sin(t * 1.05)) * 0.012 + telegraphProgress * 0.025);
     rig.frontLayer.circle(0, 0, coreRadius);
     rig.frontLayer.fill({ color: accent, alpha: 0.18 + telegraphProgress * 0.12 });
-    rig.frontLayer.circle(0, 0, coreRadius * 1.9);
-    rig.frontLayer.stroke({ color: 0xffffff, width: 2, alpha: 0.16 + telegraphProgress * 0.14 });
+    drawEnergyShell(rig.frontLayer, 0, 0, coreRadius * 1.9, { color: 0xffffff, width: 2, alpha: 0.16 + telegraphProgress * 0.14 });
     this.drawArchetypeBossAnimation(rig, archetype, t, intensity, telegraphProgress, playerX, playerY);
 
     if (!rig.astraAttackRig) {
@@ -1461,8 +1473,7 @@ export class Boss {
       for (let i = 0; i < 3; i += 1) {
         const p = clamp(phaseAge + i * 0.18, 0, 1);
         const r = radius * (0.58 + p * 0.72);
-        layer.circle(0, 0, r);
-        layer.stroke({ color: i % 2 ? palette : accent, width: 3 - i * 0.4, alpha: (0.32 - i * 0.06) * phaseProgress });
+        drawEnergyShell(layer, 0, 0, r, { color: i % 2 ? palette : accent, width: 3 - i * 0.4, alpha: (0.32 - i * 0.06) * phaseProgress });
       }
     }
 
@@ -1560,160 +1571,46 @@ export class Boss {
       rage = 0,
       presentationState = 'idle'
     } = state;
-    const charge = Math.max(telegraphProgress, phaseProgress * 0.9, entryEnergy * 0.7, impactProgress, deathProgress * 0.85);
-    const auraAlpha = Math.min(0.72, 0.16 + rage * 0.16 + telegraphProgress * 0.22 + phaseProgress * 0.18 + entryEnergy * 0.16 + impactProgress * 0.2 + deathProgress * 0.24);
-    const pulse = 1 + Math.sin(t * 1.4) * 0.018 * intensity;
-    const slowSpin = t * (this.profile?.archetype === 'clock' ? 0.55 : 0.28);
-    let auraWakeRibbonCount = 0;
-    let weaponChargeRayCount = 0;
-    let panelServoSparkCount = 0;
-    let phaseGlyphCount = 0;
-    let rageInstabilityCount = 0;
-
-    auraLayer.circle(0, 0, radius * (1.1 + rage * 0.12 + charge * 0.22) * pulse);
-    auraLayer.fill({ color: palette, alpha: auraAlpha * 0.16 });
-    auraLayer.circle(0, 0, radius * (1.32 + Math.sin(t * 0.7) * 0.035 + charge * 0.16));
-    auraLayer.stroke({ color: accent, width: 3, alpha: auraAlpha * 0.34 });
-    auraLayer.circle(0, 0, radius * (1.58 + Math.cos(t * 0.52) * 0.045 + phaseProgress * 0.18));
-    auraLayer.stroke({ color: 0xffffff, width: 1.5, alpha: auraAlpha * 0.16 });
-    for (let i = 0; i < 4; i += 1) {
-      const a = -slowSpin * 0.9 + i * Math.PI * 0.5;
-      const inner = radius * (1.04 + charge * 0.08);
-      const mid = radius * (1.28 + charge * 0.16);
-      const outer = radius * (1.5 + charge * 0.22);
-      auraLayer.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
-      auraLayer.lineTo(Math.cos(a + 0.16) * mid, Math.sin(a + 0.16) * mid);
-      auraLayer.lineTo(Math.cos(a + 0.28) * outer, Math.sin(a + 0.28) * outer);
-      auraWakeRibbonCount += 1;
+    const charge = Math.max(telegraphProgress, phaseProgress * .9, entryEnergy * .7, impactProgress, deathProgress * .85);
+    const clock=energyClock(t*1000);
+    const color=accent||palette;
+    // Quiet powered hull at rest; charge and impact wake up the machinery.
+    // No common clock-face, radial ruler, orbiting diamonds or stacked rings.
+    drawEnergySurface(auraLayer,{kind:'membrane',width:radius*(2.10+charge*.25),height:radius*(1.7+charge*.18),color,alpha:.07+charge*.14});
+    let auraWakeRibbonCount=0,weaponChargeRayCount=0,panelServoSparkCount=0,phaseGlyphCount=0,rageInstabilityCount=0;
+    const sides=this.profile?.archetype==='carrier'?[-1,-.5,.5,1]:[-1,1];
+    for(const side of sides){
+      drawEnergySurface(auraLayer,{kind:'rift',x:side*radius*.88,y:radius*.24,width:radius*.28,height:radius*(.92+charge*.50),color,alpha:(.08+charge*.22)*intensity,angle:-side*.18});
+      auraWakeRibbonCount++;
     }
-    auraLayer.stroke({ color: accent, width: 1.2 + charge * 0.7, alpha: auraAlpha * 0.28 });
-
-    const shadowScale = 1.08 + rage * 0.08 + impactProgress * 0.16 + deathProgress * 0.2;
-    silhouetteLayer.circle(0, radius * 0.06, radius * shadowScale);
-    silhouetteLayer.fill({ color: 0x050712, alpha: 0.18 + rage * 0.06 });
-    silhouetteLayer.circle(0, radius * 0.02, radius * (0.94 + charge * 0.08));
-    silhouetteLayer.stroke({ color: palette, width: 5, alpha: auraAlpha * 0.22 });
-
-    const tickCount = this.profile?.archetype === 'clock' ? 16 : 12;
-    for (let i = 0; i < tickCount; i += 1) {
-      const a = slowSpin + (Math.PI * 2 * i) / tickCount;
-      const inner = radius * (0.92 + charge * 0.06);
-      const outer = radius * (1.1 + charge * 0.18 + ((i + this.phase) % 3 === 0 ? 0.08 : 0));
-      threatLayer.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
-      threatLayer.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+    if(charge>.08)for(const node of rig.weaponNodes||[]){
+      drawEnergyLink(chargeLayer,{x:node.x*.2,y:node.y*.2,toX:node.x*.92,toY:node.y*.92,width:10+charge*13,color,alpha:.16+charge*.30});
+      drawEnergySurface(chargeLayer,{kind:'corona',x:node.x,y:node.y,width:18+charge*30,height:16+charge*24,color,alpha:charge*.48});
+      weaponChargeRayCount++;
     }
-    threatLayer.stroke({ color: accent, width: 1.6 + charge * 1.4, alpha: auraAlpha * (0.3 + charge * 0.24) });
-
-    const glyphCount = this.phase >= 3 ? 6 : 4;
-    for (let i = 0; i < glyphCount; i += 1) {
-      const a = slowSpin * 1.7 + i * (Math.PI * 2 / glyphCount);
-      const r = radius * (1.22 + charge * 0.1 + (i % 2) * 0.06);
-      const tx = -Math.sin(a);
-      const ty = Math.cos(a);
-      const rx = Math.cos(a);
-      const ry = Math.sin(a);
-      const cx = rx * r;
-      const cy = ry * r;
-      const size = 3.5 + charge * 3 + (this.phase - 1);
-      threatLayer.poly([
-        cx + rx * size, cy + ry * size,
-        cx + tx * size * 0.62, cy + ty * size * 0.62,
-        cx - rx * size, cy - ry * size,
-        cx - tx * size * 0.62, cy - ty * size * 0.62
-      ]);
-      phaseGlyphCount += 1;
+    const servoAlpha=Math.max(charge*.22,hurtProgress*.26,rage*.08);
+    if(servoAlpha>.03)for(const panel of rig.sidePanels||[]){
+      drawEnergySurface(chargeLayer,{kind:'corona',x:panel.x+(panel.side||1)*radius*.08,y:panel.y,width:12+charge*14,height:8+charge*10,color,alpha:servoAlpha});
+      panelServoSparkCount++;
     }
-    threatLayer.fill({ color: 0xffffff, alpha: auraAlpha * 0.18 + phaseProgress * 0.1 });
-
-    if (charge > 0.08) {
-      for (const node of rig.weaponNodes || []) {
-        chargeLayer.moveTo(node.x * 0.2, node.y * 0.2);
-        chargeLayer.lineTo(node.x * 0.92, node.y * 0.92);
-        weaponChargeRayCount += 1;
-      }
-      chargeLayer.stroke({ color: 0xffffff, width: 0.9 + charge * 1.1, alpha: 0.12 + charge * 0.2 });
+    if(phaseProgress>.03){
+      drawEnergySurface(threatLayer,{kind:'pressure',width:radius*(1.2+phaseProgress*1.65),height:radius*(.9+phaseProgress*1.25),color,alpha:phaseProgress*(1-phaseProgress*.7)*.42});
+      phaseGlyphCount=1;
     }
-
-    const servoAlpha = Math.max(charge * 0.22, hurtProgress * 0.26, rage * 0.08);
-    if (servoAlpha > 0.03) {
-      for (const panel of rig.sidePanels || []) {
-        const x = panel.x + (panel.side || 1) * radius * 0.08;
-        const y = panel.y + Math.sin(t + (panel.index || 0)) * radius * 0.018;
-        chargeLayer.circle(x, y, 1.8 + charge * 2.2 + ((panel.index || 0) % 2) * 0.4);
-        panelServoSparkCount += 1;
-      }
-      chargeLayer.fill({ color: accent, alpha: servoAlpha });
+    if(hurtProgress>0||recoilProgress>0){
+      const flash=Math.max(hurtProgress,recoilProgress*.7);
+      drawEnergySurface(threatLayer,{kind:'corona',width:radius*(1+flash*.8),height:radius*(.7+flash*.6),color:0xffeadb,alpha:flash*.4});
     }
-
-    if (charge > 0.04 || presentationState === 'death') {
-      const ringCount = presentationState === 'death' ? 4 : 3;
-      for (let i = 0; i < ringCount; i += 1) {
-        const p = (charge + i * 0.22 + t * 0.055) % 1;
-        const r = radius * (0.52 + p * (0.98 + impactProgress * 0.25));
-        chargeLayer.circle(0, 0, r);
-        chargeLayer.stroke({
-          color: i % 2 === 0 ? accent : 0xffffff,
-          width: Math.max(1, 3 - i * 0.45 + telegraphProgress * 1.2),
-          alpha: (0.26 - i * 0.035) * Math.max(charge, 0.25)
-        });
-      }
-
-      const arcCount = this.profile?.archetype === 'carrier' ? 6 : 5;
-      for (let i = 0; i < arcCount; i += 1) {
-        const a = -slowSpin * 1.4 + i * ((Math.PI * 2) / arcCount);
-        const r1 = radius * (0.28 + charge * 0.12);
-        const r2 = radius * (0.82 + charge * 0.34);
-        const bend = 0.24 + Math.sin(t + i) * 0.08;
-        chargeLayer.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
-        chargeLayer.lineTo(Math.cos(a + bend) * r2, Math.sin(a + bend) * r2);
-      }
-      chargeLayer.stroke({ color: palette, width: 2.2 + telegraphProgress * 1.4, alpha: 0.22 + charge * 0.34 });
+    if(rage>.38||presentationState==='death')for(let i=0;i<3;i++){
+      const angle=clock*.15+i*Math.PI*2/3;
+      drawEnergySurface(threatLayer,{kind:'rift',x:Math.cos(angle)*radius*.70,y:Math.sin(angle)*radius*.55,width:radius*.26,height:radius*.80,color,alpha:.12+rage*.12+deathProgress*.16,angle:angle-Math.PI/2});
+      rageInstabilityCount++;
     }
-
-    if (hurtProgress > 0 || recoilProgress > 0) {
-      const flash = Math.max(hurtProgress, recoilProgress * 0.7);
-      for (let i = 0; i < 6; i += 1) {
-        const a = t * 1.3 + i * Math.PI / 3;
-        const r1 = radius * (0.32 + flash * 0.08);
-        const r2 = radius * (0.98 + flash * 0.18);
-        threatLayer.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
-        threatLayer.lineTo(Math.cos(a + 0.04) * r2, Math.sin(a + 0.04) * r2);
-      }
-      threatLayer.stroke({ color: 0xffffff, width: 2.2, alpha: 0.22 + flash * 0.34 });
+    if(entryProgress<1||impactProgress>0||deathProgress>0){
+      const energy=Math.max(entryEnergy*.3,impactProgress*.5,deathProgress*(1-deathProgress*.5)*.5);
+      drawEnergySurface(chargeLayer,{kind:'pressure',width:radius*(2.5+impactProgress*.5+deathProgress*1.2),height:radius*(1.8+impactProgress*.4+deathProgress),color,alpha:energy});
     }
-
-    if (rage > 0.38 || presentationState === 'death') {
-      const staticCount = presentationState === 'death' ? 10 : 6;
-      for (let i = 0; i < staticCount; i += 1) {
-        const a = slowSpin * -1.2 + i * (Math.PI * 2 / staticCount);
-        const r = radius * (0.76 + (i % 3) * 0.16 + rage * 0.18);
-        const tx = -Math.sin(a) * (4 + rage * 6);
-        const ty = Math.cos(a) * (4 + rage * 6);
-        const cx = Math.cos(a) * r;
-        const cy = Math.sin(a) * r;
-        threatLayer.moveTo(cx - tx, cy - ty);
-        threatLayer.lineTo(cx + tx, cy + ty);
-        rageInstabilityCount += 1;
-      }
-      threatLayer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.1 + rage * 0.18 + deathProgress * 0.18 });
-    }
-
-    if (entryProgress < 1 || impactProgress > 0 || deathProgress > 0) {
-      const entryAlpha = Math.max(entryEnergy, impactProgress) * 0.42;
-      const deathAlpha = deathProgress * (1 - deathProgress * 0.45) * 0.48;
-      chargeLayer.circle(0, 0, radius * (1.72 - entryProgress * 0.36 + impactProgress * 0.45 + deathProgress * 0.72));
-      chargeLayer.stroke({ color: accent, width: 5 + deathProgress * 3, alpha: Math.max(entryAlpha, deathAlpha) });
-      chargeLayer.circle(0, 0, radius * (1.1 + entryEnergy * 0.35 + deathProgress * 0.48));
-      chargeLayer.stroke({ color: 0xffffff, width: 2 + deathProgress * 2, alpha: Math.max(entryAlpha * 0.72, deathAlpha * 0.7) });
-    }
-
-    return {
-      auraWakeRibbonCount,
-      weaponChargeRayCount,
-      panelServoSparkCount,
-      phaseGlyphCount,
-      rageInstabilityCount
-    };
+    return {auraWakeRibbonCount,weaponChargeRayCount,panelServoSparkCount,phaseGlyphCount,rageInstabilityCount};
   }
 
   getAnimationDebugState() {
@@ -1812,6 +1709,8 @@ export class Boss {
     if (ARCADE_FLIGHT_ENABLED && hasColossus(this.profile?.archetype)) {
       const target = sampleBossFlight({family:this.profile.archetype,time:this.moveTimer/60,phase:this.phase,level:this.level,
         width:gameWidth,height:gameHeight,anchorX,laneY});
+      const bounds=this.discoveryCoordinator?.getBossMovementBounds?.(this);
+      if(bounds)target.x=clamp(target.x,bounds.min,bounds.max);
       const distance=Math.hypot(target.x-previousX,target.y-previousY);
       const step=Math.min(1, Math.max(0,delta)/60 * gameWidth*.15 / Math.max(.001,distance));
       this.x=previousX+(target.x-previousX)*step;this.y=previousY+(target.y-previousY)*step;
@@ -1906,6 +1805,7 @@ export class Boss {
         : diff.bossShootDelayPhase3;
     const openingDelayScalar = this.level <= 1 ? 1.55 : this.level === 2 ? 1.2 : 1;
     return (baseDelay * openingDelayScalar) / (
+      getSectorAttackPressure(this.game?.level ?? this.level) *
       this.getCombinedBossDifficultyScalar() *
       this.getRunModeBossAttackDangerMultiplier()
     );
@@ -1948,9 +1848,10 @@ export class Boss {
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
     const reliefMult = clamp(this.getBossProfileReliefNumber('regularAttackIntervalMult', 1), 0.5, 2);
     return Math.round(((base * phaseScalar * chaosRelief) / (
+      getSectorAttackPressure(this.game?.level ?? this.level) *
       this.getCombinedBossDifficultyScalar() *
       this.getRunModeBossAttackDangerMultiplier()
-    )) * reliefMult);
+    )) * reliefMult * (this.discoveryCoordinator?.plan?.regularIntervalMultiplier || 1) / GLOBAL_CHALLENGE_TUNING.bossCadence);
   }
 
   getRegularTelegraphDurationMs() {
@@ -2127,6 +2028,7 @@ export class Boss {
     if (terminalState !== 'released' && terminalState !== 'cancelled') return null;
     if (terminalState === 'released' && token.visibleElapsedMs < token.durationMs) return null;
 
+    if (terminalState === 'released' && token.category === 'regular') this.regularAttackReleaseCount = (this.regularAttackReleaseCount || 0) + 1;
     token.terminalState = terminalState;
     token.terminalReason = String(reason || terminalState);
     token.endedAt = Date.now();
@@ -2412,6 +2314,11 @@ export class Boss {
   }
 
   startSignatureTelegraph(type, playerX, playerY) {
+    if (this.discoveryCoordinator?.plan ? !this.discoveryCoordinator.claimAttack(this, 'signature')
+      : !claimMajorTelegraph(this.game, this, 1.4)) {
+      this.delayedSignature = { phase: this.phase, type, dueAt: Date.now() + 200 };
+      return;
+    }
     const diagnostics = this.game?.scenes?.play?.performanceDiagnostics;
     const measurePerformance = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
     const fairness = BalanceConfig.difficulty.bossFairness || {};
@@ -2713,8 +2620,9 @@ export class Boss {
   }
 
   startRegularAttackTelegraph(playerX, playerY) {
+    if (this.discoveryCoordinator && !this.discoveryCoordinator.claimAttack(this, 'regular')) return;
     const fairness = BalanceConfig.difficulty.bossFairness || {};
-    const attack = this.profile?.attack || 'aimed';
+    const attack = getBossRegularAttack(this.profile, { level: this.level, phase: this.phase, releaseIndex: this.regularAttackReleaseCount || 0 });
     const type = attack === 'split'
       ? 'split'
       : ['spiral', 'clock', 'chord'].includes(attack)
@@ -2749,6 +2657,7 @@ export class Boss {
       originY: this.y,
       safeLanes: this.safeLanes
     });
+    CreatureAudio.play(this, this.profile, 'attack', { x: this.x / this.game.getWidth() });
     if(hasColossus(this.profile?.archetype)){
       AudioManager.playSfx(`boss_arsenal_${this.profile.archetype}`,{volume:.46,minIntervalMs:500,sfxGroup:this.regularTelegraph.audioGroup,preserveGameplayRng:true});
       this.regularTelegraph.audioCueActive=true;
@@ -2992,9 +2901,10 @@ export class Boss {
   }
 
   canShoot() {
+    if(Date.now()<(this.discoveryHoldUntil||0))return false;
     if (this.shootCooldown > 0 || this.telegraph) return false;
     const now = Date.now();
-    if (now < this.finishGateUntilMs) return false;
+    if (this.level < 51 && now < this.finishGateUntilMs) return false;
     if (this.entryStartMs && now - this.entryStartMs < this.entryDurationMs + 250) return false;
     if (now < this.regularAttackReadyAt) return false;
     if (!this.regularTelegraph) {
@@ -3272,12 +3182,14 @@ export class Boss {
     const incomingHealth = this.health - effectiveDamage;
     if (shouldArmorBleed) {
       this.finishGateUntilMs = Math.max(this.finishGateUntilMs || 0, pacingAnchorAt + guideMs);
-      this.applyRecoveryPause(Math.max(1, this.finishGateUntilMs - now), 'armor_finish_gate');
+      if (this.level < 51) this.applyRecoveryPause(Math.max(1, this.finishGateUntilMs - now), 'armor_finish_gate');
       this.finishGateDamageScale = damageScale;
       this.finishGateLastDamageAt = now;
-      this.shootCooldown = Math.max(this.shootCooldown || 0, 80);
-      this.signatureCooldown = Math.max(this.signatureCooldown || 0, 180);
-      this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500);
+      if (this.level < 51) {
+        this.shootCooldown = Math.max(this.shootCooldown || 0, 80);
+        this.signatureCooldown = Math.max(this.signatureCooldown || 0, 180);
+        this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500);
+      }
       if (!this.finishGateLogged) {
         this.finishGateLogged = true;
         console.log(`[BossArmorBleed] level=${this.level} elapsedMs=${Math.round(elapsed)} guideMs=${Math.round(guideMs)} threshold=${Math.round(armorBleedThreshold)} scale=${damageScale.toFixed(2)}`);
@@ -3298,6 +3210,7 @@ export class Boss {
   }
 
   destroy() {
+    CreatureAudio.stopOwner(this);
     this.cancelAttackWarning('boss_destroyed');
     this.clearTelegraphVisual();
     this.clearRegularAttackTelegraphVisual();

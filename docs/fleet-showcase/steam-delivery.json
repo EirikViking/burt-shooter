@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-09-09T21:57:03.184Z",
+  "appID": "4765070",
+  "depotID": "4765071",
+  "targetBranch": "sector-continue-test",
+  "buildID": "25218271",
+  "branchesBefore": {
+    "public": "25212721",
+    "sector-continue-test": "25212721",
+    "test-build": "23782673"
+  },
+  "branchesAfter": {
+    "public": "25212721",
+    "sector-continue-test": "25218271",
+    "test-build": "23782673"
+  },
+  "manifest": "3755582678995844674",
+  "cloudSettingsUnchanged": true,
+  "cloudConfigurationSHA256": "2baeb1acdb90a31ddae4f907711cc6d4ba9bb4724500617046036c93c41d334f",
+  "verification": "Authenticated SteamCMD app_info_update 1 and app_info_print 4765070"
+}

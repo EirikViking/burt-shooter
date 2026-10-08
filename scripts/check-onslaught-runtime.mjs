@@ -1,0 +1,184 @@
+import assert from 'node:assert/strict';
+import { chromium } from 'playwright';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+const out=process.env.CHECK_OUTPUT_DIR;
+if(!out)throw new Error('Set CHECK_OUTPUT_DIR to task-owned E: output');
+mkdirSync(out,{recursive:true});
+const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+const page=await browser.newPage({viewport:{width:1366,height:768}});
+const errors=[];page.on('pageerror',error=>errors.push(error.stack));
+const report={fixtures:true,productionUploads:false,checks:[]};
+const check=(name,condition,detail)=>{assert.ok(condition,`${name}: ${JSON.stringify(detail)}`);report.checks.push({name,detail});console.log('PASS',name);};
+try {
+ await page.goto(`${process.env.CHECK_URL || 'http://127.0.0.1:4197'}/?skipIntro=1&offlineLeaderboard=1`,{waitUntil:'domcontentloaded',timeout:120000});
+ await page.waitForFunction(()=>window.__game?.currentScene===window.__game?.scenes?.menu && window.__game?.scenes?.menu?.menuOptions?.length>0,null,{timeout:120000});
+ await page.waitForFunction(()=>document.querySelector('#loading')?.style.display==='none',null,{timeout:120000});
+ await page.waitForTimeout(1000);
+ const menu=await page.evaluate(()=>({options:window.__game.scenes.menu.menuOptions.map(o=>o.id),focus:window.__game.scenes.menu.menuOptions[window.__game.scenes.menu.menuFocusIndex]?.id}));
+ check('Arcade first, Onslaught second, Other Modes third',menu.options.slice(0,3).join(',')==='launchTactical,onslaught,otherModes',menu);
+ await page.screenshot({path:path.join(out,'menu-arcade-first.png')});
+ await page.evaluate(()=>window.__game.scenes.menu.launchHome.openModes());
+ const other=await page.evaluate(()=>window.__game.scenes.menu.menuOptions.map(o=>o.id));
+ check('Other Modes includes five routes and Back',other.slice(0,5).join(',')==='mayhemPure,overrun,scout,sectorStart,dailySignal' && other.includes('backHome'),other);
+ const briefings=await page.evaluate(()=>{const menu=window.__game.scenes.menu;return menu.menuOptions.map((option,index)=>{menu.setMenuFocus(index);return {id:option.id,briefing:menu.getRunModeBriefing()?.id||null};});});
+ check('Every Other Modes briefing survives focus changes',briefings.find(item=>item.id==='scout')?.briefing==='scout',briefings);
+ await page.screenshot({path:path.join(out,'other-modes.png')});
+ await page.evaluate(()=>window.__game.scenes.menu.launchHome.closeModes());
+ await page.evaluate(()=>window.__game.showHighscores());
+ await page.waitForFunction(()=>window.__game.currentScene===window.__game.scenes.highscore && window.__game.scenes.highscore.comment && window.__game.scenes.highscore.runAgainBtn);
+ check('New Arcade profile opens Arcade records',await page.evaluate(()=>window.__game.scenes.highscore.activeLeaderboard)==='tactical');
+ await page.evaluate(()=>window.__game.scenes.highscore.setLeaderboardView('onslaught'));
+ await page.waitForTimeout(300);
+ const deckHeights={};
+ for(const count of [0,1,3,100]){
+  await page.evaluate(async n=>{const s=window.__game.scenes.highscore;s.activeLeaderboard='onslaught';s.fetchToken++;if(s.loadingTimer)clearTimeout(s.loadingTimer);s.leaderboardPage=0;s.onslaughtOffset=0;s.applyLeaderboardResult({status:n?'available':'empty',entries:Array.from({length:n},(_,i)=>({rank:i+1,score:(n-i)*12340,name:`QA PILOT ${i+1}`,steamId:`fixture-${i}`,level:53}))});await s.layoutHighscore();},count);
+  await page.waitForTimeout(150);
+  const state=await page.evaluate(()=>window.__game.scenes.highscore.onslaughtPanelDebug);
+  check(`Onslaught ${count} real entries`,state?.realRows===count,state);
+  if(count===0){
+   const emptyCopy=await page.evaluate(()=>window.__game.scenes.highscore.rowsContainer.children.map(node=>node.text||'').join(' '));
+   check('Confirmed empty board does not imply a saved upload',!emptyCopy.includes('Your saved result will appear'),emptyCopy);
+  }
+  deckHeights[count]=await page.evaluate(()=>window.__game.scenes.highscore.tableMetrics.height);
+  await page.screenshot({path:path.join(out,`onslaught-${count}.png`)});
+ }
+ check('Sparse Onslaught record deck follows actual entry count',deckHeights[0]<deckHeights[3]&&deckHeights[3]<deckHeights[100],deckHeights);
+ const pendingCopy=await page.evaluate(async()=>{const s=window.__game.scenes.highscore;const original=s.leaderboardAdapter.getPendingSteamSubmissions;const previousEntries=s.entries;s.leaderboardAdapter.getPendingSteamSubmissions=()=>[{leaderboardName:'nova_swarm_overrun_tactical_score_v2'}];s.applyLeaderboardResult({status:'empty',entries:[]});await s.layoutHighscore();const copy=s.rowsContainer.children.map(node=>node.text||'').join(' ');s.leaderboardAdapter.getPendingSteamSubmissions=original;s.applyLeaderboardResult({status:'available',entries:previousEntries});await s.layoutHighscore();return copy;});
+ check('Pending local upload is explained separately from empty records',pendingCopy.includes('Your saved result will appear'),pendingCopy);
+ await page.evaluate(()=>{const s=window.__game.scenes.highscore;s.savedGetScores=s.leaderboardAdapter.getScores;s.leaderboardAdapter.getScores=async(view,{start})=>({status:'available',entries:Array.from({length:start===1?100:1},(_,i)=>({rank:start+i,name:`QA PILOT ${start+i}`,score:200000-start-i}))});s.leaderboardPage=Math.ceil(100/s.leaderboardPageSize)-1;s.changeLeaderboardPage(1);});
+ await page.waitForFunction(()=>window.__game.scenes.highscore.entriesNormalized[0]?.rank===101);
+ await page.evaluate(()=>window.__game.scenes.highscore.changeLeaderboardPage(-1));
+ await page.waitForFunction(()=>window.__game.scenes.highscore.entriesNormalized[0]?.rank===1 && window.__game.scenes.highscore.status==='LOADED');
+ const previousPage=await page.evaluate(()=>window.__game.scenes.highscore.leaderboardPageRange);
+ check('Previous batch returns to the page ending at rank 100',previousPage.end===100,previousPage);
+ await page.evaluate(()=>{const s=window.__game.scenes.highscore;s.leaderboardAdapter.getScores=s.savedGetScores;delete s.savedGetScores;});
+ await page.evaluate(async()=>{const s=window.__game.scenes.highscore;s.applyLeaderboardResult({status:'unavailable',entries:[],error:'isolated offline fixture'});await s.layoutHighscore();});
+ const offline=await page.evaluate(()=>window.__game.scenes.highscore.onslaughtPanelDebug);
+ check('Failed read stays unavailable',offline.status==='ERROR',offline);
+ check('Onslaught offline state has one unobstructed message and Retry',await page.evaluate(()=>{const s=window.__game.scenes.highscore;return !s.comment.visible&&s.retryBtn.visible&&s.stateMessage.visible===false;}));
+ await page.screenshot({path:path.join(out,'onslaught-offline.png')});
+ await page.evaluate(()=>window.__game.switchScene('menu'));
+ await page.waitForTimeout(500);
+ await page.evaluate(()=>window.__game.showHighscores());
+ await page.waitForFunction(()=>window.__game.scenes.highscore.comment && window.__game.scenes.highscore.runAgainBtn);
+ check('Inspecting Onslaught does not change natural Arcade default',await page.evaluate(()=>window.__game.scenes.highscore.activeLeaderboard)==='tactical');
+ await page.evaluate(()=>window.__game.switchScene('menu'));
+ await page.waitForFunction(()=>window.__game.scenes.menu.astraMenuShip?.ready);
+ await page.waitForTimeout(500);
+ await page.evaluate(()=>{void window.__game.startGame(window.__game.selectedShipSpriteKey,{runMode:'overrun_tactical'});});
+ await page.getByRole('dialog').waitFor({timeout:10000});
+ await page.screenshot({path:path.join(out,'onslaught-first-flight.png')});
+ const picker=await page.evaluate(()=>({slots:[...document.querySelectorAll('.onslaught-loadout-slots button')].map(b=>b.textContent),choices:document.querySelectorAll('.onslaught-loadout-choices button').length,closed:document.querySelector('.onslaught-loadout-picker')?.hidden,ship:document.querySelector('.ship-identity strong')?.textContent,shipButtons:document.querySelectorAll('.onslaught-loadout-ship button').length,categories:document.querySelectorAll('.onslaught-loadout-categories button').length}));
+ check('Onslaught opens on a clear three-slot overview',picker.slots.length===3&&picker.choices===15&&picker.closed&&picker.shipButtons===2&&picker.categories===4,picker);
+ await page.getByRole('button',{name:'NEXT SHIP'}).click();
+ const nextShip=await page.locator('.ship-identity strong').textContent();
+ check('Mouse next ship changes the selected hull',nextShip!==picker.ship,{from:picker.ship,to:nextShip});
+ await page.getByRole('button',{name:'PREVIOUS SHIP'}).click();
+ check('Mouse previous ship returns to the starting hull',await page.locator('.ship-identity strong').textContent()===picker.ship);
+ await page.locator('.onslaught-loadout-slots button').first().click();
+ check('A slot opens only its focused augment picker',await page.evaluate(()=>!document.querySelector('.onslaught-loadout-picker').hidden&&[...document.querySelectorAll('.onslaught-loadout-choices button')].filter(b=>!b.hidden).length>0));
+ await page.keyboard.press('Escape');
+ check('Escape closes the augment picker without canceling launch',await page.evaluate(()=>document.querySelector('.onslaught-loadout-picker')?.hidden===true&&!!document.querySelector('.onslaught-loadout-overlay')));
+ await page.getByRole('button',{name:'LAUNCH ONSLAUGHT',exact:true}).click();
+ await page.waitForFunction(()=>window.__game.competitionStart && window.__game.currentScene===window.__game.scenes.play,null,{timeout:60000});
+ const start=await page.evaluate(()=>({runMode:window.__game.runMode,score:window.__game.score,level:window.__game.level,start:window.__game.competitionStart,policy:window.__game.runPolicy}));
+ check('Real runtime launches valid three-augment Onslaught v2 start',start.runMode==='overrun_tactical'&&start.start.startScore===0&&start.start.startSector===51&&start.start.augmentIds.length===3&&start.start.rulesetVersion==='overrun_tactical_score_v2'&&start.start.checkpoint===null,start);
+ await page.screenshot({path:path.join(out,'onslaught-gameplay.png')});
+ const eligibility=await page.evaluate(()=>window.__game.getLeaderboardAdapter().createRunResult(window.__game));
+ check('Actual result retains fixed start and is eligible',eligibility.eligibleForSubmission===true && eligibility.shipId===start.start.shipId,eligibility);
+ await page.evaluate(()=>{
+  window.__game.globalLeaderboardTargets=[{rank:1,score:59809,playerName:'EXISTING PILOT'}];
+  window.__game.gameOver({fromInterlude:true});
+ });
+ await page.waitForFunction(()=>window.__game.scenes.gameOver.state==='runback' && window.__game.scenes.gameOver.nextGoalText,null,{timeout:30000});
+ await page.waitForTimeout(800);
+ check('Zero-score result never shows a personal-best medal after art loads', await page.evaluate(() => {
+  const scene=window.__game.scenes.gameOver;
+  return scene.finalScore===0 && scene.isPersonalBest===false && scene.recordMedal?.visible===false
+    && scene.recordMedalLabel?.visible===false;
+ }));
+ check('Personal-best medal has an explicit label when earned', await page.evaluate(() => {
+  const scene=window.__game.scenes.gameOver;
+  scene.isPersonalBest=true;
+  scene.layoutCeremonyVisuals();
+  const valid=scene.recordMedalLabel?.visible===true && scene.recordMedalLabel?.text==='PERSONAL BEST';
+  scene.isPersonalBest=false;
+  scene.layoutCeremonyVisuals();
+  return valid;
+ }));
+ const result=await page.evaluate(()=>({mode:window.__game.runMode,state:window.__game.scenes.gameOver.state,steam:window.__game.scenes.gameOver.steamSubmissionMode,lines:window.__game.scenes.gameOver.getLeaderboardPlacementLines()}));
+ check('Onslaught result uses its Steam lane',result.mode==='overrun_tactical'&&result.steam===true,result);
+ check('Onslaught result identifies its starting build',result.lines.some(line=>line.includes('ONSLAUGHT LOADOUT')&&line.includes(' / ')),result.lines);
+ const goal=await page.evaluate(()=>{const s=window.__game.scenes.gameOver;s.layoutScreen();return s.nextGoalText.text;});
+ check('Onslaught goal remains mode-scoped after result layout',goal.includes('59,809')&&!goal.includes('CAREER GOAL'),goal);
+ await page.screenshot({path:path.join(out,'onslaught-result.png')});
+ const actions=await page.evaluate(()=>{const s=window.__game.scenes.gameOver;return {retry:s.getRetryCtaDebugState(),change:{label:s.changeLoadoutButtonLabel?.text,visible:s.changeLoadoutButton?.visible},leaderboard:s.getLeaderboardCtaDebugState(),hangar:s.getHangarCtaDebugState(),menu:s.getMainMenuCtaDebugState(),report:s.getRunReportCtaDebugState()};});
+ check('All six Onslaught result actions are visible',actions.retry.visible&&actions.retry.label==='RETRY SAME LOADOUT'&&actions.change.visible&&actions.change.label==='CHANGE LOADOUT'&&actions.leaderboard.visible&&actions.hangar.visible&&actions.menu.visible&&actions.report.visible,actions);
+ const boxes=Object.values(actions).filter(action=>action.visible&&action.width>0&&action.height>0);
+ const overlaps=boxes.flatMap((a,index)=>boxes.slice(index+1).filter(b=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y).map(b=>[a.label,b.label]));
+ check('Onslaught result actions do not overlap',overlaps.length===0,overlaps);
+ const visibleActionBounds=()=>page.evaluate(()=>{
+  const s=window.__game.scenes.gameOver;
+  return ['retryButton','runReportButton','changeLoadoutButton','leaderboardButton','hangarButton','mainMenuButton']
+   .filter(key=>s[key]?.visible)
+   .map(key=>{const b=s[key].getBounds();return {key,x:b.x,y:b.y,width:b.width,height:b.height};});
+ });
+ const visualOverlaps=(nodes)=>nodes.flatMap((a,index)=>nodes.slice(index+1)
+  .filter(b=>Math.min(a.x+a.width,b.x+b.width)-Math.max(a.x,b.x)>2&&Math.min(a.y+a.height,b.y+b.height)-Math.max(a.y,b.y)>2)
+  .map(b=>[a.key,b.key]));
+ await page.evaluate(()=>{const s=window.__game.scenes.gameOver;s.retryButton.scale.set(1.03);s.refreshVisibleRunbackAfterSubmission('score_saved');});
+ let visualBounds=await visibleActionBounds();
+ check('Async status and focused retry keep visible action frames separate',visualOverlaps(visualBounds).length===0,visualBounds);
+ await page.setViewportSize({width:1280,height:720});
+ await page.waitForTimeout(250);
+ visualBounds=await visibleActionBounds();
+ check('720p action frames remain separate after responsive layout',visualOverlaps(visualBounds).length===0,visualBounds);
+ await page.keyboard.press('v');
+ await page.waitForFunction(()=>window.__game.scenes.gameOver.runReportOpen===true);
+ const reportOpen=await page.evaluate(()=>window.__game.scenes.gameOver.getRunReportOverlayDebugState());
+ check('Keyboard opens Run Report over intact results',reportOpen.open&&reportOpen.visible,reportOpen);
+ await page.evaluate(()=>window.__game.scenes.gameOver.handleGamepadNavigation({pressed:{confirm:true}}));
+ const reportClosed=await page.evaluate(()=>({open:window.__game.scenes.gameOver.runReportOpen,state:window.__game.scenes.gameOver.state,retry:window.__game.scenes.gameOver.getRetryCtaDebugState()}));
+ check('Controller closes Run Report and restores intact result focus',!reportClosed.open&&reportClosed.state==='runback'&&reportClosed.retry.visible,reportClosed);
+ const wiring=await page.evaluate(()=>{const s=window.__game.scenes.gameOver;const pairs=[['retryButton','restartRun'],['leaderboardButton','openLeaderboard'],['hangarButton','openHangar'],['mainMenuButton','returnToMenu']];const calls=[];for(const [button,method] of pairs){const original=s[method];s[method]=()=>calls.push(method);s[button].emit('pointerdown');s[method]=original;}return calls;});
+ check('Mouse actions are wired to retry, leaderboard, hangar and main menu',wiring.join(',')==='restartRun,openLeaderboard,openHangar,returnToMenu',wiring);
+ await page.evaluate(()=>window.__game.scenes.gameOver.openHangar());
+ await page.waitForFunction(()=>window.__game.currentSceneName==='shipSelect');
+ const hangarMode=await page.evaluate(()=>{const selected=window.__game.scenes.shipSelect;selected.openLaunchModeOverlay();return {scene:window.__game.currentSceneName,runMode:window.__game.runMode,focused:selected.launchModeOverlay?.options?.[selected.launchModeOverlay?.focusedIndex]?.id};});
+ check('Hangar return preserves Onslaught as the intended launch mode',hangarMode.scene==='shipSelect'&&hangarMode.runMode==='overrun_tactical'&&hangarMode.focused==='overrun_tactical',hangarMode);
+ await page.evaluate(()=>window.__game.switchScene('gameOver'));
+ await page.waitForFunction(()=>window.__game.scenes.gameOver.state==='runback');
+ await page.evaluate(()=>window.__game.scenes.gameOver.restartRun());
+ await page.waitForFunction(id=>window.__game.currentSceneName==='play'&&window.__game.runId!==id&&window.__game.competitionStart,start.start.runId,{timeout:30000});
+ const retry=await page.evaluate(()=>({runId:window.__game.runId,mode:window.__game.runMode,start:window.__game.competitionStart}));
+ check('Retry starts a new fixed Onslaught run',retry.runId!==start.start.runId&&retry.mode==='overrun_tactical'&&retry.start.startScore===0,retry);
+ await page.evaluate(()=>window.__game.gameOver({fromInterlude:true}));
+ await page.waitForTimeout(1000);
+ await page.evaluate(()=>window.__game.scenes.gameOver.openLeaderboard());
+ await page.waitForFunction(()=>window.__game.scenes.highscore.comment && window.__game.currentSceneName==='highscore');
+ check('Onslaught results open the Onslaught board',await page.evaluate(()=>window.__game.scenes.highscore.activeLeaderboard)==='onslaught');
+ for(const locale of ['en','de','zh-CN','ru','es','pt-BR','ko','ja']){
+  await page.setViewportSize({width:1280,height:720});
+  await page.evaluate(async code=>{await window.__novaI18n.setLanguagePreference(code);const s=window.__game.scenes.highscore;s.activeLeaderboard='onslaught';s.fetchToken++;s.applyLeaderboardResult({status:'available',entries:[{rank:1,name:'QA PILOT 1',score:50000},{rank:2,name:'QA PILOT 2',score:30000},{rank:3,name:'QA PILOT 3',score:10000}]});await s.layoutHighscore();},locale);
+  await page.waitForTimeout(250);
+  await page.screenshot({path:path.join(out,`onslaught-720p-${locale}.png`)});
+ }
+ const invitePage=await browser.newPage({viewport:{width:1366,height:768},reducedMotion:'reduce'});
+ invitePage.on('pageerror',error=>errors.push(error.stack));
+ await invitePage.addInitScript(()=>localStorage.setItem('nova.hangarProgress.v1',JSON.stringify({version:1,totalRuns:4,bestLevel:11,bestSector:11})));
+ await invitePage.goto(`${process.env.CHECK_URL || 'http://127.0.0.1:4197'}/?skipIntro=1&offlineLeaderboard=1`,{waitUntil:'domcontentloaded'});
+ await invitePage.waitForFunction(()=>window.__game?.scenes?.menu?.astraMenuShip?.ready && document.querySelector('#loading')?.style.display==='none',null,{timeout:120000});
+ await invitePage.evaluate(()=>window.__game.startGame(window.__game.selectedShipSpriteKey,{runMode:'ranked_tactical'}));
+ await invitePage.waitForFunction(()=>window.__game.currentSceneName==='play'&&window.__game.scenes.play.player?.active,null,{timeout:60000});
+ await invitePage.evaluate(()=>window.__game.gameOver({fromInterlude:true}));
+ await invitePage.waitForFunction(()=>window.__game.scenes.gameOver.state==='runback',null,{timeout:30000});
+ const invitation=await invitePage.evaluate(()=>({shown:window.__game.scenes.gameOver.onslaughtInvitation,mode:window.__game.runMode,goal:window.__game.scenes.gameOver.nextGoalText.text}));
+ check('Mastery invitation preserves Arcade with Reduced Motion',invitation.shown&&invitation.mode==='ranked_tactical'&&invitation.goal.includes('EXPLORE ONSLAUGHT'),invitation);
+ await invitePage.screenshot({path:path.join(out,'arcade-mastery-invitation.png')});
+ await invitePage.evaluate(()=>window.__game.scenes.gameOver.handleGamepadNavigation({pressed:{rb:true}}));
+ const dismissed=await invitePage.evaluate(()=>({shown:window.__game.scenes.gameOver.onslaughtInvitation,mode:window.__game.runMode,saved:Object.keys(localStorage).some(k=>k.includes('onslaughtInvitation')&&JSON.parse(localStorage.getItem(k)).dismissed)}));
+ check('Controller dismissal persists without changing mode',!dismissed.shown&&dismissed.saved&&dismissed.mode==='ranked_tactical',dismissed);
+ await invitePage.close();
+ check('No runtime exceptions',errors.length===0,errors);
+} finally {writeFileSync(path.join(out,'runtime-report.json'),JSON.stringify({...report,errors},null,2));await browser.close();}

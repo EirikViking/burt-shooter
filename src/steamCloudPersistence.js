@@ -28,9 +28,11 @@ import {
 } from './config/DisplaySettings.js';
 import {
   CONFIRM_EXIT_KEY,
+  GAMEPLAY_BACKGROUND_KEY,
   SHOW_PILOT_ORDERS_KEY,
   getMenuSettings,
   normalizeConfirmExit,
+  normalizeGameplayBackground,
   normalizeShowPilotOrders
 } from './config/MenuSettings.js';
 import {
@@ -51,6 +53,7 @@ import {
   normalizePilotXpExact
 } from './shared/RankPolicy.js';
 import { CHATTER_FREQUENCY_KEY, normalizeChatterFrequency } from './audio/VoicePolicy.js';
+import { mergeOnslaughtEvidence, normalizeOnslaughtEvidence } from './achievements/OnslaughtAchievementProgress.js';
 import {
   KEYBOARD_BINDINGS_KEY,
   getKeyboardBindings,
@@ -62,7 +65,7 @@ import {
   normalizeControlSettings
 } from './config/ControlSettings.js';
 
-export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY, SHOW_PILOT_ORDERS_KEY };
+export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY, GAMEPLAY_BACKGROUND_KEY, SHOW_PILOT_ORDERS_KEY };
 export { KEYBOARD_BINDINGS_KEY };
 export { CONTROL_SETTINGS_KEY };
 
@@ -92,6 +95,7 @@ const AUDIO_KEYS = Object.freeze({
   voiceVolume: 'burt_volume_voice',
   musicEnabled: 'burt_music_enabled',
   voiceEnabled: 'burt_voice_enabled',
+  tacticalVoiceEnabled: 'nova_audio_tactical_announcer_enabled',
   menuVoiceEnabled: 'burt_menu_voice_enabled',
   menuAudioMode: 'burt_menu_audio_mode',
   bossVoiceEnabled: 'burt_boss_voice_enabled',
@@ -835,6 +839,7 @@ function normalizeAchievementPayload(raw = {}) {
   return {
     version: Math.max(1, Math.floor(Number(raw?.version) || 1)),
     unlocked,
+    onslaughtRuns: normalizeOnslaughtEvidence(raw?.onslaughtRuns),
     updatedAt: raw?.updatedAt ? String(raw.updatedAt) : null
   };
 }
@@ -849,6 +854,7 @@ function collectAudioSettings(storage) {
   if (has(AUDIO_KEYS.voiceVolume)) audio.voiceVolume = clampUnit(readStorage(storage, AUDIO_KEYS.voiceVolume), 0.45);
   if (has(AUDIO_KEYS.musicEnabled)) audio.musicEnabled = readStorage(storage, AUDIO_KEYS.musicEnabled) !== 'false';
   if (has(AUDIO_KEYS.voiceEnabled)) audio.voiceEnabled = readStorage(storage, AUDIO_KEYS.voiceEnabled) !== 'false';
+  if (has(AUDIO_KEYS.tacticalVoiceEnabled)) audio.tacticalVoiceEnabled = readStorage(storage, AUDIO_KEYS.tacticalVoiceEnabled) !== 'false';
   if (has(AUDIO_KEYS.menuVoiceEnabled)) audio.menuVoiceEnabled = readStorage(storage, AUDIO_KEYS.menuVoiceEnabled) === 'true';
   if (has(AUDIO_KEYS.menuAudioMode)) audio.menuAudioMode = readStorage(storage, AUDIO_KEYS.menuAudioMode) === 'music' ? 'music' : 'ambient';
   if (has(AUDIO_KEYS.bossVoiceEnabled)) audio.bossVoiceEnabled = readStorage(storage, AUDIO_KEYS.bossVoiceEnabled) !== 'false';
@@ -865,7 +871,7 @@ function restoreAudioSettings(storage, audio = {}) {
   for (const key of ['masterVolume', 'musicVolume', 'sfxVolume', 'uiVolume', 'voiceVolume']) {
     if (audio[key] !== undefined && writeStorage(storage, AUDIO_KEYS[key], clampUnit(audio[key], 1))) changed += 1;
   }
-  for (const key of ['musicEnabled', 'voiceEnabled', 'menuVoiceEnabled', 'bossVoiceEnabled', 'ctaVoiceEnabled']) {
+  for (const key of ['musicEnabled', 'voiceEnabled', 'tacticalVoiceEnabled', 'menuVoiceEnabled', 'bossVoiceEnabled', 'ctaVoiceEnabled']) {
     if (audio[key] !== undefined && writeStorage(storage, AUDIO_KEYS[key], Boolean(audio[key]))) changed += 1;
   }
   if (audio.musicPack !== undefined && writeStorage(storage, AUDIO_KEYS.musicPack, String(audio.musicPack).slice(0, 64))) {
@@ -1011,12 +1017,13 @@ export function restoreSteamCloudPersistenceToStorage(save, {
   }
 
   const cloudAchievements = normalizeAchievementPayload(save.achievements || save.achievementMirror);
-  if (cloudAchievements.unlocked.length > 0) {
+  if (cloudAchievements.unlocked.length > 0 || cloudAchievements.onslaughtRuns.length > 0) {
     const localAchievements = normalizeAchievementPayload(readJsonStorage(storage, CLOUD_ACHIEVEMENT_KEY, {}));
     const unlocked = [...new Set([...localAchievements.unlocked, ...cloudAchievements.unlocked])];
     const payload = {
       version: Math.max(localAchievements.version, cloudAchievements.version, 1),
       unlocked,
+      onslaughtRuns: mergeOnslaughtEvidence(localAchievements.onslaughtRuns, cloudAchievements.onslaughtRuns),
       updatedAt: cloudAchievements.updatedAt || localAchievements.updatedAt || new Date().toISOString()
     };
     summary.achievements = unlocked.length;
@@ -1163,6 +1170,14 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     }
   }
   if (settings.menu?.confirmExit !== undefined && writeStorage(storage, CONFIRM_EXIT_KEY, normalizeConfirmExit(settings.menu.confirmExit) ? '1' : '0')) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
+  if (settings.menu?.gameplayBackground !== undefined && writeStorage(
+    storage,
+    GAMEPLAY_BACKGROUND_KEY,
+    normalizeGameplayBackground(settings.menu.gameplayBackground)
+  )) {
     summary.settings += 1;
     summary.restored = true;
   }

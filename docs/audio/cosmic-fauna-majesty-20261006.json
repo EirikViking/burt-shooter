@@ -1,0 +1,425 @@
+{
+  "method": "Local ffmpeg mastering of 42 existing, individually generated ElevenLabs recordings; no new generated recordings or paid calls",
+  "rows": [
+    {
+      "id": "cathedral_ray",
+      "type": "luminous",
+      "source": "public/audio/sfx/cosmic-fauna/cathedral_ray.wav",
+      "sourceSha256": "c5294127bcdd740cfdb4b57d01efd0032050f1cf318432a01db2b80e255d7812",
+      "outputSha256": "bde737584dd0afedfcf7666d0b804e9c6db1597d872091c411e1a5227e93558c",
+      "seconds": 20,
+      "pitch": 0.92,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=40572,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "lantern_medusa",
+      "type": "luminous",
+      "source": "public/audio/sfx/cosmic-fauna/lantern_medusa.wav",
+      "sourceSha256": "13810b41f824ca08d2ab3c1c7304dc42ad974f790aa482a3261142e7578e9527",
+      "outputSha256": "79b6c5c1f71718b96714e94940fe5d03eae8cfe221126671474c59b9440c693d",
+      "seconds": 20,
+      "pitch": 0.92,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=40572,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "obsidian_mantis",
+      "type": "armoured",
+      "source": "public/audio/sfx/cosmic-fauna/obsidian_mantis.wav",
+      "sourceSha256": "cb4bac735d650d3392a3fab1bd34a88feb9a11b95fa785bf2bae5ef50b82d3a5",
+      "outputSha256": "2c00bcdd536590a64cf89f9a9ce631084899f66301651e2171d01d22eb003d89",
+      "seconds": 20,
+      "pitch": 0.89,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=39249,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "glassjaw_leviathan",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/glassjaw_leviathan.wav",
+      "sourceSha256": "667b87dfe5a7d5fdba5f6780a1e228905d4a1ebaa6d672aea4fd8534ad9477ab",
+      "outputSha256": "d057cffb43656429bcae69dbe90d664edca5eb5366b1d552571227237391e86a",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "ember_cuttle",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/ember_cuttle.wav",
+      "sourceSha256": "0fd75144fc88f356d0bb4b1ac43f8b7d686e18bd449da975814cf10bbcc49907",
+      "outputSha256": "27f3ee5c68caea6af99b66ddf3a8b5ab5d882b0111a63ff281216e9bbf923bc8",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "crown_nautilus",
+      "type": "armoured",
+      "source": "public/audio/sfx/cosmic-fauna/crown_nautilus.wav",
+      "sourceSha256": "4ad02145519d8f54523071be289965836e52ab12f121486feed8407c47281ca7",
+      "outputSha256": "ed2d729085ae0b0982f2e345feee719b647273f1f284992799d1160a471a3139",
+      "seconds": 20,
+      "pitch": 0.89,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=39249,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "mourning_swan",
+      "type": "luminous",
+      "source": "public/audio/sfx/cosmic-fauna/mourning_swan.wav",
+      "sourceSha256": "6a483457c771e54f909cbb7d480ea663bc1986abb6e8d701840505d260c02ce7",
+      "outputSha256": "4b3352712dc2dc48b0f4e5639263542885223b947d2482a8f342563069dacc79",
+      "seconds": 20,
+      "pitch": 0.92,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=40572,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "abyssal_ribbon",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/abyssal_ribbon.wav",
+      "sourceSha256": "ee565ef9c4f55b22e4b7203db2a2afe0cbd2afb13b168b6509e37a344c5d7a42",
+      "outputSha256": "798686bce682966f3c24fd492eb4e70210274e5a5c36065200120386bddbb822",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "bloom_kraken",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/bloom_kraken.wav",
+      "sourceSha256": "62006e07f43e4a9f478e001f2be9d032529e70f56114577e142bc07e9e8bdf43",
+      "outputSha256": "9f8e175840e989038475b7b0bc2c8883ab25a67421ffa7fc8841ad0041372c0f",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "polar_seahorse",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/polar_seahorse.wav",
+      "sourceSha256": "5120c39ac9726153c2afffa71487581b28290acdf25b7f19cdae636e20b4a280",
+      "outputSha256": "7724b1c4945fb68226743b8cbe93c3847ae17d747c0609af4101f428cc4301d6",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "velvet_angel",
+      "type": "luminous",
+      "source": "public/audio/sfx/cosmic-fauna/velvet_angel.wav",
+      "sourceSha256": "75c44bb20a25285f6a1b60ea913e086c45f1d6c0ad09d0aed42e4d6aca6245d1",
+      "outputSha256": "7cb4f7f9b05a16b6ce6cfbfa7ee114c90ed0c25ec5379a4f1d4139597f198d67",
+      "seconds": 20,
+      "pitch": 0.92,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=40572,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "cinderback_turtle",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/cinderback_turtle.wav",
+      "sourceSha256": "16dff80e9f288594dd287c944588759f589b8673564d45e5caa91b37b5be620e",
+      "outputSha256": "a65422f853a1c2813f24fdb529adbfb6c666995d5d89a548ee635a9c1565a9da",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "thunder_eel",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/thunder_eel.wav",
+      "sourceSha256": "6c04de641a61d36a94c24ff4827aeb3b0d8dd5eb5da7aa6d4969fa6bb9279e43",
+      "outputSha256": "435bd02b3f50f73bd5955534d2bb323d44eebe11c28eebdd934fb7c7f7bed531",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "cathedral_centipede",
+      "type": "armoured",
+      "source": "public/audio/sfx/cosmic-fauna/cathedral_centipede.wav",
+      "sourceSha256": "aeeb41d36da550fa712ce71b00e7a5c38c6b932cba1c8d88485d5e46b4a186e0",
+      "outputSha256": "ab4e7c3356c7821752f46f49220456f1ffad1ff2bbf0e319c88bfea7d12e11db",
+      "seconds": 20,
+      "pitch": 0.89,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=39249,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "pearl_salamander",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/pearl_salamander.wav",
+      "sourceSha256": "60a2fee930e09fd6eefe8bf387f366981309539e41e24d322b1ecff8d4b26c69",
+      "outputSha256": "d876318026335b01d91f8c76afd261ed37f411808b40abb761555bc04c1a79c6",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "mirror_moth",
+      "type": "luminous",
+      "source": "public/audio/sfx/cosmic-fauna/mirror_moth.wav",
+      "sourceSha256": "764e6f053a5027ec332f8264d889f8aee09a6109632f5bbdd531857305efbb82",
+      "outputSha256": "ba82da528260f6a2d82fdb336dc1aba8ee65972517bc3cb0a136965c1fa14c5e",
+      "seconds": 20,
+      "pitch": 0.92,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=40572,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "moon_urchin",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/moon_urchin.wav",
+      "sourceSha256": "0cccd78e8d0df79f7268328672317c02a0f14f811fc606ec49c6ee6151b88e54",
+      "outputSha256": "62950aff842932eef22a81eabd63198b57a03c4f8d795fa5c6b73dd31fd4723c",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "rose_anemone",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/rose_anemone.wav",
+      "sourceSha256": "d67020a505ee6dd382e896c7d16277389f7846f3226c4724df6332dfba6c0918",
+      "outputSha256": "5a24a0192f2f7de0153ab126111afc80e85765859dbbc367842dc378c6585045",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "spine_shark",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/spine_shark.wav",
+      "sourceSha256": "18fde6c95def8c14e6b7c071dced75b54db09bdbf78c3ec1b46a76e497da0716",
+      "outputSha256": "b2578f26c94cebf9066b66dcaf5cc78292061fe894fad3bd714e761ea11197c3",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "dawn_koi",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/dawn_koi.wav",
+      "sourceSha256": "45cbb0dac65ee6db96b565aabd195cba7750077676f09722e5f234395d4bef52",
+      "outputSha256": "8a5a821c257918891e073969dc5927ed91f159c8ed3f563e84240f76d215327a",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "iron_jelly",
+      "type": "armoured",
+      "source": "public/audio/sfx/cosmic-fauna/iron_jelly.wav",
+      "sourceSha256": "7710cbe48d6f7d2f1b6101cce2cbfa6e8dbb595936a432f4e4a1cf31ccab5e60",
+      "outputSha256": "6a343bc7f4f35a547f5d0c1ef32a764bd8c428769f5c652506910bd6df65e720",
+      "seconds": 20,
+      "pitch": 0.89,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=39249,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.1+0.18*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "saffron_seadragon",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/saffron_seadragon.wav",
+      "sourceSha256": "be51d074a956f594d07b9658824043f7f139ab829228041026169a4cbc211859",
+      "outputSha256": "341352e3b3664fd4c16d1f034d110c1784f91e2161d51d71e53a82e813d3bb06",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "quasar_bat",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/quasar_bat.wav",
+      "sourceSha256": "94f2096ca46e81d639aeb86452e1a37f0ab5158c9ccd2f215d195075644b87f6",
+      "outputSha256": "aed1dba311faffd340a92aab7aba5f3b1ac5155b0979e39a160ad0c5df7c7599",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "fossil_seadrake",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/fossil_seadrake.wav",
+      "sourceSha256": "23ae9141bfd735b0ed0a6fe79ea662aa7e314302711d0bb3f7b9bc3fbf7671f8",
+      "outputSha256": "9305d09bd499d5bdffaa2b8b2f567cbc9e1331aed7f1c9e3ea157d86a22f5e12",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "opal_scallop",
+      "type": "armoured",
+      "source": "public/audio/sfx/cosmic-fauna/opal_scallop.wav",
+      "sourceSha256": "5f3d88aaf8a50d725a75e25dcd8e10272784e1a2031bb0e7872be3af5883bf43",
+      "outputSha256": "4edb705f9df5e52e092289939cddf84d2c5ebd6618b6a1f323449a13876004ca",
+      "seconds": 20,
+      "pitch": 0.89,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=39249,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "dusk_hydra",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/dusk_hydra.wav",
+      "sourceSha256": "6e2b9d2963e199bea61fe9de9e484506c78008839a6161667db7462ca4cb307d",
+      "outputSha256": "e3b47fcdafbcf6db0cd06ee9e6180bec3691a029da7aa11f44ab2548de753250",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "velvet_worm",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/velvet_worm.wav",
+      "sourceSha256": "d78a52c019f2ca455cb9fe0e791b9bcd7c1c5f3a5b36f9ab73ff5776b2442a67",
+      "outputSha256": "52df0f118f666670b64bd043f112eb7c11e3019c919a4a6937d9b587c898090d",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "halo_stag",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/halo_stag.wav",
+      "sourceSha256": "16a30b4536f473b13a0bf5b7aa00f841597e94f58ce75c040f9e32fc3d002e24",
+      "outputSha256": "6a2baaf9e802dd053b7b23f00b7f635c205ab83ca913e24d512849ad8d759119",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "cryolith_isopod",
+      "type": "armoured",
+      "source": "public/audio/sfx/cosmic-fauna/cryolith_isopod.wav",
+      "sourceSha256": "54acb73081576eb8cb2177b743f1c2767811459a40c705360e00045b327d7003",
+      "outputSha256": "e14484c86adc0361470b8705b2b1ad08d55564237f98e3f232145d2a1beb1492",
+      "seconds": 20,
+      "pitch": 0.89,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=39249,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "solar_butterfly",
+      "type": "luminous",
+      "source": "public/audio/sfx/cosmic-fauna/solar_butterfly.wav",
+      "sourceSha256": "c8fa7e82af463575a639f1e0e82c941f6285863007ae71866bd0a67eb10c8de1",
+      "outputSha256": "69f6bcccfae6c008e8864d5e8dbe57040bf8e0852e708ff403babe2c8ab4bf2e",
+      "seconds": 20,
+      "pitch": 0.92,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=40572,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "lantern_angler",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/lantern_angler.wav",
+      "sourceSha256": "e8eb7d95e54f757eca243b3dd088814338d45d13bf323bad35005c3003794c95",
+      "outputSha256": "2532863707c62d49bf701015798fc415173222e61a7d4d56d86c3b3ee49832a7",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "glass_octopus",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/glass_octopus.wav",
+      "sourceSha256": "fc1cb7c77984fea4d4b25db60133e775c6bd5903532c4a9c24f319bbfa9c6c0a",
+      "outputSha256": "070cbe0e2208699a2603c30b69a807a5a80c7e48b51c643313682d9bfbb8b8f4",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "astral_cobra",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/astral_cobra.wav",
+      "sourceSha256": "212d5f04a2e02c8d6ada47db0f9c197ea53958b9851da904851433f6502ae50a",
+      "outputSha256": "e784e38cff300b16da8298180c3fb0cb76b752d15c37591e8ab122c1aa76d580",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "crown_shrimp",
+      "type": "armoured",
+      "source": "public/audio/sfx/cosmic-fauna/crown_shrimp.wav",
+      "sourceSha256": "c4080eb10f33920c8d8bdbe2f0bc7dd8b7a5b8088d3cc5587e9a25543492f945",
+      "outputSha256": "2951fc49064ced58dff9dd9301a0c556f085199f76bb86241d98c6ce0b5a74cc",
+      "seconds": 20,
+      "pitch": 0.89,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=39249,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "silt_wraith",
+      "type": "luminous",
+      "source": "public/audio/sfx/cosmic-fauna/silt_wraith.wav",
+      "sourceSha256": "32ad578124398a6c3ad19f56fdcb48798ae88a1513d979f333d67401737ac7dc",
+      "outputSha256": "43e86249b8070d112d7cf8a6701a298557325b4b5252db57f505956cbb8ecc8e",
+      "seconds": 20,
+      "pitch": 0.92,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=40572,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "coral_giant",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/coral_giant.wav",
+      "sourceSha256": "dedf5a91ac1157c52c06fbc12c5a6d08ce35f6ef78a20c09437e8a83344c6df5",
+      "outputSha256": "bc0fdca81f08ae3b5567f7dd20aea0f8b667cc4e3ed5a1df9529eb44834b89b7",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "winter_cicada",
+      "type": "armoured",
+      "source": "public/audio/sfx/cosmic-fauna/winter_cicada.wav",
+      "sourceSha256": "33839dca392c0ae63528ad8af744608880a88d0f92d42c894a2222128e0956a5",
+      "outputSha256": "f690595587667660134f19af38980da6e342b9b2c90c0902758eb59a514be394",
+      "seconds": 20,
+      "pitch": 0.89,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=39249,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "onyx_hammerhead",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/onyx_hammerhead.wav",
+      "sourceSha256": "9e2bd88b9844a514f206ac31956ac7a0b7f752dc9526d012df4fa2cb0e2cc504",
+      "outputSha256": "cb293fc0d9380b38115e825d95122e17c9f51b31a83982a70c5c7cff043050cc",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "choir_siphonophore",
+      "type": "luminous",
+      "source": "public/audio/sfx/cosmic-fauna/choir_siphonophore.wav",
+      "sourceSha256": "7c57afe10d1ab06e2776495ff5f9f60c6cf762ddf0fb7d0bfbbbbc9e2ed64db8",
+      "outputSha256": "467e891774c103e84b6eda2ec4940a35fae4c73f3ba60c2dfc818ec30953b71a",
+      "seconds": 20,
+      "pitch": 0.92,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=40572,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "copper_skate",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/copper_skate.wav",
+      "sourceSha256": "bef80f9f896e3e9e20ae30d7daab30f41e4f1d6022488314e63c66e9143e797a",
+      "outputSha256": "ba04c3cad6463eb238b31beb841e1c4177859e9f69b4bfc5bb7fb6e524ee5594",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "eclipse_hydroid",
+      "type": "luminous",
+      "source": "public/audio/sfx/cosmic-fauna/eclipse_hydroid.wav",
+      "sourceSha256": "ef0b2cd79d8122bd5e4e49a99c526339625f58364a170575afcd1562574f8b0d",
+      "outputSha256": "3d1de52c497b1d45e074823f7a9cefdcb8fe0fb093801ccab36d44dc60b8114a",
+      "seconds": 20,
+      "pitch": 0.92,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=40572,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    },
+    {
+      "id": "dream_sailfish",
+      "type": "abyssal",
+      "source": "public/audio/sfx/cosmic-fauna/dream_sailfish.wav",
+      "sourceSha256": "2c4b1a060d908930c943e71392c314263b02a591cd9b4a45fc24fd1d8b71ef3b",
+      "outputSha256": "83302939c1c7d07ce727211b72eed3b60a65eb673d0dcfe4fa39ec14fbaa3f1b",
+      "seconds": 20,
+      "pitch": 0.82,
+      "filters": "[0:a]asplit=3[approach][voice][wake];[approach]asetrate=26460,aresample=44100,atempo=0.72,lowpass=f=850,highpass=f=48,volume=0.48,apad=whole_dur=8,atrim=duration=8,asetpts=N/SR/TB,afade=t=in:d=2.4,afade=t=out:st=4.8:d=3.2[a];[voice]asetrate=36162,aresample=44100,atempo=0.82,equalizer=f=210:t=q:w=0.85:g=2.5,aecho=0.8:0.75:180|410|760:0.22|0.14|0.08,afade=t=in:d=0.35,adelay=4300[v];[wake]asetrate=30870,aresample=44100,atempo=0.70,lowpass=f=2400,volume=0.46,aecho=0.8:0.65:370|810:0.22|0.12,afade=t=in:d=1.4,adelay=10100[w];[a][v][w]amix=inputs=3:normalize=0:duration=longest,highpass=f=42,lowpass=f=9500,apad=whole_dur=20,atrim=duration=20,asetpts=N/SR/TB,afade=t=out:st=16:d=4,loudnorm=I=-20:TP=-5.5:LRA=11,aresample=44100,asetpts=N/SR/TB,apad=whole_dur=20,atrim=end_sample=882000,volume='if(lt(t,4),0.22+0.38*t/4,if(lt(t,11),1,if(lt(t,16),1-0.12*(t-11),0.4)))':eval=frame,afade=t=in:d=0.65,afade=t=out:st=16:d=4[master]"
+    }
+  ]
+}

@@ -1,3 +1,10 @@
+import { getGameOverQualitySourceText } from '../gameOverQualityText.js';
+import { getFirstLightSourceText } from '../firstLightText.js';
+import { getOnslaughtText } from '../onslaughtText.js';
+import { getAudioSettingsHelpText } from '../audioSettingsHelpText.js';
+import { getMysterySourceText } from '../mysteryText.js';
+import {getDiscoveryText} from '../discoveryText.js';
+import { getTractorFleetSourceText } from '../tractorFleetText.js';
 import { getMenuAudioSourceText } from '../menuAudioText.js';
 import { getActivePilotingText } from '../activePilotingText.js';
 import { getLaunchHomeSourceText } from '../launchHomeText.js';
@@ -33,6 +40,7 @@ import { getHighSectorSourceText } from '../highSectorSourceText.js';
 import { getLateGameExperimentSourceText } from '../lateGameExperimentSourceText.js';
 
 const sourceText = Object.freeze({
+  ...getAudioSettingsHelpText('pt-BR'),
   'MOVE — WASD / ARROWS  •  SHOOT — SPACE': 'MOVER — WASD / SETAS  •  ATIRAR — ESPAÇO',
   'MOVE — STICK / D-PAD  •  SHOOT — A / RT': 'MOVER — ANALÓGICO / D-PAD  •  ATIRAR — A / RT',
   'PHASE — SHIFT': 'FASE — SHIFT',
@@ -925,6 +933,11 @@ const sourceText = Object.freeze({
   'VOICE': 'VOZ',
   'Boss Voices': 'VOZ DO CHEFE',
   'CTA VOICE': 'VOZ RECOMEÇO',
+  'RETRY VOICE': 'VOZ DE REINÍCIO',
+  'POST-RUN VOICE': 'VOZ PÓS-PARTIDA',
+  'TACTICAL WARNINGS': 'ALERTAS TÁTICOS',
+  'Tactical Warnings play incoming threats even with Voice off. Retry Voice controls retry prompts. Chatter Rate affects optional voices.': 'Alertas táticos avisam sobre ameaças mesmo com Voz desligada. Voz de reinício controla os convites para tentar de novo. Frequência de falas afeta apenas vozes opcionais.',
+  'Tactical Warnings announce incoming threats even with Voice off. Post-Run Voice invites another try on the results screen. Chatter Rate affects optional voices.': 'Alertas táticos avisam sobre ameaças mesmo com Voz desligada. A voz pós-partida convida você a tentar de novo na tela de resultados. Frequência de falas afeta apenas vozes opcionais.',
   'Chatter Frequency': 'FREQUÊNCIA DE CONVERSA',
   'CHATTER RATE': 'RITMO DE FALAS',
   'Full': 'Completa',
@@ -1543,6 +1556,7 @@ const sourceText = Object.freeze({
   'Reach sector 15 in overrun and pilot rank 13': 'Alcance o setor 15 em overrun e o ranque de piloto 13',
   'Discover 160 Threat Codex entries and reach pilot rank 14': 'Descubra 160 entradas do Codex de ameaças e alcance o ranque de piloto 14',
   'Clear the arcade run 3 times and reach pilot rank 14': 'Conclua a run arcade 3 vezes e alcance o ranque de piloto 14',
+  "Clear Sector 10 in Mayhem with 2 lives left, or score 500,000 in Mayhem": "Conclua o setor 10 no Mayhem com 2 vidas ou faça 500.000 pontos no Mayhem",
   'Clear with 2 lives remaining or score 500,000': 'Conclua com 2 vidas restantes ou faça 500.000 pontos',
   'Clear twice, reach rank 16, and discover 180 threats': 'Conclua duas vezes, alcance o ranque 16 e descubra 180 ameaças',
   'HULLS READY': 'CASCOS PRONTOS',
@@ -1573,6 +1587,7 @@ const sourceText = Object.freeze({
   'Qualify for the global leaderboard.': 'Classifique-se no ranking global.',
   'Swarm Elite': 'Elite do enxame',
   'Submit a 750,000-point ranked run.': 'Envie uma run ranqueada de 750.000 pontos.',
+  'Submit a ranked score of at least 250,000 points. Modes: Arcade Tactical, Arcade Pure, Onslaught Tactical.': 'Envie uma pontuação ranqueada de pelo menos 250.000 pontos. Modos: Arcade Tactical, Arcade Pure, Onslaught Tactical.',
   'Legacy Ranked Run': 'Run ranqueada antiga',
   'Unknown Run Mode': 'Modo de run desconhecido',
   'First Ranked Run': 'Primeira run ranqueada',
@@ -1887,6 +1902,8 @@ const overhaulSourceText = Object.freeze({
 
 export const ptBR = {
   code: 'pt-BR',
+  history: { unknownMode: "Modo desconhecido", sectorUnrecorded: "SETOR NÃO REGISTRADO", sectorUnrecordedHint: "Registros antigos da Steam não salvaram os dados de setor." },
+  recovery: {storageHelp:"Falha ao salvar. Mantenha o jogo aberto e libere espaço no disco ou restaure o acesso à pasta de saves. O jogo tentará salvar automaticamente. Reiniciar só fica disponível após salvar.","title":"Jogo pausado após um problema","help":"Se os gráficos se recuperarem, volte ao menu de pausa. Reiniciar encerra o voo em andamento; o progresso já salvo é mantido. Se ocorrer novamente, inclua a versão e recovery/recovery-latest.json no relato.","resume":"Voltar ao menu de pausa","restart":"Reiniciar jogo"},
   name: 'Portuguese Brazil',
   nativeName: 'Português do Brasil',
   settings: {
@@ -1908,6 +1925,6 @@ export const ptBR = {
   diagnostics: {
     interfaceLanguage: 'Idioma da interface'
   },
-  sourceText: Object.freeze({ ...getMenuAudioSourceText('pt-BR'), ...getActivePilotingText('pt-BR'), ...getLaunchHomeSourceText('pt-BR'), ...getShipTraitSummarySourceText("pt-BR"), ...getBonusCoreSourceText('pt-BR'), ...getBonusDroneSourceText('pt-BR'), ...getCoreSerpentSourceText('pt-BR'), ...getAstraPresentationSourceText('pt-BR'), ...getFirstRunRetentionSourceText('pt-BR'), ...getModeBriefingReviewSourceText('pt-BR'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getOverrunModeSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR'), ...getPlayerFeedbackReliabilitySourceText('pt-BR'), ...getTyrianFeedbackSourceText('pt-BR'), ...getCompetitionLearningSourceText('pt-BR'), ...getTacticalDraftClaritySourceText('pt-BR'), ...getWonderCodexSourceText('pt-BR'), ...getHangarLaunchModeSourceText('pt-BR'), ...getNewestTyrianFeedbackSourceText('pt-BR'), ...getSecondPolishSourceText('pt-BR'), ...getTyrian112SourceText('pt-BR'), ...getHighSectorSourceText('pt-BR'), ...getLateGameExperimentSourceText('pt-BR') }),
+  sourceText: Object.freeze({ ...getFirstLightSourceText('pt-BR'), ...getOnslaughtText('pt-BR'), "Steam: Upload pending":"Steam: Envio pendente","Steam: Upload not confirmed":"Steam: Envio não confirmado", "TEST FLIGHT · SECTOR {sector} · CHOOSE ANY SHIP": "VOO DE TESTE · SETOR {sector} · ESCOLHA QUALQUER NAVE", ...getMysterySourceText('pt-BR'), ...getDiscoveryText('pt-BR'), ...getTractorFleetSourceText('pt-BR'), ...getMenuAudioSourceText('pt-BR'), ...getActivePilotingText('pt-BR'), ...getLaunchHomeSourceText('pt-BR'), ...getShipTraitSummarySourceText("pt-BR"), ...getBonusCoreSourceText('pt-BR'), ...getBonusDroneSourceText('pt-BR'), ...getCoreSerpentSourceText('pt-BR'), ...getAstraPresentationSourceText('pt-BR'), ...getFirstRunRetentionSourceText('pt-BR'), ...getModeBriefingReviewSourceText('pt-BR'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getOverrunModeSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR'), ...getPlayerFeedbackReliabilitySourceText('pt-BR'), ...getTyrianFeedbackSourceText('pt-BR'), ...getCompetitionLearningSourceText('pt-BR'), ...getTacticalDraftClaritySourceText('pt-BR'), ...getWonderCodexSourceText('pt-BR'), ...getHangarLaunchModeSourceText('pt-BR'), ...getNewestTyrianFeedbackSourceText('pt-BR'), ...getSecondPolishSourceText('pt-BR'), ...getTyrian112SourceText('pt-BR'), ...getHighSectorSourceText('pt-BR'), ...getLateGameExperimentSourceText('pt-BR'), ...getGameOverQualitySourceText('pt-BR') }),
   patterns
 };

@@ -156,6 +156,7 @@ async function runSteamLeaderboardRuntimeProbe({ window, args, baseUrl, runtimeI
           rank: entry.rank ?? entry.globalRank ?? null,
           playerName: entry.playerName || null,
           score: entry.score ?? null,
+          details: Array.isArray(entry.details) ? entry.details.slice(0, 64) : [],
           levelReached: entry.levelReached ?? entry.level ?? entry.metadata?.levelReached ?? null,
           shipId: entry.shipId ?? entry.metadata?.shipId ?? null,
           runTimeSeconds: entry.runTimeSeconds ?? entry.metadata?.runTimeSeconds ?? null,

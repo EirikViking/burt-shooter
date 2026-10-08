@@ -1,0 +1,14 @@
+{
+  "tool": "image_gen.imagegen",
+  "generatedFile": "boss-fire-atlas.png",
+  "width": 1774,
+  "height": 887,
+  "format": "RGBA PNG",
+  "requestedAtlas": {
+    "columns": 4,
+    "rows": 2,
+    "transparent_background": true
+  },
+  "integrationNote": "Normalize once to an integer four-column/two-row dimension while preserving alpha before importing; generated dimensions divide into 443.5-pixel cells.",
+  "prompt": "Use case: stylized-concept. Asset type: production transparent game VFX animation atlas, exactly EIGHT equal-sized frames in a strict 4-column by 2-row grid on a 2048 by 1024 canvas. Each 512-square cell contains the same isolated compact volumetric fire plume at a consecutive moment in a slow smooth 8-frame looping animation. No grid lines or labels. The fire travels to the RIGHT: small tapered smoky tail on the left, rounded billowing orange flame head at the right. Each plume occupies only the center 75 percent of its cell with completely transparent gutters on all four sides and no overlap into another cell. Art direction: premium physically believable dense rolling combustion, sculpted three-dimensional orange and deep copper flame volumes, dark charcoal smoky pockets, restrained small amber luminous core, sparse tiny ember flecks contained inside the plume silhouette. Rich medium-scale lobes and dark separation rather than a mass of thin threadlike lines. Consistent size, position, direction, and exposure across all eight frames, with evolving internal rolling turbulence only. This is a dangerous fire attack texture for a fast 2D space shooter, so keep the body crisp and readable at small size without whitening it. Genuine transparent RGBA background, no backdrop, no black background plate, no floor, no text, no numbers, no decorative borders, no laser streaks, no pointed white spear, no white-hot bloom, no glowing halo outside the silhouette. Deliver only the transparent eight-frame atlas."
+}

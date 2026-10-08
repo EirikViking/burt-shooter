@@ -1,5 +1,6 @@
 import {Container,Sprite,Graphics,Assets,Texture} from 'pixi.js';
 import {getAccessibilitySettings} from '../config/AccessibilitySettings.js';
+import {drawEnergySurface} from './AstraEnergyMaterial.js';
 
 let lightTexture,hardwarePromise;
 function light(){
@@ -39,12 +40,15 @@ export class AstraAttackRig extends Container{
     const endX=node.x,endY=node.y+r*.25;
     for(let k=0;k<3;k++){
      const u=((t*1.1+k/3+i*.14)%1),x=endX*u,y=endY*u;
-     this.filaments.moveTo(x,y).lineTo(x+endX*.08,y+endY*.08).stroke({color:k===1?0xfff2d4:this.color,width:k===1?1.2:.7,alpha:charge*(.25+.55*u)*settings.flashIntensity});
+     drawEnergySurface(this.filaments,{kind:'corona',x,y,
+       width:r*.2,height:r*.24,color:k===1?0xfff2d4:this.color,
+       alpha:charge*(.2+.32*u)*settings.flashIntensity});
     }
     // A tiny contained discharge crawls over the emitter mouth.
     if(motion&&charge>.5){
-     for(let j=0;j<6;j++){const x=endX+(j/5-.5)*r*.25,y=endY+Math.sin(j*3.1+t*21+i)*r*.035;if(j)this.filaments.lineTo(x,y);else this.filaments.moveTo(x,y);}
-     this.filaments.stroke({color:0xfff7e0,width:.75,alpha:(charge-.5)*settings.flashIntensity});
+     drawEnergySurface(this.filaments,{kind:'rift',x:endX,y:endY,
+       width:r*.3,height:r*.22,color:0xfff7e0,
+       alpha:(charge-.5)*settings.flashIntensity});
     }
    }
   });

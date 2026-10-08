@@ -30,6 +30,7 @@ function isPressed(buttons, index) {
 }
 
 function readSnapshot() {
+  if (globalThis.window?.__novaNativePresentation?.isInputActive?.() === false) return null;
   const override = typeof window !== 'undefined' ? window.__burtGamepadOverride : null;
   if (override) {
     return {
@@ -88,7 +89,7 @@ export class GamepadNavigator {
     const pad = readSnapshot();
     if (!pad || pad.connected === false) {
       this.previous = {};
-      this.suppressActiveInput = false;
+      this.suppressActiveInput = globalThis.window?.__novaNativePresentation?.isInputActive?.() === false;
       return {
         connected: false,
         active: false,

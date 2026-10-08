@@ -106,7 +106,7 @@ async function checkWebRuntime() {
   const adapter = createLeaderboardAdapter();
   await adapter.refreshAvailability();
   assert.equal(adapter.isSteamAvailable(), false, 'web runtime should not use Steam without a bridge');
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'local']);
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['tactical', 'onslaught', 'global', 'local']);
 
   const global = await adapter.getScores('global', { useCache: false });
   assert.equal(global.source, 'cloud');
@@ -137,13 +137,15 @@ async function checkWebRuntime() {
     level: 4,
     levelReached: 5,
     rankIndex: 4,
+    runMode: 'ranked',
     playerName: 'REACHED ACE',
     submissionId: 'web-reached-level'
   };
   const reachedLocal = await adapter.submitScore(reachedRun, { target: 'local', saveLocal: true, name: 'REACHED ACE' });
   assert.equal(reachedLocal.localEntry.level, 5, 'local leaderboard should prefer reached level over stale current level');
   assert.equal(reachedLocal.localEntry.levelReached, 5, 'local leaderboard should carry reached level alias');
-  await adapter.submitScore(reachedRun, { target: 'cloud', saveLocal: false, name: 'REACHED ACE' });
+  const reachedCloud = await adapter.submitScore(reachedRun, { target: 'cloud', saveLocal: false, name: 'REACHED ACE' });
+  assert.equal(reachedCloud.globalStatus, 'submitted');
   assert.equal(cloudState.lastPost.level, 5, 'cloud leaderboard should submit reached level, not stale current level');
 
   assert.equal(getPilotNameValidation('Eirik').valid, true, 'Eirik should be a valid pilot name');
@@ -152,13 +154,15 @@ async function checkWebRuntime() {
     score: 55301,
     level: 11,
     rankIndex: 6,
+    runMode: 'ranked',
     playerName: 'Eirik',
     submissionId: 'eirik-name-regression'
   };
   const eirikLocal = await adapter.submitScore(eirikRun, { target: 'local', saveLocal: true, name: 'Eirik' });
   assert.equal(eirikLocal.localEntry.name, 'EIRIK');
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('PILOT06'), false);
-  await adapter.submitScore(eirikRun, { target: 'cloud', saveLocal: false, name: 'Eirik' });
+  const eirikCloud = await adapter.submitScore(eirikRun, { target: 'cloud', saveLocal: false, name: 'Eirik' });
+  assert.equal(eirikCloud.globalStatus, 'submitted');
   assert.equal(cloudState.lastPost.name, 'EIRIK');
   assert.equal(cloudState.lastPost.level, 11);
 }
@@ -169,7 +173,7 @@ async function checkMockSteamRuntime() {
   const adapter = createLeaderboardAdapter();
   await adapter.refreshAvailability();
   assert.equal(adapter.isSteamAvailable(), true, 'mock Steam runtime should be available');
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['tactical', 'global', 'sector', 'friends', 'local'], 'Steam tabs should lead with Tactical, followed by Pure, Sector, Friends, and Local');
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['tactical', 'onslaught', 'global', 'sector', 'friends', 'local'], 'Steam tabs should lead with Tactical and Onslaught, followed by Pure, Sector, Friends, and Local');
 
   win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
     {
@@ -183,7 +187,7 @@ async function checkMockSteamRuntime() {
     }
   ]));
   await adapter.refreshAvailability();
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['tactical', 'global', 'sector', 'friends', 'local']);
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['tactical', 'onslaught', 'global', 'sector', 'friends', 'local']);
 
   const result = await adapter.submitScore({
     score: 12345,
@@ -197,7 +201,9 @@ async function checkMockSteamRuntime() {
     kills: 55,
     bossKills: 2,
     wavesCleared: 14,
-    submissionId: 'steam-run-1'
+    submissionId: 'steam-run-1',
+    runMode: 'ranked',
+    playerName: 'STEAM ACE'
   }, { target: 'steam', saveLocal: true });
   assert.equal(result.steamStatus, 'submitted');
   assert.equal(result.localStatus, 'saved');
@@ -256,7 +262,8 @@ async function checkMockSteamRuntime() {
     kills: 60,
     bossKills: 3,
     wavesCleared: 18,
-    submissionId: 'steam-level-repair'
+    submissionId: 'steam-level-repair',
+    runMode: 'ranked'
   }, { target: 'steam', saveLocal: false });
   assert.equal(repaired.steamStatus, 'submitted');
   assert.equal(repaired.steamUploadMethod, 'force_update', 'same-score stale Steam level metadata should use a one-row repair update');

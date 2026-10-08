@@ -1,5 +1,6 @@
 import { GENERATED_ENEMY_ASSET_COUNT } from './GeneratedEnemyProfiles.js';
 import { hashString } from './VisualVariantCatalog.js';
+import {discoverySector,hullDiscoverySector} from './DiscoveryProgression.js';
 
 export const BOSS_SUPPORT_SHIP_TOTAL = 111;
 export function getEarlyBossFuelMultiplier(level) { return level >= 1 && level <= 20 ? 1.5 : 1; }
@@ -69,6 +70,7 @@ function buildSupportShip(index) {
     beamStyle: role.beamStyle,
     deliveryFx: role.deliveryFx,
     spriteIndex: (index * 29 + Math.floor(index / 4) * 7) % GENERATED_ENEMY_ASSET_COUNT,
+    unlockLevel: Math.max(discoverySector(index,BOSS_SUPPORT_SHIP_TOTAL),hullDiscoverySector((index * 29 + Math.floor(index / 4) * 7) % GENERATED_ENEMY_ASSET_COUNT)),
     spriteScale: round(1.02 + (index % 6) * 0.025, 3),
     haloScale: round(1.45 + (index % 4) * 0.12, 2),
     routeDrift: drift,
@@ -109,5 +111,6 @@ export function getBossSupportShipEventSeed(level = 1, eventIndex = 0) {
 export function pickBossSupportShipProfile(level = 1, seed = '') {
   const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
   const hash = hashString(`${safeLevel}:${seed || Date.now()}`);
-  return BOSS_SUPPORT_SHIPS[hash % BOSS_SUPPORT_SHIPS.length] || BOSS_SUPPORT_SHIPS[0];
+  const pool=BOSS_SUPPORT_SHIPS.filter(profile=>profile.unlockLevel<=safeLevel);
+  return pool[hash % pool.length] || BOSS_SUPPORT_SHIPS[0];
 }

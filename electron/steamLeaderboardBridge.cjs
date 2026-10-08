@@ -1,9 +1,11 @@
+const { ONSLAUGHT_BOARD, ONSLAUGHT_BOARD_V2, onslaughtBoardForRuleset, validOnslaughtRun } = require('./onslaughtContract.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const { requireOptionalPackagedModule } = require('./unpackedModuleResolver.cjs');
 const { PUBLIC_PILOT_NAME_MAX_LENGTH } = require('./pilotNamePolicy.cjs');
 
 const DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
+const SECTOR_STEAM_LEADERBOARD_NAME = 'nova_swarm_sector_start_score_v1';
 const DEFAULT_STEAM_APP_ID = 4765070;
 const STEAM_LEADERBOARD_NAME = process.env.NOVA_SWARM_STEAM_LEADERBOARD_NAME || DEFAULT_STEAM_LEADERBOARD_NAME;
 const INT32_MAX = 2147483647;
@@ -37,6 +39,8 @@ const FALLBACK_DATA_REQUEST = {
 
 let koffiModule = undefined;
 let leaderboardScoreUploadedStruct = null;
+let leaderboardScoresDownloadedStruct = null;
+let leaderboardEntryStruct = null;
 let userStatsReceivedStruct = null;
 
 function integer(value, fallback = 0) {
@@ -135,6 +139,26 @@ function getLeaderboardScoreUploadedStruct(koffi) {
     m_nGlobalRankPrevious: 'int'
   });
   return leaderboardScoreUploadedStruct;
+}
+
+function getLeaderboardScoresDownloadedStruct(koffi) {
+  if (!leaderboardScoresDownloadedStruct) leaderboardScoresDownloadedStruct = koffi.struct('NovaLeaderboardScoresDownloaded_t', {
+    m_hSteamLeaderboard: 'uint64',
+    m_hSteamLeaderboardEntries: 'uint64',
+    m_cEntryCount: 'int32'
+  });
+  return leaderboardScoresDownloadedStruct;
+}
+
+function getLeaderboardEntryStruct(koffi) {
+  if (!leaderboardEntryStruct) leaderboardEntryStruct = koffi.struct('NovaLeaderboardEntry_t', {
+    m_steamIDUser: 'uint64',
+    m_nGlobalRank: 'int32',
+    m_nScore: 'int32',
+    m_cDetails: 'int32',
+    m_hUGC: 'uint64'
+  });
+  return leaderboardEntryStruct;
 }
 
 function getUserStatsReceivedStruct(koffi) {
@@ -255,7 +279,17 @@ function parseDetailsValue(details) {
   return [];
 }
 
-function detailsMetadata(details) {
+function detailsMetadata(details, leaderboardName = null) {
+  if (leaderboardName === SECTOR_STEAM_LEADERBOARD_NAME) {
+    return {
+      leaderboardName, leaderboardKind: 'sector_start',
+      startSector: details[0] ?? null, sectorStart: details[0] ?? null,
+      highestSectorReached: details[1] ?? null, finalSector: details[2] ?? null,
+      levelReached: details[1] ?? null, level: details[1] ?? null,
+      shipId: details[3] ?? null, runTimeSeconds: details[4] ?? null,
+      bossKills: details[5] ?? null, wavesCleared: details[6] ?? null
+    };
+  }
   return {
     levelReached: details[0] ?? null,
     level: details[0] ?? null,
@@ -341,6 +375,7 @@ class SteamLeaderboardBridge {
     this.callbackTimer = null;
     this.lastUploadDiagnostics = null;
     this.uploadInFlight = false;
+    this.uploadAttemptTimes = [];
     this.captureSurfaceStatus = {
       enabled: false,
       reason: 'not_initialized'
@@ -350,12 +385,32 @@ class SteamLeaderboardBridge {
   }
 
   getStatus() {
+    let overlayEnabled = null;
+    let overlayNeedsPresent = null;
+    if (this.initialized && this.steam) {
+      try {
+        overlayEnabled = typeof this.steam.utils?.isOverlayEnabled === 'function'
+          ? Boolean(this.steam.utils.isOverlayEnabled())
+          : null;
+      } catch {
+        overlayEnabled = null;
+      }
+      try {
+        overlayNeedsPresent = typeof this.steam.utils?.overlayNeedsPresent === 'function'
+          ? Boolean(this.steam.utils.overlayNeedsPresent())
+          : null;
+      } catch {
+        overlayNeedsPresent = null;
+      }
+    }
     return {
       available: Boolean(this.initialized),
       reason: this.statusReason,
       appId: this.appId || null,
       sdkPathConfigured: Boolean(this.sdkPath),
       nativeModuleLoaded: Boolean(this.steam),
+      overlayEnabled,
+      overlayNeedsPresent,
       leaderboardName: resolveLeaderboardName()
     };
   }
@@ -376,6 +431,7 @@ class SteamLeaderboardBridge {
   }
 
   async initialize() {
+    if (this.shuttingDown) return false;
     if (this.initialized) return true;
     if (this.initializing) return this.initializing;
     this.initializing = this.tryInitialize();
@@ -548,6 +604,7 @@ class SteamLeaderboardBridge {
     }
     try {
       const image = await browserWindow.webContents.capturePage();
+      if (this.shuttingDown) return { ok: false, reason: 'shutdown' };
       const size = image.getSize();
       if (!size.width || !size.height) {
         return {
@@ -564,6 +621,7 @@ class SteamLeaderboardBridge {
       const filename = `nova-swarm-${Date.now()}-${process.pid}-${this.screenshotSequence}.png`;
       const screenshotPath = path.join(outputDir, filename);
       await fs.promises.writeFile(screenshotPath, image.toPNG());
+      if (this.shuttingDown) return { ok: false, reason: 'shutdown' };
       const handle = this.steam.screenshots.addScreenshotToLibrary(
         screenshotPath,
         null,
@@ -652,7 +710,7 @@ class SteamLeaderboardBridge {
     if (typeof manager.findLeaderboard === 'function') {
       leaderboard = await manager.findLeaderboard(safeName);
     }
-    if (!leaderboard && process.env.NOVA_SWARM_STEAM_FIND_OR_CREATE === '1' && typeof manager.findOrCreateLeaderboard === 'function') {
+    if (![ONSLAUGHT_BOARD, ONSLAUGHT_BOARD_V2].includes(safeName) && !leaderboard && process.env.NOVA_SWARM_STEAM_FIND_OR_CREATE === '1' && typeof manager.findOrCreateLeaderboard === 'function') {
       const nativeModule = this.loadNativeModule();
       leaderboard = await manager.findOrCreateLeaderboard(
         safeName,
@@ -682,7 +740,7 @@ class SteamLeaderboardBridge {
     return publicFallbackName(steamId, index);
   }
 
-  async normalizeEntries(entries = []) {
+  async normalizeEntries(entries = [], leaderboardName = null) {
     const currentId = this.getCurrentSteamId();
     return Promise.all((Array.isArray(entries) ? entries : []).map(async (entry, index) => {
       const details = sanitizeDetails(
@@ -694,7 +752,7 @@ class SteamLeaderboardBridge {
         entry.metadata?.details
       );
       const steamId = stringifySteamId(entry.steamId ?? entry.steamID ?? entry.m_steamIDUser);
-      const metadata = detailsMetadata(details);
+      const metadata = detailsMetadata(details, leaderboardName);
       const hasEncodedLevel = details.length > 0 && Number.isFinite(Number(metadata.levelReached)) && Number(metadata.levelReached) > 0;
       const level = readScoreLevel(entry, metadata, details, estimateLevelFromScore(entry.score ?? entry.m_nScore));
       return {
@@ -704,6 +762,11 @@ class SteamLeaderboardBridge {
         score: clampInt32(entry.score ?? entry.m_nScore),
         details,
         metadata,
+        ...(leaderboardName === SECTOR_STEAM_LEADERBOARD_NAME ? {
+          leaderboardName, leaderboardKind: 'sector_start',
+          startSector: metadata.startSector, highestSectorReached: metadata.highestSectorReached,
+          finalSector: metadata.finalSector
+        } : {}),
         level,
         levelReached: level,
         levelSource: hasEncodedLevel ? 'encoded' : 'score_estimate',
@@ -720,31 +783,90 @@ class SteamLeaderboardBridge {
     }));
   }
 
+  async downloadEntries(leaderboard, dataRequest, start, end) {
+    if (![ONSLAUGHT_BOARD_V2, SECTOR_STEAM_LEADERBOARD_NAME].includes(leaderboard.name)) {
+      return this.steam.leaderboards.downloadLeaderboardEntries(leaderboard.handle, dataRequest, start, end);
+    }
+    const manager = this.steam.leaderboards;
+    const loader = manager?.libraryLoader;
+    const stats = manager?.apiCore?.getUserStatsInterface?.();
+    const koffi = requireKoffi();
+    // steamworks-ffi-node 0.10.3 decodes each detail with its array-length
+    // overload. That yields prefix arrays, loses the final augment ID, and
+    // turns the other IDs into zeros during normalization. Read these boards'
+    // entries through the same SDK callback with an actual int32 array type.
+    if (!loader || !stats || !manager?.callbackPoller || !koffi) {
+      if (this.allowNativeLoad === false) return manager.downloadLeaderboardEntries(leaderboard.handle, dataRequest, start, end);
+      throw new Error('Steam leaderboard details read is unavailable');
+    }
+    const callHandle = loader.SteamAPI_ISteamUserStats_DownloadLeaderboardEntries(stats, leaderboard.handle, dataRequest, start, end);
+    if (!callHandle || callHandle === 0n) throw new Error('Steam leaderboard read could not start');
+    const result = await manager.callbackPoller.poll(callHandle, getLeaderboardScoresDownloadedStruct(koffi), 1105);
+    if (!result || String(result.m_hSteamLeaderboard) !== String(leaderboard.handle)) throw new Error('Steam leaderboard read was not confirmed');
+    const count = Math.max(0, Math.min(MAX_STEAM_DOWNLOAD_ENTRIES, integer(result.m_cEntryCount, 0)));
+    const entries = [];
+    for (let index = 0; index < count; index++) {
+      const entryPtr = koffi.alloc(getLeaderboardEntryStruct(koffi), 1);
+      const detailsPtr = koffi.alloc('int32', 64);
+      if (!loader.SteamAPI_ISteamUserStats_GetDownloadedLeaderboardEntry(
+        stats, result.m_hSteamLeaderboardEntries, index, entryPtr, detailsPtr, 64
+      )) throw new Error('Steam leaderboard entry details could not be read');
+      const entry = koffi.decode(entryPtr, getLeaderboardEntryStruct(koffi));
+      const detailCount = Math.max(0, Math.min(64, integer(entry.m_cDetails, 0)));
+      entries.push({
+        steamId: String(entry.m_steamIDUser),
+        globalRank: entry.m_nGlobalRank,
+        score: entry.m_nScore,
+        details: detailCount ? Array.from(koffi.decode(detailsPtr, koffi.array('int32', detailCount))) : [],
+        ugcHandle: entry.m_hUGC
+      });
+    }
+    return entries;
+  }
+
   async getTopScores(options = {}) {
     const leaderboard = await this.getLeaderboard(options.leaderboardName);
     const nativeModule = this.loadNativeModule();
     const limit = Math.max(1, Math.min(MAX_STEAM_DOWNLOAD_ENTRIES, integer(options.limit, 20)));
     const start = Math.max(1, integer(options.start, 1));
-    const end = Math.max(start, Math.min(MAX_STEAM_DOWNLOAD_ENTRIES, integer(options.end, start + limit - 1)));
-    const raw = await this.steam.leaderboards.downloadLeaderboardEntries(
-      leaderboard.handle,
+    const end = Math.max(start, Math.min(start + MAX_STEAM_DOWNLOAD_ENTRIES - 1, integer(options.end, start + limit - 1)));
+    const raw = await this.downloadEntries(
+      leaderboard,
       enumValue(nativeModule, 'LeaderboardDataRequest', 'Global', FALLBACK_DATA_REQUEST.Global),
       start,
       end
     );
-    return this.normalizeEntries(asEntryArray(raw));
+    if (!Array.isArray(raw) && !Array.isArray(raw?.entries) && !Array.isArray(raw?.data)) {
+      throw new Error('Steam leaderboard read was not confirmed');
+    }
+    return this.normalizeEntries(asEntryArray(raw), leaderboard.name);
+  }
+
+  async getPlayerBest(options = {}) {
+    const leaderboard = await this.getLeaderboard(options.leaderboardName);
+    const nativeModule = this.loadNativeModule();
+    const raw = await this.downloadEntries(
+      leaderboard,
+      enumValue(nativeModule, 'LeaderboardDataRequest', 'GlobalAroundUser', FALLBACK_DATA_REQUEST.GlobalAroundUser),
+      0,
+      0
+    );
+    const entries = await this.normalizeEntries(asEntryArray(raw), leaderboard.name);
+    // Only the signed-in Steam ID owns the row we may force-update. Names are
+    // not unique, and an existing row may be well outside the global top 100.
+    return entries.find(entry => entry.isCurrentPlayer) || null;
   }
 
   async getFriendsScores(options = {}) {
     const leaderboard = await this.getLeaderboard(options.leaderboardName);
     const nativeModule = this.loadNativeModule();
-    const raw = await this.steam.leaderboards.downloadLeaderboardEntries(
-      leaderboard.handle,
+    const raw = await this.downloadEntries(
+      leaderboard,
       enumValue(nativeModule, 'LeaderboardDataRequest', 'Friends', FALLBACK_DATA_REQUEST.Friends),
       0,
       0
     );
-    const entries = await this.normalizeEntries(asEntryArray(raw));
+    const entries = await this.normalizeEntries(asEntryArray(raw), leaderboard.name);
     return entries.map(entry => ({ ...entry, source: 'steam-friends' }));
   }
 
@@ -759,7 +881,10 @@ class SteamLeaderboardBridge {
   }
 
   async submitScoreDetailed(payload = {}) {
+    const boards = new Set(['nova_swarm_global_score_v2', 'nova_swarm_tactical_score_v1', 'nova_swarm_sector_start_score_v1', ONSLAUGHT_BOARD, ONSLAUGHT_BOARD_V2]);
     const leaderboardName = resolveLeaderboardName(payload.leaderboardName);
+    if (!boards.has(leaderboardName)) throw new Error('Unsupported leaderboard');
+    if ([ONSLAUGHT_BOARD, ONSLAUGHT_BOARD_V2].includes(leaderboardName) && (!validOnslaughtRun(payload.runResult) || onslaughtBoardForRuleset(payload.runResult?.rulesetVersion) !== leaderboardName || Number(payload.score) !== Number(payload.runResult.score) || payload.uploadMethod !== 'keep_best')) throw new Error('Invalid Onslaught submission');
     const score = clampInt32(payload.score);
     const hasDetails = Object.prototype.hasOwnProperty.call(payload, 'details');
     const details = hasDetails ? sanitizeDetails(payload.details) : undefined;
@@ -861,6 +986,19 @@ class SteamLeaderboardBridge {
     }
 
     const leaderboard = await this.getLeaderboard(leaderboardName);
+    if (Object.prototype.hasOwnProperty.call(payload, 'expectedSteamId') &&
+      (!payload.expectedSteamId || stringifySteamId(payload.expectedSteamId) !== this.getCurrentSteamId())) {
+      return this.recordUploadResult({ success: false, accepted: false, interpretedStatus: 'steam_account_changed', leaderboardName });
+    }
+    // Shared by score retries and metadata writes: Steam permits 10 uploads per
+    // ten minutes as well as only one outstanding call. Reject locally; the
+    // durable renderer record will retry with persisted backoff.
+    const now = Date.now();
+    this.uploadAttemptTimes = this.uploadAttemptTimes.filter(time => time > now - 600000);
+    if (this.uploadAttemptTimes.length >= 10) {
+      return this.recordUploadResult({ success: false, accepted: false, interpretedStatus: 'steam_upload_rate_limited', leaderboardName });
+    }
+    this.uploadAttemptTimes.push(now);
     const nativeModule = this.loadNativeModule();
     const score = clampInt32(payload.score);
     const hasDetails = Boolean(payload.hasDetails);
@@ -972,7 +1110,7 @@ class SteamLeaderboardBridge {
     ];
     if (hasDetails) uploadArgs.push(details);
     const result = await uploader.call(this.steam.leaderboards, ...uploadArgs);
-    const accepted = Boolean(result && result.success !== false);
+    const accepted = result?.success === true;
     const scoreChanged = result?.scoreChanged ?? null;
     let interpretedStatus = 'accepted';
     let nativeErrorMessage = null;
@@ -982,6 +1120,9 @@ class SteamLeaderboardBridge {
     } else if (result.success === false) {
       interpretedStatus = 'wrapper_reported_success_false';
       nativeErrorMessage = result.error || result.message || 'steamworks-ffi-node returned success=false.';
+    } else if (!accepted) {
+      interpretedStatus = 'wrapper_did_not_confirm_success';
+      nativeErrorMessage = 'steamworks-ffi-node returned no explicit upload acknowledgement.';
     } else if (scoreChanged === false) {
       interpretedStatus = 'accepted_keep_best_not_changed';
     }
@@ -1138,6 +1279,10 @@ class SteamLeaderboardBridge {
 
     while (Date.now() - startedAt < timeoutMs) {
       await new Promise(resolve => setTimeout(resolve, delayMs));
+      if (this.shuttingDown || apiCore.isInitialized?.() === false) {
+        return { callbackObserved: false, rawResult: null, bIOFailureCaptured: false,
+          durationMs: Date.now() - startedAt, reason: 'shutdown' };
+      }
       try {
         apiCore.runCallbacks?.();
       } catch {
@@ -1294,6 +1439,9 @@ class SteamLeaderboardBridge {
   }
 
   shutdown() {
+    if (this.shuttingDown) return;
+    this.shuttingDown = true;
+    this.initialized = false;
     if (this.screenshotInputBinding) {
       const { webContents, handler } = this.screenshotInputBinding;
       webContents.removeListener?.('before-input-event', handler);

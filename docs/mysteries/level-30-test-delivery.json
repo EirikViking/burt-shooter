@@ -1,0 +1,190 @@
+{
+  "status": "deployed and verified",
+  "appID": 4765070,
+  "depotID": 4765071,
+  "targetBranch": "sector-continue-test",
+  "sourceBranch": "codex/veilborn-test-ship-choice-20260912",
+  "baseline": "3167b11",
+  "runtimeCommit": "05db732",
+  "buildStamp": "v2026-09-12_18-42-23",
+  "package": {
+    "runtimeCommit": "05db732",
+    "root": "E:/Codex/builds/nova-swarm/veilborn-test-30/package",
+    "payload": "E:/Codex/builds/nova-swarm/veilborn-test-30/package/win-unpacked",
+    "baseline": "E:/Codex/builds/nova-swarm/encounter-pacing/package/win-unpacked",
+    "retained": 15402,
+    "playerAssets": 64,
+    "changed": [
+      "dist/index.html",
+      "dist/assets/index-d1rBsAlU.css",
+      "dist/assets/vendor-pixi-Kn5eMiJA.js",
+      "dist/assets/vendor-BkbZGUfW.js",
+      "dist/assets/index-DUUSs9Oe.js",
+      "dist/version.json",
+      "dist/sw.js"
+    ],
+    "bytes": 2316749581
+  },
+  "nativeTour": {
+    "ship": "EIRIK THE VIKING",
+    "sector": 30,
+    "managerSector": 30,
+    "roster": 56,
+    "waves": 57,
+    "voice": [
+      {
+        "url": "nova-swarm://app/audio/voice/mysteries-v2/glass_widow.mp3?v=v2026-09-12_18-42-23",
+        "at": 29546,
+        "volume": 0.13095,
+        "muted": false,
+        "others": [],
+        "played": true,
+        "ended": 32871.5
+      }
+    ],
+    "mixedCombat": true,
+    "attacks": 3,
+    "lives": 2,
+    "errors": []
+  },
+  "nativeBossTests": [
+    {
+      "preset": "dual-boss",
+      "sector": 30,
+      "kind": "relay",
+      "bossCount": 2,
+      "snakeSections": 0,
+      "lives": 2,
+      "invincible": false,
+      "isolation": true
+    },
+    {
+      "preset": "boss-snake",
+      "sector": 30,
+      "kind": "snake",
+      "bossCount": 1,
+      "snakeSections": 9,
+      "lives": 2,
+      "invincible": false,
+      "isolation": true
+    }
+  ],
+  "selection": [
+    {
+      "preset": null,
+      "name": "EIRIK THE VIKING",
+      "normalUnlocks": 3
+    },
+    {
+      "preset": "mystery:choir_unbound",
+      "name": "PIXEL NEEDLE",
+      "state": {
+        "ship": "nova-player-ship-03.png",
+        "sector": 30,
+        "managerSector": 30,
+        "mode": "unranked",
+        "policy": {
+          "runMode": "unranked",
+          "isDebugRun": true,
+          "prototype": true,
+          "ranked": false,
+          "allowLeaderboardSubmission": false,
+          "allowGlobalLeaderboardSubmission": false,
+          "allowLocalLeaderboardSubmission": false,
+          "allowAchievements": false,
+          "allowCareerProgress": false,
+          "allowCheckpointUnlocks": false,
+          "allowPersonalBests": false,
+          "allowHangarProgress": false,
+          "allowCodexProgress": false,
+          "allowShipUnlocks": false,
+          "allowPersistentRewards": false,
+          "allowCloudProgressSync": false
+        },
+        "id": "choir_unbound"
+      }
+    }
+  ],
+  "tests": [
+    "59 trusted presets at sector 30 and invalid preset rejection",
+    "Normal career locks and URL spoof rejection",
+    "Eirik full tour and Pixel Needle single-selector ship choice",
+    "Native level-30 full tour with ordinary controls",
+    "Native dual-boss and boss-snake gates with ordinary controls",
+    "Announcement playing/ended events, nonzero volume, no dialogue overlap",
+    "check:release-line",
+    "check:i18n",
+    "check:i18n-ui: all 8 languages",
+    "check:controller-flow",
+    "check:steam-electron-bridge",
+    "build:current",
+    "Package retained-file hashes: 15402 files, including 64 player assets"
+  ],
+  "limitations": [
+    "No new performance benchmark or full 56-enemy manual run; this validates the changed launch and difficulty paths.",
+    "Existing combat/audio content is retained byte-for-byte."
+  ],
+  "newUntranslatedStrings": 0,
+  "cleanup": {
+    "status": "blocked by automatic approval review",
+    "ownedRoot": "E:/Codex/builds/nova-swarm/veilborn-test-30",
+    "disposable": [
+      "E:/Codex/builds/nova-swarm/veilborn-test-30/package/source",
+      "E:/Codex/builds/nova-swarm/veilborn-test-30/build-dist",
+      "E:/Codex/builds/nova-swarm/veilborn-test-30/steam-output",
+      "E:/Codex/tmp/veilborn-test-30",
+      "E:/dev-cache/vite-veilborn-test-30"
+    ],
+    "reason": "Cleanup command rejected: blocked by policy. No deletion executed; no bypass attempted.",
+    "audit": [
+      {
+        "path": "E:\\Codex\\builds\\nova-swarm\\veilborn-test-30\\package\\source",
+        "bytes": 2430966479,
+        "reparsePoints": 0
+      },
+      {
+        "path": "E:\\Codex\\builds\\nova-swarm\\veilborn-test-30\\build-dist",
+        "bytes": 6992023,
+        "reparsePoints": 0
+      },
+      {
+        "path": "E:\\Codex\\builds\\nova-swarm\\veilborn-test-30\\steam-output",
+        "bytes": 1587,
+        "reparsePoints": 0
+      },
+      {
+        "path": "E:\\Codex\\tmp\\veilborn-test-30",
+        "bytes": 22779116,
+        "reparsePoints": 0
+      },
+      {
+        "path": "E:\\dev-cache\\vite-veilborn-test-30",
+        "bytes": 11486555,
+        "reparsePoints": 0
+      }
+    ],
+    "remaining": [
+      "E:/Codex/builds/nova-swarm/veilborn-test-30/package/source",
+      "E:/Codex/builds/nova-swarm/veilborn-test-30/build-dist",
+      "E:/Codex/builds/nova-swarm/veilborn-test-30/steam-output",
+      "E:/Codex/tmp/veilborn-test-30",
+      "E:/dev-cache/vite-veilborn-test-30"
+    ]
+  },
+  "buildID": "25273400",
+  "manifestID": "278619892595062592",
+  "branches": {
+    "before": {
+      "public": "25237042",
+      "sector-continue-test": "25272660",
+      "test-build": "23782673"
+    },
+    "after": {
+      "public": "25237042",
+      "sector-continue-test": "25273400",
+      "test-build": "23782673"
+    }
+  },
+  "publicUnchanged": true,
+  "steamworksStoreSettingsUntouched": true
+}

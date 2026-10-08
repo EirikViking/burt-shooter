@@ -1,0 +1,47 @@
+{
+  "id": 11,
+  "name": "Circuit Tap",
+  "architecture": "circuit",
+  "baselineDesign": [
+    "Circuit Tap",
+    1.55,
+    0.94,
+    0.74,
+    0.98,
+    "circuit",
+    [
+      [
+        0.21,
+        0.55,
+        -1.15,
+        0.15
+      ],
+      [
+        0.79,
+        0.37,
+        -1.23,
+        0.17
+      ],
+      [
+        1.29,
+        0.12,
+        -1.01,
+        0.06
+      ],
+      [
+        1.41,
+        -0.35,
+        -0.86,
+        0.023
+      ]
+    ]
+  ],
+  "palette": [
+    "cbdcdb",
+    "193d3d",
+    "6be8dd"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false
+}

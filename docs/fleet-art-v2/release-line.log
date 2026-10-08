@@ -1,0 +1,5 @@
+
+> nova-swarm@1.0.0 check:release-line
+> node scripts/check-release-line.mjs
+
+[release-line] PASS latest localization, achievements, Steam Cloud, fullscreen, and marketing hotkey markers present

@@ -1,6 +1,27 @@
 import * as PIXI from 'pixi.js';
 
 let plumeTexture;
+export function createEnginePlumePixels(width = 64, height = 192) {
+  const pixels = new Uint8ClampedArray(width * height * 4);
+  for (let y = 0; y < height; y++) {
+    const t = y / (height - 1);
+    const radius = width * (0.17 + Math.sin(t * Math.PI) * 0.045) * Math.pow(1 - t, 0.65);
+    const shock = Math.pow(Math.max(0, Math.cos((t - 0.1) * Math.PI * 11)), 12) * Math.exp(-t * 3);
+    for (let x = 0; x < width; x++) {
+      const r = Math.abs(x + 0.5 - width / 2) / Math.max(0.01, radius);
+      const core = Math.exp(-r * r * 9) * Math.exp(-t * 3.4);
+      const envelope = Math.exp(-r * r * 2.2) * Math.pow(1 - t, 1.2);
+      const filaments = 0.88 + 0.12 * Math.sin(x * 1.4 + t * 55) * Math.sin(t * 23 - x * 0.6);
+      const hot = Math.min(1, core * 1.5 + shock * Math.exp(-r * r * 5) * 0.65);
+      const p = (y * width + x) * 4;
+      pixels[p] = 24 + hot * 231;
+      pixels[p + 1] = 139 + hot * 116;
+      pixels[p + 2] = 255;
+      pixels[p + 3] = Math.min(255, (envelope * 0.7 * filaments + core * 0.6 + shock * envelope * 0.35) * 255);
+    }
+  }
+  return pixels;
+}
 // One tiny shared raster, generated once. Animation only changes sprite transforms;
 // it never advances a timer, changes thrust, or calls gameplay randomness.
 export function createAstraEnginePlume() {
@@ -8,22 +29,9 @@ export function createAstraEnginePlume() {
     const canvas = document.createElement('canvas');
     canvas.width = 64; canvas.height = 192;
     const ctx = canvas.getContext('2d');
-    const body = ctx.createLinearGradient(0, 0, 0, 192);
-    body.addColorStop(0, '#d7fbff');
-    body.addColorStop(0.13, '#78edff');
-    body.addColorStop(0.45, '#179cdca8');
-    body.addColorStop(1, '#076baa00');
-    ctx.fillStyle = body; ctx.shadowColor = '#28bfff'; ctx.shadowBlur = 9;
-    ctx.beginPath();ctx.moveTo(18, 0);ctx.bezierCurveTo(6, 50, 25, 133, 32, 192);ctx.bezierCurveTo(39, 133, 58, 50, 46, 0);ctx.closePath();ctx.fill();
-    ctx.shadowBlur = 0;
-    const core = ctx.createLinearGradient(0, 0, 0, 135);
-    core.addColorStop(0, '#ffffff');core.addColorStop(0.4, '#d4fdffdc');core.addColorStop(1, '#4dddff00');
-    ctx.fillStyle = core;ctx.beginPath();ctx.moveTo(25, 0);ctx.lineTo(32, 140);ctx.lineTo(39, 0);ctx.closePath();ctx.fill();
-    for (let j=0;j<4;j++) {
-      const y=25+j*23, w=5-j*.75;
-      ctx.fillStyle=`rgba(225,255,255,${.62-j*.12})`;
-      ctx.beginPath();ctx.moveTo(32,y-5);ctx.lineTo(32+w,y);ctx.lineTo(32,y+7);ctx.lineTo(32-w,y);ctx.closePath();ctx.fill();
-    }
+    const image = ctx.createImageData(canvas.width, canvas.height);
+    image.data.set(createEnginePlumePixels(canvas.width, canvas.height));
+    ctx.putImageData(image, 0, 0);
     plumeTexture = PIXI.Texture.from(canvas);
   }
   const sprite = new PIXI.Sprite(plumeTexture);

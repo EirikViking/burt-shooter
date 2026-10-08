@@ -4,7 +4,10 @@ import * as PIXI from 'pixi.js';
 import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
+import { RUN_MODES } from '../game/RunMode.js';
 import { translateText } from '../i18n/index.js';
+import { FIRST_LIGHT_ENGLISH as FIRST_LIGHT } from '../i18n/firstLightText.js';
+import { ENCOUNTER_EVOLUTION_ENGLISH as EVOLUTION } from '../i18n/encounterEvolutionText.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { createText } from '../utils/pixiText.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from './MenuFxLayer.js';
@@ -97,6 +100,30 @@ const CORE_HELP_ROWS = Object.freeze([
 
 const MODE_HELP_ROWS = Object.freeze([
   {
+    code: '11',
+    icon: 'BUILD',
+    label: 'ARCADE TACTICAL',
+    control: 'RANKED // BOSS DRAFTS ACTIVE',
+    tip: 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',
+    accent: 0xffef7e
+  },
+  {
+    code: '12',
+    icon: 'OVERRUN',
+    label: 'ONSLAUGHT TACTICAL',
+    control: 'SECTOR 51 // FULL CAREER XP',
+    tip: 'Available from the start. Choose a ship and three augments, then launch at Sector 51 with zero score. Earn full career XP from play and chase separate global records. Skipped sectors and starting equipment grant no rewards.',
+    accent: 0xff8f5a
+  },
+  {
+    code: '13',
+    icon: 'PURE',
+    label: 'ARCADE PURE',
+    control: 'RANKED // NO TACTICAL UPGRADES',
+    tip: 'No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.',
+    accent: 0x37f5ff
+  },
+  {
     code: 'D1',
     icon: 'DAILY',
     label: 'DAILY CHALLENGE',
@@ -105,23 +132,7 @@ const MODE_HELP_ROWS = Object.freeze([
     accent: 0x7dffcc
   },
   {
-    code: '11',
-    icon: 'PURE',
-    label: 'MAYHEM PURE',
-    control: 'RANKED // NO TACTICAL UPGRADES',
-    tip: 'No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.',
-    accent: 0x37f5ff
-  },
-  {
-    code: '12',
-    icon: 'BUILD',
-    label: 'MAYHEM TACTICAL',
-    control: 'RANKED // BOSS DRAFTS ACTIVE',
-    tip: 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',
-    accent: 0xffef7e
-  },
-  {
-    code: '13',
+    code: '14',
     icon: 'SCOUT',
     label: 'SCOUT RUN',
     control: '3 ANOMALIES // UNRANKED PRACTICE',
@@ -129,20 +140,12 @@ const MODE_HELP_ROWS = Object.freeze([
     accent: 0x66ff9d
   },
   {
-    code: '14',
+    code: '15',
     icon: 'SECTOR',
     label: 'SECTOR RUN',
     control: 'SECTOR LEADERBOARD // CHECKPOINT STARTS',
     tip: 'Unlock checkpoints through Mayhem, then practice deeper routes with boss Drafts. Each checkpoint keeps its own record and submits to the separate Steam Sector leaderboard; career and achievements stay untouched.',
     accent: 0xb285ff
-  },
-  {
-    code: 'O1',
-    icon: 'OVERRUN',
-    label: 'OVERRUN',
-    control: 'SECTOR 51 // 85% NORMAL CAREER XP',
-    tip: 'Starts at zero score with no skipped-sector rewards. Earns 85% of normal Career XP (15% less), advances cumulative Pilot Orders, and leaves leaderboards, achievements, checkpoints, and competitive bests untouched.',
-    accent: 0xff8f5a
   }
 ]);
 
@@ -167,8 +170,8 @@ const TACTICS_HELP_ROWS = Object.freeze([
     code: 'F1',
     icon: 'FUSE',
     label: 'FUSION PROTOCOLS',
-    control: 'OWN BOTH LISTED AUGMENTS // NO SCORE MULTIPLIER',
-    tip: 'Pair complementary augments to unlock a Fusion Protocol. It changes how both systems work together, appears first in the HUD, and never adds a score multiplier.',
+    control: 'OWN ALL LISTED AUGMENTS // NO SCORE MULTIPLIER',
+    tip: 'Own all listed augments to unlock a Fusion Protocol. Inspect its prerequisites and behavior in Tactical upgrades.',
     accent: 0xd8a66b
   },
   {
@@ -294,6 +297,12 @@ const CAREER_HELP_ROWS = Object.freeze([
 const HELP_PAGES = Object.freeze([
   Object.freeze({ id: 'flight', label: 'FLIGHT', rows: Object.freeze(CORE_HELP_ROWS.slice(0, 4)) }),
   Object.freeze({ id: 'combat', label: 'COMBAT', rows: Object.freeze(CORE_HELP_ROWS.slice(4, 10)) }),
+  Object.freeze({ id: 'encounters', label: FIRST_LIGHT.encounters, rows: Object.freeze([
+    { code: '32', icon: 'FIRE', label: FIRST_LIGHT.convoyTitle, control: FIRST_LIGHT.convoyHint, tip: FIRST_LIGHT.helpConvoy, accent: 0x58ffe2 },
+    { code: '33', icon: 'BOSS', label: FIRST_LIGHT.rivalTitle, control: FIRST_LIGHT.rivalHint, tip: FIRST_LIGHT.helpRival, accent: 0xffbd68 },
+    { code: '34', icon: 'FIRE', label: EVOLUTION.molt, control: EVOLUTION.moltControl, tip: EVOLUTION.moltHelp, accent: 0xffb57c },
+    { code: '35', icon: 'BUILD', label: FIRST_LIGHT.rescue, control: FIRST_LIGHT.rivalTitle, tip: EVOLUTION.paybackHelp, accent: 0x73e8d1 }
+  ]) }),
   Object.freeze({ id: 'modes', label: 'MODES', rows: MODE_HELP_ROWS }),
   Object.freeze({ id: 'tactics', label: 'TACTICS', rows: TACTICS_HELP_ROWS }),
   Object.freeze({ id: 'intel', label: 'INTEL', rows: INTEL_HELP_ROWS }),
@@ -316,11 +325,11 @@ const HELP_DETAIL_COPY = Object.freeze({
   'MAYHEM TACTICAL': 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',
   'SCOUT RUN': 'Choose Calibration for the original Scout rules, Bullet School for ranked-speed projectile pressure with Scout sustain, or Boss Lab for full-strength bosses after Scout waves. Change anomaly with Left/Right before launch. Every preset remains unranked.',
   'SECTOR RUN': 'Unlock checkpoints through Mayhem, then practice deeper routes with boss Drafts. Each checkpoint keeps its own record and submits to the separate Steam Sector leaderboard; career and achievements stay untouched.',
-  OVERRUN: 'Unlock by reaching Sector 30 in Mayhem. Pure starts without Tactical augments or boss Drafts. Tactical starts with Damage Up, Rapid Fire, Blink Drive, Focus Lens, and Double Shot, then continues boss Drafts. Both begin at zero score and award no credit for skipped sectors. The 85% rate is reduced Career XP—not a +85% bonus.',
+  'ONSLAUGHT TACTICAL': 'Choose a ship and three starting augments, then launch at Sector 51 with zero score. Earn boss Drafts, full career XP from play, and separate global records. Starting equipment and skipped sectors grant no rewards or checkpoint credit.',
   'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
   'SIDE DIRECTIVES': 'Every run draws a fifty-stage chain from one thousand objective, intensity, and reward combinations. Only one directive can clear per level, unfinished progress carries forward and recalibrates after a drought, and the fiftieth cannot clear before level 50. Chase the hardware when it is safe; the clipboard never outranks survival.',
   'TACTICAL DRAFT': 'Every boss leaves behind up to three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
-  'FUSION PROTOCOLS': 'Fusion Protocols unlock only when you own both listed augments. Rift Reprisal returns Phase-cleared bullets; Drone Constellation creates every-fourth-volley crossfire; Aegis Reactor turns shield break into a purge; Sky Verdict routes orbital charges through bomb markers. Inspect active protocols in Tactical upgrades.',
+  'FUSION PROTOCOLS': 'Own all listed augments to unlock a Fusion Protocol. Inspect its prerequisites and behavior in Tactical upgrades.',
   'SCORE ROUTE & BANS': 'Combo Anchor is the fixed, marked scoring offer in Sector 5, so a serious score attempt never depends on an early random draw. Start with two permanent bans, then earn another every 15 sectors cleared in this run, with up to five banked. Ban an offer to remove that augment from later Drafts.',
   'DRAFT TOOLS': 'Rescan once, hold one card for the next boss, tap Pass to skip one Draft, or hold Pass to lock your current build and stop later Drafts.',
   'DRAFT RESCAN': 'One rescan replaces all three offers and cannot be refunded, photocopied, or argued with. Spend it when the entire page misses your build. Mild disappointment is not an emergency; three dead choices are.',
@@ -397,15 +406,17 @@ function drawCornerBrackets(container, x, y, width, height, color) {
 }
 
 export class HowToPlayOverlay {
-  constructor(game, { onClose = null } = {}) {
+  constructor(game, { onClose = null, onViewAchievements = null } = {}) {
     this.game = game;
     this.onClose = onClose;
+    this.onViewAchievements = onViewAchievements;
     this.container = new PIXI.Container();
     this.container.zIndex = 2100000;
     this.container.label = 'ui_howToPlayOverlay';
     this.container.sortableChildren = true;
     this.menuFx = null;
     this.closeButton = null;
+    this.achievementsButton = null;
     this.pageIndex = 0;
     this.pageButtons = [];
     this.cards = [];
@@ -625,14 +636,32 @@ export class HowToPlayOverlay {
       footerY + (compact ? 22 : footerHeight / 2)
     );
     fitTextToBox(footer, compact ? panelWidth - pad * 4 : panelWidth * 0.44, 24, { minScale: 0.62 });
-    this.container.addChild(footer);
+    if (!veryShort || !this.onViewAchievements) this.container.addChild(footer);
 
-    const buttonWidth = Math.min(compact ? 230 : 260, panelWidth - pad * 2.5);
+    const buttonGap = 12;
+    const availableButtonWidth = panelWidth - pad * 2 - 24;
+    const closeWidth = this.onViewAchievements
+      ? Math.min(220, Math.max(150, availableButtonWidth * 0.34))
+      : Math.min(compact ? 230 : 260, panelWidth - pad * 2.5);
+    const achievementsWidth = this.onViewAchievements
+      ? Math.min(340, availableButtonWidth - closeWidth - buttonGap)
+      : 0;
     const buttonHeight = veryShort ? 38 : compact ? 44 : 48;
-    const buttonX = compact ? width / 2 : panelX + panelWidth - pad - buttonWidth / 2 - 8;
+    const actionGroupWidth = achievementsWidth + (this.onViewAchievements ? buttonGap : 0) + closeWidth;
+    const actionRight = compact ? width / 2 + actionGroupWidth / 2 : panelX + panelWidth - pad - 8;
+    const buttonX = actionRight - closeWidth / 2;
     const buttonY = compact ? footerY + footerHeight - 24 : footerY + footerHeight / 2;
+    const achievementsX = buttonX - closeWidth / 2 - buttonGap - achievementsWidth / 2;
+    if (this.onViewAchievements) {
+      this.achievementsButton = this.createButton(
+        translateText('VIEW ACHIEVEMENTS FOR THIS MODE'), achievementsX, buttonY,
+        () => this.openAchievementsForSelectedMode(),
+        { width: achievementsWidth, height: buttonHeight, fontSize: veryShort ? 12 : compact ? 14 : 15 }
+      );
+      this.container.addChild(this.achievementsButton);
+    }
     this.closeButton = this.createButton(translateText('BACK'), buttonX, buttonY, () => this.close(), {
-      width: buttonWidth,
+      width: closeWidth,
       height: buttonHeight,
       fontSize: veryShort ? 14 : compact ? 16 : 18
     });
@@ -645,11 +674,17 @@ export class HowToPlayOverlay {
       height: Math.round(footerHeight - 16)
     };
     const buttonBounds = {
-      x: Math.round(buttonX - buttonWidth / 2 - 5),
+      x: Math.round(buttonX - closeWidth / 2 - 5),
       y: Math.round(buttonY - buttonHeight / 2 - 5),
-      width: Math.round(buttonWidth + 10),
+      width: Math.round(closeWidth + 10),
       height: Math.round(buttonHeight + 10)
     };
+    const achievementsBounds = this.onViewAchievements ? {
+      x: Math.round(achievementsX - achievementsWidth / 2 - 5),
+      y: buttonBounds.y,
+      width: Math.round(achievementsWidth + 10),
+      height: buttonBounds.height
+    } : null;
     const layoutWarnings = [];
     for (const card of cardLayouts) {
       if (rectsOverlap(card, footerBounds, 4)) {
@@ -657,6 +692,9 @@ export class HowToPlayOverlay {
       }
       if (rectsOverlap(card, buttonBounds, 4)) {
         layoutWarnings.push(`card ${card.code} overlaps back button`);
+      }
+      if (achievementsBounds && rectsOverlap(card, achievementsBounds, 4)) {
+        layoutWarnings.push(`card ${card.code} overlaps achievements button`);
       }
     }
     for (let i = 0; i < cardLayouts.length; i += 1) {
@@ -680,6 +718,7 @@ export class HowToPlayOverlay {
       cards: cardLayouts,
       footer: footerBounds,
       button: buttonBounds,
+      achievementsButton: achievementsBounds,
       layoutWarnings
     };
   }
@@ -1012,10 +1051,30 @@ export class HowToPlayOverlay {
 
   setFocusedCard(index = 0) {
     if (!this.cards.length) return;
-    this.focusedCardIndex = (Math.floor(Number(index) || 0) + this.cards.length) % this.cards.length;
+    const count = this.cards.length + (this.achievementsButton ? 1 : 0);
+    this.focusedCardIndex = (Math.floor(Number(index) || 0) + count) % count;
     this.cards.forEach((card, cardIndex) => {
       card.tint = cardIndex === this.focusedCardIndex ? 0xc8f5ff : 0xffffff;
     });
+    this.achievementsButton?.redraw(this.focusedCardIndex === this.cards.length);
+  }
+
+  openAchievementsForSelectedMode() {
+    if (!this.onViewAchievements) return;
+    const modeByHelpCode = {
+      '11': RUN_MODES.MAYHEM_TACTICAL,
+      '12': RUN_MODES.OVERRUN_TACTICAL,
+      '13': RUN_MODES.RANKED,
+      D1: RUN_MODES.DAILY_SIGNAL,
+      '14': RUN_MODES.SCOUT,
+      '15': RUN_MODES.SECTOR_START
+    };
+    const helpCode = this.pageIndex === HELP_PAGES.findIndex((page) => page.id === 'modes')
+      ? this.cards[this.focusedCardIndex]?._helpRow?.code : null;
+    const mode = modeByHelpCode[helpCode] || this.game.runMode || RUN_MODES.MAYHEM_TACTICAL;
+    const callback = this.onViewAchievements;
+    this.close();
+    callback(mode);
   }
 
   openDetail(row) {
@@ -1202,12 +1261,17 @@ export class HowToPlayOverlay {
       const up = key === 'ArrowUp' || key === 'w' || key === 'W';
       const down = key === 'ArrowDown' || key === 's' || key === 'S';
       const confirm = ['Enter', ' '].includes(key) || event.code === 'Space' || event.code === 'NumpadEnter';
-      const handled = pageLeft || pageRight || up || down || confirm || key === 'Escape';
+      const achievements = Boolean(this.achievementsButton) && (key === 'v' || key === 'V');
+      const handled = pageLeft || pageRight || up || down || confirm || achievements || key === 'Escape';
       if (!handled) return;
       event.preventDefault();
       event.stopPropagation();
       if (this.detailRow) {
         if (confirm || key === 'Escape') this.closeDetail();
+        return;
+      }
+      if (achievements) {
+        this.openAchievementsForSelectedMode();
         return;
       }
       if (pageLeft) {
@@ -1223,7 +1287,8 @@ export class HowToPlayOverlay {
         return;
       }
       if (confirm) {
-        this.openDetail(this.cards[this.focusedCardIndex]?._helpRow);
+        if (this.achievementsButton && this.focusedCardIndex === this.cards.length) this.openAchievementsForSelectedMode();
+        else this.openDetail(this.cards[this.focusedCardIndex]?._helpRow);
         return;
       }
       this.close();
@@ -1244,7 +1309,17 @@ export class HowToPlayOverlay {
     if (nav.pressed.left) this.setPage(this.pageIndex - 1);
     if (nav.pressed.right) this.setPage(this.pageIndex + 1);
     if (nav.pressed.up || nav.pressed.down) this.setFocusedCard(this.focusedCardIndex + (nav.pressed.up ? -1 : 1));
-    if (nav.pressed.confirm) this.openDetail(this.cards[this.focusedCardIndex]?._helpRow);
+    if (nav.pressed.confirm) {
+      if (this.achievementsButton && this.focusedCardIndex === this.cards.length) {
+        this.openAchievementsForSelectedMode();
+        return;
+      }
+      this.openDetail(this.cards[this.focusedCardIndex]?._helpRow);
+    }
+    if (nav.pressed.lb && this.achievementsButton) {
+      this.openAchievementsForSelectedMode();
+      return;
+    }
     if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) this.close();
   }
 
@@ -1268,7 +1343,7 @@ export class HowToPlayOverlay {
       cardCount: helpPage.rows.length,
       trainingFlow: 'GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE',
       translatedTrainingFlow: translateText('GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE'),
-      focusedControl: 'back',
+      focusedControl: this.achievementsButton && this.focusedCardIndex === this.cards.length ? 'achievements' : 'card',
       focusedCardIndex: this.focusedCardIndex,
       detail: this.detailContainer?._debugDetail || null,
       layout: this.debugLayout,

@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
 const root = process.cwd();
-const exePath = path.resolve(root, 'release/desktop/win-unpacked/Nova Swarm.exe');
+const exePath = path.resolve(process.env.NOVA_SWARM_PACKAGED_EXE || path.join(root, 'release/desktop/win-unpacked/Nova Swarm.exe'));
 const outputDir = path.resolve(
   process.env.NOVA_SWARM_PACKAGED_PERF_OUTPUT_DIR ||
   `test-results/packaged-perf-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}`

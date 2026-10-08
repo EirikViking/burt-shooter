@@ -1,3 +1,5 @@
+import { GLOBAL_CHALLENGE_TUNING } from '../config/BalanceConfig.js';
+
 export class BulletManager {
   constructor(container, onCap) {
     this.container = container;
@@ -107,6 +109,13 @@ export class BulletManager {
       this.cleanupDiagnostics.rejectedAtCap += 1;
       this.disposeBullet(bullet, 'enemy_cap_rejected', 'enemy');
       return false;
+    }
+    // One shared increase reaches ordinary, boss, snake and special bullets.
+    // Apply it only on admission so delayed/pending bullets never speed up twice.
+    if (!bullet.__globalChallengeSpeedApplied) {
+      bullet.vx *= GLOBAL_CHALLENGE_TUNING.hostileProjectileSpeed;
+      bullet.vy *= GLOBAL_CHALLENGE_TUNING.hostileProjectileSpeed;
+      bullet.__globalChallengeSpeedApplied = true;
     }
     if (this.updatingEnemyBullets) {
       this.pendingEnemyBullets.push(bullet);

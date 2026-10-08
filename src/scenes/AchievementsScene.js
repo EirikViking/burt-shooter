@@ -1,17 +1,26 @@
 import { drawAstraPanel } from '../ui/AstraConsole.js';
 import * as PIXI from 'pixi.js';
-import { ACHIEVEMENTS } from '../achievements/AchievementCatalog.js';
+import { ACHIEVEMENTS, ACHIEVEMENT_MODE_NAMES } from '../achievements/AchievementCatalog.js';
+import { getAchievementDescriptionForLocale } from '../achievements/AchievementPresentation.js';
+import { getOnslaughtCollectionItems } from '../achievements/OnslaughtAchievementProgress.js';
+import { getBaseShipMetadata } from '../config/ShipMetadata.js';
+import { getOnslaughtCollectionAugmentName } from '../i18n/onslaughtCollectionNames.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { createTextLayout, getResponsiveFontSize } from '../ui/textLayout.js';
 import { createText } from '../utils/pixiText.js';
-import { translateText } from '../i18n/index.js';
+import { getCurrentLanguage, translateText } from '../i18n/index.js';
+import { RUN_MODES } from '../game/RunMode.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const FONT_BODY = 'Rajdhani, Bahnschrift, Segoe UI, Arial, sans-serif';
 const GAMEPAD_DEADZONE = 0.42;
 const ACHIEVEMENT_ICON_BASE = '/art/generated/nova-swarm/achievements';
+const MODE_OPTIONS = Object.freeze([
+  RUN_MODES.MAYHEM_TACTICAL, RUN_MODES.RANKED, RUN_MODES.OVERRUN_TACTICAL,
+  RUN_MODES.OVERRUN_PURE, RUN_MODES.SCOUT, RUN_MODES.SECTOR_START, RUN_MODES.DAILY_SIGNAL
+]);
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -72,8 +81,10 @@ function getAchievementIconPath(id, unlocked) {
 }
 
 export class AchievementsScene {
-  constructor(game) {
+  constructor(game, { onClose = null, overlay = false } = {}) {
     this.game = game;
+    this.onClose = onClose;
+    this.overlay = overlay;
     this.container = new PIXI.Container();
     this.backdrop = null;
     this.backdropShade = null;
@@ -110,9 +121,15 @@ export class AchievementsScene {
     this.scrollBarDebug = null;
     this.gamepadPrevious = {};
     this.gamepadSuppressActiveInput = true;
+    this.modeFilter = MODE_OPTIONS.includes(game?.achievementBrowserMode) ? game.achievementBrowserMode : RUN_MODES.MAYHEM_TACTICAL;
+    this.availableOnly = game?.achievementBrowserAvailableOnly === true;
+    this.groupFilter = game?.achievementBrowserGroup || 'challenges';
+    this.detailOverlay = null;
   }
 
   init() {
+    this.renderGeneration = (this.renderGeneration || 0) + 1;
+    this.closeAchievementDetail();
     this.suppressGamepadUntilReleased();
     destroyMenuFx(this);
     this.cleanupDisplayObjects();
@@ -152,9 +169,14 @@ export class AchievementsScene {
         continue;
       }
       seenIds.add(achievement.id);
+      if (this.groupFilter === 'ranks' && achievement.type !== 'rank') continue;
+      if (this.groupFilter === 'challenges' && achievement.type === 'rank') continue;
+      const unlocked = Boolean(manager?.isUnlocked?.(achievement.id));
+      if (this.availableOnly && !unlocked && !achievement.progressModes?.includes(this.modeFilter)
+        && !achievement.completeModes?.includes(this.modeFilter)) continue;
       rows.push({
         achievement,
-        unlocked: Boolean(manager?.isUnlocked?.(achievement.id))
+        unlocked
       });
     }
     this.catalogIntegrity = {
@@ -199,8 +221,10 @@ export class AchievementsScene {
 
     const backdropSrc = AssetManifest.generated?.leaderboardHall || AssetManifest.generated?.menuBackdrop;
     if (!backdropSrc) return;
+    const generation = this.renderGeneration;
     PIXI.Assets.load(backdropSrc).then((texture) => {
-      if (this.game?.currentScene !== this) return;
+      if (generation !== this.renderGeneration || this.backdrop) return;
+      if (this.game?.currentScene !== this && !this.overlay) return;
       this.backdrop = new PIXI.Sprite(texture);
       this.backdrop.anchor.set(0.5);
       this.backdrop.alpha = 0.5;
@@ -285,6 +309,43 @@ export class AchievementsScene {
     this.backBtn = this.createButton('BACK');
     this.backBtn.on('pointerdown', () => this.returnToMenu());
     this.container.addChild(this.backBtn);
+    this.filterBtn = this.createButton('ALL ACHIEVEMENTS');
+    this.filterBtn.on('pointerdown', () => this.toggleAvailableFilter());
+    this.container.addChild(this.filterBtn);
+    this.modeBtn = this.createButton('MODE: {mode}');
+    this.modeBtn.on('pointerdown', () => this.cycleModeFilter(1));
+    this.container.addChild(this.modeBtn);
+    this.groupBtn = this.createButton('CHALLENGES');
+    this.groupBtn.on('pointerdown', () => this.cycleGroupFilter());
+    this.container.addChild(this.groupBtn);
+  }
+
+  cycleGroupFilter() {
+    const groups = ['challenges', 'ranks', 'all'];
+    this.groupFilter = groups[(groups.indexOf(this.groupFilter) + 1) % groups.length];
+    this.game.achievementBrowserGroup = this.groupFilter;
+    this.refreshFilteredRows();
+  }
+
+  toggleAvailableFilter() {
+    this.availableOnly = !this.availableOnly;
+    this.game.achievementBrowserAvailableOnly = this.availableOnly;
+    this.refreshFilteredRows();
+  }
+
+  cycleModeFilter(direction = 1) {
+    const index = MODE_OPTIONS.indexOf(this.modeFilter);
+    this.modeFilter = MODE_OPTIONS[(index + direction + MODE_OPTIONS.length) % MODE_OPTIONS.length];
+    this.game.achievementBrowserMode = this.modeFilter;
+    this.refreshFilteredRows();
+  }
+
+  refreshFilteredRows() {
+    const focusedId = this.rows[this.focusedIndex]?.achievement?.id;
+    this.rows = this.buildRows();
+    this.focusedIndex = Math.max(0, this.rows.findIndex(row => row.achievement.id === focusedId));
+    this.scrollOffset = 0;
+    this.layoutScreen();
   }
 
   createButton(label) {
@@ -335,6 +396,8 @@ export class AchievementsScene {
     bg.fill({ color: 0xd8a66b, alpha: 0.62 });
     bg.rect(x + width - 16, y + 7, 4, height - 14);
     bg.fill({ color: 0xffd15c, alpha: 0.5 });
+    button._label.scale.x = 1;
+    button._label.scale.x = Math.min(1, (width - 36) / Math.max(1, button._label.width));
   }
 
   layoutScreen() {
@@ -354,7 +417,7 @@ export class AchievementsScene {
     this.layoutBackdrop(width, height);
     this.backdropShade.clear();
     this.backdropShade.rect(0, 0, width, height);
-    this.backdropShade.fill({ color: 0x020711, alpha: 0.52 });
+    this.backdropShade.fill({ color: 0x020711, alpha: this.overlay ? 0.96 : 0.52 });
     this.backdropShade.rect(0, 0, width, height);
     this.backdropShade.fill({ color: 0x001527, alpha: 0.22 });
 
@@ -369,7 +432,9 @@ export class AchievementsScene {
     });
     this.hint.text = mobile
       ? translateText('UP/DOWN: BROWSE  |  WHEEL/PAGE: MORE  |  ESC/B: BACK')
-      : translateText('ARROWS/STICK: BROWSE  |  WHEEL/PAGE: MORE  |  ESC/B: BACK');
+      : translateText('G/X: GROUP · F/LB: FILTER · M/RB: MODE · ENTER/A: DETAILS · ESC/B: BACK');
+    this.hint.scale.set(1);
+    this.hint.scale.x = Math.min(1, (width - 40) / Math.max(1, this.hint.width));
     this.hint.visible = !short;
 
     this.title.x = width / 2;
@@ -381,11 +446,11 @@ export class AchievementsScene {
 
     this.columns = width >= 980 ? 2 : 1;
     this.columnGap = this.columns > 1 ? 18 : 0;
-    this.rowHeight = short ? 82 : mobile ? 122 : 148;
+    this.rowHeight = short ? 82 : mobile ? 132 : 164;
     const bottomReserve = short ? 46 : mobile ? 98 : 108;
-    this.listTop = this.summary.y + (short ? 20 : mobile ? 32 : 42);
+    this.listTop = this.summary.y + (short ? 46 : mobile ? 61 : 68);
     const listBottom = height - bottomInset - bottomReserve;
-    this.rowsPerColumn = Math.max(3, Math.floor(Math.max(120, listBottom - this.listTop) / this.rowHeight));
+    this.rowsPerColumn = Math.max(1, Math.floor(Math.max(120, listBottom - this.listTop) / this.rowHeight));
     this.visibleCapacity = Math.max(1, this.rowsPerColumn * this.columns);
     this.rowWidth = this.columns > 1
       ? Math.min(460, (width - layout.padding * 2 - this.columnGap) / 2)
@@ -404,6 +469,28 @@ export class AchievementsScene {
     this.backBtn.y = height - bottomInset - (short ? 24 : mobile ? 62 : 70);
     this.backBtn._label.style.fontSize = short ? 13 : mobile ? 16 : 17;
     this.drawButton(this.backBtn, false);
+    const filtersY = this.summary.y + (short ? 22 : mobile ? 27 : 35);
+    const filterWidth = Math.min(short ? 174 : 225, (width - 60) / 3);
+    const modeWidth = filterWidth;
+    this.filterBtn._buttonWidth = filterWidth;
+    this.filterBtn._buttonHeight = short ? 28 : 34;
+    this.filterBtn._label.text = translateText(this.availableOnly ? 'AVAILABLE IN THIS MODE' : 'ALL ACHIEVEMENTS');
+    this.filterBtn._label.style.fontSize = short ? 11 : 13;
+    this.filterBtn.position.set(width / 2, filtersY);
+    this.drawButton(this.filterBtn, this.availableOnly);
+    this.modeBtn._buttonWidth = modeWidth;
+    this.modeBtn._buttonHeight = short ? 28 : 34;
+    this.modeBtn._label.text = translateText('MODE: {mode}', { mode: translateText(ACHIEVEMENT_MODE_NAMES[this.modeFilter]) });
+    this.modeBtn._label.style.fontSize = short ? 11 : 13;
+    this.modeBtn.position.set(width / 2 + modeWidth + 10, filtersY);
+    this.drawButton(this.modeBtn, false);
+    this.groupBtn._buttonWidth = filterWidth;
+    this.groupBtn._buttonHeight = short ? 28 : 34;
+    this.groupBtn._label.text = translateText(this.groupFilter === 'ranks' ? 'PILOT RANKS'
+      : this.groupFilter === 'all' ? 'ALL ACHIEVEMENTS' : 'CHALLENGES');
+    this.groupBtn._label.style.fontSize = short ? 11 : 13;
+    this.groupBtn.position.set(width / 2 - filterWidth - 10, filtersY);
+    this.drawButton(this.groupBtn, this.groupFilter !== 'all');
   }
 
   layoutBackdrop(width = this.game.app.screen.width, height = this.game.app.screen.height) {
@@ -436,10 +523,11 @@ export class AchievementsScene {
     if (this.focusedIndex < this.scrollOffset) {
       this.scrollOffset = this.focusedIndex;
     } else if (this.focusedIndex >= this.scrollOffset + this.visibleCapacity) {
-      this.scrollOffset = this.focusedIndex - this.visibleCapacity + 1;
+      this.scrollOffset = Math.floor(this.focusedIndex / this.columns) * this.columns - this.visibleCapacity + this.columns;
     }
-    const maxOffset = Math.max(0, this.rows.length - this.visibleCapacity);
+    const maxOffset = Math.max(0, Math.ceil((this.rows.length - this.visibleCapacity) / this.columns) * this.columns);
     this.scrollOffset = clamp(this.scrollOffset, 0, maxOffset);
+    this.scrollOffset = Math.floor(this.scrollOffset / this.columns) * this.columns;
   }
 
   drawRows() {
@@ -448,8 +536,8 @@ export class AchievementsScene {
     const visibleRows = this.rows.slice(this.scrollOffset, this.scrollOffset + this.visibleCapacity);
     visibleRows.forEach((row, visibleIndex) => {
       const absoluteIndex = this.scrollOffset + visibleIndex;
-      const col = Math.floor(visibleIndex / this.rowsPerColumn);
-      const rowInColumn = visibleIndex % this.rowsPerColumn;
+      const col = visibleIndex % this.columns;
+      const rowInColumn = Math.floor(visibleIndex / this.columns);
       const x = this.listLeft + col * (this.rowWidth + this.columnGap);
       const y = this.listTop + rowInColumn * this.rowHeight;
       const display = this.createAchievementRow(row, absoluteIndex);
@@ -480,6 +568,7 @@ export class AchievementsScene {
       this.ensureFocusedVisible();
       this.drawRows();
     });
+    container.on('pointertap', () => this.openAchievementDetail(row));
     const height = this.rowHeight - 6;
 
     const bg = new PIXI.Graphics();
@@ -543,6 +632,15 @@ export class AchievementsScene {
     status.x = textX;
     status.y = short ? 7 : 10;
     container.addChild(status);
+    const modeEligible = achievement.progressModes?.includes(this.modeFilter)
+      || achievement.completeModes?.includes(this.modeFilter);
+    const modeBadge = createText(translateText(modeEligible ? 'AVAILABLE IN MODE' : 'NOT IN THIS MODE'), {
+      fontFamily: FONT_BODY, fontSize: short ? 10 : 12, fontWeight: 'bold',
+      fill: modeEligible ? '#9dded7' : '#9aafc0'
+    });
+    modeBadge.anchor.x = 1;
+    modeBadge.position.set(this.rowWidth - 16, short ? 9 : 12);
+    container.addChild(modeBadge);
 
     const name = createText(hidden ? translateText('Hidden Achievement') : translateText(achievement.name), {
       fontFamily: FONT_DISPLAY,
@@ -552,26 +650,40 @@ export class AchievementsScene {
       stroke: '#031323',
       strokeThickness: 3,
       align: 'left',
-      wordWrap: true,
-      wordWrapWidth: textWidth
+      wordWrap: false
     });
     name.x = textX;
     name.y = short ? 23 : 31;
+    name.scale.x = Math.min(1, textWidth / Math.max(1, name.width));
     container.addChild(name);
 
-    const description = createText(hidden ? translateText('Unlock to reveal details.') : translateText(achievement.description), {
+    const description = createText(hidden ? translateText('Unlock to reveal details.') : short
+      ? translateText('SELECT / A: DETAILS') : translateText(achievement.description), {
       fontFamily: FONT_BODY,
       fontSize: short ? 16 : 18,
       fill: unlocked ? '#d8e6ff' : '#7e91a3',
       stroke: '#031323',
       strokeThickness: 2,
       align: 'left',
-      wordWrap: true,
+      wordWrap: true, breakWords: true,
       wordWrapWidth: textWidth
     });
     description.x = textX;
-    description.y = short ? 48 : 69;
+    description.y = short ? 48 : 68;
+    const descriptionBottom = height - (!short && !hidden && this.game?.achievementManager?.getOnslaughtProgress?.(achievement.id) ? 33 : 10);
+    description.scale.set(Math.min(1, textWidth / Math.max(1, description.width), (descriptionBottom - description.y) / Math.max(1, description.height)));
     container.addChild(description);
+    const progress = this.game?.achievementManager?.getOnslaughtProgress?.(achievement.id);
+    if (!short && !hidden && progress) {
+      const label = achievement.scope === 'single_run' ? 'Best run: {value}/{target}'
+        : achievement.scope === 'consecutive_runs' ? 'Consecutive runs: {value}/{target}'
+          : achievement.scope === 'collection' ? 'Collection: {value}/{target}' : 'Across runs: {value}/{target}';
+      const node = createText(translateText(label, { value: Math.min(progress.value, progress.target), target: progress.target }), {
+        fontFamily: FONT_BODY, fontSize: 13, fontWeight: 'bold', fill: '#9dded7'
+      });
+      node.position.set(textX, height - 22);
+      container.addChild(node);
+    }
 
     return container;
   }
@@ -585,7 +697,7 @@ export class AchievementsScene {
     const railHeight = Math.max(80, bottom - this.listTop);
     const total = Math.max(1, this.rows.length);
     const visible = Math.min(total, this.visibleCapacity);
-    const maxOffset = Math.max(0, total - visible);
+    const maxOffset = Math.max(0, Math.ceil((total - visible) / this.columns) * this.columns);
     const thumbHeight = maxOffset <= 0 ? railHeight : Math.max(42, railHeight * (visible / total));
     const thumbY = maxOffset <= 0
       ? railY
@@ -654,7 +766,7 @@ export class AchievementsScene {
     const bounds = this.scrollDrag?.bounds || this.scrollBarDebug;
     if (!bounds?.interactive || bounds.maxOffset <= 0) return false;
     const ratio = clamp((Number(y) - bounds.y) / Math.max(1, bounds.height), 0, 1);
-    const nextOffset = clamp(Math.round(ratio * bounds.maxOffset), 0, bounds.maxOffset);
+    const nextOffset = clamp(Math.round(ratio * bounds.maxOffset / this.columns) * this.columns, 0, bounds.maxOffset);
     if (nextOffset === this.scrollOffset && this.focusedIndex === nextOffset) return false;
     this.scrollOffset = nextOffset;
     this.focusedIndex = clamp(nextOffset, 0, Math.max(0, this.rows.length - 1));
@@ -671,28 +783,126 @@ export class AchievementsScene {
     playMenuFocusSfx(0.09);
   }
 
+  openAchievementDetail(row = this.rows[this.focusedIndex]) {
+    if (!row?.achievement) return;
+    this.closeAchievementDetail();
+    const { width, height } = this.game.app.screen;
+    const panelWidth = Math.min(760, width - 32);
+    const achievement = row.achievement;
+    const hidden = achievement.hidden && !row.unlocked;
+    const requirement = hidden
+      ? translateText('Unlock to reveal details.')
+      : getAchievementDescriptionForLocale(achievement, getCurrentLanguage());
+    const collection = hidden ? [] : getOnslaughtCollectionItems(achievement, this.game.achievementManager?.onslaughtRuns);
+    const collectionLines = collection.slice(0, 5).map(item => {
+      const hull = getBaseShipMetadata(item.hullId)?.name || item.hullId;
+      const label = item.augmentIds
+        ? `${hull ? hull + ': ' : ''}${item.augmentIds.map(id => getOnslaughtCollectionAugmentName(id, getCurrentLanguage())).join(' / ')}`
+        : hull;
+      return translateText('{item}: {status}', { item: label, status: translateText(item.counted ? 'Counted' : 'Not yet') });
+    });
+    const fullDescription = [requirement, ...collectionLines].join('\n\n');
+    const detailFontSize = collectionLines.length ? 16 : 18;
+    const measured = createText(fullDescription, { fontFamily: FONT_BODY, fontSize: detailFontSize, fontWeight: 'bold',
+      wordWrap: true, breakWords: true, wordWrapWidth: panelWidth - 48, lineHeight: detailFontSize * 1.25 });
+    const progress = this.game?.achievementManager?.getOnslaughtProgress?.(achievement.id);
+    const panelHeight = Math.min(height - 38, Math.max(250, 157 + measured.height + (!hidden && progress ? 35 : 0)));
+    measured.destroy();
+    const x = (width - panelWidth) / 2;
+    const y = (height - panelHeight) / 2;
+    const modal = new PIXI.Container();
+    modal.label = 'ui_achievement_detail';
+    modal.zIndex = 1000;
+    modal.eventMode = 'static';
+    modal.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    modal.addChild(new PIXI.Graphics().rect(0, 0, width, height).fill({ color: 0x01050d, alpha: 0.86 }));
+    const frame = new PIXI.Graphics();
+    drawAstraPanel(frame, x, y, panelWidth, panelHeight, 8, { color: 0x061729, alpha: 0.99 }, { color: 0xffd15c, width: 2, alpha: 0.92 });
+    modal.addChild(frame);
+    const addLine = (value, py, size, color = '#d8e6ff') => {
+      const node = createText(value, { fontFamily: FONT_BODY, fontSize: size, fontWeight: 'bold', fill: color,
+        wordWrap: true, breakWords: true, wordWrapWidth: panelWidth - 48, lineHeight: size * 1.25 });
+      node.position.set(x + 24, py);
+      modal.addChild(node);
+      return node;
+    };
+    addLine(translateText(row.unlocked ? 'UNLOCKED' : 'LOCKED'), y + 18, 15, row.unlocked ? '#fff3a2' : '#aabdc9');
+    const title = addLine(hidden ? translateText('Hidden Achievement') : translateText(achievement.name), y + 42, 25, '#c9fbff');
+    title.scale.set(Math.min(1, 60 / Math.max(1, title.height)));
+    const descriptionY = title.y + title.height + 12;
+    const description = addLine(fullDescription, descriptionY, detailFontSize);
+    description.scale.set(Math.min(1, (y + panelHeight - (progress ? 106 : 72) - descriptionY) / Math.max(1, description.height)));
+    if (!hidden && progress) {
+      const label = achievement.scope === 'single_run' ? 'Best run: {value}/{target}'
+        : achievement.scope === 'consecutive_runs' ? 'Consecutive runs: {value}/{target}'
+          : achievement.scope === 'collection' ? 'Collection: {value}/{target}' : 'Across runs: {value}/{target}';
+      addLine(translateText(label, { value: Math.min(progress.value, progress.target), target: progress.target }),
+        Math.min(y + panelHeight - 95, description.y + description.height + 18), 18, '#9dded7');
+    }
+    const close = this.createButton('BACK TO ACHIEVEMENTS');
+    close._buttonWidth = Math.min(300, panelWidth - 48);
+    close._buttonHeight = 42;
+    close.position.set(width / 2, y + panelHeight - 39);
+    close.on('pointerdown', () => this.closeAchievementDetail());
+    this.drawButton(close, true);
+    modal.addChild(close);
+    this.container.addChild(modal);
+    this.detailOverlay = modal;
+    this.suppressGamepadUntilReleased();
+  }
+
+  closeAchievementDetail() {
+    if (!this.detailOverlay) return;
+    this.detailOverlay.destroy({ children: true });
+    this.detailOverlay = null;
+    this.suppressGamepadUntilReleased();
+  }
+
   setupKeyboard() {
     if (this.keyHandler) window.removeEventListener('keydown', this.keyHandler, true);
     this.keyHandler = (event) => {
       const key = event.key;
+      if (this.detailOverlay) {
+        if (key === 'Escape' || key === 'Backspace' || key === 'Enter' || event.code === 'Space') {
+          event.preventDefault();
+          event.stopImmediatePropagation?.();
+          this.closeAchievementDetail();
+        }
+        return;
+      }
       if (key === 'Escape' || key === 'Backspace') {
         event.preventDefault();
         event.stopImmediatePropagation?.();
         this.returnToMenu();
         return;
       }
-      if (key === 'ArrowUp') {
+      if (event.code === 'KeyG') {
         event.preventDefault();
-        this.moveFocus(-1);
-      } else if (key === 'ArrowDown' || key === 'Tab') {
+        this.cycleGroupFilter();
+      } else if (event.code === 'KeyF') {
+        event.preventDefault();
+        this.toggleAvailableFilter();
+      } else if (event.code === 'KeyM') {
+        event.preventDefault();
+        this.cycleModeFilter(event.shiftKey ? -1 : 1);
+      } else if (key === 'Enter' || event.code === 'Space') {
+        event.preventDefault();
+        this.openAchievementDetail();
+      } else if (key === 'ArrowUp') {
+        event.preventDefault();
+        this.moveFocus(-this.columns);
+      } else if (key === 'ArrowDown') {
+        event.preventDefault();
+        this.moveFocus(this.columns);
+      } else if (key === 'Tab') {
         event.preventDefault();
         this.moveFocus(event.shiftKey ? -1 : 1);
       } else if (key === 'ArrowLeft') {
         event.preventDefault();
-        this.moveFocus(-this.rowsPerColumn);
+        this.moveFocus(-1);
       } else if (key === 'ArrowRight') {
         event.preventDefault();
-        this.moveFocus(this.rowsPerColumn);
+        this.moveFocus(1);
       } else if (key === 'PageUp') {
         event.preventDefault();
         this.moveFocus(-this.visibleCapacity);
@@ -715,7 +925,8 @@ export class AchievementsScene {
 
     if (this.wheelHandler) window.removeEventListener('wheel', this.wheelHandler, true);
     this.wheelHandler = (event) => {
-      if (this.game?.currentScene !== this) return;
+      if (this.game?.currentScene !== this && !this.overlay) return;
+      if (this.detailOverlay) return;
       event.preventDefault();
       event.stopPropagation();
       const step = Math.max(1, Math.round(Math.abs(event.deltaY || 0) / 90));
@@ -726,7 +937,8 @@ export class AchievementsScene {
 
   returnToMenu() {
     playMenuConfirmSfx(0.14);
-    this.game.showMenu();
+    if (this.onClose) this.onClose();
+    else this.game.showMenu();
   }
 
   suppressGamepadUntilReleased() {
@@ -750,6 +962,10 @@ export class AchievementsScene {
       down: isGamepadButtonPressed(buttons, 13) || axisY > 0,
       left: isGamepadButtonPressed(buttons, 14) || axisX < 0,
       right: isGamepadButtonPressed(buttons, 15) || axisX > 0,
+      confirm: isGamepadButtonPressed(buttons, 0),
+      filter: isGamepadButtonPressed(buttons, 4),
+      mode: isGamepadButtonPressed(buttons, 5),
+      group: isGamepadButtonPressed(buttons, 2),
       cancel: isGamepadButtonPressed(buttons, 1),
       back: isGamepadButtonPressed(buttons, 8),
       menu: isGamepadButtonPressed(buttons, 9)
@@ -775,10 +991,18 @@ export class AchievementsScene {
     updateMenuFx(this, delta);
     const nav = this.readGamepadNavigation();
     if (!nav.connected || !nav.active) return;
-    if (nav.pressed.up) this.moveFocus(-1);
-    if (nav.pressed.down) this.moveFocus(1);
-    if (nav.pressed.left) this.moveFocus(-this.rowsPerColumn);
-    if (nav.pressed.right) this.moveFocus(this.rowsPerColumn);
+    if (this.detailOverlay) {
+      if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.closeAchievementDetail();
+      return;
+    }
+    if (nav.pressed.filter) this.toggleAvailableFilter();
+    if (nav.pressed.mode) this.cycleModeFilter(1);
+    if (nav.pressed.group) this.cycleGroupFilter();
+    if (nav.pressed.up) this.moveFocus(-this.columns);
+    if (nav.pressed.down) this.moveFocus(this.columns);
+    if (nav.pressed.left) this.moveFocus(-1);
+    if (nav.pressed.right) this.moveFocus(1);
+    if (nav.pressed.confirm) this.openAchievementDetail();
     if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.returnToMenu();
   }
 
@@ -807,6 +1031,8 @@ export class AchievementsScene {
   }
 
   destroy() {
+    this.renderGeneration = (this.renderGeneration || 0) + 1;
+    this.closeAchievementDetail();
     if (this.layoutUnsubscribe) {
       this.layoutUnsubscribe();
       this.layoutUnsubscribe = null;

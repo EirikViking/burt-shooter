@@ -1,8 +1,10 @@
 export const CONFIRM_EXIT_KEY = 'nova_confirm_exit_v1';
+export const GAMEPLAY_BACKGROUND_KEY = 'nova_gameplay_background_v1';
 export const SHOW_PILOT_ORDERS_KEY = 'nova_show_pilot_orders_v1';
 
 export const DEFAULT_MENU_SETTINGS = Object.freeze({
   confirmExit: true,
+  gameplayBackground: 'modern',
   showPilotOrders: true
 });
 
@@ -26,13 +28,19 @@ export function normalizeShowPilotOrders(value, fallback = DEFAULT_MENU_SETTINGS
   return Boolean(fallback);
 }
 
+export function normalizeGameplayBackground(value) {
+  return String(value || '').trim().toLowerCase() === 'legacy' ? 'legacy' : 'modern';
+}
+
 export function getMenuSettings({ storage = null, defaultShowPilotOrders = DEFAULT_MENU_SETTINGS.showPilotOrders } = {}) {
   const localStorageRef = getStorage(storage);
   try {
     const storedConfirmExit = localStorageRef?.getItem?.(CONFIRM_EXIT_KEY);
+    const storedGameplayBackground = localStorageRef?.getItem?.(GAMEPLAY_BACKGROUND_KEY);
     const storedShowPilotOrders = localStorageRef?.getItem?.(SHOW_PILOT_ORDERS_KEY);
     return {
       confirmExit: storedConfirmExit == null ? DEFAULT_MENU_SETTINGS.confirmExit : normalizeConfirmExit(storedConfirmExit),
+      gameplayBackground: normalizeGameplayBackground(storedGameplayBackground),
       showPilotOrders: storedShowPilotOrders == null
         ? normalizeShowPilotOrders(defaultShowPilotOrders)
         : normalizeShowPilotOrders(storedShowPilotOrders, defaultShowPilotOrders),
@@ -47,6 +55,9 @@ export function saveMenuSettings(settings = {}, { storage = null, syncCloud = tr
   const current = getMenuSettings({ storage, defaultShowPilotOrders });
   const clean = {
     confirmExit: settings.confirmExit === undefined ? current.confirmExit : normalizeConfirmExit(settings.confirmExit),
+    gameplayBackground: settings.gameplayBackground === undefined
+      ? current.gameplayBackground
+      : normalizeGameplayBackground(settings.gameplayBackground),
     showPilotOrders: settings.showPilotOrders === undefined
       ? current.showPilotOrders
       : normalizeShowPilotOrders(settings.showPilotOrders, defaultShowPilotOrders),
@@ -55,6 +66,7 @@ export function saveMenuSettings(settings = {}, { storage = null, syncCloud = tr
   const localStorageRef = getStorage(storage);
   try {
     if (settings.confirmExit !== undefined) localStorageRef?.setItem?.(CONFIRM_EXIT_KEY, clean.confirmExit ? '1' : '0');
+    if (settings.gameplayBackground !== undefined) localStorageRef?.setItem?.(GAMEPLAY_BACKGROUND_KEY, clean.gameplayBackground);
     if (settings.showPilotOrders !== undefined) localStorageRef?.setItem?.(SHOW_PILOT_ORDERS_KEY, clean.showPilotOrders ? '1' : '0');
     if (syncCloud && typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.()?.catch?.(() => {});
   } catch {

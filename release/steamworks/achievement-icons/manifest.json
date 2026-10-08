@@ -1,9 +1,9 @@
 {
   "appId": 4765070,
-  "generatedAt": "2026-07-24T15:18:35.842Z",
+  "generatedAt": "2026-09-22T22:31:04.334Z",
   "canonicalSource": "src/achievements/AchievementCatalog.js",
   "sourceSheet": "nova-swarm-achievement-icons-sheet-20260615-legendary-unique.png",
-  "sourceGenerator": "Codex generated/curated achievement icon set; 2026-06-12 hard-rank and First Ranked Run icons generated from local badge/SVG assets; 2026-06-15 ultra-hard achievement icons generated with internal Codex imagegen and processed to 256x256 JPG pairs. 2026-07-24 rank-number correction remaps stable zero-based API ids to player-facing badge index + 1.",
+  "sourceGenerator": "Curated Nova Swarm icon set; Onslaught v2 motifs generated with Codex imagegen and cropped from onslaught-v2-icon-sheet.png into distinct 256x256 achieved/grayscale-locked JPG pairs.",
   "iconSize": "256x256 jpg",
   "icons": [
     {
@@ -731,6 +731,177 @@
       "hidden": false,
       "achievedIcon": "ACH_FULL_HANGAR_OMEGA-achieved.jpg",
       "lockedIcon": "ACH_FULL_HANGAR_OMEGA-locked.jpg"
+    },
+    {
+      "apiName": "ACH_OS_THREE_HULLS",
+      "displayName": "Three Wings",
+      "description": "Across runs, clear 2 sectors on 3 distinct hulls.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_THREE_HULLS-achieved.jpg",
+      "lockedIcon": "ACH_OS_THREE_HULLS-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_FIVE_HULLS",
+      "displayName": "Five Hull Salute",
+      "description": "Across runs, defeat a boss on 5 distinct hulls.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_FIVE_HULLS-achieved.jpg",
+      "lockedIcon": "ACH_OS_FIVE_HULLS-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_STARTER_WINGS",
+      "displayName": "Small Wings, Long Shadows",
+      "description": "Across runs, clear 3 sectors on 3 distinct starter hulls.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_STARTER_WINGS-achieved.jpg",
+      "lockedIcon": "ACH_OS_STARTER_WINGS-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_FIVE_BUILDS",
+      "displayName": "Five Opening Gambits",
+      "description": "Across runs, clear 2 sectors with 5 distinct starting augment triples.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_FIVE_BUILDS-achieved.jpg",
+      "lockedIcon": "ACH_OS_FIVE_BUILDS-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_ONE_HULL_THREE_BUILDS",
+      "displayName": "Same Hull, New Plan",
+      "description": "Across runs, clear 2 sectors on one hull with 3 distinct starting augment triples.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_ONE_HULL_THREE_BUILDS-achieved.jpg",
+      "lockedIcon": "ACH_OS_ONE_HULL_THREE_BUILDS-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_BOSS_LEDGER",
+      "displayName": "Boss Ledger",
+      "description": "Across runs, defeat 20 Onslaught bosses.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_BOSS_LEDGER-achieved.jpg",
+      "lockedIcon": "ACH_OS_BOSS_LEDGER-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_SNAKE_SPECIES",
+      "displayName": "Serpent Survey",
+      "description": "Across runs, defeat 3 distinct Space Snake types.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_SNAKE_SPECIES-achieved.jpg",
+      "lockedIcon": "ACH_OS_SNAKE_SPECIES-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_DRAFT_VARIETY",
+      "displayName": "Field Research",
+      "description": "Across runs, choose 10 distinct augments from earned boss Drafts.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_DRAFT_VARIETY-achieved.jpg",
+      "lockedIcon": "ACH_OS_DRAFT_VARIETY-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_FUSION_VARIETY",
+      "displayName": "Fusion Conductor",
+      "description": "Across runs, earn 3 distinct fusion protocols from boss Drafts.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_FUSION_VARIETY-achieved.jpg",
+      "lockedIcon": "ACH_OS_FUSION_VARIETY-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_STEADY_FIVE",
+      "displayName": "Five Deep Flights",
+      "description": "Across 5 runs, clear at least 5 sectors in each.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_STEADY_FIVE-achieved.jpg",
+      "lockedIcon": "ACH_OS_STEADY_FIVE-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_CLEAN_FLIGHTS",
+      "displayName": "Quiet Skies",
+      "description": "Across 5 runs, clear at least 3 no-hit waves in each.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_CLEAN_FLIGHTS-achieved.jpg",
+      "lockedIcon": "ACH_OS_CLEAN_FLIGHTS-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_THREE_STREAK",
+      "displayName": "Hold the Line",
+      "description": "Clear at least 2 sectors in 3 consecutive Onslaught runs.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_THREE_STREAK-achieved.jpg",
+      "lockedIcon": "ACH_OS_THREE_STREAK-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_TEN_SECTORS",
+      "displayName": "Ten Sectors Beyond",
+      "description": "In one run, clear 10 Onslaught sectors.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_TEN_SECTORS-achieved.jpg",
+      "lockedIcon": "ACH_OS_TEN_SECTORS-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_THREE_BOSSES",
+      "displayName": "Three Boss Salute",
+      "description": "In one run, defeat 3 Onslaught bosses.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_THREE_BOSSES-achieved.jpg",
+      "lockedIcon": "ACH_OS_THREE_BOSSES-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_CLEAN_FIVE",
+      "displayName": "Five Clean Waves",
+      "description": "In one run, clear 5 Onslaught waves without taking a hit.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_CLEAN_FIVE-achieved.jpg",
+      "lockedIcon": "ACH_OS_CLEAN_FIVE-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_SNAKE_DUEL",
+      "displayName": "Serpent Duel",
+      "description": "In one run, defeat a Space Snake with at most 1 life lost.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_SNAKE_DUEL-achieved.jpg",
+      "lockedIcon": "ACH_OS_SNAKE_DUEL-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_SPARROW_FIVE",
+      "displayName": "Sparrow Against the Swarm",
+      "description": "In one run with Nova Sparrow, clear 5 Onslaught sectors.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_SPARROW_FIVE-achieved.jpg",
+      "lockedIcon": "ACH_OS_SPARROW_FIVE-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_FIELD_FUSION",
+      "displayName": "Built Under Fire",
+      "description": "In one run, earn a fusion from a boss Draft and clear 3 sectors.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_FIELD_FUSION-achieved.jpg",
+      "lockedIcon": "ACH_OS_FIELD_FUSION-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
+    },
+    {
+      "apiName": "ACH_OS_COMPLETE_SET",
+      "displayName": "Onslaught Constellation",
+      "description": "Earn all other 18 Onslaught achievements.",
+      "hidden": false,
+      "achievedIcon": "ACH_OS_COMPLETE_SET-achieved.jpg",
+      "lockedIcon": "ACH_OS_COMPLETE_SET-locked.jpg",
+      "source": "onslaught-v2-icon-sheet.png"
     }
   ],
   "sourceFiles": [],

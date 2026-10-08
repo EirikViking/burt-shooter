@@ -1,0 +1,12 @@
+{
+  "id": 1,
+  "name": "Nova Sparrow",
+  "architecture": "sparrow",
+  "palette": [
+    "dce8eb",
+    "1762b0",
+    "ffc126"
+  ],
+  "textureSize": 1536,
+  "spriteGeneration": false
+}

@@ -1,3 +1,4 @@
+import {discoverySector,hullDiscoverySector} from './DiscoveryProgression.js';
 import { getGeneratedEnemyTypeForSpriteIndex } from './GeneratedEnemyProfiles.js';
 
 // A contact should feel like a story players tell, not a routine wave modifier.
@@ -51,6 +52,7 @@ export const RARE_CHAOS_VISITOR_VARIANTS = Object.freeze(HULLS.flatMap((hull, hu
     return Object.freeze({
       id: `rare_chaos_visitor_${String(number).padStart(2, '0')}`,
       number,
+      unlockLevel: Math.max(discoverySector(number-1,HULLS.length*WEAPON_RIGS.length,6),hullDiscoverySector(hull.spriteIndex)),
       displayName: hull.name,
       loadoutName: weapon.name,
       hullId: hull.id,
@@ -93,17 +95,18 @@ export function isRareChaosVisitorEligibleWave(config = {}) {
 }
 
 export function planRareChaosVisitorSpawn({ seed = 'nova-swarm', level = 1, waveIndex = 0, config = {}, force = false } = {}) {
-  const eligible = isRareChaosVisitorEligibleWave(config);
+  const pool=force?RARE_CHAOS_VISITOR_VARIANTS:RARE_CHAOS_VISITOR_VARIANTS.filter(profile=>profile.unlockLevel<=level);
+  const eligible = isRareChaosVisitorEligibleWave(config)&&pool.length>0;
   const salt = `${Math.max(1, Math.floor(Number(level) || 1))}:${Math.max(0, Math.floor(Number(waveIndex) || 0))}`;
   const roll = stableUnit(seed, `rare-chaos-roll:${salt}`);
   const variantRoll = stableUnit(seed, `rare-chaos-variant:${salt}`);
-  const variantIndex = Math.min(RARE_CHAOS_VISITOR_VARIANTS.length - 1, Math.floor(variantRoll * RARE_CHAOS_VISITOR_VARIANTS.length));
+  const variantIndex = Math.min(pool.length - 1, Math.floor(variantRoll * pool.length));
   return Object.freeze({
     eligible,
     forced: force === true,
     chance: RARE_CHAOS_VISITOR_WAVE_CHANCE,
     roll,
     shouldSpawn: eligible && (force === true || roll < RARE_CHAOS_VISITOR_WAVE_CHANCE),
-    variant: RARE_CHAOS_VISITOR_VARIANTS[variantIndex]
+    variant: pool[variantIndex]||null
   });
 }

@@ -55,6 +55,7 @@ if (!existsSync(reportPath)) {
 const report = readJson(reportPath);
 const currentBuild = existsSync(versionPath) ? readJson(versionPath) : null;
 const errors = [];
+if (result.status !== 0) errors.push(`process exited ${result.status}`);
 let steamValidation;
 
 try {

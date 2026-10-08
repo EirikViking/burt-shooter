@@ -6,6 +6,7 @@ import {
 } from './AchievementCatalog.js';
 import { createSteamAchievementSync } from './SteamAchievementSync.js';
 import { isRankedRunMode } from '../game/RunMode.js';
+import { evidenceFromOnslaughtRun, getOnslaughtAchievementProgress, mergeOnslaughtEvidence, normalizeOnslaughtEvidence } from './OnslaughtAchievementProgress.js';
 
 export const ACHIEVEMENT_STORAGE_KEY = 'nova_swarm_achievements_v1';
 
@@ -25,6 +26,14 @@ function readStoredIds(storage) {
     const parsed = JSON.parse(raw);
     const ids = Array.isArray(parsed) ? parsed : parsed?.unlocked;
     return Array.isArray(ids) ? ids.filter(isValidAchievementId) : [];
+  } catch {
+    return [];
+  }
+}
+
+function readStoredEvidence(storage) {
+  try {
+    return normalizeOnslaughtEvidence(JSON.parse(storage?.getItem(ACHIEVEMENT_STORAGE_KEY) || 'null')?.onslaughtRuns);
   } catch {
     return [];
   }
@@ -74,6 +83,7 @@ export class AchievementManager {
       ? null
       : options.steamSync || createSteamAchievementSync({ storage: this.storage });
     this.unlockedIds = new Set(readStoredIds(this.storage));
+    this.onslaughtRuns = readStoredEvidence(this.storage);
     this.lastUnlocked = null;
     this.lastSteamSync = null;
   }
@@ -83,11 +93,17 @@ export class AchievementManager {
     if (typeof options.onUnlock === 'function') this.onUnlock = options.onUnlock;
   }
 
-  canUnlockFromCurrentRun(payload = {}) {
+  canUnlockFromCurrentRun(id, payload = {}) {
+    const definition = getAchievementById(id);
+    if (!definition) return false;
+    if (payload.runMode && !definition.completeModes.includes(payload.runMode)) return false;
     if (payload.ignoreRunGate === true) return true;
-    if (payload.allowAchievements === false) return false;
+    const explicitOnslaughtGrant = payload.onslaughtTacticalEligible === true
+      && payload.runMode === 'overrun_tactical'
+      && payload.isDebugRun !== true;
+    if (payload.allowAchievements === false && !explicitOnslaughtGrant) return false;
 
-    if (!isRankedRunMode(payload.runMode, { isDebugRun: payload.isDebugRun })) {
+    if (!explicitOnslaughtGrant && !isRankedRunMode(payload.runMode, { isDebugRun: payload.isDebugRun })) {
       return false;
     }
 
@@ -98,9 +114,13 @@ export class AchievementManager {
       runState = null;
     }
 
-    if (!isRankedRunMode(runState?.runMode, { isDebugRun: runState?.isDebugRun })) {
+    const matchingOnslaughtRun = explicitOnslaughtGrant
+      && runState?.runMode === 'overrun_tactical'
+      && runState?.isDebugRun !== true;
+    if (!matchingOnslaughtRun && !isRankedRunMode(runState?.runMode, { isDebugRun: runState?.isDebugRun })) {
       return false;
     }
+    if (runState?.runMode !== payload.runMode) return false;
 
     return true;
   }
@@ -108,9 +128,11 @@ export class AchievementManager {
   persist() {
     if (!this.storage) return;
     try {
+      this.onslaughtRuns = mergeOnslaughtEvidence(this.onslaughtRuns, readStoredEvidence(this.storage));
       this.storage.setItem(ACHIEVEMENT_STORAGE_KEY, JSON.stringify({
-        version: 1,
+        version: 2,
         unlocked: this.getUnlocked(),
+        onslaughtRuns: this.onslaughtRuns,
         updatedAt: new Date().toISOString()
       }));
       if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.()?.catch?.(() => {});
@@ -122,7 +144,7 @@ export class AchievementManager {
   unlock(id, payload = {}) {
     try {
       if (!isValidAchievementId(id)) return null;
-      if (!this.canUnlockFromCurrentRun(payload)) return null;
+      if (!this.canUnlockFromCurrentRun(id, payload)) return null;
       if (this.unlockedIds.has(id)) return null;
 
       this.unlockedIds.add(id);
@@ -156,6 +178,55 @@ export class AchievementManager {
 
   getUnlocked() {
     return getAchievementIds().filter((id) => this.unlockedIds.has(id));
+  }
+
+  recordOnslaughtSnakeDefeat(summary = {}) {
+    const evidence = evidenceFromOnslaughtRun(summary);
+    if (!evidence || !evidence.snakeDefeats?.length) return null;
+    const id = 'ACH_OS_SNAKE_DUEL';
+    const progress = getOnslaughtAchievementProgress(getAchievementById(id), [evidence]);
+    if (!progress.complete) return null;
+    // This event has full run provenance. Persist the earned unlock now, but
+    // leave the run open for its later, complete collection evidence.
+    const award = this.unlock(id, {
+      source: 'onslaught_snake_defeat', runMode: evidence.mode, runId: evidence.runId,
+      ignoreRunGate: true, progressValue: progress.value, target: progress.target
+    });
+    const collection = getAchievementById('ACH_OS_COMPLETE_SET');
+    const collectionProgress = getOnslaughtAchievementProgress(collection, this.onslaughtRuns, this.getUnlocked());
+    if (collectionProgress.complete) this.unlock(collection.id, {
+      source: 'onslaught_collection', runMode: evidence.mode, runId: evidence.runId,
+      ignoreRunGate: true, progressValue: collectionProgress.value, target: collectionProgress.target
+    });
+    return award;
+  }
+
+  recordOnslaughtRun(summary = {}) {
+    const evidence = evidenceFromOnslaughtRun(summary);
+    if (!evidence) return { recorded: false, reason: 'ineligible_run', unlocked: [] };
+    this.onslaughtRuns = mergeOnslaughtEvidence(this.onslaughtRuns, readStoredEvidence(this.storage));
+    if (this.onslaughtRuns.some(run => run.runId === evidence.runId)) {
+      return { recorded: false, reason: 'duplicate_run', unlocked: [] };
+    }
+    this.onslaughtRuns = mergeOnslaughtEvidence(this.onslaughtRuns, [evidence]);
+    this.persist();
+    const unlocked = [];
+    for (const achievement of ACHIEVEMENTS.filter(entry => entry.type === 'onslaught')) {
+      if (!achievement.allowedModes.includes(evidence.mode)) continue;
+      const progress = getOnslaughtAchievementProgress(achievement, this.onslaughtRuns, this.getUnlocked());
+      if (!progress.complete || this.isUnlocked(achievement.id)) continue;
+      const award = this.unlock(achievement.id, {
+        source: 'onslaught_run_evidence', runMode: evidence.mode, runId: evidence.runId,
+        ignoreRunGate: true, progressValue: progress.value, target: progress.target
+      });
+      if (award) unlocked.push(award.id);
+    }
+    return { recorded: true, unlocked, evidence };
+  }
+
+  getOnslaughtProgress(id) {
+    this.onslaughtRuns = mergeOnslaughtEvidence(this.onslaughtRuns, readStoredEvidence(this.storage));
+    return getOnslaughtAchievementProgress(getAchievementById(id), this.onslaughtRuns, this.getUnlocked());
   }
 
   getDebugState() {

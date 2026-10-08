@@ -1,0 +1,10 @@
+{
+  "title": "Nova Sparrow — showcase realism review",
+  "brokenImages": [],
+  "video": {
+    "duration": 92.76,
+    "width": 1920,
+    "height": 1080
+  },
+  "measurements": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)\n\nAsset\t35.69 MiB · 331 876 triangles · 9 materials · 5 maps\nmenu rotation\tFrame mean 16.67 ms · p95 16.80 ms · 1536px ship buffer\nhangar rotation\tFrame mean 16.67 ms · p95 16.90 ms · 768px ship buffer\nFresh profile readiness\t6.96 seconds, including game startup\nRepeated selection\t12 selections; one resident ship; zero resident showcase models in combat\n\nIsolated 1080p Chrome, no video recording, Blender or build running; CPU render/copy wall time is not GPU time"
+}

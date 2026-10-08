@@ -183,8 +183,8 @@ try {
       state.ready?.readyFlashing &&
       state.ready?.readyFlashProgress >= 0.99 &&
       state.activeCue?.visible &&
-      state.activeCue?.phaseGateBracketCount >= 4 &&
-      state.activeCue?.phaseLaneStreakCount >= 4 &&
+      state.activeCue?.phaseGateBracketCount === 0 &&
+      state.activeCue?.phaseLaneStreakCount === 2 &&
       state.activeHidden?.visible === false &&
       state.activeHidden?.activePhase &&
       state.ringVisible &&

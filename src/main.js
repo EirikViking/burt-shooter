@@ -1,11 +1,13 @@
 import './styles.css';
 import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
+import { initializeBossEncounterTest, getBossEncounterTest } from './config/BossEncounterTest.js';
 import { RUN_MODES, getRunModeProfile } from './game/RunMode.js';
 import { summarizeRunReport } from './game/RunReport.js';
 import { POINT_DEFENSE_RADIUS } from './game/ProjectileDefenseRules.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { BootWatchdog } from './utils/BootWatchdog.js';
+import { installRuntimeRecovery } from './utils/RuntimeRecovery.js';
 import { installConsoleLogFilter } from './utils/Logger.js';
 import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
@@ -68,6 +70,8 @@ installPixiTextLocalization(PIXI);
 const BOOT_RENDER_TIMEOUT_MS = 5000;
 const DOM_READY_TIMEOUT_MS = 2000;
 const UI_FONT_BOOT_STEP_TIMEOUT_MS = UI_FONT_PREFLIGHT_TIMEOUT_MS + 250;
+const BOOT_REVEAL_TIMEOUT_MS = 30000;
+const BOOT_REVEAL_FRAME_WAIT_MS = 1500;
 const PERF_SAMPLE_MS = 500;
 const MAX_DELTA = 2;
 const urlParams = new URLSearchParams(window.location.search);
@@ -118,7 +122,7 @@ function isPerfEnabled() {
 }
 
 function isAutoStartEnabled() {
-  return urlParams.get('autostart') === '1';
+  return Boolean(getBossEncounterTest()) || urlParams.get('autostart') === '1';
 }
 
 function isDesktopRuntime() {
@@ -888,6 +892,7 @@ function buildGameTextState(game) {
       surfaces: []
     },
     highSectorEscalation: enemyManager?.getHighSectorEscalationDebugState?.() || null,
+    firstLight: playScene?.firstLightDirector?.snapshot() || null,
     wave: enemyManager ? {
       phase: enemyManager.phase || null,
       state: enemyManager.state || null,
@@ -1474,6 +1479,7 @@ function showFatalOverlay(step, error) {
 
 async function runBootStep(logger, label, fn, options = {}) {
   const { timeoutMs, logFailure = true } = options;
+  BootWatchdog.checkpoint(label, timeoutMs);
   const finish = logger.startStep(label);
   let timeoutId;
 
@@ -1522,6 +1528,37 @@ function waitForDomReady() {
 
   return new Promise((resolve) => {
     document.addEventListener('DOMContentLoaded', () => resolve(), { once: true });
+  });
+}
+
+function waitForAnimationFrames(count = 2, timeoutMs = BOOT_REVEAL_FRAME_WAIT_MS) {
+  const requestedFrames = Math.max(1, Math.floor(Number(count) || 1));
+  const waitMs = Math.max(0, Number(timeoutMs) || 0);
+
+  return new Promise((resolve) => {
+    let remaining = requestedFrames;
+    let settled = false;
+    let timer = null;
+
+    const finish = (mode) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      resolve(mode);
+    };
+
+    const nextFrame = () => {
+      if (settled) return;
+      remaining -= 1;
+      if (remaining <= 0) {
+        finish('frames');
+        return;
+      }
+      requestAnimationFrame(nextFrame);
+    };
+
+    timer = setTimeout(() => finish('timeout'), waitMs);
+    requestAnimationFrame(nextFrame);
   });
 }
 
@@ -1753,6 +1790,7 @@ async function init() {
   // ---------------------------
 
   await initializeMaintainerDevtools();
+  await initializeBossEncounterTest();
   const bootLogger = createBootLogger(isBootDebugEnabled());
   await runBootStep(bootLogger, 'init profile storage namespace', () => initializeProfileStorageNamespace(), {
     timeoutMs: 900,
@@ -1848,11 +1886,9 @@ async function init() {
     return attachCanvas(canvas);
   });
 
-  await runBootStep(bootLogger, 'hide loading', () => {
-    if (loadingEl) {
-      loadingEl.style.display = 'none';
-    }
-  });
+  // Keep the loading screen through the initial showroom upload. Revealing
+  // the menu first caused a visible freeze when its GLB compiled moments later.
+  if (canvas) canvas.style.visibility = 'hidden';
 
   const audioResult = await runBootStep(bootLogger, 'init audio', () => {
     AudioManager.init();
@@ -1889,6 +1925,7 @@ async function init() {
   const game = new Game(app);
   window.__app = app;
   window.__game = game;
+  const runtimeRecovery = installRuntimeRecovery({ app, game, buildId: BUILD_ID, gitSha: GIT_SHA });
   window.render_game_to_text = () => JSON.stringify(buildGameTextState(game));
   window.advanceTime = (ms = 1000 / 60) => {
     const steps = Math.max(1, Math.min(600, Math.round(Number(ms) / (1000 / 60))));
@@ -1902,25 +1939,18 @@ async function init() {
   perfState.renderer = app.renderer?.constructor?.name || perfState.renderer;
   await runBootStep(bootLogger, 'start game', () => {
     game.start();
-    if (document.body) {
-      document.body.dataset.menuReady = '1';
-    }
     syncSteamCloudRendererState().catch(() => {});
     const displaySettings = getDisplaySettings();
     const hasDisplayBridge = Boolean(window.__novaDisplay?.applySettings);
     if (hasDisplayBridge || displaySettings.mode !== 'fullscreen') {
       applyDisplaySettings(displaySettings).catch(() => {});
     }
-    if (isAutoStartEnabled() && !autoStartTriggered) {
-      autoStartTriggered = true;
-      setTimeout(() => {
-        game.startGame(undefined, { countShipUsage: false });
-      }, 100);
-    }
   });
 
   await runBootStep(bootLogger, 'start ticker', () => {
     app.ticker.add((delta) => {
+      if (runtimeRecovery.stopped) return;
+      try {
       const rawDelta = delta.deltaTime;
       const clampedDelta = Math.min(rawDelta, MAX_DELTA);
       publishTickerFrameTiming(game, rawDelta, clampedDelta);
@@ -1930,11 +1960,44 @@ async function init() {
         Number.isFinite(elapsedFrameMs) ? Math.max(0, elapsedFrameMs) : rawDelta * (1000 / 60)
       );
       updatePerfStats(app, game, rawDelta, clampedDelta);
+      } catch (error) { runtimeRecovery.fail(error); }
     });
   });
 
+  await runBootStep(bootLogger, 'prepare initial showroom', () => game.scenes.menu.presentationReady, {
+    timeoutMs: 30000,
+    logFailure: false
+  });
+  await runBootStep(bootLogger, 'hide loading', async () => {
+    app.renderer.render({container:app.stage});
+    // Let the initial canvas transfer and GPU uploads finish while the existing
+    // loading screen is still covering the showroom. Backgrounded windows can
+    // pause requestAnimationFrame, so reveal after a short bounded grace period
+    // instead of converting a delayed compositor frame into a fatal boot state.
+    const frameWait = await waitForAnimationFrames(2, BOOT_REVEAL_FRAME_WAIT_MS);
+    app.renderer.render({container:app.stage});
+    // flush submits the queued commands without synchronously blocking the UI
+    // thread on a potentially slow first-use GPU upload.
+    app.renderer.gl?.flush?.();
+    if (canvas) canvas.style.visibility = '';
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (document.body) document.body.dataset.menuReady = '1';
+    return { bootDetail: `frames:${frameWait}` };
+  }, { timeoutMs: BOOT_REVEAL_TIMEOUT_MS, logFailure: false });
+
   bootState.completed = true;
   BootWatchdog.checkpoint('SCENE_READY');
+  if (isAutoStartEnabled() && !autoStartTriggered) {
+    autoStartTriggered = true;
+    setTimeout(() => {
+      // Trusted test launches retain ship selection, after startup owns no
+      // pending showroom work that could compete with the hangar transition.
+      const launch = getBossEncounterTest()
+        ? game.showShipSelect()
+        : game.startGame(undefined, { countShipUsage: false });
+      Promise.resolve(launch).catch(error => console.error('[Boot] Launch failed:', error));
+    }, 100);
+  }
 }
 
 init().catch((error) => {

@@ -1,0 +1,252 @@
+{
+  "buildID": "25237042",
+  "appID": 4765070,
+  "depotID": 4765071,
+  "manifest": "7405192103773482556",
+  "targetBranch": "sector-continue-test",
+  "sourceBranch": "codex/mystery-encounters-20260910",
+  "baseline": "b22ea81",
+  "runtimeCommit": "cfa5f0c",
+  "branchesBefore": {
+    "public": "25233377",
+    "sector-continue-test": "25235979",
+    "test-build": "23782673"
+  },
+  "branchesAfter": {
+    "public": "25233377",
+    "sector-continue-test": "25237042",
+    "test-build": "23782673"
+  },
+  "launchOptions": [
+    "--nova-encounter-test=dual-boss",
+    "--nova-encounter-test=boss-snake"
+  ],
+  "package": {
+    "runtimeCommit": "cfa5f0c",
+    "root": "C:/CodexTemp/nova-encounter-balance-cfa5f0c-20260910",
+    "payload": "C:/CodexTemp/nova-encounter-balance-cfa5f0c-20260910/win-unpacked",
+    "unchangedFiles": 15151,
+    "unchangedPlayerAssets": 64,
+    "changed": [
+      "dist/index.html",
+      "dist/version.json",
+      "dist/sw.js",
+      "dist/assets/index-6H1slBBc.js",
+      "dist/assets/index-8_Ec_Chb.js",
+      "dist/assets/index-BAuqBPFI.js",
+      "dist/assets/index-BbrYgW_n.js",
+      "dist/assets/index-BM0PmUlu.js",
+      "dist/assets/index-BUW2Z9LB.js",
+      "dist/assets/index-CBnzuR_G.js",
+      "dist/assets/index-Cfgs1KLw.css",
+      "dist/assets/index-D4EVi2D_.js",
+      "dist/assets/index-DaFIeT77.js",
+      "dist/assets/index-DLfV1KXf.js",
+      "dist/assets/index-DohfEdiA.js",
+      "dist/assets/index-DXQdWnbY.js",
+      "dist/assets/index-KWsq-wg3.js",
+      "dist/assets/index-y2Jv1VEK.js",
+      "dist/assets/index-ySuyKm3d.js",
+      "dist/assets/vendor-BkbZGUfW.js",
+      "dist/assets/vendor-pixi-DMQ31nLQ.js",
+      "dist/assets/vendor-pixi-Kn5eMiJA.js",
+      "electron/main.cjs",
+      "electron/preload.cjs",
+      "electron/bossEncounterTest.cjs"
+    ],
+    "compiledCodeMatches": true,
+    "buildVersion": {
+      "version": "v2026-09-10_19-54-03",
+      "timestamp": "2026-09-10T17:54:03.346Z"
+    },
+    "archiveBytes": 2156671768
+  },
+  "filesChanged": [
+    "docs/discovery-celebrations/README.md",
+    "docs/encounter-balance/README.md",
+    "scripts/check-boss-discoveries-runtime.mjs",
+    "scripts/check-boss-encounter-balance.mjs",
+    "scripts/check-boss-encounter-launch.mjs",
+    "src/config/BossEncounterTest.js",
+    "src/config/DiscoveryProgression.js",
+    "src/entities/Boss.js",
+    "src/entities/SpaceSnake.js",
+    "src/i18n/discoveryText.js",
+    "src/managers/BossDiscoveryEncounter.js",
+    "src/managers/EnemyManager.js"
+  ],
+  "tests": [
+    "release-line",
+    "i18n: all eight languages",
+    "build:current and final commit-stamped bundle",
+    "compiled i18n UI: no page errors, missing glyphs, placeholder or English-leak hits",
+    "Steam Electron bridge",
+    "1,780 ordinary enemy stats unchanged and seeded encounter probabilities preserved",
+    "boss warning lifecycle across regular/signature profiles, long frames, pause and cleanup",
+    "boss fairness cadence and wall contracts",
+    "combined runtime: both death orders, surviving snake, pending chain arrival, one completion, cancellation/load timeout",
+    "sustained real-projectile offense and normal-damage survival probes",
+    "packaged dependency/runtime check and isolated normal-start smoke",
+    "both launch options in actual packaged executable, full health and all account writes denied",
+    "15,151 retained archive files and 64 player-asset files hash-identical",
+    "SteamPipe upload and live test-branch/manifest verification"
+  ],
+  "calibration": {
+    "baseline": [
+      {
+        "id": "dual-boss",
+        "pilot": "offense",
+        "seconds": 10.268199999982112,
+        "complete": true,
+        "lives": 2,
+        "dodges": 0,
+        "incoming": 1,
+        "volleys": {
+          "nova_boss_26": 1
+        },
+        "ship": "nova_ship_01",
+        "damage": 0.9338000000000001,
+        "shotDelay": 107.64,
+        "frameSamples": 618,
+        "meanFrameMs": 16.615210355958112,
+        "p95FrameMs": 16.90000000000873
+      },
+      {
+        "id": "boss-snake",
+        "pilot": "offense",
+        "seconds": 9.258799999994041,
+        "complete": true,
+        "lives": 3,
+        "dodges": 0,
+        "incoming": 25,
+        "volleys": {
+          "space_snake_thorn-0": 1,
+          "space_snake_thorn-2": 1,
+          "space_snake_thorn-3": 1,
+          "space_snake_thorn-6": 1,
+          "space_snake_thorn-7": 1
+        },
+        "ship": "nova_ship_01",
+        "damage": 0.9338000000000001,
+        "shotDelay": 107.64,
+        "frameSamples": 556,
+        "meanFrameMs": 16.65251798560079,
+        "p95FrameMs": 17
+      }
+    ],
+    "offense": [
+      {
+        "id": "dual-boss",
+        "pilot": "offense",
+        "seconds": 37.7035,
+        "complete": true,
+        "lives": 3,
+        "dodges": 0,
+        "incoming": 59,
+        "volleys": {
+          "nova_boss_28": 3,
+          "nova_boss_26": 8
+        },
+        "ship": "nova_ship_01",
+        "damage": 0.9338000000000001,
+        "shotDelay": 107.64,
+        "frameSamples": 2258,
+        "meanFrameMs": 16.697741364038972,
+        "p95FrameMs": 17.19999999999709
+      },
+      {
+        "id": "boss-snake",
+        "pilot": "offense",
+        "seconds": 27.191899999988077,
+        "complete": true,
+        "lives": 3,
+        "dodges": 0,
+        "incoming": 67,
+        "volleys": {
+          "nova_boss_28": 4,
+          "space_snake_thorn-0": 7,
+          "space_snake_thorn-1": 1
+        },
+        "ship": "nova_ship_01",
+        "damage": 0.9338000000000001,
+        "shotDelay": 107.64,
+        "frameSamples": 1632,
+        "meanFrameMs": 16.661703431365243,
+        "p95FrameMs": 17.099999999998545
+      }
+    ],
+    "normalDamage": [
+      {
+        "id": "dual-boss",
+        "pilot": "dodge",
+        "seconds": 52.256100000017874,
+        "complete": false,
+        "lives": 0,
+        "losses": 3,
+        "dodges": 0,
+        "incoming": 73,
+        "volleys": {
+          "nova_boss_28": 11,
+          "nova_boss_26": 10
+        },
+        "ship": "nova_ship_01",
+        "damage": 0.9338000000000001,
+        "shotDelay": 107.64,
+        "frameSamples": 3131,
+        "meanFrameMs": 16.689907377840267,
+        "p95FrameMs": 17
+      },
+      {
+        "id": "boss-snake",
+        "pilot": "dodge",
+        "seconds": 43.358300000017884,
+        "complete": true,
+        "lives": 2,
+        "losses": 1,
+        "dodges": 0,
+        "incoming": 76,
+        "volleys": {
+          "nova_boss_28": 10,
+          "space_snake_thorn-0": 3,
+          "space_snake_thorn-1": 2
+        },
+        "ship": "nova_ship_01",
+        "damage": 0.9338000000000001,
+        "shotDelay": 107.64,
+        "frameSamples": 2577,
+        "meanFrameMs": 16.825106713239382,
+        "p95FrameMs": 17
+      },
+      {
+        "id": "dual-boss",
+        "pilot": "dodge-blink",
+        "seconds": 76.82270000001787,
+        "complete": true,
+        "lives": 2,
+        "losses": 2,
+        "dodges": 2,
+        "incoming": 109,
+        "volleys": {
+          "nova_boss_28": 12,
+          "nova_boss_26": 16
+        },
+        "ship": "nova_ship_01",
+        "damage": 0.9338000000000001,
+        "shotDelay": 107.64,
+        "frameSamples": 4606,
+        "meanFrameMs": 16.678831958319122,
+        "p95FrameMs": 16.90000000000873
+      }
+    ],
+    "scope": "1920x1080 Chrome runtime on RTX 2060 host. Offense probes ignore incoming player damage only to measure sustained-fire time-to-kill. Survival probes use normal lives, speed, weapons, collision and existing Blink cooldown. These automated results do not establish a human success rate. Performance runs had no concurrent builds or captures."
+  },
+  "untranslatedText": "None added; both warnings translated in all eight languages.",
+  "steamworks": "Updated sector-continue-test only; public and test-build unchanged, no Steamworks settings or Cloud configuration changes. No Git push.",
+  "rollback": "git revert cfa5f0c; previous Steam test build: 25235979",
+  "limits": [
+    "Human balance feedback is still necessary. A weaker warning-aware bot without Blink lost the dual fight; the Blink-using bot won.",
+    "The ordinary campaign still gates arrivals by health; launch presets practice the full combined fight immediately.",
+    "Snake departure is bounded at 55 seconds. No secret health floor or minimum-length invulnerability was added.",
+    "Existing build warnings about large bundles and public-directory font resolution remain; packaged runtime and eight-language UI checks passed."
+  ]
+}

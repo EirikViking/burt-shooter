@@ -182,8 +182,10 @@ try {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return state.overrunInterlude?.active === true &&
         state.overrunInterlude?.cardVisible === true &&
-        state.overrunInterlude?.promptVisible === true;
-    }, null, { timeout: 2000 });
+        state.overrunInterlude?.promptVisible === true &&
+        ['title', 'flavor', 'report', 'sector', 'bonus', 'warning'].every(id =>
+          state.overrunInterlude?.textNodes?.some(node => node.id === `ui_overrun_card_${id}` && node.visible !== false));
+    }, null, { timeout: 6000 });
   } catch (error) {
     const timeoutState = await readState(page);
     const runtime = await page.evaluate(() => {

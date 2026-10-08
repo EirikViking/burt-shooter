@@ -124,6 +124,7 @@ try {
 
     const impactX = player.x;
     const impactY = player.y - 170;
+    const fixtureBullets = [];
     for (let i = 0; i < 5; i += 1) {
       const shot = enemy.shoot(player.x, player.y);
       const bullets = Array.isArray(shot) ? shot : [shot];
@@ -138,6 +139,7 @@ try {
         bullet.sprite.y = bullet.y;
       }
       play.bulletManager.addEnemyBullet(bullet);
+      fixtureBullets.push(bullet);
     }
 
     const beforeScore = game.score || 0;
@@ -224,6 +226,7 @@ try {
       chargedBulletMarked: Boolean(charged?.isGrazeBreaker),
       chargedLaunch,
       remainingEnemyBullets: finalState.counts?.enemyBullets || 0,
+      remainingFixtureBullets: fixtureBullets.filter(bullet => bullet.active).length,
       lastGrazeBreak: finalState.scoring?.lastGrazeBreak || null,
       immediateReearn: {
         grazeBreakReady: reearnState.scoring?.grazeBreakReady || false,
@@ -262,14 +265,14 @@ try {
       last.triggered === true &&
       last.bulletsCleared >= 3 &&
       last.bonusScore >= 775 &&
-      last.visualScale >= 2.8 &&
-      last.visualSparkleCount >= 14 &&
-      last.visualRingCount >= 3 &&
+      last.visualScale <= 2.2 &&
+      last.visualSparkleCount <= 16 &&
+      last.visualRingCount <= 3 &&
       last.visual?.active === true &&
       result.immediateReearn?.grazeBreakReady === true &&
       result.immediateReearn?.cooldownAt <= result.immediateReearn?.gameplayClockMs &&
       result.scoreGain > 0 &&
-      result.remainingEnemyBullets <= 2 &&
+      result.remainingFixtureBullets === 0 &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),

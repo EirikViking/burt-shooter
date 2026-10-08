@@ -1,0 +1,184 @@
+{
+  "sheets": {
+    "dreadnought.png": {
+      "width": 1916,
+      "height": 821,
+      "sha256": "5e21eb38cb6c122d32bd23252d8f57b51bb81544988d73871b62eeaf9facd178",
+      "alpha": true
+    },
+    "machinery.png": {
+      "width": 1448,
+      "height": 1086,
+      "sha256": "258152c13e20925584c64a3c17dc520632e15004bb60190c21091142c18cba01",
+      "alpha": true
+    },
+    "combat-detail.png": {
+      "width": 1774,
+      "height": 887,
+      "sha256": "9f8d126850da7639517682c2def54e49d73b94969b2e79af1463798c464d8e98",
+      "alpha": true
+    },
+    "orbit-breaker.png": {
+      "width": 1774,
+      "height": 887,
+      "sha256": "ff95f4ca2e2e9e4d4ccc995f993f2da46ec7714a6448045081492e1b675a891d",
+      "alpha": true
+    }
+  },
+  "frames": {
+    "dreadnought": {
+      "sheet": "dreadnought.png",
+      "x": 13,
+      "y": 16,
+      "w": 1890,
+      "h": 788
+    },
+    "battery": {
+      "sheet": "machinery.png",
+      "x": 33,
+      "y": 8,
+      "w": 301,
+      "h": 349
+    },
+    "relay": {
+      "sheet": "machinery.png",
+      "x": 419,
+      "y": 0,
+      "w": 250,
+      "h": 358
+    },
+    "reactorClosed": {
+      "sheet": "machinery.png",
+      "x": 728,
+      "y": 18,
+      "w": 336,
+      "h": 332
+    },
+    "reactorOpen": {
+      "sheet": "machinery.png",
+      "x": 1095,
+      "y": 6,
+      "w": 331,
+      "h": 349
+    },
+    "moltPlate": {
+      "sheet": "machinery.png",
+      "x": 52,
+      "y": 365,
+      "w": 310,
+      "h": 359
+    },
+    "moltHead": {
+      "sheet": "machinery.png",
+      "x": 362,
+      "y": 365,
+      "w": 308,
+      "h": 359
+    },
+    "moltSpine": {
+      "sheet": "machinery.png",
+      "x": 804,
+      "y": 365,
+      "w": 181,
+      "h": 359
+    },
+    "moltTail": {
+      "sheet": "machinery.png",
+      "x": 1136,
+      "y": 365,
+      "w": 277,
+      "h": 359
+    },
+    "weaverClaw": {
+      "sheet": "machinery.png",
+      "x": 28,
+      "y": 724,
+      "w": 334,
+      "h": 310
+    },
+    "weaverGun": {
+      "sheet": "machinery.png",
+      "x": 362,
+      "y": 724,
+      "w": 362,
+      "h": 355
+    },
+    "fighterA": {
+      "sheet": "machinery.png",
+      "x": 724,
+      "y": 724,
+      "w": 356,
+      "h": 349
+    },
+    "fighterB": {
+      "sheet": "machinery.png",
+      "x": 1094,
+      "y": 724,
+      "w": 345,
+      "h": 340
+    },
+    "wreckA": {
+      "sheet": "combat-detail.png",
+      "x": 30,
+      "y": 36,
+      "w": 395,
+      "h": 391
+    },
+    "wreckB": {
+      "sheet": "combat-detail.png",
+      "x": 459,
+      "y": 47,
+      "w": 409,
+      "h": 383
+    },
+    "moltArmour": {
+      "sheet": "combat-detail.png",
+      "x": 904,
+      "y": 18,
+      "w": 410,
+      "h": 412
+    },
+    "moltExposedHead": {
+      "sheet": "combat-detail.png",
+      "x": 1346,
+      "y": 42,
+      "w": 404,
+      "h": 384
+    },
+    "captureCradle": {
+      "sheet": "combat-detail.png",
+      "x": 36,
+      "y": 469,
+      "w": 375,
+      "h": 382
+    },
+    "muzzle": {
+      "sheet": "combat-detail.png",
+      "x": 460,
+      "y": 567,
+      "w": 406,
+      "h": 178
+    },
+    "rupture": {
+      "sheet": "combat-detail.png",
+      "x": 911,
+      "y": 459,
+      "w": 401,
+      "h": 402
+    },
+    "ionPlume": {
+      "sheet": "combat-detail.png",
+      "x": 1348,
+      "y": 577,
+      "w": 408,
+      "h": 139
+    },
+    "orbitBreaker": {
+      "sheet": "orbit-breaker.png",
+      "x": 10,
+      "y": 34,
+      "w": 1757,
+      "h": 813
+    }
+  }
+}

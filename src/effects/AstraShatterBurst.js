@@ -1,4 +1,5 @@
 import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
+import { drawEnergySurface } from './AstraEnergyMaterial.js';
 
 // Uneven ballistic fragments, rather than expanding target diagrams. All
 // positions are analytic; no extra random draws or particle-pool allocations.
@@ -12,13 +13,15 @@ export function drawAstraShatterBurst(g,{progress=0,radius=32,count=6,color=0xff
     const speed=.45+(i%4)*.19,d=radius*(.19+travel*speed*motion);
     const x=dx*d,y=dy*d*.78+t*t*radius*.12*motion;
     const length=radius*(.09+(i%3)*.025)*(1-t*.6),w=1.1+(i%3)*.45;
-    // Heated shard with an asymmetrical silhouette and a thin cooling wake.
-    g.moveTo(x-dx*length*2,y-dy*length*2).lineTo(x,y)
-      .stroke({color,width:w*2,alpha:fade*.12*flash});
+    // Compact plasma pockets and hot fragments; no wire rays survive a kill.
+    drawEnergySurface(g,{kind:'corona',x:x-dx*length*.25,y:y-dy*length*.25,
+      width:length*5,height:length*3,color,alpha:fade*.26*flash,angle:a});
     g.poly([x+dx*length,y+dy*length,x-dx*length-dy*w,y-dy*length+dx*w,
       x-dx*length*.35+dy*w*.6,y-dy*length*.35-dx*w*.6])
       .fill({color:i%3?color:accent,alpha:fade*(.6+(i%2)*.2)*flash});
-    g.moveTo(x-dx*length,y-dy*length).lineTo(x+dx*length*.7,y+dy*length*.7)
-      .stroke({color:accent,width:.8,alpha:fade*.65*flash});
+    g.poly([x+dx*length*.72,y+dy*length*.72,
+      x-dx*length*.4-dy*w*.5,y-dy*length*.4+dx*w*.5,
+      x-dx*length*.35+dy*w*.5,y-dy*length*.35-dx*w*.5])
+      .fill({color:accent,alpha:fade*.46*flash});
   }
 }

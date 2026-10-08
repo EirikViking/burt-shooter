@@ -1,0 +1,62 @@
+{
+  "id": 23,
+  "name": "Hazard Ram",
+  "architecture": "ram",
+  "baselineDesign": [
+    "Hazard Ram",
+    1.8,
+    1.16,
+    0.76,
+    1.05,
+    "ram",
+    [
+      [
+        0.22,
+        0.72,
+        -1.22,
+        0.18
+      ],
+      [
+        0.72,
+        1.21,
+        -1.12,
+        0.22
+      ],
+      [
+        1.17,
+        1.55,
+        -0.74,
+        0.13
+      ],
+      [
+        1.55,
+        0.27,
+        -0.6,
+        0.045
+      ]
+    ]
+  ],
+  "palette": [
+    "e9ce70",
+    "eae6b9",
+    "ffcc16"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false,
+  "bytes": 15053632,
+  "triangles": 199294,
+  "materials": [
+    "Graphite structural composite",
+    "Off-white aerospace polyurethane",
+    "Brushed titanium fittings",
+    "Seals and cabin upholstery",
+    "Dim ion throat and instrument phosphor",
+    "Laminated cockpit glazing",
+    "Cobalt blue painted alloy",
+    "Sooted nozzle liner",
+    "Heat-oxidised exhaust alloy"
+  ],
+  "images": 5,
+  "repaired": 0
+}

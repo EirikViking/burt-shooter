@@ -1,0 +1,6668 @@
+{
+  "placeholderHits": [],
+  "englishLeakHits": [],
+  "status": "passed",
+  "baseUrl": "http://127.0.0.1:5201",
+  "outputDir": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa",
+  "screenshots": {
+    "english": {
+      "settings": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\01-english-settings.png",
+      "prototypeSettings": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\01-english-settings-prototype.png",
+      "menu": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\01-english-main-menu.png",
+      "dailyMenu": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\01-english-daily-signal-menu.png",
+      "modeBriefing": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\01-english-mode-briefing.png",
+      "hud": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\01-english-hud.png",
+      "pause": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\01-english-pause.png",
+      "gameOver": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\01-english-game-over.png",
+      "leaderboard": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\01-english-leaderboard.png",
+      "leaderboardPopulated": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\01-english-leaderboard-populated.png"
+    },
+    "german": {
+      "settings": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\02-german-settings.png",
+      "prototypeSettings": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\02-german-settings-prototype.png",
+      "menu": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\02-german-main-menu.png",
+      "dailyMenu": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\02-german-daily-signal-menu.png",
+      "modeBriefing": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\02-german-mode-briefing.png",
+      "hud": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\02-german-hud.png",
+      "pause": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\02-german-pause.png",
+      "gameOver": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\02-german-game-over.png",
+      "leaderboard": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\02-german-leaderboard.png",
+      "leaderboardPopulated": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\docs\\sparrow-showcase\\i18n-qa\\02-german-leaderboard-populated.png"
+    }
+  },
+  "snapshots": {
+    "english": {
+      "settings": {
+        "language": {
+          "current": "en",
+          "preference": "en",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "menu",
+        "menu": {
+          "launch": "PLAY",
+          "settings": "SETTINGS",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 0.3,
+          "missionBriefing": {
+            "eyebrow": "RUN MODE",
+            "title": "MAYHEM",
+            "body": "Three starter ships await in the Hangar. Beat bosses and build your run.",
+            "status": "RANKED",
+            "restriction": "Tactical and Pure use separate leaderboards.",
+            "personalBest": null,
+            "launchFocused": true,
+            "launchButtonLabel": "START PLAYING",
+            "detailsFocused": false,
+            "detailsButtonLabel": "VIEW MODE DETAILS",
+            "renderPadding": {
+              "eyebrow": 12,
+              "title": 36,
+              "status": 18,
+              "body": 12,
+              "restriction": 12,
+              "launch": 8,
+              "details": 24
+            },
+            "statusBounds": {
+              "x": 1149,
+              "y": 186,
+              "width": 87,
+              "height": 27,
+              "right": 1236,
+              "bottom": 213
+            },
+            "variantSelectorBounds": {
+              "x": 898,
+              "y": 230,
+              "width": 338,
+              "height": 38,
+              "right": 1236,
+              "bottom": 268
+            },
+            "restrictionBounds": null,
+            "personalBestBounds": null,
+            "launchButtonBounds": {
+              "x": 898,
+              "y": 343,
+              "width": 338,
+              "height": 60,
+              "right": 1236,
+              "bottom": 403
+            },
+            "launchButtonLabelBounds": {
+              "x": 959,
+              "y": 359,
+              "width": 216,
+              "height": 29,
+              "right": 1175,
+              "bottom": 388
+            },
+            "detailsButtonBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0,
+              "right": 0,
+              "bottom": 0
+            },
+            "detailsButtonLabelBounds": {
+              "x": 1182,
+              "y": 366,
+              "width": 106,
+              "height": 15,
+              "right": 1288,
+              "bottom": 381
+            },
+            "detailsButtonIconBounds": null,
+            "tiles": [],
+            "mode": "launchTactical",
+            "panelBounds": {
+              "x": 877,
+              "y": 164,
+              "width": 380,
+              "height": 250,
+              "right": 1257,
+              "bottom": 414
+            },
+            "eyebrowBounds": {
+              "x": 899,
+              "y": 176,
+              "width": 63,
+              "height": 17,
+              "right": 962,
+              "bottom": 193
+            },
+            "titleBounds": {
+              "x": 899,
+              "y": 194,
+              "width": 115,
+              "height": 30,
+              "right": 1014,
+              "bottom": 224
+            },
+            "bodyBounds": {
+              "x": 899,
+              "y": 277,
+              "width": 323,
+              "height": 38,
+              "right": 1222,
+              "bottom": 315
+            }
+          },
+          "launchDeck": {
+            "bounds": {
+              "x": 23,
+              "y": 262,
+              "width": 280,
+              "height": 286,
+              "right": 303,
+              "bottom": 548
+            },
+            "hierarchy": [
+              "launchTactical",
+              "dailySignal",
+              "scout",
+              "sectorStart",
+              "overrun"
+            ],
+            "featuredDailySignal": {
+              "label": "DAILY CHALLENGE",
+              "sublabel": "CLEAR S10 · CROSSFIRE BLACKOUT",
+              "role": "activity",
+              "focused": false,
+              "bounds": {
+                "x": 40,
+                "y": 338,
+                "width": 263,
+                "height": 48,
+                "right": 303,
+                "bottom": 386
+              },
+              "contract": {
+                "dailyKey": "2026-09-09",
+                "rulesHash": "DCS1-A744B5EE",
+                "loanerShipKey": "nova-player-ship-19.png",
+                "loanerShipName": "NEON STUTTER",
+                "templateId": "crossfire_blackout",
+                "finishSector": 10,
+                "localOnly": true
+              },
+              "bestScore": 0,
+              "bestAttempt": null,
+              "bestClear": null,
+              "flightLog": {
+                "symbols": "· · · · · · ·",
+                "clears": 0,
+                "attemptedDays": 0,
+                "attempts": 0,
+                "streak": 0,
+                "atRisk": false
+              },
+              "resetTime": "06:55"
+            },
+            "cards": {
+              "mayhemTactical": {
+                "label": "MAYHEM TACTICAL",
+                "sublabel": "MAIN MODE · RECOMMENDED · RANKED",
+                "body": null,
+                "role": "main",
+                "focused": true,
+                "runMode": "ranked_tactical",
+                "bounds": {
+                  "x": 23,
+                  "y": 262,
+                  "width": 280,
+                  "height": 70,
+                  "right": 303,
+                  "bottom": 332
+                }
+              },
+              "daily": {
+                "label": "DAILY CHALLENGE",
+                "sublabel": "CLEAR S10 · CROSSFIRE BLACKOUT",
+                "body": null,
+                "role": "activity",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 338,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 386
+                }
+              },
+              "scout": {
+                "label": "SCOUT RUN",
+                "sublabel": "ANOMALY: CALIBRATION",
+                "body": null,
+                "role": "practice",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 392,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 440
+                }
+              },
+              "sector": {
+                "label": "SECTOR RUN",
+                "sublabel": "LOCKED",
+                "body": null,
+                "role": "checkpoint",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 446,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 494
+                }
+              },
+              "overrun": {
+                "label": "OVERRUN TACTICAL",
+                "sublabel": "LOCKED · REACH SECTOR 30",
+                "body": null,
+                "role": "advanced",
+                "focused": false,
+                "available": false,
+                "progressionUnlocked": false,
+                "previewAccess": false,
+                "requiredSector": 30,
+                "startSector": 51,
+                "runMode": "overrun_tactical",
+                "bounds": {
+                  "x": 40,
+                  "y": 500,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 548
+                }
+              }
+            }
+          },
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": "general",
+          "language": "English",
+          "languageHint": "Saved choice",
+          "close": "CLOSE",
+          "renderedText": [
+            "DISPLAY",
+            "Display Mode",
+            "Fullscreen",
+            "Window Size",
+            "1280 x 720",
+            "UI Scale",
+            "100%",
+            "Safe Reset",
+            "Display changes apply immediately",
+            "LANGUAGE",
+            "LANGUAGE",
+            "English",
+            "Saved choice",
+            "GAMEPLAY",
+            "Confirm Exit",
+            "ON",
+            "Fire Input",
+            "HOLD",
+            "Mouse Steering",
+            "OFF",
+            "KEYBOARD",
+            "REMAP"
+          ],
+          "prototype": {
+            "enabled": false,
+            "quickStart": false,
+            "oneRunOnly": true,
+            "allowLaunch": true,
+            "draft": {
+              "scenario": "standard",
+              "ruleset": "tactical",
+              "fixtureId": "tactical_saturation_bounded",
+              "startSector": 75,
+              "lifeStock": "three_lives",
+              "phasePulseAvailable": true
+            },
+            "activeRun": false,
+            "launchButton": {
+              "x": 195,
+              "y": 532,
+              "width": 331,
+              "height": 39,
+              "right": 526,
+              "bottom": 571
+            },
+            "confirmationOpen": false,
+            "confirmationBounds": null,
+            "infoCard": {
+              "frameBounds": {
+                "x": 671,
+                "y": 180,
+                "width": 497,
+                "height": 412,
+                "right": 1168,
+                "bottom": 592
+              },
+              "contentBounds": {
+                "x": 673,
+                "y": 192,
+                "width": 490,
+                "height": 368,
+                "right": 1163,
+                "bottom": 560
+              },
+              "scale": 1
+            }
+          }
+        },
+        "hud": {
+          "score": null,
+          "lives": null,
+          "mission": null
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 0,
+              "fullCount": 1,
+              "enterCount": 1,
+              "exitCount": 0,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": null
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "prototypeSettings": {
+        "language": {
+          "current": "en",
+          "preference": "en",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "menu",
+        "menu": {
+          "launch": "PLAY",
+          "settings": "SETTINGS",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 0.3,
+          "missionBriefing": {
+            "eyebrow": "RUN MODE",
+            "title": "MAYHEM",
+            "body": "Three starter ships await in the Hangar. Beat bosses and build your run.",
+            "status": "RANKED",
+            "restriction": "Tactical and Pure use separate leaderboards.",
+            "personalBest": null,
+            "launchFocused": true,
+            "launchButtonLabel": "START PLAYING",
+            "detailsFocused": false,
+            "detailsButtonLabel": "VIEW MODE DETAILS",
+            "renderPadding": {
+              "eyebrow": 12,
+              "title": 36,
+              "status": 18,
+              "body": 12,
+              "restriction": 12,
+              "launch": 8,
+              "details": 24
+            },
+            "statusBounds": {
+              "x": 1149,
+              "y": 186,
+              "width": 87,
+              "height": 27,
+              "right": 1236,
+              "bottom": 213
+            },
+            "variantSelectorBounds": {
+              "x": 898,
+              "y": 230,
+              "width": 338,
+              "height": 38,
+              "right": 1236,
+              "bottom": 268
+            },
+            "restrictionBounds": null,
+            "personalBestBounds": null,
+            "launchButtonBounds": {
+              "x": 898,
+              "y": 343,
+              "width": 338,
+              "height": 60,
+              "right": 1236,
+              "bottom": 403
+            },
+            "launchButtonLabelBounds": {
+              "x": 959,
+              "y": 359,
+              "width": 216,
+              "height": 29,
+              "right": 1175,
+              "bottom": 388
+            },
+            "detailsButtonBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0,
+              "right": 0,
+              "bottom": 0
+            },
+            "detailsButtonLabelBounds": {
+              "x": 1182,
+              "y": 366,
+              "width": 106,
+              "height": 15,
+              "right": 1288,
+              "bottom": 381
+            },
+            "detailsButtonIconBounds": null,
+            "tiles": [],
+            "mode": "launchTactical",
+            "panelBounds": {
+              "x": 877,
+              "y": 164,
+              "width": 380,
+              "height": 250,
+              "right": 1257,
+              "bottom": 414
+            },
+            "eyebrowBounds": {
+              "x": 899,
+              "y": 176,
+              "width": 63,
+              "height": 17,
+              "right": 962,
+              "bottom": 193
+            },
+            "titleBounds": {
+              "x": 899,
+              "y": 194,
+              "width": 115,
+              "height": 30,
+              "right": 1014,
+              "bottom": 224
+            },
+            "bodyBounds": {
+              "x": 899,
+              "y": 277,
+              "width": 323,
+              "height": 38,
+              "right": 1222,
+              "bottom": 315
+            }
+          },
+          "launchDeck": {
+            "bounds": {
+              "x": 23,
+              "y": 262,
+              "width": 280,
+              "height": 286,
+              "right": 303,
+              "bottom": 548
+            },
+            "hierarchy": [
+              "launchTactical",
+              "dailySignal",
+              "scout",
+              "sectorStart",
+              "overrun"
+            ],
+            "featuredDailySignal": {
+              "label": "DAILY CHALLENGE",
+              "sublabel": "CLEAR S10 · CROSSFIRE BLACKOUT",
+              "role": "activity",
+              "focused": false,
+              "bounds": {
+                "x": 40,
+                "y": 338,
+                "width": 263,
+                "height": 48,
+                "right": 303,
+                "bottom": 386
+              },
+              "contract": {
+                "dailyKey": "2026-09-09",
+                "rulesHash": "DCS1-A744B5EE",
+                "loanerShipKey": "nova-player-ship-19.png",
+                "loanerShipName": "NEON STUTTER",
+                "templateId": "crossfire_blackout",
+                "finishSector": 10,
+                "localOnly": true
+              },
+              "bestScore": 0,
+              "bestAttempt": null,
+              "bestClear": null,
+              "flightLog": {
+                "symbols": "· · · · · · ·",
+                "clears": 0,
+                "attemptedDays": 0,
+                "attempts": 0,
+                "streak": 0,
+                "atRisk": false
+              },
+              "resetTime": "06:55"
+            },
+            "cards": {
+              "mayhemTactical": {
+                "label": "MAYHEM TACTICAL",
+                "sublabel": "MAIN MODE · RECOMMENDED · RANKED",
+                "body": null,
+                "role": "main",
+                "focused": true,
+                "runMode": "ranked_tactical",
+                "bounds": {
+                  "x": 23,
+                  "y": 262,
+                  "width": 280,
+                  "height": 70,
+                  "right": 303,
+                  "bottom": 332
+                }
+              },
+              "daily": {
+                "label": "DAILY CHALLENGE",
+                "sublabel": "CLEAR S10 · CROSSFIRE BLACKOUT",
+                "body": null,
+                "role": "activity",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 338,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 386
+                }
+              },
+              "scout": {
+                "label": "SCOUT RUN",
+                "sublabel": "ANOMALY: CALIBRATION",
+                "body": null,
+                "role": "practice",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 392,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 440
+                }
+              },
+              "sector": {
+                "label": "SECTOR RUN",
+                "sublabel": "LOCKED",
+                "body": null,
+                "role": "checkpoint",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 446,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 494
+                }
+              },
+              "overrun": {
+                "label": "OVERRUN TACTICAL",
+                "sublabel": "LOCKED · REACH SECTOR 30",
+                "body": null,
+                "role": "advanced",
+                "focused": false,
+                "available": false,
+                "progressionUnlocked": false,
+                "previewAccess": false,
+                "requiredSector": 30,
+                "startSector": 51,
+                "runMode": "overrun_tactical",
+                "bounds": {
+                  "x": 40,
+                  "y": 500,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 548
+                }
+              }
+            }
+          },
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": "prototype",
+          "language": "English",
+          "languageHint": "Saved choice",
+          "close": "CLOSE",
+          "renderedText": [
+            "LATE-GAME PRESSURE TEST",
+            "SCENARIO",
+            "STANDARD TEST",
+            "RULESET",
+            "TACTICAL",
+            "FIXTURE",
+            "BOUNDED PIERCE",
+            "Mature saturation loadout with the two-hit Pierce comparison.",
+            "START",
+            "SECTOR 75",
+            "STANDARD TEST STARTS AT SECTOR 75.",
+            "LIFE STOCK",
+            "3 LIVES",
+            "PHASE PULSE",
+            "AVAILABLE",
+            "START EXPERIMENT",
+            "EXPERIMENTAL LATE-GAME TEST",
+            "This is a temporary, unranked playground where the developer and experienced players test late-game pressure.",
+            "It is not an official game mode. Rules, balance, and content may change or disappear.",
+            "Test runs grant no rankings, achievements, progression, Codex discoveries, unlocks, checkpoints, records, or awards.",
+            "WHAT TO EXPECT",
+            "Standard Test starts at Sector 75 with a fixed seed, pressure profile, three lives, and loadout. It ends after ten sectors with a test report.",
+            "Endurance Test supports deeper starting presets and either three lives or a mature life stock. It continues until death or retirement.",
+            "Pure uses the real Pure contract with zero Tactical augments. Tactical uses a clearly disclosed comparison fixture.",
+            "Every launch requires a fresh acknowledgement. Returning to the menu completely clears the test state.",
+            "Experimental content may contain bugs, performance problems, or balance issues. Feedback is very welcome."
+          ],
+          "prototype": {
+            "enabled": false,
+            "quickStart": false,
+            "oneRunOnly": true,
+            "allowLaunch": true,
+            "draft": {
+              "scenario": "standard",
+              "ruleset": "tactical",
+              "fixtureId": "tactical_saturation_bounded",
+              "startSector": 75,
+              "lifeStock": "three_lives",
+              "phasePulseAvailable": true
+            },
+            "activeRun": false,
+            "launchButton": {
+              "x": 195,
+              "y": 532,
+              "width": 331,
+              "height": 39,
+              "right": 526,
+              "bottom": 571
+            },
+            "confirmationOpen": false,
+            "confirmationBounds": null,
+            "infoCard": {
+              "frameBounds": {
+                "x": 671,
+                "y": 180,
+                "width": 497,
+                "height": 412,
+                "right": 1168,
+                "bottom": 592
+              },
+              "contentBounds": {
+                "x": 673,
+                "y": 192,
+                "width": 490,
+                "height": 368,
+                "right": 1163,
+                "bottom": 560
+              },
+              "scale": 1
+            }
+          }
+        },
+        "hud": {
+          "score": null,
+          "lives": null,
+          "mission": null
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 0,
+              "fullCount": 1,
+              "enterCount": 1,
+              "exitCount": 0,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": null
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "menu": {
+        "language": {
+          "current": "en",
+          "preference": "en",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "menu",
+        "menu": {
+          "launch": "PLAY",
+          "settings": "SETTINGS",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "duplicateRotateHint": false,
+          "missionBriefing": {
+            "eyebrow": "RUN MODE",
+            "title": "MAYHEM",
+            "body": "Three starter ships await in the Hangar. Beat bosses and build your run.",
+            "status": "RANKED",
+            "restriction": "Tactical and Pure use separate leaderboards.",
+            "personalBest": null,
+            "launchFocused": true,
+            "launchButtonLabel": "START PLAYING",
+            "detailsFocused": false,
+            "detailsButtonLabel": "VIEW MODE DETAILS",
+            "renderPadding": {
+              "eyebrow": 12,
+              "title": 36,
+              "status": 18,
+              "body": 12,
+              "restriction": 12,
+              "launch": 8,
+              "details": 24
+            },
+            "statusBounds": {
+              "x": 1149,
+              "y": 186,
+              "width": 87,
+              "height": 27,
+              "right": 1236,
+              "bottom": 213
+            },
+            "variantSelectorBounds": {
+              "x": 898,
+              "y": 230,
+              "width": 338,
+              "height": 38,
+              "right": 1236,
+              "bottom": 268
+            },
+            "restrictionBounds": null,
+            "personalBestBounds": null,
+            "launchButtonBounds": {
+              "x": 898,
+              "y": 343,
+              "width": 338,
+              "height": 60,
+              "right": 1236,
+              "bottom": 403
+            },
+            "launchButtonLabelBounds": {
+              "x": 959,
+              "y": 359,
+              "width": 216,
+              "height": 29,
+              "right": 1175,
+              "bottom": 388
+            },
+            "detailsButtonBounds": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0,
+              "right": 0,
+              "bottom": 0
+            },
+            "detailsButtonLabelBounds": {
+              "x": 1182,
+              "y": 366,
+              "width": 106,
+              "height": 15,
+              "right": 1288,
+              "bottom": 381
+            },
+            "detailsButtonIconBounds": null,
+            "tiles": [],
+            "mode": "launchTactical",
+            "panelBounds": {
+              "x": 877,
+              "y": 164,
+              "width": 380,
+              "height": 250,
+              "right": 1257,
+              "bottom": 414
+            },
+            "eyebrowBounds": {
+              "x": 899,
+              "y": 176,
+              "width": 63,
+              "height": 17,
+              "right": 962,
+              "bottom": 193
+            },
+            "titleBounds": {
+              "x": 899,
+              "y": 194,
+              "width": 115,
+              "height": 30,
+              "right": 1014,
+              "bottom": 224
+            },
+            "bodyBounds": {
+              "x": 899,
+              "y": 277,
+              "width": 323,
+              "height": 38,
+              "right": 1222,
+              "bottom": 315
+            }
+          },
+          "launchDeck": {
+            "bounds": {
+              "x": 23,
+              "y": 262,
+              "width": 280,
+              "height": 286,
+              "right": 303,
+              "bottom": 548
+            },
+            "hierarchy": [
+              "launchTactical",
+              "dailySignal",
+              "scout",
+              "sectorStart",
+              "overrun"
+            ],
+            "featuredDailySignal": {
+              "label": "DAILY CHALLENGE",
+              "sublabel": "CLEAR S10 · CROSSFIRE BLACKOUT",
+              "role": "activity",
+              "focused": false,
+              "bounds": {
+                "x": 40,
+                "y": 338,
+                "width": 263,
+                "height": 48,
+                "right": 303,
+                "bottom": 386
+              },
+              "contract": {
+                "dailyKey": "2026-09-09",
+                "rulesHash": "DCS1-A744B5EE",
+                "loanerShipKey": "nova-player-ship-19.png",
+                "loanerShipName": "NEON STUTTER",
+                "templateId": "crossfire_blackout",
+                "finishSector": 10,
+                "localOnly": true
+              },
+              "bestScore": 0,
+              "bestAttempt": null,
+              "bestClear": null,
+              "flightLog": {
+                "symbols": "· · · · · · ·",
+                "clears": 0,
+                "attemptedDays": 0,
+                "attempts": 0,
+                "streak": 0,
+                "atRisk": false
+              },
+              "resetTime": "06:54"
+            },
+            "cards": {
+              "mayhemTactical": {
+                "label": "MAYHEM TACTICAL",
+                "sublabel": "MAIN MODE · RECOMMENDED · RANKED",
+                "body": null,
+                "role": "main",
+                "focused": true,
+                "runMode": "ranked_tactical",
+                "bounds": {
+                  "x": 23,
+                  "y": 262,
+                  "width": 280,
+                  "height": 70,
+                  "right": 303,
+                  "bottom": 332
+                }
+              },
+              "daily": {
+                "label": "DAILY CHALLENGE",
+                "sublabel": "CLEAR S10 · CROSSFIRE BLACKOUT",
+                "body": null,
+                "role": "activity",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 338,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 386
+                }
+              },
+              "scout": {
+                "label": "SCOUT RUN",
+                "sublabel": "ANOMALY: CALIBRATION",
+                "body": null,
+                "role": "practice",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 392,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 440
+                }
+              },
+              "sector": {
+                "label": "SECTOR RUN",
+                "sublabel": "LOCKED",
+                "body": null,
+                "role": "checkpoint",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 446,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 494
+                }
+              },
+              "overrun": {
+                "label": "OVERRUN TACTICAL",
+                "sublabel": "LOCKED · REACH SECTOR 30",
+                "body": null,
+                "role": "advanced",
+                "focused": false,
+                "available": false,
+                "progressionUnlocked": false,
+                "previewAccess": false,
+                "requiredSector": 30,
+                "startSector": 51,
+                "runMode": "overrun_tactical",
+                "bounds": {
+                  "x": 40,
+                  "y": 500,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 548
+                }
+              }
+            }
+          },
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": null,
+          "lives": null,
+          "mission": null
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 0,
+              "fullCount": 1,
+              "enterCount": 1,
+              "exitCount": 0,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": null
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "dailyMenu": {
+        "language": {
+          "current": "en",
+          "preference": "en",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "menu",
+        "menu": {
+          "launch": "PLAY",
+          "settings": "SETTINGS",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "duplicateRotateHint": true,
+          "missionBriefing": {
+            "eyebrow": "RUN MODE",
+            "title": "DAILY CHALLENGE",
+            "body": "Clear today’s challenge with a loaner ship.\nReplay it to improve your local daily record.",
+            "status": "UNRANKED",
+            "restriction": "Local record only. No public daily leaderboard.",
+            "personalBest": "BEST — CLEARED · BEST 123,456 · 9:59",
+            "launchFocused": false,
+            "launchButtonLabel": "PLAY",
+            "detailsFocused": false,
+            "detailsButtonLabel": "VIEW MODE DETAILS",
+            "renderPadding": {
+              "eyebrow": 12,
+              "title": 36,
+              "status": 18,
+              "body": 12,
+              "restriction": 12,
+              "launch": 8,
+              "details": 24
+            },
+            "statusBounds": {
+              "x": 1127,
+              "y": 186,
+              "width": 108,
+              "height": 27,
+              "right": 1236,
+              "bottom": 213
+            },
+            "variantSelectorBounds": null,
+            "restrictionBounds": {
+              "x": 899,
+              "y": 366,
+              "width": 262,
+              "height": 18,
+              "right": 1161,
+              "bottom": 384
+            },
+            "personalBestBounds": {
+              "x": 899,
+              "y": 395,
+              "width": 298,
+              "height": 16,
+              "right": 1197,
+              "bottom": 411
+            },
+            "launchButtonBounds": {
+              "x": 898,
+              "y": 419,
+              "width": 158,
+              "height": 44,
+              "right": 1056,
+              "bottom": 463
+            },
+            "launchButtonLabelBounds": {
+              "x": 954,
+              "y": 432,
+              "width": 45,
+              "height": 18,
+              "right": 1000,
+              "bottom": 450
+            },
+            "detailsButtonBounds": {
+              "x": 1063,
+              "y": 420,
+              "width": 173,
+              "height": 43,
+              "right": 1236,
+              "bottom": 463
+            },
+            "detailsButtonLabelBounds": {
+              "x": 1096,
+              "y": 434,
+              "width": 106,
+              "height": 15,
+              "right": 1202,
+              "bottom": 449
+            },
+            "detailsButtonIconBounds": null,
+            "tiles": [
+              {
+                "label": "TARGET",
+                "value": "SECTOR 10",
+                "bounds": {
+                  "x": 899,
+                  "y": 269,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1064,
+                  "bottom": 311
+                },
+                "visualBounds": {
+                  "x": 899,
+                  "y": 269,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1064,
+                  "bottom": 311
+                }
+              },
+              {
+                "label": "SHIP",
+                "value": "NEON STUTTER",
+                "bounds": {
+                  "x": 1070,
+                  "y": 269,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1235,
+                  "bottom": 311
+                },
+                "visualBounds": {
+                  "x": 1070,
+                  "y": 269,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1235,
+                  "bottom": 311
+                }
+              },
+              {
+                "label": "DRAFTS",
+                "value": "TACTICAL",
+                "bounds": {
+                  "x": 899,
+                  "y": 317,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1064,
+                  "bottom": 358
+                },
+                "visualBounds": {
+                  "x": 899,
+                  "y": 317,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1064,
+                  "bottom": 358
+                }
+              },
+              {
+                "label": "RECORD",
+                "value": "CLEARED",
+                "bounds": {
+                  "x": 1070,
+                  "y": 317,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1235,
+                  "bottom": 358
+                },
+                "visualBounds": {
+                  "x": 1070,
+                  "y": 317,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1235,
+                  "bottom": 358
+                }
+              }
+            ],
+            "mode": "dailySignal",
+            "panelBounds": {
+              "x": 877,
+              "y": 164,
+              "width": 380,
+              "height": 310,
+              "right": 1257,
+              "bottom": 474
+            },
+            "eyebrowBounds": {
+              "x": 899,
+              "y": 176,
+              "width": 63,
+              "height": 17,
+              "right": 962,
+              "bottom": 193
+            },
+            "titleBounds": {
+              "x": 899,
+              "y": 194,
+              "width": 235,
+              "height": 29,
+              "right": 1134,
+              "bottom": 223
+            },
+            "bodyBounds": {
+              "x": 899,
+              "y": 224,
+              "width": 265,
+              "height": 38,
+              "right": 1164,
+              "bottom": 262
+            }
+          },
+          "launchDeck": {
+            "bounds": {
+              "x": 23,
+              "y": 262,
+              "width": 280,
+              "height": 286,
+              "right": 303,
+              "bottom": 548
+            },
+            "hierarchy": [
+              "launchTactical",
+              "dailySignal",
+              "scout",
+              "sectorStart",
+              "overrun"
+            ],
+            "featuredDailySignal": {
+              "label": "DAILY CHALLENGE",
+              "sublabel": "CLEAR S10 · CROSSFIRE BLACKOUT",
+              "role": "activity",
+              "focused": true,
+              "bounds": {
+                "x": 40,
+                "y": 338,
+                "width": 263,
+                "height": 48,
+                "right": 303,
+                "bottom": 386
+              },
+              "contract": {
+                "dailyKey": "2026-09-09",
+                "rulesHash": "DCS1-A744B5EE",
+                "loanerShipKey": "nova-player-ship-19.png",
+                "loanerShipName": "NEON STUTTER",
+                "templateId": "crossfire_blackout",
+                "finishSector": 10,
+                "localOnly": true
+              },
+              "bestScore": 0,
+              "bestAttempt": null,
+              "bestClear": null,
+              "flightLog": {
+                "symbols": "· · · · · · ·",
+                "clears": 0,
+                "attemptedDays": 0,
+                "attempts": 0,
+                "streak": 0,
+                "atRisk": false
+              },
+              "resetTime": "06:54"
+            },
+            "cards": {
+              "mayhemTactical": {
+                "label": "MAYHEM PURE",
+                "sublabel": "ALTERNATIVE RANKED MODE",
+                "body": null,
+                "role": "main",
+                "focused": true,
+                "runMode": "ranked",
+                "bounds": {
+                  "x": 23,
+                  "y": 262,
+                  "width": 280,
+                  "height": 70,
+                  "right": 303,
+                  "bottom": 332
+                }
+              },
+              "daily": {
+                "label": "DAILY CHALLENGE",
+                "sublabel": "CLEAR S10 · CROSSFIRE BLACKOUT",
+                "body": null,
+                "role": "activity",
+                "focused": true,
+                "bounds": {
+                  "x": 40,
+                  "y": 338,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 386
+                }
+              },
+              "scout": {
+                "label": "SCOUT RUN",
+                "sublabel": "ANOMALY: CALIBRATION",
+                "body": null,
+                "role": "practice",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 392,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 440
+                }
+              },
+              "sector": {
+                "label": "SECTOR RUN",
+                "sublabel": "LOCKED",
+                "body": null,
+                "role": "checkpoint",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 446,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 494
+                }
+              },
+              "overrun": {
+                "label": "OVERRUN TACTICAL",
+                "sublabel": "LOCKED · REACH SECTOR 30",
+                "body": null,
+                "role": "advanced",
+                "focused": false,
+                "available": false,
+                "progressionUnlocked": false,
+                "previewAccess": false,
+                "requiredSector": 30,
+                "startSector": 51,
+                "runMode": "overrun_tactical",
+                "bounds": {
+                  "x": 40,
+                  "y": 500,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 548
+                }
+              }
+            }
+          },
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": null,
+          "lives": null,
+          "mission": null
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 0,
+              "fullCount": 1,
+              "enterCount": 1,
+              "exitCount": 0,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": null
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "modeBriefing": {
+        "language": {
+          "current": "en",
+          "preference": "en",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "menu",
+        "menu": {
+          "launch": "PLAY",
+          "settings": "SETTINGS",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 0.3,
+          "duplicateRotateHint": true,
+          "missionBriefing": {
+            "eyebrow": "RUN MODE",
+            "title": "DAILY CHALLENGE",
+            "body": "Clear today’s challenge with a loaner ship.\nReplay it to improve your local daily record.",
+            "status": "UNRANKED",
+            "restriction": "Local record only. No public daily leaderboard.",
+            "personalBest": "BEST — CLEARED · BEST 123,456 · 9:59",
+            "launchFocused": false,
+            "launchButtonLabel": "PLAY",
+            "detailsFocused": true,
+            "detailsButtonLabel": "VIEW MODE DETAILS",
+            "renderPadding": {
+              "eyebrow": 12,
+              "title": 36,
+              "status": 18,
+              "body": 12,
+              "restriction": 12,
+              "launch": 8,
+              "details": 24
+            },
+            "statusBounds": {
+              "x": 1127,
+              "y": 186,
+              "width": 108,
+              "height": 27,
+              "right": 1236,
+              "bottom": 213
+            },
+            "variantSelectorBounds": null,
+            "restrictionBounds": {
+              "x": 899,
+              "y": 366,
+              "width": 262,
+              "height": 18,
+              "right": 1161,
+              "bottom": 384
+            },
+            "personalBestBounds": {
+              "x": 899,
+              "y": 395,
+              "width": 298,
+              "height": 16,
+              "right": 1197,
+              "bottom": 411
+            },
+            "launchButtonBounds": {
+              "x": 898,
+              "y": 419,
+              "width": 158,
+              "height": 44,
+              "right": 1056,
+              "bottom": 463
+            },
+            "launchButtonLabelBounds": {
+              "x": 954,
+              "y": 432,
+              "width": 45,
+              "height": 18,
+              "right": 1000,
+              "bottom": 450
+            },
+            "detailsButtonBounds": {
+              "x": 1062,
+              "y": 419,
+              "width": 174,
+              "height": 44,
+              "right": 1236,
+              "bottom": 463
+            },
+            "detailsButtonLabelBounds": {
+              "x": 1096,
+              "y": 434,
+              "width": 106,
+              "height": 15,
+              "right": 1202,
+              "bottom": 449
+            },
+            "detailsButtonIconBounds": null,
+            "tiles": [
+              {
+                "label": "TARGET",
+                "value": "SECTOR 10",
+                "bounds": {
+                  "x": 899,
+                  "y": 269,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1064,
+                  "bottom": 311
+                },
+                "visualBounds": {
+                  "x": 899,
+                  "y": 269,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1064,
+                  "bottom": 311
+                }
+              },
+              {
+                "label": "SHIP",
+                "value": "NEON STUTTER",
+                "bounds": {
+                  "x": 1070,
+                  "y": 269,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1235,
+                  "bottom": 311
+                },
+                "visualBounds": {
+                  "x": 1070,
+                  "y": 269,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1235,
+                  "bottom": 311
+                }
+              },
+              {
+                "label": "DRAFTS",
+                "value": "TACTICAL",
+                "bounds": {
+                  "x": 899,
+                  "y": 317,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1064,
+                  "bottom": 358
+                },
+                "visualBounds": {
+                  "x": 899,
+                  "y": 317,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1064,
+                  "bottom": 358
+                }
+              },
+              {
+                "label": "RECORD",
+                "value": "CLEARED",
+                "bounds": {
+                  "x": 1070,
+                  "y": 317,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1235,
+                  "bottom": 358
+                },
+                "visualBounds": {
+                  "x": 1070,
+                  "y": 317,
+                  "width": 165,
+                  "height": 42,
+                  "right": 1235,
+                  "bottom": 358
+                }
+              }
+            ],
+            "mode": "dailySignal",
+            "panelBounds": {
+              "x": 877,
+              "y": 164,
+              "width": 380,
+              "height": 310,
+              "right": 1257,
+              "bottom": 474
+            },
+            "eyebrowBounds": {
+              "x": 899,
+              "y": 176,
+              "width": 63,
+              "height": 17,
+              "right": 962,
+              "bottom": 193
+            },
+            "titleBounds": {
+              "x": 899,
+              "y": 194,
+              "width": 235,
+              "height": 29,
+              "right": 1134,
+              "bottom": 223
+            },
+            "bodyBounds": {
+              "x": 899,
+              "y": 224,
+              "width": 265,
+              "height": 38,
+              "right": 1164,
+              "bottom": 262
+            }
+          },
+          "launchDeck": {
+            "bounds": {
+              "x": 23,
+              "y": 262,
+              "width": 280,
+              "height": 286,
+              "right": 303,
+              "bottom": 548
+            },
+            "hierarchy": [
+              "launchTactical",
+              "dailySignal",
+              "scout",
+              "sectorStart",
+              "overrun"
+            ],
+            "featuredDailySignal": {
+              "label": "DAILY CHALLENGE",
+              "sublabel": "CLEAR S10 · CROSSFIRE BLACKOUT",
+              "role": "activity",
+              "focused": true,
+              "bounds": {
+                "x": 40,
+                "y": 338,
+                "width": 263,
+                "height": 48,
+                "right": 303,
+                "bottom": 386
+              },
+              "contract": {
+                "dailyKey": "2026-09-09",
+                "rulesHash": "DCS1-A744B5EE",
+                "loanerShipKey": "nova-player-ship-19.png",
+                "loanerShipName": "NEON STUTTER",
+                "templateId": "crossfire_blackout",
+                "finishSector": 10,
+                "localOnly": true
+              },
+              "bestScore": 0,
+              "bestAttempt": null,
+              "bestClear": null,
+              "flightLog": {
+                "symbols": "· · · · · · ·",
+                "clears": 0,
+                "attemptedDays": 0,
+                "attempts": 0,
+                "streak": 0,
+                "atRisk": false
+              },
+              "resetTime": "06:54"
+            },
+            "cards": {
+              "mayhemTactical": {
+                "label": "MAYHEM PURE",
+                "sublabel": "ALTERNATIVE RANKED MODE",
+                "body": null,
+                "role": "main",
+                "focused": true,
+                "runMode": "ranked",
+                "bounds": {
+                  "x": 23,
+                  "y": 262,
+                  "width": 280,
+                  "height": 70,
+                  "right": 303,
+                  "bottom": 332
+                }
+              },
+              "daily": {
+                "label": "DAILY CHALLENGE",
+                "sublabel": "CLEAR S10 · CROSSFIRE BLACKOUT",
+                "body": null,
+                "role": "activity",
+                "focused": true,
+                "bounds": {
+                  "x": 40,
+                  "y": 338,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 386
+                }
+              },
+              "scout": {
+                "label": "SCOUT RUN",
+                "sublabel": "ANOMALY: CALIBRATION",
+                "body": null,
+                "role": "practice",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 392,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 440
+                }
+              },
+              "sector": {
+                "label": "SECTOR RUN",
+                "sublabel": "LOCKED",
+                "body": null,
+                "role": "checkpoint",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 446,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 494
+                }
+              },
+              "overrun": {
+                "label": "OVERRUN TACTICAL",
+                "sublabel": "LOCKED · REACH SECTOR 30",
+                "body": null,
+                "role": "advanced",
+                "focused": false,
+                "available": false,
+                "progressionUnlocked": false,
+                "previewAccess": false,
+                "requiredSector": 30,
+                "startSector": 51,
+                "runMode": "overrun_tactical",
+                "bounds": {
+                  "x": 40,
+                  "y": 500,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 548
+                }
+              }
+            }
+          },
+          "modeBriefing": {
+            "open": true,
+            "modeId": "dailySignal",
+            "title": "DAILY CHALLENGE",
+            "status": "UNRANKED",
+            "focusedIndex": 0,
+            "focusedType": "button",
+            "focusedUpgradeId": null,
+            "scrollY": 0,
+            "panel": {
+              "x": 160,
+              "y": 79,
+              "width": 960,
+              "height": 562
+            },
+            "content": {
+              "x": 184,
+              "y": 179,
+              "width": 912,
+              "height": 404
+            },
+            "contentHeight": 293,
+            "maxScrollY": 0,
+            "compact": true,
+            "sectionIds": [
+              "conditions",
+              "active",
+              "unavailable"
+            ],
+            "loadoutIds": [],
+            "renderedText": [
+              "MODE BRIEFING",
+              "DAILY CHALLENGE",
+              "UNRANKED",
+              "Clear Sector 10, then replay to improve your local best.",
+              "STARTING CONDITIONS",
+              "TARGET",
+              "SECTOR 10",
+              "SHIP",
+              "NEON STUTTER",
+              "ROUTE",
+              "CROSSFIRE BLACKOUT",
+              "ACTIVE",
+              "Tactical Boss Drafts",
+              "WEEKLY CLEARS: 0 / 7",
+              "RESETS IN 06:54",
+              "NOT AVAILABLE",
+              "Public daily leaderboard submission",
+              "BACK  [ESC]"
+            ]
+          }
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": null,
+          "lives": null,
+          "mission": null
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 0,
+              "fullCount": 1,
+              "enterCount": 1,
+              "exitCount": 0,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": null
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "hud": {
+        "language": {
+          "current": "en",
+          "preference": "en",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "play",
+        "menu": {
+          "launch": "PLAY",
+          "settings": "SETTINGS",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "missionBriefing": null,
+          "launchDeck": null,
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": "SCORE 44",
+          "lives": "LIVES 3",
+          "mission": "MISSION STATUS"
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [
+            {
+              "slot": "corner",
+              "type": "cabinet_log",
+              "message": "CABINET LOG // NEW RECEIPT\nNew Codex signal archived: Cabinet Log. // +44",
+              "title": null,
+              "imageAlias": null,
+              "duration": 1450,
+              "protectedRemainingMs": 500,
+              "combatRelocated": false,
+              "edgeAligned": false,
+              "placement": null,
+              "channel": "side",
+              "visualLanguage": null,
+              "nonterminalQuickRead": false,
+              "reducedMotion": false,
+              "alpha": 1,
+              "authoredSignalCount": 0,
+              "primitiveOrnamentCount": 0,
+              "ageMs": 600,
+              "dossier": null,
+              "specialSignal": null,
+              "bounds": {
+                "x": 937,
+                "y": 135,
+                "width": 295,
+                "height": 42
+              }
+            }
+          ],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": false,
+            "stage": "opening_pending",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": true,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 44,
+              "fullCount": 150,
+              "enterCount": 87,
+              "exitCount": 59,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": {
+              "active": true,
+              "phase": "hidden",
+              "progress": 0,
+              "restoreCount": 0,
+              "restoreReason": null,
+              "restoreStartedAtMs": null,
+              "restoreCompletedAtMs": null,
+              "durationMs": 160,
+              "reducedMotion": false,
+              "targets": {
+                "directiveText": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.62,
+                  "eventMode": "none"
+                },
+                "directiveProgressBg": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.56,
+                  "eventMode": "none"
+                },
+                "directiveProgressFill": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.72,
+                  "eventMode": "none"
+                },
+                "shipMasteryText": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 1,
+                  "eventMode": "none"
+                },
+                "shipMasteryMedals": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 1,
+                  "eventMode": "none"
+                },
+                "traitGroup": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.84,
+                  "eventMode": "none"
+                }
+              }
+            }
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": true
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "pause": {
+        "language": {
+          "current": "en",
+          "preference": "en",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "play",
+        "menu": {
+          "launch": "PLAY",
+          "settings": "SETTINGS",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "missionBriefing": null,
+          "launchDeck": null,
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": "SCORE 44",
+          "lives": "LIVES 3",
+          "mission": "MISSION STATUS"
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": "ION DASH: Quicker bolts, crisp handling, and a forgiving dodge pulse."
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [
+            {
+              "slot": "corner",
+              "type": "cabinet_log",
+              "message": "CABINET LOG // NEW RECEIPT\nNew Codex signal archived: Cabinet Log. // +44",
+              "title": null,
+              "imageAlias": null,
+              "duration": 1450,
+              "protectedRemainingMs": 0,
+              "combatRelocated": false,
+              "edgeAligned": false,
+              "placement": null,
+              "channel": "side",
+              "visualLanguage": null,
+              "nonterminalQuickRead": false,
+              "reducedMotion": false,
+              "alpha": 1,
+              "authoredSignalCount": 0,
+              "primitiveOrnamentCount": 0,
+              "ageMs": 1215,
+              "dossier": null,
+              "specialSignal": null,
+              "bounds": {
+                "x": 937,
+                "y": 135,
+                "width": 295,
+                "height": 42
+              }
+            }
+          ],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": false,
+            "stage": "opening_pending",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": true,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 44,
+              "fullCount": 150,
+              "enterCount": 87,
+              "exitCount": 59,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": {
+              "active": true,
+              "phase": "hidden",
+              "progress": 0,
+              "restoreCount": 0,
+              "restoreReason": null,
+              "restoreStartedAtMs": null,
+              "restoreCompletedAtMs": null,
+              "durationMs": 160,
+              "reducedMotion": false,
+              "targets": {
+                "directiveText": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.62,
+                  "eventMode": "none"
+                },
+                "directiveProgressBg": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.56,
+                  "eventMode": "none"
+                },
+                "directiveProgressFill": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.72,
+                  "eventMode": "none"
+                },
+                "shipMasteryText": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 1,
+                  "eventMode": "none"
+                },
+                "shipMasteryMedals": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 1,
+                  "eventMode": "none"
+                },
+                "traitGroup": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.84,
+                  "eventMode": "none"
+                }
+              }
+            }
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": true
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "gameOver": {
+        "language": {
+          "current": "en",
+          "preference": "en",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "gameOver",
+        "menu": {
+          "launch": "PLAY",
+          "settings": "SETTINGS",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "missionBriefing": null,
+          "launchDeck": null,
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": "SCORE 44",
+          "lives": "LIVES 3",
+          "mission": "MISSION STATUS"
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": "LOCAL BOARD RANK #8",
+          "prompt": "ENTER: LOG LOCAL SCORE",
+          "score": "SCORE: 1,234",
+          "cta": "SUBMIT SCORE"
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": false,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 44,
+              "fullCount": 150,
+              "enterCount": 87,
+              "exitCount": 59,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": {
+              "active": true,
+              "phase": "hidden",
+              "progress": 0,
+              "restoreCount": 0,
+              "restoreReason": null,
+              "restoreStartedAtMs": null,
+              "restoreCompletedAtMs": null,
+              "durationMs": 160,
+              "reducedMotion": false,
+              "targets": {
+                "directiveText": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.62,
+                  "eventMode": "none"
+                },
+                "directiveProgressBg": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.56,
+                  "eventMode": "none"
+                },
+                "directiveProgressFill": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.72,
+                  "eventMode": "none"
+                },
+                "shipMasteryText": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 1,
+                  "eventMode": "none"
+                },
+                "shipMasteryMedals": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 1,
+                  "eventMode": "none"
+                },
+                "traitGroup": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.84,
+                  "eventMode": "none"
+                }
+              }
+            }
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 1,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 322,
+            "top": 322,
+            "corner": 322
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "leaderboard": {
+        "language": {
+          "current": "en",
+          "preference": "en",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "highscore",
+        "menu": {
+          "launch": "PLAY",
+          "settings": "SETTINGS",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "missionBriefing": null,
+          "launchDeck": null,
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": "SCORE 44",
+          "lives": "LIVES 3",
+          "mission": "MISSION STATUS"
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": "LOCAL BOARD RANK #8",
+          "prompt": "ENTER: LOG LOCAL SCORE",
+          "score": "SCORE: 1,234",
+          "cta": "SUBMIT SCORE"
+        },
+        "leaderboard": {
+          "title": "STEAM SCORE DECK",
+          "retry": null,
+          "board": null,
+          "comment": "The leaderboard is wearing its blank expression.",
+          "stateMessage": "Cloud Global loaded.",
+          "commentBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "stateBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "rowChildCount": 45,
+          "firstRowBounds": {
+            "x": 107,
+            "y": 268,
+            "width": 980,
+            "height": 4,
+            "right": 1087,
+            "bottom": 272
+          }
+        },
+        "toasts": {
+          "active": [
+            {
+              "slot": "top",
+              "type": "sector_arrival",
+              "message": "SECTOR 03: NYX VEY // BOSS-GATE LIFE ROUTING",
+              "title": null,
+              "imageAlias": null,
+              "duration": 2100,
+              "protectedRemainingMs": 388,
+              "combatRelocated": false,
+              "edgeAligned": false,
+              "placement": null,
+              "channel": "transition",
+              "visualLanguage": "nova_command_hud_transition_v1",
+              "nonterminalQuickRead": false,
+              "reducedMotion": false,
+              "alpha": 1,
+              "authoredSignalCount": 0,
+              "primitiveOrnamentCount": 0,
+              "ageMs": 1712,
+              "dossier": null,
+              "specialSignal": null,
+              "bounds": {
+                "x": 459,
+                "y": 170,
+                "width": 362,
+                "height": 81
+              }
+            }
+          ],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": false,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 44,
+              "fullCount": 150,
+              "enterCount": 87,
+              "exitCount": 59,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": {
+              "active": true,
+              "phase": "hidden",
+              "progress": 0,
+              "restoreCount": 0,
+              "restoreReason": null,
+              "restoreStartedAtMs": null,
+              "restoreCompletedAtMs": null,
+              "durationMs": 160,
+              "reducedMotion": false,
+              "targets": {
+                "directiveText": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0.446,
+                  "productionAlpha": 0.446,
+                  "eventMode": "none"
+                },
+                "directiveProgressBg": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0.403,
+                  "productionAlpha": 0.403,
+                  "eventMode": "none"
+                },
+                "directiveProgressFill": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0.518,
+                  "productionAlpha": 0.518,
+                  "eventMode": "none"
+                },
+                "shipMasteryText": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 1,
+                  "eventMode": "none"
+                },
+                "shipMasteryMedals": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 1,
+                  "eventMode": "none"
+                },
+                "traitGroup": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.84,
+                  "eventMode": "none"
+                }
+              }
+            }
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": true,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "leaderboardPopulated": {
+        "language": {
+          "current": "en",
+          "preference": "en",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "highscore",
+        "menu": {
+          "launch": "PLAY",
+          "settings": "SETTINGS",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "missionBriefing": null,
+          "launchDeck": null,
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": "SCORE 44",
+          "lives": "LIVES 3",
+          "mission": "MISSION STATUS"
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": "LOCAL BOARD RANK #8",
+          "prompt": "ENTER: LOG LOCAL SCORE",
+          "score": "SCORE: 1,234",
+          "cta": "SUBMIT SCORE"
+        },
+        "leaderboard": {
+          "title": "STEAM SCORE DECK",
+          "retry": null,
+          "board": null,
+          "comment": "High-score orbit achieved!",
+          "stateMessage": "Cloud Global loaded.",
+          "commentBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "stateBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "rowChildCount": 51,
+          "firstRowBounds": {
+            "x": 107,
+            "y": 268,
+            "width": 980,
+            "height": 4,
+            "right": 1087,
+            "bottom": 272
+          }
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": false,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 44,
+              "fullCount": 150,
+              "enterCount": 87,
+              "exitCount": 59,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": {
+              "active": true,
+              "phase": "hidden",
+              "progress": 0,
+              "restoreCount": 0,
+              "restoreReason": null,
+              "restoreStartedAtMs": null,
+              "restoreCompletedAtMs": null,
+              "durationMs": 160,
+              "reducedMotion": false,
+              "targets": {
+                "directiveText": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0.62,
+                  "productionAlpha": 0.62,
+                  "eventMode": "none"
+                },
+                "directiveProgressBg": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0.56,
+                  "productionAlpha": 0.56,
+                  "eventMode": "none"
+                },
+                "directiveProgressFill": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0.72,
+                  "productionAlpha": 0.72,
+                  "eventMode": "none"
+                },
+                "shipMasteryText": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 1,
+                  "eventMode": "none"
+                },
+                "shipMasteryMedals": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 1,
+                  "eventMode": "none"
+                },
+                "traitGroup": {
+                  "visible": true,
+                  "renderable": false,
+                  "alpha": 0,
+                  "productionAlpha": 0.84,
+                  "eventMode": "none"
+                }
+              }
+            }
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      }
+    },
+    "german": {
+      "settings": {
+        "language": {
+          "current": "de",
+          "preference": "de",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "menu",
+        "menu": {
+          "launch": "SPIELEN",
+          "settings": "EINSTELLUNGEN",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 0.3,
+          "missionBriefing": {
+            "eyebrow": "SPIELMODUS",
+            "title": "MAYHEM",
+            "body": "Wähle nach jedem Boss ein dauerhaftes taktisches Upgrade.\nMiss dich in der separaten Tactical-Rangliste.",
+            "status": "GEWERTET",
+            "restriction": "Tactical und Pure verwenden getrennte Ranglisten.",
+            "personalBest": null,
+            "launchFocused": false,
+            "launchButtonLabel": "SPIELEN",
+            "detailsFocused": false,
+            "detailsButtonLabel": "MODUSDETAILS",
+            "renderPadding": {
+              "eyebrow": 12,
+              "title": 36,
+              "status": 18,
+              "body": 12,
+              "restriction": 12,
+              "launch": 8,
+              "details": 24
+            },
+            "statusBounds": {
+              "x": 1126,
+              "y": 186,
+              "width": 110,
+              "height": 27,
+              "right": 1236,
+              "bottom": 213
+            },
+            "variantSelectorBounds": {
+              "x": 898,
+              "y": 230,
+              "width": 338,
+              "height": 38,
+              "right": 1236,
+              "bottom": 268
+            },
+            "restrictionBounds": {
+              "x": 899,
+              "y": 392,
+              "width": 293,
+              "height": 18,
+              "right": 1192,
+              "bottom": 410
+            },
+            "personalBestBounds": null,
+            "launchButtonBounds": {
+              "x": 898,
+              "y": 419,
+              "width": 158,
+              "height": 44,
+              "right": 1056,
+              "bottom": 463
+            },
+            "launchButtonLabelBounds": {
+              "x": 942,
+              "y": 432,
+              "width": 70,
+              "height": 18,
+              "right": 1012,
+              "bottom": 450
+            },
+            "detailsButtonBounds": {
+              "x": 1063,
+              "y": 420,
+              "width": 173,
+              "height": 43,
+              "right": 1236,
+              "bottom": 463
+            },
+            "detailsButtonLabelBounds": {
+              "x": 1109,
+              "y": 434,
+              "width": 81,
+              "height": 15,
+              "right": 1189,
+              "bottom": 449
+            },
+            "detailsButtonIconBounds": null,
+            "tiles": [
+              {
+                "label": "START",
+                "value": "SEKTOR 1",
+                "bounds": {
+                  "x": 899,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1064,
+                  "bottom": 380
+                },
+                "visualBounds": {
+                  "x": 899,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1064,
+                  "bottom": 380
+                }
+              },
+              {
+                "label": "PUNKTZAHL",
+                "value": "STARTET BEI 0",
+                "bounds": {
+                  "x": 1070,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1235,
+                  "bottom": 380
+                },
+                "visualBounds": {
+                  "x": 1070,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1235,
+                  "bottom": 380
+                }
+              }
+            ],
+            "mode": "launchTactical",
+            "panelBounds": {
+              "x": 877,
+              "y": 164,
+              "width": 380,
+              "height": 310,
+              "right": 1257,
+              "bottom": 474
+            },
+            "eyebrowBounds": {
+              "x": 899,
+              "y": 176,
+              "width": 78,
+              "height": 17,
+              "right": 977,
+              "bottom": 193
+            },
+            "titleBounds": {
+              "x": 899,
+              "y": 194,
+              "width": 115,
+              "height": 30,
+              "right": 1014,
+              "bottom": 224
+            },
+            "bodyBounds": {
+              "x": 899,
+              "y": 277,
+              "width": 269,
+              "height": 49,
+              "right": 1168,
+              "bottom": 326
+            }
+          },
+          "launchDeck": {
+            "bounds": {
+              "x": 23,
+              "y": 262,
+              "width": 280,
+              "height": 286,
+              "right": 303,
+              "bottom": 548
+            },
+            "hierarchy": [
+              "launchTactical",
+              "dailySignal",
+              "scout",
+              "sectorStart",
+              "overrun"
+            ],
+            "featuredDailySignal": {
+              "label": "TAGESHERAUSFORDERUNG",
+              "sublabel": "S10 ABSCHLIESSEN · KREUZFEUER-BLACKOUT",
+              "role": "activity",
+              "focused": false,
+              "bounds": {
+                "x": 40,
+                "y": 338,
+                "width": 263,
+                "height": 48,
+                "right": 303,
+                "bottom": 386
+              },
+              "contract": {
+                "dailyKey": "2026-09-09",
+                "rulesHash": "DCS1-A744B5EE",
+                "loanerShipKey": "nova-player-ship-19.png",
+                "loanerShipName": "NEON STUTTER",
+                "templateId": "crossfire_blackout",
+                "finishSector": 10,
+                "localOnly": true
+              },
+              "bestScore": 0,
+              "bestAttempt": null,
+              "bestClear": null,
+              "flightLog": {
+                "symbols": "· · · · · · ·",
+                "clears": 0,
+                "attemptedDays": 0,
+                "attempts": 0,
+                "streak": 0,
+                "atRisk": false
+              },
+              "resetTime": "06:54"
+            },
+            "cards": {
+              "mayhemTactical": {
+                "label": "MAYHEM TAKTISCH",
+                "sublabel": "HAUPTMODUS · EMPFOHLEN · GEWERTET",
+                "body": null,
+                "role": "main",
+                "focused": true,
+                "runMode": "ranked_tactical",
+                "bounds": {
+                  "x": 23,
+                  "y": 262,
+                  "width": 280,
+                  "height": 70,
+                  "right": 303,
+                  "bottom": 332
+                }
+              },
+              "daily": {
+                "label": "TAGESHERAUSFORDERUNG",
+                "sublabel": "S10 ABSCHLIESSEN · KREUZFEUER-BLACKOUT",
+                "body": null,
+                "role": "activity",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 338,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 386
+                }
+              },
+              "scout": {
+                "label": "SCOUT RUN",
+                "sublabel": "ANOMALIE: KALIBRIERUNG",
+                "body": null,
+                "role": "practice",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 392,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 440
+                }
+              },
+              "sector": {
+                "label": "SEKTORLAUF",
+                "sublabel": "GESPERRT",
+                "body": null,
+                "role": "checkpoint",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 446,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 494
+                }
+              },
+              "overrun": {
+                "label": "ÜBERRENNEN TAKTISCH",
+                "sublabel": "GESPERRT · ERREICHE SEKTOR 30",
+                "body": null,
+                "role": "advanced",
+                "focused": false,
+                "available": false,
+                "progressionUnlocked": false,
+                "previewAccess": false,
+                "requiredSector": 30,
+                "startSector": 51,
+                "runMode": "overrun_tactical",
+                "bounds": {
+                  "x": 40,
+                  "y": 500,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 548
+                }
+              }
+            }
+          },
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": "general",
+          "language": "Deutsch",
+          "languageHint": "Gespeichert",
+          "close": "SCHLIESSEN",
+          "renderedText": [
+            "ANZEIGE",
+            "Anzeigemodus",
+            "Vollbild",
+            "Fenstergroesse",
+            "1280 x 720",
+            "UI-Skalierung",
+            "100 %",
+            "Sicher zuruecksetzen",
+            "Anzeigeaenderungen gelten sofort",
+            "SPRACHE",
+            "SPRACHE",
+            "Deutsch",
+            "Gespeichert",
+            "SPIEL",
+            "ENDE BESTÄT.",
+            "AN",
+            "Feuermodus",
+            "HALTEN",
+            "Maussteuerung",
+            "AUS",
+            "TASTATUR",
+            "NEU ZUWEISEN"
+          ],
+          "prototype": {
+            "enabled": false,
+            "quickStart": false,
+            "oneRunOnly": true,
+            "allowLaunch": true,
+            "draft": {
+              "scenario": "standard",
+              "ruleset": "tactical",
+              "fixtureId": "tactical_saturation_bounded",
+              "startSector": 75,
+              "lifeStock": "three_lives",
+              "phasePulseAvailable": true
+            },
+            "activeRun": false,
+            "launchButton": {
+              "x": 195,
+              "y": 532,
+              "width": 331,
+              "height": 39,
+              "right": 526,
+              "bottom": 571
+            },
+            "confirmationOpen": false,
+            "confirmationBounds": null,
+            "infoCard": {
+              "frameBounds": {
+                "x": 671,
+                "y": 180,
+                "width": 497,
+                "height": 412,
+                "right": 1168,
+                "bottom": 592
+              },
+              "contentBounds": {
+                "x": 673,
+                "y": 192,
+                "width": 445,
+                "height": 388,
+                "right": 1118,
+                "bottom": 580
+              },
+              "scale": 0.919
+            }
+          }
+        },
+        "hud": {
+          "score": null,
+          "lives": null,
+          "mission": null
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 0,
+              "fullCount": 1,
+              "enterCount": 1,
+              "exitCount": 0,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": null
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "prototypeSettings": {
+        "language": {
+          "current": "de",
+          "preference": "de",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "menu",
+        "menu": {
+          "launch": "SPIELEN",
+          "settings": "EINSTELLUNGEN",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 0.3,
+          "missionBriefing": {
+            "eyebrow": "SPIELMODUS",
+            "title": "MAYHEM",
+            "body": "Wähle nach jedem Boss ein dauerhaftes taktisches Upgrade.\nMiss dich in der separaten Tactical-Rangliste.",
+            "status": "GEWERTET",
+            "restriction": "Tactical und Pure verwenden getrennte Ranglisten.",
+            "personalBest": null,
+            "launchFocused": false,
+            "launchButtonLabel": "SPIELEN",
+            "detailsFocused": false,
+            "detailsButtonLabel": "MODUSDETAILS",
+            "renderPadding": {
+              "eyebrow": 12,
+              "title": 36,
+              "status": 18,
+              "body": 12,
+              "restriction": 12,
+              "launch": 8,
+              "details": 24
+            },
+            "statusBounds": {
+              "x": 1126,
+              "y": 186,
+              "width": 110,
+              "height": 27,
+              "right": 1236,
+              "bottom": 213
+            },
+            "variantSelectorBounds": {
+              "x": 898,
+              "y": 230,
+              "width": 338,
+              "height": 38,
+              "right": 1236,
+              "bottom": 268
+            },
+            "restrictionBounds": {
+              "x": 899,
+              "y": 392,
+              "width": 293,
+              "height": 18,
+              "right": 1192,
+              "bottom": 410
+            },
+            "personalBestBounds": null,
+            "launchButtonBounds": {
+              "x": 898,
+              "y": 419,
+              "width": 158,
+              "height": 44,
+              "right": 1056,
+              "bottom": 463
+            },
+            "launchButtonLabelBounds": {
+              "x": 942,
+              "y": 432,
+              "width": 70,
+              "height": 18,
+              "right": 1012,
+              "bottom": 450
+            },
+            "detailsButtonBounds": {
+              "x": 1063,
+              "y": 420,
+              "width": 173,
+              "height": 43,
+              "right": 1236,
+              "bottom": 463
+            },
+            "detailsButtonLabelBounds": {
+              "x": 1109,
+              "y": 434,
+              "width": 81,
+              "height": 15,
+              "right": 1189,
+              "bottom": 449
+            },
+            "detailsButtonIconBounds": null,
+            "tiles": [
+              {
+                "label": "START",
+                "value": "SEKTOR 1",
+                "bounds": {
+                  "x": 899,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1064,
+                  "bottom": 380
+                },
+                "visualBounds": {
+                  "x": 899,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1064,
+                  "bottom": 380
+                }
+              },
+              {
+                "label": "PUNKTZAHL",
+                "value": "STARTET BEI 0",
+                "bounds": {
+                  "x": 1070,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1235,
+                  "bottom": 380
+                },
+                "visualBounds": {
+                  "x": 1070,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1235,
+                  "bottom": 380
+                }
+              }
+            ],
+            "mode": "launchTactical",
+            "panelBounds": {
+              "x": 877,
+              "y": 164,
+              "width": 380,
+              "height": 310,
+              "right": 1257,
+              "bottom": 474
+            },
+            "eyebrowBounds": {
+              "x": 899,
+              "y": 176,
+              "width": 78,
+              "height": 17,
+              "right": 977,
+              "bottom": 193
+            },
+            "titleBounds": {
+              "x": 899,
+              "y": 194,
+              "width": 115,
+              "height": 30,
+              "right": 1014,
+              "bottom": 224
+            },
+            "bodyBounds": {
+              "x": 899,
+              "y": 277,
+              "width": 269,
+              "height": 49,
+              "right": 1168,
+              "bottom": 326
+            }
+          },
+          "launchDeck": {
+            "bounds": {
+              "x": 23,
+              "y": 262,
+              "width": 280,
+              "height": 286,
+              "right": 303,
+              "bottom": 548
+            },
+            "hierarchy": [
+              "launchTactical",
+              "dailySignal",
+              "scout",
+              "sectorStart",
+              "overrun"
+            ],
+            "featuredDailySignal": {
+              "label": "TAGESHERAUSFORDERUNG",
+              "sublabel": "S10 ABSCHLIESSEN · KREUZFEUER-BLACKOUT",
+              "role": "activity",
+              "focused": false,
+              "bounds": {
+                "x": 40,
+                "y": 338,
+                "width": 263,
+                "height": 48,
+                "right": 303,
+                "bottom": 386
+              },
+              "contract": {
+                "dailyKey": "2026-09-09",
+                "rulesHash": "DCS1-A744B5EE",
+                "loanerShipKey": "nova-player-ship-19.png",
+                "loanerShipName": "NEON STUTTER",
+                "templateId": "crossfire_blackout",
+                "finishSector": 10,
+                "localOnly": true
+              },
+              "bestScore": 0,
+              "bestAttempt": null,
+              "bestClear": null,
+              "flightLog": {
+                "symbols": "· · · · · · ·",
+                "clears": 0,
+                "attemptedDays": 0,
+                "attempts": 0,
+                "streak": 0,
+                "atRisk": false
+              },
+              "resetTime": "06:54"
+            },
+            "cards": {
+              "mayhemTactical": {
+                "label": "MAYHEM TAKTISCH",
+                "sublabel": "HAUPTMODUS · EMPFOHLEN · GEWERTET",
+                "body": null,
+                "role": "main",
+                "focused": true,
+                "runMode": "ranked_tactical",
+                "bounds": {
+                  "x": 23,
+                  "y": 262,
+                  "width": 280,
+                  "height": 70,
+                  "right": 303,
+                  "bottom": 332
+                }
+              },
+              "daily": {
+                "label": "TAGESHERAUSFORDERUNG",
+                "sublabel": "S10 ABSCHLIESSEN · KREUZFEUER-BLACKOUT",
+                "body": null,
+                "role": "activity",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 338,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 386
+                }
+              },
+              "scout": {
+                "label": "SCOUT RUN",
+                "sublabel": "ANOMALIE: KALIBRIERUNG",
+                "body": null,
+                "role": "practice",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 392,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 440
+                }
+              },
+              "sector": {
+                "label": "SEKTORLAUF",
+                "sublabel": "GESPERRT",
+                "body": null,
+                "role": "checkpoint",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 446,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 494
+                }
+              },
+              "overrun": {
+                "label": "ÜBERRENNEN TAKTISCH",
+                "sublabel": "GESPERRT · ERREICHE SEKTOR 30",
+                "body": null,
+                "role": "advanced",
+                "focused": false,
+                "available": false,
+                "progressionUnlocked": false,
+                "previewAccess": false,
+                "requiredSector": 30,
+                "startSector": 51,
+                "runMode": "overrun_tactical",
+                "bounds": {
+                  "x": 40,
+                  "y": 500,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 548
+                }
+              }
+            }
+          },
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": "prototype",
+          "language": "Deutsch",
+          "languageHint": "Gespeichert",
+          "close": "SCHLIESSEN",
+          "renderedText": [
+            "ENDGAME-DRUCKTEST",
+            "SZENARIO",
+            "STANDARDTEST",
+            "REGELWERK",
+            "TAKTISCH",
+            "TESTAUFBAU",
+            "BEGRENZTER DURCHSCHLAG",
+            "Ausgereifte Saettigungsausruestung fuer den Zwei-Treffer-Durchschlagsvergleich.",
+            "START",
+            "SEKTOR 75",
+            "STANDARDTEST STARTET IN SEKTOR 75.",
+            "LEBENSVORRAT",
+            "3 LEBEN",
+            "PHASENIMPULS",
+            "VERFUEGBAR",
+            "EXPERIMENT STARTEN",
+            "EXPERIMENTELLER ENDGAME-TEST",
+            "Dies ist ein temporaerer, ungewerteter Spielplatz, auf dem Entwickler und erfahrene Spieler den Endgame-Druck testen.",
+            "Dies ist kein offizieller Spielmodus. Regeln, Balance und Inhalte koennen sich aendern oder verschwinden.",
+            "Testlaeufe gewähren keine Ranglistenplaetze, Erfolge, Fortschritte, Codex-Entdeckungen, Freischaltungen, Checkpoints, Rekorde oder Belohnungen.",
+            "WAS DICH ERWARTET",
+            "Der Standardtest beginnt in Sektor 75 mit festem Seed, Druckprofil, drei Leben und Testausruestung. Nach zehn Sektoren endet er mit einem Testbericht.",
+            "Der Ausdauertest bietet tiefere Startvorgaben sowie drei Leben oder einen ausgereiften Lebensvorrat. Er laeuft bis zum Tod oder freiwilligen Abbruch.",
+            "Pur verwendet das echte Pure-Regelwerk ohne taktische Erweiterungen. Taktisch verwendet einen klar offengelegten Vergleichsaufbau.",
+            "Jeder Start erfordert eine neue Bestaetigung. Die Rueckkehr ins Menue loescht den Testzustand vollstaendig.",
+            "Experimentelle Inhalte koennen Fehler, Leistungsprobleme oder Balanceprobleme enthalten. Feedback ist sehr willkommen."
+          ],
+          "prototype": {
+            "enabled": false,
+            "quickStart": false,
+            "oneRunOnly": true,
+            "allowLaunch": true,
+            "draft": {
+              "scenario": "standard",
+              "ruleset": "tactical",
+              "fixtureId": "tactical_saturation_bounded",
+              "startSector": 75,
+              "lifeStock": "three_lives",
+              "phasePulseAvailable": true
+            },
+            "activeRun": false,
+            "launchButton": {
+              "x": 195,
+              "y": 532,
+              "width": 331,
+              "height": 39,
+              "right": 526,
+              "bottom": 571
+            },
+            "confirmationOpen": false,
+            "confirmationBounds": null,
+            "infoCard": {
+              "frameBounds": {
+                "x": 671,
+                "y": 180,
+                "width": 497,
+                "height": 412,
+                "right": 1168,
+                "bottom": 592
+              },
+              "contentBounds": {
+                "x": 673,
+                "y": 192,
+                "width": 445,
+                "height": 388,
+                "right": 1118,
+                "bottom": 580
+              },
+              "scale": 0.919
+            }
+          }
+        },
+        "hud": {
+          "score": null,
+          "lives": null,
+          "mission": null
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 0,
+              "fullCount": 1,
+              "enterCount": 1,
+              "exitCount": 0,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": null
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "menu": {
+        "language": {
+          "current": "de",
+          "preference": "de",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "menu",
+        "menu": {
+          "launch": "SPIELEN",
+          "settings": "EINSTELLUNGEN",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "duplicateRotateHint": false,
+          "missionBriefing": {
+            "eyebrow": "SPIELMODUS",
+            "title": "MAYHEM",
+            "body": "Wähle nach jedem Boss ein dauerhaftes taktisches Upgrade.\nMiss dich in der separaten Tactical-Rangliste.",
+            "status": "GEWERTET",
+            "restriction": "Tactical und Pure verwenden getrennte Ranglisten.",
+            "personalBest": null,
+            "launchFocused": false,
+            "launchButtonLabel": "SPIELEN",
+            "detailsFocused": false,
+            "detailsButtonLabel": "MODUSDETAILS",
+            "renderPadding": {
+              "eyebrow": 12,
+              "title": 36,
+              "status": 18,
+              "body": 12,
+              "restriction": 12,
+              "launch": 8,
+              "details": 24
+            },
+            "statusBounds": {
+              "x": 1126,
+              "y": 186,
+              "width": 110,
+              "height": 27,
+              "right": 1236,
+              "bottom": 213
+            },
+            "variantSelectorBounds": {
+              "x": 898,
+              "y": 230,
+              "width": 338,
+              "height": 38,
+              "right": 1236,
+              "bottom": 268
+            },
+            "restrictionBounds": {
+              "x": 899,
+              "y": 392,
+              "width": 293,
+              "height": 18,
+              "right": 1192,
+              "bottom": 410
+            },
+            "personalBestBounds": null,
+            "launchButtonBounds": {
+              "x": 898,
+              "y": 419,
+              "width": 158,
+              "height": 44,
+              "right": 1056,
+              "bottom": 463
+            },
+            "launchButtonLabelBounds": {
+              "x": 942,
+              "y": 432,
+              "width": 70,
+              "height": 18,
+              "right": 1012,
+              "bottom": 450
+            },
+            "detailsButtonBounds": {
+              "x": 1063,
+              "y": 420,
+              "width": 173,
+              "height": 43,
+              "right": 1236,
+              "bottom": 463
+            },
+            "detailsButtonLabelBounds": {
+              "x": 1109,
+              "y": 434,
+              "width": 81,
+              "height": 15,
+              "right": 1189,
+              "bottom": 449
+            },
+            "detailsButtonIconBounds": null,
+            "tiles": [
+              {
+                "label": "START",
+                "value": "SEKTOR 1",
+                "bounds": {
+                  "x": 899,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1064,
+                  "bottom": 380
+                },
+                "visualBounds": {
+                  "x": 899,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1064,
+                  "bottom": 380
+                }
+              },
+              {
+                "label": "PUNKTZAHL",
+                "value": "STARTET BEI 0",
+                "bounds": {
+                  "x": 1070,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1235,
+                  "bottom": 380
+                },
+                "visualBounds": {
+                  "x": 1070,
+                  "y": 334,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1235,
+                  "bottom": 380
+                }
+              }
+            ],
+            "mode": "launchTactical",
+            "panelBounds": {
+              "x": 877,
+              "y": 164,
+              "width": 380,
+              "height": 310,
+              "right": 1257,
+              "bottom": 474
+            },
+            "eyebrowBounds": {
+              "x": 899,
+              "y": 176,
+              "width": 78,
+              "height": 17,
+              "right": 977,
+              "bottom": 193
+            },
+            "titleBounds": {
+              "x": 899,
+              "y": 194,
+              "width": 115,
+              "height": 30,
+              "right": 1014,
+              "bottom": 224
+            },
+            "bodyBounds": {
+              "x": 899,
+              "y": 277,
+              "width": 269,
+              "height": 49,
+              "right": 1168,
+              "bottom": 326
+            }
+          },
+          "launchDeck": {
+            "bounds": {
+              "x": 23,
+              "y": 262,
+              "width": 280,
+              "height": 286,
+              "right": 303,
+              "bottom": 548
+            },
+            "hierarchy": [
+              "launchTactical",
+              "dailySignal",
+              "scout",
+              "sectorStart",
+              "overrun"
+            ],
+            "featuredDailySignal": {
+              "label": "TAGESHERAUSFORDERUNG",
+              "sublabel": "S10 ABSCHLIESSEN · KREUZFEUER-BLACKOUT",
+              "role": "activity",
+              "focused": false,
+              "bounds": {
+                "x": 40,
+                "y": 338,
+                "width": 263,
+                "height": 48,
+                "right": 303,
+                "bottom": 386
+              },
+              "contract": {
+                "dailyKey": "2026-09-09",
+                "rulesHash": "DCS1-A744B5EE",
+                "loanerShipKey": "nova-player-ship-19.png",
+                "loanerShipName": "NEON STUTTER",
+                "templateId": "crossfire_blackout",
+                "finishSector": 10,
+                "localOnly": true
+              },
+              "bestScore": 0,
+              "bestAttempt": null,
+              "bestClear": null,
+              "flightLog": {
+                "symbols": "· · · · · · ·",
+                "clears": 0,
+                "attemptedDays": 0,
+                "attempts": 0,
+                "streak": 0,
+                "atRisk": false
+              },
+              "resetTime": "06:54"
+            },
+            "cards": {
+              "mayhemTactical": {
+                "label": "MAYHEM TAKTISCH",
+                "sublabel": "HAUPTMODUS · EMPFOHLEN · GEWERTET",
+                "body": null,
+                "role": "main",
+                "focused": true,
+                "runMode": "ranked_tactical",
+                "bounds": {
+                  "x": 23,
+                  "y": 262,
+                  "width": 280,
+                  "height": 70,
+                  "right": 303,
+                  "bottom": 332
+                }
+              },
+              "daily": {
+                "label": "TAGESHERAUSFORDERUNG",
+                "sublabel": "S10 ABSCHLIESSEN · KREUZFEUER-BLACKOUT",
+                "body": null,
+                "role": "activity",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 338,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 386
+                }
+              },
+              "scout": {
+                "label": "SCOUT RUN",
+                "sublabel": "ANOMALIE: KALIBRIERUNG",
+                "body": null,
+                "role": "practice",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 392,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 440
+                }
+              },
+              "sector": {
+                "label": "SEKTORLAUF",
+                "sublabel": "GESPERRT",
+                "body": null,
+                "role": "checkpoint",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 446,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 494
+                }
+              },
+              "overrun": {
+                "label": "ÜBERRENNEN TAKTISCH",
+                "sublabel": "GESPERRT · ERREICHE SEKTOR 30",
+                "body": null,
+                "role": "advanced",
+                "focused": false,
+                "available": false,
+                "progressionUnlocked": false,
+                "previewAccess": false,
+                "requiredSector": 30,
+                "startSector": 51,
+                "runMode": "overrun_tactical",
+                "bounds": {
+                  "x": 40,
+                  "y": 500,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 548
+                }
+              }
+            }
+          },
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": null,
+          "lives": null,
+          "mission": null
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 0,
+              "fullCount": 1,
+              "enterCount": 1,
+              "exitCount": 0,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": null
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "dailyMenu": {
+        "language": {
+          "current": "de",
+          "preference": "de",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "menu",
+        "menu": {
+          "launch": "SPIELEN",
+          "settings": "EINSTELLUNGEN",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "duplicateRotateHint": true,
+          "missionBriefing": {
+            "eyebrow": "SPIELMODUS",
+            "title": "TAGESHERAUSFORDERUNG",
+            "body": "Schließe die heutige Herausforderung mit einem Leihschiff ab.\nSpiele sie erneut, um deinen lokalen Tagesrekord zu verbessern.",
+            "status": "OHNE WERTUNG",
+            "restriction": "Nur lokaler Rekord. Keine öffentliche Tagesrangliste.",
+            "personalBest": "BESTER — NICHT ABGESCHLOSSEN · BESTE S9 · 123,456 · 9:59",
+            "launchFocused": false,
+            "launchButtonLabel": "SPIELEN",
+            "detailsFocused": false,
+            "detailsButtonLabel": "MODUSDETAILS",
+            "renderPadding": {
+              "eyebrow": 12,
+              "title": 36,
+              "status": 18,
+              "body": 12,
+              "restriction": 12,
+              "launch": 8,
+              "details": 24
+            },
+            "statusBounds": {
+              "x": 1120,
+              "y": 186,
+              "width": 115,
+              "height": 27,
+              "right": 1236,
+              "bottom": 213
+            },
+            "variantSelectorBounds": null,
+            "restrictionBounds": {
+              "x": 899,
+              "y": 366,
+              "width": 299,
+              "height": 18,
+              "right": 1198,
+              "bottom": 384
+            },
+            "personalBestBounds": {
+              "x": 899,
+              "y": 397,
+              "width": 336,
+              "height": 11,
+              "right": 1235,
+              "bottom": 409
+            },
+            "launchButtonBounds": {
+              "x": 898,
+              "y": 419,
+              "width": 158,
+              "height": 44,
+              "right": 1056,
+              "bottom": 463
+            },
+            "launchButtonLabelBounds": {
+              "x": 942,
+              "y": 432,
+              "width": 70,
+              "height": 18,
+              "right": 1012,
+              "bottom": 450
+            },
+            "detailsButtonBounds": {
+              "x": 1063,
+              "y": 420,
+              "width": 173,
+              "height": 43,
+              "right": 1236,
+              "bottom": 463
+            },
+            "detailsButtonLabelBounds": {
+              "x": 1109,
+              "y": 434,
+              "width": 81,
+              "height": 15,
+              "right": 1189,
+              "bottom": 449
+            },
+            "detailsButtonIconBounds": null,
+            "tiles": [
+              {
+                "label": "ZIEL",
+                "value": "SEKTOR 10",
+                "bounds": {
+                  "x": 899,
+                  "y": 297,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1064,
+                  "bottom": 343
+                },
+                "visualBounds": {
+                  "x": 899,
+                  "y": 297,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1064,
+                  "bottom": 343
+                }
+              },
+              {
+                "label": "SCHIFF",
+                "value": "NEON STUTTER",
+                "bounds": {
+                  "x": 1070,
+                  "y": 297,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1235,
+                  "bottom": 343
+                },
+                "visualBounds": {
+                  "x": 1070,
+                  "y": 297,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1235,
+                  "bottom": 343
+                }
+              }
+            ],
+            "mode": "dailySignal",
+            "panelBounds": {
+              "x": 877,
+              "y": 164,
+              "width": 380,
+              "height": 310,
+              "right": 1257,
+              "bottom": 474
+            },
+            "eyebrowBounds": {
+              "x": 899,
+              "y": 176,
+              "width": 78,
+              "height": 17,
+              "right": 977,
+              "bottom": 193
+            },
+            "titleBounds": {
+              "x": 899,
+              "y": 194,
+              "width": 259,
+              "height": 22,
+              "right": 1158,
+              "bottom": 216
+            },
+            "bodyBounds": {
+              "x": 899,
+              "y": 224,
+              "width": 274,
+              "height": 65,
+              "right": 1173,
+              "bottom": 289
+            }
+          },
+          "launchDeck": {
+            "bounds": {
+              "x": 23,
+              "y": 262,
+              "width": 280,
+              "height": 286,
+              "right": 303,
+              "bottom": 548
+            },
+            "hierarchy": [
+              "launchTactical",
+              "dailySignal",
+              "scout",
+              "sectorStart",
+              "overrun"
+            ],
+            "featuredDailySignal": {
+              "label": "TAGESHERAUSFORDERUNG",
+              "sublabel": "S10 ABSCHLIESSEN · KREUZFEUER-BLACKOUT",
+              "role": "activity",
+              "focused": true,
+              "bounds": {
+                "x": 40,
+                "y": 338,
+                "width": 263,
+                "height": 48,
+                "right": 303,
+                "bottom": 386
+              },
+              "contract": {
+                "dailyKey": "2026-09-09",
+                "rulesHash": "DCS1-A744B5EE",
+                "loanerShipKey": "nova-player-ship-19.png",
+                "loanerShipName": "NEON STUTTER",
+                "templateId": "crossfire_blackout",
+                "finishSector": 10,
+                "localOnly": true
+              },
+              "bestScore": 0,
+              "bestAttempt": null,
+              "bestClear": null,
+              "flightLog": {
+                "symbols": "· · · · · · ·",
+                "clears": 0,
+                "attemptedDays": 0,
+                "attempts": 0,
+                "streak": 0,
+                "atRisk": false
+              },
+              "resetTime": "06:54"
+            },
+            "cards": {
+              "mayhemTactical": {
+                "label": "MAYHEM PUR",
+                "sublabel": "ALTERNATIVER RANGLISTENMODUS",
+                "body": null,
+                "role": "main",
+                "focused": true,
+                "runMode": "ranked",
+                "bounds": {
+                  "x": 23,
+                  "y": 262,
+                  "width": 280,
+                  "height": 70,
+                  "right": 303,
+                  "bottom": 332
+                }
+              },
+              "daily": {
+                "label": "TAGESHERAUSFORDERUNG",
+                "sublabel": "S10 ABSCHLIESSEN · KREUZFEUER-BLACKOUT",
+                "body": null,
+                "role": "activity",
+                "focused": true,
+                "bounds": {
+                  "x": 40,
+                  "y": 338,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 386
+                }
+              },
+              "scout": {
+                "label": "SCOUT RUN",
+                "sublabel": "ANOMALIE: KALIBRIERUNG",
+                "body": null,
+                "role": "practice",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 392,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 440
+                }
+              },
+              "sector": {
+                "label": "SEKTORLAUF",
+                "sublabel": "GESPERRT",
+                "body": null,
+                "role": "checkpoint",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 446,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 494
+                }
+              },
+              "overrun": {
+                "label": "ÜBERRENNEN TAKTISCH",
+                "sublabel": "GESPERRT · ERREICHE SEKTOR 30",
+                "body": null,
+                "role": "advanced",
+                "focused": false,
+                "available": false,
+                "progressionUnlocked": false,
+                "previewAccess": false,
+                "requiredSector": 30,
+                "startSector": 51,
+                "runMode": "overrun_tactical",
+                "bounds": {
+                  "x": 40,
+                  "y": 500,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 548
+                }
+              }
+            }
+          },
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": null,
+          "lives": null,
+          "mission": null
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 0,
+              "fullCount": 1,
+              "enterCount": 1,
+              "exitCount": 0,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": null
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "modeBriefing": {
+        "language": {
+          "current": "de",
+          "preference": "de",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "menu",
+        "menu": {
+          "launch": "SPIELEN",
+          "settings": "EINSTELLUNGEN",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 0.3,
+          "duplicateRotateHint": true,
+          "missionBriefing": {
+            "eyebrow": "SPIELMODUS",
+            "title": "TAGESHERAUSFORDERUNG",
+            "body": "Schließe die heutige Herausforderung mit einem Leihschiff ab.\nSpiele sie erneut, um deinen lokalen Tagesrekord zu verbessern.",
+            "status": "OHNE WERTUNG",
+            "restriction": "Nur lokaler Rekord. Keine öffentliche Tagesrangliste.",
+            "personalBest": "BESTER — NICHT ABGESCHLOSSEN · BESTE S9 · 123,456 · 9:59",
+            "launchFocused": false,
+            "launchButtonLabel": "SPIELEN",
+            "detailsFocused": true,
+            "detailsButtonLabel": "MODUSDETAILS",
+            "renderPadding": {
+              "eyebrow": 12,
+              "title": 36,
+              "status": 18,
+              "body": 12,
+              "restriction": 12,
+              "launch": 8,
+              "details": 24
+            },
+            "statusBounds": {
+              "x": 1120,
+              "y": 186,
+              "width": 115,
+              "height": 27,
+              "right": 1236,
+              "bottom": 213
+            },
+            "variantSelectorBounds": null,
+            "restrictionBounds": {
+              "x": 899,
+              "y": 366,
+              "width": 299,
+              "height": 18,
+              "right": 1198,
+              "bottom": 384
+            },
+            "personalBestBounds": {
+              "x": 899,
+              "y": 397,
+              "width": 336,
+              "height": 11,
+              "right": 1235,
+              "bottom": 409
+            },
+            "launchButtonBounds": {
+              "x": 898,
+              "y": 419,
+              "width": 158,
+              "height": 44,
+              "right": 1056,
+              "bottom": 463
+            },
+            "launchButtonLabelBounds": {
+              "x": 942,
+              "y": 432,
+              "width": 70,
+              "height": 18,
+              "right": 1012,
+              "bottom": 450
+            },
+            "detailsButtonBounds": {
+              "x": 1062,
+              "y": 419,
+              "width": 174,
+              "height": 44,
+              "right": 1236,
+              "bottom": 463
+            },
+            "detailsButtonLabelBounds": {
+              "x": 1109,
+              "y": 434,
+              "width": 81,
+              "height": 15,
+              "right": 1189,
+              "bottom": 449
+            },
+            "detailsButtonIconBounds": null,
+            "tiles": [
+              {
+                "label": "ZIEL",
+                "value": "SEKTOR 10",
+                "bounds": {
+                  "x": 899,
+                  "y": 297,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1064,
+                  "bottom": 343
+                },
+                "visualBounds": {
+                  "x": 899,
+                  "y": 297,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1064,
+                  "bottom": 343
+                }
+              },
+              {
+                "label": "SCHIFF",
+                "value": "NEON STUTTER",
+                "bounds": {
+                  "x": 1070,
+                  "y": 297,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1235,
+                  "bottom": 343
+                },
+                "visualBounds": {
+                  "x": 1070,
+                  "y": 297,
+                  "width": 165,
+                  "height": 46,
+                  "right": 1235,
+                  "bottom": 343
+                }
+              }
+            ],
+            "mode": "dailySignal",
+            "panelBounds": {
+              "x": 877,
+              "y": 164,
+              "width": 380,
+              "height": 310,
+              "right": 1257,
+              "bottom": 474
+            },
+            "eyebrowBounds": {
+              "x": 899,
+              "y": 176,
+              "width": 78,
+              "height": 17,
+              "right": 977,
+              "bottom": 193
+            },
+            "titleBounds": {
+              "x": 899,
+              "y": 194,
+              "width": 259,
+              "height": 22,
+              "right": 1158,
+              "bottom": 216
+            },
+            "bodyBounds": {
+              "x": 899,
+              "y": 224,
+              "width": 274,
+              "height": 65,
+              "right": 1173,
+              "bottom": 289
+            }
+          },
+          "launchDeck": {
+            "bounds": {
+              "x": 23,
+              "y": 262,
+              "width": 280,
+              "height": 286,
+              "right": 303,
+              "bottom": 548
+            },
+            "hierarchy": [
+              "launchTactical",
+              "dailySignal",
+              "scout",
+              "sectorStart",
+              "overrun"
+            ],
+            "featuredDailySignal": {
+              "label": "TAGESHERAUSFORDERUNG",
+              "sublabel": "S10 ABSCHLIESSEN · KREUZFEUER-BLACKOUT",
+              "role": "activity",
+              "focused": true,
+              "bounds": {
+                "x": 40,
+                "y": 338,
+                "width": 263,
+                "height": 48,
+                "right": 303,
+                "bottom": 386
+              },
+              "contract": {
+                "dailyKey": "2026-09-09",
+                "rulesHash": "DCS1-A744B5EE",
+                "loanerShipKey": "nova-player-ship-19.png",
+                "loanerShipName": "NEON STUTTER",
+                "templateId": "crossfire_blackout",
+                "finishSector": 10,
+                "localOnly": true
+              },
+              "bestScore": 0,
+              "bestAttempt": null,
+              "bestClear": null,
+              "flightLog": {
+                "symbols": "· · · · · · ·",
+                "clears": 0,
+                "attemptedDays": 0,
+                "attempts": 0,
+                "streak": 0,
+                "atRisk": false
+              },
+              "resetTime": "06:54"
+            },
+            "cards": {
+              "mayhemTactical": {
+                "label": "MAYHEM PUR",
+                "sublabel": "ALTERNATIVER RANGLISTENMODUS",
+                "body": null,
+                "role": "main",
+                "focused": true,
+                "runMode": "ranked",
+                "bounds": {
+                  "x": 23,
+                  "y": 262,
+                  "width": 280,
+                  "height": 70,
+                  "right": 303,
+                  "bottom": 332
+                }
+              },
+              "daily": {
+                "label": "TAGESHERAUSFORDERUNG",
+                "sublabel": "S10 ABSCHLIESSEN · KREUZFEUER-BLACKOUT",
+                "body": null,
+                "role": "activity",
+                "focused": true,
+                "bounds": {
+                  "x": 40,
+                  "y": 338,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 386
+                }
+              },
+              "scout": {
+                "label": "SCOUT RUN",
+                "sublabel": "ANOMALIE: KALIBRIERUNG",
+                "body": null,
+                "role": "practice",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 392,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 440
+                }
+              },
+              "sector": {
+                "label": "SEKTORLAUF",
+                "sublabel": "GESPERRT",
+                "body": null,
+                "role": "checkpoint",
+                "focused": false,
+                "bounds": {
+                  "x": 40,
+                  "y": 446,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 494
+                }
+              },
+              "overrun": {
+                "label": "ÜBERRENNEN TAKTISCH",
+                "sublabel": "GESPERRT · ERREICHE SEKTOR 30",
+                "body": null,
+                "role": "advanced",
+                "focused": false,
+                "available": false,
+                "progressionUnlocked": false,
+                "previewAccess": false,
+                "requiredSector": 30,
+                "startSector": 51,
+                "runMode": "overrun_tactical",
+                "bounds": {
+                  "x": 40,
+                  "y": 500,
+                  "width": 263,
+                  "height": 48,
+                  "right": 303,
+                  "bottom": 548
+                }
+              }
+            }
+          },
+          "modeBriefing": {
+            "open": true,
+            "modeId": "dailySignal",
+            "title": "TAGESHERAUSFORDERUNG",
+            "status": "UNRANKED",
+            "focusedIndex": 0,
+            "focusedType": "button",
+            "focusedUpgradeId": null,
+            "scrollY": 0,
+            "panel": {
+              "x": 160,
+              "y": 79,
+              "width": 960,
+              "height": 562
+            },
+            "content": {
+              "x": 184,
+              "y": 179,
+              "width": 912,
+              "height": 404
+            },
+            "contentHeight": 293,
+            "maxScrollY": 0,
+            "compact": true,
+            "sectionIds": [
+              "conditions",
+              "active",
+              "unavailable"
+            ],
+            "loadoutIds": [],
+            "renderedText": [
+              "MODUS-BRIEFING",
+              "TAGESHERAUSFORDERUNG",
+              "OHNE WERTUNG",
+              "Schließe Sektor 10 ab und spiele erneut, um deinen lokalen Bestwert zu verbessern.",
+              "STARTBEDINGUNGEN",
+              "ZIEL",
+              "SEKTOR 10",
+              "SCHIFF",
+              "NEON STUTTER",
+              "ROUTE",
+              "KREUZFEUER-BLACKOUT",
+              "AKTIV",
+              "Taktische Boss-Auswahlen",
+              "WOECHENTLICHE ABSCHLUESSE: 0 / 7",
+              "WECHSEL IN 06:54",
+              "NICHT VERFÜGBAR",
+              "Eintrag in die öffentliche Tagesrangliste",
+              "ZURÜCK  [ESC]"
+            ]
+          }
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": null,
+          "lives": null,
+          "mission": null
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 0,
+              "fullCount": 1,
+              "enterCount": 1,
+              "exitCount": 0,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": null
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "hud": {
+        "language": {
+          "current": "de",
+          "preference": "de",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "play",
+        "menu": {
+          "launch": "SPIELEN",
+          "settings": "EINSTELLUNGEN",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "missionBriefing": null,
+          "launchDeck": null,
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": "PUNKTZAHL 365",
+          "lives": "LEBEN 3",
+          "mission": "MISSION"
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [
+            {
+              "slot": "top",
+              "type": "highscore_chase",
+              "message": "Dieser Highscore tut so, als schwitze er nicht.",
+              "title": null,
+              "imageAlias": null,
+              "duration": 2600,
+              "protectedRemainingMs": 0,
+              "combatRelocated": false,
+              "edgeAligned": false,
+              "placement": null,
+              "channel": "transition",
+              "visualLanguage": "authored_combat_signal_flourish_v1",
+              "nonterminalQuickRead": false,
+              "reducedMotion": false,
+              "alpha": 0.4004800800000232,
+              "authoredSignalCount": 1,
+              "primitiveOrnamentCount": 0,
+              "ageMs": 328,
+              "dossier": null,
+              "specialSignal": null,
+              "bounds": {
+                "x": 394,
+                "y": 180,
+                "width": 492,
+                "height": 76
+              }
+            },
+            {
+              "slot": "corner",
+              "type": "cabinet_log",
+              "message": "CABINET-LOG // NEUER BELEG\nNeues Codex-Signal archiviert: Cabinet-Log.",
+              "title": null,
+              "imageAlias": null,
+              "duration": 1450,
+              "protectedRemainingMs": 451,
+              "combatRelocated": false,
+              "edgeAligned": false,
+              "placement": null,
+              "channel": "side",
+              "visualLanguage": null,
+              "nonterminalQuickRead": false,
+              "reducedMotion": false,
+              "alpha": 1,
+              "authoredSignalCount": 0,
+              "primitiveOrnamentCount": 0,
+              "ageMs": 649,
+              "dossier": null,
+              "specialSignal": null,
+              "bounds": {
+                "x": 959,
+                "y": 164,
+                "width": 273,
+                "height": 42
+              }
+            }
+          ],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 44,
+              "fullCount": 150,
+              "enterCount": 87,
+              "exitCount": 59,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": {
+              "active": false,
+              "phase": "ordinary",
+              "progress": 1,
+              "restoreCount": 0,
+              "targets": {}
+            }
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 2828,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": true,
+            "side": true
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "pause": {
+        "language": {
+          "current": "de",
+          "preference": "de",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "play",
+        "menu": {
+          "launch": "SPIELEN",
+          "settings": "EINSTELLUNGEN",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "missionBriefing": null,
+          "launchDeck": null,
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": "PUNKTZAHL 365",
+          "lives": "LEBEN 3",
+          "mission": "MISSION"
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": "IONENSPRINT: Schnellere Geschosse, direkte Steuerung und ein großzügiger Ausweichimpuls."
+        },
+        "gameOver": {
+          "title": null,
+          "prompt": null,
+          "score": null,
+          "cta": null
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [
+            {
+              "slot": "top",
+              "type": "highscore_chase",
+              "message": "Dieser Highscore tut so, als schwitze er nicht.",
+              "title": null,
+              "imageAlias": null,
+              "duration": 2600,
+              "protectedRemainingMs": 0,
+              "combatRelocated": false,
+              "edgeAligned": false,
+              "placement": null,
+              "channel": "transition",
+              "visualLanguage": "authored_combat_signal_flourish_v1",
+              "nonterminalQuickRead": false,
+              "reducedMotion": false,
+              "alpha": 1,
+              "authoredSignalCount": 1,
+              "primitiveOrnamentCount": 0,
+              "ageMs": 1351,
+              "dossier": null,
+              "specialSignal": null,
+              "bounds": {
+                "x": 374,
+                "y": 176,
+                "width": 532,
+                "height": 84
+              }
+            },
+            {
+              "slot": "corner",
+              "type": "cabinet_log",
+              "message": "CABINET-LOG // NEUER BELEG\nNeues Codex-Signal archiviert: Cabinet-Log.",
+              "title": null,
+              "imageAlias": null,
+              "duration": 1450,
+              "protectedRemainingMs": 0,
+              "combatRelocated": false,
+              "edgeAligned": false,
+              "placement": null,
+              "channel": "side",
+              "visualLanguage": null,
+              "nonterminalQuickRead": false,
+              "reducedMotion": false,
+              "alpha": 0.6178665714285502,
+              "authoredSignalCount": 0,
+              "primitiveOrnamentCount": 0,
+              "ageMs": 1672,
+              "dossier": null,
+              "specialSignal": null,
+              "bounds": {
+                "x": 959,
+                "y": 164,
+                "width": 273,
+                "height": 42
+              }
+            }
+          ],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 44,
+              "fullCount": 150,
+              "enterCount": 87,
+              "exitCount": 59,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": {
+              "active": false,
+              "phase": "ordinary",
+              "progress": 1,
+              "restoreCount": 0,
+              "targets": {}
+            }
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 1805,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": true,
+            "side": true
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "gameOver": {
+        "language": {
+          "current": "de",
+          "preference": "de",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "gameOver",
+        "menu": {
+          "launch": "SPIELEN",
+          "settings": "EINSTELLUNGEN",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "missionBriefing": null,
+          "launchDeck": null,
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": "PUNKTZAHL 365",
+          "lives": "LEBEN 3",
+          "mission": "MISSION"
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": "LOKALE LISTE RANG #8",
+          "prompt": "ENTER: LOKALE PUNKTZAHL SPEICHERN",
+          "score": "PUNKTZAHL: 1,234",
+          "cta": "PUNKTZAHL SENDEN"
+        },
+        "leaderboard": {
+          "title": null,
+          "retry": null,
+          "board": null,
+          "comment": null,
+          "stateMessage": null,
+          "commentBounds": null,
+          "stateBounds": null,
+          "rowChildCount": 0,
+          "firstRowBounds": null
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 44,
+              "fullCount": 150,
+              "enterCount": 87,
+              "exitCount": 59,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": {
+              "active": false,
+              "phase": "ordinary",
+              "progress": 1,
+              "restoreCount": 0,
+              "targets": {}
+            }
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 89,
+            "top": 89,
+            "corner": 89
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "leaderboard": {
+        "language": {
+          "current": "de",
+          "preference": "de",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "highscore",
+        "menu": {
+          "launch": "SPIELEN",
+          "settings": "EINSTELLUNGEN",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "missionBriefing": null,
+          "launchDeck": null,
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": "PUNKTZAHL 365",
+          "lives": "LEBEN 3",
+          "mission": "MISSION"
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": "LOKALE LISTE RANG #8",
+          "prompt": "ENTER: LOKALE PUNKTZAHL SPEICHERN",
+          "score": "PUNKTZAHL: 1,234",
+          "cta": "PUNKTZAHL SENDEN"
+        },
+        "leaderboard": {
+          "title": "STEAM-PUNKTETAFEL",
+          "retry": null,
+          "board": null,
+          "comment": "Die Bestenliste setzt ihr ausdrucksloses Gesicht auf.",
+          "stateMessage": "Cloud Global geladen.",
+          "commentBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "stateBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "rowChildCount": 45,
+          "firstRowBounds": {
+            "x": 107,
+            "y": 268,
+            "width": 980,
+            "height": 4,
+            "right": 1087,
+            "bottom": 272
+          }
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 44,
+              "fullCount": 150,
+              "enterCount": 87,
+              "exitCount": 59,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": {
+              "active": false,
+              "phase": "ordinary",
+              "progress": 1,
+              "restoreCount": 0,
+              "targets": {}
+            }
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      },
+      "leaderboardPopulated": {
+        "language": {
+          "current": "de",
+          "preference": "de",
+          "supported": [
+            "en",
+            "de",
+            "es",
+            "ru",
+            "zh-CN",
+            "pt-BR",
+            "ko",
+            "ja"
+          ]
+        },
+        "scene": "highscore",
+        "menu": {
+          "launch": "SPIELEN",
+          "settings": "EINSTELLUNGEN",
+          "primaryRunMode": "ranked_tactical",
+          "homeAlpha": 1,
+          "missionBriefing": null,
+          "launchDeck": null,
+          "modeBriefing": null
+        },
+        "settings": {
+          "activePage": null,
+          "language": null,
+          "languageHint": null,
+          "close": null,
+          "renderedText": [],
+          "prototype": null
+        },
+        "hud": {
+          "score": "PUNKTZAHL 365",
+          "lives": "LEBEN 3",
+          "mission": "MISSION"
+        },
+        "pause": {
+          "title": null,
+          "resume": null,
+          "trait": null
+        },
+        "gameOver": {
+          "title": "LOKALE LISTE RANG #8",
+          "prompt": "ENTER: LOKALE PUNKTZAHL SPEICHERN",
+          "score": "PUNKTZAHL: 1,234",
+          "cta": "PUNKTZAHL SENDEN"
+        },
+        "leaderboard": {
+          "title": "STEAM-PUNKTETAFEL",
+          "retry": null,
+          "board": null,
+          "comment": "Der Automat erkennt Adel!",
+          "stateMessage": "Cloud Global geladen.",
+          "commentBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "stateBounds": {
+            "x": 0,
+            "y": 0,
+            "width": 0,
+            "height": 0,
+            "right": 0,
+            "bottom": 0
+          },
+          "rowChildCount": 51,
+          "firstRowBounds": {
+            "x": 107,
+            "y": 268,
+            "width": 980,
+            "height": 4,
+            "right": 1087,
+            "bottom": 272
+          }
+        },
+        "toasts": {
+          "active": [],
+          "comboDisplay": null,
+          "scorePopups": [],
+          "achievement": {
+            "id": null,
+            "queued": 0,
+            "bounds": null
+          },
+          "firstRunOnboarding": {
+            "introActive": false,
+            "complete": true,
+            "stage": "complete",
+            "controlsShownAt": 0,
+            "threatShownAt": 0,
+            "focusShownAt": 0,
+            "actions": {
+              "moved": false,
+              "fired": false,
+              "phased": false,
+              "focused": false
+            },
+            "focusDensity": {
+              "activeRoutineCount": 0,
+              "startCount": 44,
+              "fullCount": 150,
+              "enterCount": 87,
+              "exitCount": 59,
+              "target": 0,
+              "level": 0,
+              "meaningful": false,
+              "aboveForMs": 0,
+              "belowForMs": 0,
+              "enterHoldMs": 250,
+              "exitHoldMs": 500
+            },
+            "completion": null,
+            "discoveryYield": null,
+            "remainingMs": 0,
+            "hudDisclosure": {
+              "active": false,
+              "phase": "ordinary",
+              "progress": 1,
+              "restoreCount": 0,
+              "targets": {}
+            }
+          },
+          "progressionPresentation": {
+            "pendingRank": null,
+            "rankUpActive": false,
+            "waveBonusActive": false
+          },
+          "queued": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "lockedMs": {
+            "center": 0,
+            "top": 0,
+            "corner": 0
+          },
+          "channels": {
+            "major": false,
+            "transition": false,
+            "side": false
+          }
+        },
+        "glyphs": {
+          "sans": true,
+          "rajdhani": true
+        }
+      }
+    },
+    "systemFallback": {
+      "language": {
+        "current": "en",
+        "preference": "system",
+        "supported": [
+          "en",
+          "de",
+          "es",
+          "ru",
+          "zh-CN",
+          "pt-BR",
+          "ko",
+          "ja"
+        ]
+      },
+      "scene": "highscore",
+      "menu": {
+        "launch": "SPIELEN",
+        "settings": "EINSTELLUNGEN",
+        "primaryRunMode": "ranked_tactical",
+        "homeAlpha": 1,
+        "missionBriefing": null,
+        "launchDeck": null,
+        "modeBriefing": null
+      },
+      "settings": {
+        "activePage": null,
+        "language": null,
+        "languageHint": null,
+        "close": null,
+        "renderedText": [],
+        "prototype": null
+      },
+      "hud": {
+        "score": "SCORE 365",
+        "lives": "LIVES 3",
+        "mission": "MISSION"
+      },
+      "pause": {
+        "title": null,
+        "resume": null,
+        "trait": null
+      },
+      "gameOver": {
+        "title": "LOCAL BOARD RANK #8",
+        "prompt": "ENTER: LOG LOCAL SCORE",
+        "score": "PUNKTZAHL: 1,234",
+        "cta": "SUBMIT SCORE"
+      },
+      "leaderboard": {
+        "title": "STEAM-PUNKTETAFEL",
+        "retry": null,
+        "board": null,
+        "comment": "Der Automat erkennt Adel!",
+        "stateMessage": "Cloud Global geladen.",
+        "commentBounds": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "stateBounds": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "rowChildCount": 51,
+        "firstRowBounds": {
+          "x": 107,
+          "y": 268,
+          "width": 980,
+          "height": 4,
+          "right": 1087,
+          "bottom": 272
+        }
+      },
+      "toasts": {
+        "active": [],
+        "comboDisplay": null,
+        "scorePopups": [],
+        "achievement": {
+          "id": null,
+          "queued": 0,
+          "bounds": null
+        },
+        "firstRunOnboarding": {
+          "introActive": false,
+          "complete": true,
+          "stage": "complete",
+          "controlsShownAt": 0,
+          "threatShownAt": 0,
+          "focusShownAt": 0,
+          "actions": {
+            "moved": false,
+            "fired": false,
+            "phased": false,
+            "focused": false
+          },
+          "focusDensity": {
+            "activeRoutineCount": 0,
+            "startCount": 44,
+            "fullCount": 150,
+            "enterCount": 87,
+            "exitCount": 59,
+            "target": 0,
+            "level": 0,
+            "meaningful": false,
+            "aboveForMs": 0,
+            "belowForMs": 0,
+            "enterHoldMs": 250,
+            "exitHoldMs": 500
+          },
+          "completion": null,
+          "discoveryYield": null,
+          "remainingMs": 0,
+          "hudDisclosure": {
+            "active": false,
+            "phase": "ordinary",
+            "progress": 1,
+            "restoreCount": 0,
+            "targets": {}
+          }
+        },
+        "progressionPresentation": {
+          "pendingRank": null,
+          "rankUpActive": false,
+          "waveBonusActive": false
+        },
+        "queued": {
+          "center": 0,
+          "top": 0,
+          "corner": 0
+        },
+        "lockedMs": {
+          "center": 0,
+          "top": 0,
+          "corner": 0
+        },
+        "channels": {
+          "major": false,
+          "transition": false,
+          "side": false
+        }
+      },
+      "glyphs": {
+        "sans": true,
+        "rajdhani": true
+      }
+    },
+    "englishRestored": {
+      "language": {
+        "current": "en",
+        "preference": "en",
+        "supported": [
+          "en",
+          "de",
+          "es",
+          "ru",
+          "zh-CN",
+          "pt-BR",
+          "ko",
+          "ja"
+        ]
+      },
+      "scene": "highscore",
+      "menu": {
+        "launch": "SPIELEN",
+        "settings": "EINSTELLUNGEN",
+        "primaryRunMode": "ranked_tactical",
+        "homeAlpha": 1,
+        "missionBriefing": null,
+        "launchDeck": null,
+        "modeBriefing": null
+      },
+      "settings": {
+        "activePage": null,
+        "language": null,
+        "languageHint": null,
+        "close": null,
+        "renderedText": [],
+        "prototype": null
+      },
+      "hud": {
+        "score": "SCORE 365",
+        "lives": "LIVES 3",
+        "mission": "MISSION"
+      },
+      "pause": {
+        "title": null,
+        "resume": null,
+        "trait": null
+      },
+      "gameOver": {
+        "title": "LOCAL BOARD RANK #8",
+        "prompt": "ENTER: LOG LOCAL SCORE",
+        "score": "PUNKTZAHL: 1,234",
+        "cta": "SUBMIT SCORE"
+      },
+      "leaderboard": {
+        "title": "STEAM-PUNKTETAFEL",
+        "retry": null,
+        "board": null,
+        "comment": "Der Automat erkennt Adel!",
+        "stateMessage": "Cloud Global geladen.",
+        "commentBounds": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "stateBounds": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0,
+          "right": 0,
+          "bottom": 0
+        },
+        "rowChildCount": 51,
+        "firstRowBounds": {
+          "x": 107,
+          "y": 268,
+          "width": 980,
+          "height": 4,
+          "right": 1087,
+          "bottom": 272
+        }
+      },
+      "toasts": {
+        "active": [],
+        "comboDisplay": null,
+        "scorePopups": [],
+        "achievement": {
+          "id": null,
+          "queued": 0,
+          "bounds": null
+        },
+        "firstRunOnboarding": {
+          "introActive": false,
+          "complete": true,
+          "stage": "complete",
+          "controlsShownAt": 0,
+          "threatShownAt": 0,
+          "focusShownAt": 0,
+          "actions": {
+            "moved": false,
+            "fired": false,
+            "phased": false,
+            "focused": false
+          },
+          "focusDensity": {
+            "activeRoutineCount": 0,
+            "startCount": 44,
+            "fullCount": 150,
+            "enterCount": 87,
+            "exitCount": 59,
+            "target": 0,
+            "level": 0,
+            "meaningful": false,
+            "aboveForMs": 0,
+            "belowForMs": 0,
+            "enterHoldMs": 250,
+            "exitHoldMs": 500
+          },
+          "completion": null,
+          "discoveryYield": null,
+          "remainingMs": 0,
+          "hudDisclosure": {
+            "active": false,
+            "phase": "ordinary",
+            "progress": 1,
+            "restoreCount": 0,
+            "targets": {}
+          }
+        },
+        "progressionPresentation": {
+          "pendingRank": null,
+          "rankUpActive": false,
+          "waveBonusActive": false
+        },
+        "queued": {
+          "center": 0,
+          "top": 0,
+          "corner": 0
+        },
+        "lockedMs": {
+          "center": 0,
+          "top": 0,
+          "corner": 0
+        },
+        "channels": {
+          "major": false,
+          "transition": false,
+          "side": false
+        }
+      },
+      "glyphs": {
+        "sans": true,
+        "rajdhani": true
+      }
+    }
+  },
+  "consoleEvents": [],
+  "pageErrors": []
+}

@@ -242,6 +242,12 @@ try {
     return {
       ok: true,
       player: friendly.sprite?._debugProjectileReadability || null,
+      playerVisualSize: {
+        coreScale: friendly.core?.scale?.x,
+        wakeWidth: friendly.trail?.width,
+        wakeHeight: friendly.trail?.height,
+        wakeAlpha: friendly.trail?.alpha
+      },
       enemy: hostile.sprite?._debugProjectileReadability || null,
       timedEnemy: timedHostile.sprite?._debugProjectileReadability || null,
       specials: {
@@ -279,6 +285,31 @@ try {
   await page.waitForTimeout(180);
   const screenshot = path.join(outputDir, 'player-projectile-readability.png');
   await page.screenshot({ path: screenshot, fullPage: true });
+  const denseVolley = await page.evaluate(async () => {
+    const { Bullet } = await import('/src/entities/Bullet.js');
+    const play = window.__game.scenes.play;
+    const player = play.player;
+    const bullets = [];
+    for (let i = 0; i < 42; i += 1) {
+      const lane = i % 14 - 6.5;
+      const row = Math.floor(i / 14);
+      const bullet = new Bullet(player.x + lane * (19 + row * 4),
+        player.y - 75 - row * 66 - Math.abs(lane) * 13,
+        lane * 0.65, -7, 1, 0xff66dd, true);
+      play.bulletManager.addPlayerBullet(bullet);
+      bullet.update(1);
+      bullets.push(bullet);
+    }
+    return {
+      count: bullets.length,
+      maxCoreScale: Math.max(...bullets.map((bullet) => bullet.core.scale.x)),
+      maxWakeHeight: Math.max(...bullets.map((bullet) => bullet.trail.height)),
+      maxWakeAlpha: Math.max(...bullets.map((bullet) => bullet.trail.alpha)),
+      extraGlowLayers: bullets.filter((bullet) => bullet.friendlyGlint || bullet.friendlyWingTrace).length
+    };
+  });
+  const denseScreenshot = path.join(outputDir, 'player-projectile-dense-volley.png');
+  await page.screenshot({ path: denseScreenshot, fullPage: true });
 
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
@@ -287,11 +318,11 @@ try {
   if (state.counts?.playerBullets !== 6) failures.push(`player bullet count mismatch: ${JSON.stringify(state.counts)}`);
   if (state.counts?.enemyBullets !== 2) failures.push(`enemy bullet count mismatch: ${JSON.stringify(state.counts)}`);
   if (!state.player?.isPlayer) failures.push(`player debug missing isPlayer: ${JSON.stringify(state.player)}`);
-  if (!state.player?.friendlyGlint || !state.player?.friendlyWingTrace) failures.push(`friendly projectile markers missing: ${JSON.stringify(state.player)}`);
-  if (!state.player?.friendlySpeedRibbon) failures.push(`friendly projectile speed ribbon missing: ${JSON.stringify(state.player)}`);
-  if ((state.player?.friendlyWingTraceLaneCount || 0) < 5) failures.push(`friendly wing trace lanes too sparse: ${JSON.stringify(state.player)}`);
-  if ((state.player?.friendlyTailChevronCount || 0) < 2) failures.push(`friendly tail chevrons missing: ${JSON.stringify(state.player)}`);
-  if ((state.player?.friendlyRibbonCount || 0) < 2 || (state.player?.friendlyBeadCount || 0) < 3) failures.push(`friendly speed ribbon debug missing: ${JSON.stringify(state.player)}`);
+  if (state.player?.friendlyGlint || state.player?.friendlyWingTrace || !state.player?.friendlyPlasmaWake) failures.push(`friendly projectile should have one restrained wake and no extra glow layers: ${JSON.stringify(state.player)}`);
+  if (state.player?.friendlySpeedRibbon) failures.push(`duplicate friendly wake returned: ${JSON.stringify(state.player)}`);
+  if (!(state.playerVisualSize?.coreScale <= 0.28 && state.playerVisualSize?.wakeWidth <= 18 && state.playerVisualSize?.wakeHeight <= 5 && state.playerVisualSize?.wakeAlpha <= 0.25)) failures.push(`friendly shot size or brightness exceeds budget: ${JSON.stringify(state.playerVisualSize)}`);
+  if (denseVolley.count !== 42 || denseVolley.maxCoreScale > 0.28 || denseVolley.maxWakeHeight > 5 || denseVolley.maxWakeAlpha > 0.25 || denseVolley.extraGlowLayers !== 0) failures.push(`dense volley exceeds visual budget: ${JSON.stringify(denseVolley)}`);
+  if (state.player?.friendlyWingTraceLaneCount || state.player?.friendlyTailChevronCount || state.player?.friendlyRibbonCount) failures.push(`legacy line art returned to friendly shots: ${JSON.stringify(state.player)}`);
   if (state.player?.playerIntentActive) failures.push(`plain player bullet should not show intent markers: ${JSON.stringify(state.player)}`);
   if (state.player?.dangerGlint) failures.push(`player bullet should not have danger glint: ${JSON.stringify(state.player)}`);
   if ((state.player?.dangerWakeBeadCount || 0) !== 0) failures.push(`player bullet should not have danger wake beads: ${JSON.stringify(state.player)}`);
@@ -301,7 +332,7 @@ try {
   if ((state.enemy?.threatArmingPipCount || 0) !== 0) failures.push(`plain enemy bullet should not have arming pips: ${JSON.stringify(state.enemy)}`);
   if (!state.timedEnemy?.dangerGlint || (state.timedEnemy?.dangerWakeBeadCount || 0) !== 3) failures.push(`timed enemy danger cue missing: ${JSON.stringify(state.timedEnemy)}`);
   if ((state.timedEnemy?.threatArmingPipCount || 0) !== 4 || state.timedEnemy?.threatArmingKind !== 'split') failures.push(`timed enemy arming cue missing: ${JSON.stringify(state.timedEnemy)}`);
-  if ((state.markers?.friendlyGlints || 0) !== 1 || (state.markers?.friendlyWings || 0) !== 1) failures.push(`friendly marker child counts mismatch: ${JSON.stringify(state.markers)}`);
+  if ((state.markers?.friendlyGlints || 0) !== 0 || (state.markers?.friendlyWings || 0) !== 0) failures.push(`extra friendly glow layers returned: ${JSON.stringify(state.markers)}`);
   if ((state.markers?.enemyDangerGlints || 0) !== 2) failures.push(`enemy danger glint count mismatch: ${JSON.stringify(state.markers)}`);
   if ((state.markers?.enemyWakeBeads || 0) !== 2) failures.push(`enemy wake bead layer count mismatch: ${JSON.stringify(state.markers)}`);
   if ((state.markers?.enemyArmingLayers || 0) !== 1) failures.push(`enemy arming layer count mismatch: ${JSON.stringify(state.markers)}`);
@@ -315,11 +346,9 @@ try {
   for (const [key, marker] of Object.entries(state.specials || {})) {
     if (!marker?.active) failures.push(`${key} intent marker inactive: ${JSON.stringify(marker)}`);
     if (!marker?.intents?.[key === 'critical' ? 'critical' : key]) failures.push(`${key} intent flag missing: ${JSON.stringify(marker)}`);
-    if ((marker?.markerCount || 0) < 2) failures.push(`${key} marker count too low: ${JSON.stringify(marker)}`);
+    if ((marker?.markerCount || 0) < 1) failures.push(`${key} filled marker missing: ${JSON.stringify(marker)}`);
     if ((marker?.orbitBeadCount || 0) < 4) failures.push(`${key} orbit beads missing: ${JSON.stringify(marker)}`);
-    if ((marker?.chargeRingCount || 0) < 1) failures.push(`${key} charge ring missing: ${JSON.stringify(marker)}`);
-    if ((marker?.chordCount || 0) < 1) failures.push(`${key} chord marker missing: ${JSON.stringify(marker)}`);
-    if (key === 'piercing' && (marker?.lanceStripeCount || 0) < 2) failures.push(`${key} lance stripes missing: ${JSON.stringify(marker)}`);
+    if (marker?.chargeRingCount || marker?.chordCount || marker?.lanceStripeCount) failures.push(`${key} legacy line markers returned: ${JSON.stringify(marker)}`);
   }
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);

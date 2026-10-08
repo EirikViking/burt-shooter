@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {OrbitBreakerModel,sweptOrbitTouches,sweptOrbitTouchesEllipse,ORBIT_BREAKER} from '../src/game/OrbitBreaker.js';
+const m=new OrbitBreakerModel();m.update(1/60,{x:0,y:0},80);assert(m.samples.length<=ORBIT_BREAKER.maxSamples);
+assert(sweptOrbitTouches(m.samples,m.position.x,m.position.y,4));assert(!sweptOrbitTouches(m.samples,0,0,4));
+const angle=m.angle;m.update(0,{x:0,y:0},80);assert.equal(m.angle,angle);
+m.update(10,{x:10,y:0},80);assert(m.samples.length<=ORBIT_BREAKER.maxSamples);assert(Number.isFinite(m.position.x));
+assert(!m.canHit(null,10));const target={};assert(m.canHit(target,10));m.noteHit(target,10);assert(!m.canHit(target,10.1));assert(m.canHit(target,11));
+const same=m.position;m.clear();assert.equal(m.samples.length,0);assert(m.canHit(target,10));
+assert(sweptOrbitTouchesEllipse([{x:55,y:-30},{x:55,y:30}],0,0,64,26,18));
+assert(!sweptOrbitTouchesEllipse([{x:100,y:-30},{x:100,y:30}],0,0,64,26,18));
+console.log('[orbit-breaker] PASS swept contact, bounded samples, cooldown and reset');

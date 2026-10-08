@@ -1,0 +1,131 @@
+{
+  "created": "2026-10-02T15:22:10.088Z",
+  "requestedTotal": 42,
+  "batch": "4: forms 23–32",
+  "audioBatchId": "batch4",
+  "audioCreditCeiling": 1800,
+  "commonArtPrompt": "Use case: stylized-concept. Production transparent creature sprite for Nova Swarm, premium cinematic VFX biology, convincing three-dimensional sculpted volume, tactile organic materials, not a spaceship or cartoon. ONE entire enormous creature swimming LEFT, slightly elevated three-quarter side view, horizontal landscape frame, all appendages fully inside with transparent padding. Large readable anatomical masses, subtle internal light, directional soft key and rim light, deep dimensional shadows. TRUE TRANSPARENT BACKGROUND. No scene, stars, planets, floor, cast-shadow plane, text, card, frame, particles, giant bloom, motion blur or cut-off limbs. ",
+  "definitions": [
+    {
+      "id": "quasar_bat",
+      "anatomy": "bat",
+      "period": 5.7,
+      "amplitude": 0.046,
+      "width": 1,
+      "lane": 0.44,
+      "duration": 29,
+      "seconds": 4.3,
+      "brief": "A huge alien bat-like swimmer facing LEFT, compact muscular horned charcoal body with a long wedge snout, four tiny pale green eyes, and FOUR distinct broad muscular wings spreading above and below. The two front wings are long hooked fingers supporting violet-black translucent membranes; rear wings smaller and deeply scalloped, long tapering tail at RIGHT. Strong bony joints, subtle crimson membrane veins, wet dark chest fur, not a demon, dragon or terrestrial bat mascot. Cinematic terrifying organic mass, all four wings fully inside generous transparent margin.",
+      "audio": "A colossal four-winged alien flexes its chest. Heavy soft leathery wingbeats offset in pairs, low resonant nasal growl, slow tendon creaks and fine breathy membrane flutter. Menacing graceful wild animal, detailed cinematic organic Foley. No screech, jump scare, human voice, music, weapons or alarm."
+    },
+    {
+      "id": "fossil_seadrake",
+"artEdit": {"source":"C:\\Users\\cromk\\.codex\\generated_images\\01a0ec1e-e5fb-7710-98df-2993049c9c09\\exec-7197e5ec-ca35-446a-8086-8586a299fa26.png","prompt":"Use case: precise-object-edit. Fix framing of this exact full-body transparent alien fossil sea drake sprite. Preserve its identity, anatomy, pose, colors, texture, lighting and transparent background. Zoom out to leave a generous 10% transparent margin on ALL four sides. Reconstruct only any cut-off dorsal-fin and paddle extremities naturally, ensuring the whole silhouette is complete and comfortably inside the frame. Do not add scenery or extra limbs. Do not change the creature design.","reason":"Generated dorsal/paddle extremities reached image edge; restore full silhouette and padding."},
+      "anatomy": "drake",
+      "period": 6.9,
+      "amplitude": 0.035,
+      "width": 1.07,
+      "lane": 0.42,
+      "duration": 33,
+      "seconds": 4.4,
+      "brief": "An enormous ancient alien sea drake swimming LEFT. Long narrow head with curved ram horns and dark living eyes, ivory fossil-like external bone armor over deep moss-green muscle, a long sinuous neck and broad ribbed torso tapering to a finned tail on RIGHT. FOUR thick small paddle limbs, tall tattered dorsal fin, worn bone surfaces with rich cavities, tiny amber organs under the rib plates. Alive and powerful, not a skeleton corpse or spaceship. Distinct curled ram-horn silhouette, deeply sculptural organic anatomy; entire creature and horns inside frame.",
+      "audio": "An ancient fossil-armored sea drake exhales. Deep hoarse chest breath, worn bony plates grinding softly over muscle, horn cartilage groans and a broad leathery tail sweep ending in a low rasp. Huge ominous living creature, rich physical cinematic Foley. No human voice, roaring jump scare, music, falling rubble, weapon or alarm."
+    },
+    {
+      "id": "opal_scallop",
+      "anatomy": "scallop",
+      "period": 6.8,
+      "amplitude": 0.027,
+      "width": 0.86,
+      "lane": 0.46,
+      "duration": 33,
+      "seconds": 4.2,
+      "brief": "A colossal alien scallop swimming LEFT, two broad deeply ribbed opal fan-shell valves open in a dramatic V, hinge near center-right, curved scalloped rim facing LEFT. Layers of luminous pale mint and ivory fleshy mantle emerge between the rigid shells, many tiny dark blue sensory eyes along the mantle rim and long thin lavender fringe cilia flowing RIGHT. Upper valve rises above, lower valve curves below, beautiful thick porcelain mineral surfaces with subtle pink iridescence. A real substantial shellfish, no pearl jewelry, ornament, text or scenery. Entire shells and fringe inside frame.",
+      "audio": "A giant opal scallop slowly closes and opens its shell. Hollow rounded suction breath, two soft mineral valve creaks, a fine flutter of many mantle cilia and gentle watery chamber resonance fading away. Exquisite strange living shellfish, detailed cinematic Foley. No musical chime, melody, voice, impact crash, weapon or alarm."
+    },
+    {
+      "id": "dusk_hydra",
+      "anatomy": "hydra",
+      "period": 6.5,
+      "amplitude": 0.044,
+      "width": 1.02,
+      "lane": 0.43,
+      "duration": 32,
+      "seconds": 4.4,
+      "brief": "ONE vast alien dusk hydra with THREE distinct long necks facing LEFT, each ending in a narrow smooth predatory sensory head with tiny amber eyes. All necks visibly join one powerful indigo torso at center-right. Two broad translucent smoky violet swimming wings and one long forked tail trail to RIGHT. Upper neck arcs high, middle neck reaches straight forward, lower neck curls downward, generous clear gaps. Dark blue scaled wet skin, pale bone ridges and restrained rose gill tissue. Coherent three-headed aquatic alien, not three animals, no fire, magic or attack effects.",
+      "audio": "One immense three-throated alien breathes with three staggered organic voices. Low chest rumble, one husky nasal exhale, a softer hollow gill murmur answering it, slow neck tendon creaks and wide membrane folds. Beautiful ominous living creature with coherent shared body, cinematic Foley. No words, singing, music, scream, weapon or alarm."
+    },
+    {
+      "id": "velvet_worm",
+      "anatomy": "worm",
+      "period": 5.6,
+      "amplitude": 0.042,
+      "width": 1.09,
+      "lane": 0.44,
+      "duration": 30,
+      "seconds": 4.1,
+      "brief": "A vast soft-bodied alien velvet worm swimming LEFT, long plush deep burgundy segmented body in a shallow S curve. Rounded low head with two branching flexible feelers and tiny black eyes, no enormous toothy jaw. Twelve pairs of short fleshy fringed paddle limbs undulate along its sides, each salmon-gold membrane with delicate comb edges. Broad tail fan trails RIGHT. Velvet suede skin with subtle wet folds at joints, copper freckles and small lavender gill slits. Weighty dimensional wild animal, elegant and uncanny, not cute, not a caterpillar on a branch.",
+      "audio": "An enormous soft velvet worm swims in a slow rolling wave. Quiet fleshy segments compress, many fringed paddles brush softly in sequence, low warm hollow breathing and small damp mouth clicks fade into a tail swish. Uncanny gentle giant, highly textured cinematic organic Foley. No music, voice, cute squeak, slithering horror sting, weapon or alarm."
+    },
+    {
+      "id": "halo_stag",
+      "anatomy": "stag",
+      "period": 7.3,
+      "amplitude": 0.032,
+      "width": 0.98,
+      "lane": 0.43,
+      "duration": 34,
+      "seconds": 4.5,
+      "brief": "A regal enormous alien aquatic stag swimming LEFT: long smooth charcoal sensory head, a magnificent branching ivory antler-like crown curving around the head into an incomplete halo. Compact muscular cobalt torso, FOUR broad pale blue membranous fins in place of legs, long ridged tail trailing RIGHT. The antlers are living porous sensory bone with tiny amber organs nestled in the branches. NO hooves, fur, deer legs or literal terrestrial stag body. Clearly invented marine animal, ancient beautiful and unnerving, solid sculpted bone and supple translucent fins, all antlers fully in frame.",
+      "audio": "A giant antler-crowned aquatic alien calls once. Low resonant nasal breath opening into a soft hollow bone-chamber overtone, fine sensory crown creaks, broad membrane fin sweeps and a long calm exhale. Ancient regal eerie living animal, detailed cinematic Foley. No stag bugle, human voice, choir, music, weapon or alarm."
+    },
+    {
+      "id": "cryolith_isopod",
+      "anatomy": "isopod",
+      "period": 6.2,
+      "amplitude": 0.03,
+      "width": 1.01,
+      "lane": 0.43,
+      "duration": 32,
+      "seconds": 4.2,
+      "brief": "An enormous alien polar isopod swimming LEFT, broad low domed body with TEN overlapping icy mineral-blue armor plates, a compact armored head with dark eyes and two long crystalline feelers. Fourteen separate translucent pale cyan paddle legs fan below and to the sides, wide segmented tail fan on RIGHT. Thick frosted semitransparent shell with tiny trapped violet organ channels, soft dark living joints, convincing arthropod anatomy. Different from centipede: compact oval armored pill-shaped shell, short low profile, no tall spines. Whole body and all paddles isolated inside frame.",
+      "audio": "A colossal icy armored isopod shifts its plates. Soft staggered crystalline shell creaks over a low breathing rasp, many translucent paddle feet moving with muted wet ticks, gentle antenna friction and a short hollow exhale. Heavy beautiful alien crustacean, cinematic organic Foley. No ice explosion, machinery, music, voice, weapon or alarm."
+    },
+    {
+      "id": "solar_butterfly",
+      "anatomy": "butterfly",
+      "period": 6.8,
+      "amplitude": 0.047,
+      "width": 0.94,
+      "lane": 0.44,
+      "duration": 33,
+      "seconds": 4.3,
+      "brief": "A gigantic solar butterfly-like alien gliding LEFT. Slender luminous cream segmented body and small black sensory head with curled twin antennae. FOUR huge rounded translucent amber wings with scalloped tails, the upper pair broad and oval, lower pair smaller and teardrop-shaped. Strong russet branching veins and subdued ivory eye-like organic markings embedded in the membrane. Distinct from glass moth: warm thin honey-colored translucent skin, smooth rounded masses, no faceted glass or dark fur. Soft internal organ warmth, not a sun or fire, no particles. Entire wings and tips inside transparent margin.",
+      "audio": "An enormous amber-winged alien glides slowly. Fine dry membrane wing sweeps in two offset pairs, warm low thoracic purr, delicate antenna ticks and a soft airy resonant flutter fading into silence. Beautiful immense living insect, cinematic organic Foley. No magical chimes, melody, music, human voice, fire, weapons or alarm."
+    },
+    {
+      "id": "lantern_angler",
+      "anatomy": "angler",
+      "period": 7.1,
+      "amplitude": 0.028,
+      "width": 1.03,
+      "lane": 0.42,
+      "duration": 33,
+      "seconds": 4.3,
+      "brief": "A huge terrifying deep-space anglerfish swimming LEFT with a massive rounded charcoal head and hollow gaping jaw, curved thin ivory teeth and tiny pale blue eyes. One long organic lure arches smoothly forward above the head, ending in a small soft amber fleshy lantern, NO beam or rays. Short muscular body behind the head, broad smoky violet pectoral fins, long fanned tail to RIGHT. Tactile pebbled deep-sea skin, violet gill tissue, amber throat organs, powerful jaw volume. Entire lure and tail fit, lantern clearly attached by curved living stalk, no bright weapon-like glow.",
+      "audio": "An immense lantern angler breathes through a cavernous jaw. Deep hollow suction growl, long damp gill rasp, soft lure-stalk tendon creaks and a tiny organic lantern pulse beneath a heavy rounded exhale. Dangerous ancient animal, detailed cinematic creature Foley. No sonar beep, electrical zap, scream, music, human voice, weapon or alarm."
+    },
+    {
+      "id": "glass_octopus",
+      "anatomy": "octopus",
+      "period": 5.4,
+      "amplitude": 0.052,
+      "width": 1.05,
+      "lane": 0.44,
+      "duration": 31,
+      "seconds": 4.3,
+      "brief": "An enormous translucent alien octopus swimming LEFT. Large elongated clear smoky lavender mantle on the LEFT with a visible suspended amber neural organ and thick inner muscle bands, dark glassy sensory eyes at the mantle base. EIGHT long separately readable transparent muscular arms sweep to the RIGHT, each curling at a different depth, small opal suckers and faint cyan nerve strands inside. No round jellyfish bell, no petal crown. Substantial wet glasslike living tissue, not literal glass sculpture, arms have weight and thickness, exquisite layered refraction with restrained glow and all arms in frame.",
+      "audio": "A colossal translucent octopus pulses its mantle. Deep rounded liquid lung pressure, eight heavy smooth arms sliding past with soft suction clicks, a delicate irregular internal tremor and a long airy wet sigh. Beautiful unnerving living animal, richly textured cinematic Foley. No glass crash, bells, music, words, weapon or alarm."
+    }
+  ]
+}

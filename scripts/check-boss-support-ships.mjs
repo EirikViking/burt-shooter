@@ -78,9 +78,11 @@ if (glyphs.size < 8 || beamStyles.size < 8 || deliveryFx.size < 8) {
 }
 
 const picked = new Set();
-for (let level = 1; level <= 40; level += 1) {
+for (let level = 1; level <= 60; level += 1) {
   for (let index = 0; index < 16; index += 1) {
-    picked.add(pickBossSupportShipProfile(level, `qa-${level}-${index}`)?.id);
+    const profile=pickBossSupportShipProfile(level, `qa-${level}-${index}`);
+    if(profile.unlockLevel>level)fail('support identity revealed ahead of its sector');
+    picked.add(profile.id);
   }
 }
 if (picked.size < 80) fail(`support picker should cover most variants across seeds, reached ${picked.size}`);
@@ -335,7 +337,7 @@ deliveryProbe.updateBossFuelShip({
     deactivated = true;
   }
 }, 1);
-if (deliveredHeal !== 8 || deliveredSource !== 'boss_fuel_ship' || !deactivated) {
+if (deliveredHeal !== 16 || deliveredSource !== 'boss_fuel_ship' || !deactivated) {
   fail(`support delivery should heal and deactivate, heal=${deliveredHeal} source=${deliveredSource || 'none'} deactivated=${deactivated}`);
 }
 if (deliveryToast !== 'BOSS REFUELED +1 HP' || deliveryToast.includes('.')) {

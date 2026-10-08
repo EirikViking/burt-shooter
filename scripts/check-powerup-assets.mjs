@@ -31,7 +31,8 @@ for (const key of requiredPowerups) {
     errors.push(`Missing AssetManifest.generated.powerups.${key}`);
     continue;
   }
-  if (!url.startsWith('/art/generated/nova-swarm/powerups/')) {
+  const premiumRail = key === 'rail_surge' && url === '/art/celebration-polish-20260908/hyper-rail.png';
+  if (!premiumRail && !url.startsWith('/art/generated/nova-swarm/powerups/')) {
     errors.push(`${key} should use generated Nova Swarm powerup art, got ${url}`);
   }
   const filePath = path.join(root, 'public', url.replace(/^\//, ''));
@@ -41,8 +42,12 @@ for (const key of requiredPowerups) {
   }
   try {
     const { width, height } = pngDimensions(filePath);
-    if (width !== 192 || height !== 192) {
-      errors.push(`${key} expected 192x192 PNG, got ${width}x${height}: ${url}`);
+    // Row Core's existing approved artwork was replaced at native resolution
+    // in ed3f925. Keep the size contract explicit for that exact asset slot.
+    const premiumRowCore = key === 'row_core' && url === '/art/generated/nova-swarm/powerups/nova-powerup-row_core-20260613.png';
+    const expectedSize = premiumRail || premiumRowCore ? 1254 : 192;
+    if (width !== expectedSize || height !== expectedSize) {
+      errors.push(`${key} expected ${expectedSize}x${expectedSize} PNG, got ${width}x${height}: ${url}`);
     }
   } catch (error) {
     errors.push(error.message);
@@ -81,12 +86,13 @@ const sourceDirByPowerup = new Map([
   ['nova_miracle', path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260713')]
 ]);
 const expectedAssetSuffixByPowerup = new Map([
+  ['rail_surge', '/hyper-rail.png'],
   ['super_extra_life', '-20260626.png'],
   ['nova_miracle', '-20260713.png']
 ]);
 
 for (const key of NEW_POWERUP_TYPES) {
-  const sourcePath = path.join(
+  const sourcePath = key==='orbit_breaker'?path.join(root,'public/art/encounter-premium/orbit-breaker.png'):path.join(
     spectacleExpansionTypes.has(key)
       ? spectacleExpansionSourceDir
       : sourceDirByPowerup.get(key) || imagegenSourceDir,
@@ -99,7 +105,7 @@ for (const key of NEW_POWERUP_TYPES) {
 
 for (const key of NEW_POWERUP_TYPES) {
   const url = generatedPowerups[key] || '';
-  const expectedSuffix = spectacleExpansionTypes.has(key)
+  const expectedSuffix = key==='orbit_breaker'?'-20260930.png':spectacleExpansionTypes.has(key)
     ? '-20260714.png'
     : expectedAssetSuffixByPowerup.get(key) || '-20260613.png';
   if (!url.endsWith(expectedSuffix)) {

@@ -51,16 +51,16 @@ export const TACTICAL_DRAFT_AUGMENTS = Object.freeze([
   defineAugment({ id: 'pierce', category: 'offense', previewMetric: 'piercing', previewMetrics: ['piercing', 'directDps'], draftDescription: 'Piercing shots; damage -3%', modifiers: { pierce: true, damageMult: 0.97 }, maxStacks: 1 }),
   defineAugment({ id: 'target_paint', evolutionName: 'KILL WARRANT', category: 'offense', previewMetric: 'damage', previewMetrics: ['directDps'], draftDescription: 'Damage +7% and fire rate +4%', modifiers: { damageMult: 1.07, fireDelayMult: 0.96 } }),
   defineAugment({ id: 'plasma_lance', evolutionName: 'SUNSPEAR', category: 'offense', previewMetric: 'damage', previewMetrics: ['directDps', 'bulletSpeed'], draftDescription: 'Damage +14%, bullet speed +8%, fire rate -4%', modifiers: { damageMult: 1.14, fireDelayMult: 1.04, bulletSpeedMult: 1.08 } }),
-  defineAugment({ id: 'chain_lightning', evolutionName: 'STORM COURT', category: 'offense', previewMetric: 'chainReach', draftDescription: 'Chain reach +1', modifiers: { chainMax: 1 } }),
+  defineAugment({ id: 'chain_lightning', evolutionName: 'STORM COURT', category: 'offense', previewMetric: 'chainReach', draftDescription: 'Chain reach +1', modifiers: { chainMax: 1 }, maxStacks: 3 }),
   defineAugment({ id: 'speed_up', evolutionName: 'COMET DRIVE', category: 'mobility', previewMetric: 'movement', draftDescription: 'Movement speed +10%', modifiers: { speedMult: 1.1 } }),
   defineAugment({ id: 'blink_drive', evolutionName: 'NULLSTEP DRIVE', category: 'mobility', previewMetric: 'dodgeCooldown', previewMetrics: ['movement', 'dodgeCooldown'], draftDescription: 'Movement speed +4% and dodge cooldown -16%', modifiers: { speedMult: 1.04, dodgeDelayMult: 0.84 } }),
   defineAugment({ id: 'vector_boost', evolutionName: 'VECTOR CROWN', category: 'mobility', previewMetric: 'movement', previewMetrics: ['movement', 'dodgeDuration'], draftDescription: 'Movement speed +8% and dodge duration +10%', modifiers: { speedMult: 1.08, dodgeDurationMult: 1.1 } }),
   defineAugment({ id: 'shield', category: 'defense', draftDescription: 'Start each sector with a shield', sectorStart: { shield: true }, maxStacks: 1 }),
-  defineAugment({ id: 'ghost', evolutionName: 'WRAITH SHELL', category: 'defense', draftDescription: 'Start each sector with 1 second of invulnerability', sectorStart: { invulnerabilityMs: 1000 } }),
-  defineAugment({ id: 'point_defense', evolutionName: 'AEGIS GRID', category: 'defense', draftDescription: 'Start each sector with 4.5 seconds of point defense', sectorStart: { pointDefenseMs: 4500 } }),
+  defineAugment({ id: 'ghost', evolutionName: 'WRAITH SHELL', category: 'defense', draftDescription: 'Start each sector with 1.5 seconds of invulnerability', sectorStart: { invulnerabilityMs: 1500 } }),
+  defineAugment({ id: 'point_defense', evolutionName: 'AEGIS GRID', category: 'defense', draftDescription: 'Start each sector with 4.5 seconds of point defense', sectorStart: { pointDefenseMs: 4500 }, maxStacks: 3 }),
   defineAugment({ id: 'nano_patch', category: 'defense', draftDescription: 'Repair 1 life immediately', immediate: { repairLives: 1 }, consumedOnApply: true, maxStacks: 1 }),
   defineAugment({ id: 'magnet', evolutionName: 'GRAVITY WELL', category: 'utility', previewMetric: 'pickupRange', draftDescription: 'Pickup radius +90', modifiers: { magnetRadiusBonus: 90, magnetStrengthBonus: 0.03 } }),
-  defineAugment({ id: 'drones', evolutionName: 'DRONE WING', category: 'utility', previewMetric: 'supportDrones', draftDescription: 'Add 1 permanent support drone', modifiers: { droneCount: 1 } }),
+  defineAugment({ id: 'drones', evolutionName: 'DRONE WING', category: 'utility', previewMetric: 'supportDrones', draftDescription: 'Add 1 permanent support drone', modifiers: { droneCount: 1 }, maxStacks: 3 }),
   defineAugment({ id: 'bomb', evolutionName: 'SIEGE RACK', category: 'utility', draftDescription: 'Start each sector with 2 bomb shots', sectorStart: { bombShots: 2 } }),
   defineAugment({ id: 'orbital_strike', evolutionName: 'SKY TRIBUNAL', category: 'utility', draftDescription: 'Start each sector with 2 orbital charges', sectorStart: { orbitalCharges: 2 } }),
   defineAugment({ id: 'phase_reactor', name: 'PHASE REACTOR', category: 'mobility', color: 0xff5bd6, sfx: 'tactical_phase_reactor', draftDescription: 'Phase: next volley +50% damage (1.8s)', detail: 'Phase instantly reloads your weapon and charges your next normal volley for 1.8 seconds. That volley deals 50% more damage. Bombs do not consume the charge.', modifiers: { phaseReload: true }, maxStacks: 1 }),
@@ -90,6 +90,12 @@ function defineFusion(config) {
 }
 
 export const TACTICAL_FUSION_PROTOCOLS = Object.freeze([
+  defineFusion({id:'salvage_crown',name:'SALVAGE CROWN',color:0x82fff1,sfx:'tactical_drone_link',
+    requiredIds:['drones','salvage_clock'],description:'Capture a recent wreck weapon: nine shots or six seconds.',
+    detail:'DRONES + SALVAGE CLOCK. Claim one ordinary wreck and mount its burst, fan or lance in the drone wing. Nine shots or six combat seconds; captured kills cannot supply another capture.'}),
+  defineFusion({id:'rift_crossfire',name:'RIFT CROSSFIRE',color:0xb99bff,sfx:'tactical_phase_reactor',
+    requiredIds:['phase_reactor','phase_wake','blink_drive'],description:'Earned Rift shards converge from your Phase start and end.',
+    detail:'PHASE REACTOR + PHASE WAKE + BLINK DRIVE. Replace the five earned Rift shots with delayed fire from your Phase start and end. Nearby positions merge; no cleared bullets or valid target means no attack.'}),
   defineFusion({
     id: 'rift_reprisal',
     name: 'RIFT REPRISAL',
@@ -254,7 +260,8 @@ export function buildTacticalDraftOffers({
   bannedIds = [],
   heldId = null,
   recentOfferIds = [],
-  openingLoadoutChoice = false
+  openingLoadoutChoice = false,
+  preferBuildProgress = false
 } = {}) {
   const counts = getStackCounts(selectedIds);
   const consumed = new Set(Array.isArray(consumedIds) ? consumedIds : []);
@@ -267,7 +274,8 @@ export function buildTacticalDraftOffers({
     if (augment.id === 'combo_anchor' && !fixedScoreRoute) return false;
     if (augment.id !== 'combo_anchor' && banned.has(augment.id)) return false;
     if (augment.id !== 'combo_anchor' && ineffective.has(augment.id)) return false;
-    if ((counts.get(augment.id) || 0) >= augment.maxStacks) return false;
+    const offerCap = preferBuildProgress && ['drones', 'chain_lightning', 'point_defense'].includes(augment.id) ? 2 : augment.maxStacks;
+    if ((counts.get(augment.id) || 0) >= offerCap) return false;
     if (augment.id === 'nano_patch' && lives >= maxLives) return false;
     return Boolean(getTacticalDraftMeta(augment.id));
   });
@@ -298,10 +306,12 @@ export function buildTacticalDraftOffers({
   let evolutionCandidate = allowEvolution
     ? candidates
       .filter((augment) => (counts.get(augment.id) || 0) > 0 && !excluded.has(augment.id))
-      .sort((a, b) => stableScore(seed, b, sectorCleared, context) - stableScore(seed, a, sectorCleared, context))[0] || null
+      .sort((a, b) => (preferBuildProgress ? (counts.get(b.id) - counts.get(a.id)) : 0)
+        || stableScore(seed, b, sectorCleared, context) - stableScore(seed, a, sectorCleared, context))[0] || null
     : null;
   if (
     evolutionCandidate
+    && !preferBuildProgress
     && (counts.get(evolutionCandidate.id) || 0) >= 2
     && unseenCandidates.length >= TACTICAL_DRAFT_OFFER_COUNT
   ) {
@@ -356,7 +366,7 @@ export function buildTacticalDraftOffers({
     if (replacementIndex < offers.length) offers.splice(replacementIndex, 1, candidate);
     else if (offers.length < TACTICAL_DRAFT_OFFER_COUNT) offers.push(candidate);
   };
-  unseenCandidates
+  (preferBuildProgress ? [] : unseenCandidates)
     .filter((candidate) => !excluded.has(candidate.id))
     .sort((a, b) => stableScore(seed, b, sectorCleared, context) - stableScore(seed, a, sectorCleared, context))
     .forEach((candidate) => {
@@ -367,8 +377,9 @@ export function buildTacticalDraftOffers({
       );
       ensurePriorityOffer(candidate, protectedIds);
     });
-  ensurePriorityOffer(fusionCompletionCandidate);
-  ensurePriorityOffer(singleLaneCatchupCandidate, new Set([fusionCompletionCandidate?.id].filter(Boolean)));
+  const protectedEvolution = preferBuildProgress ? evolutionCandidate?.id : null;
+  ensurePriorityOffer(fusionCompletionCandidate, new Set([protectedEvolution].filter(Boolean)));
+  ensurePriorityOffer(singleLaneCatchupCandidate, new Set([fusionCompletionCandidate?.id, protectedEvolution].filter(Boolean)));
   const heldCandidate = eligibleCandidates.find((augment) => augment.id === heldId) || null;
   if (heldCandidate && !offers.some((augment) => augment.id === heldCandidate.id)) {
     const protectedIds = new Set([fusionCompletionCandidate?.id, singleLaneCatchupCandidate?.id].filter(Boolean));
@@ -402,6 +413,7 @@ export function buildTacticalDraftOffers({
     const nextStack = currentStacks + 1;
     return {
       ...getTacticalDraftDisplayMeta(augment.id, nextStack),
+      maxStacks: preferBuildProgress && ['drones', 'chain_lightning', 'point_defense'].includes(augment.id) ? 2 : augment.maxStacks,
       currentStacks,
       nextStack,
       held: augment.id === heldId,
@@ -415,6 +427,7 @@ export function buildTacticalDraftOffers({
 export function buildTacticalDraftModifiers(selectedIds = [], {
   activePowerupType = null,
   activePowerupTypes = [],
+  shotCapacity = Infinity,
   permanentPierceDamageMultOverride = null
 } = {}) {
   const timedPowerupTypes = new Set([
@@ -473,6 +486,10 @@ export function buildTacticalDraftModifiers(selectedIds = [], {
         ? SHIP_THREAT_RESPONSE_TARGETS.secondStackEffectiveness
         : SHIP_THREAT_RESPONSE_TARGETS.thirdStackEffectiveness;
     const modifiers = augment.modifiers || {};
+    // Counts must grant whole units. At the volley cap an extra-shot stack
+    // grants neither another projectile nor its associated damage penalty.
+    const shotBonus = Math.min(Number(modifiers.shotBonus) || 0, Math.max(0, shotCapacity - result.shotBonus));
+    if (modifiers.shotBonus && shotBonus === 0) continue;
     const suppressMatchingTimedEffect = timedPowerupTypes.has(id) && id !== 'double_shot';
     if (!suppressMatchingTimedEffect) {
       const damageMult = id === 'pierce'
@@ -486,12 +503,12 @@ export function buildTacticalDraftModifiers(selectedIds = [], {
       result.bulletSpeedMult *= Math.pow(Number(modifiers.bulletSpeedMult) || 1, effectiveness);
       result.dodgeDelayMult *= Math.pow(Number(modifiers.dodgeDelayMult) || 1, effectiveness);
       result.dodgeDurationMult *= Math.pow(Number(modifiers.dodgeDurationMult) || 1, effectiveness);
-      result.shotBonus += (Number(modifiers.shotBonus) || 0) * effectiveness;
+      result.shotBonus += shotBonus;
       result.pierce = result.pierce || modifiers.pierce === true;
       result.magnetRadiusBonus += (Number(modifiers.magnetRadiusBonus) || 0) * effectiveness;
       result.magnetStrengthBonus += (Number(modifiers.magnetStrengthBonus) || 0) * effectiveness;
-      result.droneCount += (Number(modifiers.droneCount) || 0) * effectiveness;
-      result.chainMax += (Number(modifiers.chainMax) || 0) * effectiveness;
+      result.droneCount += Number(modifiers.droneCount) || 0;
+      result.chainMax += Number(modifiers.chainMax) || 0;
       result.focusDamageMult *= Math.pow(Number(modifiers.focusDamageMult) || 1, effectiveness);
       result.focusSpreadMult *= Math.pow(Number(modifiers.focusSpreadMult) || 1, effectiveness);
       result.focusSpeedMult *= Math.pow(Number(modifiers.focusSpeedMult) || 1, effectiveness);
@@ -518,6 +535,8 @@ export function buildTacticalDraftModifiers(selectedIds = [], {
   result.overlapSuppressedId = result.overlapSuppressedIds[0] || null;
   result.fusionIds = getActiveTacticalFusionProtocols(selectedIds).map((fusion) => fusion.id);
   result.riftReprisal = result.fusionIds.includes('rift_reprisal');
+  result.salvageCrown = result.fusionIds.includes('salvage_crown');
+  result.riftCrossfire = result.fusionIds.includes('rift_crossfire');
   result.droneConstellation = result.fusionIds.includes('drone_constellation');
   result.aegisReactor = result.fusionIds.includes('aegis_reactor');
   result.skyVerdict = result.fusionIds.includes('sky_verdict');

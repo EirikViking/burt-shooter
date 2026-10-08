@@ -1,5 +1,26 @@
 export const MAX_PLAYER_LIVES = Number.POSITIVE_INFINITY;
 
+// Distributed ~10% combat-pressure budget. Keep warning time, player damage,
+// life economy, encounter admission and score rules independent of this tune.
+export const GLOBAL_CHALLENGE_TUNING = Object.freeze({
+    normalMovement: 1.03,
+    normalFireChance: 1.045,
+    hostileProjectileSpeed: 1.025,
+    bossHealth: 1.04,
+    bossCadence: 1.03,
+    snakeHealth: 1.05,
+    snakeCadence: 1.02,
+    rivalHealth: 1.04,
+    rivalCadence: 1.03
+});
+
+// Use the displayed sector, never the normal-wave difficulty offset. Increase
+// attack opportunities without accelerating warnings, recovery or wave cleanup.
+export function getSectorAttackPressure(sector) {
+    const level = Number(sector) || 1;
+    return level >= 70 ? 1.24 : level >= 50 ? 1.16 : level >= 20 ? 1.1 : 1;
+}
+
 export const BalanceConfig = {
     // Global pressure trim: below 1 keeps Nova Swarm readable while the wave count rises.
     DIFFICULTY_MULTIPLIER: 0.7524,
@@ -41,6 +62,7 @@ export const BalanceConfig = {
     // Difficulty: six-wave early sectors, then a steady linear climb.
     difficulty: {
         pressureScalar: 0.72675,
+        globalChallengeNormalFireChance: GLOBAL_CHALLENGE_TUNING.normalFireChance,
         baseEnemyHealthMultiplier: 0.62,
         hpScalePerLevel: 0.035,
         enemyHealthMaxMultiplier: 1.8,

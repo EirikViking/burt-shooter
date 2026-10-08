@@ -1,3 +1,4 @@
+import { ONSLAUGHT_BOARD_V2, ONSLAUGHT_RULESET_V2, ONSLAUGHT_START_POOL, onslaughtBoardForRuleset, validOnslaughtRun } from '../../electron/onslaughtContract.cjs';
 import { BUILD_ID } from '../buildInfo.js';
 import {
   MAX_RANK_INDEX,
@@ -19,6 +20,7 @@ import {
   parseRunMode
 } from '../game/RunMode.js';
 
+export const STEAM_ONSLAUGHT_LEADERBOARD_NAME = ONSLAUGHT_BOARD_V2;
 export const LEADERBOARD_DISPLAY_LIMIT = 50;
 export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 export const STEAM_LEADERBOARD_COMMUNITY_NAME = 'Global High Score';
@@ -27,11 +29,13 @@ export const STEAM_TACTICAL_LEADERBOARD_COMMUNITY_NAME = 'Tactical Mayhem Score'
 export const STEAM_SECTOR_LEADERBOARD_NAME = 'nova_swarm_sector_start_score_v1';
 export const STEAM_SECTOR_LEADERBOARD_COMMUNITY_NAME = 'Sector Run Score';
 export const CAREER_RANK_DETAILS_MARKER = 20260814;
+export const ONSLAUGHT_LOADOUT_DETAILS_MARKER = 20260922;
 export const GLOBAL_COMPETITIVE_DETAILS_COUNT = 6;
 export const SECTOR_COMPETITIVE_DETAILS_COUNT = 7;
 const STEAM_DETAILS_INT32_MAX = 2147483647;
 
 export const LeaderboardView = {
+  ONSLAUGHT: 'onslaught',
   GLOBAL: 'global',
   TACTICAL: 'tactical',
   SECTOR: 'sector',
@@ -39,7 +43,9 @@ export const LeaderboardView = {
   LOCAL: 'local'
 };
 
-export function getLeaderboardDescriptorForRunMode(runMode = 'ranked') {
+export function getLeaderboardDescriptorForRunMode(runMode = null, rulesetVersion = ONSLAUGHT_RULESET_V2) {
+  if (runMode === 'overrun_tactical') return { leaderboardName: onslaughtBoardForRuleset(rulesetVersion), leaderboardKind: 'overrun_tactical', view: LeaderboardView.ONSLAUGHT, sourceLabel: 'Steam Onslaught' };
+  if (!['ranked', 'ranked_tactical'].includes(runMode)) return { leaderboardName: null, leaderboardKind: 'ineligible', view: null, sourceLabel: null };
   if (String(runMode || '') === 'ranked_tactical') {
     return {
       leaderboardName: STEAM_TACTICAL_LEADERBOARD_NAME,
@@ -83,8 +89,11 @@ export function encodeCareerRankExtension(careerRankExact) {
 }
 
 export function replaceCareerRankDetails(details = [], careerRankExact, competitiveDetailsCount = GLOBAL_COMPETITIVE_DETAILS_COUNT) {
-  const preserved = readLeaderboardDetails(details).slice(0, Math.max(0, competitiveDetailsCount));
-  return [...preserved, ...encodeCareerRankExtension(careerRankExact)];
+  const values = readLeaderboardDetails(details);
+  const preserved = values.slice(0, Math.max(0, competitiveDetailsCount));
+  // A rank-only refresh must never erase the starting build attached to a v2 score.
+  const loadout = values.slice(competitiveDetailsCount + 4);
+  return [...preserved, ...encodeCareerRankExtension(careerRankExact), ...loadout];
 }
 
 export function readCareerRankStatus(details = [], competitiveDetailsCount = GLOBAL_COMPETITIVE_DETAILS_COUNT) {
@@ -114,6 +123,54 @@ export function readCareerRankStatus(details = [], competitiveDetailsCount = GLO
     leadingNineDigits,
     version: CAREER_RANK_DETAILS_MARKER
   };
+}
+
+// Career Rank is current profile metadata, independent of the score's run.
+// Steam stores very large ranks as a digit count and leading digits; compare
+// that representation without rounding it through a JavaScript Number.
+export function preserveHigherCareerRankDetails(details, previousDetails, competitiveDetailsCount = GLOBAL_COMPETITIVE_DETAILS_COUNT) {
+  const incoming = readCareerRankStatus(details, competitiveDetailsCount);
+  const previous = readCareerRankStatus(previousDetails, competitiveDetailsCount);
+  if (!previous) return details;
+  const keepPrevious = !incoming || (previous.exact && incoming.exact
+    ? BigInt(previous.exact) >= BigInt(incoming.exact)
+    : Boolean(previous.exact) !== Boolean(incoming.exact)
+      ? !previous.exact // Compact ranks are always above the exact int32 range.
+      : previous.digitCount > incoming.digitCount || (
+        previous.digitCount === incoming.digitCount
+        && previous.leadingNineDigits >= incoming.leadingNineDigits
+      ));
+  return keepPrevious
+    ? [...details.slice(0, competitiveDetailsCount), ...readLeaderboardDetails(previousDetails).slice(competitiveDetailsCount, competitiveDetailsCount + 4), ...details.slice(competitiveDetailsCount + 4)]
+    : details;
+}
+
+function stableIdCode(value) {
+  let hash = 2166136261;
+  for (const char of String(value || '')) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) & STEAM_DETAILS_INT32_MAX;
+}
+
+export function encodeOnslaughtLoadoutDetails(runResult = {}) {
+  const start = runResult.competitionStart;
+  if (runResult.rulesetVersion !== ONSLAUGHT_RULESET_V2 || !validOnslaughtRun(runResult)) return [];
+  const shipCode = stableIdCode(start.shipId);
+  const augmentCodes = start.augmentIds.map(id => ONSLAUGHT_START_POOL.indexOf(id) + 1);
+  return [ONSLAUGHT_LOADOUT_DETAILS_MARKER, shipCode, ...augmentCodes];
+}
+
+export function readOnslaughtLoadoutDetails(details = [], competitiveDetailsCount = GLOBAL_COMPETITIVE_DETAILS_COUNT) {
+  const values = readLeaderboardDetails(details);
+  const offset = competitiveDetailsCount + 4;
+  if (values[offset] !== ONSLAUGHT_LOADOUT_DETAILS_MARKER) return null;
+  const shipCode = values[offset + 1];
+  const matches = getSelectableShips().filter(ship => stableIdCode(getShipMetadata(ship.spriteKey)?.id || ship.id) === shipCode);
+  const augmentIds = values.slice(offset + 2, offset + 5).map(code => ONSLAUGHT_START_POOL[code - 1]);
+  if (matches.length !== 1 || augmentIds.length !== 3 || augmentIds.some(id => !id) || new Set(augmentIds).size !== 3) return null;
+  return { shipId: getShipMetadata(matches[0].spriteKey)?.id || matches[0].id, augmentIds, rulesetVersion: ONSLAUGHT_RULESET_V2 };
 }
 
 function firstFiniteInt(values = [], fallback = 0) {
@@ -300,8 +357,8 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
     ? firstFiniteInt([
       raw.finalSector,
       raw.metadata?.finalSector,
-      raw.metadata?.levelReached,
-      raw.levelReached,
+      raw.levelSource === 'score_estimate' ? null : raw.metadata?.levelReached,
+      raw.levelSource === 'score_estimate' ? null : raw.levelReached,
       details[2]
     ], 0)
     : null;
@@ -315,6 +372,7 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
   const rankIndex = Math.max(0, Math.min(MAX_RANK_INDEX, numericInt(raw.rankIndex ?? raw.rank_index, getRankFromLevel(level))));
   const competitiveDetailsCount = sectorEntry ? SECTOR_COMPETITIVE_DETAILS_COUNT : GLOBAL_COMPETITIVE_DETAILS_COUNT;
   const encodedCareerRank = readCareerRankStatus(details, competitiveDetailsCount);
+  const onslaughtLoadout = sectorEntry ? null : readOnslaughtLoadoutDetails(details, competitiveDetailsCount);
   const localCareerRankExact = raw.careerRankExact ?? raw.metadata?.careerRankExact ?? null;
   const careerRankExact = localCareerRankExact == null
     ? encodedCareerRank?.exact ?? null
@@ -322,6 +380,9 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
   const careerRankLabel = careerRankExact
     ? formatCareerInteger(careerRankExact, { maxPlainDigits: 6 })
     : encodedCareerRank?.label ?? String(rankIndex + 1);
+  const careerRankIndex = careerRankExact
+    ? Math.max(0, Math.min(MAX_RANK_INDEX, Number(careerRankExact) - 1))
+    : encodedCareerRank ? MAX_RANK_INDEX : rankIndex;
   const runTimeSeconds = sectorEntry
     ? (raw.runTimeSeconds ?? raw.runtimeSeconds ?? raw.metadata?.runTimeSeconds ?? details[4] ?? null)
     : (raw.runTimeSeconds ?? raw.runtimeSeconds ?? raw.metadata?.runTimeSeconds ?? null);
@@ -343,13 +404,19 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
     rankIndex,
     careerRankExact,
     careerRankLabel,
+    careerRankIndex,
     careerRankStatusSource: localCareerRankExact != null
       ? 'exact'
       : encodedCareerRank
         ? 'steam_details'
         : 'authored_fallback',
     shipId,
+    startingLoadout: onslaughtLoadout,
     shipName,
+    runMode: typeof raw.runMode === 'string' ? raw.runMode.slice(0, 40) : null,
+    startSector: sectorEntry ? (sectorStart > 0 ? sectorStart : null)
+      : Number.isInteger(Number(raw.startSector)) && Number(raw.startSector) > 0 ? Number(raw.startSector) : null,
+    endSector: Number.isInteger(Number(raw.endSector)) && Number(raw.endSector) > 0 ? Number(raw.endSector) : null,
     shipTier,
     shipPowerRating: shipPowerRating == null ? null : Number(shipPowerRating),
     runTimeSeconds: runTimeSeconds == null ? null : Math.max(0, numericInt(runTimeSeconds, 0)),
@@ -360,7 +427,7 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
     sectorStart: sectorStart ? Math.max(1, sectorStart) : null,
     highestSectorReached: highestSectorReached ? Math.max(1, highestSectorReached) : null,
     finalSector: finalSector ? Math.max(1, finalSector) : null,
-    levelSource: explicitLevel ? 'encoded' : 'score_estimate',
+    levelSource: raw.levelSource === 'score_estimate' ? 'score_estimate' : explicitLevel ? 'encoded' : 'score_estimate',
     source: raw.source || options.source || 'unknown',
     isCurrentPlayer: Boolean(raw.isCurrentPlayer),
     timestamp: raw.timestamp || raw.created_at || raw.createdAt || null,
@@ -394,10 +461,19 @@ export function createRunResultFromGame(game, overrides = {}) {
   const canonicalRunMode = parseRunMode(runModeSource);
   const runMode = canonicalRunMode || (String(runModeSource ?? '').trim() || null);
   const isDebugRun = overrides.isDebugRun ?? game?.isDebugRun === true;
-  const submissionEligible = canRunModeSubmitGlobalLeaderboard(canonicalRunMode, { isDebugRun });
+  const competition = {
+    runId: game?.runId || null,
+    rulesetVersion: game?.rulesetVersion || null,
+    competitionStart: game?.competitionStart ? { ...game.competitionStart } : null,
+    prototype: game?.runPolicy?.prototype === true
+  };
+  const startSector = Math.max(1, numericInt(overrides.startSector ?? game?.runSummary?.startSector ?? game?.runStartSector, 1));
+  const submissionEligible = !competition.prototype
+    && canRunModeSubmitGlobalLeaderboard(canonicalRunMode, { isDebugRun })
+    && (canonicalRunMode !== 'overrun_tactical' || validOnslaughtRun({ ...competition, runMode, isDebugRun, startSector, shipId: shipMetadata?.id || selectedShipSpriteKey }));
   const achievementEligible = canRunModeUnlockAchievements(canonicalRunMode, { isDebugRun });
   const leaderboard = submissionEligible
-    ? getLeaderboardDescriptorForRunMode(canonicalRunMode)
+    ? getLeaderboardDescriptorForRunMode(canonicalRunMode, competition.rulesetVersion)
     : {
         leaderboardName: null,
         leaderboardKind: 'ineligible',
@@ -428,7 +504,11 @@ export function createRunResultFromGame(game, overrides = {}) {
     kills: Math.max(0, numericInt(overrides.kills ?? playScene?.totalKills, 0)),
     bossKills: Math.max(0, numericInt(overrides.bossKills ?? playScene?.bossKills, 0)),
     wavesCleared: Math.max(0, numericInt(overrides.wavesCleared ?? playScene?.wavesCleared, 0)),
+    sectorsCleared: Math.max(0, numericInt(overrides.sectorsCleared ?? game?.runSummary?.sectorsCleared ?? (levelReached - Math.max(1, numericInt(overrides.startSector ?? game?.runStartSector, 1))), 0)),
     runMode,
+    startSector: Math.max(1, numericInt(overrides.startSector ?? game?.runSummary?.startSector ?? game?.runStartSector, 1)),
+    endSector: levelReached,
+    ...competition,
     runModeSource: runModeSource == null ? null : String(runModeSource),
     isDebugRun,
     eligibleForSubmission: submissionEligible,
@@ -469,6 +549,9 @@ export function createSectorStartRunResultFromGame(game, overrides = {}) {
     game?.level
   ], highestSectorReached));
   return {
+    runMode: 'sector_start',
+    isDebugRun: game?.isDebugRun === true,
+    eligibleForSubmission: game?.isDebugRun !== true,
     score: Math.max(0, numericInt(overrides.score ?? attempt.scoreEarned ?? game?.score, 0)),
     level: highestSectorReached,
     levelReached: highestSectorReached,
@@ -513,7 +596,7 @@ export function encodeSteamLeaderboardDetails(runResult = {}) {
     Math.max(0, numericInt(runResult.bossKills, 0)),
     Math.max(0, numericInt(runResult.wavesCleared, 0))
   ].map(value => Math.max(0, Math.min(STEAM_DETAILS_INT32_MAX, value)));
-  return replaceCareerRankDetails(competitiveDetails, runResult.careerRankExact ?? String((runResult.rankIndex || 0) + 1), GLOBAL_COMPETITIVE_DETAILS_COUNT);
+  return [...replaceCareerRankDetails(competitiveDetails, runResult.careerRankExact ?? String((runResult.rankIndex || 0) + 1), GLOBAL_COMPETITIVE_DETAILS_COUNT), ...encodeOnslaughtLoadoutDetails(runResult)];
 }
 
 export function encodeSteamSectorLeaderboardDetails(runResult = {}) {

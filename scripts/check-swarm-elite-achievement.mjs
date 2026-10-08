@@ -38,17 +38,18 @@ function evaluate(overrides = {}) {
 
 assert.equal(SWARM_ELITE_ACHIEVEMENT_ID, 'ACH_GLOBAL_NUMBER_ONE', 'stable Steam/internal ID must be retained');
 assert.equal(GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID, SWARM_ELITE_ACHIEVEMENT_ID, 'legacy source constant must remain a compatibility alias');
-assert.equal(SWARM_ELITE_SCORE_GATE, 750000);
+assert.equal(SWARM_ELITE_SCORE_GATE, 250000);
 
 const catalogEntry = getAchievementById(SWARM_ELITE_ACHIEVEMENT_ID);
 assert.equal(catalogEntry?.name, 'Swarm Elite');
-assert.equal(catalogEntry?.description, 'Submit a 750,000-point ranked run.');
-assert.equal(catalogEntry?.target, 750000);
+assert.equal(catalogEntry?.description, 'Submit a ranked score of at least 250,000 points. Modes: Arcade Tactical, Arcade Pure, Onslaught Tactical.');
+assert.equal(catalogEntry?.target, 250000);
 
-assert.equal(evaluate({ score: 749999 }).eligible, false, '749,999 must not unlock');
-assert.equal(evaluate({ score: 750000 }).eligible, true, '750,000 must unlock after acceptance');
+assert.equal(evaluate({ score: 249999 }).eligible, false, '249,999 must not unlock');
+assert.equal(evaluate({ score: 250000 }).eligible, true, '250,000 must unlock after acceptance');
 assert.equal(evaluate({ score: 1250000 }).eligible, true, 'scores above the gate must unlock after acceptance');
 assert.equal(evaluate({ runMode: RUN_MODES.MAYHEM_TACTICAL }).eligible, true, 'Mayhem Tactical is an eligible ranked mode');
+assert.equal(evaluate({ runMode: RUN_MODES.OVERRUN_TACTICAL, score:250000 }).eligible,true,'accepted Onslaught Tactical score qualifies without requiring first place');
 assert.equal(evaluate({ runMode: 'mayhem-pure' }).eligible, true, 'known legacy Pure aliases should remain compatible');
 assert.equal(evaluate({ submissionAccepted: false, rejected: true }).eligible, false, 'rejected submissions must not unlock');
 assert.equal(evaluate({ submissionAccepted: false, queued: true }).eligible, false, 'offline queued submissions must wait for acceptance');

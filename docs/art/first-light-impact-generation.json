@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "tool": "built-in image_gen",
+  "generatedSourcePath": "C:\\Users\\cromk\\.codex\\generated_images\\01a0e3ab-e4f1-7072-8ad3-4fa0a3258a7d\\exec-776a2aab-4ba4-4bfd-8364-b89a4b2f2d63.png",
+  "output": "explosion-atlas-original.png",
+  "prompt": "Use case: stylized-concept. Asset type: production-ready transparent sprite animation atlas for a premium 2D top-down arcade space shooter.\n\nCreate ONE wide atlas arranged in EXACTLY FOUR COLUMNS and TWO ROWS, exactly EIGHT equal SQUARE cells, read left to right across the top row and then the bottom row. Overall canvas aspect ratio 2:1. No grid markings or labels. Each cell is an animation frame of the SAME centered volumetric impact explosion seen directly from above, with the exact same camera, center point, lighting and consistent spatial scale. Every cell has generous EMPTY transparent margins on every side, including toward adjacent cells. All visible particles and smoke must stay inside the inner 65 percent of their own cell; no cell overlap, no connecting effects.\n\nAnimation: frame 1, small dense amber ignition core with tiny irregular sparks; frame 2, a compact orange-gold pressure rupture with emerging irregular molten fragments; frame 3, the eruption rapidly grows with asymmetric tongues of incandescent fire and early charcoal smoke; frame 4, the explosion reaches its brightest detailed irregular peak, orange-gold fire visibly broken by darker material and no solid white center; frame 5, expansion into separate hot fragments and thick sculptural dark charcoal smoke; frame 6, flames diminish to ember-lit chunks between distinct billowing smoke masses; frame 7, sparse cooling orange fragments and loose fading dark smoke wisps; frame 8, a few dim embers with faint dissipating charcoal wisps, nearly transparent. The widest stage remains safely centered within each cell's inner 65 percent, and later stages naturally fade.\n\nStyle: sophisticated high-detail physically rendered game VFX, tactile molten metal, hot gaseous turbulence, detailed volumetric smoke, rich warm-orange and deep-gold highlights with readable dark contrast. A short premium ship-impact/ship-destruction burst, suitable for gameplay scale. Controlled luminosity and clean alpha edges. Genuine transparent background everywhere outside each effect, including smoke transparency.\n\nStrictly avoid: geometric circles or rings, shockwave circles, radial lines or spokes, starbursts, beam streaks, abstract vector graphics, flat gradients, a white ball obscuring the detail, giant baked outer glow, lens flares, text, numbers, borders, checkerboard pattern, ground, floor, cast shadows, background scenery, spacecraft or objects. Only the eight coherent explosion stages in the exact 4 by 2 atlas layout.",
+  "transparentBackgroundRequested": true,
+  "layout": {
+    "columns": 4,
+    "rows": 2,
+    "order": "left to right, top row then bottom row"
+  },
+  "visualInspection": "Eight distinct stages inspected: warm orange/gold ignition expands into irregular volumetric fire, molten fragments and charcoal smoke, then cools and fades. No geometric rings, lines, spokes, text or white ball. Separate transparent gutters and broadly consistent frame centers. Final frames retain smoke texture; integration should fade their opacity to zero.",
+  "processing": "No image editing or resampling performed; generated source pixels and alpha preserved.",
+  "qa": {
+    "sha256": "42d97b275c39a90a29c006e750f92baf4f79b1dc8f8016413ec381b5efe43242",
+    "bytes": 1135816,
+    "width": 1774,
+    "height": 887,
+    "format": "RGBA PNG8",
+    "idealCellSize": 443.5,
+    "normalizationNeeded": true,
+    "normalizationSuggestion": "Resize the full atlas proportionally to 1776x888 or 1024x512 before extracting equal cells, or use the rounded source rectangles below.",
+    "allFramesHaveTransparentGutters": true,
+    "frames": [
+      {
+        "frame": 1,
+        "rect": {
+          "x": 0,
+          "y": 0,
+          "width": 444,
+          "height": 444
+        },
+        "visibleBounds": {
+          "minX": 161,
+          "minY": 163,
+          "maxX": 279,
+          "maxY": 287
+        },
+        "minimumTransparentMargin": 156,
+        "alphaWeightedCenter": {
+          "x": 223.1407600231005,
+          "y": 224.29768775970683
+        },
+        "visiblePixels": 8208,
+        "transparentPixels": 183503,
+        "occupiedCellEdgePixels": 0
+      },
+      {
+        "frame": 2,
+        "rect": {
+          "x": 444,
+          "y": 0,
+          "width": 443,
+          "height": 444
+        },
+        "visibleBounds": {
+          "minX": 111,
+          "minY": 127,
+          "maxX": 325,
+          "maxY": 325
+        },
+        "minimumTransparentMargin": 111,
+        "alphaWeightedCenter": {
+          "x": 220.346958141789,
+          "y": 223.61217536815994
+        },
+        "visiblePixels": 25689,
+        "transparentPixels": 162848,
+        "occupiedCellEdgePixels": 0
+      },
+      {
+        "frame": 3,
+        "rect": {
+          "x": 887,
+          "y": 0,
+          "width": 444,
+          "height": 444
+        },
+        "visibleBounds": {
+          "minX": 52,
+          "minY": 60,
+          "maxX": 368,
+          "maxY": 364
+        },
+        "minimumTransparentMargin": 52,
+        "alphaWeightedCenter": {
+          "x": 212.24841402468113,
+          "y": 223.26643522955746
+        },
+        "visiblePixels": 58751,
+        "transparentPixels": 126284,
+        "occupiedCellEdgePixels": 0
+      },
+      {
+        "frame": 4,
+        "rect": {
+          "x": 1331,
+          "y": 0,
+          "width": 443,
+          "height": 444
+        },
+        "visibleBounds": {
+          "minX": 27,
+          "minY": 46,
+          "maxX": 410,
+          "maxY": 411
+        },
+        "minimumTransparentMargin": 27,
+        "alphaWeightedCenter": {
+          "x": 221.43636673044975,
+          "y": 221.21944869672757
+        },
+        "visiblePixels": 93223,
+        "transparentPixels": 92391,
+        "occupiedCellEdgePixels": 0
+      },
+      {
+        "frame": 5,
+        "rect": {
+          "x": 0,
+          "y": 444,
+          "width": 444,
+          "height": 443
+        },
+        "visibleBounds": {
+          "minX": 37,
+          "minY": 43,
+          "maxX": 405,
+          "maxY": 389
+        },
+        "minimumTransparentMargin": 37,
+        "alphaWeightedCenter": {
+          "x": 216.76640135509928,
+          "y": 218.02333941330681
+        },
+        "visiblePixels": 83827,
+        "transparentPixels": 100776,
+        "occupiedCellEdgePixels": 0
+      },
+      {
+        "frame": 6,
+        "rect": {
+          "x": 444,
+          "y": 444,
+          "width": 443,
+          "height": 443
+        },
+        "visibleBounds": {
+          "minX": 65,
+          "minY": 56,
+          "maxX": 391,
+          "maxY": 379
+        },
+        "minimumTransparentMargin": 51,
+        "alphaWeightedCenter": {
+          "x": 226.29288059902672,
+          "y": 220.29610308912075
+        },
+        "visiblePixels": 64529,
+        "transparentPixels": 120177,
+        "occupiedCellEdgePixels": 0
+      },
+      {
+        "frame": 7,
+        "rect": {
+          "x": 887,
+          "y": 444,
+          "width": 444,
+          "height": 443
+        },
+        "visibleBounds": {
+          "minX": 90,
+          "minY": 80,
+          "maxX": 351,
+          "maxY": 374
+        },
+        "minimumTransparentMargin": 68,
+        "alphaWeightedCenter": {
+          "x": 221.28105294061928,
+          "y": 223.86251029415521
+        },
+        "visiblePixels": 46892,
+        "transparentPixels": 137787,
+        "occupiedCellEdgePixels": 0
+      },
+      {
+        "frame": 8,
+        "rect": {
+          "x": 1331,
+          "y": 444,
+          "width": 443,
+          "height": 443
+        },
+        "visibleBounds": {
+          "minX": 85,
+          "minY": 74,
+          "maxX": 341,
+          "maxY": 363
+        },
+        "minimumTransparentMargin": 74,
+        "alphaWeightedCenter": {
+          "x": 202.98422472619114,
+          "y": 218.06543098182877
+        },
+        "visiblePixels": 34138,
+        "transparentPixels": 137586,
+        "occupiedCellEdgePixels": 0
+      }
+    ]
+  }
+}

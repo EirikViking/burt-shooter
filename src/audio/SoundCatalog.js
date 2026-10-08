@@ -1,7 +1,12 @@
+import {TRACTOR_FLEET} from '../config/TractorFleet.js';
 import { BONUS_CORES } from '../config/BonusCoreCatalog.js';
 import { PREDATOR_SFX, PREDATOR_SOUND_ROOT } from './PredatorSounds.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { BOSS_ARSENALS } from '../config/BossArsenal.js';
+import { FIRST_LIGHT_SOUND_CATALOG, FIRST_LIGHT_SOUND_MIX } from './FirstLightSounds.js';
+import { PREMIUM_SOUND_CATALOG, PREMIUM_SOUND_MIX } from './PremiumSounds.js';
+import { VISUAL_LIFE_SOUND_CATALOG, VISUAL_LIFE_SOUND_MIX } from './VisualLifeSounds.js';
+import {CONVOY_SURPRISE_SOUND_CATALOG,CONVOY_SURPRISE_SOUND_MIX} from './ConvoySurpriseSounds.js';
 import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
 import { GAME_OVER_TAUNT_VOICE_COUNT } from '../config/GameOverTauntVoiceLines.js';
 import { LEVEL_CLEAR_VOICE_COUNT } from '../config/LevelClearVoiceLines.js';
@@ -249,6 +254,10 @@ export const MUSIC_PLAYLISTS = {
 };
 
 export const SFX_MIX = {
+    ...Object.fromEntries(Object.entries(FIRST_LIGHT_SOUND_MIX).map(([id,mix])=>[`first_light_${id}`,mix])),
+    ...PREMIUM_SOUND_MIX,
+    ...VISUAL_LIFE_SOUND_MIX,
+    ...CONVOY_SURPRISE_SOUND_MIX,
     shoot_small: { volume: 0.78, minIntervalMs: 42, priority: 3, priorityDuckFactor: 0.55 },
     shoot_alt: { volume: 0.7, minIntervalMs: 50, priority: 3, priorityDuckFactor: 0.55 },
     shoot_heavy: { volume: 0.82, minIntervalMs: 80, priority: 3, priorityDuckFactor: 0.55 },
@@ -415,7 +424,7 @@ export const SFX_MIX = {
     boss_net_fire: { volume: 0.66, minIntervalMs: 700, priority: 8, priorityHoldMs: 420 },
     boss_hazard_impact: { volume: 0.58, minIntervalMs: 180, playbackRateMin: 0.92, playbackRateMax: 1.05 },
     trait_bonus_hit: { volume: 0.08, minIntervalMs: 650 },
-    trait_wing_hit: { volume: 0.34, minIntervalMs: 120 },
+    trait_wing_hit: { volume: 0.12, minIntervalMs: 400, priority: 0 },
     trait_pierce_hit: { volume: 0.32, minIntervalMs: 120 },
     trait_crit_splash: { volume: 0.46, minIntervalMs: 350 }
 };
@@ -459,6 +468,7 @@ export const VOICE_MIX = {
     mission_control_global_close: { volume: 0.9, duckFactor: 0.42, duckMs: 2100, cooldownMs: 42000 },
     mission_control_top3_close: { volume: 0.94, duckFactor: 0.38, duckMs: 2300, cooldownMs: 42000 },
     mission_control_number_one_close: { volume: 0.98, duckFactor: 0.34, duckMs: 2600, cooldownMs: 42000 },
+    mission_control_known_record_beaten: { volume: 0.86, duckFactor: 0.5, duckMs: 1900, cooldownMs: 60000 },
     mission_control_top3_highscore: { volume: 1.02, duckFactor: 0.28, duckMs: 3800, cooldownMs: 9000 },
     mission_control_number_one_highscore: { volume: 1.06, duckFactor: 0.24, duckMs: 4300, cooldownMs: 9000 },
     mission_control_near_miss: { volume: 0.84, duckFactor: 0.46, duckMs: 2300, cooldownMs: 9000 },
@@ -501,6 +511,7 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_global_close: 'mission_control_global_close_01.mp3',
     mission_control_top3_close: 'mission_control_top3_close_01.mp3',
     mission_control_number_one_close: 'mission_control_number_one_close_01.mp3',
+    mission_control_known_record_beaten: 'mission_control_known_record_beaten_01.mp3',
     mission_control_top3_highscore: 'mission_control_top3_highscore_01.mp3',
     mission_control_number_one_highscore: 'mission_control_number_one_highscore_01.mp3',
     mission_control_near_miss: 'mission_control_near_miss_01.mp3',
@@ -524,6 +535,11 @@ export const VOICE_EVENT_FALLBACKS = {
 };
 
 export const SFX_CATALOG = {
+    ...FIRST_LIGHT_SOUND_CATALOG,
+    ...PREMIUM_SOUND_CATALOG,
+    ...VISUAL_LIFE_SOUND_CATALOG,
+    ...CONVOY_SURPRISE_SOUND_CATALOG,
+    ...Object.fromEntries(TRACTOR_FLEET.flatMap(p=>['charge','active','break'].map(event=>[`tractor_${p.id}_${event}`, [`/audio/sfx/tractor-fleet/${p.id}-${event}.mp3`]]))),
     ...Object.fromEntries(Object.keys(BOSS_ARSENALS).map(key => [`boss_arsenal_${key}`, [`/audio/sfx/arsenal/${key}.wav`]])),
     serpent_arrive: ['/audio/sfx/core-serpent/serpent_arrive.mp3'],
     serpent_break: ['/audio/sfx/core-serpent/serpent_break.mp3'],
@@ -882,6 +898,7 @@ export const SFX_CATALOG = {
     'mission_control_global_close': numberedVoicePool('mission_control_global_close', 1),
     'mission_control_top3_close': numberedVoicePool('mission_control_top3_close', 1),
     'mission_control_number_one_close': numberedVoicePool('mission_control_number_one_close', 1),
+    'mission_control_known_record_beaten': numberedVoicePool('mission_control_known_record_beaten', 1),
     'mission_control_top3_highscore': numberedVoicePool('mission_control_top3_highscore', 1),
     'mission_control_number_one_highscore': numberedVoicePool('mission_control_number_one_highscore', 1),
     'mission_control_near_miss': numberedVoicePool('mission_control_near_miss', 1),
@@ -981,9 +998,8 @@ export const SFX_CATALOG = {
     'nova_danger_mid_pop': [
         getSfx('nova_danger_mid_pop')
     ],
-    'overrun_clear_coronation': [
-        getSfx('astra_overrun_coronation_v6')
-    ],
+    'overrun_clear_coronation': ['/audio/sfx/celebration-polish-20260908/overrun-triumph.mp3'],
+    'personal_record_premium': ['/audio/sfx/celebration-polish-20260908/personal-record.mp3'],
     'overrun_clear_shockwave': [
         getSfx('nova_overrun_clear_shockwave')
     ],

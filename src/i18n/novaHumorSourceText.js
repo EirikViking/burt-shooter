@@ -13,7 +13,10 @@ export const NOVA_HUMOR_POOLS = Object.freeze({
     'Arcade Control says this is technically a rescue mission.',
     'Please keep hands, feet, and heroic nonsense inside the ship.',
     'Somewhere, a boss is rehearsing its entrance.',
-    'The score counter has been told to dream bigger.'
+    'The score counter has been told to dream bigger.',
+    'Onslaught starts at Sector 51: choose a ship and three augments before launch.',
+    'In Onslaught, a fallen boss does not dismiss its surviving escorts.',
+    'Inspect an Onslaught record to see its starting build, then try it with an unlocked ship.'
   ]),
   pause: freezePool([
     'Time stopped. The bullets are pretending not to move.',
@@ -68,7 +71,10 @@ const localizedPools = Object.freeze({
       'Arcade Control behauptet, dies sei technisch gesehen eine Rettungsmission.',
       'Bitte Hände, Füße und heldenhaften Unsinn im Schiff behalten.',
       'Irgendwo probt ein Boss seinen Auftritt.',
-      'Der Punktezähler wurde angewiesen, größer zu träumen.'
+      'Der Punktezähler wurde angewiesen, größer zu träumen.',
+      'Onslaught beginnt in Sektor 51: Wähle vor dem Start ein Schiff und drei Augmentierungen.',
+      'In Onslaught verschwinden die verbliebenen Begleitschiffe nicht, wenn der Boss fällt.',
+      'Untersuche einen Onslaught-Rekord und probiere dessen Startausrüstung mit einem freigeschalteten Schiff aus.'
     ],
     pause: [
       'Die Zeit steht. Die Kugeln tun nur so, als würden sie sich nicht bewegen.',
@@ -121,7 +127,10 @@ const localizedPools = Object.freeze({
       'Control Arcade asegura que esto es técnicamente una misión de rescate.',
       'Mantén manos, pies y heroicidades absurdas dentro de la nave.',
       'En algún lugar, un jefe está ensayando su entrada.',
-      'Al contador de puntos le han ordenado soñar más alto.'
+      'Al contador de puntos le han ordenado soñar más alto.',
+      'Onslaught comienza en el sector 51: elige nave y tres mejoras antes de despegar.',
+      'En Onslaught, derrotar al jefe no elimina a sus escoltas supervivientes.',
+      'Inspecciona un récord de Onslaught y prueba su equipo inicial con una nave desbloqueada.'
     ],
     pause: [
       'El tiempo se ha detenido. Las balas fingen no moverse.',
@@ -174,7 +183,10 @@ const localizedPools = Object.freeze({
       'Аркадный диспетчер уверяет, что технически это спасательная операция.',
       'Руки, ноги и героическую чепуху держать внутри корабля.',
       'Где-то босс репетирует эффектный выход.',
-      'Счётчику очков приказано мечтать масштабнее.'
+      'Счётчику очков приказано мечтать масштабнее.',
+      'Onslaught начинается в секторе 51: перед стартом выбери корабль и три улучшения.',
+      'В Onslaught после гибели босса оставшееся сопровождение не исчезает.',
+      'Изучи рекорд Onslaught и попробуй его стартовый набор на открытом корабле.'
     ],
     pause: [
       'Время остановилось. Пули делают вид, что тоже.',
@@ -227,7 +239,10 @@ const localizedPools = Object.freeze({
       '街机控制部说，严格来讲这算救援任务。',
       '请把手脚和英雄式胡闹留在船内。',
       '某个Boss正在排练登场。',
-      '计分器接到命令：把梦做大点。'
+      '计分器接到命令：把梦做大点。',
+      'Onslaught 从第 51 区开始：出发前选择飞船和三项强化。',
+      '在 Onslaught 中，击败 Boss 后仍需消灭幸存的护卫。',
+      '查看 Onslaught 纪录的初始配置，并用已解锁飞船尝试。'
     ],
     pause: [
       '时间停了。子弹也在假装没动。',
@@ -280,7 +295,10 @@ const localizedPools = Object.freeze({
       'O Controle do Arcade diz que isto é tecnicamente uma missão de resgate.',
       'Mantenha mãos, pés e bobagem heroica dentro da nave.',
       'Em algum lugar, um chefe está ensaiando sua entrada.',
-      'O contador de pontos foi instruído a sonhar mais alto.'
+      'O contador de pontos foi instruído a sonhar mais alto.',
+      'Onslaught começa no Setor 51: escolha uma nave e três melhorias antes de partir.',
+      'Em Onslaught, derrotar o chefe não elimina os escoltas sobreviventes.',
+      'Inspecione um recorde de Onslaught e teste a configuração inicial com uma nave desbloqueada.'
     ],
     pause: [
       'O tempo parou. As balas fingem que também.',
@@ -333,7 +351,10 @@ const localizedPools = Object.freeze({
       '아케이드 관제실 말로는 엄밀히 따져 구조 임무랍니다.',
       '손발과 영웅적인 헛짓은 함선 안에 두세요.',
       '어딘가에서 보스가 등장을 연습하고 있습니다.',
-      '점수판에 더 큰 꿈을 꾸라는 명령이 내려졌습니다.'
+      '점수판에 더 큰 꿈을 꾸라는 명령이 내려졌습니다.',
+      'Onslaught는 51구역에서 시작합니다. 출격 전 함선과 강화 3개를 고르세요.',
+      'Onslaught에서는 보스를 처치해도 살아남은 호위 적이 사라지지 않습니다.',
+      'Onslaught 기록의 시작 구성을 살펴보고 잠금 해제된 함선으로 시험해 보세요.'
     ],
     pause: [
       '시간이 멈췄습니다. 탄환도 안 움직이는 척합니다.',
@@ -386,7 +407,10 @@ const localizedPools = Object.freeze({
       'アーケード管制によれば、これは一応救助任務です。',
       '手足と英雄的な無茶は船内にお収めください。',
       'どこかのボスが登場を練習中です。',
-      'スコア計には、もっと大きく夢を見るよう命令しました。'
+      'スコア計には、もっと大きく夢を見るよう命令しました。',
+      'Onslaughtはセクター51から。出撃前に船と3つの強化を選びましょう。',
+      'Onslaughtではボスを倒しても生き残った護衛は消えません。',
+      'Onslaughtの記録で初期構成を調べ、解除済みの船で試してみましょう。'
     ],
     pause: [
       '時間は停止。弾は動いていないふりをしています。',

@@ -1,0 +1,27 @@
+{
+  "tool": "built-in image_gen.imagegen",
+  "transparent_background": true,
+  "assets": [
+    {
+      "file": "prison-transport.png",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0e3d3-11c3-7130-ade6-11b9278f9c8f/exec-8393fa3c-00a9-4aac-8b82-5a3dd9a6b9c4.png",
+      "prompt": "Use case: stylized-concept. Asset type: production transparent spacecraft sprite for a premium 2D vertically scrolling space shooter. Create ONE large gunmetal armored prison transport, perfectly orthographic overhead/top-down, no perspective or isometric angle. The blunt forward nose points straight UP. Its wide horizontal silhouette is approximately three times wider than tall, with a heavy central armored spine, battered bronze armor panels, recessed teal power cells, fine believable mechanical recesses and clean high-contrast form separation. Two clearly open EMPTY docking bays are built into the left and right sides, each a deep open rectangular/U-shaped recess with visible empty space, intended to accept separate small fighter sprites at runtime. The bays must visibly contain no ships. Detailed painted and rendered sci-fi game art, premium crisp material definition with restrained cool metal highlights, readable broad forms at small scale. Full object centered with generous transparent margin on all sides, completely uncut. Background must be genuinely transparent with clean alpha, including negative space in the docking recesses. No floor, no ground or cast shadow outside the hull, no environment, no checkerboard painted into the image, no text, letters, logos, watermark, lasers, rings, drawn lines, bullets, exhaust plume, glow bloom, or extra objects.",
+      "width": 2172,
+      "height": 724
+    },
+    {
+      "file": "rival-core-hull.png",
+      "source": "C:/Users/cromk/.codex/generated_images/01a0e3d3-11c3-7130-ade6-11b9278f9c8f/exec-b575daab-1e9d-4f70-89c9-7cc9ad2b64d5.png",
+      "prompt": "Use case: stylized-concept. Asset type: a production transparent 2D spacecraft game sprite, one enemy rival CORE HULL that will receive separate cannon sprites at runtime. Premium painted/rendered sci-fi spacecraft, perfectly orthographic TOP-DOWN overhead view, no perspective, no isometric tilt. Its pointed forward nose points straight DOWN toward the bottom edge of the image. Broad aggressive swept wings give a silhouette about twice as wide as tall. Crimson lacquered armored plates over deeply recessed charcoal mechanical structures; a hot amber central reactor is visible but has only contained emissive light, absolutely no bloom. High-end crisp painted material definition, broad readable armor facets, restrained wear, cohesive original design. The lateral left and right sides have obvious EMPTY weapon mounting sockets/hardpoints, with no attached barrels or cannons, designed for separate runtime cannons. Full isolated ship centered at no more than 75 percent of canvas width and height, generous completely transparent margin around the whole hull, do not crop any part. Truly transparent alpha background, no scene, no floor, no cast shadow outside the hull, no painted checkerboard. Do not include any text, lettering, logos, watermark, bullets, rockets, laser lines, rings, engine flame, exhaust, bloom, or additional objects. Produce the sprite itself, not a concept sheet or presentation board.",
+      "width": 1536,
+      "height": 1024
+    }
+  ],
+  "integration": {
+    "convoy": "public/art/first-light/prison-transport.webp",
+    "rival": "public/art/first-light/rival-core-hull.webp",
+    "normalization": "Sharp, fit inside width 1024, WebP quality 90; transparent 12 px padding around transport before resize",
+    "sourceOriginals": "E:/Codex/builds/nova-swarm/arcade-first-light/art-source (unique editable PNG originals retained)",
+    "notes": "Generated tool outputs use application-managed storage. Project processing and copies stayed on E; canonical game assets are in D source."
+  }
+}

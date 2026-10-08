@@ -1,0 +1,62 @@
+
+> nova-swarm@1.0.0 desktop:perf:packaged
+> node scripts/smoke-packaged-perf.mjs
+
+
+[Steamworks] Finding leaderboard: nova_swarm_global_score_v2
+[Steamworks] Finding leaderboard: nova_swarm_global_score_v2
+[Steamworks] Leaderboard found: nova_swarm_global_score_v2 (handle: 19997814)
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Leaderboard found: nova_swarm_global_score_v2 (handle: 19997814)
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Downloaded 4 entries
+[Steamworks] Downloaded 4 entries
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Downloaded 4 entries
+[Steamworks] Downloaded 4 entries
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Downloading entries (1 to 100)
+[Steamworks] Finding leaderboard: nova_swarm_tactical_score_v1
+[Steamworks] Finding leaderboard: nova_swarm_tactical_score_v1
+[Steamworks] Leaderboard found: nova_swarm_tactical_score_v1 (handle: 20417250)
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Leaderboard found: nova_swarm_tactical_score_v1 (handle: 20417250)
+[Steamworks] Downloading entries (1 to 100)
+[Steamworks] Downloading entries (1 to 50)
+[Steamworks] Downloading entries (0 to 0)
+[Steamworks] Downloading entries (1 to 100)
+[Steamworks] Downloaded 4 entries
+[Steamworks] Downloaded 88 entries
+[Steamworks] Downloaded 2 entries
+[Steamworks] Downloaded 50 entries
+[Steamworks] Downloaded 4 entries
+[Steamworks] Downloaded 88 entries
+[Steamworks] Downloaded 41 entries
+[electron-perf] t=5s fps=59.9 ms=16.7 level=1 enemies=7 bullets=47 scene=play
+[electron-perf] t=11s fps=60.2 ms=16.6 level=1 enemies=7 bullets=38 scene=play
+[electron-perf] t=16s fps=59.9 ms=16.7 level=1 enemies=7 bullets=39 scene=play
+[electron-perf] t=21s fps=59.9 ms=16.7 level=1 enemies=7 bullets=38 scene=play
+[electron-perf] t=27s fps=59.9 ms=16.7 level=1 enemies=7 bullets=36 scene=play
+[electron-perf] t=32s fps=59.9 ms=16.7 level=1 enemies=13 bullets=18 scene=play
+[electron-perf] t=37s fps=59.9 ms=16.7 level=1 enemies=6 bullets=32 scene=play
+[electron-perf] t=43s fps=59.5 ms=16.8 level=1 enemies=1 bullets=23 scene=play
+[electron-perf] t=48s fps=60.2 ms=16.6 level=1 enemies=8 bullets=22 scene=play
+[electron-perf] t=54s fps=59.9 ms=16.7 level=1 enemies=1 bullets=40 scene=play
+[electron-perf] t=59s fps=60.2 ms=16.6 level=1 enemies=0 bullets=20 scene=play
+[electron-perf] t=64s fps=59.9 ms=16.7 level=1 enemies=1 bullets=20 scene=play
+{
+  "outputDir": "D:\\vibe-coding-e\\nova-swarm-forum-129-improvements-20260822\\test-results\\fleet-art-v2-packaged-perf",
+  "baseUrl": "nova-swarm://app",
+  "build": "v2026-09-09_17-00-12",
+  "minFps": 59.523809523799216,
+  "avgFps": 59.946216157890404,
+  "sampleCount": 12,
+  "warnings": [],
+  "errors": []
+}
+Setting breakpad minidump AppID = 4765070
+SteamInternal_SetMinidumpSteamID:  Caching Steam ID:  76561198953993508 [API loaded no]
+(node:11636) [DEP0180] DeprecationWarning: fs.Stats constructor is deprecated.
+(Use `Nova Swarm --trace-deprecation ...` to show where the warning was created)
+[packaged-perf] ok: test-results/fleet-art-v2-packaged-perf/report.json

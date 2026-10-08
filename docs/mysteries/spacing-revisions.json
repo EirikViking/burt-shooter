@@ -1,0 +1,22 @@
+[
+  {
+    "id": "doorwraith",
+    "path": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-b991aa3c-11d2-4c31-8594-17dfdb87912f.png",
+    "prompt": "Correct this original production sprite atlas spacing. Preserve EXACTLY its four parts, designs, color, materials and orthographic perspective, but SHRINK ALL FOUR by 30% and place each in the exact CENTER of its own equal 2x2 quadrant. Every part must have generous transparent space inside all four sides of its quadrant. Nothing may cross either center axis. There MUST be a completely empty transparent horizontal gutter at least 100 pixels wide across the center AND vertical gutter 100px wide down the center. Preserve the four disjoint complete silhouettes and detached fragments with their own parent part. True transparent RGBA background. No new parts, no grid, text, labels, background or layout lines. This is simply a production layout correction, not new concept art."
+  },
+  {
+    "id": "tidemason",
+    "path": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-50b8f19a-c640-43c6-b8f6-92a979adbdb7.png",
+    "prompt": "Correct this original production sprite atlas spacing. Preserve EXACTLY its four parts, designs, color, materials and orthographic perspective, but SHRINK ALL FOUR by 30% and place each in the exact CENTER of its own equal 2x2 quadrant. Every part must have generous transparent space inside all four sides of its quadrant. Nothing may cross either center axis. There MUST be a completely empty transparent horizontal gutter at least 100 pixels wide across the center AND vertical gutter 100px wide down the center. Preserve the four disjoint complete silhouettes and detached fragments with their own parent part. True transparent RGBA background. No new parts, no grid, text, labels, background or layout lines. This is simply a production layout correction, not new concept art."
+  },
+  {
+    "id": "rift_surgeon",
+    "path": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-592784cb-e917-43d6-baf9-473302374da3.png",
+    "prompt": "Correct this original production sprite atlas spacing. Preserve EXACTLY its four parts, designs, color, materials and orthographic perspective, but SHRINK ALL FOUR by 30% and place each in the exact CENTER of its own equal 2x2 quadrant. Every part must have generous transparent space inside all four sides of its quadrant. Nothing may cross either center axis. There MUST be a completely empty transparent horizontal gutter at least 100 pixels wide across the center AND vertical gutter 100px wide down the center. Preserve the four disjoint complete silhouettes and detached fragments with their own parent part. True transparent RGBA background. No new parts, no grid, text, labels, background or layout lines. This is simply a production layout correction, not new concept art."
+  },
+  {
+    "id": "brood_ark",
+    "path": "C:/Users/cromk/.codex/generated_images/01a08651-8a75-7912-b016-bdc7cf3e9ea0/exec-641b275e-c81e-4194-be95-b5f7098e9e11.png",
+    "prompt": "Edit this original RGBA game part atlas ONLY to correct spacing and layout. Preserve the creature designs and painted material quality. TRUE transparent background. Rearrange and uniformly shrink the FOUR individual parts into a strict equal 2x2 grid: central long carrier torso entirely inside TOP LEFT with 10% empty padding on all four sides; first egg pod entirely inside TOP RIGHT with 10% padding; second egg pod entirely inside BOTTOM LEFT with 10% padding; juvenile raider entirely inside BOTTOM RIGHT with 10% padding. All four bounding rectangles must be completely DISJOINT, with a broad transparent central cross gutter. The main long body must be MUCH SMALLER: no taller than 40% of the image height, never 75% as currently shown. No component may extend across either central axis. Preserve whole silhouettes. No text, lines, grids, frames or backgrounds. Do not add objects. This is production asset spacing, not a scene."
+  }
+]

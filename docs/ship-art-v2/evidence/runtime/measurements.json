@@ -1,0 +1,2422 @@
+{
+  "gpu": {
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "vendor": "Google Inc. (NVIDIA)"
+  },
+  "initial": {
+    "resident": 1,
+    "geometries": 6,
+    "textures": 8,
+    "calls": 12,
+    "triangles": 47656
+  },
+  "imports": [
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+      "durationMs": 181.60000000149012,
+      "transferBytes": 1856520,
+      "decodedBytes": 1856220
+    }
+  ],
+  "drag": {
+    "yaw": 1.9199999966110497,
+    "pitch": 0.5849999989674292
+  },
+  "rotation": {
+    "frame": {
+      "samples": 716,
+      "meanMs": 16.667039106145253,
+      "p50Ms": 16.69999999999891,
+      "p95Ms": 16.80000000000291,
+      "maxMs": 17.299999999999272
+    },
+    "renderAndCanvasCopy": {
+      "samples": 715,
+      "meanMs": 0.831608391672998,
+      "p50Ms": 0.7999999970197678,
+      "p95Ms": 1.3000000044703484,
+      "maxMs": 3
+    }
+  },
+  "counts": [
+    {
+      "stage": "hangar-sparrow",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "hangar-courier",
+      "resident": 1,
+      "geometries": 9,
+      "textures": 4,
+      "calls": 18,
+      "triangles": 104720
+    },
+    {
+      "stage": "hangar-sparrow-return",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "menu",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "hangar-sparrow",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "hangar-courier",
+      "resident": 1,
+      "geometries": 9,
+      "textures": 4,
+      "calls": 18,
+      "triangles": 104720
+    },
+    {
+      "stage": "hangar-sparrow-return",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "menu",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "hangar-sparrow",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "hangar-courier",
+      "resident": 1,
+      "geometries": 9,
+      "textures": 4,
+      "calls": 18,
+      "triangles": 104720
+    },
+    {
+      "stage": "hangar-sparrow-return",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "menu",
+      "resident": 1,
+      "geometries": 6,
+      "textures": 8,
+      "calls": 12,
+      "triangles": 47656
+    },
+    {
+      "stage": "gameplay",
+      "resident": 0,
+      "geometries": 0,
+      "textures": 2,
+      "calls": 12,
+      "triangles": 47656
+    }
+  ],
+  "requests": [
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/03.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/03.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/03.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb"
+  ],
+  "errors": [],
+  "combat": {
+    "state": {
+      "coordinateSystem": "origin top-left, x right, y down",
+      "buildId": "v2026-08-22_14-35-02",
+      "gitSha": "0439b1f",
+      "language": {
+        "current": "en",
+        "preference": "system",
+        "supported": [
+          "en",
+          "de",
+          "es",
+          "ru",
+          "zh-CN",
+          "pt-BR",
+          "ko",
+          "ja"
+        ]
+      },
+      "scene": "play",
+      "score": 831,
+      "level": 1,
+      "sector": {
+        "number": 1,
+        "name": "Astra Vey",
+        "act": 1,
+        "bossCheckpoint": false
+      },
+      "lives": 3,
+      "runMode": "ranked",
+      "runModeReason": null,
+      "runModeProfile": {
+        "id": "ranked",
+        "menuId": "mayhem",
+        "label": "MAYHEM PURE",
+        "shortLabel": "Mayhem Pure",
+        "subLabel": "Ranked · No tactical upgrades",
+        "resultLabel": "MAYHEM PURE",
+        "oneMoreLabel": "ONE MORE PURE RUN",
+        "ranked": true,
+        "tacticalDraftEnabled": false,
+        "submitsGlobalLeaderboard": true,
+        "submitsLocalLeaderboard": true,
+        "unlocksAchievements": true,
+        "unlocksRankedCheckpoints": true,
+        "updatesCareerProgress": true,
+        "difficultyProfileId": "accepted_harder_ranked",
+        "normalWaveDifficultyLevelOffsetDelta": 0,
+        "bossDifficultyMult": 1,
+        "bossAttackDangerMult": 1,
+        "normalWaveAggressionMult": 1,
+        "normalWaveScoreXpMult": 1.2,
+        "pressureMultipliers": {
+          "fireChanceMult": 1,
+          "projectileSpeedMult": 1,
+          "enemySpeedMult": 1,
+          "eliteChanceMult": 1,
+          "specialThreatMult": 1,
+          "sustainMult": 1,
+          "scoreMult": 1,
+          "contentRarityMult": 1
+        }
+      },
+      "scoutAnomaly": null,
+      "combatTelemetry": {
+        "volleysFired": 65,
+        "projectilesFired": 130,
+        "projectilesHit": 9,
+        "accuracyPercent": 6.923076923076923,
+        "totalDamage": 9,
+        "averageDps": 1.0735629167511582,
+        "recentDps": 0,
+        "peakDps": 5,
+        "topSourceId": "primary",
+        "topSourceDamage": 9,
+        "topSourcePercent": 100,
+        "damageBySource": {
+          "primary": 9
+        }
+      },
+      "sectorStartChallenge": null,
+      "globalLeaderboardCues": {
+        "global": true,
+        "top3": false,
+        "number1": false,
+        "rivalKey": "next_rival|9|900|VOIDCADET",
+        "rivalTarget": {
+          "targetKind": "next_rival",
+          "targetName": "VOIDCADET",
+          "targetRank": 9,
+          "targetEntryScore": 900
+        }
+      },
+      "scoreSubmissionAllowed": true,
+      "maintainerDevtools": {
+        "enabled": true,
+        "source": "local_browser_hash"
+      },
+      "selectedShipSpriteKey": "nova-player-ship-01.png",
+      "threatResponse": {
+        "version": 1,
+        "shipId": "nova_ship_01",
+        "shipName": "NOVA SPARROW",
+        "responseLevel": "STANDARD",
+        "sustainedDps": 17.949,
+        "dpsRatio": 1,
+        "hullPressure": 0,
+        "tacticalPickCount": 0,
+        "enemyCountMult": 1,
+        "hardenedFodderChance": 0,
+        "hardenedFodderHealth": 2,
+        "durableHealthMult": 1,
+        "enemySpeedMult": 1,
+        "enemyFireDelayMult": 1,
+        "projectileSpeedMult": 1,
+        "bossHealthMult": 1,
+        "bossAttackDangerMult": 1
+      },
+      "steamUploadDiagnostics": null,
+      "achievements": {
+        "unlocked": [],
+        "lastUnlocked": null,
+        "steam": {
+          "queued": [],
+          "queueCount": 0,
+          "inFlight": [],
+          "lastResult": {
+            "type": "syncWithLocal",
+            "result": {
+              "ok": false,
+              "reason": "steam_achievements_bridge_missing"
+            },
+            "recordedAt": "2026-09-09T13:49:22.008Z"
+          }
+        },
+        "lastSteamSync": {
+          "direction": "bidirectional",
+          "result": {
+            "ok": false,
+            "reason": "steam_achievements_bridge_missing"
+          },
+          "syncedAt": "2026-09-09T13:49:22.010Z"
+        },
+        "count": 0,
+        "total": 81
+      },
+      "isPaused": false,
+      "overlays": {
+        "pause": false,
+        "settings": false,
+        "howToPlay": false,
+        "tacticalLoadout": false,
+        "credits": false,
+        "fatal": false
+      },
+      "pauseOverlay": {
+        "visible": false,
+        "visualLanguage": null,
+        "score": null,
+        "sector": null,
+        "lives": null,
+        "powerup": null,
+        "pilotOrders": null,
+        "combatTelemetryText": null,
+        "tacticalDraft": null,
+        "experimentLabel": null,
+        "tacticalDirective": "DIRECTIVE 1/50: SUPPORT HUNTS 0/1 // EXTRA RESCAN",
+        "combatTelemetry": {
+          "volleysFired": 65,
+          "projectilesFired": 130,
+          "projectilesHit": 9,
+          "accuracyPercent": 6.923076923076923,
+          "totalDamage": 9,
+          "averageDps": 1.0735629167511582,
+          "recentDps": 0,
+          "peakDps": 5,
+          "topSourceId": "primary",
+          "topSourceDamage": 9,
+          "topSourcePercent": 100,
+          "damageBySource": {
+            "primary": 9
+          }
+        },
+        "humor": null,
+        "aceBounty": {
+          "active": {
+            "id": "skirmisher_pincer_needle",
+            "number": 515,
+            "chassisId": "skirmisher",
+            "chassisLabel": "SKIRMISHER",
+            "flightId": "pincer",
+            "flightLabel": "PINCER",
+            "weaponId": "needle",
+            "weaponLabel": "NEEDLE",
+            "rewardId": "ghost",
+            "rewardLabel": "GHOST MODE",
+            "rewardKind": "powerup",
+            "rewardPowerupType": "ghost",
+            "color": 6750109,
+            "accent": 13281023,
+            "effects": {
+              "healthMult": 1.28,
+              "speedMult": 1.18,
+              "radiusMult": 0.98,
+              "fireDelayMult": 1.008,
+              "projectileSpeedMult": 1.3464,
+              "fireScalarMult": 0.9,
+              "diveBiasMult": 1.2312,
+              "swayMult": 1,
+              "moveStyle": "pincer",
+              "shotPattern": "needle",
+              "volley": null
+            },
+            "sector": 1,
+            "targetWaveIndex": 2,
+            "spawned": false,
+            "completed": false,
+            "protocolId": "siege_reserve_storm_bomb",
+            "protocolNumber": 1942,
+            "openingId": "siege",
+            "openingLabel": "SIEGE",
+            "defenseId": "reserve",
+            "defenseLabel": "RESERVE HULL",
+            "enrageId": "storm",
+            "enrageLabel": "STORM MODE",
+            "bonusId": "bomb",
+            "bonusLabel": "BOMB",
+            "bonusKind": "powerup",
+            "bonusPowerupType": "bomb",
+            "rivalWingId": "pincer_armored_net_berserk",
+            "rivalWingNumber": 1132,
+            "rivalWingFormationId": "pincer",
+            "rivalWingFormationLabel": "PINCER WING",
+            "rivalWingDisciplineId": "armored",
+            "rivalWingVolleyId": "net",
+            "rivalWingMoraleId": "berserk",
+            "rivalWingMoraleLabel": "REVENGE RUSH",
+            "rivalWingEscortCount": 0,
+            "rivalWingMoraleActivated": false,
+            "preparedAt": 1788961809547,
+            "preparedReason": "introComplete"
+          },
+          "completedCount": 0,
+          "availableVariants": 1000,
+          "completedProtocolCount": 0,
+          "availableProtocolVariants": 10000,
+          "completedRivalWingCount": 0,
+          "availableRivalWingVariants": 10000,
+          "sequence": 1,
+          "lastCompletion": null,
+          "history": []
+        },
+        "tacticalLoadout": null
+      },
+      "cursor": {
+        "hidden": true,
+        "shouldHide": true,
+        "activeGameplay": true,
+        "canvasCursor": "none",
+        "containerCursor": "none",
+        "bodyCursor": "none",
+        "htmlCursor": "none"
+      },
+      "menu": null,
+      "runContracts": {
+        "version": 8,
+        "runMode": "ranked",
+        "noLifeLost": true,
+        "allCompleteThisRun": false,
+        "allCompletedAt": null,
+        "careerProgress": {
+          "pilot_rank": {
+            "progress": 1,
+            "updatedAt": "2026-09-09T13:50:07.757Z"
+          },
+          "run_starts": {
+            "progress": 1,
+            "updatedAt": "2026-09-09T13:50:07.758Z"
+          },
+          "enemy_kills": {
+            "progress": 8,
+            "updatedAt": "2026-09-09T13:50:13.326Z"
+          },
+          "enemy_variety": {
+            "progress": 2,
+            "updatedAt": "2026-09-09T13:50:13.108Z",
+            "uniqueIds": [
+              "nova_enemy_1176",
+              "nova_enemy_181"
+            ]
+          }
+        },
+        "active": [
+          {
+            "id": "graze_10",
+            "orderNumber": 1,
+            "orderSlot": "01",
+            "title": "Graze Cadet",
+            "shortTitle": "Graze x10",
+            "progress": 0,
+            "target": 10,
+            "group": "graze_count",
+            "uniqueCount": 0,
+            "completed": false,
+            "eligible": true,
+            "completedAt": null
+          },
+          {
+            "id": "boss_breaker",
+            "orderNumber": 2,
+            "orderSlot": "02",
+            "title": "Boss Breaker",
+            "shortTitle": "Boss Breaker",
+            "progress": 0,
+            "target": 1,
+            "group": "boss_intro",
+            "uniqueCount": 0,
+            "completed": false,
+            "eligible": true,
+            "completedAt": null
+          },
+          {
+            "id": "enemy_sweep_1000",
+            "orderNumber": 3,
+            "orderSlot": "03",
+            "title": "Enemy Sweep I",
+            "shortTitle": "1000 Enemies",
+            "progress": 8,
+            "target": 1000,
+            "group": "enemy_kills",
+            "uniqueCount": 0,
+            "completed": false,
+            "eligible": true,
+            "completedAt": null
+          }
+        ],
+        "completedThisRun": [],
+        "completedCount": 0,
+        "total": 50,
+        "progressLabel": "0",
+        "progressThisRun": [
+          {
+            "id": "enemy_sweep_1000",
+            "title": "Enemy Sweep I",
+            "shortTitle": "1000 Enemies",
+            "orderSlot": "03",
+            "previousProgress": 0,
+            "progress": 8,
+            "target": 1000,
+            "lastSector": 1
+          }
+        ],
+        "launchCompletionIds": [],
+        "launchCompletionToastSuppressed": false,
+        "next": [
+          {
+            "id": "support_hunter",
+            "orderIndex": 3,
+            "orderNumber": 4,
+            "orderSlot": "04",
+            "title": "Support Hunter",
+            "shortTitle": "Support Hunter",
+            "description": "Destroy 2 boss support ships.",
+            "shortDescription": "Destroy 2 support ships.",
+            "howTo": "During boss fights, shoot the smaller support ships.",
+            "modeLabel": "Mayhem",
+            "modes": [
+              "ranked",
+              "ranked_tactical"
+            ],
+            "persistAcrossRuns": false,
+            "target": 2,
+            "reward": {
+              "type": "careerXp",
+              "pilotXp": 190,
+              "label": "+190 Career XP"
+            },
+            "progress": 0,
+            "objective": "boss_support_defeats",
+            "group": "support_kills",
+            "accent": 8388568,
+            "completed": false,
+            "completionCount": 0,
+            "completedAt": null,
+            "lastRunMode": null,
+            "lastSector": null
+          },
+          {
+            "id": "phase_runner",
+            "orderIndex": 4,
+            "orderNumber": 5,
+            "orderSlot": "05",
+            "title": "Phase Runner",
+            "shortTitle": "Phase Runner",
+            "description": "Use Phase through dangerous bullets.",
+            "shortDescription": "Phase through dangerous bullets.",
+            "howTo": "Press Phase while a dangerous bullet is about to hit you.",
+            "modeLabel": "Mayhem",
+            "modes": [
+              "ranked",
+              "ranked_tactical"
+            ],
+            "persistAcrossRuns": false,
+            "target": 1,
+            "reward": {
+              "type": "careerXp",
+              "pilotXp": 195,
+              "label": "+195 Career XP"
+            },
+            "progress": 0,
+            "objective": "phase_through_danger",
+            "group": "phase",
+            "accent": 10288127,
+            "completed": false,
+            "completionCount": 0,
+            "completedAt": null,
+            "lastRunMode": null,
+            "lastSector": null
+          },
+          {
+            "id": "powerup_collector_10",
+            "orderIndex": 5,
+            "orderNumber": 6,
+            "orderSlot": "06",
+            "title": "Powerup Pilot I",
+            "shortTitle": "10 Powerups",
+            "description": "Collect 10 powerups in Mayhem.",
+            "shortDescription": "Collect 10 powerups.",
+            "howTo": "Pick up glowing powerup capsules in Mayhem.",
+            "modeLabel": "Mayhem",
+            "modes": [
+              "ranked",
+              "ranked_tactical",
+              "overrun_pure",
+              "overrun_tactical"
+            ],
+            "persistAcrossRuns": true,
+            "target": 10,
+            "reward": {
+              "type": "careerXp",
+              "pilotXp": 200,
+              "label": "+200 Career XP"
+            },
+            "progress": 0,
+            "objective": "powerup_collected",
+            "group": "powerup_total",
+            "accent": 6750173,
+            "completed": false,
+            "completionCount": 0,
+            "completedAt": null,
+            "lastRunMode": null,
+            "lastSector": null
+          }
+        ]
+      },
+      "tacticalDirectives": {
+        "active": {
+          "id": "support_hunts_t01_rescan",
+          "objectiveId": "support_hunts",
+          "objectiveLabel": "SUPPORT HUNTS",
+          "event": "boss_support_defeated",
+          "mode": "count",
+          "valueKey": null,
+          "target": 1,
+          "tier": 1,
+          "rewardId": "rescan",
+          "rewardLabel": "EXTRA RESCAN",
+          "rewardKind": "rescan",
+          "rewardPowerupType": null,
+          "accent": 8388568,
+          "rewardAccent": 16772990,
+          "progress": 0,
+          "progressLabel": "0/1",
+          "ratio": 0,
+          "completed": false,
+          "eventCount": 0,
+          "milestonesShown": [],
+          "calibrationCount": 0,
+          "eligibleFromSector": 1,
+          "lastProgressSector": 1,
+          "lastCalibrationSector": 1,
+          "queued": false
+        },
+        "completedCount": 0,
+        "completionCap": 50,
+        "currentOrdinal": 1,
+        "currentSector": 1,
+        "minimumFinalSector": 50,
+        "completionsThisSector": 0,
+        "availableVariants": 1000,
+        "sequence": 1,
+        "lastCompletion": null,
+        "history": []
+      },
+      "rareChaosVisitors": {
+        "availableVariants": 99,
+        "waveChance": 0.004,
+        "stats": {
+          "eligibleWaves": 1,
+          "spawned": 0,
+          "defeated": 0,
+          "lastPlan": {
+            "eligible": true,
+            "chance": 0.004,
+            "roll": 0.469215,
+            "shouldSpawn": false,
+            "variantId": "rare_chaos_visitor_49",
+            "level": 1,
+            "waveIndex": 0
+          },
+          "lastSpawn": null
+        },
+        "lastAnnouncement": null,
+        "lastDefeat": null
+      },
+      "reinforcementPresentation": null,
+      "spectacle": {
+        "active": false,
+        "activePulses": 0,
+        "maxActivePulses": 10,
+        "activeLimit": 10,
+        "peakActivePulses": 2,
+        "activeKinds": [],
+        "reducedMotion": false,
+        "totalEmitted": 3,
+        "totalDropped": 0,
+        "layerAttached": true,
+        "layerVisible": false,
+        "oneTicker": true,
+        "visualLanguage": "plasma_fracture_v2",
+        "primitiveCircleCount": 0,
+        "primitiveDiamondCount": 0,
+        "lastEvent": {
+          "id": 3,
+          "kind": "elite",
+          "x": 995,
+          "y": 146,
+          "intensity": 0.96,
+          "reducedMotion": false,
+          "performanceLite": false,
+          "startedAt": 1788961813106,
+          "durationMs": 820
+        }
+      },
+      "cabinetWonders": {
+        "availableVariants": 60,
+        "shownCount": 0,
+        "eligibleChecks": 0,
+        "onePerRun": false,
+        "onePerSector": true,
+        "cadenceSectors": 3,
+        "blocking": false,
+        "lifecycleState": "idle",
+        "prewarm": null,
+        "opportunity": null,
+        "scoreNeutral": true,
+        "gameplayNeutral": true,
+        "active": null,
+        "overlayCount": 0,
+        "lastDecision": null,
+        "lastTerminal": null,
+        "last": null,
+        "history": []
+      },
+      "gameplayBackdrop": {
+        "mode": "base",
+        "elapsedMs": 8885,
+        "reducedMotion": false,
+        "starCount": 244,
+        "travelMoteCount": 64,
+        "auroraBandCount": 3
+      },
+      "highscoreChase": {
+        "targetScore": 0,
+        "targetSector": 0,
+        "targetTimeSeconds": 0,
+        "goalMode": "score",
+        "bestAttemptSector": 0,
+        "hasDailyClear": false,
+        "source": "mayhem_mode_best_score",
+        "syncingTarget": false,
+        "surpassed": true,
+        "celebrationFired": false,
+        "celebrationScore": 0
+      },
+      "globalRivalProjection": {
+        "targetKind": "next_rival",
+        "targetName": "VOIDCADET",
+        "targetRank": 9,
+        "targetScore": 901,
+        "scoreToPass": 70,
+        "projectedPlacement": 10,
+        "projectedNumberOne": false,
+        "snapshotOnly": true
+      },
+      "personalBestCelebration": {
+        "active": false,
+        "visible": false,
+        "overlayCount": 0,
+        "previousScore": 0,
+        "triggerScore": 0,
+        "currentScore": 0,
+        "delta": 0,
+        "source": null,
+        "completed": false,
+        "endedReason": null,
+        "reducedMotion": false,
+        "scoreNeutral": true,
+        "elapsedMs": 0,
+        "durationMs": 0,
+        "remainingMs": 0,
+        "phase": null,
+        "settled": false,
+        "carryPrepared": false,
+        "carryDurationMs": 0,
+        "rayCount": 0,
+        "sparkCount": 0,
+        "hasCrown": false,
+        "hasLiveCounter": false
+      },
+      "aceBounties": {
+        "active": {
+          "id": "skirmisher_pincer_needle",
+          "number": 515,
+          "chassisId": "skirmisher",
+          "chassisLabel": "SKIRMISHER",
+          "flightId": "pincer",
+          "flightLabel": "PINCER",
+          "weaponId": "needle",
+          "weaponLabel": "NEEDLE",
+          "rewardId": "ghost",
+          "rewardLabel": "GHOST MODE",
+          "rewardKind": "powerup",
+          "rewardPowerupType": "ghost",
+          "color": 6750109,
+          "accent": 13281023,
+          "effects": {
+            "healthMult": 1.28,
+            "speedMult": 1.18,
+            "radiusMult": 0.98,
+            "fireDelayMult": 1.008,
+            "projectileSpeedMult": 1.3464,
+            "fireScalarMult": 0.9,
+            "diveBiasMult": 1.2312,
+            "swayMult": 1,
+            "moveStyle": "pincer",
+            "shotPattern": "needle",
+            "volley": null
+          },
+          "sector": 1,
+          "targetWaveIndex": 2,
+          "spawned": false,
+          "completed": false,
+          "protocolId": "siege_reserve_storm_bomb",
+          "protocolNumber": 1942,
+          "openingId": "siege",
+          "openingLabel": "SIEGE",
+          "defenseId": "reserve",
+          "defenseLabel": "RESERVE HULL",
+          "enrageId": "storm",
+          "enrageLabel": "STORM MODE",
+          "bonusId": "bomb",
+          "bonusLabel": "BOMB",
+          "bonusKind": "powerup",
+          "bonusPowerupType": "bomb",
+          "rivalWingId": "pincer_armored_net_berserk",
+          "rivalWingNumber": 1132,
+          "rivalWingFormationId": "pincer",
+          "rivalWingFormationLabel": "PINCER WING",
+          "rivalWingDisciplineId": "armored",
+          "rivalWingVolleyId": "net",
+          "rivalWingMoraleId": "berserk",
+          "rivalWingMoraleLabel": "REVENGE RUSH",
+          "rivalWingEscortCount": 0,
+          "rivalWingMoraleActivated": false,
+          "preparedAt": 1788961809547,
+          "preparedReason": "introComplete"
+        },
+        "completedCount": 0,
+        "availableVariants": 1000,
+        "completedProtocolCount": 0,
+        "availableProtocolVariants": 10000,
+        "completedRivalWingCount": 0,
+        "availableRivalWingVariants": 10000,
+        "sequence": 1,
+        "lastCompletion": null,
+        "history": []
+      },
+      "settingsOverlay": null,
+      "howToPlayOverlay": null,
+      "tacticalLoadoutOverlay": null,
+      "audio": {
+        "masterVolume": 0.3,
+        "musicVolume": 0.2,
+        "sfxVolume": 0.4,
+        "uiVolume": 0.4,
+        "voiceVolume": 0.45,
+        "musicEnabled": true,
+        "voiceEnabled": true,
+        "menuVoiceEnabled": false,
+        "menuAudioMode": "ambient",
+        "ctaVoiceEnabled": true,
+        "bossVoiceEnabled": true,
+        "chatterFrequency": "full",
+        "chatterSequence": 0,
+        "lastVoiceClassification": {
+          "eventName": "mission_control_launch",
+          "category": "critical",
+          "critical": true,
+          "chatter": false,
+          "reason": "critical_by_default"
+        },
+        "musicDuckFactor": 1,
+        "pauseDuckFactor": 1,
+        "currentMusicContext": "gameplay",
+        "hangarAmbience": {
+          "active": false,
+          "layers": 0,
+          "loaded": true,
+          "seconds": 0
+        },
+        "musicPack": "classic",
+        "musicPlaying": true,
+        "musicReadyState": 4,
+        "currentMusicTrack": "bgm_v2.mp3",
+        "lastSfxEvent": "shoot_small",
+        "lastSfxBus": "sfx",
+        "lastSfxTrack": "laserSmall_000.mp3",
+        "sfxPriorityLock": null,
+        "lastSpectacleAccent": {
+          "kind": "elite",
+          "pan": 0.03,
+          "intensity": 0.9,
+          "rootHz": 68,
+          "sparkleHz": 570,
+          "durationMs": 420,
+          "playedAt": 1788961813106,
+          "compressor": true,
+          "synthetic": true,
+          "etherealLayer": false
+        },
+        "lastVoiceEvent": "mission_control_global_close",
+        "lastVoiceTrack": "mission_control_global_close_01.mp3",
+        "voicePriorityLock": null,
+        "delayedVoiceCount": 0,
+        "lastVoiceSuppression": {
+          "eventName": "mission_control_launch",
+          "reason": "global_cooldown",
+          "at": 1788961810328,
+          "remainingMs": 41581
+        },
+        "recentVoiceSuppressions": [
+          {
+            "eventName": "mission_control_launch",
+            "reason": "global_cooldown",
+            "at": 1788961810328,
+            "remainingMs": 41581
+          }
+        ],
+        "activeVoiceCount": 0,
+        "activeVoiceEvents": [],
+        "activeVoiceGroups": {}
+      },
+      "shootAudio": {
+        "key": "shoot_small",
+        "requestIntervalMs": 42,
+        "totalVolleys": 65,
+        "totalRequests": 65,
+        "totalPlayed": 65,
+        "totalSuppressed": 0
+      },
+      "display": {
+        "mode": "fullscreen",
+        "windowSize": {
+          "width": 1280,
+          "height": 720
+        },
+        "uiScale": 1
+      },
+      "layout": {
+        "width": 1920,
+        "height": 1080,
+        "isMobile": false,
+        "isPortrait": false,
+        "scale": 1.4,
+        "uiScale": 1,
+        "safeArea": {
+          "left": 16,
+          "top": 16,
+          "right": 1904,
+          "bottom": 1064
+        }
+      },
+      "accessibility": {
+        "screenShake": 1,
+        "playerFocus": 0.72,
+        "playerHitbox": false,
+        "colorAssist": false,
+        "flashIntensity": 1,
+        "reducedMotion": false,
+        "prefersReducedMotion": false
+      },
+      "input": {
+        "gamepad": {
+          "connected": false,
+          "id": null,
+          "index": null,
+          "moveX": 0,
+          "moveY": 0,
+          "firing": false,
+          "dodge": false,
+          "focus": false,
+          "pause": false,
+          "pauseJustPressed": false,
+          "specialFire": false,
+          "specialFireJustPressed": false,
+          "buttons": {},
+          "updatedAt": 0
+        },
+        "controls": {
+          "pressedKeys": [
+            " ",
+            "Space"
+          ],
+          "suppressedKeys": [],
+          "suppressedGamepadActions": {},
+          "touchFireActive": false,
+          "mouseFireActive": false,
+          "fireToggleLatched": false,
+          "specialFirePointerJustPressed": false,
+          "controlSettings": {
+            "fireInput": "hold",
+            "mouseSteering": false
+          },
+          "mouseSteeringTarget": null,
+          "lastMovementDevice": null,
+          "touches": 0
+        },
+        "autoFireCueVisible": false
+      },
+      "debugTools": {
+        "enabled": true,
+        "invincible": false,
+        "levelToolsUsed": false,
+        "levelJumpAvailable": true
+      },
+      "toast": {
+        "active": [],
+        "comboDisplay": null,
+        "scorePopups": [],
+        "achievement": {
+          "id": null,
+          "queued": 0,
+          "bounds": null
+        },
+        "firstRunOnboarding": {
+          "introActive": false,
+          "complete": false,
+          "stage": "focus_pending",
+          "controlsShownAt": 1788961809810,
+          "threatShownAt": 1788961810946,
+          "focusShownAt": 0,
+          "actions": {
+            "moved": true,
+            "fired": true,
+            "phased": false,
+            "focused": false
+          },
+          "focusDensity": {
+            "activeRoutineCount": 20,
+            "startCount": 44,
+            "fullCount": 150,
+            "enterCount": 87,
+            "exitCount": 59,
+            "target": 0,
+            "level": 0,
+            "meaningful": false,
+            "aboveForMs": 0,
+            "belowForMs": 3266.8000000000093,
+            "enterHoldMs": 250,
+            "exitHoldMs": 500
+          },
+          "completion": null,
+          "discoveryYield": {
+            "reason": "phase_eligible",
+            "stage": "awaiting_phase",
+            "yieldedAt": 1788961810943,
+            "originalCreatedAt": 1788961809905,
+            "originalDurationMs": 2800
+          },
+          "remainingMs": 0,
+          "hudDisclosure": {
+            "active": false,
+            "phase": "restored",
+            "progress": 1,
+            "restoreCount": 1,
+            "restoreReason": "actions_complete",
+            "restoreStartedAtMs": 50157.79999999702,
+            "restoreCompletedAtMs": 50321.39999999851,
+            "durationMs": 160,
+            "reducedMotion": false,
+            "targets": {
+              "directiveText": {
+                "visible": true,
+                "renderable": true,
+                "alpha": 0.62,
+                "productionAlpha": 0.62,
+                "eventMode": "none"
+              },
+              "directiveProgressBg": {
+                "visible": true,
+                "renderable": true,
+                "alpha": 0.56,
+                "productionAlpha": 0.56,
+                "eventMode": "none"
+              },
+              "directiveProgressFill": {
+                "visible": true,
+                "renderable": true,
+                "alpha": 0.72,
+                "productionAlpha": 0.72,
+                "eventMode": "none"
+              },
+              "shipMasteryText": {
+                "visible": true,
+                "renderable": true,
+                "alpha": 1,
+                "productionAlpha": 1,
+                "eventMode": "none"
+              },
+              "shipMasteryMedals": {
+                "visible": true,
+                "renderable": true,
+                "alpha": 1,
+                "productionAlpha": 1,
+                "eventMode": "none"
+              },
+              "traitGroup": {
+                "visible": false,
+                "renderable": true,
+                "alpha": 0.84,
+                "productionAlpha": 0.84,
+                "eventMode": "none"
+              }
+            }
+          }
+        },
+        "progressionPresentation": {
+          "pendingRank": null,
+          "rankUpActive": false,
+          "waveBonusActive": false
+        },
+        "queued": {
+          "center": 0,
+          "top": 1,
+          "corner": 0
+        },
+        "lockedMs": {
+          "center": 0,
+          "top": 0,
+          "corner": 0
+        },
+        "channels": {
+          "major": false,
+          "transition": false,
+          "side": false
+        }
+      },
+      "shipIntro": {
+        "active": false,
+        "complete": true,
+        "agencyState": "complete",
+        "agencyHistory": [
+          {
+            "state": "pending",
+            "at": 1788961807758,
+            "reason": "scene_init"
+          },
+          {
+            "state": "active",
+            "at": 1788961807839,
+            "reason": "ship_intro_started"
+          },
+          {
+            "state": "complete",
+            "at": 1788961809454,
+            "reason": "ship_intro_complete"
+          }
+        ],
+        "returningPilot": false,
+        "elapsedMs": 10484,
+        "timing": {
+          "flightMs": 1050,
+          "totalMs": 1600,
+          "fadeInMs": 280,
+          "holdUntilMs": 1100,
+          "impactStartMs": 820,
+          "impactEndMs": 950
+        }
+      },
+      "gameOverInterlude": {
+        "active": false,
+        "visible": false
+      },
+      "gameOverAnimation": {
+        "active": false,
+        "visible": false
+      },
+      "overrunInterlude": {
+        "active": false,
+        "requiresConfirm": false,
+        "confirmed": false,
+        "confirmedBy": null,
+        "eventKind": null,
+        "milestoneSector": null,
+        "nextSector": null,
+        "variantId": null,
+        "readyForConfirm": false,
+        "cardVisible": false,
+        "promptVisible": false,
+        "promptText": null,
+        "bounds": null,
+        "buttonBounds": null,
+        "promptBounds": null,
+        "milestoneReward": null,
+        "textNodes": []
+      },
+      "scoring": {
+        "comboCount": 0,
+        "comboMultiplier": 1,
+        "dangerDodgeCount": 0,
+        "dangerDodgeTimerMs": 0,
+        "bestDangerDodgeStreak": 0,
+        "lastDangerDodgeScore": 0,
+        "nearMissSurgesThisRun": 0,
+        "lastNearMissSurge": null,
+        "lastComboCelebration": {
+          "triggered": true,
+          "threshold": 5,
+          "multiplier": 1,
+          "reason": "combo_milestone",
+          "remainingMs": 0
+        },
+        "lastPowerupPickupJuice": null,
+        "grazeBreakReady": false,
+        "grazeBreakReadyMs": 0,
+        "grazeBreakNeedsFireRelease": false,
+        "grazeBreakReleasePrimed": false,
+        "firePressed": true,
+        "grazeBreakBullets": 0,
+        "lastGrazeBreak": null
+      },
+      "arcadeRun": {
+        "runElapsedSeconds": 8.38,
+        "targetRunSeconds": 1500,
+        "currentSector": 1,
+        "targetSectors": 10,
+        "sectorElapsedSeconds": 8.37,
+        "averageSectorSeconds": 8.37,
+        "estimatedRunCompletionSeconds": 83.68,
+        "pressurePhase": "opening",
+        "pressureMultipliers": {
+          "fireChanceMult": 1.0042,
+          "projectileSpeedMult": 1.0017,
+          "enemySpeedMult": 1.0011,
+          "eliteChanceMult": 1.0056,
+          "specialThreatMult": 1.005,
+          "sustainMult": 0.9972,
+          "scoreMult": 1.0014,
+          "contentRarityMult": 1.0028
+        },
+        "runTheme": "receipt_nebula",
+        "contentDirectorState": {
+          "enabled": true,
+          "seed": "1788961807711-nova-player-ship-01.png-8paeji6vter",
+          "runTheme": {
+            "id": "receipt_nebula",
+            "label": "Receipt Nebula",
+            "role": "Delayed proof pressure"
+          },
+          "contentPoolSummary": {
+            "id": "opening",
+            "formations": [
+              "TUTORIAL_ARC",
+              "ARC",
+              "GRID",
+              "STAGGERED_WING",
+              "DOUBLE_ARC"
+            ],
+            "threatActions": [
+              "pulse_ring_bloom",
+              "splitter_seed",
+              "crossfire_pair",
+              "seed_of_regret",
+              "forklift_crossfire",
+              "hesitation_bolt"
+            ],
+            "waveTactics": [
+              "strafe_sweep",
+              "needle_stagger",
+              "dive_chain",
+              "pulse_net",
+              "receipt_spiral",
+              "velvet_sawtooth",
+              "paperclip_parade"
+            ],
+            "enemyLevelMin": 1,
+            "enemyLevelMax": 8
+          },
+          "selectedEnemyFamilies": [
+            "space_denial",
+            "simple_shooter",
+            "disruptor"
+          ],
+          "selectedThreatActions": [
+            "seed_of_regret",
+            "hazard_receipt",
+            "boomerang_invoice"
+          ],
+          "selectedWaveTactics": [
+            "receipt_spiral",
+            "traffic_court",
+            "plasma_bookclub"
+          ],
+          "selectedElitePool": [
+            "Mine layer",
+            "Jammer disruptor"
+          ],
+          "unseenBoostedCount": 18,
+          "recentlySuppressedCount": 0,
+          "recentSelections": [
+            {
+              "level": 8,
+              "waveIndex": 0,
+              "pool": "opening",
+              "formation": "DOUBLE_ARC",
+              "tactic": "receipt_spiral",
+              "type": "nova_enemy_1176"
+            },
+            {
+              "level": 8,
+              "waveIndex": 1,
+              "pool": "opening",
+              "formation": "SCREEN_DOOR",
+              "tactic": "velvet_sawtooth",
+              "type": "nova_enemy_1089"
+            },
+            {
+              "level": 8,
+              "waveIndex": 2,
+              "pool": "opening",
+              "formation": "GRID",
+              "tactic": "traffic_court",
+              "type": "nova_enemy_1441"
+            }
+          ]
+        },
+        "discoveriesThisRun": [
+          {
+            "id": "receipt_nebula",
+            "category": "runThemes",
+            "name": "Receipt Nebula",
+            "discoveredAt": "2026-09-09T13:50:07.711Z",
+            "metadata": {
+              "name": "Receipt Nebula",
+              "role": "Delayed proof pressure"
+            }
+          },
+          {
+            "id": "receipt_spiral",
+            "category": "waveTactics",
+            "name": "RECEIPT SPIRAL",
+            "discoveredAt": "2026-09-09T13:50:09.881Z",
+            "metadata": {
+              "name": "RECEIPT SPIRAL",
+              "role": "orbit",
+              "sector": 1
+            }
+          },
+          {
+            "id": "codex-discovery",
+            "category": "cabinetLogs",
+            "name": "CABINET LOG: NEW RECEIPT",
+            "discoveredAt": "2026-09-09T13:50:09.883Z",
+            "metadata": {
+              "name": "CABINET LOG: NEW RECEIPT",
+              "label": "CABINET LOG: NEW RECEIPT",
+              "role": "Codex value",
+              "description": "Filed the first time the run discovers a new Codex signal. It explains why scanning new threats is practical progression, not just flavor.",
+              "tip": "New signals grant score immediately, count toward Career XP, and can help unlock future ships.",
+              "line": "New Codex signal archived: RECEIPT SPIRAL. It pays score now and Career XP later. Knowledge is just currency with worse lighting.",
+              "sector": 1,
+              "source": "codex:waveTactics"
+            }
+          },
+          {
+            "id": "nova_enemy_1176",
+            "category": "enemies",
+            "name": "Chrome Limpet",
+            "discoveredAt": "2026-09-09T13:50:09.892Z",
+            "metadata": {
+              "name": "Chrome Limpet",
+              "role": "soft_scout",
+              "movementStyle": "sine",
+              "fireStyle": "wide",
+              "rarity": "starter-surge",
+              "sector": 1,
+              "waveIndex": 0
+            }
+          },
+          {
+            "id": "danger_mid_01",
+            "category": "enemies",
+            "name": "Knife Clerk",
+            "discoveredAt": "2026-09-09T13:50:09.895Z",
+            "metadata": {
+              "name": "Knife Clerk",
+              "role": "danger mid ship",
+              "movementStyle": "sweep",
+              "fireStyle": "needle",
+              "rarity": "Red Contact",
+              "sector": 1,
+              "waveIndex": 0
+            }
+          },
+          {
+            "id": "pulse_ring_bloom",
+            "category": "attackPatterns",
+            "name": "Pulse Ring Bloom",
+            "discoveredAt": "2026-09-09T13:50:09.897Z",
+            "metadata": {
+              "name": "Pulse Ring Bloom",
+              "role": "special attack",
+              "sector": 1
+            }
+          },
+          {
+            "id": "splitter_seed",
+            "category": "attackPatterns",
+            "name": "Splitter Seed",
+            "discoveredAt": "2026-09-09T13:50:09.902Z",
+            "metadata": {
+              "name": "Splitter Seed",
+              "role": "special attack",
+              "sector": 1
+            }
+          },
+          {
+            "id": "seed_of_regret",
+            "category": "attackPatterns",
+            "name": "Seed of Regret",
+            "discoveredAt": "2026-09-09T13:50:09.904Z",
+            "metadata": {
+              "name": "Seed of Regret",
+              "role": "special attack",
+              "sector": 1
+            }
+          },
+          {
+            "id": "nova_enemy_181",
+            "category": "enemies",
+            "name": "Maximum Cupholder",
+            "discoveredAt": "2026-09-09T13:50:13.108Z",
+            "metadata": {
+              "name": "Maximum Cupholder",
+              "role": "simple_shooter",
+              "sector": 1
+            }
+          }
+        ],
+        "codexCompletionCounts": {
+          "enemies": {
+            "discovered": 3,
+            "total": 2049,
+            "percent": 0
+          },
+          "spaceSnakes": {
+            "discovered": 0,
+            "total": 14,
+            "percent": 0
+          },
+          "attackPatterns": {
+            "discovered": 3,
+            "total": 40,
+            "percent": 8
+          },
+          "waveTactics": {
+            "discovered": 1,
+            "total": 39,
+            "percent": 3
+          },
+          "powerups": {
+            "discovered": 0,
+            "total": 65,
+            "percent": 0
+          },
+          "bonusCores": {
+            "discovered": 0,
+            "total": 10,
+            "percent": 0
+          },
+          "bonusDrones": {
+            "discovered": 0,
+            "total": 19,
+            "percent": 0
+          },
+          "augments": {
+            "discovered": 0,
+            "total": 32,
+            "percent": 0
+          },
+          "sectors": {
+            "discovered": 1,
+            "total": 17,
+            "percent": 6
+          },
+          "elites": {
+            "discovered": 0,
+            "total": 50,
+            "percent": 0
+          },
+          "bosses": {
+            "discovered": 0,
+            "total": 50,
+            "percent": 0
+          },
+          "runThemes": {
+            "discovered": 1,
+            "total": 18,
+            "percent": 6
+          },
+          "wonders": {
+            "discovered": 0,
+            "total": 60,
+            "percent": 0
+          },
+          "cabinetLogs": {
+            "discovered": 1,
+            "total": 8,
+            "percent": 13
+          },
+          "pilotRanks": {
+            "discovered": 1,
+            "total": 40,
+            "percent": 3
+          },
+          "rareModifiers": {
+            "discovered": 0,
+            "total": 0,
+            "percent": 0
+          }
+        },
+        "discoveryStats": {
+          "totalDiscovered": 11,
+          "counts": {
+            "enemies": 3,
+            "spaceSnakes": 0,
+            "attackPatterns": 3,
+            "waveTactics": 1,
+            "powerups": 0,
+            "bonusCores": 0,
+            "bonusDrones": 0,
+            "augments": 0,
+            "sectors": 1,
+            "elites": 0,
+            "bosses": 0,
+            "runThemes": 1,
+            "wonders": 0,
+            "cabinetLogs": 1,
+            "pilotRanks": 1,
+            "rareModifiers": 0
+          },
+          "unreadCount": 9,
+          "discoveriesThisRun": 9
+        },
+        "livesGainedThisRun": 0,
+        "repairsGrantedThisRun": 0,
+        "extraLifeDropsThisRun": 0,
+        "pickupSpawns": {
+          "activeCount": 1,
+          "duplicateBlockedCount": 0,
+          "enduranceLifeBlockedCount": 0,
+          "extraLifeDropsEnabled": true,
+          "extraLifeFinalSector": 100,
+          "active": [
+            {
+              "spawnId": "pickup-1",
+              "spawnKey": null,
+              "source": "first_run_pickup",
+              "type": "rapid_fire",
+              "bundledPowerupTypes": [],
+              "rewardClaim": false,
+              "rngIsolated": false,
+              "lifeTimeMs": 26000,
+              "lifetimeRemainingMs": 19577,
+              "lifetimePaused": false,
+              "verticalSpeed": 1,
+              "pickupAssistRadius": 24,
+              "collectibleAt": 1788961811901,
+              "claimGraceRemainingMs": 0,
+              "x": 1011,
+              "y": 829
+            }
+          ],
+          "recentSpawns": [
+            {
+              "spawnId": "pickup-1",
+              "spawnKey": null,
+              "source": "first_run_pickup",
+              "type": "rapid_fire",
+              "bundledPowerupTypes": [],
+              "rewardClaim": false,
+              "rngIsolated": false,
+              "lifeTimeMs": 26000,
+              "verticalSpeed": 1,
+              "pickupAssistRadius": 24,
+              "x": 1011,
+              "y": 454,
+              "spawnedAt": 1788961811901,
+              "collectibleAt": 1788961811901
+            }
+          ],
+          "blockedDuplicates": []
+        },
+        "bossesKilled": 0,
+        "wavesCleared": 0,
+        "runCleared": false,
+        "clearReason": null,
+        "clearLivesRemaining": 0,
+        "score": 831,
+        "scoreBreakdown": {
+          "baseScore": 131,
+          "enemyScore": 0,
+          "waveClearBonus": 0,
+          "sectorClearBonus": 0,
+          "bossBonus": 0,
+          "bossSpeedBonus": 0,
+          "noHitBonus": 0,
+          "discoveryBonus": 700,
+          "dangerMultiplierBonus": 0,
+          "remainingLivesBonus": 0,
+          "runClearBonus": 0,
+          "pilotXpGained": 162,
+          "finalScore": 831
+        },
+        "lastCabinetLog": {
+          "id": "codex-discovery",
+          "title": "CABINET LOG: NEW RECEIPT",
+          "line": "New Codex signal archived: RECEIPT SPIRAL. It pays score now and Career XP later. Knowledge is just currency with worse lighting.",
+          "compactLine": "New Codex signal archived: RECEIPT SPIRAL.",
+          "combatPresentation": "compact_corner_toast",
+          "fullTextArchived": true,
+          "archived": true,
+          "appliedBonus": 44
+        },
+        "currentEnemyBulletCount": 9,
+        "peakEnemyBulletCount": null,
+        "pilotXp": 0,
+        "pilotRank": 0,
+        "highestPilotRank": 0,
+        "newRanksThisRun": [],
+        "rankAchievementsUnlocked": [],
+        "newlyUnlockedShips": [],
+        "shipUnlockProgressSummary": {
+          "pilotXp": 0,
+          "pilotXpExact": "0",
+          "pilotRank": 0,
+          "highestPilotRank": 0,
+          "totalRuns": 0,
+          "bestScore": 0,
+          "bestSector": 1,
+          "bestLevel": 1,
+          "totalBossesDefeated": 0,
+          "totalWavesCleared": 0,
+          "totalCodexDiscoveries": 0,
+          "runClears": 0,
+          "secretShipUnlockIds": [],
+          "creditsEasterEggFound": false,
+          "creditsAscendantEasterEggAttempts": 0,
+          "creditsAscendantEasterEggFound": false,
+          "unlockedShipIds": [
+            "nova_ship_01",
+            "nova_ship_03",
+            "nova_ship_07"
+          ],
+          "shipUnlockHistory": {
+            "nova_ship_01": {
+              "unlockedAt": "2026-09-09T13:50:07.710Z",
+              "reasonKey": "shipUnlock.reason.available",
+              "reasonParams": {},
+              "source": "starter",
+              "sector": null,
+              "score": null,
+              "bossCount": null,
+              "runMode": null,
+              "buildVersion": "v2026-08-22_14-35-02"
+            },
+            "nova_ship_03": {
+              "unlockedAt": "2026-09-09T13:50:07.710Z",
+              "reasonKey": "shipUnlock.reason.available",
+              "reasonParams": {},
+              "source": "starter",
+              "sector": null,
+              "score": null,
+              "bossCount": null,
+              "runMode": null,
+              "buildVersion": "v2026-08-22_14-35-02"
+            },
+            "nova_ship_07": {
+              "unlockedAt": "2026-09-09T13:50:07.710Z",
+              "reasonKey": "shipUnlock.reason.available",
+              "reasonParams": {},
+              "source": "starter",
+              "sector": null,
+              "score": null,
+              "bossCount": null,
+              "runMode": null,
+              "buildVersion": "v2026-08-22_14-35-02"
+            }
+          },
+          "newlyUnlockedShipIds": [],
+          "rankProgress": {
+            "rankIndex": 0,
+            "authoredRankIndex": 0,
+            "title": "Cadet",
+            "pilotXp": 0,
+            "pilotXpExact": "0",
+            "displayRankExact": "1",
+            "currentThreshold": 0,
+            "currentThresholdExact": "0",
+            "nextThreshold": 650,
+            "nextThresholdExact": "650",
+            "xpIntoRank": 0,
+            "xpIntoRankExact": "0",
+            "xpToNextRank": 650,
+            "xpToNextRankExact": "650",
+            "progress": 0,
+            "postCap": false
+          }
+        }
+      },
+      "tacticalDraft": {
+        "active": false,
+        "fusionUnlock": null,
+        "sectorCleared": null,
+        "focusIndex": null,
+        "initialFocusIndex": null,
+        "confirmedId": null,
+        "passed": false,
+        "installingCategory": null,
+        "installingName": null,
+        "confirmHoldMs": 0,
+        "lockInActive": false,
+        "lockInProgress": 0,
+        "inputArmed": false,
+        "compact": false,
+        "permanenceScopeVisible": false,
+        "materialReady": false,
+        "title": null,
+        "eyebrow": null,
+        "subtitle": null,
+        "buildSummary": null,
+        "scoreRouteOfferId": null,
+        "scoreRouteDecision": null,
+        "scoreRouteState": null,
+        "lastScoreRouteRestriction": null,
+        "rescansRemaining": 1,
+        "rescansUsed": 0,
+        "rescanCount": 0,
+        "rescanLabel": null,
+        "rescanBounds": null,
+        "heldId": null,
+        "heldAtOpenId": null,
+        "holdChangedSinceOpen": false,
+        "holdLabel": null,
+        "holdBounds": null,
+        "bansRemaining": 2,
+        "bannedIds": [],
+        "banLabel": null,
+        "banBounds": null,
+        "passLabel": null,
+        "passBounds": null,
+        "buildLocked": false,
+        "passHoldProgress": 0,
+        "passHoldMs": 0,
+        "buildLockHoldMs": 1100,
+        "banAward": null,
+        "lastBannedId": null,
+        "lastBanSource": null,
+        "lastHoldSource": null,
+        "pendingBossBanterId": null,
+        "pendingBossBanterContext": null,
+        "lastBossBanterId": null,
+        "lastBossBanterEvent": null,
+        "lastBossBanterContext": null,
+        "lastBossBanterTrack": "mission_control_global_close_01.mp3",
+        "lastBossBanterAt": 0,
+        "titleBounds": null,
+        "offers": [],
+        "selectedIds": [],
+        "selectedLabels": [],
+        "history": [],
+        "passes": [],
+        "player": {
+          "selectedIds": [],
+          "activeIds": [],
+          "consumedIds": [],
+          "labels": [],
+          "fusionIds": [],
+          "lastFusionEvent": null,
+          "fusionStats": {
+            "riftShardsFired": 0,
+            "constellationVolleys": 0,
+            "aegisPurges": 0,
+            "skyVerdicts": 0
+          },
+          "skyVerdictEmergency": {
+            "state": "unavailable",
+            "sector": 1
+          },
+          "modifiers": {
+            "damageMult": 1,
+            "fireDelayMult": 1,
+            "speedMult": 1,
+            "bulletSpeedMult": 1,
+            "dodgeDelayMult": 1,
+            "dodgeDurationMult": 1,
+            "shotBonus": 0,
+            "pierce": false,
+            "magnetRadiusBonus": 0,
+            "magnetStrengthBonus": 0,
+            "droneCount": 0,
+            "chainMax": 0,
+            "focusDamageMult": 1,
+            "focusSpreadMult": 1,
+            "focusSpeedMult": 1,
+            "phaseReload": false,
+            "phaseClearRadius": 0,
+            "movingDodgeRecoveryMult": 1,
+            "lowLifeSectorShieldMs": 0,
+            "hitInvulnerabilityBonusMs": 0,
+            "grazeShieldThreshold": 0,
+            "lowLifeDodgeRecoveryMult": 1,
+            "comboWindowBonusMs": 0,
+            "pickupLifetimeMult": 1,
+            "powerupDurationMult": 1,
+            "droneDamageMult": 1,
+            "fusionIds": [],
+            "riftReprisal": false,
+            "droneConstellation": false,
+            "aegisReactor": false,
+            "skyVerdict": false,
+            "sectorStart": {
+              "shield": false,
+              "invulnerabilityMs": 0,
+              "pointDefenseMs": 0,
+              "bombShots": 0,
+              "orbitalCharges": 0
+            },
+            "overlapSuppressedIds": [],
+            "overlapSuppressedId": null
+          },
+          "overlapSuppressedId": null,
+          "overlapSuppressedIds": [],
+          "lastSectorStart": {
+            "sector": 1,
+            "triggered": [],
+            "selectedIds": []
+          }
+        },
+        "closeReason": "run_reset"
+      },
+      "tacticalAugments": {
+        "selectedIds": [],
+        "activeIds": [],
+        "consumedIds": [],
+        "labels": [],
+        "fusionIds": [],
+        "lastFusionEvent": null,
+        "fusionStats": {
+          "riftShardsFired": 0,
+          "constellationVolleys": 0,
+          "aegisPurges": 0,
+          "skyVerdicts": 0
+        },
+        "skyVerdictEmergency": {
+          "state": "unavailable",
+          "sector": 1
+        },
+        "modifiers": {
+          "damageMult": 1,
+          "fireDelayMult": 1,
+          "speedMult": 1,
+          "bulletSpeedMult": 1,
+          "dodgeDelayMult": 1,
+          "dodgeDurationMult": 1,
+          "shotBonus": 0,
+          "pierce": false,
+          "magnetRadiusBonus": 0,
+          "magnetStrengthBonus": 0,
+          "droneCount": 0,
+          "chainMax": 0,
+          "focusDamageMult": 1,
+          "focusSpreadMult": 1,
+          "focusSpeedMult": 1,
+          "phaseReload": false,
+          "phaseClearRadius": 0,
+          "movingDodgeRecoveryMult": 1,
+          "lowLifeSectorShieldMs": 0,
+          "hitInvulnerabilityBonusMs": 0,
+          "grazeShieldThreshold": 0,
+          "lowLifeDodgeRecoveryMult": 1,
+          "comboWindowBonusMs": 0,
+          "pickupLifetimeMult": 1,
+          "powerupDurationMult": 1,
+          "droneDamageMult": 1,
+          "fusionIds": [],
+          "riftReprisal": false,
+          "droneConstellation": false,
+          "aegisReactor": false,
+          "skyVerdict": false,
+          "sectorStart": {
+            "shield": false,
+            "invulnerabilityMs": 0,
+            "pointDefenseMs": 0,
+            "bombShots": 0,
+            "orbitalCharges": 0
+          },
+          "overlapSuppressedIds": [],
+          "overlapSuppressedId": null
+        },
+        "overlapSuppressedId": null,
+        "overlapSuppressedIds": [],
+        "lastSectorStart": {
+          "sector": 1,
+          "triggered": [],
+          "selectedIds": []
+        }
+      },
+      "runReport": null,
+      "lateGameExperiment": null,
+      "highSectorPrototype": null,
+      "runRewardSuppression": {
+        "suppressed": false,
+        "reason": null,
+        "surfaces": []
+      },
+      "highSectorEscalation": {
+        "profileId": "high_sector_authored_v2",
+        "enabledByDefault": false,
+        "armed": false,
+        "active": false,
+        "inertThroughSector": 59,
+        "activationSector": 60,
+        "sector": 1,
+        "seed": "1788961807711-nova-player-ship-01.png-8paeji6vter",
+        "runMode": "ranked",
+        "reducedMotion": false,
+        "preserveNativePressure": false,
+        "pressureStep": 0,
+        "pressureBudget": 1,
+        "progressionTier": null,
+        "protocol": null,
+        "tacticalDepthProfile": null,
+        "bossSupportEvent": null,
+        "caps": null,
+        "downtime": null,
+        "authoredEncounterLimit": null,
+        "authoredEncounterBeatCount": null,
+        "conditionReadMs": null,
+        "runtime": null,
+        "authoredBossSupport": null,
+        "hostileProjectiles": 9,
+        "hostileProjectileCap": 300
+      },
+      "wave": {
+        "phase": "WAVES",
+        "state": "WAVE_ACTIVE",
+        "marketingDebug": false,
+        "currentWaveIndex": 0,
+        "currentWaveNumber": 1,
+        "totalWaves": 3,
+        "challengeFlight": null,
+        "briefingMs": 0,
+        "tactic": {
+          "id": "receipt_spiral",
+          "label": "RECEIPT SPIRAL",
+          "move": "orbit",
+          "shot": "fan",
+          "volley": "pulse",
+          "threatActions": [
+            "pulse_ring_bloom",
+            "splitter_seed",
+            "seed_of_regret"
+          ]
+        },
+        "threatBudget": {
+          "maxActive": 2,
+          "dangerBudget": 3,
+          "activeCount": 0,
+          "activeCost": 0,
+          "assignedIds": [
+            "pulse_ring_bloom",
+            "splitter_seed",
+            "seed_of_regret"
+          ]
+        },
+        "nextTactic": null
+      },
+      "intro": null,
+      "shipSelect": null,
+      "shipDetails": null,
+      "gameOver": null,
+      "highscore": null,
+      "achievementsScreen": null,
+      "threatCodexScreen": null,
+      "player": {
+        "x": 960,
+        "y": 930,
+        "active": true,
+        "radius": 11,
+        "shipVariant": "ion",
+        "shipTrait": "ION DASH",
+        "traitCombat": {
+          "projectileRadiusMult": 1,
+          "dodgeCooldownMult": 0.97,
+          "dodgeDurationMult": 1.03,
+          "bonusShotEvery": 0,
+          "bonusShotDamageMult": 0,
+          "wingShotEvery": 0,
+          "wingShotDamageMult": 0,
+          "wingShotAngle": 0,
+          "pierceEvery": 0,
+          "pierceDamageMult": 0,
+          "critEvery": 0,
+          "critDamageMult": 0,
+          "dodgePulseRadius": 54,
+          "nearMissScoreMult": 1.16
+        },
+        "traitState": {
+          "slug": "ion",
+          "label": "ION DASH",
+          "description": "Quicker bolts, crisp handling, and a forgiving dodge pulse.",
+          "shotsFired": 65,
+          "bonusShotEvery": 0,
+          "wingShotEvery": 0,
+          "pierceEvery": 0,
+          "critEvery": 0,
+          "nextBonusShotIn": 0,
+          "nextWingShotIn": 0,
+          "nextPierceShotIn": 0,
+          "nextCritShotIn": 0,
+          "dodgePulseRadius": 54,
+          "nearMissScoreMult": 1.16,
+          "projectileRadiusMult": 1,
+          "experimentalPulse": null
+        },
+        "stats": "trait=ION_DASH fire=117 speed=6.04 dmg=1.05 proj=12.5 shots=2 pierce=false dodgePulse=54 nearMiss=1.16x radius=1",
+        "powerup": null,
+        "powerups": [],
+        "pointDefense": {
+          "active": false,
+          "radius": 0,
+          "remainingMs": 0,
+          "interceptTotal": 0,
+          "lastIntercept": null,
+          "ring": null
+        },
+        "bombIntent": {
+          "charges": 0,
+          "armedAt": 0,
+          "triggerQueued": false,
+          "commit": {
+            "ready": false,
+            "reason": "empty",
+            "clusterCount": 0
+          },
+          "lastTrigger": {
+            "at": 0,
+            "queued": false,
+            "reason": "empty",
+            "targetKind": null,
+            "clusterCount": 0
+          },
+          "indicator": null
+        },
+        "statusEffects": [],
+        "hitboxReticle": {
+          "visible": false,
+          "settingEnabled": false,
+          "radius": 11,
+          "focusDriftActive": false,
+          "phasing": false,
+          "pulseMs": 0,
+          "pulseReason": null,
+          "nearMiss": {
+            "active": false,
+            "streak": 0,
+            "filledPips": 0,
+            "windowProgress": 0
+          },
+          "invulnerability": {
+            "active": false,
+            "remainingMs": 0,
+            "progress": 0,
+            "ticks": 0
+          }
+        },
+        "ghostTimer": {
+          "visible": false,
+          "remainingMs": 0,
+          "reducedMotion": false
+        },
+        "dodgeExitPulse": null,
+        "cockpitMastery": {
+          "tier": "none",
+          "medalCount": 0,
+          "clears": 0,
+          "tally": "TOURS ×0",
+          "rewardsAdded": false
+        },
+        "tractorDebuff": {
+          "immune": false,
+          "immunityRemainingMs": 0,
+          "last": null,
+          "active": []
+        }
+      },
+      "hijacker": null,
+      "tractorHijack": {
+        "active": false,
+        "current": null,
+        "last": null
+      },
+      "inputContinuity": {
+        "enabled": false,
+        "events": [],
+        "longFrames": [],
+        "transient": {
+          "pressedKeys": [
+            " ",
+            "Space"
+          ],
+          "suppressedKeys": [],
+          "suppressedGamepadActions": {},
+          "touchFireActive": false,
+          "mouseFireActive": false,
+          "fireToggleLatched": false,
+          "specialFirePointerJustPressed": false,
+          "controlSettings": {
+            "fireInput": "hold",
+            "mouseSteering": false
+          },
+          "mouseSteeringTarget": null,
+          "lastMovementDevice": null,
+          "touches": 0
+        }
+      },
+      "eliteMiddleShips": [],
+      "counts": {
+        "enemies": 2,
+        "bossAdds": 0,
+        "bosses": 0,
+        "eliteMiddleShips": 0,
+        "rareChaosVisitors": 0,
+        "playerBullets": 18,
+        "enemyBullets": 9,
+        "particles": 1
+      },
+      "projectileLifecycle": {
+        "player": 18,
+        "enemy": 9,
+        "pendingEnemy": 0,
+        "managedVisuals": 27,
+        "inPlaceCompaction": true,
+        "orphanSweepInterval": 120,
+        "framesUntilOrphanSweep": 117,
+        "adaptiveFriendlyVfx": {
+          "enabled": true,
+          "level": 0,
+          "target": 0,
+          "startCount": 44,
+          "fullCount": 150
+        },
+        "updatePasses": 603,
+        "disposedPlayer": 112,
+        "disposedEnemy": 8,
+        "disposedPending": 0,
+        "rejectedAtCap": 0,
+        "orphanSweeps": 5,
+        "orphanVisualsRemoved": 0,
+        "clearOperations": 0,
+        "lastReason": "player_inactive_update",
+        "lastCleanup": null,
+        "friendlyVfxCompression": {
+          "enabled": true,
+          "activeRoutineCount": 18,
+          "startCount": 44,
+          "fullCount": 150,
+          "target": 0,
+          "level": 0
+        }
+      },
+      "enemyVisualAudit": {
+        "staleVisibleCount": 0,
+        "orphanedVisibleCount": 0,
+        "pendingEntryVisibleCount": 0,
+        "trackedEnemyVisualCount": 2,
+        "renderTreeEnemyVisualCount": 2,
+        "samples": []
+      },
+      "enemyWeapons": {
+        "activeProfiles": [
+          "magenta_crescent"
+        ],
+        "visibleBullets": [
+          {
+            "x": 1469,
+            "y": 519,
+            "radius": 6,
+            "profile": "magenta_crescent",
+            "label": "Magenta Crescent",
+            "art": "boss_shard",
+            "animation": "shard",
+            "behavior": "arc_left",
+            "waveTactic": "receipt_spiral",
+            "threatAction": null,
+            "speed": 1.24
+          },
+          {
+            "x": 1365,
+            "y": 526,
+            "radius": 6,
+            "profile": "magenta_crescent",
+            "label": "Magenta Crescent",
+            "art": "boss_shard",
+            "animation": "shard",
+            "behavior": "arc_left",
+            "waveTactic": "receipt_spiral",
+            "threatAction": null,
+            "speed": 1.24
+          },
+          {
+            "x": 1261,
+            "y": 512,
+            "radius": 6,
+            "profile": "magenta_crescent",
+            "label": "Magenta Crescent",
+            "art": "boss_shard",
+            "animation": "shard",
+            "behavior": "arc_left",
+            "waveTactic": "receipt_spiral",
+            "threatAction": null,
+            "speed": 1.24
+          },
+          {
+            "x": 879,
+            "y": 358,
+            "radius": 6,
+            "profile": "magenta_crescent",
+            "label": "Magenta Crescent",
+            "art": "boss_shard",
+            "animation": "shard",
+            "behavior": "arc_left",
+            "waveTactic": "receipt_spiral",
+            "threatAction": null,
+            "speed": 1.27
+          },
+          {
+            "x": 935,
+            "y": 446,
+            "radius": 6,
+            "profile": "magenta_crescent",
+            "label": "Magenta Crescent",
+            "art": "boss_shard",
+            "animation": "shard",
+            "behavior": "arc_left",
+            "waveTactic": "receipt_spiral",
+            "threatAction": null,
+            "speed": 1.25
+          },
+          {
+            "x": 928,
+            "y": 416,
+            "radius": 6,
+            "profile": "magenta_crescent",
+            "label": "Magenta Crescent",
+            "art": "boss_shard",
+            "animation": "shard",
+            "behavior": "arc_left",
+            "waveTactic": "receipt_spiral",
+            "threatAction": null,
+            "speed": 1.26
+          },
+          {
+            "x": 830,
+            "y": 331,
+            "radius": 6,
+            "profile": "magenta_crescent",
+            "label": "Magenta Crescent",
+            "art": "boss_shard",
+            "animation": "shard",
+            "behavior": "arc_left",
+            "waveTactic": "receipt_spiral",
+            "threatAction": null,
+            "speed": 1.39
+          },
+          {
+            "x": 781,
+            "y": 377,
+            "radius": 6,
+            "profile": "magenta_crescent",
+            "label": "Magenta Crescent",
+            "art": "boss_shard",
+            "animation": "shard",
+            "behavior": "arc_left",
+            "waveTactic": "receipt_spiral",
+            "threatAction": null,
+            "speed": 1.39
+          },
+          {
+            "x": 725,
+            "y": 412,
+            "radius": 6,
+            "profile": "magenta_crescent",
+            "label": "Magenta Crescent",
+            "art": "boss_shard",
+            "animation": "shard",
+            "behavior": "arc_left",
+            "waveTactic": "receipt_spiral",
+            "threatAction": null,
+            "speed": 1.39
+          }
+        ]
+      },
+      "bossHazards": {
+        "active": [],
+        "lastHit": null,
+        "lastCleanup": null,
+        "layerHasGeometry": false
+      },
+      "visibleEnemies": [
+        {
+          "x": 585,
+          "y": 102,
+          "radius": 11,
+          "kind": "enemy",
+          "waveTactic": {
+            "id": "receipt_spiral",
+            "label": "RECEIPT SPIRAL",
+            "move": "orbit",
+            "shot": "fan",
+            "role": "left_flank"
+          },
+          "threatAction": {
+            "id": "pulse_ring_bloom",
+            "state": "cooldown",
+            "remainingMs": 2320.564697265625,
+            "executions": 1
+          },
+          "ace": null,
+          "rivalWing": null,
+          "variant": "nova_enemy_1176",
+          "eliteMiddleShip": null,
+          "rareChaosVisitor": null,
+          "reinforcement": null,
+          "health": 1,
+          "maxHealth": 1,
+          "phase": null,
+          "bossProfile": null,
+          "bossArchetype": null,
+          "bossMovement": null,
+          "bossMovementFamily": null,
+          "bossAttack": null,
+          "bossSignature": null,
+          "bossAnimation": null,
+          "bossSignatureWarning": null,
+          "bossWarningLifecycle": null,
+          "safeLanes": [],
+          "phaseShift": null,
+          "visualBounds": {
+            "width": 122,
+            "height": 118
+          },
+          "telegraph": null,
+          "type": "nova_enemy_1176"
+        },
+        {
+          "x": 1344,
+          "y": 163,
+          "radius": 11,
+          "kind": "enemy",
+          "waveTactic": {
+            "id": "receipt_spiral",
+            "label": "RECEIPT SPIRAL",
+            "move": "orbit",
+            "shot": "fan",
+            "role": "right_flank"
+          },
+          "threatAction": null,
+          "ace": null,
+          "rivalWing": null,
+          "variant": "nova_enemy_1176",
+          "eliteMiddleShip": null,
+          "rareChaosVisitor": null,
+          "reinforcement": null,
+          "health": 1,
+          "maxHealth": 1,
+          "phase": null,
+          "bossProfile": null,
+          "bossArchetype": null,
+          "bossMovement": null,
+          "bossMovementFamily": null,
+          "bossAttack": null,
+          "bossSignature": null,
+          "bossAnimation": null,
+          "bossSignatureWarning": null,
+          "bossWarningLifecycle": null,
+          "safeLanes": [],
+          "phaseShift": null,
+          "visualBounds": {
+            "width": 148,
+            "height": 148
+          },
+          "telegraph": null,
+          "type": "nova_enemy_1176"
+        }
+      ]
+    },
+    "sprite": {
+      "width": 74.1,
+      "height": 74.1,
+      "scale": 0.1447265625,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "minX": 922.95,
+        "minY": 890.9556904478973,
+        "maxX": 997.05,
+        "maxY": 965.0556904478972,
+        "matrix": {
+          "array": null,
+          "a": 0.1447265625,
+          "b": 0,
+          "c": 0,
+          "d": 0.1447265625,
+          "tx": 960,
+          "ty": 928.0056904478972
+        }
+      }
+    },
+    "radius": 11
+  }
+}

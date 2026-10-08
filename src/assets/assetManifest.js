@@ -1,5 +1,11 @@
 import { BONUS_CORES } from '../config/BonusCoreCatalog.js';
+import { TRACTOR_FLEET } from '../config/TractorFleet.js';
 import { PREDATOR_SFX, PREDATOR_SOUND_ROOT } from '../audio/PredatorSounds.js';
+import { FIRST_LIGHT_SOUND_CATALOG } from '../audio/FirstLightSounds.js';
+import { PREMIUM_SOUND_CATALOG } from '../audio/PremiumSounds.js';
+import { VISUAL_LIFE_SOUND_CATALOG } from '../audio/VisualLifeSounds.js';
+import { CONVOY_SURPRISE_SOUND_CATALOG } from '../audio/ConvoySurpriseSounds.js';
+import { COSMIC_FAUNA } from '../config/CosmicFaunaCatalog.js';
 import { menuBossBarkLines } from '../config/MenuBossBarkLines.js';
 import { mayhemSuperStormVoiceLines } from '../config/MayhemSuperStormVoiceLines.js';
 import { tacticalBossBanterLines } from '../config/TacticalBossBanterLines.js';
@@ -13,13 +19,14 @@ import { CABINET_WONDER_DEFINITIONS } from '../config/CabinetWonderLore.js';
 
 export const AssetManifest = {
     generated: {
+        cosmicFauna: COSMIC_FAUNA.map(entry=>entry.art),
         astraThreatCounts: { elites: 50, supports: 111, late: 177 },
         fleetV5Count: 227,
         bonusDrones: [...Array.from({length:12},(_,i)=>i<4?`/art/bonus-drones-20260908/gameplay/${String(i+1).padStart(2,'0')}.png`:`/art/astra/drone-v5/${String(i+1).padStart(2,'0')}.png`), ...Array.from({length:15},(_,i)=>`/art/bonus-drones-20260908/gameplay/${String(i+5).padStart(2,'0')}.png`)],
         bossPresentation: Array.from({ length: 50 }, (_, i) => `/art/astra/boss/${String(i + 1).padStart(2, '0')}.png`),
-        playerPresentation: Array.from({ length: 30 }, (_, i) => `/art/solid-fleet-20260908/player/${String(i + 1).padStart(2, '0')}.png`),
+        playerPresentation: Array.from({ length: 30 }, (_, i) => i === 0 ? '/art/material-rebuild/scout.png' : `/art/solid-fleet-20260908/player/${String(i + 1).padStart(2, '0')}.png`),
         bossComponents: [1, 2, 3].map((i) => `/art/astra/component/${String(i).padStart(2, '0')}.png`),
-        sectorWorlds: Array.from({ length: 48 }, (_, i) => `/art/astra/world/${String(i + 1).padStart(2, '0')}.webp`),
+        sectorWorlds: Array.from({ length: 48 }, (_, i) => ['/art/material-rebuild/ocean.webp', '/art/material-rebuild/volcanic.webp', '/art/material-rebuild/ice.webp'][i] || `/art/astra/world/${String(i + 1).padStart(2, '0')}.webp`),
         codexBackdrop: '/art/astra/archive-v3.webp',
         menuBackdrop: '/art/astra/orbital-dock-v3.webp',
         menuCredits: '/art/generated/nova-swarm/menu/nova-swarm-credits-20260519.png',
@@ -40,7 +47,8 @@ export const AssetManifest = {
         gameOverCeremony: '/art/astra/boss.webp',
         gameOverFinalTransmission: '/art/generated/nova-swarm/gameover/nova-swarm-final-transmission-interlude-20260722.png',
         gameOverFinalTransmissions: GAME_OVER_FINAL_TRANSMISSION_VARIANTS,
-        gameplayArenaBackdrop: '/art/astra/world/01.webp',
+        gameplayArenaBackdrop: '/art/material-rebuild/ocean.webp',
+        legacyGameplayArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
         stormGameplayBackdrop: '/art/astra/storm.webp',
         bossArenaBackdrop: '/art/astra/boss.webp',
         bossDossier: '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
@@ -140,6 +148,7 @@ export const AssetManifest = {
             '/art/generated/nova-swarm/projectiles/nova-enemy-projectile-sheet-alpha-20260624.png'
         ],
         powerups: {
+            orbit_breaker: '/art/generated/nova-swarm/powerups/nova-powerup-orbit_breaker-20260930.png',
             triple_beam: '/art/generated/nova-swarm/powerups/nova-powerup-triple_beam-20260519.png',
             vector_boost: '/art/generated/nova-swarm/powerups/nova-powerup-vector_boost-20260519.png',
             rapid_cabinet: '/art/generated/nova-swarm/powerups/nova-powerup-rapid_cabinet-20260519.png',
@@ -163,7 +172,7 @@ export const AssetManifest = {
             orbital_strike: '/art/generated/nova-swarm/powerups/nova-powerup-orbital_strike-20260519.png',
             vampire: '/art/generated/nova-swarm/powerups/nova-powerup-vampire-20260519.png',
             prism_splitter: '/art/generated/nova-swarm/powerups/nova-powerup-prism_splitter-20260613.png',
-            rail_surge: '/art/generated/nova-swarm/powerups/nova-powerup-rail_surge-20260613.png',
+            rail_surge: '/art/celebration-polish-20260908/hyper-rail.png',
             chrono_anchor: '/art/generated/nova-swarm/powerups/nova-powerup-chrono_anchor-20260613.png',
             blink_drive: '/art/generated/nova-swarm/powerups/nova-powerup-blink_drive-20260613.png',
             nano_patch: '/art/generated/nova-swarm/powerups/nova-powerup-nano_patch-20260613.png',
@@ -423,6 +432,7 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_global_close_01.mp3',
             '/audio/voice/mission-control/mission_control_top3_close_01.mp3',
             '/audio/voice/mission-control/mission_control_number_one_close_01.mp3',
+            '/audio/voice/mission-control/mission_control_known_record_beaten_01.mp3',
             '/audio/voice/mission-control/mission_control_top3_highscore_01.mp3',
             '/audio/voice/mission-control/mission_control_number_one_highscore_01.mp3',
             '/audio/voice/mission-control/mission_control_near_miss_01.mp3',
@@ -461,6 +471,7 @@ export const AssetManifest = {
             '/audio/music/SkyFire (Title Screen).mp3', '/audio/music/Space Heroes.mp3', '/audio/music/Victory Tune.mp3',
             '/audio/music/Without Fear.mp3', '/audio/music/bgm_v2.mp3',
             '/audio/music/nova-swarm/nova_swarm_intro_overture.mp3',
+            '/audio/music/nova-swarm/hangar_departure.mp3',
             '/audio/music/nova-swarm/nova_swarm_menu_neon_cabinet.mp3',
             '/audio/music/nova-swarm/nova_swarm_menu_starcoin_parade.mp3',
             '/audio/music/nova-swarm/nova_swarm_scoreboard_trophy_orbit.mp3',
@@ -477,6 +488,11 @@ export const AssetManifest = {
             '/audio/music/nova-swarm/nova_swarm_gameover_last_coin.mp3'
         ],
         sfx: [
+            ...Object.values(FIRST_LIGHT_SOUND_CATALOG).flat(),
+            ...Object.values(PREMIUM_SOUND_CATALOG).flat(),
+            ...Object.values(VISUAL_LIFE_SOUND_CATALOG).flat(),
+            ...Object.values(CONVOY_SURPRISE_SOUND_CATALOG).flat(),
+            ...COSMIC_FAUNA.map(entry=>entry.sound),
             // Computer Noise
             '/audio/sfx/computerNoise_000.mp3', '/audio/sfx/computerNoise_001.mp3', '/audio/sfx/computerNoise_002.mp3', '/audio/sfx/computerNoise_003.mp3',
             // Door
@@ -517,6 +533,7 @@ export const AssetManifest = {
             '/audio/sfx/core-serpent/serpent_arrive.mp3',
             ...PREDATOR_SFX.map(event => `${PREDATOR_SOUND_ROOT}/${event}.mp3`),
             ...BONUS_CORES.map(core => `${PREDATOR_SOUND_ROOT}/${core.sound}.mp3`),
+            ...TRACTOR_FLEET.flatMap(ship => ['charge', 'active', 'break'].map(event => `/audio/sfx/tractor-fleet/${ship.id}-${event}.mp3`)),
             '/audio/sfx/core-serpent/serpent_break.mp3',
             ...BONUS_CORES.map(core => `/audio/sfx/core-serpent/${core.sound}.mp3`),
             ...[1,2,3,4].flatMap(i => ['hunt','death'].map(event => `/audio/sfx/core-serpent/serpent_${i}_${event}.mp3`)),
@@ -556,6 +573,8 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_boss_death_clock.mp3',
             '/audio/sfx/nova-swarm/nova_overrun_clear_coronation.mp3',
             '/audio/sfx/nova-swarm/astra_overrun_coronation_v6.mp3',
+            '/audio/sfx/celebration-polish-20260908/overrun-triumph.mp3',
+            '/audio/sfx/celebration-polish-20260908/personal-record.mp3',
             '/audio/sfx/nova-swarm/nova_overrun_clear_shockwave.mp3',
             '/audio/sfx/nova-swarm/nova_row_core_pickup.mp3',
             '/audio/sfx/nova-swarm/nova_row_core_horn.mp3',

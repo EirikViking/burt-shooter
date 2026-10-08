@@ -549,7 +549,7 @@ try {
   }
 
   const managerSource = readFileSync('src/managers/EnemyManager.js', 'utf8');
-  assert.match(managerSource, /enemy\.update\(isBoss \? dt[^\n]+isBoss \? delta : undefined\)/, 'boss warning clock must receive unscaled frame time while movement preserves slow-time scaling');
+  assert.match(managerSource, /enemy\.update\(isBoss(?: \|\|[^\n]+)? \? dt[^\n]+isBoss \? delta : undefined\)/, 'boss warning clock must receive unscaled frame time while movement preserves slow-time scaling');
   assert.match(managerSource, /cancelAttackWarning\?\.\('boss_support_inbound', \{ category: 'regular' \}\)/, 'normal fuel-support warning must cancel an active regular warning');
 
   console.log(`[boss-warning-lifecycle] PASS regularProfiles=${regularResults.length} signatureProfiles=${signatureResults.length} phaseThresholds=2 frameThresholds=16,33,100,249,250,251,10000 interruptions=armor,finish,refuel,support,pause,respawn,long-frame notificationOwnership=queued+active+idempotent transientCleanup=pass experimentIsolation=pass`);

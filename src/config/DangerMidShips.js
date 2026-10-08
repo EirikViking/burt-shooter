@@ -1,3 +1,4 @@
+import {discoverySector,hullDiscoverySector} from './DiscoveryProgression.js';
 import { GENERATED_ENEMY_ASSET_COUNT } from './GeneratedEnemyProfiles.js';
 
 const NAMES_A = Object.freeze([
@@ -27,7 +28,7 @@ export const DANGER_MID_SHIPS = Object.freeze(Array.from({ length: 58 }, (_, ind
   const id = `danger_mid_${String(index + 1).padStart(2, '0')}`;
   const name = `${NAMES_A[index % NAMES_A.length]} ${NAMES_B[(index * 7) % NAMES_B.length]}`;
   const tier = index < 18 ? 'Red Contact' : index < 38 ? 'Black Contact' : 'Overrun Contact';
-  const unlockLevel = 8 + Math.floor(index / 4);
+  const unlockLevel = Math.max(8 + Math.floor(index / 4),discoverySector(index,58,8),hullDiscoverySector((50+index)%GENERATED_ENEMY_ASSET_COUNT));
   const tint = TINTS[index % TINTS.length];
   const accent = TINTS[(index * 3 + 2) % TINTS.length];
   const move = MOVES[index % MOVES.length];

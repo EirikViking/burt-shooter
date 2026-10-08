@@ -1,0 +1,5 @@
+
+> nova-swarm@1.0.0 steamworks:payload-manifest
+> node scripts/write-steam-payload-manifest.mjs
+
+[steam-payload-manifest] wrote docs/fleet-art-v2/payload-manifest.json (410 files, 1980406387 bytes)

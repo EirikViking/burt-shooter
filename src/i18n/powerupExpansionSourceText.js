@@ -906,6 +906,7 @@ const localeMaps = Object.freeze({
   }
 });
 
+import {getOrbitBreakerSourceText} from './orbitBreakerText.js';
 export function getPowerupExpansionSourceText(localeCode) {
-  return localeMaps[localeCode] || Object.freeze({});
+  return {...(localeMaps[localeCode]||{}),...getOrbitBreakerSourceText(localeCode)};
 }

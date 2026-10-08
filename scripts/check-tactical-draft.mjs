@@ -260,7 +260,7 @@ const doubleDamage = buildTacticalDraftModifiers(['damage_up', 'damage_up']);
 assert(doubleDamage.damageMult > 1.12 && doubleDamage.damageMult < 1.12 * 1.12, 'second stack should have diminishing returns');
 const tripleDamage = buildTacticalDraftModifiers(['damage_up', 'damage_up', 'damage_up']);
 assert(tripleDamage.damageMult > doubleDamage.damageMult && tripleDamage.damageMult < doubleDamage.damageMult * 1.12, 'third stack should extend the late pool with stronger diminishing returns');
-const latePoolSelected = TACTICAL_DRAFT_AUGMENTS.flatMap((augment) => Array(Math.min(augment.maxStacks, augment.maxStacks === 3 ? 2 : 1)).fill(augment.id));
+const latePoolSelected = TACTICAL_DRAFT_AUGMENTS.flatMap((augment) => Array(augment.maxStacks === 3 ? 2 : augment.maxStacks).fill(augment.id));
 const latePoolOffers = buildTacticalDraftOffers({
   seed: 'sector-forty-proof',
   sectorCleared: 40,
@@ -347,7 +347,7 @@ assert(
 
 const allExceptPhaseWake = TACTICAL_DRAFT_AUGMENTS
   .filter((augment) => augment.id !== 'phase_wake')
-  .flatMap((augment) => Array(Math.min(augment.maxStacks, augment.maxStacks === 3 ? 2 : 1)).fill(augment.id));
+  .flatMap((augment) => Array(augment.maxStacks === 3 ? 2 : augment.maxStacks).fill(augment.id));
 const fusionBeforeThirdStack = buildTacticalDraftOffers({
   seed: 'fusion-before-third-stack',
   sectorCleared: 14,
@@ -1217,10 +1217,17 @@ try {
   assert(interruptionGuard.isPaused === false && interruptionGuard.pauseVisible === false,
     `external focus event paused behind Tactical Draft: ${JSON.stringify(interruptionGuard)}`);
   assert(gatedLevel === 1, `sector advanced before tactical choice: ${gatedLevel}`);
+  await flowPage.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.player.applyRunAugment('phase_reactor');
+    play.tacticalDraft.offers[1].id = 'phase_wake';
+  });
   await flowPage.evaluate(() => window.__game.scenes.play.confirmTacticalDraft(1, 'pointer'));
   await flowPage.waitForFunction(() => window.__game.level === 2, null, { timeout: 5000 });
   const flowState = await readState(flowPage);
   assert(flowState.tacticalDraft.history.length === 1, 'automatic boss-clear draft did not retain its pick');
+  assert(flowState.tacticalDraft.history[0].newFusionIds?.includes('rift_reprisal'),
+    `confirmed boss Draft did not retain earned fusion: ${JSON.stringify(flowState.tacticalDraft.history[0])}`);
   assert(flowState.isPaused === false && flowState.pauseOverlay?.visible !== true,
     `Tactical Draft returned to Pause instead of combat: ${JSON.stringify(flowState.pauseOverlay)}`);
   await flowPage.close();

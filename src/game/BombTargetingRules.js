@@ -5,7 +5,7 @@ function isActiveTarget(target, {
   viewportHeight = Number.POSITIVE_INFINITY,
   nowMs = Date.now()
 } = {}) {
-  if (!target || target.active === false || target.destroyed === true || target.waitingForEntry === true) {
+  if (!target || target.untargetable || target.active === false || target.destroyed === true || target.waitingForEntry === true) {
     return false;
   }
   if (

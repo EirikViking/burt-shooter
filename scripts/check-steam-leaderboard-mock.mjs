@@ -137,6 +137,14 @@ try {
         leaderboardName: sectorLeaderboardName,
         leaderboardKind: 'sector_start',
         source: 'steam'
+      },
+      {
+        playerName: 'LEGACY SECTOR',
+        score: 5000,
+        details: [],
+        leaderboardName: sectorLeaderboardName,
+        leaderboardKind: 'sector_start',
+        source: 'steam'
       }
     ]));
     delete window.__game.leaderboardView;
@@ -150,8 +158,8 @@ try {
     return state.scene === 'highscore' && state.highscore?.status === 'LOADED';
   }, null, { timeout: 12000 });
   const defaultState = await state(page);
-  if (defaultState.highscore?.tabs?.join(',') !== 'tactical,global,sector,friends,local') {
-    throw new Error('Steam tabs are not Tactical-first: ' + defaultState.highscore?.tabs);
+  if (defaultState.highscore?.tabs?.join(',') !== 'tactical,onslaught,global,sector,friends,local') {
+    throw new Error('Steam tabs are not Tactical/Onslaught-first: ' + defaultState.highscore?.tabs);
   }
   if (defaultState.highscore?.activeLeaderboard !== 'tactical' || defaultState.highscore?.sourceLabel !== 'Steam Tactical') {
     throw new Error('Tactical should be the default Steam leaderboard: ' + JSON.stringify(defaultState.highscore));
@@ -203,9 +211,23 @@ try {
     throw new Error(`Expected Steam Sector source, got ${sectorState.highscore?.sourceLabel}`);
   }
   const sectorRows = await page.evaluate(() => window.__game?.scenes?.highscore?.rowLayoutDebug || []);
-  if (!sectorRows.some((row) => row.levelText === 'S 20')) {
-    throw new Error(`Sector tab should render start sector as S 20: ${JSON.stringify(sectorRows)}`);
+  if (!sectorRows.some((row) => row.levelText === 'S 20–22')) {
+    throw new Error(`Sector tab should render the start-to-highest range as S 20–22: ${JSON.stringify(sectorRows)}`);
   }
+  const legacySectorRow = sectorRows.find((row) => row.levelText === '—');
+  if (!legacySectorRow) {
+    throw new Error(`Legacy Steam sector data should remain unknown: ${JSON.stringify(sectorRows)}`);
+  }
+  await page.waitForTimeout(900);
+  await page.mouse.move(legacySectorRow.row.right - 8, legacySectorRow.row.y + legacySectorRow.row.height / 2);
+  await page.waitForFunction(() => Boolean(window.__game.scenes.highscore.sectorHint));
+  const sectorHint = await page.evaluate(() => window.__game.scenes.highscore.sectorHint?.children.find((child) => child.text)?.text);
+  if (sectorHint !== 'Older Steam entries did not save sector details.') {
+    throw new Error(`Legacy row hover did not explain missing sector data: ${sectorHint}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-sector-legacy-hint.png'), fullPage: true });
+  await page.mouse.move(8, 8);
+  await page.waitForFunction(() => !window.__game.scenes.highscore.sectorHint);
   await page.screenshot({ path: path.join(outputDir, 'steam-sector-tab.png'), fullPage: true });
 
   await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('friends'));

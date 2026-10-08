@@ -7,7 +7,7 @@ function isVisibleTarget(target) {
 }
 
 export function isSkyVerdictTargetEligible(target) {
-  if (!target || target.active === false || target.destroyed === true || target.waitingForEntry === true) {
+  if (!target || target.untargetable || target.active === false || target.destroyed === true || target.waitingForEntry === true) {
     return false;
   }
   if (!isVisibleTarget(target)) return false;

@@ -1,0 +1,6 @@
+
+> nova-swarm@1.0.0 check:powerup-assets
+> node scripts/check-powerup-assets.mjs
+
+[powerup-assets] ok: 66 generated powerup icons
+[powerup-icon-distinctness] PASS catalog=65 pairs=13 native=192px gameplay=48px

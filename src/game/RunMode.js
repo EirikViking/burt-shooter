@@ -13,7 +13,7 @@ export const RUN_MODES = Object.freeze({
 
 export const SECTOR_START_CHECKPOINT_INTERVAL = 5;
 export const OVERRUN_START_SECTOR = 51;
-export const OVERRUN_UNLOCK_SECTOR = 30;
+export const OVERRUN_UNLOCK_SECTOR = 1;
 export const OVERRUN_WEB_PREVIEW_PARAM = 'overrunPreview';
 export const OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS = Object.freeze([
   'damage_up',
@@ -40,10 +40,10 @@ export const RUN_MODE_PROFILES = Object.freeze({
   [RUN_MODES.RANKED]: Object.freeze({
     id: RUN_MODES.RANKED,
     menuId: 'mayhem',
-    label: 'MAYHEM PURE',
-    shortLabel: 'Mayhem Pure',
+    label: 'ARCADE PURE',
+    shortLabel: 'Arcade Pure',
     subLabel: 'Ranked · No tactical upgrades',
-    resultLabel: 'MAYHEM PURE',
+    resultLabel: 'ARCADE PURE',
     oneMoreLabel: 'ONE MORE PURE RUN',
     ranked: true,
     tacticalDraftEnabled: false,
@@ -63,11 +63,11 @@ export const RUN_MODE_PROFILES = Object.freeze({
   [RUN_MODES.MAYHEM_TACTICAL]: Object.freeze({
     id: RUN_MODES.MAYHEM_TACTICAL,
     menuId: 'mayhemTactical',
-    label: 'MAYHEM TACTICAL',
-    shortLabel: 'Mayhem Tactical',
+    label: 'ARCADE TACTICAL',
+    shortLabel: 'Arcade Tactical',
     subLabel: 'Ranked · Tactical upgrades',
-    resultLabel: 'MAYHEM TACTICAL',
-    oneMoreLabel: 'ONE MORE TACTICAL RUN',
+    resultLabel: 'ARCADE TACTICAL',
+    oneMoreLabel: 'RETRY ARCADE',
     ranked: true,
     tacticalDraftEnabled: true,
     submitsGlobalLeaderboard: true,
@@ -166,11 +166,11 @@ export const RUN_MODE_PROFILES = Object.freeze({
   [RUN_MODES.OVERRUN_PURE]: Object.freeze({
     id: RUN_MODES.OVERRUN_PURE,
     menuId: 'overrun',
-    label: 'OVERRUN PURE',
-    shortLabel: 'Overrun Pure',
+    label: 'ONSLAUGHT PURE',
+    shortLabel: 'Onslaught Pure',
     subLabel: 'Sector 51 · Career active · No leaderboard',
-    resultLabel: 'OVERRUN PURE',
-    oneMoreLabel: 'ONE MORE OVERRUN',
+    resultLabel: 'ONSLAUGHT PURE',
+    oneMoreLabel: 'RETRY ONSLAUGHT',
     ranked: false,
     tacticalDraftEnabled: false,
     mayhemReinforcementsEnabled: true,
@@ -193,23 +193,22 @@ export const RUN_MODE_PROFILES = Object.freeze({
   [RUN_MODES.OVERRUN_TACTICAL]: Object.freeze({
     id: RUN_MODES.OVERRUN_TACTICAL,
     menuId: 'overrun',
-    label: 'OVERRUN TACTICAL',
-    shortLabel: 'Overrun Tactical',
-    subLabel: 'Sector 51 · Fixed baseline · Career active',
-    resultLabel: 'OVERRUN TACTICAL',
-    oneMoreLabel: 'ONE MORE OVERRUN',
+    label: 'ONSLAUGHT TACTICAL',
+    shortLabel: 'Onslaught Tactical',
+    subLabel: 'Sector 51 · Choose three augments · Career active',
+    resultLabel: 'ONSLAUGHT TACTICAL',
+    oneMoreLabel: 'RETRY ONSLAUGHT',
     ranked: false,
     tacticalDraftEnabled: true,
     mayhemReinforcementsEnabled: true,
     routineReinforcementsEnabled: true,
-    submitsGlobalLeaderboard: false,
+    submitsGlobalLeaderboard: true,
     submitsLocalLeaderboard: false,
     unlocksAchievements: false,
     unlocksRankedCheckpoints: false,
     updatesCareerProgress: true,
     updatesCompetitiveCareerBests: false,
-    careerXpMultiplier: 0.85,
-    tacticalBaselineAugmentIds: OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
+    careerXpMultiplier: 1.0,
     difficultyProfileId: 'overrun_sector_51_v1',
     normalWaveDifficultyLevelOffsetDelta: 0,
     bossDifficultyMult: 1,
@@ -337,7 +336,7 @@ export function isRankedRunMode(mode, { isDebugRun = false } = {}) {
 export function canRunModeSubmitGlobalLeaderboard(mode, options = {}) {
   const canonicalMode = parseRunMode(mode);
   return canonicalMode !== null
-    && isRankedRunMode(canonicalMode, options)
+    && options.isDebugRun !== true
     && RUN_MODE_PROFILES[canonicalMode]?.submitsGlobalLeaderboard === true;
 }
 

@@ -1,0 +1,54 @@
+{
+  "errors": [],
+  "checks": [
+    "Hangar Back -> home; no extra launch count",
+    "Support heals respect 60% cap without reducing HP"
+  ],
+  "tip": {
+    "count": "1",
+    "present": true
+  },
+  "enemies": {
+    "id": "boss_support_ship_001",
+    "source": "/art/astra/fleet-v5/001.png"
+  },
+  "bonusDrones": {
+    "id": "bonus_drone_legacy_0",
+    "source": "/art/bonus-drones-20260908/codex/01.webp"
+  },
+  "bonusCores": {
+    "id": "bonus_core_treasure",
+    "source": "/art/core-serpent/core-01-imagegen.png"
+  },
+  "augments": {
+    "id": "damage_up",
+    "source": "/art/generated/nova-swarm/powerups/nova-powerup-damage_up-20260519.png"
+  },
+  "spaceSnakes": {
+    "id": "space_snake_cinder",
+    "source": "/art/core-serpent/snake-1-head-imagegen.png"
+  },
+  "heal": [
+    {
+      "health": 400,
+      "healed": 200
+    },
+    {
+      "health": 600,
+      "healed": 50
+    },
+    {
+      "health": 600,
+      "healed": 0
+    },
+    {
+      "health": 800,
+      "healed": 0
+    },
+    {
+      "health": 1000,
+      "healed": 200
+    }
+  ],
+  "status": "passed"
+}

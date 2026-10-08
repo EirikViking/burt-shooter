@@ -8,7 +8,7 @@ import { chromium } from 'playwright';
 const host = '127.0.0.1';
 const port = await findAvailablePort(4920);
 const baseUrl = `http://${host}:${port}`;
-const outputDir = path.resolve(`test-results/runback-agency-lifecycle-${new Date().toISOString().replace(/[:.]/g, '-')}`);
+const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/runback-agency-lifecycle-${new Date().toISOString().replace(/[:.]/g, '-')}`);
 
 async function findAvailablePort(startPort) {
   for (let candidate = startPort; candidate < startPort + 40; candidate += 1) {

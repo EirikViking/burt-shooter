@@ -37,8 +37,13 @@ export function setGameplayCursorHidden(hidden) {
   return gameplayCursorHidden;
 }
 
-export function syncGameplayCursorVisibility(game) {
-  return setGameplayCursorHidden(shouldHideGameplayCursor(game));
+export function syncGameplayCursorVisibility(game, { force = false } = {}) {
+  const shouldHide = shouldHideGameplayCursor(game);
+  if (force && shouldHide && typeof document !== 'undefined') {
+    setGameplayCursorHidden(false);
+    void document.documentElement?.offsetWidth;
+  }
+  return setGameplayCursorHidden(shouldHide);
 }
 
 export function isGameplayCursorHidden() {

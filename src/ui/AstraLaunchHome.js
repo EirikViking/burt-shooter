@@ -1,19 +1,35 @@
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import { Assets, Container, Graphics, NineSliceSprite, Rectangle, Sprite, Texture } from 'pixi.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText as t } from '../i18n/index.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
-import { RUN_MODES } from '../game/RunMode.js';
+import { RUN_MODES, getRunModeProfile } from '../game/RunMode.js';
+import { readLastRunMode } from '../game/LastRunMode.js';
+import { getHangarLaunchModeOptions } from './HangarLaunchModeOverlay.js';
 import { playMenuConfirmSfx, playMenuFocusSfx } from './MenuFxLayer.js';
 import { getCurrentLayout } from './responsiveLayout.js';
+import {preloadEnergyMaterials} from '../effects/AstraEnergyMaterial.js';
 
 const FONT = 'Rajdhani, Bahnschrift, Segoe UI, sans-serif';
 const DISPLAY = 'Orbitron, Rajdhani, sans-serif';
 const MODE_KEY = 'nova_launch_menu_mode_v1'; // Local navigation preference, not run/save progress.
+let artwork;
+function loadArtwork() {
+  return artwork ||= Promise.all(['wordmark','launch-control'].map(name => Assets.load(`/art/menu-energy/${name}.webp`))).catch(() => { artwork=null; return null; });
+}
+let sweepTexture;
+function surfaceLight() {
+  if(sweepTexture)return sweepTexture;
+  const c=document.createElement('canvas');c.width=128;c.height=32;
+  const ctx=c.getContext('2d'),g=ctx.createLinearGradient(0,0,128,0);
+  g.addColorStop(0,'#bdeeff00');g.addColorStop(.46,'#bdeeff06');g.addColorStop(.6,'#d9faff33');g.addColorStop(1,'#bdeeff00');
+  ctx.fillStyle=g;ctx.fillRect(0,0,128,32);sweepTexture=Texture.from(c);return sweepTexture;
+}
 
 export class AstraLaunchHome extends Container {
   constructor(scene) {
     super(); this.scene = scene; scene.mayhemRunMode=RUN_MODES.MAYHEM_TACTICAL; this.zIndex = 30; this.label = 'ui_astraLaunchHome';
-    this.surface = 'home'; this.clock = 0;
+    this.surface = 'home'; this.clock = 0; this.highlightedMode = 'launchTactical';
+    void preloadEnergyMaterials();
     this.home = new Container(); this.chrome = new Graphics(); this.addChild(this.chrome, this.home);
     this.title = this.text('NOVA\nSWARM', 72, 0xeaf7ff, DISPLAY, this.home);
     this.title.style.fontWeight = '900'; this.title.style.lineHeight = 76;
@@ -27,7 +43,19 @@ export class AstraLaunchHome extends Container {
     this.shipLabel = this.text('', 13, 0x80aab9, FONT, this.home);
     this.buttons = {};
     this.options = [];
-    this.make('launchTactical', 'PLAY', () => scene.quickStartRun(RUN_MODES.MAYHEM_TACTICAL), 'primary');
+    this.make('launchTactical', 'ARCADE', () => scene.quickStartRun(RUN_MODES.MAYHEM_TACTICAL), 'primary');
+    this.make('onslaught', 'ONSLAUGHT', () => scene.quickStartRun(RUN_MODES.OVERRUN_TACTICAL), 'secondary');
+    const newBadge = new Container();
+    newBadge.eventMode = 'none';
+    newBadge.addChild(new Graphics().poly([0, 0, 49, 0, 54, 5, 54, 18, 0, 18])
+      .fill({ color: 0x4b361b, alpha: .98 })
+      .stroke({ color: 0xe6bc6e, width: 1, alpha: .85 }));
+    const newLabel = this.text(t('NEW'), 12, 0xffe3a8, FONT, newBadge);
+    newLabel.anchor.set(.5); newLabel.position.set(27, 9);
+    newLabel.scale.x = Math.min(1, 44 / Math.max(1, newLabel.width));
+    newBadge._label = newLabel;
+    this.buttons.onslaught.addChild(newBadge);
+    this.buttons.onslaught._newBadge = newBadge;
     this.make('otherModes', 'OTHER MODES', () => this.openModes(), 'secondary');
     this.make('changeShip', 'CHANGE SHIP', () => scene.openShipSelect(), 'text');
     this.make('hangar', 'SHIP HANGAR', () => scene.openShipSelect(), 'nav');
@@ -43,6 +71,19 @@ export class AstraLaunchHome extends Container {
     this.make('backHome', 'BACK', () => this.closeModes(), 'secondary');
     this.buttons.backHome.visible = false;
     this.options = this.options.filter(o => o.id !== 'backHome');
+    void loadArtwork().then(textures=>{
+      if(!textures||this.destroyed)return;
+      this.wordmark=new Sprite(textures[0]);this.wordmark.eventMode='none';this.home.addChild(this.wordmark);
+      this.title.visible=false;
+      for(const id of ['launchTactical','onslaught','otherModes']){
+        const b=this.buttons[id];
+        b._plate=new NineSliceSprite({texture:textures[1],leftWidth:90,rightWidth:360,topHeight:42,bottomHeight:42});
+        b._plate.eventMode='none';b.addChildAt(b._plate,1);
+        b._surfaceLight=new Sprite(surfaceLight());b._surfaceLight.blendMode='add';b._surfaceLight.eventMode='none';
+        b._surfaceMask=new Graphics();b._surfaceLight.mask=b._surfaceMask;b.addChildAt(b._surfaceLight,2);b.addChild(b._surfaceMask);
+      }
+      this.scene.layoutMenu();
+    });
   }
 
   text(value, size, color, font = FONT, parent = this) {
@@ -52,23 +93,31 @@ export class AstraLaunchHome extends Container {
 
   make(id, source, activate, variant) {
     const b = new Container(); b.label = `ui_launch_${id}`; b.eventMode = 'static'; b.cursor = 'pointer';
-    b._launchHomeButton = true; b._source = source; b._variant = variant; b._accent = 0xa4f7e0;
+    b._launchHomeButton = true; b._id = id; b._source = source; b._variant = variant; b._accent = 0xa4f7e0;
     b._bg = new Graphics(); b.addChild(b._bg);
     b._label = this.text('', variant === 'primary' ? 32 : 17, 0xeaf7ff, variant === 'primary' ? DISPLAY : FONT, b);
     b._subtitle = this.text('', 15, 0xa5e2d9, FONT, b);
-    if (id === 'launchTactical' || id === 'otherModes') { b._energy = new Graphics(); b._energy.eventMode='none'; b.addChildAt(b._energy,1); }
-    b.activate = activate; b._paint = () => this.paint(b);
+    if (id === 'launchTactical' || id === 'onslaught' || id === 'otherModes') { b._energy = new Graphics(); b._energy.eventMode='none'; b.addChildAt(b._energy,1); }
+    const invoke=()=>{b._pressedUntil=this.clock+.16;this.paint(b);activate();};
+    b.activate = invoke; b._paint = () => this.paint(b);
     b.on('pointerover', () => { this.scene.setMenuFocusByButton(b); b._hovered = true; this.paint(b); playMenuFocusSfx(.075); });
     b.on('pointerout', () => { b._hovered = false; this.paint(b); });
-    b.on('pointerdown', e => { e?.stopPropagation?.(); this.scene.setInputDevice('keyboard'); playMenuConfirmSfx(.24); activate(); });
-    this.addChild(b); this.buttons[id] = b; this.options.push({ id, button: b, activate }); return b;
+    b.on('pointerdown', e => { e?.stopPropagation?.(); this.scene.setInputDevice('keyboard'); playMenuConfirmSfx(.24); invoke(); });
+    this.addChild(b); this.buttons[id] = b; this.options.push({ id, button: b, activate:invoke }); return b;
   }
 
   paint(b) {
     const w = b._btnWidth || 150, h = b._btnHeight || 44, active = b._focused || b._hovered;
     const g = b._bg; g.clear(); b._label.text = t(b._source);
     const primary = b._variant === 'primary', solid = primary || b._variant === 'secondary', action=Boolean(b._energy);
-    if (action) {
+    if (action && b._plate) {
+      const scale=h/404;b._plate.scale.set(scale);b._plate.width=w/scale;b._plate.height=404;
+      // NineSlice dimensions are local; scale keeps the manufactured end-cap undistorted.
+      b._plate.scale.set(scale);
+      b._plate.tint=primary?(active?0xffffff:0xd5e8e7):(active?0xc8d4ff:0x8996bc);
+      b._surfaceMask.clear().roundRect(26,h*.13,w-h*1.2-26,h*.70,6).fill(0xffffff);
+      b._label.style.dropShadow={color:0x000710,alpha:1,blur:5,distance:2};
+    } else if (action) {
       const edge=primary?0xffce91:0xa9bcff, tint=primary?0x53d9d0:0x6f8cff;
       const outline=[0,0,w-18,0,w,18,w,h,18,h,0,h-18,0,0];
       g.poly(outline).fill({color:primary?0x092b36:0x101d38,alpha:.97});
@@ -96,42 +145,49 @@ export class AstraLaunchHome extends Container {
     }
     b._label.style.fill = primary ? 0xedfff7 : active ? 0xc9fff1 : 0xb9d0dc;
     b._label.anchor.set(solid ? 0 : .5, .5);
-    b._label.position.set(solid ? 24 : w/2, primary ? h*.38 : h/2);
+    b._label.position.set(solid ? b._newBadge ? 90 : 24 : w/2, action ? h*.38 : h/2);
     if(action)b._label.style.fontSize=primary?Math.min(42,h*.36):Math.min(23,h*.38);
-    const textRoom=w-(action?Math.max(100,h*1.55):solid?72:12);
+    const textRoom=w-(action?Math.max(b._newBadge ? 158 : 100,h*1.55):solid?72:12);
     b._label.scale.set(1); if (b._label.width > textRoom) b._label.scale.set(textRoom/b._label.width);
-    b._subtitle.visible = primary; b._subtitle.text = primary ? t('MAYHEM TACTICAL') : '';
+    b._subtitle.visible = action;
+    b._subtitle.text = primary ? t('Fight from Sector 1 · build, survive, climb')
+      : b === this.buttons.onslaught ? t('Sector 51 · custom builds, elite records')
+        : b === this.buttons.otherModes ? t('Pure runs, daily trials & special missions') : '';
+    if (action && (b._focused || b._hovered)) { this.highlightedMode = b._id; this.updateInvitation(); }
     b._subtitle.position.set(24,h*.65); b._subtitle.scale.set(1);
     if (b._subtitle.width>textRoom) b._subtitle.scale.set(textRoom/b._subtitle.width);
     if (solid&&!action) g.poly([w-34,h/2-6,w-24,h/2,w-34,h/2+6]).stroke({color:primary ? 0xaaffdf : 0x8ce7d2,width:2});
     if(action)this.paintActionLight(b,0,true);
+    if (b._newBadge) {
+      b._newBadge.position.set(24, 12);
+      b._newBadge._label.text = t('NEW');
+      b._newBadge._label.scale.x = Math.min(1, 44 / Math.max(1, b._newBadge._label.width));
+    }
     b.hitArea = new Rectangle(0,0,w,h);
+  }
+
+  updateInvitation() {
+    const source = this.highlightedMode === 'onslaught'
+      ? 'Build your edge at Sector 51. Chase the elite.'
+      : this.highlightedMode === 'otherModes'
+        ? 'Take a new route. Face a new challenge.'
+        : 'Start at Sector 1. Forge a run worth remembering.';
+    this.invitation.text = t(source);
   }
 
   paintActionLight(b,time,reduced) {
     const g=b._energy,w=b._btnWidth||150,h=b._btnHeight||44,primary=b._variant==='primary';g.clear();
-    const x=w-h*.7,y=h*.5,r=h*(primary?.29:.30),active=b._focused||b._hovered;
-    const pulse=reduced?.7:.68+.18*Math.sin(time*1.7),colour=primary?0x7bfff0:0xabbcff;
-    for(let i=3;i>0;i--)g.circle(x,y,r+i*3).fill({color:colour,alpha:(active?.025:.015)*pulse});
-    g.circle(x,y,r).fill({color:0x03131e,alpha:.9}).stroke({color:colour,width:1,alpha:.35});
-    if(primary){
-      for(let i=0;i<3;i++){
-        const a=(reduced?0:time*.22)+i*Math.PI*2/3;
-        g.moveTo(x+(r+4)*Math.cos(a),y+(r+4)*Math.sin(a)).arc(x,y,r+4,a,a+1.25).stroke({color:i===0?0xffd29b:colour,width:2,alpha:.75});
-      }
-      g.poly([x-r*.24,y-r*.48,x+r*.45,y,x-r*.24,y+r*.48,x-r*.08,y,x-r*.24,y-r*.48]).fill({color:0xe3fff6,alpha:.95});
-      for(let i=0;i<3;i++){
-        const cx=x-r-14-i*10;
-        g.moveTo(cx-4,y-6).lineTo(cx+1,y).lineTo(cx-4,y+6).stroke({color:colour,width:2,alpha:reduced?.45:.25+.4*(.5+.5*Math.sin(time*2.7+i*.8))});
-      }
+    const active=b._focused||b._hovered,pressed=!reduced&&time<(b._pressedUntil||0);
+    if(b._plate){
+      b._plate.y=pressed?1.5:0;
+      b._surfaceLight.width=w*.38;b._surfaceLight.height=h;
+      b._surfaceLight.x=reduced?w*.2:((time*.085+(primary?0:.4))%1)*(w*2)-w*.65;
+      b._surfaceLight.alpha=reduced?.06:active?.38:.19;
+      if(active)g.roundRect(30,h*.17,Math.max(1,w-h*1.22-30),h*.64,4).fill({color:primary?0x76e8e2:0x9aacff,alpha:pressed?.12:.055});
     }else{
-      const points=[[-.48,.3],[0,-.4],[.48,.3]];
-      g.moveTo(x-r*.48,y+r*.3).lineTo(x,y-r*.4).lineTo(x+r*.48,y+r*.3).closePath().stroke({color:colour,width:1,alpha:.55});
-      points.forEach(([px,py],i)=>{const nx=x+px*r,ny=y+py*r;g.circle(nx,ny,3.2).fill({color:i===1?0xffd39b:colour,alpha:reduced?.85:.6+.3*Math.sin(time*1.6+i)**2});});
-      g.moveTo(x+(r+3)*Math.cos(-.6),y+(r+3)*Math.sin(-.6)).arc(x,y,r+3,-.6,1.8).stroke({color:0xa497ff,width:2,alpha:pulse});
+      // Immediate, quiet loading fallback; no orbiting placeholder ornaments.
+      g.poly([w-h*.75,h*.27,w-h*.35,h*.5,w-h*.75,h*.73]).fill({color:0xc9fff1,alpha:.7});
     }
-    const length=w-42,travel=reduced?.38:(time*.12)%1,beam=20+travel*(length-42);
-    g.moveTo(beam,h-2).lineTo(beam+32,h-2).stroke({color:primary?0xffd09a:colour,width:2,alpha:pulse});
   }
 
   place(id,x,y,w,h) { const b=this.buttons[id]; b.position.set(x,y); b._btnWidth=w; b._btnHeight=h; this.paint(b); }
@@ -156,12 +212,10 @@ export class AstraLaunchHome extends Container {
     }
     const w=b._btnWidth||150;
     this.paintActionLight(b,time,reduced);
+    this.paintActionLight(this.buttons.onslaught,time,reduced);
     this.paintActionLight(this.buttons.otherModes,time,reduced);
+    this.buttons.onslaught._newBadge.alpha = reduced ? .9 : .84 + .08 * Math.sin(time * 2.2);
     this.signature.clear();
-    const x=this.title.x+5,y=this.title.y+this.title.height+9,span=Math.min(w*.6,240);
-    this.signature.moveTo(x,y).lineTo(x+span,y).stroke({color:0x91d8dc,width:1,alpha:.25});
-    this.signature.moveTo(x,y).lineTo(x+span*.25,y).stroke({color:0xffcc96,width:2,alpha:.8});
-    this.signature.circle(x+span+8,y,2).fill({color:0xffd7a5,alpha:reduced?.7:.55+.2*Math.sin(time*.8)});
   }
 
   layout(width, height) {
@@ -169,17 +223,18 @@ export class AstraLaunchHome extends Container {
     const fontScale=Math.min(1.35,Math.max(1,getCurrentLayout()?.uiScale||1));
     const left=width*.055, navY=height-62*s, column=compact ? width*.42 : width*.34;
     this.home.visible=this.surface==='home';
-    for (const id of ['launchTactical','otherModes','changeShip']) this.buttons[id].visible=this.surface==='home';
+    for (const id of ['launchTactical','onslaught','otherModes','changeShip']) this.buttons[id].visible=this.surface==='home';
     this.buttons.backHome.visible=this.surface==='modes';
     this.title.position.set(left,height*.13); this.title.style.fontSize=70*s; this.title.style.lineHeight=77*s;
-    this.invitation.text=t('Survive the swarm. Defeat bosses. Choose powerful upgrades.');
+    this.updateInvitation();
     this.invitation.style.fontSize=Math.max(17,21*s)*fontScale; this.invitation.style.wordWrap=true; this.invitation.style.wordWrapWidth=column;
     this.invitation.position.set(left,height*.385);
     this.invitation.scale.set(1);
     const invitationRoom=height*.53-this.invitation.y-16*s;
     if(this.invitation.height>invitationRoom)this.invitation.scale.set(invitationRoom/this.invitation.height);
-    this.place('launchTactical',left,height*.53,column,84*s);
-    this.place('otherModes',left,height*.53+100*s,column,46*s);
+    this.place('launchTactical',left,height*.49,column,76*s);
+    this.place('onslaught',left,height*.49+84*s,column,66*s);
+    this.place('otherModes',left,height*.49+158*s,column,56*s);
     this.shipLabel.text=t('SELECTED SHIP'); this.shipLabel.style.fontSize=13*s;
     this.shipName.text=getShipMetadata(this.scene.getQuickStartShipKey())?.name || this.scene.getQuickStartShipKey();
     this.shipName.style.fontSize=Math.max(16,20*s)*fontScale; this.shipName.scale.set(1);
@@ -199,10 +254,10 @@ export class AstraLaunchHome extends Container {
     this.chrome.clear();this.chrome.rect(0,navY-12*s,width,height-navY+12*s).fill({color:0x020811,alpha:.8});
     this.chrome.moveTo(left,navY-12*s).lineTo(width-left,navY-12*s).stroke({color:0x75b5bb,width:1,alpha:.35});
     if(width<600) {
-      const full=width-left*2, footY=height-100, plaqueY=footY-85, otherY=plaqueY-56, playY=otherY-78;
+      const full=width-left*2, footY=height-100, plaqueY=footY-85, otherY=plaqueY-62, playY=otherY-134;
       this.title.position.set(left,Math.max(44,height*.06));this.title.style.fontSize=40;this.title.style.lineHeight=44;
       this.invitation.position.set(left,playY-68);this.invitation.style.fontSize=17;this.invitation.style.wordWrapWidth=full;this.invitation.scale.set(1);
-      this.place('launchTactical',left,playY,full,66);this.place('otherModes',left,otherY,full,44);
+      this.place('launchTactical',left,playY,full,62);this.place('onslaught',left,playY+68,full,58);this.place('otherModes',left,otherY,full,54);
       this.shipLabel.position.set(left+12,plaqueY);this.shipName.position.set(left+12,plaqueY+18);this.shipName.style.fontSize=16;
       this.shipName.scale.set(1);if(this.shipName.width>full-24)this.shipName.scale.set((full-24)/this.shipName.width);
       this.place('changeShip',left,plaqueY+42,full,28);this.rotateHint.visible=false;
@@ -210,7 +265,13 @@ export class AstraLaunchHome extends Container {
       nav.forEach((id,i)=>this.place(id,left+(i%3)*full/3,footY+Math.floor(i/3)*46,full/3,44));
       this.chrome.clear();this.chrome.rect(0,footY-8,width,height-footY+8).fill({color:0x020811,alpha:.9});
     } else this.rotateHint.visible=true;
+    if(this.wordmark){
+      const markWidth=width<600?Math.min(column*1.8,330):column;
+      this.wordmark.width=markWidth;this.wordmark.height=markWidth*518/1536;
+      this.wordmark.position.copyFrom(this.title.position);
+    }
     this.scene.legacyMenuLayer.visible=this.surface==='modes';
+    this.scene.tacticalStartBtn.visible=false;
     for(const key of ['highscoreBtn','storyBtn','threatCodexBtn','achievementsBtn','settingsBtn','musicBtn','helpBtn','exitBtn'])this.scene[key].visible=false;
     if(this.surface==='modes') { this.scene.title.text=t('OTHER MODES'); this.scene.subtitle.visible=false; this.scene.menuPanel.visible=false; }
     this.syncModalPresentation();
@@ -225,12 +286,21 @@ export class AstraLaunchHome extends Container {
   }
 
   openModes() {
-    this.surface='modes'; this.scene.mayhemRunMode=RUN_MODES.RANKED;this.scene.newPilotCueDismissed=true;
+    this.surface='modes'; this.scene.overrunRunMode=RUN_MODES.OVERRUN_PURE; this.scene.mayhemRunMode=RUN_MODES.MAYHEM_TACTICAL;this.scene.newPilotCueDismissed=true;
     let saved={id:'launchTactical'}; try { saved=JSON.parse(localStorage.getItem(MODE_KEY)||'null')||saved; } catch { /* Local preference is optional. */ }
-    if([RUN_MODES.OVERRUN_PURE,RUN_MODES.OVERRUN_TACTICAL].includes(saved.overrun))this.scene.overrunRunMode=saved.overrun;
+    this.scene.overrunRunMode=RUN_MODES.OVERRUN_PURE;
     this.scene.buildMenuNavigation();
     const index=this.scene.menuOptions.findIndex(o=>o.id===saved.id); this.scene.setMenuFocus(Math.max(0,index));
     this.scene.refreshButtonCopy(this.scene.tacticalStartBtn,{forceGpuRefresh:true}); this.scene.layoutMenu();
+  }
+  getPrimaryRunMode() {
+    return RUN_MODES.MAYHEM_TACTICAL;
+  }
+  launchRememberedMode() {
+    const mode = this.getPrimaryRunMode();
+    if (mode === RUN_MODES.DAILY_SIGNAL) return this.scene.startDailySignalRun();
+    if (mode === RUN_MODES.SECTOR_START) return this.scene.launchSectorStartRun();
+    return this.scene.quickStartRun(mode);
   }
   closeModes() {
     this.rememberMode();
@@ -239,7 +309,7 @@ export class AstraLaunchHome extends Container {
   }
   rememberMode() {
     const id=this.scene.getSelectedMenuOptionId();
-    if(this.surface!=='modes'||!['launchTactical','dailySignal','scout','sectorStart','overrun'].includes(id))return;
+    if(this.surface!=='modes'||!['launchTactical','mayhemPure','dailySignal','scout','sectorStart','overrun'].includes(id))return;
     try{localStorage.setItem(MODE_KEY,JSON.stringify({id,overrun:this.scene.overrunRunMode}));}catch{/* Local preference is optional. */}
   }
   navigate({up,down,left,right,confirm,cancel,tab,reverse}) {
@@ -248,5 +318,5 @@ export class AstraLaunchHome extends Container {
     else if(down||right||tab)this.scene.moveMenuFocus(1);
     if(confirm)this.scene.activateFocusedMenuOption();
   }
-  debug() { return {surface:this.surface,primaryRunMode:RUN_MODES.MAYHEM_TACTICAL,selectedShip:this.scene.getQuickStartShipKey(),buttons:Object.fromEntries(Object.entries(this.buttons).map(([id,b])=>[id,{visible:b.visible,text:b._label.text,x:b.x,y:b.y,width:b._btnWidth,height:b._btnHeight}]))}; }
+  debug() { return {surface:this.surface,primaryRunMode:this.getPrimaryRunMode(),selectedShip:this.scene.getQuickStartShipKey(),buttons:Object.fromEntries(Object.entries(this.buttons).map(([id,b])=>[id,{visible:b.visible,text:b._label.text,x:b.x,y:b.y,width:b._btnWidth,height:b._btnHeight}]))}; }
 }

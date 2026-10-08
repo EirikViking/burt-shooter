@@ -89,7 +89,28 @@ class SteamAchievementsBridge {
   async getAllAchievements() {
     const manager = await this.getAchievementManager();
     if (!manager || typeof manager.getAllAchievements !== 'function') return [];
+    await this.applyApprovedRankCorrection(manager);
     return manager.getAllAchievements();
+  }
+
+  async applyApprovedRankCorrection(manager) {
+    // Owner-approved support correction, 2026-09-13, forum comment
+    // 569297137117213020. Steam confirmed earlier ranks and rejected the
+    // publisher write for this Client achievement. Match only the native
+    // signed-in account, never a display name or renderer-supplied identity.
+    if (String(this.steamClientBridge?.getStatus?.().appId) !== '4765070' ||
+      String(this.steamClientBridge?.getCurrentSteamId?.() || '') !== '76561198231493012') return false;
+    if (typeof manager.isAchievementUnlocked !== 'function' || typeof manager.unlockAchievement !== 'function') return false;
+    if (this.rankCorrectionPromise) return this.rankCorrectionPromise;
+    this.rankCorrectionPromise = (async () => {
+      const id = 'ACH_RANK_27'; // Displayed rank 28: Redline Ghost.
+      if (await manager.isAchievementUnlocked(id)) return true;
+      const stored = await manager.unlockAchievement(id);
+      const verified = stored && Boolean(await manager.isAchievementUnlocked(id));
+      this.rankCorrection = { achievementId: id, verified: Boolean(verified), source: 'approved_support_correction' };
+      return Boolean(verified);
+    })().catch(() => false).finally(() => { this.rankCorrectionPromise = null; });
+    return this.rankCorrectionPromise;
   }
 
   async getUnlockedAchievements(payload = {}) {

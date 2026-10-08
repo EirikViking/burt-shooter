@@ -1,5 +1,22 @@
+import { EncounterScorePacing } from './EncounterScorePacing.js';
+import { CombatWrecks } from '../game/CombatWrecks.js';
+import { BehavioralFusions } from '../effects/BehavioralFusions.js';
+import { chooseEnvironment } from '../game/EncounterEnvironments.js';
+import { AuthoredEnvironment } from './AuthoredEnvironment.js';
+import { DreadnoughtBoss } from '../entities/DreadnoughtBoss.js';
+import { PlanetfallBoss } from '../entities/PlanetfallBoss.js';
+import { dreadnoughtEligible, planetfallEligible, encounterPacing, pacingRoll, encounterFamilyReady, recordEncounterFamily } from '../config/EncounterPacing.js';
+import { CombatWreckVisual } from '../effects/CombatWreckVisual.js';
+import { updateEncounterPacing, recordOrdinaryWaveClear, majorContacts } from '../config/EncounterPacing.js';
+import {BossDiscoveryEncounter} from './BossDiscoveryEncounter.js';
 import { SpaceSnake } from '../entities/SpaceSnake.js';
-import { SPACE_SNAKES, isSpaceSnakeEligible, isSpaceSnakeWave } from '../config/SpaceSnakes.js';
+import { SerpentMolt } from '../effects/SerpentMolt.js';
+import { serpentMoltEligible, serpentMoltDue, SERPENT_MOLT } from '../game/SerpentMolt.js';
+import {SnakeBrood} from './SnakeBrood.js';
+import {planSnakeBrood} from '../config/SnakeBroods.js';
+import { CreatureAudio } from '../audio/CreatureAudio.js';
+import { SPACE_SNAKES, getSpaceSnakesForLevel, isSpaceSnakeEligible, isSpaceSnakeWave } from '../config/SpaceSnakes.js';
+import { MysteryEncounterDirector } from './MysteryEncounterDirector.js';
 import { getEarlyBossFuelMultiplier } from '../config/BossSupportShips.js';
 import { waveFlightPlan, arcadeEntryDuration, arcadeBriefingDuration, ARCADE_FLIGHT_ENABLED } from '../config/ArcadeFlight.js';
 import { openingWaveEntry } from '../config/OpeningWaveEngagement.js';
@@ -8,12 +25,12 @@ import { Enemy } from '../entities/Enemy.js';
 import { Boss } from '../entities/Boss.js';
 import { Hijacker } from '../entities/Hijacker.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { BalanceConfig, getNormalWaveDangerMoment, getNormalWaveDifficultyLevel, getNormalWavePressureTuning } from '../config/BalanceConfig.js';
+import { BalanceConfig, getSectorAttackPressure, getNormalWaveDangerMoment, getNormalWaveDifficultyLevel, getNormalWavePressureTuning } from '../config/BalanceConfig.js';
 import { getMicroMessage } from '../text/phrasePool.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
 import { translateText } from '../i18n/index.js';
-import { canRunModeUseMayhemReinforcements } from '../game/RunMode.js';
+import { canRunModeUseMayhemReinforcements, isOverrunRunMode } from '../game/RunMode.js';
 import {
   isDailySignalReinforcementSector,
   isDailySignalSuperStormSector
@@ -84,6 +101,8 @@ export const MAYHEM_SUPER_STORM_WARNING_SOUND_ID = 'boss_mayhem_super_storm_warn
 export const MAYHEM_SUPER_STORM_SURVIVED_SOUND_ID = 'boss_mayhem_super_storm_survived';
 export const MAYHEM_REINFORCEMENT_WARNING_TEXT = 'INCOMING REINFORCEMENTS';
 const MAYHEM_REINFORCEMENT_HARD_REASONS = new Set([
+  'authored_encounter_active',
+  'challenge_flight_active',
   'disabled',
   'not_mayhem',
   'not_normal_wave_phase',
@@ -243,6 +262,9 @@ export class EnemyManager {
     this.container = container;
     this.game = game;
     this.enemies = []; // Regular enemies
+    this.combatWrecks = new CombatWrecks();
+    this.combatWreckVisual = new CombatWreckVisual(this);
+    this.behavioralFusions = new BehavioralFusions(this);
     this.onCap = onCap;
 
     // STATE MACHINE
@@ -333,6 +355,8 @@ export class EnemyManager {
     };
 
     // BOSS FIX: Boss state machine
+    this.discoveryEncounter?.dispose();
+    this.discoveryEncounter = null;
     this.boss = null;
     this.bossGateTimer = 0;
     this.bossGateTauntShown = false;
@@ -373,6 +397,8 @@ export class EnemyManager {
   }
 
   startLevel(level) {
+    if(level>=5)AuthoredEnvironment.prewarm().catch(error=>console.warn('[Environment] prewarm failed',error.message));
+    if(level>=6)DreadnoughtBoss.prewarm().catch(error=>console.warn('[Breach] prewarm failed',error.message));
     console.log(`[EnemyManager] STARTING LEVEL ${level}`);
     this.markPerformance('level_start.begin', { level });
     this.marketingDebugMode = false;
@@ -422,6 +448,8 @@ export class EnemyManager {
     this.resetMayhemReinforcementState();
 
     // BOSS FIX: Reset boss state
+    this.discoveryEncounter?.dispose();
+    this.discoveryEncounter = null;
     this.boss = null;
     this.bossGateTimer = 0;
     this.resetBossGateMessaging();
@@ -475,6 +503,8 @@ export class EnemyManager {
     this.waves = normalWaves;
     this.normalWavesTotal = normalWaves.length;
     this.bossWaveIndex = this.normalWavesTotal;
+    this.mysteryDirector ||= new MysteryEncounterDirector(this);
+    this.mysteryDirector.startLevel();
     console.log(`[EnemyManager] Level ${level}: ${normalWaves.length} waves + boss`);
     console.log(`[BossPlan] level=${level} normalWaves=${this.normalWavesTotal} bossWaveIndex=${this.bossWaveIndex} hasBoss=${this.isBossLevel}`);
     this.logBossStatus('level_start');
@@ -544,9 +574,12 @@ export class EnemyManager {
     this.cleanupPhase = 'NONE';
     this.resetWaveWatchdog();
 
+    this.discoveryEncounter?.dispose();
+    this.discoveryEncounter = null;
     this.boss = null;
     this.bossGateTimer = 0;
     this.bossSpawning = false;
+    this.bossSpawnRequest = null;
     this.resetBossGateMessaging();
     this.bossSpawnedThisLevel = false;
     this.bossDefeatedThisLevel = false;
@@ -1199,6 +1232,7 @@ export class EnemyManager {
   // WAVE FIX: Helper to identify objective enemies (ships, not bonus drones)
   isObjectiveEnemy(enemy) {
     if (!enemy || enemy.destroyed) return false;
+    if (enemy.kind === 'snake_baby' && (enemy.isDeparting?.() || enemy.brood?.orphanAt != null)) return false;
     if (enemy.active === false && !enemy.waitingForEntry) return false;
     // bonus drones and bosses are not objective enemies
     return enemy.kind !== 'bonus_drone' && enemy.kind !== 'boss';
@@ -1452,6 +1486,8 @@ export class EnemyManager {
       ?.filter((bullet) => bullet?.active !== false).length || 0;
     const waveAgeMs = Number(this.waveActiveTimer) || 0;
     const reasons = [];
+    if (this.environment?.active || this.curatedReassemblyMolt && !this.curatedReassemblyMolt.disposed) reasons.push('authored_encounter_active');
+    if (currentWave?.isChallenge || this.challengeFlightState?.active) reasons.push('challenge_flight_active');
     if (!config) reasons.push('disabled');
     if (!this.isOverrunRoutineReinforcementMode()) reasons.push('not_overrun_routine');
     if (this.phase !== 'WAVES' || this.state !== 'WAVE_ACTIVE') reasons.push('not_normal_wave_phase');
@@ -1687,6 +1723,8 @@ export class EnemyManager {
       !this.dailySignalForcedSuperStormSectors?.has(level)
     );
     let reasons = [];
+    if (this.environment?.active || this.curatedReassemblyMolt && !this.curatedReassemblyMolt.disposed) reasons.push('authored_encounter_active');
+    if (currentWave?.isChallenge || this.challengeFlightState?.active) reasons.push('challenge_flight_active');
 
     if (!config) reasons.push('disabled');
     if (!canRunModeUseMayhemReinforcements(this.game?.runMode)) reasons.push('not_mayhem');
@@ -1997,6 +2035,10 @@ export class EnemyManager {
   updateMayhemReinforcement() {
     const state = this.mayhemReinforcementState;
     if (!state || state.spawned) return false;
+    if (this.waves?.[this.currentWaveIndex]?.isChallenge || this.challengeFlightState?.active) {
+      this.mayhemReinforcementState = null;
+      return false;
+    }
     if (this.phase !== 'WAVES' || this.state !== 'WAVE_ACTIVE' || this.waveEnding) {
       this.mayhemReinforcementState = null;
       return false;
@@ -2243,6 +2285,7 @@ export class EnemyManager {
 
   // WAVE FIX: Gate for bonus drone spawning
   allowBonusDroneSpawns() {
+    if (this.mysteryDirector?.busy) return false;
     // Only allow during WAVE_ACTIVE, not during wave ending or cleanup
     return this.state === 'WAVE_ACTIVE' &&
       this.level > 1 &&
@@ -2452,6 +2495,10 @@ export class EnemyManager {
   }
 
   update(delta) {
+    (this.encounterScorePacing ||= new EncounterScorePacing(this)).update();
+    updateEncounterPacing(this, delta);
+    this.mysteryAftermath?.update(delta);
+    this.mysteryDirector?.update(delta);
     // 1. Update State Machine
     switch (this.state) {
       case 'WAVE_ACTIVE':
@@ -2459,11 +2506,11 @@ export class EnemyManager {
         if (!this.waveEnding) {
           this.waveActiveTimer += Math.max(0, Math.min(1000, delta * 16.67));
         }
-        if (!this.isCurrentHighSectorAuthoredWave()) this.updateMayhemReinforcement();
+        if (!this.isCurrentHighSectorAuthoredWave() && !this.mysteryDirector?.protectsUpcomingWaves()) this.updateMayhemReinforcement();
         // WAVE FIX: Check objective enemies only, not bonus drones
         const objectiveCount = this.getObjectiveEnemyCount();
         if (objectiveCount === 0 && !this.waveEnding) {
-          if (this.spawning) {
+          if (this.spawning || this.mysteryDirector?.busy) {
             break;
           }
           if (this.hasPendingMayhemReinforcement()) {
@@ -2494,8 +2541,8 @@ export class EnemyManager {
           // Immediately start cleanup phase
           this.cleanupTimer = 0;
           this.cleanupPhase = 'SLOWING';
-        } else if (objectiveCount > 0 && !this.waveEnding) {
-          if (!this.isCurrentHighSectorAuthoredWave()) this.maybeScheduleMayhemReinforcement(objectiveCount);
+        } else if (objectiveCount > 0 && !this.waveEnding && !this.mysteryDirector?.busy) {
+          if (!this.isCurrentHighSectorAuthoredWave() && !this.mysteryDirector?.protectsUpcomingWaves()) this.maybeScheduleMayhemReinforcement(objectiveCount);
           this.maybePressureStalledWave(objectiveCount);
           if (!this.maybeRetreatStalledWave(objectiveCount)) {
             this.maybeClearStalledWave(objectiveCount);
@@ -2605,18 +2652,16 @@ export class EnemyManager {
           console.log(`[BossFlow] spawn boss level=${this.level}`);
           bossGatePlayScene?.cancelCabinetWonderBeforeCombatRelease?.('boss_release');
           AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800, bypassGlobalCooldown: true });
-          this.bossSpawning = true;
           this.markPerformance('boss_event_telegraph_start', { level: this.level, phase: 'boss_gate_spawn' });
-          this.spawnBoss(this.level).then(() => {
-            this.state = 'BOSS_ACTIVE';
-            this.bossGateTimer = 0;
-            this.bossSpawning = false;
-            this.logBossStatus('boss_spawned');
-          });
+          this.beginBossSpawn();
         }
         break;
 
       case 'BOSS_ACTIVE':
+        if(this.discoveryEncounter?.update(delta)) break;
+        // A defeated boss must not delete its still-fighting Mystery visitor
+        // or open the reward/draft screen over that encounter.
+        if (this.boss?.health <= 0 && this.mysteryDirector?.busy) break;
         // BOSS FIX: Wait for boss to be defeated
         // Boss is in this.enemies array or this.boss reference
         const bossAlive = this.boss && this.boss.active;
@@ -2626,7 +2671,7 @@ export class EnemyManager {
           const dt = Date.now() - (this.bossSpawnedAtMs || this.boss.spawnedAtMs || 0);
           if (this.boss.health <= 0) {
             console.log(`[BossDefeatAttempt] level=${this.level} hp=${this.boss.health} dt=${dt} reason=hp_zero`);
-            if (dt < 1500) {
+            if (dt < 1500 && !this.discoveryEncounter?.plan && !this.boss.isDreadnought && !this.boss.isPlanetfall) {
               if (this.game?.scenes?.play?.debugPowerups) {
                 console.warn(`[BossFix] prevented instant boss defeat level=${this.level} dt=${dt}`);
               }
@@ -2634,6 +2679,7 @@ export class EnemyManager {
               this.boss.active = true;
               return;
             }
+            this.discoveryEncounter?.dispose();
             this.bossDefeatedThisLevel = true;
             if (!this.bossDefeatCelebrated) {
               this.bossDefeatCelebrated = true;
@@ -2648,9 +2694,11 @@ export class EnemyManager {
                 playScene.showBossCelebration({ level: this.level, type: this.boss?.bossType || 'UNKNOWN' });
               }
             }
-            const clearedSupport = this.clearNonBossEnemyVisuals('boss_defeated');
-            if (clearedSupport > 0) {
-              console.log(`[BossCleanup] cleared non-boss support ships=${clearedSupport}`);
+            if (!isOverrunRunMode(this.game?.runMode)) {
+              const clearedSupport = this.clearNonBossEnemyVisuals('boss_defeated');
+              if (clearedSupport > 0) {
+                console.log(`[BossCleanup] cleared non-boss support ships=${clearedSupport}`);
+              }
             }
             this.logBossStatus('boss_defeated');
             console.log(`[BossDefeatProof] level=${this.level} hp=0 dt=${dt} reason=hp_zero`);
@@ -2668,15 +2716,12 @@ export class EnemyManager {
           console.log(`[BossDefeatAttempt] level=${this.level} hp=${hp} dt=${dt} reason=missing_entity`);
           if (!this.bossSpawning) {
             console.warn(`[BossFix] boss missing, respawning level=${this.level}`);
-            this.bossSpawning = true;
-            this.spawnBoss(this.level).finally(() => {
-              this.bossSpawning = false;
-            });
+            this.beginBossSpawn();
           }
         }
         if (this.authoredBossSupportState) {
           this.updateAuthoredHighSectorBossSupport(delta);
-        } else {
+        } else if (!this.discoveryEncounter?.plan && !this.boss?.isDreadnought && !this.boss?.isPlanetfall) {
           this.updateBossMayhemReinforcement();
           this.maybeScheduleBossMayhemReinforcement();
           this.maybeTriggerBossChaos();
@@ -2685,6 +2730,9 @@ export class EnemyManager {
         break;
 
       case 'LEVEL_COMPLETE':
+        // Onslaught's boss is only one target. Surviving enemies remain hostile
+        // and must be defeated by the pilot before sector progression.
+        if (this.bossDefeatedThisLevel && isOverrunRunMode(this.game?.runMode)) break;
         // CLEANUP FIX: Check for bonus drones across all tracking systems
         const playScene = this.game.scenes.play;
         let allTargets = [];
@@ -2862,7 +2910,8 @@ export class EnemyManager {
     const pressureDirector = this.game?.runPressureDirector;
     const pressureTuning = getNormalWavePressureTuning(pressureLevel);
     const fireChance = (pressureDirector?.scaleEnemyFireChance?.(baseFireChance, pressureLevel) ?? baseFireChance * pressureTuning.fireChanceMult) *
-      diff.pressureScalar *
+      diff.pressureScalar * diff.globalChallengeNormalFireChance     *
+      getSectorAttackPressure(this.level) *
       this.getOpeningFireScalar() *
       (1 + tier * 0.1);
     const openingMomentum = this.getOpeningMomentumTuning();
@@ -2884,7 +2933,15 @@ export class EnemyManager {
       // Boss movement keeps the established slow-time scale, while its warning
       // token owns an unscaled visible clock so slow time does not shorten or
       // lengthen the shipped reaction window.
-      enemy.update(isBoss ? dt : dt * enemySpeedMult, playerX, playerY, isBoss ? delta : undefined);
+      const aimPreviousX = enemy.x, aimPreviousY = enemy.y;
+      enemy.update(isBoss || enemy.kind === 'mystery' || enemy.kind === 'snake_baby' ? dt : dt * enemySpeedMult, playerX, playerY, isBoss ? delta : undefined);
+      if (delta > 0) {
+        const vx = (enemy.x - aimPreviousX) / delta, vy = (enemy.y - aimPreviousY) / delta;
+        // Entry teleports and respawns must not launch shards off the playfield.
+        const valid = Number.isFinite(vx) && Number.isFinite(vy) && Math.hypot(vx, vy) <= 24;
+        enemy.aimVelocityX = valid ? vx : 0;
+        enemy.aimVelocityY = valid ? vy : 0;
+      }
 
       if (enemy.challengeFlightReticle) {
         enemy.challengeFlightReticle.rotation += delta * 0.018;
@@ -2931,6 +2988,19 @@ export class EnemyManager {
 
       return true;
     });
+    // New articulated targets are appended after filtering. Appending from an
+    // encounter's update would otherwise lose them when filter replaces the array.
+    for (const enemy of this.enemies) if (enemy.active && enemy.kind === 'mystery' && enemy.pendingTargets?.length) {
+      this.enemies.push(...enemy.pendingTargets.splice(0).filter(part => part.active));
+    }
+    // Hatchlings must also join after filter has replaced the array.
+    for (const brood of this.snakeBroods || []) brood.update(dt, player);
+    for (const molt of this.serpentMolts || []) molt.update(delta);
+    this.combatWrecks.update(Math.min(.1,Math.max(0,dt/60)));
+    this.combatWreckVisual.update();
+    this.behavioralFusions.update(delta);
+    this.environment?.update(delta);
+    for(const collapse of this.breachCollapses||[])collapse.update(delta);
     const challengeNow = Date.now();
     if (this.challengeFlightState?.active && challengeNow >= (this.challengeFlightState.nextHudUpdateAt || 0)) {
       this.challengeFlightState.nextHudUpdateAt = challengeNow + 200;
@@ -3070,6 +3140,7 @@ export class EnemyManager {
     enemy.challengeFlightResolved = false;
     enemy.challengeFlightTargetId = `${this.level}:${this.currentWaveIndex}:${safeIndex}`;
     enemy.challengeFlightPatternId = state.patternId;
+    enemy.waveSlot = safeIndex;
     enemy.challengeFlightExitAt = Date.now() + Math.max(0, Number(entryDelayMs) || 0) + Math.max(600, Number(entryDurationMs) || 0) + CHALLENGE_FLIGHT_TARGET_WINDOW_MS;
     enemy.health = 1;
     enemy.maxHealth = 1;
@@ -3215,6 +3286,19 @@ export class EnemyManager {
   }
 
   spawnWave(config) {
+    if (!this.isCurrentRun()) return;
+    if(!config.isChallenge && !config.marketingDebug){
+      config={...config};
+      if(Array.isArray(config.dangerMidShipIds))config.dangerMidShipIds=config.dangerMidShipIds
+        .filter(slot=>getDangerMidShipProfile(slot.id)?.unlockLevel<=this.level);
+      const profile=getGeneratedEnemyProfile(config.type);
+      if(profile?.unlockLevel>this.level)config.type=pickGeneratedEnemyTypeForLevel(this.level);
+      if(getEliteMiddleShipProfile(config.eliteMiddleShipId)?.minLevel>this.level){
+        config.eliteMiddleShipId=this.pickEliteMiddleShipIds(this.level,1)[0]||null;
+      }
+      if(Array.isArray(config.multiEliteMiddleShipIds))config.multiEliteMiddleShipIds=config.multiEliteMiddleShipIds
+        .filter(id=>getEliteMiddleShipProfile(id)?.minLevel<=this.level);
+    }
     this.game?.scenes?.play?.prewarmCabinetWonderForTransition?.({
       sector: this.level,
       waveNumber: this.currentWaveIndex + 1,
@@ -3272,14 +3356,50 @@ export class EnemyManager {
     }
 
     this.resetWaveWatchdog();
-    if (isSpaceSnakeEligible(config, this.level, this.game)) {
+    if (this.mysteryDirector?.tryStart(config)) return;
+    if (isSpaceSnakeEligible(config, this.level, this.game)
+      && !(this.mysteryDirector?.busy && this.mysteryDirector.plan?.firstContact)
+      && majorContacts(this).total < 2
+      && !this.game.scenes.play.firstLightDirector?.model.encounter) {
       const ordinal = this.spaceSnakeEligibleWaves || 0;
       this.spaceSnakeEligibleWaves = ordinal + 1;
-      if (isSpaceSnakeWave(this.getStableReinforcementRoll(this.level, ordinal, 'space-snake-encounter'))) {
+      const play=this.game.scenes.play;
+      const standalone=majorContacts(this).total===0&&!this.discoveryEncounter?.plan&&!this.mysteryDirector?.busy
+        &&!play.activeMayhemReinforcementWarning?.overlay?.parent&&!play.activeMayhemRoutineWarning?.overlay?.parent
+        &&!(this.mayhemReinforcementState?.warningFired&&!this.mayhemReinforcementState.spawned);
+      if (ordinal - (this.lastSpaceSnakeEligibleWave ?? -3) >= 3 &&
+        (isSpaceSnakeWave(this.getStableReinforcementRoll(this.level, ordinal, 'space-snake-encounter')) || serpentMoltDue(ordinal,this.lastMoltEligibleWave,standalone))) {
+        this.lastSpaceSnakeEligibleWave = ordinal;
         const speciesRoll = this.getStableReinforcementRoll(this.level, ordinal, 'space-snake-species');
-        this.spawnSpaceSnake(SPACE_SNAKES[Math.min(SPACE_SNAKES.length - 1, Math.floor(speciesRoll * SPACE_SNAKES.length))]);
+        const pool=getSpaceSnakesForLevel(this.level);
+        if(pool.length){
+          // Spend an existing snake slot. After a long eligible-wave gap,
+          // prefer Cinder without an extra spawn or another gameplay RNG draw.
+          const sinceMolt=ordinal-(this.lastMoltEligibleWave??-SERPENT_MOLT.droughtWaves);
+
+          const profile=standalone&&sinceMolt>=SERPENT_MOLT.droughtWaves?SPACE_SNAKES[0]
+            :pool[Math.min(pool.length-1,Math.floor(speciesRoll*pool.length))];
+          const molt=standalone&&sinceMolt>=SERPENT_MOLT.recoveryWaves&&profile.id===SERPENT_MOLT.profileId
+            &&encounterFamilyReady(this.game,'wreck_claim',this.level);
+          if(molt)this.lastMoltEligibleWave=ordinal;
+          this.spawnSpaceSnake(profile,{molt});
+        }
         return;
       }
+    }
+    const envOrdinal=this.environmentEligibleWaves||0;
+    const envSafe=!config.mysteryId&&!config.isChallenge&&!config.allowConcurrentSpawn&&!config.isMayhemReinforcement
+      &&!config.highSectorAuthoredEncounter&&!config.marketingDebug&&this.game.runMode!=='daily_signal'
+      &&!this.game.lateGameExperiment?.active&&!this.mysteryDirector?.protectsUpcomingWaves()
+      &&!majorContacts(this).total&&!this.game.scenes.play.firstLightDirector?.model.encounter;
+    if(envSafe){
+      this.environmentEligibleWaves=envOrdinal+1;
+      const plan=chooseEnvironment({sector:this.level,ordinal:envOrdinal,last:this.lastEnvironmentWave??-6,
+        recent:this.environmentRecent||[],blockedFamilies:['wreck_claim','linked_battery','brood_route'].filter(f=>!encounterFamilyReady(this.game,f,this.level)),
+        roll:pacingRoll(this.game.contentDirector?.seed,envOrdinal,'environment')});
+      if(plan&&(plan.id!=='siege'||AuthoredEnvironment.siegeReady)){this.environment?.destroy();this.environment=new AuthoredEnvironment(this,plan,config);
+        recordEncounterFamily(this.game,plan.family,this.level);
+        this.lastEnvironmentWave=envOrdinal;this.environmentRecent=[...(this.environmentRecent||[]),plan.family].slice(-3);return;}
     }
     const { count, formation, type } = config;
     // One spatial arrival per formation, never one competing sound per ship.
@@ -3343,6 +3463,7 @@ export class EnemyManager {
       this.game?.scenes?.play?.showMayhemReinforcementEntryBurst?.({
         groupIndex: Math.max(0, Math.floor(Number(config.reinforcementGroupIndex) || 0)),
         groupCount: Math.max(1, Math.floor(Number(config.reinforcementGroupCount) || 1)),
+        route: String(config.reinforcementEntryRoute || ''),
         laneOffsetPx: Number(config.reinforcementLaneOffsetPx) || 0,
         boss: config.isBossMayhemReinforcement === true,
         superStorm: config.isMayhemSuperStorm === true,
@@ -3429,7 +3550,7 @@ export class EnemyManager {
 
     const spawnEnemyAtSlot = (pos, i, scheduledDelayMs = 0) => {
       const validState = this.state === 'WAVE_ACTIVE' || (allowBossReinforcementSpawn && this.state === 'BOSS_ACTIVE');
-      if (this.waveSpawnSerial !== waveSpawnSerial || !validState) {
+      if (!this.isCurrentRun() || this.waveSpawnSerial !== waveSpawnSerial || !validState) {
         markWaveSpawnDone();
         return;
       }
@@ -3467,10 +3588,7 @@ export class EnemyManager {
           enemy.isReinforcementSwarmEntry = enemy.reinforcementGroupCount > 1;
           enemy.isOverrunRoutineReinforcement = config.isOverrunRoutineReinforcement === true;
           enemy.reinforcementEntryRoute = reinforcementEntryRoute || null;
-          enemy.contactSafeDuringEntry = Boolean(
-            enemy.isOverrunRoutineReinforcement
-            && reinforcementEntryRoute === 'bottom'
-          );
+          enemy.contactSafeDuringEntry = enemy.isOverrunRoutineReinforcement;
           if (enemy.isOverrunRoutineReinforcement) enemy.isReinforcementSwarmEntry = true;
           const scoreMultiplier = Math.max(1, Number(config.reinforcementScoreMultiplier) || 1);
           if (scoreMultiplier > 1) {
@@ -3551,6 +3669,9 @@ export class EnemyManager {
         }
         const flightDurationMs = arcadeEntryDuration(resolvedEntryDurationMs, flight);
         enemy.startEntry(startX, startY, pos.x, pos.y, flightDurationMs, entryDelayMs, flight);
+        if (enemy.contactSafeDuringEntry) {
+          enemy.contactSafeUntil = enemy.entryCurve.startTime + flightDurationMs + 250;
+        }
         if (flight && enemy.tacticalDiveAt) enemy.tacticalDiveAt += flightDurationMs - entryDurationMs;
         if (openingEntry && enemy.tacticalDiveAt) {
           // Delayed wings must still settle before their authored dive begins.
@@ -3565,7 +3686,7 @@ export class EnemyManager {
             targetY: pos.y,
             entryDurationMs: resolvedEntryDurationMs,
             entryDelayMs,
-            contactSafeState: 'ENTRY'
+            contactSafeState: 'ENTRY+250ms'
           };
         }
         if (config.isChallenge) {
@@ -3639,7 +3760,7 @@ export class EnemyManager {
       console.log(`[FormationWidth] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} formation=${formation} count=${count} spanPct=${(span / screenW).toFixed(2)} policy=engagement_band`);
     }
     const runDiscoveryHooks = () => {
-      if (this.waveSpawnSerial !== waveSpawnSerial || this.game?.currentScene !== this.game?.scenes?.play) return;
+      if (!this.isCurrentRun() || this.waveSpawnSerial !== waveSpawnSerial) return;
       this.measurePerformance('wave_spawn.discovery_hooks', () => {
         const playScene = this.game?.scenes?.play;
         playScene?.recordThreatDiscovery?.(tactic.id, 'waveTactics', {
@@ -3688,21 +3809,35 @@ export class EnemyManager {
     console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count} threats=${threatPlan.assignedIds.join(',') || 'none'}`);
   }
 
-  spawnSpaceSnake(profile) {
+  spawnSpaceSnake(profile, broodOptions = {}) {
+    if (!this.isCurrentSector() || !profile || this.level < 6 || this.level < profile.unlockLevel) return null;
+    // Boss guests and ordinary snakes share the existing ordinary-wave gap.
+    this.lastSpaceSnakeEligibleWave = Math.max(0, (this.spaceSnakeEligibleWaves || 0) - 1);
+    recordEncounterFamily(this.game,'brood_route',this.level);
     this.currentNormalWaveDifficultyLevel = this.getNormalWaveDifficultyLevel(this.level);
     const chain = { age: 0, sections: [], routeSeed: this.level * 7 + this.currentWaveIndex * 11 + profile.index, nextCryAt: 8 };
     for (let i = 0; i < profile.segments; i++) {
       const section = new SpaceSnake(this.game.getWidth() * .5, -140 - i * 29, profile.id, this.level, this.game);
       section.chain = chain;
-      if (i === 0) section.health = section.maxHealth = section.health * 2;
+      if (i === 0) section.health = section.maxHealth = section.health * 1.25;
+      section.health=section.maxHealth=section.health*Math.max(.1,Math.min(1,broodOptions.healthScalar||1));
       chain.sections.push(section);
       this.enemies.push(section);
       this.container.addChildAt(section.sprite, 0);
     }
+    if(broodOptions.molt&&serpentMoltEligible({profileId:profile.id,sector:this.level,runMode:this.game.runMode,
+      standalone:majorContacts(this).total===1&&!this.discoveryEncounter?.plan&&(!this.mysteryDirector?.busy||broodOptions.curatedReassembly===true)})){
+      this.serpentMolts ||= new Set();chain.molt=new SerpentMolt(this,chain);this.serpentMolts.add(chain.molt);
+      recordEncounterFamily(this.game,'wreck_claim',this.level);
+    }
     this.game.scenes.play.recordThreatDiscovery?.(profile.id, 'spaceSnakes', { sector: this.level });
-    AudioManager.duckMusic(.28, 4200);
-    AudioManager.playSfx('serpent_arrival_omen', { volume: .78, minIntervalMs: 5000, priority: 6, priorityHoldMs: 1400, preserveGameplayRng: true });
-    AudioManager.playSfx(`${profile.voice}_hunt`, { volume: .93, minIntervalMs: 1000, preserveGameplayRng: true });
+    CreatureAudio.play(chain, profile, 'arrival');
+    const seed = `${this.game.contentDirector?.seed||this.game.gameId||'nova'}:${this.level}:${this.currentWaveIndex}:${chain.routeSeed}`;
+    if (planSnakeBrood({seed,profile,...broodOptions})?.enabled) {
+      this.snakeBroods ||= new Set();
+      chain.brood = new SnakeBrood(this,chain,profile,broodOptions);
+      this.snakeBroods.add(chain.brood);
+    }
     return chain;
   }
 
@@ -3728,6 +3863,7 @@ export class EnemyManager {
   }
 
   spawnRareChaosVisitor(variantOrNumber = 1, context = {}) {
+    if (this.mysteryDirector?.busy) return null;
     const variant = typeof variantOrNumber === 'object' ? variantOrNumber : getRareChaosVisitorVariant(variantOrNumber);
     if (!variant || this.phase !== 'WAVES' || this.state === 'BOSS_ACTIVE') return null;
     const waveKey = this.getRareChaosVisitorWaveKey();
@@ -4008,7 +4144,7 @@ export class EnemyManager {
     if (!profile) return null;
     const marketingDebug = context.marketingDebug === true;
     const spawnLevel = Math.max(1, Number(context.normalWaveDifficultyLevel) || Number(this.level) || 1);
-    if (!marketingDebug && !context.ignoreLevelGate && spawnLevel < profile.minLevel) return null;
+    if (!marketingDebug && !context.ignoreLevelGate && this.level < profile.minLevel) return null;
 
     const activeElites = this.enemies.filter(enemy =>
       enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry)
@@ -4482,8 +4618,41 @@ export class EnemyManager {
     }));
   }
 
+  async beginBossSpawn() {
+    if(this.bossSpawning)return null;
+    const request={level:this.level,serial:this.waveSpawnSerial,pacing:encounterPacing(this.game),state:this.state};
+    this.bossSpawnRequest=request;
+    this.bossSpawning=true;
+    const current=()=>this.bossSpawnRequest===request&&this.isCurrentRun()
+      &&this.isCurrentSector(request.level)&&this.waveSpawnSerial===request.serial
+      &&encounterPacing(this.game)===request.pacing&&this.state===request.state;
+    try{
+      const boss=await this.spawnBoss(request.level);
+      if(!current())return null;
+      this.bossGateTimer=0;
+      if(!boss){this.state='BOSS_GATE';return null;}
+      this.state='BOSS_ACTIVE';
+      this.logBossStatus('boss_spawned');
+      return boss;
+    }catch(error){
+      if(current()){
+        this.state='BOSS_GATE';
+        this.bossGateTimer=0;
+        console.warn('[BossFlow] boss load deferred; retrying after gate',error);
+      }
+      return null;
+    }finally{
+      // An old completion must not release a newer run's loading guard.
+      if(this.bossSpawnRequest===request){this.bossSpawnRequest=null;this.bossSpawning=false;}
+    }
+  }
+
   async spawnBoss(level, options = {}) {
     const marketingDebug = options.marketingDebug === true;
+    if (!this.isCurrentRun() || (!marketingDebug && !this.isCurrentSector(level))) return null;
+    const spawnSerial = this.waveSpawnSerial;
+    const pacingState=encounterPacing(this.game),pending=this.planetfallSpawnPending;
+    if(!marketingDebug&&pending?.level===level&&pending.serial===spawnSerial&&pending.pacing===pacingState)return null;
     const centerX = Number.isFinite(options.x)
       ? options.x
       : marketingDebug
@@ -4496,9 +4665,14 @@ export class EnemyManager {
         : 100;
     const bossProfile = getBossProfileForRun(level, {
       seed: this.game?.contentDirector?.seed || this.game?.gameId || 'nova-swarm',
-      seenThroughSector: this.game?.overrunSeenBossMaxSector || 50
+      seenThroughSector: isOverrunRunMode(this.game?.runMode) ? 50 : (this.game?.overrunSeenBossMaxSector || 50),
+      shuffleFromSector: isOverrunRunMode(this.game?.runMode) ? 51 : 61
     });
-    const boss = new Boss(centerX, spawnY, level, this.game, bossProfile); // VISIBILITY FIX: Spawn at visible position
+    const breach=!marketingDebug&&dreadnoughtEligible(this);
+    const forcedPlanetfall=import.meta.env.DEV&&this.game.runPolicy?.prototype&&this.game.encounterEvolutionTest?.id==='planetfall';
+    const planetfall=!marketingDebug&&(forcedPlanetfall||planetfallEligible(this));
+    const boss = planetfall?new PlanetfallBoss(centerX,spawnY,level,this.game,bossProfile):breach?new DreadnoughtBoss(centerX,spawnY,level,this.game,bossProfile,
+      this.game.encounterEvolutionTest?.id==='breach-diagonal'?1:Math.floor(pacingRoll(this.game.contentDirector?.seed,level,'breach-layout')*2)):new Boss(centerX, spawnY, level, this.game, bossProfile); // VISIBILITY FIX: Spawn at visible position
     if (!marketingDebug && this.highSectorEscalationState?.active) {
       const cappedHealth = capHighSectorBossHealth(boss.health, this.highSectorEscalationState);
       boss.health = cappedHealth;
@@ -4507,7 +4681,19 @@ export class EnemyManager {
     }
 
     // Wait for boss visual to load
-    await boss.createSprite();
+    const reservation=planetfall?{boss,level,serial:spawnSerial,pacing:pacingState}:null;
+    if(reservation)this.planetfallSpawnPending=reservation;
+    try{await boss.createSprite();}
+    catch(error){if(planetfall)boss.destroy();throw error;}
+    finally{if(reservation&&this.planetfallSpawnPending===reservation)this.planetfallSpawnPending=null;}
+
+    if (!this.isCurrentRun() || this.waveSpawnSerial !== spawnSerial
+      || (!marketingDebug && !this.isCurrentSector(level))
+      || (planetfall&&(encounterPacing(this.game)!==pacingState||!forcedPlanetfall&&!planetfallEligible(this)))) {
+      boss.destroy();
+      boss.sprite?.destroy({ children: true });
+      return null;
+    }
 
     boss.marketingDebug = marketingDebug;
     if (marketingDebug) {
@@ -4554,8 +4740,26 @@ export class EnemyManager {
     } else {
       this.boss = boss;
     }
-    this.enemies.push(boss);
+    if(!marketingDebug){
+      this.discoveryEncounter?.dispose();
+      const test = this.game.encounterTest?.sector === level ? this.game.encounterTest : null;
+      this.discoveryEncounter=new BossDiscoveryEncounter(this,boss,{
+        roll: test?.roll,
+        forced: Boolean(test && Number.isFinite(test.roll)),
+        immediateReinforcement: test?.immediateReinforcement,
+        disabled:Boolean(boss.isPlanetfall||boss.isDreadnought||this.authoredBossSupportState||this.game?.lateGameExperiment?.active||this.game?.runMode==='daily_signal')
+      });
+    }
+    this.enemies.push(boss,...(boss.components||[]));
+    if(boss.isPlanetfall){pacingState.planetfallSector=level;recordEncounterFamily(this.game,'linked_battery',level);}
+    if(boss.isDreadnought){recordEncounterFamily(this.game,'linked_battery',level);this.game.lastDreadnoughtSector=level;this.game.scenes.play.recordThreatDiscovery?.('dreadnought_breach','enemies',{sector:level},{scoreBonus:false,silent:true});}
     this.container.addChild(boss.sprite);
+
+    const mysteryPlan = this.mysteryDirector?.plan;
+    if (!marketingDebug && mysteryPlan?.selected && !mysteryPlan.direct
+      && mysteryPlan.bossWave) {
+      this.mysteryDirector.tryStart({ type: 'BOSS', mysteryId: mysteryPlan.id });
+    }
 
     // Force visibility
     boss.sprite.visible = true;
@@ -5390,7 +5594,7 @@ export class EnemyManager {
     this.updateBossFuelTether(enemy, boss, distance);
     const contactDistance = (enemy.radius || 18) + (boss.getVisualRadius?.() || boss.radius || 70) * 0.45;
     if (distance <= contactDistance) {
-      const healAmount = Math.max(2, Math.round((boss.maxHealth || 1) * (enemy.bossFuelProfile?.healPercent || 0.08)));
+      const healAmount = Math.max(2, Math.round((boss.maxHealth || 1) * Math.max(0.12, Math.min(0.20, (enemy.bossFuelProfile?.healPercent || 0.08) * 2))));
       const healed = boss.heal?.(healAmount, { source: 'boss_fuel_ship' }) || 0;
       const healAt = Date.now();
       this.lastBossFuelSupportOrder = {
@@ -5669,6 +5873,7 @@ export class EnemyManager {
   }
 
   spawnBossAdds(count = 6) {
+    if(this.discoveryEncounter?.plan)return 0;
     if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.level <= 1) {
       return 0;
     }
@@ -5768,6 +5973,7 @@ export class EnemyManager {
 
     const clearedWaveIndex = this.currentWaveIndex;
     const clearedWave = (clearedWaveIndex >= 0 && clearedWaveIndex < this.waves.length) ? this.waves[clearedWaveIndex] : null;
+    recordOrdinaryWaveClear(this, clearedWave);
     const clearedWaveNumber = clearedWaveIndex + 1;
     const experimentMetrics = this.game?.lateGameExperiment?.active === true
       ? this.game.lateGameExperiment.metrics
@@ -5936,7 +6142,8 @@ export class EnemyManager {
     // Logic to potentially inject a short score-risk challenge wave.
     const normalWaveLevel = this.getNormalWaveDifficultyLevel(this.level);
     if (
-      !clearedWave?.highSectorAuthoredEncounter
+      !this.game.encounterTest?.mysteryId
+      && !clearedWave?.highSectorAuthoredEncounter
       && consumedReinforcementWaveIndex === null
       && normalWaveLevel > 1
       && hasUpcomingWave
@@ -5996,6 +6203,11 @@ export class EnemyManager {
     this.currentWaveIndex = transitionWaveIndex;
     this.mayhemReinforcementState = null;
 
+    if (this.mysteryDirector?.plan?.direct) {
+      this.state = 'MYSTERY_TEST_COMPLETE';
+      this.game.scenes.play.showMysteryTestComplete?.();
+      return;
+    }
     if (this.isBossLevel && !this.bossSpawnedThisLevel && !this.bossDefeatedThisLevel) {
       this.phase = 'BOSS';
       console.log(`[BossFlow] spawning boss level=${this.level} waveIndex=${this.currentWaveIndex + 1} bossWaveIndex=${this.bossWaveIndex}`);
@@ -6089,6 +6301,8 @@ export class EnemyManager {
   }
 
   maybeSpawnHijacker({ clearedWaveNumber = this.currentWaveIndex + 1, hasUpcomingWave = true } = {}) {
+    if (this.waves?.[this.currentWaveIndex]?.isChallenge || this.waves?.[this.currentWaveIndex + 1]?.isChallenge || this.challengeFlightState?.active) return;
+    if (this.mysteryDirector?.protectsUpcomingWaves()) return;
     // Check conditions for hijacker spawn
     if (!isHijackerEnabled()) return;
     if (this.level < 2) return;
@@ -6118,6 +6332,7 @@ export class EnemyManager {
   }
 
   releasePendingTransitionHijackerSpawn() {
+    if (this.waves?.[this.currentWaveIndex]?.isChallenge || this.challengeFlightState?.active) return false;
     const plan = this.pendingTransitionHijackerSpawn;
     if (!plan) return false;
     this.pendingTransitionHijackerSpawn = null;
@@ -6132,6 +6347,8 @@ export class EnemyManager {
   }
 
   spawnHijacker(plan = {}) {
+    if (this.waves?.[this.currentWaveIndex]?.isChallenge || this.challengeFlightState?.active) return;
+    if (this.mysteryDirector?.busy || this.mysteryDirector?.protectsUpcomingWaves()) return;
     if (!isHijackerEnabled()) return;
 
     console.log('[EnemyManager] Spawning Hijacker!');
@@ -6146,9 +6363,14 @@ export class EnemyManager {
       : Math.max(112, Math.min(this.game.getHeight() * 0.18, 132)); // Clear of HUD, still a top-lane threat.
 
     this.hijacker = new Hijacker(spawnX, spawnY, this.level, this.game, {
-      initialBeamDelayMs: plan.initialBeamDelayMs
+      initialBeamDelayMs: plan.initialBeamDelayMs,
+      tractorVariant: plan.tractorVariant
     });
     this.container.addChild(this.hijacker.sprite);
+
+    this.game.scenes.play?.recordThreatDiscovery?.(`tractor_${this.hijacker.tractorProfile.id}`, 'enemies', {
+      name:this.hijacker.tractorProfile.name, art:this.hijacker.tractorProfile.sprite, sector:this.level
+    }, {scoreBonus:false,silent:true});
 
     // The Hijacker warning is a combat-critical callout, so keep it out of voice pileups.
     AudioManager.playVoice('mission_control_hijacker', {
@@ -6172,9 +6394,10 @@ export class EnemyManager {
     // Level is complete when all waves are done and no enemies (including hijacker)
     const noHijacker = !this.hijacker || !this.hijacker.active;
     if (this.phase !== 'COMPLETE') return false;
+    const preserveSurvivors = this.bossDefeatedThisLevel && isOverrunRunMode(this.game?.runMode);
     const activeBlockers = this.enemies.filter(enemy => {
-      if (!enemy || enemy.active === false) return false;
-      if (enemy.kind === 'bonus_drone' || enemy.kind === 'boss_add') return false;
+      if (!enemy || (enemy.active === false && !(preserveSurvivors && this.isPendingEntryEnemy(enemy)))) return false;
+      if (!preserveSurvivors && (enemy.kind === 'bonus_drone' || enemy.kind === 'boss_add')) return false;
       if (enemy.kind === 'boss' && this.bossDefeatedThisLevel) return false;
       return true;
     });
@@ -6182,6 +6405,13 @@ export class EnemyManager {
   }
 
   forceClearAllEnemies() {
+    this.behavioralFusions.clear();
+    this.environment?.destroy();this.environment=null;
+    this.combatWrecks.clear();this.combatWreckVisual.clear();this.curatedReassemblyMolt=null;
+    for(const collapse of this.breachCollapses||[])collapse.destroy();
+    for(const molt of this.serpentMolts||[])molt.dispose('forced-clear');
+    for (const brood of this.snakeBroods || []) brood.dispose();
+    this.snakeBroods?.clear();
     // CLEANUP FIX: Use authoritative collector to clear all bonus drones.
     const playScene = this.game.scenes.play;
     let bonusDroneCount = 0;
@@ -6244,7 +6474,36 @@ export class EnemyManager {
     console.log(`[EnemyManager] Wave cleanup complete: cleared ${enemyCount} enemies + ${bonusDroneCount} bonus drones + hijacker=${hijackerCleared}`);
   }
 
+  isCurrentRun() {
+    const play = this.game?.scenes?.play;
+    return !this.disposed && this.game?.currentScene === play && play?.enemyManager === this;
+  }
+
+  isCurrentSector(sector = this.level) {
+    return this.isCurrentRun() && this.level === sector && this.game.level === sector;
+  }
+
+  dispose() {
+    this.disposed = true;
+    this.clearEnemies();
+    this.combatWreckVisual.destroy();
+    this.behavioralFusions.destroy();
+  }
+
   clearEnemies() {
+    this.behavioralFusions.clear();
+    this.environment?.destroy();this.environment=null;
+    this.combatWrecks.clear();this.combatWreckVisual.clear();this.curatedReassemblyMolt=null;
+    for(const collapse of this.breachCollapses||[])collapse.destroy();
+    for(const molt of this.serpentMolts||[])molt.dispose('clear-enemies');
+    for (const brood of this.snakeBroods || []) brood.dispose();
+    this.snakeBroods?.clear();
+    this.encounterScorePacing?.cancel();
+    this.majorTelegraph = null;
+    this.mysteryAftermath?.clear();
+    this.mysteryDirector?.cancel();
+    this.discoveryEncounter?.dispose();
+    this.discoveryEncounter=null;
     this.game?.scenes?.play?.clearChallengeFlightHud?.('clear_enemies');
     this.challengeFlightState = null;
     this.clearPendingWaveSpawns();

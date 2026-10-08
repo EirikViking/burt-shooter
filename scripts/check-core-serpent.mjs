@@ -19,7 +19,7 @@ assert.equal(BONUS_CORES.length,10);
 assert.equal(SPACE_SNAKES.length,14);
 assert.equal(new Set(SPACE_SNAKES.map(p=>p.art)).size,14);
 assert.equal(new Set(SPACE_SNAKES.map(p=>p.voice)).size,14);
-assert.equal(getSpaceSnakeSectionHealth(6),18);
+assert.equal(getSpaceSnakeSectionHealth(6),19.5);
 assert.ok(getSpaceSnakeSectionHealth(50)>getSpaceSnakeSectionHealth(20));
 assert.ok(getSpaceSnakeSectionHealth(410)<=258);
 for(const p of SPACE_SNAKES){
@@ -56,10 +56,10 @@ assert.ok(isSpaceSnakeEligible({},6,{}));
 for(const flag of ['isChallenge','isMayhemReinforcement','isBossMayhemReinforcement','allowConcurrentSpawn','highSectorAuthoredEncounter'])assert.equal(isSpaceSnakeEligible({[flag]:true},60,{}),false);
 assert.equal(isSpaceSnakeEligible({},6,{runMode:'daily_signal'}),false);
 assert.equal(isSpaceSnakeEligible({},6,{lateGameExperiment:{active:true}}),false);
-assert.ok(isSpaceSnakeWave(0));assert.ok(isSpaceSnakeWave(.199999));assert.equal(isSpaceSnakeWave(.2),false);assert.equal(isSpaceSnakeWave(NaN),false);
+assert.ok(isSpaceSnakeWave(0));assert.ok(isSpaceSnakeWave(.119999));assert.equal(isSpaceSnakeWave(.12),false);assert.equal(isSpaceSnakeWave(NaN),false);
 let state=9182,spawns=0,previous=-1;const gaps=new Set();
 for(let i=0;i<10000;i++){state=(Math.imul(state,1664525)+1013904223)>>>0;if(isSpaceSnakeWave(state/2**32)){spawns++;if(previous>=0)gaps.add(i-previous);previous=i;}}
-assert.ok(spawns>1800&&spawns<2200);assert.ok(gaps.size>15,'Random intervals rather than every fifth wave');
+assert.ok(spawns>1000&&spawns<1400);assert.ok(gaps.size>15,'Random intervals rather than every fifth wave');
 for(const p of SPACE_SNAKES)for(const [w,h]of[[800,600],[1280,720],[1920,1080]])for(let t=0;t<90;t+=.1){
  const pos=sampleSpaceSnake(p,t,w,h);assert.ok(Number.isFinite(pos.x)&&Number.isFinite(pos.y));
  assert.ok(pos.x>=w*.1&&pos.x<=w*.9);assert.ok(pos.y>=-140&&pos.y<h*.76);

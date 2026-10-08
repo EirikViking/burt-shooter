@@ -1,6 +1,57 @@
 import {Texture} from 'pixi.js';
 
 const textures=new Map();
+const friendlyTextures=new Map();
+let wakeTexture;
+
+// Friendly fire is a painted plasma drop with a soft silhouette. It has no
+// wire ring or keyline, and one cached texture serves every shot of a color.
+export function getAstraFriendlyProjectileTexture(color=0x7dffcc){
+ const key=Number(color)>>>0;if(friendlyTextures.has(key))return friendlyTextures.get(key);
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=128;
+ const c=canvas.getContext('2d'),hex=`#${key.toString(16).padStart(6,'0').slice(-6)}`;
+ c.translate(64,64);
+ const halo=c.createRadialGradient(0,0,2,0,0,43);
+ halo.addColorStop(0,'#ffffff90');halo.addColorStop(.22,hex+'72');
+ halo.addColorStop(.62,hex+'1c');halo.addColorStop(1,hex+'00');
+ c.fillStyle=halo;c.fillRect(-46,-46,92,92);
+ for(const side of [-1,1]){
+  c.beginPath();c.moveTo(-34,side*3);
+  c.bezierCurveTo(-17,side*18,8,side*19,28,0);
+  c.bezierCurveTo(9,side*8,-12,side*6,-34,side*3);
+  const plume=c.createLinearGradient(-34,0,28,0);
+  plume.addColorStop(0,hex+'00');plume.addColorStop(.36,hex+'70');
+  plume.addColorStop(.72,hex+'cc');plume.addColorStop(1,'#ffffffdd');
+  c.fillStyle=plume;c.fill();
+ }
+ const heart=c.createRadialGradient(8,-2,1,5,0,20);
+ heart.addColorStop(0,'#ffffff');heart.addColorStop(.32,'#fff9da');
+ heart.addColorStop(.7,hex+'e0');heart.addColorStop(1,hex+'00');
+ c.beginPath();c.ellipse(5,0,27,12,0,0,Math.PI*2);c.fillStyle=heart;c.fill();
+ const texture=Texture.from(canvas);texture.label=`astra_friendly_plasma_${key}`;
+ friendlyTextures.set(key,texture);return texture;
+}
+
+// A shared soft volume for both friendly and hostile shot wakes. Its taper is
+// baked into alpha, so dense volleys do not stack hundreds of graphic strokes.
+export function getAstraProjectileWakeTexture(){
+ if(typeof document==='undefined')return Texture.WHITE; // Headless simulation has no rendered material.
+ if(wakeTexture)return wakeTexture;
+ const canvas=document.createElement('canvas');canvas.width=128;canvas.height=48;
+ const c=canvas.getContext('2d'),data=c.createImageData(128,48);
+ for(let y=0;y<48;y++)for(let x=0;x<128;x++){
+  const u=x/127,v=(y-23.5)/23.5;
+  const width=.34+.46*u,side=Math.exp(-Math.pow(v/width,2)*3.2);
+  const head=Math.sin(Math.PI*Math.pow(u,.72));
+  const turbulence=.82+.18*Math.sin(u*29+v*8)*Math.sin(u*13-v*5);
+  const i=(y*128+x)*4;
+  data.data[i]=data.data[i+1]=data.data[i+2]=255;
+  data.data[i+3]=Math.round(170*Math.max(0,head)*side*turbulence);
+ }
+ c.putImageData(data,0,0);
+ wakeTexture=Texture.from(canvas);wakeTexture.label='astra_projectile_soft_wake';
+ return wakeTexture;
+}
 // Small premultiplied sprite materials: a sharp collision core, colored rim
 // and a restrained optical halo. The center is registered to the hit circle.
 export function getAstraProjectileTexture(style='pulse',color=0xff6349){

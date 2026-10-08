@@ -34,7 +34,7 @@ requireFile(resolve(root, 'electron', 'steamCloudSave.cjs'), 'Steam Cloud save s
 
 requireText(resolve(root, 'electron', 'main.cjs'), [
   [/shouldStartFullscreen/, 'fullscreen launch guard'],
-  [/fullscreen:\s*shouldStartFullscreen/, 'fullscreen BrowserWindow option'],
+  [/fullscreen:\s*(?:shouldStartFullscreen|startNativeFullscreen)/, 'fullscreen BrowserWindow option'],
   [/isWindowed/, 'explicit windowed diagnostic escape hatch'],
   [/createSteamCloudSave/, 'Steam Cloud save initialization']
 ]);

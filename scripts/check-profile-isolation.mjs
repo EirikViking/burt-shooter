@@ -14,6 +14,7 @@ import {
   restoreSteamCloudPersistenceToStorage
 } from '../src/steamCloudPersistence.js';
 import { normalizeHangarProgress } from '../src/progression/HangarProgressState.js';
+import { STARTER_SHIP_IDS } from '../src/config/ShipUnlockConfig.js';
 import { getCodexDiscoverySignature } from '../src/progression/ThreatDiscoveryState.js';
 import {
   PROFILE_SCOPED_STORAGE_KEYS,
@@ -156,7 +157,7 @@ try {
   const freshStorage = restoreToMemory(freshInitialized);
   const freshHangar = JSON.parse(freshStorage.getItem(CLOUD_HANGAR_PROGRESS_KEY));
   assert.equal(freshHangar.pilotXp, 0);
-  assert.deepEqual(normalizeHangarProgress(freshHangar).unlockedShipIds, ['nova_ship_01'], 'fresh Steam profile should normalize to starter hull only');
+  assert.deepEqual(normalizeHangarProgress(freshHangar).unlockedShipIds, [...STARTER_SHIP_IDS], 'fresh Steam profile should normalize to starter hulls only');
   assert.equal(JSON.parse(freshStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.powerups
     ? Object.keys(JSON.parse(freshStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.powerups).length
     : 0, 0);

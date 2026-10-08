@@ -1,0 +1,397 @@
+{
+  "process": "55 Hz high-pass, 14 kHz low-pass, -17 LUFS / -2 dBTP, native pitch, eight-millisecond onset and bounded tail. Six original cues per lazy bank; no local synthesis.",
+  "rows": [
+    {
+      "id": "glass_widow",
+      "file": "public/audio/sfx/mysteries/glass_widow.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "131c0b38ee54dcaab7eb70ce8bdff6c8d66a574cb9ec7b83c43236177d8bb97d"
+    },
+    {
+      "id": "cinder_manta",
+      "file": "public/audio/sfx/mysteries/cinder_manta.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "97ef12582fdf538e056b2adf70cddb9e4b7b0d2136d6345cc81a1d475e3dee88"
+    },
+    {
+      "id": "needle_saint",
+      "file": "public/audio/sfx/mysteries/needle_saint.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "91360d4918fec3ae060de99b4a52e5abacd282dca3a3fcaabf78bf58995dcb83"
+    },
+    {
+      "id": "blind_leviathan",
+      "file": "public/audio/sfx/mysteries/blind_leviathan.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "c6ed0f2fa61fce7f569eb54d0d9227c392f3a78cd543765482a5303f4998d477"
+    },
+    {
+      "id": "lantern_eater",
+      "file": "public/audio/sfx/mysteries/lantern_eater.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "6ab2da9fec1ffec7ce8f6f055b06276292ca9e194b9e711ccfa65f995f58c58a"
+    },
+    {
+      "id": "scissor_twins",
+      "file": "public/audio/sfx/mysteries/scissor_twins.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "c237e8a83c0347325ede668925023e1fb5a1bd0daa07c85a7b4c6af59ece076f"
+    },
+    {
+      "id": "red_wake",
+      "file": "public/audio/sfx/mysteries/red_wake.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "2d7bb06e12a57e5e362f210f0373afc951c9d1ee60f4dfaa7098ab3f3687c684"
+    },
+    {
+      "id": "foldship",
+      "file": "public/audio/sfx/mysteries/foldship.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "1a855a036c44a2dc67761a81d57cd185f290a1642ba3dad15edc0f846cbb7c85"
+    },
+    {
+      "id": "doorwraith",
+      "file": "public/audio/sfx/mysteries/doorwraith.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "f8d5da1cc3f72a6cb15a3f3406d615729584701e0d2ac851602fc231743a51f1"
+    },
+    {
+      "id": "tidemason",
+      "file": "public/audio/sfx/mysteries/tidemason.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "cf2bd257983ed879300ad513dc271bd037ff336100d42741ba0a0e1350b40304"
+    },
+    {
+      "id": "parallax_hunter",
+      "file": "public/audio/sfx/mysteries/parallax_hunter.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "40e308b0f87ea058720cd7e7e9857f8f0ff43df29bfdd010cb53ed6d10097665"
+    },
+    {
+      "id": "clockray",
+      "file": "public/audio/sfx/mysteries/clockray.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "4cdedb3a0f6153b22b43d2f0989b7022070369a1443966421055fd4b4b68d96b"
+    },
+    {
+      "id": "horizon_biter",
+      "file": "public/audio/sfx/mysteries/horizon_biter.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "4500efe8490b460f86db60f06a8bac7c381e66c62901f27b10475691d32e87e0"
+    },
+    {
+      "id": "rift_surgeon",
+      "file": "public/audio/sfx/mysteries/rift_surgeon.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "cecc94a855c130fc029f02fc7fd4105c196fcd34e4098aa1c9b46ee3096dbc29"
+    },
+    {
+      "id": "bloom_queen",
+      "file": "public/audio/sfx/mysteries/bloom_queen.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "83f0151386befc77aab3431d2c3988c51dad7b5f84884a2f5329bf7b84db7aa1"
+    },
+    {
+      "id": "brood_ark",
+      "file": "public/audio/sfx/mysteries/brood_ark.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "f60628f14bc8c223dc9fa4bce6b0f0b07102933a6990ef67e62222d081b0a02b"
+    },
+    {
+      "id": "carrion_weaver",
+      "file": "public/audio/sfx/mysteries/carrion_weaver.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "64de4e213727eb5a3939a28235a2f500e5b28da6123c0339653a2d17424b978a"
+    },
+    {
+      "id": "spore_monk",
+      "file": "public/audio/sfx/mysteries/spore_monk.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "1025318646c858c1b4aae583bada217b7a25a69dddc0169851858f22a4af64e7"
+    },
+    {
+      "id": "husk_parade",
+      "file": "public/audio/sfx/mysteries/husk_parade.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "3e9b47b753bdae5cc0cfa933f9d3aa70a03f528de4c3174b32ebdda35267a29b"
+    },
+    {
+      "id": "magnet_urchin",
+      "file": "public/audio/sfx/mysteries/magnet_urchin.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "e9dbced7977f61bdd1094609e7b4abb37ecc5791fc5273eb62d8b37582ee49f4"
+    },
+    {
+      "id": "chrysalis_hunter",
+      "file": "public/audio/sfx/mysteries/chrysalis_hunter.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "8eb0a36014ddc46a0112177e9cde9380716aa3c79f4ffcd3959fcff9329dcfa6"
+    },
+    {
+      "id": "rail_cathedral",
+      "file": "public/audio/sfx/mysteries/rail_cathedral.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "d43a67c97267beb635d20008c255b25b7ef533b5369e2fbea6eb72ee12d83e21"
+    },
+    {
+      "id": "siege_orchid",
+      "file": "public/audio/sfx/mysteries/siege_orchid.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "e9c298fa37fc935d3cffd47a30f482ccd4e0bb99ede6958731f51d15e363e7d8"
+    },
+    {
+      "id": "bulwark_hauler",
+      "file": "public/audio/sfx/mysteries/bulwark_hauler.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "a9b2011840c62a42dd46ad204ab5f538b53b7b06330278db13402fadad3d8b16"
+    },
+    {
+      "id": "bellfoundry",
+      "file": "public/audio/sfx/mysteries/bellfoundry.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "48a0a30324f091eb36c1995fef17b33f71ed041078cf3a14a042664a8164f50d"
+    },
+    {
+      "id": "prism_bastion",
+      "file": "public/audio/sfx/mysteries/prism_bastion.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "6cc4805a2dc92fd22e32bc7b94e55f35eab4fd9a19e545a0fa052d812bc87216"
+    },
+    {
+      "id": "cable_kraken",
+      "file": "public/audio/sfx/mysteries/cable_kraken.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "f66d9ec9c4d55dff76b1f91119b753cbba41bcc586a297bf9f4074ce9d67c6a1"
+    },
+    {
+      "id": "switchyard",
+      "file": "public/audio/sfx/mysteries/switchyard.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "9727f0477874e7d947e12255bbcdc01cebb01f4ebf0868f9421e8fc6608bdddb"
+    },
+    {
+      "id": "false_sun",
+      "file": "public/audio/sfx/mysteries/false_sun.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "6f2a25ba4d6f447b6667a1d7ff8bc0098d6d5d195bea08f20ec6a51a81a820eb"
+    },
+    {
+      "id": "mirror_court",
+      "file": "public/audio/sfx/mysteries/mirror_court.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "f395e91d056a46246bf36bce8f7bb5d6508dc51e6ba77064f938de4310730e22"
+    },
+    {
+      "id": "signal_thief",
+      "file": "public/audio/sfx/mysteries/signal_thief.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "82c2cf2c702799e91c211a48e52040977420ce297040373cb1aef95baff93208"
+    },
+    {
+      "id": "lantern_mimic",
+      "file": "public/audio/sfx/mysteries/lantern_mimic.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "1ef31161dcc61b2524dc46e5b5504642b8208f266c22392ae2d33ab3f83caf0a"
+    },
+    {
+      "id": "afterimage_duelist",
+      "file": "public/audio/sfx/mysteries/afterimage_duelist.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "55a53405ae4f05b6d63c17480a1ae6503c5ece0487be6991c55a865c77d66d3b"
+    },
+    {
+      "id": "surveyor",
+      "file": "public/audio/sfx/mysteries/surveyor.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "f7a44178808cf80240b3cae2c3bebd4deff2f896abbf2d6f1c68cb5b8057822d"
+    },
+    {
+      "id": "cipher_engine",
+      "file": "public/audio/sfx/mysteries/cipher_engine.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "d2d052ecef6fdaf3d129a8ef1da0d961c056269c8526a93cf02c9c65443e3917"
+    },
+    {
+      "id": "rainmaker",
+      "file": "public/audio/sfx/mysteries/rainmaker.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "66073cbdb87568e1aa6e86802b6bc3e04f022c81a192a191d191c5e316b140c4"
+    },
+    {
+      "id": "comet_shepherd",
+      "file": "public/audio/sfx/mysteries/comet_shepherd.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "4f0110cce24e74e07bdf558e61e07e11086cfd31840c8da68195b44df7e12df9"
+    },
+    {
+      "id": "thunder_loom",
+      "file": "public/audio/sfx/mysteries/thunder_loom.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "3798ca14b4d7866b0d1955cbba6ad47b00c7f01dba1b215882a3422a2e8f46da"
+    },
+    {
+      "id": "avalanche_engine",
+      "file": "public/audio/sfx/mysteries/avalanche_engine.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "7a58a926ee0c1748ade3367df7f7518f337f0e79d7aea7667a241dbfc081737c"
+    },
+    {
+      "id": "ricochet_duchess",
+      "file": "public/audio/sfx/mysteries/ricochet_duchess.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "c243468e601469bbffd9b67a63440d596d390d12854f958e3701aced1903d9eb"
+    },
+    {
+      "id": "lantern_shoal",
+      "file": "public/audio/sfx/mysteries/lantern_shoal.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "6c5819689f3ae5ecbd889a2ab4e636acac2d56fcc0b04a4848a3f74dc4a83b51"
+    },
+    {
+      "id": "nova_anvil",
+      "file": "public/audio/sfx/mysteries/nova_anvil.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "be363dc129b857b0693bdfb6a55939ea0dbb56a08d1009068ce23ea8a98357b8"
+    },
+    {
+      "id": "gilded_pilgrim",
+      "file": "public/audio/sfx/mysteries/gilded_pilgrim.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "cdf1bbb010bc3d4f3c5194c3dd18380a9d96c9aaa31ddf9e4ad288a5bed91ce6"
+    },
+    {
+      "id": "vault_crawler",
+      "file": "public/audio/sfx/mysteries/vault_crawler.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "f09e23c873c30f657778bf8e16daeb17e147e2f2f6df524f070e119dd8459f3a"
+    },
+    {
+      "id": "oathkeeper",
+      "file": "public/audio/sfx/mysteries/oathkeeper.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "58a8ecf0ba668690d59ab6c07216dab60d88f785753d63c7a28597f4b24a8899"
+    },
+    {
+      "id": "courier_zero",
+      "file": "public/audio/sfx/mysteries/courier_zero.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "8153a456912b0245c5b2618f2dd1831751aad158bbd61405a79b03128cde6edf"
+    },
+    {
+      "id": "debt_collector",
+      "file": "public/audio/sfx/mysteries/debt_collector.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "28a4263d53fc531188fb3bd48d2e2f57be5f82eaa9ccab276c29e908a3633f91"
+    },
+    {
+      "id": "mercy_trap",
+      "file": "public/audio/sfx/mysteries/mercy_trap.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "05818d789d6044c23593bd817e4be390e204e04f94dcbb7c3cad15ea518d18bf"
+    },
+    {
+      "id": "fortune_leech",
+      "file": "public/audio/sfx/mysteries/fortune_leech.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "1bd9f893bd7a5005b81d6cd59e0644132558177714cf88f6dee4e3f91df14fcf"
+    },
+    {
+      "id": "constellation_beast",
+      "file": "public/audio/sfx/mysteries/constellation_beast.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "e330371a367a74fc45060ef639f65cadefcd9fb36f71d80646f9df03d6c2f04a"
+    },
+    {
+      "id": "cathedral_of_teeth",
+      "file": "public/audio/sfx/mysteries/cathedral_of_teeth.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "dd0ceaa7bfb643071a2da1ac76b51ef7800f1b29a9fc9979c0086ac565581310"
+    },
+    {
+      "id": "dying_star",
+      "file": "public/audio/sfx/mysteries/dying_star.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "b77af8252c53af68ce6c4e41ae0fdbe2c094e6bb2a1f523968e706f5ea7d98f6"
+    },
+    {
+      "id": "worldmolt",
+      "file": "public/audio/sfx/mysteries/worldmolt.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "564104fdfaf114940a31b96a83ee9561d92adbca5983fecd8c69a649a7cd9603"
+    },
+    {
+      "id": "eventide_engine",
+      "file": "public/audio/sfx/mysteries/eventide_engine.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "affbfbba39d22d58e4805dcb926b696589f71e6cd7d292652cfa6775861f5935"
+    },
+    {
+      "id": "witness",
+      "file": "public/audio/sfx/mysteries/witness.mp3",
+      "duration": 16.9,
+      "bytes": 405673,
+      "sha256": "14375abf5b10b6a2ba3488ec934d1b41bf2fc78d58f26615915603c38f445025"
+    },
+    {
+      "id": "choir_unbound",
+      "file": "public/audio/sfx/mysteries/choir_unbound.mp3",
+      "duration": 25.299999999999994,
+      "bytes": 607547,
+      "sha256": "28d542097b36cb8e4ed2bd93b3234e0baf7425d792a1c6d24f30f4e8d5ef35fa"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || 'test-results/codex-lore-layout');
 const allScenarios = [
+  ...['en','de','es','pt-BR','ru','zh-CN','ko','ja'].map(locale=>({locale,width:1280,height:720,category:'bosses',entryId:'planetfall',label:`${locale}-planetfall`})),
   { locale: 'en', width: 1920, height: 1080, category: 'wonders', entryId: 'celestial_crane_migration', label: 'en-wonder-epic-history' },
   { locale: 'en', width: 1920, height: 1080, category: 'bosses', entryId: 'nova_boss_01', label: 'en-sonia-story' },
   { locale: 'en', width: 1920, height: 1080, category: 'bosses', entryId: 'nova_boss_03', label: 'en-tyrian-story' },

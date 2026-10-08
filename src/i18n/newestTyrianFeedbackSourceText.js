@@ -1,5 +1,8 @@
 const ENTRIES = Object.freeze({
   de: {
+    'Gameplay Background': 'Spielhintergrund',
+    Modern: 'Modern',
+    Legacy: 'Klassisch',
     'Fire Input': 'Feuermodus',
     HOLD: 'HALTEN',
     TOGGLE: 'UMSCHALTEN',
@@ -16,6 +19,9 @@ const ENTRIES = Object.freeze({
     'REDUCED MOTION': 'BEWEGUNG RED.'
   },
   es: {
+    'Gameplay Background': 'Fondo de juego',
+    Modern: 'Moderno',
+    Legacy: 'Clásico',
     'Fire Input': 'Modo disparo',
     HOLD: 'MANTENER',
     TOGGLE: 'ALTERNAR',
@@ -32,6 +38,9 @@ const ENTRIES = Object.freeze({
     'REDUCED MOTION': 'MOVIMIENTO REDUCIDO'
   },
   ru: {
+    'Gameplay Background': 'Фон игры',
+    Modern: 'Современный',
+    Legacy: 'Классический',
     'Fire Input': 'Режим огня',
     HOLD: 'УДЕРЖАНИЕ',
     TOGGLE: 'ПЕРЕКЛЮЧЕНИЕ',
@@ -48,6 +57,9 @@ const ENTRIES = Object.freeze({
     'REDUCED MOTION': 'СНИЖ.ДВИЖ.'
   },
   'zh-CN': {
+    'Gameplay Background': '游戏背景',
+    Modern: '现代',
+    Legacy: '经典',
     'Fire Input': '开火输入',
     HOLD: '按住',
     TOGGLE: '切换',
@@ -64,6 +76,9 @@ const ENTRIES = Object.freeze({
     'REDUCED MOTION': '减少动态效果'
   },
   'pt-BR': {
+    'Gameplay Background': 'Fundo do jogo',
+    Modern: 'Moderno',
+    Legacy: 'Clássico',
     'Fire Input': 'Modo de tiro',
     HOLD: 'SEGURAR',
     TOGGLE: 'ALTERNAR',
@@ -80,6 +95,9 @@ const ENTRIES = Object.freeze({
     'REDUCED MOTION': 'MOVIMENTO REDUZIDO'
   },
   ko: {
+    'Gameplay Background': '게임 배경',
+    Modern: '모던',
+    Legacy: '클래식',
     'Fire Input': '발사 입력',
     HOLD: '누르기',
     TOGGLE: '전환',
@@ -96,6 +114,9 @@ const ENTRIES = Object.freeze({
     'REDUCED MOTION': '모션 줄이기'
   },
   ja: {
+    'Gameplay Background': 'ゲーム背景',
+    Modern: 'モダン',
+    Legacy: 'クラシック',
     'Fire Input': '射撃入力',
     HOLD: '長押し',
     TOGGLE: '切り替え',

@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import {energyTexture} from './AstraEnergyMaterial.js';
 
 // Original, cached optical materials. Thirty-two sprites per boss event;
 // no filters, per-frame geometry, random numbers or gameplay callbacks.
@@ -55,6 +56,8 @@ export class AstraReactorRupture extends PIXI.Container {
     this.core=sprite(m.core);this.flare=sprite(m.core);
   }
   draw(age, pixels, reduced, flash) {
+    const pressureTexture=energyTexture('pressure');
+    if(pressureTexture!==PIXI.Texture.EMPTY){this.wave.texture=pressureTexture;this.echo.texture=pressureTexture;}
     const t=age/60;
     this.visible=!reduced && flash>.05;
     if(!this.visible)return;

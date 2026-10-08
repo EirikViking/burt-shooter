@@ -15,7 +15,7 @@ import {
 } from '../effects/MicroSignalVfx.js';
 
 export class BonusDrone {
-    constructor(x, y, game, type = 'HAZARD', coreId = null) {
+    constructor(x, y, game, type = 'HAZARD', coreId = null, options = {}) {
         this.x = x;
         this.y = y;
         this.game = game;
@@ -40,7 +40,8 @@ export class BonusDrone {
         // Cosmetic selection uses spawn coordinates, never another gameplay roll.
         this.droneProfile = type === 'HAZARD' ? pickBonusDrone(x * 13 + y * 7) : null;
         this.visualVariant = this.droneProfile?.textureIndex || 0;
-        this.scoreValue = this.droneProfile?.score || 0;
+        this.scoreValue = type === 'HAZARD' && Number.isFinite(options.scoreValue) && options.scoreValue > 0
+            ? Math.round(options.scoreValue) : (this.droneProfile?.score || 0);
         this.coreProfile = type === 'POWERUP' ? (BONUS_CORES.find(c => c.id === coreId) || pickBonusCore(Math.random())) : null;
         this.ageSeconds = 0;
         this.fragment = this.coreProfile?.reward === 'constellation' ? Math.floor(Math.random() * 3) : 0;
@@ -51,6 +52,7 @@ export class BonusDrone {
         }
 
         this.createSprite();
+        this.escapeBaseRadius = this.radius;
 
         if (this.type === 'POWERUP') {
             AudioManager.playSfx('spawn_special'); // Distinct spawn sound
@@ -106,9 +108,6 @@ export class BonusDrone {
             });
         }
 
-        this.intentGlyph = new PIXI.Graphics();
-        this.intentGlyph.label = 'bonusDroneIntentGlyph';
-        this.sprite.addChild(this.intentGlyph);
         if (this.droneProfile) {
             this.targetLabel = createText(`${translateText('SHOOT')} · +${this.scoreValue}`, {
                 fontFamily:'Rajdhani',fontSize:16,fontWeight:'bold',fill:'#ffd18a',
@@ -197,6 +196,22 @@ export class BonusDrone {
         this.updateClarityVisuals(delta, speedMultiplier);
         this.updateEdgeMarker();
 
+        // Escape contracts into a small shimmer near the lower edge. It remains
+        // collectible/shootable until the original exit boundary is crossed.
+        const escape = Math.max(0, Math.min(1, (this.y - (this.game.getHeight() - 65)) / 115));
+        if (escape > 0) {
+            this.sprite.scale.set(1 - escape * .78);
+            if (this.type === 'HAZARD') this.radius = this.escapeBaseRadius * this.sprite.scale.x;
+            this.sprite.alpha = 1 - escape * .85;
+            this.intentHalo.clear();
+            const shimmer = this.type === 'POWERUP' ? 0xb4f8ff : 0x71bfff;
+            this.intentHalo.ellipse(0, 0, 40 * (1 - escape) + 4, 7 + escape * 7)
+                .stroke({ color: shimmer, width: 2, alpha: (1 - escape) * .8 });
+            this.motionTrail.clear();
+            this.hideEdgeMarker('escaping');
+            if (this.targetLabel) this.targetLabel.alpha = 1 - escape;
+            if (this.pickupLabel) this.pickupLabel.alpha = 1 - escape;
+        }
         // Despawn
         if (this.y > this.game.getHeight() + 50) {
             this.hideEdgeMarker('despawn');
@@ -213,7 +228,7 @@ export class BonusDrone {
     }
 
     updateClarityVisuals(delta = 1, speedMultiplier = 1) {
-        if (!this.intentHalo || !this.intentGlyph || !this.motionTrail) return;
+        if (!this.intentHalo || !this.motionTrail) return;
         const isPowerup = this.type === 'POWERUP';
         const pulse = Number.isFinite(this.clarityPulse) ? this.clarityPulse : 0.5;
         const baseRadius = isPowerup ? 33 : 29;
@@ -232,40 +247,8 @@ export class BonusDrone {
             this.intentHalo.stroke({ color: primary, width: isPowerup ? 2 : 1.4, alpha: alpha * 0.75 });
         }
 
-        this.intentGlyph.clear();
-        if (isPowerup) {
-            const r = radius + 8;
-            const chevron = 7;
-            const drawChevron = (x1, y1, x2, y2, x3, y3) => {
-                this.intentGlyph.moveTo(x1, y1);
-                this.intentGlyph.lineTo(x2, y2);
-                this.intentGlyph.lineTo(x3, y3);
-            };
-            drawChevron(0, -r + chevron, -chevron, -r, -chevron * 1.8, -r + chevron * 0.9);
-            drawChevron(0, -r + chevron, chevron, -r, chevron * 1.8, -r + chevron * 0.9);
-            drawChevron(0, r - chevron, -chevron, r, -chevron * 1.8, r - chevron * 0.9);
-            drawChevron(0, r - chevron, chevron, r, chevron * 1.8, r - chevron * 0.9);
-            drawChevron(-r + chevron, 0, -r, -chevron, -r + chevron * 0.9, -chevron * 1.8);
-            drawChevron(-r + chevron, 0, -r, chevron, -r + chevron * 0.9, chevron * 1.8);
-            drawChevron(r - chevron, 0, r, -chevron, r - chevron * 0.9, -chevron * 1.8);
-            drawChevron(r - chevron, 0, r, chevron, r - chevron * 0.9, chevron * 1.8);
-            this.intentGlyph.stroke({ color: primary, width: 2, alpha: 0.46 + pulse * 0.28 });
-        } else {
-            const r = radius - 2;
-            const bracket = 5;
-            const drawBracket = (sx, sy) => {
-                const x = sx * r;
-                const y = sy * r;
-                this.intentGlyph.moveTo(x - sx * bracket, y);
-                this.intentGlyph.lineTo(x, y);
-                this.intentGlyph.lineTo(x, y - sy * bracket);
-            };
-            drawBracket(1, 1);
-            drawBracket(-1, 1);
-            drawBracket(1, -1);
-            drawBracket(-1, -1);
-            this.intentGlyph.stroke({ color: primary, width: 1.8, alpha: 0.48 + pulse * 0.3 });
-        }
+        // SHOOT/COLLECT labels already distinguish the two interactions.
+        // Extra brackets around the hull obscure the authored ship silhouette.
 
         const vx = Number(this.vx) || 0;
         const vy = Number(this.vy) || 0;
@@ -287,7 +270,7 @@ export class BonusDrone {
             type: this.type,
             intent: isPowerup ? 'collect' : 'shoot',
             halo: true,
-            glyph: true,
+            glyph: false,
             trail: true,
             radius: Number(radius.toFixed(2)),
             trailAlpha: Number(trailAlpha.toFixed(3)),
@@ -458,6 +441,5 @@ export class BonusDrone {
         this.mainSprite = null;
         this.motionTrail = null;
         this.intentHalo = null;
-        this.intentGlyph = null;
     }
 }

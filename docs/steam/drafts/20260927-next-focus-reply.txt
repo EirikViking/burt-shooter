@@ -1,0 +1,21 @@
+Thanks, Tyrian. My announcement reply did not really answer the design suggestions in your post. I have now included them in the work I am planning for the coming week, alongside the newer bug reports. I will try to implement most of the improvements during that week, with testing before release.
+
+[quote=Tyrian Mollusk;591816302688019948]normal achievements[/quote]
+Eligible earned progress can count in Onslaught under each achievement's mode rules, and Onslaught Tactical awards full career XP for earned play. Skipped sectors and supplied starting equipment do not count as earned progress. I will check that the game explains those boundaries clearly.
+
+[quote=Tyrian Mollusk;591816302688019948]Weapons[/quote]
+I will work on more distinct weapon behaviour and useful ship differences, beginning with the narrow shot, wide spread, and slow hull cases you highlighted. I want each ship to offer a reason to choose it. I will test a small set of clear identities first and check their practical performance before extending the idea across the fleet.
+
+[quote=Tyrian Mollusk;591816302688019948]stat juggling[/quote]
+I agree that the most interesting upgrades change what you can do. I will improve Draft choice quality and develop more useful interactions around movement, focus, and the existing fusion system. Focus Lens and Rift Shards are good examples of the direction to build on. I will preserve their strengths while testing alternatives, rather than making reaching a workable build less reliable.
+
+[quote=Tyrian Mollusk;591816302688019948]score comparably[/quote]
+I will compare clear time, survivability, and scoring opportunities across different builds. Existing records need to remain valid, and any meaningful ruleset change needs to be handled openly.
+
+[quote=Tyrian Mollusk;591816302688019948]veilborn[/quote]
+I will give varied swarm and Veilborn encounters more room in the encounter mix and reduce repetitive snake appearances. New variations should ask for a different response rather than simply add more health.
+
+[quote=Tyrian Mollusk;591816302688019948]hard mode[/quote]
+I will test stronger late game boss patterns, including ideas from the earlier attacks, while retaining reliable telegraphs. I understand that you would choose the extra challenge without a score bonus. I will check how to offer that challenge clearly without confusing score comparisons or making the regular opening hostile to new players.
+
+I am also studying other strong games in the genre for ideas about weapon identity, pacing, readable threats, and replay value. The aim is to improve what already feels good in Nova Swarm. Please keep the suggestions coming, and remind me of any older concern I have missed.

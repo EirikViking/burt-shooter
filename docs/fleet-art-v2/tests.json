@@ -1,0 +1,50 @@
+{
+  "build": "v2026-09-09_17-00-12",
+  "compiledGitSha": "c7e88e4",
+  "baseline": "e67fe3906950b2eb564e57e698deb3ff9913cf71",
+  "branch": "codex/fleet-art-direction-v2",
+  "checksPassed": [
+    "fleet contracts (30)",
+    "editable source texture paths (29)",
+    "glTF validation (29)",
+    "runtime full rotation and selection/resource traversal (30)",
+    "active combat identity (30)",
+    "review images (30 ships x 4 modes) and rotation video",
+    "check:i18n",
+    "check:i18n-ui (8 locales)",
+    "check:steam-electron-bridge",
+    "check:release-line",
+    "build:current",
+    "smoke (production rerun)",
+    "check:controller-flow",
+    "package:steam:win:current",
+    "check:steam-package-runtime",
+    "desktop:smoke:packaged (Steam ready)",
+    "desktop:perf:packaged",
+    "packaged asset hashes (150)"
+  ],
+  "packagedSmoke": {
+    "status": "passed",
+    "steamReady": true,
+    "leaderboardReady": true,
+    "consoleEvents": []
+  },
+  "packagedPerformance": {
+    "status": "passed",
+    "durationMs": 60000,
+    "minFps": 59.523809523799216,
+    "avgFps": 59.946216157890404,
+    "warnings": [],
+    "errors": []
+  },
+  "directLaunchEnvironment": {
+    "SteamAppId": "4765070",
+    "SteamGameId": "4765070"
+  },
+  "limitations": [
+    "Automated local tests, not a human Steam-client playthrough",
+    "No exhaustive campaign playthrough",
+    "Rotation timing capture ran with concurrent QA/build load",
+    "Initial smoke attempts failed while Steam was unavailable; final Steam-connected gates passed"
+  ]
+}

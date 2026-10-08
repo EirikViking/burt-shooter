@@ -1,10 +1,12 @@
 import { NUM_RANKS, getRankTitle } from '../shared/RankPolicy.js';
+import { RUN_MODES } from '../game/RunMode.js';
+import { NEW_ONSLAUGHT_ACHIEVEMENTS } from './OnslaughtAchievementDefinitions.js';
 
 export const GLOBAL_LEADERBOARD_ACHIEVEMENT_ID = 'ACH_GLOBAL_LEADERBOARD';
 export const SWARM_ELITE_ACHIEVEMENT_ID = 'ACH_GLOBAL_NUMBER_ONE';
 export const GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID = SWARM_ELITE_ACHIEVEMENT_ID;
 export const EARLY_PILOT_ACHIEVEMENT_ID = 'ACH_EARLY_PILOT';
-export const SWARM_ELITE_SCORE_GATE = 750000;
+export const SWARM_ELITE_SCORE_GATE = 250000;
 export const LEGEND_SCORE_GATE = 100000;
 export const LEGEND_COMPOUND_SCORE_GATE = 250000;
 
@@ -552,7 +554,68 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   }
 ].map((achievement) => Object.freeze(achievement)));
 
-export const ACHIEVEMENTS = Object.freeze([
+const ARCADE = Object.freeze([RUN_MODES.MAYHEM_TACTICAL, RUN_MODES.RANKED]);
+const ARCADE_WITH_ONSLAUGHT_TACTICAL = Object.freeze([...ARCADE, RUN_MODES.OVERRUN_TACTICAL]);
+const CAREER_PROGRESS_MODES = Object.freeze([...ARCADE_WITH_ONSLAUGHT_TACTICAL, RUN_MODES.OVERRUN_PURE]);
+
+// Explicit legacy eligibility. Anything tied to the Sector-1 journey stays
+// Arcade-only; supplied Sector-51 progress cannot satisfy it.
+const ONSLAUGHT_TACTICAL_LEGACY_IDS = new Set([
+  GLOBAL_LEADERBOARD_ACHIEVEMENT_ID, SWARM_ELITE_ACHIEVEMENT_ID,
+  MILESTONE_ACHIEVEMENT_IDS.EARLY_PILOT,
+  MILESTONE_ACHIEVEMENT_IDS.SCORE_250K,
+  MILESTONE_ACHIEVEMENT_IDS.NO_HIT_SECTOR,
+  MILESTONE_ACHIEVEMENT_IDS.BOSS_HUNTER_25,
+  MILESTONE_ACHIEVEMENT_IDS.SIGNAL_CARTOGRAPHER,
+  MILESTONE_ACHIEVEMENT_IDS.HANGAR_TWELVE,
+  LEGEND_ACHIEVEMENT_IDS.SIX_FIGURE_SIGNAL,
+  LEGEND_ACHIEVEMENT_IDS.NEON_TAX_BRACKET,
+  LEGEND_ACHIEVEMENT_IDS.CABINET_JACKPOT,
+  LEGEND_ACHIEVEMENT_IDS.MILLION_POINT_MUTINY,
+  LEGEND_ACHIEVEMENT_IDS.TWO_MILLION_REACTOR,
+  LEGEND_ACHIEVEMENT_IDS.BOSS_PAROLE_DENIED,
+  LEGEND_ACHIEVEMENT_IDS.FIVE_BOSS_FEVER,
+  LEGEND_ACHIEVEMENT_IDS.TEN_BOSS_TRIBUNAL,
+  LEGEND_ACHIEVEMENT_IDS.CLEAN_ROOM_RIOT,
+  LEGEND_ACHIEVEMENT_IDS.PERFECT_PRESSURE,
+  LEGEND_ACHIEVEMENT_IDS.CLEAN_TEN_STATUTE,
+  LEGEND_ACHIEVEMENT_IDS.THIRTY_WAVE_GHOST,
+  LEGEND_ACHIEVEMENT_IDS.FIFTY_HIT_STATIC,
+  LEGEND_ACHIEVEMENT_IDS.TWO_HUNDRED_HIT_COMET,
+  LEGEND_ACHIEVEMENT_IDS.DANGER_DANCE_CERTIFICATE,
+  LEGEND_ACHIEVEMENT_IDS.DANGER_DODGE_PROPHET,
+  LEGEND_ACHIEVEMENT_IDS.GRAZE_BREAKER_DELUXE,
+  LEGEND_ACHIEVEMENT_IDS.GRAZE_STORM_CROWN,
+  LEGEND_ACHIEVEMENT_IDS.BLACK_BOX_ARCHIVIST
+]);
+const ARCADE_ONLY_LEGACY_IDS = new Set([
+  MILESTONE_ACHIEVEMENT_IDS.SECTOR_FIVE,
+  MILESTONE_ACHIEVEMENT_IDS.FINAL_CLIMAX,
+  MILESTONE_ACHIEVEMENT_IDS.ARCADE_CLEAR,
+  MILESTONE_ACHIEVEMENT_IDS.TWO_LIVES_CLEAR,
+  LEGEND_ACHIEVEMENT_IDS.SECTOR_STORMRIDER,
+  LEGEND_ACHIEVEMENT_IDS.OVERRUN_CARTOGRAPHER,
+  LEGEND_ACHIEVEMENT_IDS.NO_REPAIR_RECEIPTS,
+  LEGEND_ACHIEVEMENT_IDS.FULL_HULL_FIREWORKS,
+  LEGEND_ACHIEVEMENT_IDS.SWARM_TAXONOMIST,
+  LEGEND_ACHIEVEMENT_IDS.HANGAR_AFTERPARTY,
+  LEGEND_ACHIEVEMENT_IDS.BOSS_ROSTER_STAMPED,
+  LEGEND_ACHIEVEMENT_IDS.THEME_PARK_PANIC,
+  LEGEND_ACHIEVEMENT_IDS.SECTOR_THIRTY_BLACKOUT,
+  LEGEND_ACHIEVEMENT_IDS.SECTOR_FIFTY_ENDLESS,
+  LEGEND_ACHIEVEMENT_IDS.FULL_HANGAR_OMEGA
+]);
+const PURE_CAREER_PROGRESS_IDS = new Set([
+  MILESTONE_ACHIEVEMENT_IDS.BOSS_HUNTER_25,
+  MILESTONE_ACHIEVEMENT_IDS.SIGNAL_CARTOGRAPHER,
+  MILESTONE_ACHIEVEMENT_IDS.HANGAR_TWELVE,
+  LEGEND_ACHIEVEMENT_IDS.SWARM_TAXONOMIST,
+  LEGEND_ACHIEVEMENT_IDS.HANGAR_AFTERPARTY,
+  LEGEND_ACHIEVEMENT_IDS.BOSS_ROSTER_STAMPED,
+  LEGEND_ACHIEVEMENT_IDS.FULL_HANGAR_OMEGA
+]);
+
+const existingAchievements = [
   ...rankAchievements,
   {
     id: GLOBAL_LEADERBOARD_ACHIEVEMENT_ID,
@@ -564,7 +627,7 @@ export const ACHIEVEMENTS = Object.freeze([
   {
     id: SWARM_ELITE_ACHIEVEMENT_ID,
     name: 'Swarm Elite',
-    description: 'Submit a 750,000-point ranked run.',
+    description: 'Submit a ranked score of at least 250,000 points. Modes: Arcade Tactical, Arcade Pure, Onslaught Tactical.',
     type: 'leaderboard',
     metric: 'acceptedRankedScore',
     target: SWARM_ELITE_SCORE_GATE,
@@ -572,7 +635,23 @@ export const ACHIEVEMENTS = Object.freeze([
   },
   ...MILESTONE_ACHIEVEMENTS,
   ...LEGEND_ACHIEVEMENTS
-].map((achievement) => Object.freeze(achievement)));
+];
+export const ACHIEVEMENTS = Object.freeze([
+  ...existingAchievements.map((achievement) => {
+    const inOnslaught = achievement.type === 'rank' || ONSLAUGHT_TACTICAL_LEGACY_IDS.has(achievement.id);
+    const arcadeOnly = ARCADE_ONLY_LEGACY_IDS.has(achievement.id);
+    if (achievement.type !== 'rank' && Number(inOnslaught) + Number(arcadeOnly) !== 1) {
+      throw new Error(`Missing or duplicate achievement mode policy: ${achievement.id}`);
+    }
+    const completeModes = inOnslaught ? ARCADE_WITH_ONSLAUGHT_TACTICAL : ARCADE;
+    const progressModes = achievement.type === 'rank' || PURE_CAREER_PROGRESS_IDS.has(achievement.id)
+      ? CAREER_PROGRESS_MODES : completeModes;
+    return Object.freeze({ ...achievement, allowedModes: progressModes, progressModes, completeModes,
+      scope: achievement.type === 'rank' ? 'career' : achievement.type === 'leaderboard' ? 'submission' : 'defined_requirements',
+      requiresSubmission: achievement.type === 'leaderboard' });
+  }),
+  ...NEW_ONSLAUGHT_ACHIEVEMENTS
+]);
 
 const ACHIEVEMENTS_BY_ID = new Map(ACHIEVEMENTS.map((achievement) => [achievement.id, achievement]));
 
@@ -580,8 +659,35 @@ export function getAchievementById(id) {
   return ACHIEVEMENTS_BY_ID.get(id) || null;
 }
 
+export const ACHIEVEMENT_MODE_NAMES = Object.freeze({
+  [RUN_MODES.MAYHEM_TACTICAL]: 'Arcade Tactical',
+  [RUN_MODES.RANKED]: 'Arcade Pure',
+  [RUN_MODES.OVERRUN_TACTICAL]: 'Onslaught Tactical',
+  [RUN_MODES.OVERRUN_PURE]: 'Onslaught Pure',
+  [RUN_MODES.SCOUT]: 'Scout Run',
+  [RUN_MODES.SECTOR_START]: 'Sector Run',
+  [RUN_MODES.DAILY_SIGNAL]: 'Daily Challenge',
+  [RUN_MODES.UNRANKED]: 'Practice'
+});
+
+export function getAchievementDescriptionSource(achievement) {
+  if (!achievement) return '';
+  const requirement = String(achievement.description || '').replace(/\s*Modes:.*$/u, '').trim()
+    .replaceAll('Mayhem', 'Arcade').replaceAll('Overrun', 'Onslaught');
+  const progressModes = (achievement.progressModes || []).map(mode => ACHIEVEMENT_MODE_NAMES[mode]);
+  const completeModes = (achievement.completeModes || []).map(mode => ACHIEVEMENT_MODE_NAMES[mode]);
+  if (progressModes.join('|') !== completeModes.join('|')) {
+    return `${requirement} Progress counts in: ${progressModes.join(', ')}. Complete in: ${completeModes.join(', ')}.`;
+  }
+  return `${requirement} Modes: ${completeModes.join(', ')}.`;
+}
+
 export function getAchievementIds() {
   return ACHIEVEMENTS.map((achievement) => achievement.id);
+}
+
+export function getPublishedAchievementIds() {
+  return ACHIEVEMENTS.filter((achievement) => achievement.steamPublished !== false).map((achievement) => achievement.id);
 }
 
 export function getMilestoneAchievements() {

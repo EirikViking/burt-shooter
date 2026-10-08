@@ -92,17 +92,15 @@ for (const style of ENEMY_ATTACK_STYLE_DEFS) {
 const level1 = getGeneratedEnemyProfilesForLevel(1);
 const level10 = getGeneratedEnemyProfilesForLevel(GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1);
 const level11 = getGeneratedEnemyProfilesForLevel(11);
-const level40 = getGeneratedEnemyProfilesForLevel(40);
+const level40 = getGeneratedEnemyProfilesForLevel(60);
 const level11Move = unique(level11.map((profile) => profile.movementStyle));
 const level40Move = unique(level40.map((profile) => profile.movementStyle));
 const level11Attack = unique(level11.map((profile) => profile.fireStyle));
 const level40Attack = unique(level40.map((profile) => profile.fireStyle));
 
-const expectedLevel1 = GENERATED_ENEMY_STARTER_COUNT + GENERATED_ENEMY_EARLY_SURGE_TOTAL;
-if (level1.length !== expectedLevel1) fail(`level 1 should expose ${expectedLevel1} profiles, found ${level1.length}`);
-if (level1.filter((profile) => profile.earlySurge).length !== GENERATED_ENEMY_EARLY_SURGE_TOTAL) {
-  fail(`level 1 should include all ${GENERATED_ENEMY_EARLY_SURGE_TOTAL} early surge profiles`);
-}
+if(level1.length<6||level1.length>profiles.length*.1)fail('sector1 must offer a small useful opening pool');
+if(getGeneratedEnemyProfilesForLevel(19).length>profiles.length*.5)fail('at least half the variants must be saved for sector20+');
+if(getGeneratedEnemyProfilesForLevel(50).length>=level40.length)fail('sector51-60 must still reveal enemies');
 if (level10.some((profile) => profile.lateMayhem)) fail('level 10 should not expose late-mayhem profiles');
 if (level11.length >= total) fail(`level 11 exposes all ${total} profiles`);
 if (!level11.some((profile) => profile.lateMayhem)) fail('level 11 should introduce late-mayhem profiles');
@@ -110,16 +108,16 @@ if (level11.length <= level10.length) fail(`level 11 should expand the pool beyo
 const expectedLevel40 = SMALL_GENERATED_ENEMY_ROSTER_ENABLED_BY_DEFAULT
   ? total
   : total - smallLateMayhem.length;
-if (level40.length !== expectedLevel40) fail(`level 40 should expose ${expectedLevel40} default-playable profiles, found ${level40.length}/${total}`);
+if (level40.length !== expectedLevel40) fail(`level 60 should expose ${expectedLevel40} default-playable profiles, found ${level40.length}/${total}`);
 if (level11Move.length >= usedMovement.size) fail(`level 11 exposes all ${usedMovement.size} movement families`);
-if (level40Move.length !== usedMovement.size) fail(`level 40 exposes ${level40Move.length}/${usedMovement.size} movement families`);
+if (level40Move.length !== usedMovement.size) fail(`level 60 exposes ${level40Move.length}/${usedMovement.size} movement families`);
 if (level11Attack.length >= usedAttacks.size) fail(`level 11 exposes all ${usedAttacks.size} attack families`);
-if (level40Attack.length !== usedAttacks.size) fail(`level 40 exposes ${level40Attack.length}/${usedAttacks.size} attack families`);
+if (level40Attack.length !== usedAttacks.size) fail(`level 60 exposes ${level40Attack.length}/${usedAttacks.size} attack families`);
 
 const surgeNames = new Set();
 const surgeSignatures = new Set();
 for (const profile of earlySurge) {
-  if (profile.unlockLevel !== 1) fail(`${profile.id} should unlock at level 1, found ${profile.unlockLevel}`);
+  if (profile.authoredUnlockLevel !== 1) fail(`${profile.id} must preserve its gentle authored stats`);
   if (!profile.displayName || surgeNames.has(profile.displayName)) fail(`duplicate/missing early surge displayName ${profile.displayName || 'none'}`);
   surgeNames.add(profile.displayName);
   if (!profile.palette || profile.palette.length < 3) fail(`${profile.id} missing readable three-color palette`);
@@ -167,7 +165,7 @@ if (errors.length) {
 
 console.log(
   `[normal-enemy-variety] PASS profiles=${total} movement=${usedMovement.size} attacks=${usedAttacks.size} ` +
-  `level1=${level1.length} earlySurge=${earlySurge.length} level10=${level10.length} level11=${level11.length} late=${lateMayhem.length} smallGated=${smallLateMayhem.length} level40=${level40.length}`
+  `level1=${level1.length} earlySurge=${earlySurge.length} level10=${level10.length} level11=${level11.length} late=${lateMayhem.length} smallGated=${smallLateMayhem.length} level60=${level40.length}`
 );
 if (warnings.length) {
   for (const warning of warnings) console.warn(`[normal-enemy-variety] warning: ${warning}`);

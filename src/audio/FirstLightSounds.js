@@ -1,0 +1,28 @@
+export const FIRST_LIGHT_SOUND_MIX = Object.freeze({
+  "convoy_bastion_arrive": { volume: 0.74, minIntervalMs: 1500 },
+  "convoy_talon_arrive": { volume: 0.74, minIntervalMs: 1500 },
+  "convoy_pearl_arrive": { volume: 0.74, minIntervalMs: 1500 },
+  "convoy_ark_arrive": { volume: 0.74, minIntervalMs: 1500 },
+  "rival_ravager_arrive": { volume: 0.76, minIntervalMs: 1500 },
+  "rival_lancer_arrive": { volume: 0.76, minIntervalMs: 1500 },
+  "rival_forge_arrive": { volume: 0.76, minIntervalMs: 1500 },
+  "rival_vortex_arrive": { volume: 0.76, minIntervalMs: 1500 },
+  "rival_wasp_arrive": { volume: 0.74, minIntervalMs: 1500 },
+  "rival_oracle_arrive": { volume: 0.76, minIntervalMs: 1500 },
+  ...Object.fromEntries(['bastion','talon','pearl','ark'].map(id=>[`convoy_${id}_rescue`,
+    {volume:.82,minIntervalMs:160,priority:2,priorityHoldMs:650}])),
+  ...Object.fromEntries(['ravager','lancer','forge','vortex','wasp','oracle'].map(id=>[`rival_${id}_destroy`,
+    {volume:.95,minIntervalMs:1200,priority:3,priorityHoldMs:1800}])),
+  "convoy_lock_break": { volume: 0.44, minIntervalMs: 100 },
+  "convoy_rescue_join": { volume: 0.68, minIntervalMs: 550 },
+  "rival_charge_mechanical": { volume: 0.42, minIntervalMs: 350 },
+  "rival_charge_exotic": { volume: 0.42, minIntervalMs: 350 },
+  "rival_fire_mechanical": { volume: 0.4, minIntervalMs: 140 },
+  "rival_fire_exotic": { volume: 0.4, minIntervalMs: 140 },
+  "rival_core_exposed": { volume: 0.58, minIntervalMs: 700 },
+  "rival_weapon_break": { volume: 0.66, minIntervalMs: 160 },
+  "rival_destroy": { volume: 0.62, minIntervalMs: 1300 },
+  "convoy_depart": { volume: 0.64, minIntervalMs: 1000 },
+  "rival_retreat": { volume: 0.72, minIntervalMs: 1000 }
+});
+export const FIRST_LIGHT_SOUND_CATALOG = Object.fromEntries(Object.keys(FIRST_LIGHT_SOUND_MIX).map(id => [`first_light_${id}`, [`/audio/sfx/first-light/${id}.wav`]]));

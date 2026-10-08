@@ -1,0 +1,32 @@
+diff --git a/src/effects/PlanetfallFoundryView.js b/src/effects/PlanetfallFoundryView.js
+index d8b915a..8ded375 100644
+--- a/src/effects/PlanetfallFoundryView.js
++++ b/src/effects/PlanetfallFoundryView.js
+@@ -8,7 +8,6 @@ const smooth=v=>{const t=clamp(v);return t*t*(3-2*t);};
+ const TAU=Math.PI*2;
+ const fadeMaterials=(materials,opacity)=>{for(const m of materials){
+   m.opacity=opacity;m.depthWrite=opacity>.8;
+-  if(m.transparent!==(opacity<1)){m.transparent=opacity<1;m.needsUpdate=true;}
+ }};
+ 
+ function armourSurface(){
+@@ -107,7 +106,9 @@ export class PlanetfallFoundryView{
+   }
+   ownMaterials(group){
+     const owned=new Map();group.traverse(object=>{if(!object.material)return;
+-      const source=object.material;if(!owned.has(source))owned.set(source,source.clone());object.material=owned.get(source);
++      const source=object.material;if(!owned.has(source)){
++        const material=source.clone();material.transparent=true;owned.set(source,material);
++      }object.material=owned.get(source);
+     });return [...owned.values()];
+   }
+   makeHull(){
+@@ -116,6 +117,8 @@ export class PlanetfallFoundryView{
+     for(let i=0;i<32;i++){
+       const group=new THREE.Group(),quadrant=Math.floor(i/8),a=(i+.5)*TAU/32;this.ring.add(group);
+       const armour=this.materials.armour.clone(),dark=this.materials.dark.clone(),steel=this.materials.steel.clone();
++      // Fading must not compile a new shader in the middle of a breakup.
++      for(const material of [armour,dark,steel])material.transparent=true;
+       this.mesh(group,hull,dark).castShadow=true;this.mesh(group,skin,armour,[0,0,.075]);this.mesh(group,rail,steel,[0,0,.006]);
+       const inset=this.block(group,this.materials.copper,-.016,0,.102,.065,.035,.018);
+       if(i%4===1||i%4===2){inset.scale.y*=2;inset.position.x=.008;}

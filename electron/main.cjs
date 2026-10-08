@@ -1,14 +1,17 @@
-const { app, BrowserWindow, clipboard, dialog, ipcMain, net, protocol, screen, shell } = require('electron');
+const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, net, protocol, screen, shell } = require('electron');
 require('./stdioSafety.cjs').installBrokenPipeGuards();
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { attachNativePresentation } = require('./nativePresentation.cjs');
+const useNativePresentation = process.platform === 'win32';
 const { createSteamLeaderboardBridge } = require('./steamLeaderboardBridge.cjs');
 const { createSteamAchievementsBridge } = require('./steamAchievementsBridge.cjs');
 const { runSteamLeaderboardRuntimeProbe } = require('./steamLeaderboardRuntimeProbe.cjs');
 const { createNativeGamepadBridge } = require('./nativeGamepadBridge.cjs');
 const { createSteamCloudSave } = require('./steamCloudSave.cjs');
 const { getMaintainerDevtoolsState } = require('./maintainerDevtoolsGate.cjs');
+const { readBossEncounterTest } = require('./bossEncounterTest.cjs');
 const { sanitizePilotName } = require('./pilotNamePolicy.cjs');
 const {
   DISPLAY_MODE_BORDERLESS,
@@ -16,6 +19,7 @@ const {
   DEFAULT_WINDOW_SIZE,
   applyDisplaySettingsToWindow,
   getDisplayInfo,
+  getStartupDisplay,
   readDisplaySettings,
   writeDisplaySettings
 } = require('./displaySettings.cjs');
@@ -27,7 +31,9 @@ const isSteamLeaderboardProbe = process.argv.includes('--steam-leaderboard-probe
 const isSteamCloudDiagnostics = process.argv.includes('--steam-cloud-diagnostics') || process.env.NOVA_SWARM_STEAM_CLOUD_DIAGNOSTICS === '1';
 const isSteamCaptureProbe = process.argv.includes('--steam-capture-probe') || process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE === '1';
 const isFramePacingProbe = process.argv.includes('--frame-pacing-probe') || process.env.NOVA_SWARM_FRAME_PACING_PROBE === '1';
-const isFreshProfile = process.argv.includes('--nova-fresh-profile') || process.env.NOVA_SWARM_FRESH_PROFILE === '1';
+const bossEncounterTest = readBossEncounterTest(process.argv);
+if (bossEncounterTest) console.log(`[EncounterTest] launch=${bossEncounterTest}`);
+const isFreshProfile = Boolean(bossEncounterTest) || process.argv.includes('--nova-fresh-profile') || process.env.NOVA_SWARM_FRESH_PROFILE === '1';
 const FRESH_PROFILE_STEAM_REASON = 'fresh_profile_isolated';
 const useClassicBossArsenal = process.argv.includes('--nova-boss-classic') || process.env.NOVA_SWARM_BOSS_ARSENAL === 'classic';
 const usePreviousFlight = process.argv.includes('--nova-flight-previous') || process.env.NOVA_SWARM_FLIGHT === 'previous';
@@ -64,24 +70,31 @@ const mimeTypes = {
 };
 
 let baseUrl = null;
-const isolatedUserDataDir = process.env.NOVA_SWARM_USER_DATA_DIR
+// Explicit isolated profile for Steam-launched QA, whose environment is inherited from Steam.
+const qaProfileArg = isFreshProfile ? process.argv.find(value => value.startsWith('--nova-qa-user-data='))?.slice('--nova-qa-user-data='.length) : null;
+if (qaProfileArg && !path.isAbsolute(qaProfileArg)) throw new Error('QA user-data directory must be absolute');
+const isolatedUserDataDir = qaProfileArg || (bossEncounterTest
+  ? path.join(app.getPath('temp'), 'nova-swarm-encounter-tests', `${bossEncounterTest.replace(/[^a-z0-9_-]/gi, '-')}-${process.pid}-${Date.now()}`)
+  : process.env.NOVA_SWARM_USER_DATA_DIR
   ? path.resolve(process.env.NOVA_SWARM_USER_DATA_DIR)
   : isFreshProfile
     ? path.join(app.getPath('temp'), 'nova-swarm-fresh-profile')
   : smokeMode
     ? path.resolve(process.cwd(), 'test-results', `electron-${smokeMode}-user-data-${new Date().toISOString().replace(/[:.]/g, '-')}`)
-    : null;
+    : null);
 if (isolatedUserDataDir) {
   try {
-    if (isFreshProfile && !process.env.NOVA_SWARM_USER_DATA_DIR && fs.existsSync(isolatedUserDataDir)) {
+    if (isFreshProfile && !qaProfileArg && !bossEncounterTest && !process.env.NOVA_SWARM_USER_DATA_DIR && fs.existsSync(isolatedUserDataDir)) {
       fs.rmSync(isolatedUserDataDir, { recursive: true, force: true });
     }
     fs.mkdirSync(isolatedUserDataDir, { recursive: true });
     app.setPath('userData', isolatedUserDataDir);
   } catch (error) {
+    if (isFreshProfile) throw error; // Never continue a test in the real profile.
     console.warn('[NovaSwarm] Failed to isolate smoke userData path:', error?.message || String(error));
   }
 }
+ipcMain.handle('nova-encounter-test:getPreset', () => bossEncounterTest);
 const steamLeaderboardBridge = createSteamLeaderboardBridge({
   rootDir: path.resolve(__dirname, '..'),
   logger: console
@@ -199,6 +212,7 @@ function registerSteamLeaderboardIpc() {
     ipcMain.handle('nova-steam-leaderboard:isAvailable', () => false);
     ipcMain.handle('nova-steam-leaderboard:getPersonaName', () => null);
     ipcMain.handle('nova-steam-leaderboard:getTopScores', () => []);
+    ipcMain.handle('nova-steam-leaderboard:getPlayerBest', () => null);
     ipcMain.handle('nova-steam-leaderboard:getFriendsScores', () => []);
     ipcMain.handle('nova-steam-leaderboard:submitScore', () => getFreshProfileSteamResult('leaderboard'));
     ipcMain.handle('nova-steam-leaderboard:submitScoreDetailed', () => getFreshProfileSteamResult('leaderboard'));
@@ -211,6 +225,7 @@ function registerSteamLeaderboardIpc() {
   ipcMain.handle('nova-steam-leaderboard:isAvailable', () => steamLeaderboardBridge.isAvailable());
   ipcMain.handle('nova-steam-leaderboard:getPersonaName', () => steamLeaderboardBridge.getPersonaName());
   ipcMain.handle('nova-steam-leaderboard:getTopScores', (_event, payload) => steamLeaderboardBridge.getTopScores(payload));
+  ipcMain.handle('nova-steam-leaderboard:getPlayerBest', (_event, payload) => steamLeaderboardBridge.getPlayerBest(payload));
   ipcMain.handle('nova-steam-leaderboard:getFriendsScores', (_event, payload) => steamLeaderboardBridge.getFriendsScores(payload));
   ipcMain.handle('nova-steam-leaderboard:submitScore', (_event, payload) => steamLeaderboardBridge.submitScore(payload));
   ipcMain.handle('nova-steam-leaderboard:submitScoreDetailed', (_event, payload) => steamLeaderboardBridge.submitScoreDetailed(payload));
@@ -296,6 +311,15 @@ function registerAppIpc() {
     }
   });
 
+  ipcMain.handle('nova-app:writeRecoveryReport', async (_event, payload = {}) => {
+    try {
+      const text = JSON.stringify(payload);
+      if (text.length > 65536) return { ok: false, error: 'report_too_large' };
+      await writeRecoveryDiagnostic('recovery-latest.json', text);
+      return { ok: true };
+    } catch (error) { return { ok: false, error: error?.message || String(error) }; }
+  });
+
   ipcMain.handle('nova-performance-diagnostics:writeReport', async (_event, payload = {}) => {
     try {
       const root = path.join(app.getPath('userData'), 'performance-diagnostics');
@@ -330,8 +354,32 @@ function registerDisplayIpc(window) {
     };
   });
   ipcMain.handle('nova-display:applySettings', (_event, payload) => {
-    const settings = writeDisplaySettings(app.getPath('userData'), payload);
-    return applyDisplaySettingsToWindow(window, screen, settings);
+    const previous = readDisplaySettings(app.getPath('userData'));
+    const currentDisplay = getStartupDisplay(screen, {
+      displayId: screen.getDisplayMatching?.(window.getBounds())?.id
+    });
+    const currentBounds = window.getBounds();
+    const nativePlacement = previous.mode === 'windowed' && !window.isFullScreen()
+      ? {
+          windowPosition: { x: currentBounds.x, y: currentBounds.y },
+          windowSize: { width: currentBounds.width, height: currentBounds.height },
+          displayId: currentDisplay?.id == null ? previous.displayId : String(currentDisplay.id)
+        }
+      : {};
+    const settings = writeDisplaySettings(app.getPath('userData'), { ...previous, ...nativePlacement, ...payload });
+    const result = applyDisplaySettingsToWindow(window, screen, settings, { previousMode: previous.mode });
+    const appliedBounds = result?.applied?.bounds;
+    if (result.ok && appliedBounds) {
+      writeDisplaySettings(app.getPath('userData'), {
+        ...settings,
+        displayId: result.applied.displayId || settings.displayId,
+        ...(settings.mode === 'windowed' ? {
+          windowPosition: { x: appliedBounds.x, y: appliedBounds.y },
+          windowSize: { width: appliedBounds.width, height: appliedBounds.height }
+        } : {})
+      });
+    }
+    return result;
   });
 }
 
@@ -513,6 +561,10 @@ function sanitizeScoreEntry(entry = {}) {
     rankIndex,
     rank_index: rankIndex,
     careerRankExact: normalizeCareerRankExact(entry.careerRankExact, String(rankIndex + 1)),
+    levelSource: entry.levelSource || (Number(entry.level ?? entry.levelReached) > 0 ? 'encoded' : 'score_estimate'),
+    runMode: typeof entry.runMode === 'string' ? entry.runMode.slice(0, 40) : null,
+    startSector: Number.isInteger(Number(entry.startSector)) && Number(entry.startSector) > 0 ? Number(entry.startSector) : null,
+    endSector: Number.isInteger(Number(entry.endSector)) && Number(entry.endSector) > 0 ? Number(entry.endSector) : null,
     shipId: entry.shipId ?? entry.ship_id ?? null,
     shipName: entry.shipName ?? entry.ship_name ?? null,
     runTimeSeconds: entry.runTimeSeconds ?? entry.runtimeSeconds ?? null,
@@ -622,35 +674,89 @@ async function registerAppProtocol() {
   return baseUrl;
 }
 
+let recoveryDiagnosticWrite = Promise.resolve();
+function writeRecoveryDiagnostic(filename, text) {
+  recoveryDiagnosticWrite = recoveryDiagnosticWrite.catch(() => {}).then(async () => {
+    const root = path.join(app.getPath('userData'), 'recovery');
+    await fs.promises.mkdir(root, { recursive: true });
+    const destination = path.join(root, filename);
+    await fs.promises.writeFile(`${destination}.tmp`, text, 'utf8');
+    await fs.promises.rename(`${destination}.tmp`, destination);
+  });
+  return recoveryDiagnosticWrite;
+}
+
+function sendWindowFocusToRenderer(window) {
+  try {
+    if (!window || window.isDestroyed()) return;
+    window.webContents.send('nova-app:window-focus');
+  } catch {
+    // Best-effort cursor-policy recovery after Alt+Tab or Steam Overlay focus.
+  }
+}
+
 function createWindow() {
   const displaySettings = readDisplaySettings(app.getPath('userData'));
-  const startBorderless = shouldStartFullscreen && displaySettings.mode === DISPLAY_MODE_BORDERLESS;
-  const primaryDisplay = screen.getPrimaryDisplay?.();
-  const displayBounds = primaryDisplay?.bounds || { x: 0, y: 0, width: 1920, height: 1080 };
+  const startNativeFullscreen = shouldStartFullscreen
+    && (displaySettings.mode === DISPLAY_MODE_FULLSCREEN || displaySettings.mode === DISPLAY_MODE_BORDERLESS);
+  const startBorderless = startNativeFullscreen && displaySettings.mode === DISPLAY_MODE_BORDERLESS;
+  const startupDisplay = getStartupDisplay(screen, displaySettings);
+  const displayBounds = startupDisplay?.bounds || { x: 0, y: 0, width: 1920, height: 1080 };
   const windowSize = displaySettings.windowSize || DEFAULT_WINDOW_SIZE;
+  const windowPosition = displaySettings.windowPosition || null;
   const win = new BrowserWindow({
-    x: startBorderless ? displayBounds.x : undefined,
-    y: startBorderless ? displayBounds.y : undefined,
+    x: startNativeFullscreen ? displayBounds.x : windowPosition?.x,
+    y: startNativeFullscreen ? displayBounds.y : windowPosition?.y,
     width: startBorderless ? displayBounds.width : windowSize.width,
     height: startBorderless ? displayBounds.height : windowSize.height,
     minWidth: 960,
     minHeight: 540,
-    fullscreen: shouldStartFullscreen && displaySettings.mode === DISPLAY_MODE_FULLSCREEN,
-    frame: !startBorderless,
+    fullscreen: startNativeFullscreen && !useNativePresentation,
+    frame: true,
     resizable: !startBorderless,
     backgroundColor: '#030714',
-    show: !isSmoke && !isPerfSmoke && !isSteamLeaderboardProbe,
-    autoHideMenuBar: true,
+    show: !useNativePresentation && !isSmoke && !isPerfSmoke && !isSteamLeaderboardProbe,
+    autoHideMenuBar: false,
     webPreferences: {
       // Performance smoke must keep receiving animation frames while the
       // automation host owns focus or occludes the Electron window.
-      backgroundThrottling: !isPerfSmoke,
+      backgroundThrottling: !useNativePresentation && !isPerfSmoke,
+      ...(useNativePresentation ? { offscreen: { useSharedTexture: true } } : {}),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
       preload: path.join(__dirname, 'preload.cjs')
     }
   });
+
+  if (useNativePresentation) {
+    attachNativePresentation(win, {
+      steam: steamLeaderboardBridge.steam,
+      captureScreenshot: () => steamLeaderboardBridge.captureElectronScreenshot(win, {
+        outputDir: path.join(app.getPath('userData'), 'steam-screenshots'), source: 'steam_callback'
+      }),
+      startupBounds: startNativeFullscreen ? displayBounds : {
+        x: windowPosition?.x ?? displayBounds.x + Math.max(0, Math.round((displayBounds.width-windowSize.width)/2)),
+        y: windowPosition?.y ?? displayBounds.y + Math.max(0, Math.round((displayBounds.height-windowSize.height)/2)),
+        ...windowSize
+      },
+      fullscreen: startNativeFullscreen
+    });
+  }
+
+  const reportWindowFailure = (kind, details = {}) => {
+    console.error('[RuntimeRecovery]', kind, details);
+    void writeRecoveryDiagnostic('native-latest.json', JSON.stringify({
+      at: new Date().toISOString(), kind, details, versions: process.versions,
+      packaged: app.isPackaged, window: win.isDestroyed() ? null : win.getBounds()
+    })).catch(error => console.error('[RuntimeRecovery] Diagnostic write failed:', error?.message));
+  };
+  win.webContents.on('render-process-gone', (_event, details) => reportWindowFailure('renderer_process_gone', details));
+  win.on('unresponsive', () => reportWindowFailure('window_unresponsive'));
+  win.webContents.on('did-fail-load', (_event, code, description, _url, isMainFrame) => {
+    if (isMainFrame && code !== -3) reportWindowFailure('main_frame_load_failed', { code, description });
+  });
+  win.removeMenu();
 
   if (isPerfSmoke) {
     // Give Chromium a native surface without activating over the user's work.
@@ -665,7 +771,7 @@ function createWindow() {
     || process.env.SteamGameId
     || process.env.SteamOverlayGameId
   );
-  const shouldEnableSteamScreenshotCapture = !isFreshProfile
+  const shouldEnableSteamScreenshotCapture = !useNativePresentation && !isFreshProfile
     && !isSmoke
     && !isControlSmoke
     && !isPerfSmoke
@@ -690,6 +796,7 @@ function createWindow() {
   if (useClassicBossArsenal) gameUrl += `${gameUrl.includes('?') ? '&' : '?'}bossArsenal=classic`;
   if (usePreviousFlight) gameUrl += `${gameUrl.includes('?') ? '&' : '?'}flight=previous`;
   if (usePreviousBossEncounter) gameUrl += `${gameUrl.includes('?') ? '&' : '?'}bossEncounter=previous`;
+  if (bossEncounterTest) gameUrl += `${gameUrl.includes('?') ? '&' : '?'}skipIntro=1`;
   const framePacingProbeUrl = baseUrl
     ? `${baseUrl}/frame-pacing-probe.html`
     : pathToFileURL(path.join(distDir, 'frame-pacing-probe.html')).toString();
@@ -720,11 +827,36 @@ async function getSteamRuntimeInfo() {
     launchedBySteamHint: Boolean(steamEnv.SteamAppId || steamEnv.SteamGameId || steamEnv.SteamOverlayGameId),
     steamEnv,
     freshProfile: isFreshProfile,
+    bossEncounterTest,
     steamIntegrationIsolated: isFreshProfile,
     achievements: isFreshProfile
       ? getFreshProfileSteamStatus('achievements')
       : steamAchievementsBridge.getStatus()
   };
+}
+
+async function writeSteamRuntimeSnapshot(window, reason = 'startup') {
+  if (!window || window.isDestroyed?.()) return;
+  const windowBounds = window.getBounds?.() || null;
+  const display = windowBounds ? screen.getDisplayMatching?.(windowBounds) : null;
+  const report = {
+    writtenAt: new Date().toISOString(),
+    reason,
+    runtimeInfo: await getSteamRuntimeInfo(),
+    steamStatus: steamLeaderboardBridge.getStatus(),
+    captureSurface: steamLeaderboardBridge.getCaptureSurfaceStatus(),
+    window: {
+      bounds: windowBounds,
+      displayId: display?.id == null ? null : String(display.id),
+      displayBounds: display?.bounds || null,
+      displayScaleFactor: display?.scaleFactor || null,
+      fullScreen: Boolean(window.isFullScreen?.()),
+      focused: Boolean(window.isFocused?.()),
+      visible: Boolean(window.isVisible?.())
+    },
+    gpuFeatureStatus: app.getGPUFeatureStatus()
+  };
+  await writeRecoveryDiagnostic('steam-runtime-latest.json', `${JSON.stringify(report, null, 2)}\n`);
 }
 
 function getSteamCloudDiagnostics() {
@@ -1571,14 +1703,20 @@ async function runFramePacingProbe(window) {
 }
 
 app.whenReady().then(async () => {
+  Menu.setApplicationMenu(null);
+  if (bossEncounterTest) console.log('[EncounterTest] Desktop ready; isolating game services');
   if (!fs.existsSync(path.join(distDir, 'index.html'))) {
     throw new Error(`Missing build output at ${distDir}. Run npm run build first.`);
   }
+  // The existing SDK must initialize before the native host creates D3D11.
+  // Isolated QA still blocks save/score/achievement writes through its existing IPC guards.
+  if (useNativePresentation) await steamLeaderboardBridge.initialize();
   steamProfileContext = await resolveSteamProfileContext();
   steamCloudSave = createSteamCloudSave(app.getPath('userData'), console, {
     profile: steamProfileContext
   });
   const initializedCloudSave = steamCloudSave.ensureInitialized();
+  if (bossEncounterTest) console.log('[EncounterTest] Test profile ready');
   if (isSteamCloudDiagnostics) {
     console.log(JSON.stringify({
       ...getSteamCloudDiagnostics(),
@@ -1594,12 +1732,26 @@ app.whenReady().then(async () => {
   registerMaintainerDevtoolsIpc();
   registerSteamCloudIpc();
   await registerAppProtocol();
+  if (bossEncounterTest) console.log('[EncounterTest] Loading encounter runtime');
   const win = createWindow();
   registerDisplayIpc(win);
+  win.webContents.once('did-finish-load', () => {
+    const timer = setTimeout(() => {
+      void writeSteamRuntimeSnapshot(win, 'steam_launch_settled').catch((error) => {
+        console.warn('[NovaSwarm] Steam runtime diagnostic failed:', error?.message || error);
+      });
+    }, 5000);
+    timer.unref?.();
+  });
   const notifyWindowBlur = () => sendWindowBlurToRenderer(win);
-  win.on('blur', notifyWindowBlur);
+  const notifyWindowFocus = () => sendWindowFocusToRenderer(win);
+  if (!win.nativePresentation) win.on('blur', notifyWindowBlur);
+  if (!win.nativePresentation) win.on('focus', notifyWindowFocus);
   app.on('browser-window-blur', (_event, blurredWindow) => {
-    if (blurredWindow === win) notifyWindowBlur();
+    if (blurredWindow === win && !win.nativePresentation) notifyWindowBlur();
+  });
+  app.on('browser-window-focus', (_event, focusedWindow) => {
+    if (focusedWindow === win && !win.nativePresentation) notifyWindowFocus();
   });
   if (isFramePacingProbe) {
     try {
@@ -1673,6 +1825,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  for (const window of BrowserWindow.getAllWindows()) window.nativePresentation?.dispose?.();
   steamLeaderboardBridge.shutdown();
 });
 

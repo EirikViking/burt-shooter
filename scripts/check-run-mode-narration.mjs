@@ -19,16 +19,16 @@ const expectedCards = Object.freeze([
   Object.freeze({
     button: 'tacticalStartBtn',
     menuId: 'launchTactical',
-    displayTitle: 'MAYHEM TACTICAL',
+    displayTitle: 'ARCADE TACTICAL',
     event: 'boss_menu_bark_mode_tactical',
     required: [/\bRanked\b/i, /tactical upgrade/i, /every boss/i]
   }),
   Object.freeze({
     button: 'startBtn',
     menuId: 'launch',
-    displayTitle: 'MAYHEM PURE',
+    displayTitle: 'ARCADE PURE',
     event: 'boss_menu_bark_mode_pure',
-    required: [/\bRanked\b/i, /No tactical drafts/i, /original Mayhem ruleset/i]
+    required: [/\bRanked\b/i, /No tactical drafts/i, /original Arcade ruleset/i]
   }),
   Object.freeze({
     button: 'dailySignalBtn',
@@ -49,14 +49,15 @@ const expectedCards = Object.freeze([
     menuId: 'sectorStart',
     displayTitle: 'SECTOR RUN',
     event: 'boss_menu_bark_mode_sector',
-    required: [/\bUnranked checkpoint practice\b/i, /unlocked in Mayhem/i, /records stay local/i]
+    required: [/\bUnranked checkpoint practice\b/i, /unlocked in Arcade/i, /records stay local/i]
   }),
   Object.freeze({
     button: 'overrunStartBtn',
     menuId: 'overrun',
-    displayTitle: 'OVERRUN TACTICAL',
+    displayTitle: 'ONSLAUGHT TACTICAL',
     event: 'boss_menu_bark_mode_overrun_tactical',
-    required: [/Sector Fifty-One/i, /zero score/i, /Damage Up/i, /Rapid Fire/i, /Blink Drive/i, /Focus Lens/i, /Double Shot/i, /sixty-five percent/i]
+    required: [/ship and three Tactical augments/i, /Sector 51/i, /separate global records/i, /full career XP/i, /starting equipment grant no rewards/i],
+    audioEnabled: true
   })
 ]);
 
@@ -89,8 +90,9 @@ const matrix = expectedCards.map((expected) => {
     localeMatrix[locale][expected.menuId] = resolvedText;
   }
 
+  assert.equal(spec.audioEnabled, expected.audioEnabled ?? true, `${expected.menuId} audio eligibility`);
   const catalog = SFX_CATALOG[spec.event] || [];
-  assert.equal(catalog.length, 1, `${expected.menuId} should resolve exactly one stable mode narration clip`);
+  assert.equal(catalog.length, 1, `${expected.menuId} should retain exactly one stable mode narration clip`);
   const expectedUrl = `/audio/voice/menu-boss-barks/${spec.event}_001.mp3`;
   assert.equal(catalog[0], expectedUrl, `${expected.menuId} catalog clip`);
   assert.ok(AssetManifest.audio.voice.includes(expectedUrl), `${expected.menuId} clip must enter AssetManifest`);
@@ -115,18 +117,19 @@ const matrix = expectedCards.map((expected) => {
     sourceTranscript: spec.transcriptSource,
     rankedStatus: spec.rankedStatus,
     mechanicSummary: spec.mechanicSummary,
-    audioUrl: expectedUrl
+    audioUrl: expectedUrl,
+    audioEnabled: spec.audioEnabled
   };
 });
 
 for (const [variantId, expected] of Object.entries({
   pure: {
     event: 'boss_menu_bark_mode_overrun_pure',
-    required: [/Sector Fifty-One/i, /zero score/i, /no Tactical augments/i, /no .*boss Drafts/i, /sixty-five percent/i]
+    required: [/Sector 51/i, /without Tactical augments or boss Drafts/i, /85% career XP/i, /eligible Onslaught achievements/i, /No skipped-sector or checkpoint credit/i]
   },
   locked: {
     event: 'boss_menu_bark_mode_overrun_locked',
-    required: [/Overrun locked/i, /Sector Thirty in Mayhem/i, /Sector Fifty-One/i, /sixty-five percent/i]
+    required: [/Available from the start/i]
   }
 })) {
   const spec = getRunModeNarrationSpec('overrun', variantId);
@@ -159,6 +162,7 @@ assert.match(menuSource, /bypassGlobalCooldown:\s*isActivate \|\| isRunModeFocus
 assert.match(menuSource, /bypassVoiceLock:\s*isActivate \|\| isRunModeFocus/, 'deliberate mode dwell must replace a previous mode briefing');
 assert.match(menuSource, /decision:\s*'scheduled_dwell'/, 'mode narration must instrument dwell decisions');
 assert.match(menuSource, /decision:\s*'suppressed_scene_cooldown'/, 'mode narration must instrument cooldown decisions');
+assert.match(menuSource, /decision:\s*'suppressed_incorrect_audio'/, 'incorrect Tactical narration audio must be suppressed explicitly');
 assert.match(menuSource, /decision:\s*played \? 'played' : 'audio_rejected'/, 'mode narration must instrument playback decisions');
 
 mkdirSync(outputDir, { recursive: true });

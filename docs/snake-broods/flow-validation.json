@@ -1,0 +1,85 @@
+{
+  "result": {
+    "collisionScore": 15,
+    "claims": 7,
+    "decoded": [
+      {
+        "family": "cinder",
+        "duration": 11.1
+      },
+      {
+        "family": "thorn",
+        "duration": 11.1
+      },
+      {
+        "family": "widow",
+        "duration": 11.1
+      },
+      {
+        "family": "abyss",
+        "duration": 11.1
+      },
+      {
+        "family": "grave",
+        "duration": 11.1
+      },
+      {
+        "family": "hammer",
+        "duration": 11.1
+      },
+      {
+        "family": "mantis",
+        "duration": 11.1
+      },
+      {
+        "family": "sunforge",
+        "duration": 11.1
+      },
+      {
+        "family": "sawtooth",
+        "duration": 11.1
+      },
+      {
+        "family": "lamprey",
+        "duration": 11.1
+      },
+      {
+        "family": "storm",
+        "duration": 11.1
+      },
+      {
+        "family": "oracle",
+        "duration": 11.1
+      },
+      {
+        "family": "carrion",
+        "duration": 11.1
+      },
+      {
+        "family": "eclipse",
+        "duration": 11.1
+      }
+    ],
+    "audio": {
+      "voices": 0,
+      "cachedFamilies": 3
+    },
+    "normalGain": 0.10199999809265137,
+    "recovery": {
+      "before": [
+        "global",
+        "local"
+      ],
+      "after": [
+        "tactical",
+        "global",
+        "sector",
+        "friends",
+        "local"
+      ],
+      "view": "local"
+    }
+  },
+  "errors": [],
+  "limitations": "Isolated browser mock platform recovery. Live Steam read verification is separate."
+}

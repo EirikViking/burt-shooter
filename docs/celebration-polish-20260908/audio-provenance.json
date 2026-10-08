@@ -1,0 +1,29 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "createdAt": "2026-09-08T21:43:43.728Z",
+  "plan": "creator",
+  "additionalSpend": 0,
+  "cues": [
+    {
+      "file": "public/audio/sfx/celebration-polish-20260908/overrun-triumph.mp3",
+      "request": {
+        "text": "Spectacular AAA science fiction arcade victory fanfare. Immediate huge polished cinematic impact with powerful tight sub bass and metallic energy ignition, then a glorious rising brass and futuristic orchestral triumph, sparkling celestial chimes and a majestic fleet-launch crescendo, resolving into a beautiful spacious shimmering tail. Extremely satisfying earned victory, premium Hollywood sound design, bold and jubilant, no speech, no",
+        "duration_seconds": 9,
+        "prompt_influence": 0.75,
+        "model_id": "eleven_text_to_sound_v2"
+      },
+      "sha256": "4e543f2fa49a47704c4bbafccdf4a06068e4a0af3e6780ef9194f557a8f8b4a0"
+    },
+    {
+      "file": "public/audio/sfx/celebration-polish-20260908/personal-record.mp3",
+      "request": {
+        "text": "Premium AAA science fiction personal high score achievement sound. Instant satisfying deep clean impact and gleaming metal trophy resonance followed by an uplifting rising cascade of crystalline notes, shimmering gold and electric cyan energy, triumphant confident short fanfare with beautiful luxurious decay. Powerful but not harsh, no speech, no distortion. One coherent polished celebration cue.",
+        "duration_seconds": 3.5,
+        "prompt_influence": 0.75,
+        "model_id": "eleven_text_to_sound_v2"
+      },
+      "sha256": "5418f922ecedf09bb3877fee5e7e336a8924a0d8e99414002a27c2f5c58f41c6"
+    }
+  ]
+}

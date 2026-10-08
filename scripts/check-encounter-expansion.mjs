@@ -1,0 +1,91 @@
+import assert from 'node:assert/strict';
+import { CombatWrecks, Reassembly, WRECK_RULES, MoltPlateClaims } from '../src/game/CombatWrecks.js';
+import {BreachModel} from '../src/game/DreadnoughtBreach.js';
+import {chooseEnvironment} from '../src/game/EncounterEnvironments.js';
+import {planRiftEchoes,capturedVolley} from '../src/game/BehavioralFusions.js';
+import {getEncounterEvolutionTest} from '../src/config/EncounterEvolutionTest.js';
+import {dreadnoughtEligible,mysteryAdmission,bossCombinationAdmission,recordMysteryArrival,encounterPacing,encounterFamilyReady,recordEncounterFamily,updateEncounterPacing} from '../src/config/EncounterPacing.js';
+import {planMysteryLevel} from '../src/config/Mysteries.js';
+import {recordExpansionEvent,encounterHighlight} from '../src/game/EncounterExpansionEvents.js';
+const killed = (type = 'grunt', extra = {}) => ({ type, kind: 'enemy', health: 0, x: 100, y: 100, ...extra });
+const w = new CombatWrecks(), enemy = killed();
+assert(w.record(enemy)); assert.equal(w.record(enemy), null);
+for (const kind of ['boss', 'bonus_drone', 'mystery', 'ally', 'space_snake']) assert.equal(w.record(killed('grunt', { kind })), null);
+assert.equal(w.record(killed('unknown')), null); assert.equal(w.record(killed('grunt', { health: 1 })), null);
+const owner = {}, other = {}, r = new Reassembly(owner, w);
+r.update(.1); assert.equal(r.state, 'assembly'); assert.equal(w.reserve(other), null);
+r.update(WRECK_RULES.assembly); assert.equal(r.state, 'warning');
+assert.equal(w.consume(r.record, other), false); assert.equal(w.consume(r.record, owner), false);
+r.update(WRECK_RULES.warning); assert.equal(r.state, 'active'); r.recover(); assert.equal(r.state, 'warning');
+r.update(WRECK_RULES.warning); r.update(WRECK_RULES.platformSeconds); assert.equal(r.state, 'done');
+for (const reason of ['owner', 'anchor', 'expiry']) {
+  const registry = new CombatWrecks(); registry.record(killed()); const model = new Reassembly({}, registry); model.update(.1);
+  if (reason === 'expiry') registry.update(5);
+  model.update(.1, { alive: reason !== 'owner', anchorAlive: reason !== 'anchor' });
+  assert.equal(model.state, 'done'); assert.equal(registry.reserve({}), null);
+}
+const empty = new Reassembly({}, new CombatWrecks()); empty.update(8); assert.equal(empty.state, 'done'); assert(!empty.attempted);
+for (let i = 0; i < 25; i++) w.record(killed()); assert.equal(w.records.length, WRECK_RULES.cap);
+w.clear(); assert.equal(w.records.length, 0);
+console.log('PASS authoritative wrecks: exclusions, cap, exact claim, expiry, interruptions, fresh warning, bounded platform');
+const plate={active:true,x:40,y:80,age:1},molt={model:{plates:[plate]},disposed:false};
+const plateRegistry=new MoltPlateClaims(molt),builder={},assembly=new Reassembly(builder,plateRegistry);
+assembly.update(.1);assert.equal(assembly.record,plate);assert(plate.active,'cover remains through response window');
+assert.equal(plateRegistry.reserve({}),null);assembly.update(1.2);assert.equal(plate.active,false);assert.equal(assembly.state,'warning');
+assert.equal(plateRegistry.consume(plate,builder),false);
+const dyingPlate={active:true,x:40,y:80},dyingMolt={model:{plates:[dyingPlate]},disposed:false};
+const early=new Reassembly({},new MoltPlateClaims(dyingMolt));early.update(.1);dyingPlate.active=false;early.update(.1);
+assert.equal(early.state,'done');assert.equal(early.reason,'expired');
+console.log('PASS actual Molt plate reservation: cover response, exclusive claim, exactly once, expiry');
+for(let layout=0;layout<2;layout++)for(const choice of ['relay','gun']){
+ const b=new BreachModel(100,layout);assert(Math.abs(b.health-100)<1e-9);assert.equal(b.hit('reactor',100),0);
+ assert(b.hit('gun_0',1)<1);b.hit(`${choice}_0`,1000);b.hit(`${choice}_1`,1000);assert.equal(b.stage,'hull');
+ b.hit('hull',1000);assert.equal(b.stage,'reactor');b.hit('reactor',1000);assert(b.defeated);assert.equal(b.health,0);
+ assert.equal(b.hit('reactor',1000),0);assert.equal(b.hit('gun_1',1000),0);
+}
+console.log('PASS Breach: two target orders/layouts, original budget, irreversible parts, burst phases, exactly-once collapse');
+assert.equal(chooseEnvironment({sector:5,ordinal:10}),null);
+assert.equal(chooseEnvironment({sector:6,ordinal:10}).id,'graveyard');
+assert.equal(chooseEnvironment({sector:51,ordinal:10,blocked:true}),null);
+assert.equal(chooseEnvironment({sector:200,ordinal:10,last:5}),null);
+assert.notEqual(chooseEnvironment({sector:20,ordinal:20,recent:['wreck_claim'],roll:0}).family,'wreck_claim');
+assert.notEqual(chooseEnvironment({sector:20,ordinal:20,blockedFamilies:['wreck_claim'],roll:0}).family,'wreck_claim');
+console.log('PASS environments: early/51/deep boundaries, ordinary-wave spacing, family anti-repeat');
+assert.equal(planRiftEchoes({x:20,y:40},{x:500,y:600},20,true).length,5);
+assert.equal(planRiftEchoes({x:20,y:40},{x:500,y:600},0,true).length,0);
+assert.equal(planRiftEchoes({x:20,y:40},{x:500,y:600},5,false).length,0);
+assert(planRiftEchoes({x:20,y:40},{x:25,y:44},5,true).every(e=>e.x===25&&e.y===44));
+assert.equal(capturedVolley('fan',2).length,2);assert(capturedVolley('fan',3).some(e=>e.angle!==0));
+assert(capturedVolley('burst',3).some(e=>e.delay>0));assert(capturedVolley('lance',3)[0].speed>capturedVolley('fan',3)[0].speed);
+console.log('PASS behavioral Fusion allocation: earned five-shot replacement, coalescence/no target, distinct capped patterns');
+for(const id of ['reassembly','crossover','breach','breach-diagonal','graveyard','siege','migration','fusions']){
+ const location={hostname:'127.0.0.1',search:`?encounterEvolution=${id}`};
+ assert.equal(getEncounterEvolutionTest({development:true,location}).id,id);
+ assert.equal(getEncounterEvolutionTest({development:false,location}),null);
+ assert.equal(getEncounterEvolutionTest({development:true,location:{...location,hostname:'example.com'}}),null);
+ assert.equal(getEncounterEvolutionTest({development:true,location:{...location,search:location.search+'&desktop=1'}}),null);
+}
+const game={contentDirector:{seed:'integration'},scenes:{play:{}},runMode:'ranked_pure'},manager={game,enemies:[],level:11};
+assert(dreadnoughtEligible(manager));game.lastDreadnoughtSector=11;manager.level=24;assert(!dreadnoughtEligible(manager));
+manager.level=25;assert(dreadnoughtEligible(manager));manager.level=51;assert(!dreadnoughtEligible(manager));
+manager.level=200;assert(dreadnoughtEligible(manager));game.runMode='daily_signal';assert(!dreadnoughtEligible(manager));
+game.runMode='ranked_pure';manager.environment={active:true};assert(mysteryAdmission(manager,{id:'carrion_weaver'}));assert(bossCombinationAdmission(manager));assert(!dreadnoughtEligible(manager));
+manager.environment=null;const state=encounterPacing(game);state.eligibleLevels=8;recordMysteryArrival(game,18,'carrion_weaver');assert(state.nextMystery>=11&&state.nextMystery<=13);
+game.level=18;game.runElapsedSeconds=0;assert(!encounterFamilyReady(game,'wreck_claim'));
+manager.level=19;game.level=19;game.runElapsedSeconds=20;assert(mysteryAdmission(manager,{id:'carrion_weaver'}));
+manager.level=20;game.level=20;game.runElapsedSeconds=14;assert(!encounterFamilyReady(game,'wreck_claim'));
+game.runElapsedSeconds=15;assert(encounterFamilyReady(game,'wreck_claim'));
+recordEncounterFamily(game,'linked_battery');assert(!dreadnoughtEligible(manager));
+manager.boss={active:true,isDreadnought:true,health:100};updateEncounterPacing(manager,1);assert(state.wasMajor);
+manager.boss.active=false;updateEncounterPacing(manager,1);assert(state.majorEvents.length&&state.recoveryThrough===9);
+game.encounterPacing=null;assert(encounterFamilyReady(game,'linked_battery'),'run reset clears family aliases');
+console.log('PASS shared family aliases, sector/combat recovery, Breach recovery and run reset');
+for(let i=0;i<50;i++)recordExpansionEvent(game,i%2?'rift':'breach');assert.equal(game.encounterExpansionEvents.length,24);assert.equal(encounterHighlight(game.encounterExpansionEvents).id,'breach');
+assert.equal(encounterHighlight([]),null);recordExpansionEvent(game,'fake');assert.equal(game.encounterExpansionEvents.length,24);
+const naturalGame={isDebugRun:true,encounterEvolutionTest:{id:'natural'},runPolicy:{prototype:true}};
+for(let sector=11;sector<20;sector++){
+ const p=planMysteryLevel({sector,game:naturalGame,waves:[{type:'grunt'},{type:'BOSS'}]});
+ if(p.selected){assert(!p.bossWave);assert(p.firstContact);break;}assert(sector<19,'safe natural planner must become eligible');
+}
+assert(!planMysteryLevel({sector:30,game:{isDebugRun:true},waves:[{type:'grunt'}]}).selected);
+console.log('PASS DEV-only routes, production/remote/desktop rejection, Pure/Daily/51/deep eligibility, overlap, scheduling, bounded truthful highlight');

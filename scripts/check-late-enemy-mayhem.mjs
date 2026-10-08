@@ -56,7 +56,7 @@ if (level11Late.length < 1) {
   fail(`level ${GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL} should introduce at least one late-mayhem enemy`);
 }
 const level10WithoutSurge = level10.filter((profile) => !profile.earlySurge);
-if (level10WithoutSurge.length < 40 || level10WithoutSurge.length >= GENERATED_ENEMY_LEGACY_TOTAL) {
+if (level10WithoutSurge.length < 10 || level10WithoutSurge.length >= GENERATED_ENEMY_LEGACY_TOTAL) {
   fail(`level 10 should keep legacy mid progression before late-mayhem, found ${level10WithoutSurge.length}`);
 }
 

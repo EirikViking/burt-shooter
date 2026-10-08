@@ -8,6 +8,7 @@ import { RUN_MODES, getRunModeReportIdentity } from './RunMode.js';
 import { getCombatDamageSourceLabel } from './CombatTelemetry.js';
 import { getPlayerDamageCause } from './PlayerDamageCause.js';
 import { formatCareerInteger, normalizePilotXpExact } from '../shared/RankPolicy.js';
+import { encounterHighlight } from './EncounterExpansionEvents.js';
 
 const RUN_REPORT_VERSION = 17;
 
@@ -426,6 +427,7 @@ export function createRunReport(summary = {}) {
       {
         id: 'combat',
         rows: buildRows([
+          { id: 'encounterHighlight', value: encounterHighlight(summary.encounterExpansionEvents)?.label },
           { id: 'kills', value: toWholeNumber(summary.totalKills) },
           { id: 'bossKills', value: toWholeNumber(summary.bossesKilled) },
           { id: 'waves', value: toWholeNumber(summary.wavesCleared) },

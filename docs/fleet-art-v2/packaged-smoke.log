@@ -1,0 +1,5 @@
+
+> nova-swarm@1.0.0 desktop:smoke:packaged
+> node scripts/smoke-packaged-desktop.mjs
+
+[packaged-smoke] failed: packaged Steam bridge unavailable (reason=steam_init_returned_false); packaged Steam leaderboard unavailable

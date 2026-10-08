@@ -1,0 +1,47 @@
+{
+  "id": 19,
+  "name": "Neon Stutter",
+  "architecture": "fork",
+  "baselineDesign": [
+    "Neon Stutter",
+    1.45,
+    0.8,
+    0.65,
+    0.86,
+    "fork",
+    [
+      [
+        0.17,
+        0.41,
+        -1.11,
+        0.11
+      ],
+      [
+        0.7,
+        0.57,
+        -1.11,
+        0.14
+      ],
+      [
+        1.27,
+        0.91,
+        -0.49,
+        0.075
+      ],
+      [
+        1.51,
+        0.95,
+        0.11,
+        0.022
+      ]
+    ]
+  ],
+  "palette": [
+    "102e3a",
+    "258cad",
+    "00dfff"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false
+}

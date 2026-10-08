@@ -38,7 +38,7 @@ assert.match(
   'challenge flights and authored high-sector encounters must not open Codex discovery panels'
 );
 assert.match(managerSource, /showChallengeFlightResult/, 'challenge completion must use the graded presentation');
-assert.match(playSource, /if \(enemy\.challengeFlightTarget\) return;/, 'challenge targets must be harmless on contact');
+assert.match(playSource, /if \(enemy\.challengeFlightTarget \|\| \(enemy\.kind === 'snake_baby' && enemy\.isDeparting\?\.\(\)\)\) return;/, 'challenge targets must be harmless on contact');
 assert.match(playSource, /HOLOGRAM TARGETS \/\/ CONTACT SAFE/, 'challenge HUD must explain harmless contact');
 assert.match(managerSource, /reticle\._hologramVisual = true/, 'challenge targets must own an explicit hologram treatment');
 assert.match(managerSource, /enemy\.sprite\.alpha = 0\.56/, 'challenge target hulls must be visibly translucent');

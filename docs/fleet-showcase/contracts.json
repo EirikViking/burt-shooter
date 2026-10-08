@@ -1,0 +1,309 @@
+{
+  "baseline": "43dc8c7",
+  "preservedFiles": 152,
+  "allCombatSpritesUnchanged": true,
+  "gameplayUnchanged": true,
+  "hangarScale": "1.25 preferred scale; capped at 420 desktop / 230 mobile pixels before viewport scaling",
+  "rows": [
+    {
+      "id": "01",
+      "name": "Nova Sparrow",
+      "architecture": "sparrow",
+      "bytes": 27003304,
+      "triangles": 332172,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1536
+    },
+    {
+      "id": "02",
+      "name": "Comet Courier",
+      "architecture": "courier",
+      "bytes": 15521072,
+      "triangles": 211242,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "03",
+      "name": "Pixel Needle",
+      "architecture": "needle",
+      "bytes": 12694720,
+      "triangles": 152856,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "04",
+      "name": "Mint Skater",
+      "architecture": "skater",
+      "bytes": 12743216,
+      "triangles": 152960,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "05",
+      "name": "Crimson Bite",
+      "architecture": "jaw",
+      "bytes": 22677384,
+      "triangles": 201816,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1536
+    },
+    {
+      "id": "06",
+      "name": "Iron Orbit",
+      "architecture": "orbit",
+      "bytes": 16053620,
+      "triangles": 217214,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "07",
+      "name": "Quasar Fan",
+      "architecture": "fan",
+      "bytes": 14883416,
+      "triangles": 196976,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "08",
+      "name": "Glacier Scope",
+      "architecture": "scope",
+      "bytes": 14977288,
+      "triangles": 197537,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "09",
+      "name": "Arc Striker",
+      "architecture": "arc",
+      "bytes": 14758416,
+      "triangles": 197234,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "10",
+      "name": "Solar Hammer",
+      "architecture": "hammer",
+      "bytes": 22201932,
+      "triangles": 194928,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1536
+    },
+    {
+      "id": "11",
+      "name": "Circuit Tap",
+      "architecture": "circuit",
+      "bytes": 15194064,
+      "triangles": 200636,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "12",
+      "name": "Violet Feint",
+      "architecture": "feint",
+      "bytes": 12958508,
+      "triangles": 152908,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "13",
+      "name": "Auric Core",
+      "architecture": "core",
+      "bytes": 15376800,
+      "triangles": 200954,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "14",
+      "name": "Plasma Skate",
+      "architecture": "plasma",
+      "bytes": 14666276,
+      "triangles": 196799,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "15",
+      "name": "Ruby Spike",
+      "architecture": "spike",
+      "bytes": 12883880,
+      "triangles": 152530,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "16",
+      "name": "Spectral Slip",
+      "architecture": "spectral",
+      "bytes": 12898588,
+      "triangles": 152712,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "17",
+      "name": "Cobalt Guard",
+      "architecture": "guard",
+      "bytes": 22518248,
+      "triangles": 198418,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1536
+    },
+    {
+      "id": "18",
+      "name": "Ember Burst",
+      "architecture": "burst",
+      "bytes": 14806996,
+      "triangles": 197158,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "19",
+      "name": "Neon Stutter",
+      "architecture": "fork",
+      "bytes": 14822204,
+      "triangles": 196909,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "20",
+      "name": "Quartz Needle",
+      "architecture": "quartz",
+      "bytes": 13142152,
+      "triangles": 157504,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "21",
+      "name": "Chrome Rail",
+      "architecture": "rail",
+      "bytes": 14816648,
+      "triangles": 197679,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "22",
+      "name": "Verdant Flow",
+      "architecture": "flow",
+      "bytes": 15031584,
+      "triangles": 199058,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "23",
+      "name": "Hazard Ram",
+      "architecture": "ram",
+      "bytes": 15053632,
+      "triangles": 199294,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "24",
+      "name": "Nova Overdrive",
+      "architecture": "overdrive",
+      "bytes": 15355888,
+      "triangles": 200912,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "25",
+      "name": "Arcade Legend",
+      "architecture": "siege",
+      "bytes": 22660920,
+      "triangles": 198760,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1536
+    },
+    {
+      "id": "26",
+      "name": "Phase Seraph",
+      "architecture": "seraph",
+      "bytes": 16841336,
+      "triangles": 245941,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1024
+    },
+    {
+      "id": "27",
+      "name": "Eirik the Viking",
+      "architecture": "viking",
+      "bytes": 22528624,
+      "triangles": 205596,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1536
+    },
+    {
+      "id": "28",
+      "name": "Aegis Comet",
+      "architecture": "aegis",
+      "bytes": 23748808,
+      "triangles": 219452,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1536
+    },
+    {
+      "id": "29",
+      "name": "Railbreaker",
+      "architecture": "railbreaker",
+      "bytes": 22238712,
+      "triangles": 206562,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1536
+    },
+    {
+      "id": "30",
+      "name": "Drone Sovereign",
+      "architecture": "carrier",
+      "bytes": 23270032,
+      "triangles": 209162,
+      "materials": 9,
+      "maps": 5,
+      "textureSize": 1536
+    }
+  ]
+}

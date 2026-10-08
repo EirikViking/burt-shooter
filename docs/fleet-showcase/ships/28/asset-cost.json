@@ -1,0 +1,56 @@
+{
+  "id": 28,
+  "name": "Aegis Comet",
+  "architecture": "aegis",
+  "baselineDesign": [
+    "Aegis Comet",
+    1.35,
+    1.17,
+    0.7,
+    1.15,
+    "aegis",
+    [
+      [
+        0.24,
+        0.18,
+        -1.22,
+        0.17
+      ],
+      [
+        0.7,
+        -0.36,
+        -1.35,
+        0.19
+      ],
+      [
+        1.17,
+        -0.68,
+        -1.1,
+        0.065
+      ]
+    ]
+  ],
+  "palette": [
+    "e4e8cc",
+    "ba923d",
+    "4ffff0"
+  ],
+  "textureSize": 1536,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false,
+  "bytes": 23748808,
+  "triangles": 219452,
+  "materials": [
+    "Graphite structural composite",
+    "Off-white aerospace polyurethane",
+    "Brushed titanium fittings",
+    "Seals and cabin upholstery",
+    "Dim ion throat and instrument phosphor",
+    "Laminated cockpit glazing",
+    "Cobalt blue painted alloy",
+    "Sooted nozzle liner",
+    "Heat-oxidised exhaust alloy"
+  ],
+  "images": 5,
+  "repaired": 0
+}

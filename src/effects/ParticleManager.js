@@ -2,14 +2,46 @@ import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { HullBreakup } from './HullBreakup.js';
 import { AstraDetonation } from './AstraDetonation.js';
+import { PremiumImpacts } from './PremiumImpacts.js';
 import {
   isMayhemPerformanceDiagnosticsActive,
   markMayhemPerformanceEvent,
   recordMayhemPerformanceDuration
 } from '../debug/MayhemPerformanceDiagnostics.js';
 
+let sharedSparkTexture = null;
+
+function getSharedSparkTexture() {
+  if (sharedSparkTexture?.source) return sharedSparkTexture;
+  if (typeof document === 'undefined') return null;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 48;
+  canvas.height = 20;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.beginPath();
+  context.moveTo(3, 10);
+  context.bezierCurveTo(13, 3, 34, 2, 45, 9);
+  context.bezierCurveTo(35, 13, 14, 18, 3, 10);
+  context.closePath();
+  context.fillStyle = '#ffffff';
+  context.fill();
+  context.beginPath();
+  context.moveTo(9, 10);
+  context.bezierCurveTo(22, 7, 34, 6, 42, 9);
+  context.strokeStyle = 'rgba(255,255,255,0.9)';
+  context.lineWidth = 1.5;
+  context.stroke();
+
+  sharedSparkTexture = PIXI.Texture.from(canvas);
+  return sharedSparkTexture;
+}
+
 class Particle {
-  constructor() {
+  constructor(sparkTexture = null) {
     this.x = 0;
     this.y = 0;
     this.vx = 0;
@@ -20,12 +52,17 @@ class Particle {
     this.age = 0;
     this.active = false;
     this.isDebris = false;
+    this.usesBitmap = Boolean(sparkTexture);
+    this.sparkTexture = sparkTexture;
+    this.bitmapScaleX = 1;
+    this.bitmapScaleY = 1;
 
     this.sprite = new PIXI.Graphics();
     this.sprite.visible = false;
 
     this.bitmap = new PIXI.Sprite();
     this.bitmap.anchor.set(0.5);
+    if (sparkTexture) this.bitmap.texture = sparkTexture;
     this.bitmap.visible = false;
   }
 
@@ -42,21 +79,40 @@ class Particle {
     this.astraSuppressed = suppressed;
     this.rotationSpeed = (Math.random() - 0.5) * 0.2;
 
-    if (texture) {
-      this.isDebris = true;
-      this.bitmap.texture = texture;
+    const bitmapTexture = texture || this.sparkTexture;
+    if (bitmapTexture) {
+      this.isDebris = Boolean(texture);
+      this.usesBitmap = true;
+      this.bitmap.texture = bitmapTexture;
       this.bitmap.x = x;
       this.bitmap.y = y;
       this.bitmap.alpha = 1;
+      this.bitmap.tint = texture ? 0xffffff : color;
+      this.bitmap.blendMode = texture ? 'normal' : 'add';
 
-      // Scale debris to fit roughly 'size'
-      const scale = (size * 5) / Math.max(texture.width, texture.height);
-      this.bitmap.scale.set(scale);
-
-      this.bitmap.visible = true;
+      if (texture) {
+        // Scale debris to fit roughly 'size'
+        const scale = (size * 5) / Math.max(texture.width, texture.height);
+        this.bitmapScaleX = scale;
+        this.bitmapScaleY = scale;
+        this.bitmap.rotation = 0;
+        this.bitmap.skew.set(0, 0);
+      } else {
+        const speed = Math.max(0.1, Math.hypot(vx, vy));
+        const shardLength = Math.max(3.2, Math.min(18, size * (1.5 + Math.min(1.65, speed * 0.17))));
+        const shardWidth = Math.max(0.9, Math.min(6.5, size * 0.7));
+        const curl = (Math.random() - 0.5) * shardWidth * 1.2;
+        this.bitmapScaleX = (shardLength * 1.5) / Math.max(1, bitmapTexture.width);
+        this.bitmapScaleY = (shardWidth * 2) / Math.max(1, bitmapTexture.height);
+        this.bitmap.rotation = Math.atan2(vy, vx);
+        this.bitmap.skew.set(0, (curl / Math.max(1, shardWidth)) * 0.12);
+      }
+      this.bitmap.scale.set(this.bitmapScaleX, this.bitmapScaleY);
+      this.bitmap.visible = !suppressed;
       this.sprite.visible = false;
     } else {
       this.isDebris = false;
+      this.usesBitmap = false;
       const speed = Math.max(0.1, Math.hypot(vx, vy));
       const shardLength = Math.max(3.2, Math.min(18, size * (1.5 + Math.min(1.65, speed * 0.17))));
       const shardWidth = Math.max(0.9, Math.min(6.5, size * 0.7));
@@ -110,12 +166,21 @@ class Particle {
     this.y += this.vy * delta;
     this.vy += 0.1 * delta; // Gravity
 
-    if (this.isDebris) {
+    if (this.usesBitmap) {
       this.bitmap.x = this.x;
       this.bitmap.y = this.y;
-      this.bitmap.rotation += this.rotationSpeed * delta;
       const lifePercent = this.age / this.lifetime;
       this.bitmap.alpha = 1 - lifePercent;
+      if (this.isDebris) {
+        this.bitmap.rotation += this.rotationSpeed * delta;
+      } else {
+        this.bitmap.rotation = Math.atan2(this.vy, this.vx) + this.rotationSpeed * this.age * 0.08;
+        this.bitmap.alpha = Math.pow(1 - lifePercent, 1.35);
+        this.bitmap.scale.set(
+          this.bitmapScaleX * (1 - lifePercent * 0.42),
+          this.bitmapScaleY * (1 - lifePercent * 0.68)
+        );
+      }
     } else {
       this.sprite.x = this.x;
       this.sprite.y = this.y;
@@ -130,6 +195,8 @@ class Particle {
 export class ParticleManager {
   constructor(container, onCap) {
     this.container = container;
+    this.destroyed = false;
+    this.premiumImpacts = new PremiumImpacts(container);
     this.hullBreakup = new HullBreakup(container);
     this.detonations = new AstraDetonation(container);
     this.particles = [];
@@ -144,26 +211,31 @@ export class ParticleManager {
     this.lastEnergyBloomVariant = -1;
     this.energyBloomVariantCounts = [0, 0, 0, 0];
     this.onCap = onCap;
+    this.sparkTexture = getSharedSparkTexture();
     GameAssets.ensurePlasmaBloomTextures?.().catch(() => {});
   }
 
   attachParticleDisplay(particle) {
     if (!particle) return;
-    if (particle.sprite?.parent !== this.container) this.container.addChild(particle.sprite);
-    if (particle.bitmap?.parent !== this.container) this.container.addChild(particle.bitmap);
+    const display = particle.usesBitmap ? particle.bitmap : particle.sprite;
+    const unused = particle.usesBitmap ? particle.sprite : particle.bitmap;
+    if (unused?.parent === this.container) this.container.removeChild(unused);
+    if (display?.parent !== this.container) this.container.addChild(display);
   }
 
   prewarm(count = 0) {
+    if (this.destroyed) return;
     const safeCount = Math.max(0, Math.min(this.maxParticles, Math.floor(Number(count) || 0)));
     const existing = this.pool.length + this.particles.length;
     for (let i = existing; i < safeCount; i += 1) {
-      const particle = new Particle();
+      const particle = new Particle(this.sparkTexture);
       this.attachParticleDisplay(particle);
       this.pool.push(particle);
     }
   }
 
   spawnParticle(x, y, vx, vy, color, size, lifetime, texture = null, suppressed = false) {
+    if (this.destroyed) return null;
     if (this.particles.length >= this.maxParticles) {
       if (this.onCap) this.onCap('particles');
       return null;
@@ -172,7 +244,7 @@ export class ParticleManager {
       return null;
     }
 
-    const particle = this.pool.pop() || new Particle();
+    const particle = this.pool.pop() || new Particle(this.sparkTexture);
     particle.reset(x, y, vx, vy, color, size, lifetime, texture, suppressed);
     this.particles.push(particle);
 
@@ -207,6 +279,7 @@ export class ParticleManager {
   }
 
   createEnergyBloom(x, y, intensity = 1, options = {}) {
+    if (this.destroyed) return false;
     const textures = GameAssets.getPlasmaBloomTextures?.() || [];
     const variant = this.resolveEnergyBloomVariant(options.color, options.variant, textures.length);
     const texture = GameAssets.getPlasmaBloomTexture?.(variant);
@@ -283,6 +356,7 @@ export class ParticleManager {
   }
 
   createExplosion(x, y, color, intensity = 1, presentation = 'combustion') {
+    if (this.destroyed) return;
     const startedAt = isMayhemPerformanceDiagnosticsActive()
       ? (globalThis.performance?.now?.() || 0)
       : 0;
@@ -328,8 +402,10 @@ export class ParticleManager {
   }
 
   async prewarmEnergyBlooms(count = this.maxEnergyBlooms) {
+    if (this.destroyed) return 0;
     const target = Math.max(0, Math.min(this.maxEnergyBlooms, Math.floor(Number(count) || 0)));
     await GameAssets.ensurePlasmaBloomTextures?.();
+    if (this.destroyed) return 0;
     const texture = GameAssets.getPlasmaBloomTexture?.(0);
     if (!GameAssets.isValidTexture(texture)) return 0;
     const existing = this.energyBloomPool.length + this.energyBlooms.length;
@@ -519,6 +595,7 @@ export class ParticleManager {
   }
 
   createHitSpark(x, y, color = 0xffff00, intensity = 1) {
+    this.premiumImpacts.emit(x,y,22+Math.min(2,intensity)*12,'impact');
     const particleCount = Math.max(3, Math.floor(5 * Math.max(0.6, intensity)));
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -600,6 +677,8 @@ export class ParticleManager {
   }
 
   update(delta) {
+    if (this.destroyed) return;
+    this.premiumImpacts.update(delta);
     this.hullBreakup.update(delta);
     this.detonations.update(delta);
     for (let index = this.energyBlooms.length - 1; index >= 0; index -= 1) {
@@ -658,5 +737,20 @@ export class ParticleManager {
       writeIndex += 1;
     }
     this.particles.length = writeIndex;
+  }
+
+  destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.detonations.destroy();
+    this.hullBreakup.destroy();
+    this.premiumImpacts.destroy();
+    for (const particle of [...this.particles, ...this.pool]) {
+      particle.active = false;
+      particle.sprite.destroy();
+      particle.bitmap.destroy();
+    }
+    for (const sprite of [...this.energyBloomPool, ...this.energyBlooms.map(b => b.sprite)]) sprite.destroy();
+    this.particles.length = this.pool.length = this.energyBlooms.length = this.energyBloomPool.length = 0;
   }
 }

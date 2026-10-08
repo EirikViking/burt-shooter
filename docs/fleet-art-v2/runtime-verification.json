@@ -1,0 +1,1015 @@
+{
+  "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2060 (0x00001F08) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "rows": [
+    {
+      "id": "01",
+      "name": "NOVA SPARROW",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666853932584274,
+        "p95": 16.900000000001455,
+        "max": 17.5
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 1.0256338024643106,
+        "p95": 1.8000000044703484,
+        "max": 4.700000002980232
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 47656
+      }
+    },
+    {
+      "id": "02",
+      "name": "COMET COURIER",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666853932584274,
+        "p95": 16.80000000000291,
+        "max": 17.10000000000582
+      },
+      "renderAndCopyMs": {
+        "samples": 356,
+        "mean": 0.7092696630887771,
+        "p95": 1.1000000014901161,
+        "max": 1.9000000059604645
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 39976
+      }
+    },
+    {
+      "id": "03",
+      "name": "PIXEL NEEDLE",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666292134831473,
+        "p95": 16.900000000001455,
+        "max": 17.30000000000291
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.9366197183938093,
+        "p95": 1.7999999970197678,
+        "max": 4.399999998509884
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38688
+      }
+    },
+    {
+      "id": "04",
+      "name": "MINT SKATER",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666292134831494,
+        "p95": 16.90000000000873,
+        "max": 17.39999999999418
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.8969014086983573,
+        "p95": 1.8000000044703484,
+        "max": 4.300000004470348
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 36976
+      }
+    },
+    {
+      "id": "05",
+      "name": "CRIMSON BITE",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.667415730337055,
+        "p95": 16.90000000000873,
+        "max": 17.60000000000582
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.9112676056967655,
+        "p95": 1.6000000014901161,
+        "max": 5
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 39008
+      }
+    },
+    {
+      "id": "06",
+      "name": "IRON ORBIT",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 357,
+        "mean": 16.667507002801088,
+        "p95": 16.90000000000873,
+        "max": 17.30000000000291
+      },
+      "renderAndCopyMs": {
+        "samples": 356,
+        "mean": 1.0567415730420793,
+        "p95": 2.5,
+        "max": 5.399999998509884
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 40816
+      }
+    },
+    {
+      "id": "07",
+      "name": "QUASAR FAN",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666573033707873,
+        "p95": 16.89999999999418,
+        "max": 17.5
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.7554929576919113,
+        "p95": 1.2000000029802322,
+        "max": 6
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38704
+      }
+    },
+    {
+      "id": "08",
+      "name": "GLACIER SCOPE",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666853932584253,
+        "p95": 16.90000000000873,
+        "max": 17.39999999999418
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.7078873242920554,
+        "p95": 1,
+        "max": 2.899999998509884
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38864
+      }
+    },
+    {
+      "id": "09",
+      "name": "ARC STRIKER",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666853932584253,
+        "p95": 16.800000000017462,
+        "max": 17.199999999982538
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.7247887328267097,
+        "p95": 1.1000000014901161,
+        "max": 2.100000001490116
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38824
+      }
+    },
+    {
+      "id": "10",
+      "name": "SOLAR HAMMER",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.667415730337094,
+        "p95": 16.89999999999418,
+        "max": 17.39999999999418
+      },
+      "renderAndCopyMs": {
+        "samples": 356,
+        "mean": 0.6424157302617357,
+        "p95": 0.9000000059604645,
+        "max": 3.2000000029802322
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 39040
+      }
+    },
+    {
+      "id": "11",
+      "name": "CIRCUIT TAP",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.667134831460675,
+        "p95": 16.800000000017462,
+        "max": 17.29999999998836
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.6292957745177645,
+        "p95": 0.8999999985098839,
+        "max": 1.5
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38984
+      }
+    },
+    {
+      "id": "12",
+      "name": "VIOLET FEINT",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.667134831460675,
+        "p95": 16.800000000017462,
+        "max": 17.5
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.5512676056212102,
+        "p95": 0.8999999985098839,
+        "max": 1.1999999955296516
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 36976
+      }
+    },
+    {
+      "id": "13",
+      "name": "AURIC CORE",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.66657303370783,
+        "p95": 16.800000000017462,
+        "max": 17.10000000000582
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 1.0064788734828922,
+        "p95": 2.6999999955296516,
+        "max": 8.100000001490116
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 39008
+      }
+    },
+    {
+      "id": "14",
+      "name": "PLASMA SKATE",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666573033707913,
+        "p95": 16.800000000017462,
+        "max": 18
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.8154929577045038,
+        "p95": 1.3999999985098839,
+        "max": 3.5
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38704
+      }
+    },
+    {
+      "id": "15",
+      "name": "RUBY SPIKE",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.667134831460675,
+        "p95": 16.79999999998836,
+        "max": 17
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.6112676056128152,
+        "p95": 1,
+        "max": 2
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38688
+      }
+    },
+    {
+      "id": "16",
+      "name": "SPECTRAL SLIP",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666573033707913,
+        "p95": 16.800000000017462,
+        "max": 17.20000000001164
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.6095774649104602,
+        "p95": 1,
+        "max": 1.8000000044703484
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 36976
+      }
+    },
+    {
+      "id": "17",
+      "name": "COBALT GUARD",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666853932584253,
+        "p95": 16.800000000017462,
+        "max": 16.900000000023283
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.68112676042906,
+        "p95": 1.1000000014901161,
+        "max": 3.5999999940395355
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38944
+      }
+    },
+    {
+      "id": "18",
+      "name": "EMBER BURST",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.667134831460675,
+        "p95": 16.800000000017462,
+        "max": 17
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.6628169015469686,
+        "p95": 0.9000000059604645,
+        "max": 2
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 45904
+      }
+    },
+    {
+      "id": "19",
+      "name": "NEON STUTTER",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 355,
+        "mean": 16.714084507042255,
+        "p95": 16.79999999998836,
+        "max": 33.40000000002328
+      },
+      "renderAndCopyMs": {
+        "samples": 354,
+        "mean": 0.6440677965259821,
+        "p95": 1,
+        "max": 3
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38704
+      }
+    },
+    {
+      "id": "20",
+      "name": "QUARTZ NEEDLE",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.66685393258417,
+        "p95": 16.79999999998836,
+        "max": 16.899999999965075
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.8160563377637259,
+        "p95": 1.2999999970197678,
+        "max": 3.899999998509884
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 39136
+      }
+    },
+    {
+      "id": "21",
+      "name": "CHROME RAIL",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 343,
+        "mean": 17.299416909621026,
+        "p95": 17.900000000023283,
+        "max": 117.09999999997672
+      },
+      "renderAndCopyMs": {
+        "samples": 343,
+        "mean": 1.2801749270746035,
+        "p95": 3.899999998509884,
+        "max": 14.300000004470348
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 39136
+      }
+    },
+    {
+      "id": "22",
+      "name": "VERDANT FLOW",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.667134831460675,
+        "p95": 16.800000000046566,
+        "max": 17.20000000001164
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.9718309860414183,
+        "p95": 1.7999999970197678,
+        "max": 8
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38704
+      }
+    },
+    {
+      "id": "23",
+      "name": "HAZARD RAM",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.667134831460675,
+        "p95": 16.899999999965075,
+        "max": 17.100000000034925
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.8419718310866557,
+        "p95": 1.3999999985098839,
+        "max": 3.2999999970197678
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 39072
+      }
+    },
+    {
+      "id": "24",
+      "name": "NOVA OVERDRIVE",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 335,
+        "mean": 17.76208955223877,
+        "p95": 19.29999999998836,
+        "max": 66.59999999997672
+      },
+      "renderAndCopyMs": {
+        "samples": 334,
+        "mean": 1.6961077844311376,
+        "p95": 3.7999999970197678,
+        "max": 35.19999999552965
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38944
+      }
+    },
+    {
+      "id": "25",
+      "name": "ARCADE LEGEND",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 284,
+        "mean": 20.77746478873256,
+        "p95": 33.79999999998836,
+        "max": 66.79999999998836
+      },
+      "renderAndCopyMs": {
+        "samples": 283,
+        "mean": 2.3593639578709755,
+        "p95": 13.200000002980232,
+        "max": 25.700000002980232
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 40672
+      }
+    },
+    {
+      "id": "26",
+      "name": "PHASE SERAPH",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 342,
+        "mean": 17.397953216374372,
+        "p95": 17.70000000001164,
+        "max": 50.20000000001164
+      },
+      "renderAndCopyMs": {
+        "samples": 341,
+        "mean": 1.4129032258851089,
+        "p95": 3.5,
+        "max": 19.899999998509884
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 39552
+      }
+    },
+    {
+      "id": "27",
+      "name": "EIRIK THE VIKING",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.66685393258417,
+        "p95": 16.900000000023283,
+        "max": 17.399999999965075
+      },
+      "renderAndCopyMs": {
+        "samples": 356,
+        "mean": 0.9432584271462781,
+        "p95": 1.8000000044703484,
+        "max": 6.799999997019768
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 38872
+      }
+    },
+    {
+      "id": "28",
+      "name": "AEGIS COMET",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.667415730337012,
+        "p95": 16.800000000046566,
+        "max": 17.300000000046566
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.710140844885732,
+        "p95": 1.1000000014901161,
+        "max": 2
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 41040
+      }
+    },
+    {
+      "id": "29",
+      "name": "RAILBREAKER",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666853932584335,
+        "p95": 16.800000000046566,
+        "max": 17.20000000001164
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.7498591547910596,
+        "p95": 1.2000000029802322,
+        "max": 1.6000000014901161
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 40952
+      }
+    },
+    {
+      "id": "30",
+      "name": "DRONE SOVEREIGN",
+      "drag": {
+        "yaw": 1.2,
+        "pitch": 0.31499999999999995
+      },
+      "frameMs": {
+        "samples": 356,
+        "mean": 16.666853932584335,
+        "p95": 16.800000000046566,
+        "max": 17
+      },
+      "renderAndCopyMs": {
+        "samples": 355,
+        "mean": 0.8301408450998051,
+        "p95": 1.3999999985098839,
+        "max": 3.2999999970197678
+      },
+      "resources": {
+        "resident": 1,
+        "geometries": 6,
+        "textures": 8,
+        "calls": 12,
+        "triangles": 46400
+      }
+    }
+  ],
+  "finalResources": {
+    "resident": 1,
+    "geometries": 6,
+    "textures": 8,
+    "calls": 12,
+    "triangles": 47656
+  },
+  "imports": [
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+      "durationMs": 3.399999998509884,
+      "transferBytes": 300
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/02.glb",
+      "durationMs": 11.299999997019768,
+      "transferBytes": 1729964
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/03.glb",
+      "durationMs": 169.80000000447035,
+      "transferBytes": 1667336
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/04.glb",
+      "durationMs": 212.69999999552965,
+      "transferBytes": 1634888
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/05.glb",
+      "durationMs": 118.79999999701977,
+      "transferBytes": 1682044
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/06.glb",
+      "durationMs": 534.2000000029802,
+      "transferBytes": 1809776
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/07.glb",
+      "durationMs": 522.8000000044703,
+      "transferBytes": 1653580
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/08.glb",
+      "durationMs": 265.29999999701977,
+      "transferBytes": 1675760
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/09.glb",
+      "durationMs": 201.79999999701977,
+      "transferBytes": 1659428
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/10.glb",
+      "durationMs": 144.30000000447035,
+      "transferBytes": 1686496
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/11.glb",
+      "durationMs": 321.3999999985099,
+      "transferBytes": 1675236
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/12.glb",
+      "durationMs": 9.800000004470348,
+      "transferBytes": 1631116
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/13.glb",
+      "durationMs": 562.6000000014901,
+      "transferBytes": 1679488
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/14.glb",
+      "durationMs": 1157.3999999985099,
+      "transferBytes": 1653432
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/15.glb",
+      "durationMs": 229.30000000447035,
+      "transferBytes": 1665668
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/16.glb",
+      "durationMs": 138.30000000447035,
+      "transferBytes": 1635648
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/17.glb",
+      "durationMs": 83.39999999850988,
+      "transferBytes": 1676376
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/18.glb",
+      "durationMs": 132.20000000298023,
+      "transferBytes": 1833680
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/19.glb",
+      "durationMs": 125.20000000298023,
+      "transferBytes": 1664616
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/20.glb",
+      "durationMs": 289.70000000298023,
+      "transferBytes": 1688136
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/21.glb",
+      "durationMs": 1346.3999999985099,
+      "transferBytes": 1687932
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/22.glb",
+      "durationMs": 100.30000000447035,
+      "transferBytes": 1664788
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/23.glb",
+      "durationMs": 99.89999999850988,
+      "transferBytes": 1686964
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/24.glb",
+      "durationMs": 174.20000000298023,
+      "transferBytes": 1672744
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/25.glb",
+      "durationMs": 1835.5999999940395,
+      "transferBytes": 1707296
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/26.glb",
+      "durationMs": 3245.7000000029802,
+      "transferBytes": 1756604
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/27.glb",
+      "durationMs": 511.3999999985099,
+      "transferBytes": 1717020
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/28.glb",
+      "durationMs": 607,
+      "transferBytes": 1817644
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/29.glb",
+      "durationMs": 894.1999999955297,
+      "transferBytes": 1717256
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/30.glb",
+      "durationMs": 684.1000000014901,
+      "transferBytes": 1829328
+    },
+    {
+      "url": "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+      "durationMs": 629.8000000044703,
+      "transferBytes": 1856520
+    }
+  ],
+  "requests": [
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/02.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/03.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/04.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/05.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/06.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/07.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/08.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/09.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/10.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/11.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/12.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/13.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/14.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/15.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/16.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/17.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/18.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/19.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/20.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/21.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/22.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/23.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/24.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/25.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/26.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/27.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/28.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/29.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/30.glb",
+    "http://127.0.0.1:5199/art/solid-fleet-20260908/01.glb"
+  ],
+  "errors": [],
+  "warnings": []
+}

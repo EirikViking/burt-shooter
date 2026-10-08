@@ -8,7 +8,12 @@ import {
   shouldPlayChatterRequest
 } from './VoicePolicy.js';
 import { BUILD_ID } from '../buildInfo.js';
-import { HangarAmbience } from './HangarAmbience.js';
+import { HANGAR_TRACK_SRC, HangarAmbience } from './HangarAmbience.js';
+import { LegacyHangarAmbience } from './LegacyHangarAmbience.js';
+import { visualDestructionSource } from './VisualLifeSounds.js';
+
+const SILENT_NAVIGATION_EVENTS = new Set(['menuMove', 'menu_tick', 'codex_open', 'codex_move', 'codex_back']);
+const SILENT_MENU_TRANSITIONS = new Set(['ui_open', 'ui_close', 'ui_cancel']);
 
 const UI_SFX_EVENTS = new Set([
   'ui_open', 'ui_close', 'ui_error', 'ui_cancel',
@@ -106,8 +111,10 @@ class AudioController {
     this.enabled = false;
     this.musicEnabled = false;
     this.voiceEnabled = false;
-    this.ctaVoiceEnabled = true;
-    this.bossVoiceEnabled = true;
+    this.tacticalVoiceEnabled = true;
+    this.voiceDefaultTacticalOnly = false;
+    this.ctaVoiceEnabled = false;
+    this.bossVoiceEnabled = false;
     this.chatterFrequency = 'full';
     this.chatterSequence = 0;
     this.lastVoiceClassification = null;
@@ -247,7 +254,8 @@ class AudioController {
     this.menuAudioMode = 'ambient';
     if (typeof localStorage === 'undefined') return;
     this.menuVoiceEnabled = localStorage.getItem('burt_menu_voice_enabled') === 'true';
-    this.menuAudioMode = localStorage.getItem('burt_menu_audio_mode') === 'music' ? 'music' : 'ambient';
+    const savedMenuAudio = localStorage.getItem('burt_menu_audio_mode');
+    this.menuAudioMode = ['music', 'legacy'].includes(savedMenuAudio) ? savedMenuAudio : 'ambient';
 
     this.masterVolume = this.readStoredFloat('burt_volume_master', this.masterVolume);
     this.musicVolume = this.readStoredFloat('burt_volume_music', this.musicVolume);
@@ -260,11 +268,13 @@ class AudioController {
     if (savedMusic !== null) this.musicEnabled = savedMusic !== 'false' && Features.MUSIC_ENABLED;
 
     const savedVoice = localStorage.getItem('burt_voice_enabled');
-    if (savedVoice !== null) this.voiceEnabled = savedVoice !== 'false' && Features.VOICE_ENABLED;
+    this.voiceEnabled = savedVoice === 'true' && Features.VOICE_ENABLED;
+    this.tacticalVoiceEnabled = localStorage.getItem('nova_audio_tactical_announcer_enabled') !== 'false' && Features.VOICE_ENABLED;
+    this.voiceDefaultTacticalOnly = savedVoice === null;
     const savedCtaVoice = localStorage.getItem('burt_cta_voice_enabled');
-    if (savedCtaVoice !== null) this.ctaVoiceEnabled = savedCtaVoice !== 'false';
+    this.ctaVoiceEnabled = savedCtaVoice === 'true';
     const savedBossVoice = localStorage.getItem('burt_boss_voice_enabled');
-    if (savedBossVoice !== null) this.bossVoiceEnabled = savedBossVoice !== 'false';
+    this.bossVoiceEnabled = savedBossVoice === 'true';
     this.chatterFrequency = normalizeChatterFrequency(localStorage.getItem(CHATTER_FREQUENCY_KEY), this.chatterFrequency);
 
     this.applyMusicVolume();
@@ -293,11 +303,13 @@ class AudioController {
       const savedMusic = localStorage.getItem('burt_music_enabled');
       this.musicEnabled = savedMusic !== 'false' && Features.MUSIC_ENABLED;
       const savedVoice = localStorage.getItem('burt_voice_enabled');
-      this.voiceEnabled = savedVoice !== 'false' && Features.VOICE_ENABLED;
+      this.voiceEnabled = savedVoice === 'true' && Features.VOICE_ENABLED;
+      this.tacticalVoiceEnabled = localStorage.getItem('nova_audio_tactical_announcer_enabled') !== 'false' && Features.VOICE_ENABLED;
+      this.voiceDefaultTacticalOnly = savedVoice === null;
       const savedCtaVoice = localStorage.getItem('burt_cta_voice_enabled');
-      this.ctaVoiceEnabled = savedCtaVoice !== 'false';
+      this.ctaVoiceEnabled = savedCtaVoice === 'true';
       const savedBossVoice = localStorage.getItem('burt_boss_voice_enabled');
-      this.bossVoiceEnabled = savedBossVoice !== 'false';
+      this.bossVoiceEnabled = savedBossVoice === 'true';
 
       // Add debug key listener globally (only once)
       if (!this._debugKeyHandler) {
@@ -491,7 +503,8 @@ class AudioController {
   }
 
   playSfx(eventName, options = {}) {
-    if (!this.enabled) return false;
+    if (!this.enabled || SILENT_NAVIGATION_EVENTS.has(eventName)
+      || (this.inMenu && SILENT_MENU_TRANSITIONS.has(eventName))) return false;
     const frameCounters = typeof window !== 'undefined' ? window.__novaMayhemFrameCounters : null;
     if (frameCounters) frameCounters.sfxAttempts = (Number(frameCounters.sfxAttempts) || 0) + 1;
 
@@ -545,7 +558,11 @@ class AudioController {
     );
 
     // 3. Pick a non-repeating variant before returning to the start of the bag.
-    const src = options.preserveGameplayRng ? variants[0] : this.pickSfxVariant(eventName, variants);
+    const legacySrc = options.preserveGameplayRng ? variants[0] : this.pickSfxVariant(eventName, variants);
+    const sourceOrdinal=this.visualDestructionOrdinals?.[eventName]||0;
+    const visualSrc=visualDestructionSource(eventName,sourceOrdinal);
+    if(visualSrc){this.visualDestructionOrdinals||={};this.visualDestructionOrdinals[eventName]=sourceOrdinal+1;}
+    const src=visualSrc||legacySrc;
 
     // 4. Play
     if (!src) return false;
@@ -977,7 +994,13 @@ class AudioController {
   }
 
   setMenuAudioMode(mode) {
-    this.menuAudioMode = mode === 'music' ? 'music' : 'ambient';
+    const nextMode = ['music', 'legacy'].includes(mode) ? mode : 'ambient';
+    if (nextMode !== this.menuAudioMode && this.hangarAmbience) {
+      this.hangarAmbience.stop(0);
+      this.hangarAmbience.silenceRetiring();
+      this.hangarAmbience = null;
+    }
+    this.menuAudioMode = nextMode;
     try { localStorage.setItem('burt_menu_audio_mode', this.menuAudioMode); } catch { }
     if (['menu', 'scoreboard'].includes(this.currentContext)) {
       this.playMusicContext(this.currentContext, { resetPlaylist: true });
@@ -994,7 +1017,7 @@ class AudioController {
       this.currentContext=contextName;this.playlist=[];
       this.pendingTrackRequest=null;this.clearPendingTrackTimer();
       this.trackSwitchToken++;this.isSwitchingTrack=false;
-      this.hangarAmbience ||= new HangarAmbience(this.context,()=>this.enabled&&this.musicEnabled?this.clampUnit(this.masterVolume*this.musicVolume*this.musicDuckFactor*this.pauseDuckFactor*.65):0);
+      this.hangarAmbience ||= new (this.menuAudioMode === 'legacy' ? LegacyHangarAmbience : HangarAmbience)(this.context,()=>this.enabled&&this.musicEnabled?this.clampUnit(this.masterVolume*this.musicVolume*this.musicDuckFactor*this.pauseDuckFactor*.80):0);
       void this.hangarAmbience.start();
       if(!alreadyAmbient)this.fadeMusicLevel(0,.9,()=>{
         if (this.isAmbientMusicContext()) this.musicAudio.pause();
@@ -1237,6 +1260,11 @@ class AudioController {
   stopMusic() {
     this.hangarAmbience?.stop(.08);
     clearInterval(this.musicTransitionTimer);this.musicTransitionTimer=null;
+    this.pendingTrackRequest = null;
+    this.clearPendingTrackTimer();
+    this.trackSwitchToken++;
+    this.isSwitchingTrack = false;
+    this.switchStartedAt = 0;
     this.musicAudio.pause();
   }
 
@@ -1298,6 +1326,7 @@ class AudioController {
       voiceVolume: this.voiceVolume,
       musicEnabled: this.musicEnabled,
       voiceEnabled: this.voiceEnabled,
+      tacticalVoiceEnabled: this.tacticalVoiceEnabled,
       menuVoiceEnabled: this.menuVoiceEnabled,
       menuAudioMode: this.menuAudioMode,
       ctaVoiceEnabled: this.ctaVoiceEnabled,
@@ -1310,9 +1339,9 @@ class AudioController {
       currentMusicContext: this.currentContext,
       hangarAmbience: this.hangarAmbience?.debug() || null,
       musicPack: this.musicPack,
-      musicPlaying: Boolean((this.hangarAmbience?.active && this.hangarAmbience.layers.length && this.context?.state==='running') || (this.musicAudio && !this.musicAudio.paused && this.musicAudio.currentTime > 0)),
+      musicPlaying: Boolean((this.hangarAmbience?.active && this.hangarAmbience.layers.length && !this.hangarAmbience.audio?.paused) || (this.musicAudio && !this.musicAudio.paused && this.musicAudio.currentTime > 0)),
       musicReadyState: this.musicAudio?.readyState || 0,
-      currentMusicTrack: this.hangarAmbience?.active ? 'orbital_hangar_ambience' : musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
+      currentMusicTrack: this.hangarAmbience?.active ? (this.menuAudioMode === 'legacy' ? 'orbital-hangar' : HANGAR_TRACK_SRC.split('/').pop()) : musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
       lastSfxEvent: this.lastSfxEvent,
       lastSfxBus: this.lastSfxBus || null,
       lastSfxTrack: this.lastSfxTrack,
@@ -1397,6 +1426,7 @@ class AudioController {
 
   setVoiceEnabled(enabled) {
     this.voiceEnabled = Boolean(enabled) && Features.VOICE_ENABLED;
+    this.voiceDefaultTacticalOnly = false;
     try {
       localStorage.setItem('burt_voice_enabled', this.voiceEnabled);
     } catch { }
@@ -1404,6 +1434,15 @@ class AudioController {
       this.silenceVoicePlayback('voice_disabled');
     }
     return this.voiceEnabled;
+  }
+
+  setTacticalVoiceEnabled(enabled) {
+    this.tacticalVoiceEnabled = Boolean(enabled) && Features.VOICE_ENABLED;
+    try {
+      localStorage.setItem('nova_audio_tactical_announcer_enabled', String(this.tacticalVoiceEnabled));
+      if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
+    } catch { }
+    return this.tacticalVoiceEnabled;
   }
 
   setCtaVoiceEnabled(enabled) {
@@ -1494,6 +1533,12 @@ class AudioController {
 
   getActiveVoiceLock(now = Date.now()) {
     const lock = this.voicePriorityLock;
+    // Decoded duration/loading can exceed the reservation. Keep narration exclusive
+    // for the real playback, with a bounded fallback for a stalled media element.
+    if ((lock?.eventName === 'boss_death_agony' || lock?.eventName?.startsWith('mystery_arrival_')) && now < lock.startedAt + 30000 &&
+        [...this.activeVoices.values()].some(e => e.eventName === lock.eventName && !e.audio.ended)) {
+      lock.until = Math.max(lock.until, now + 500);
+    }
     if (!lock || now >= lock.until) {
       this.voicePriorityLock = null;
       return null;
@@ -1545,9 +1590,14 @@ class AudioController {
   }
 
   playVoice(eventName, options = {}) {
-    if ((this.inMenu || this.currentContext === 'menu') && !this.menuVoiceEnabled) return false;
+    if (this.voiceTransitionInProgress) return false;
+    if ((this.inMenu || this.currentContext === 'menu') && !this.menuVoiceEnabled
+      && options.ignoreMenuVoiceEnabled !== true) return false;
     if (!this.enabled) return false;
-    if (!this.voiceEnabled && options.ignoreVoiceEnabled !== true) return false;
+    const classification = classifyVoiceEvent(eventName);
+    this.lastVoiceClassification = classification;
+    if (!this.voiceEnabled && !(classification.tacticalWarning && this.tacticalVoiceEnabled)
+      && options.ignoreVoiceEnabled !== true) return false;
     if (this.masterVolume <= 0 || this.voiceVolume <= 0) {
       this.recordVoiceSuppression(eventName, 'voice_muted', Date.now(), {
         masterVolume: this.masterVolume,
@@ -1556,9 +1606,11 @@ class AudioController {
       return false;
     }
     const now = Date.now();
-    const classification = classifyVoiceEvent(eventName);
-    this.lastVoiceClassification = classification;
-    if (classification.chatter) {
+    if (classification.chatter && this.voiceDefaultTacticalOnly && options.ignoreChatterPolicy !== true) {
+      this.recordVoiceSuppression(eventName, 'fresh_profile_tactical_only', now, { category: classification.category });
+      return false;
+    }
+    if (classification.chatter && options.ignoreChatterPolicy !== true) {
       const sequence = this.chatterSequence;
       this.chatterSequence += 1;
       if (!shouldPlayChatterRequest(this.chatterFrequency, sequence)) {
@@ -1592,7 +1644,7 @@ class AudioController {
     const cooldownMs = this.readMixNumber(options.cooldownMs, mix.cooldownMs ?? 1500);
     const eventCooldownMs = Math.max(0, this.readMixNumber(options.eventCooldownMs, mix.eventCooldownMs ?? cooldownMs));
     const force = options.force === true;
-    const bypassGlobalCooldown = options.bypassGlobalCooldown === true;
+    const bypassGlobalCooldown = options.bypassGlobalCooldown === true || classification.tacticalWarning;
     const lastEventAt = this.lastVoicePlayedAt[eventName] || 0;
     if (eventCooldownMs > 0 && options.bypassEventCooldown !== true && now - lastEventAt < eventCooldownMs) {
       this.recordVoiceSuppression(eventName, 'event_cooldown', now, {
@@ -1600,18 +1652,6 @@ class AudioController {
       });
       return false;
     }
-    if (options.stopOtherVoices === true) {
-      this.stopAllVoices('exclusive_voice_request');
-    }
-    if (this.readMixNumber(options.exclusiveLockMs, 0) > 0) {
-      this.reserveVoiceLock(eventName, {
-        durationMs: options.exclusiveLockMs,
-        voicePriority,
-        force: true,
-        reason: options.exclusiveLockReason || 'exclusive_voice_request'
-      });
-    }
-
     // Celebration Rate Limiting
     const celebrations = [
       'mission_control_wave_clear',
@@ -1651,7 +1691,7 @@ class AudioController {
     }
 
     // 1. Lookup in Catalog first (supports arrays/variants)
-    let variants = SFX_CATALOG[eventName];
+    let variants = options.asset ? [options.asset] : SFX_CATALOG[eventName];
 
     // 2. Fallback to direct mapping or loose match (Legacy support)
     if (!variants) {
@@ -1666,7 +1706,18 @@ class AudioController {
       const src = this.pickVoiceVariant(eventName, variants);
       if (src) {
         const exclusiveGroup = options.exclusiveGroup || (eventName.startsWith('mission_control_') ? 'announcer' : null);
-        if (exclusiveGroup) this.stopVoiceGroup(exclusiveGroup);
+        const active = [...this.activeVoices.values()];
+        const mayReplace = active.every(entry => {
+          const current = entry.classification || classifyVoiceEvent(entry.eventName);
+          if (classification.tacticalWarning) return !current.tacticalWarning || voicePriority > entry.voicePriority;
+          if (current.tacticalWarning) return false;
+          return (this.inMenu && exclusiveGroup && entry.exclusiveGroup === exclusiveGroup)
+            || (options.stopOtherVoices === true && voicePriority >= entry.voicePriority);
+        });
+        if (!mayReplace) {
+          this.recordVoiceSuppression(eventName, 'voice_busy', now);
+          return false;
+        }
         const resolvedSrc = this.resolveVoiceSrc(src);
         const audio = new Audio(resolvedSrc);
         audio.preload = 'auto';
@@ -1674,26 +1725,41 @@ class AudioController {
         const volumeBus = options.volumeBus === 'sfx' ? 'sfx' : 'voice';
         const busVolume = volumeBus === 'sfx' ? this.sfxVolume : this.voiceVolume;
         audio.volume = this.clampUnit(this.masterVolume * busVolume * volumeMultiplier);
+        this.stopAllVoices('admitted_voice_replacement');
+        if (this.readMixNumber(options.exclusiveLockMs, 0) > 0) {
+          this.reserveVoiceLock(eventName, { durationMs: options.exclusiveLockMs, voicePriority,
+            force: true, reason: options.exclusiveLockReason || 'exclusive_voice_request' });
+        }
         const voiceId = ++this.voicePlayId;
-        const entry = { audio, eventName, src: resolvedSrc, exclusiveGroup, volumeBus, volumeMultiplier };
+        const entry = { audio, eventName, src: resolvedSrc, exclusiveGroup, volumeBus, volumeMultiplier, voicePriority, classification, onEnd: options.onEnd };
         this.activeVoices.set(voiceId, entry);
-        const cleanupVoice = () => {
+        this.applyActiveVoiceVolumes();
+        let completionSent=false;
+        const cleanupVoice = (reason = 'ended') => {
+          if (completionSent) return;
+          completionSent = true;
+          audio.removeEventListener?.('ended', cleanupVoice);
+          audio.removeEventListener?.('error', cleanupVoice);
+          try { audio.pause(); } catch { }
           if (this.activeVoices.get(voiceId)?.audio === audio) {
             this.activeVoices.delete(voiceId);
           }
           if (exclusiveGroup && this.activeVoiceGroups[exclusiveGroup]?.audio === audio) {
             delete this.activeVoiceGroups[exclusiveGroup];
           }
+          try { options.onEnd?.(reason); } catch (error) { console.warn('[Audio] Voice completion callback failed', error); }
         };
+        entry.finish = cleanupVoice;
         if (exclusiveGroup) {
           this.activeVoiceGroups[exclusiveGroup] = entry;
         }
         audio.addEventListener('ended', cleanupVoice, { once: true });
+        audio.addEventListener('error', cleanupVoice, { once: true });
         audio.play().catch(e => {
           cleanupVoice();
           this.handleVoicePlayFailure(eventName, audio.src, e);
         });
-        this.duckMusic(
+        if(options.duckMusic !== false) this.duckMusic(
           this.readMixNumber(options.duckFactor, mix.duckFactor ?? 0.5),
           this.readMixNumber(options.duckMs, mix.duckMs ?? 1900)
         );
@@ -1729,31 +1795,32 @@ class AudioController {
   stopVoiceGroup(groupName) {
     const active = this.activeVoiceGroups?.[groupName];
     if (!active?.audio) return false;
+    this.voiceTransitionInProgress = true;
     try {
-      active.audio.pause();
-      active.audio.currentTime = 0;
-    } catch { }
-    for (const [voiceId, entry] of this.activeVoices || []) {
-      if (entry?.audio === active.audio || entry?.exclusiveGroup === groupName) {
-        this.activeVoices.delete(voiceId);
+      for (const [voiceId, entry] of [...(this.activeVoices || [])]) {
+        if (entry?.audio === active.audio || entry?.exclusiveGroup === groupName) {
+          if (entry.finish) entry.finish('group_stopped');
+          else { entry.audio?.pause(); this.activeVoices.delete(voiceId); }
+        }
       }
-    }
-    delete this.activeVoiceGroups[groupName];
+      if (this.activeVoiceGroups[groupName] === active) delete this.activeVoiceGroups[groupName];
+    } finally { this.voiceTransitionInProgress = false; }
     return true;
   }
 
   stopAllVoices(reason = 'manual') {
     let stopped = 0;
-    for (const [voiceId, entry] of this.activeVoices || []) {
+    const previousTransition = this.voiceTransitionInProgress;
+    this.voiceTransitionInProgress = true;
+    try { for (const [voiceId, entry] of [...(this.activeVoices || [])]) {
       if (!entry?.audio) continue;
-      try {
-        entry.audio.pause();
-        entry.audio.currentTime = 0;
-      } catch { }
-      this.activeVoices.delete(voiceId);
+      if (entry.finish) entry.finish(reason);
+      else { try { entry.audio.pause(); } catch { } this.activeVoices.delete(voiceId); }
       stopped += 1;
+    } } finally { this.voiceTransitionInProgress = previousTransition; }
+    for (const [group,entry] of Object.entries(this.activeVoiceGroups)) {
+      if (![...this.activeVoices.values()].includes(entry)) delete this.activeVoiceGroups[group];
     }
-    this.activeVoiceGroups = {};
     if (stopped && this.isVerboseDiagnostics()) {
       console.log(`[Audio] stopped ${stopped} active voice(s): ${reason}`);
     }
@@ -1787,6 +1854,9 @@ class AudioController {
     if (kind === 'voice') {
       return this.playVoice('mission_control_launch', {
         force: true,
+        ignoreVoiceEnabled: true,
+        ignoreMenuVoiceEnabled: true,
+        ignoreChatterPolicy: true,
         eventCooldownMs: 0,
         volume: 0.78,
         duckFactor: 0.54,

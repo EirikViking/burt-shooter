@@ -12,7 +12,7 @@ const main = readFileSync('src/main.js', 'utf8');
 
 const requiredTokens = [
   'function shipRecommendationScore',
-  'this.recommendedShip = this.getRecommendedShip()',
+  'this.onslaughtAdvice?.ship || null : this.getRecommendedShip()',
   'createRecommendationBanner',
   'updateRecommendationBanner',
   'RECOMMENDED HULL',

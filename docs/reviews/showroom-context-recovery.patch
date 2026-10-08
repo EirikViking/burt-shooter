@@ -1,0 +1,37 @@
+diff --git a/src/ui/AstraTurntable.js b/src/ui/AstraTurntable.js
+index d696d8c..bef02f8 100644
+--- a/src/ui/AstraTurntable.js
++++ b/src/ui/AstraTurntable.js
+@@ -43,9 +43,11 @@ export class AstraTurntable extends Container{
+   // Render only when the angle changes. Idle menus retain a full-resolution
+   // frame without spending GPU time on an unchanged ship.
+   if(this.lastRenderedAngle === undefined || Math.abs(this.viewAngle-this.lastRenderedAngle)>.0005 || Math.abs(this.pitch-this.lastRenderedPitch)>.0005){
+-   if(this.solid.render(this.viewAngle,this.pitch))this.liveTexture.source.update();
+-   this.lastRenderedAngle=this.viewAngle;
+-   this.lastRenderedPitch=this.pitch;
++   if(this.solid.render(this.viewAngle,this.pitch)){
++    this.liveTexture.source.update();
++    this.lastRenderedAngle=this.viewAngle;
++    this.lastRenderedPitch=this.pitch;
++   }
+   }
+  }
+  destroy(options){
+diff --git a/src/ui/SolidShipView.js b/src/ui/SolidShipView.js
+index bd40dd5..45276df 100644
+--- a/src/ui/SolidShipView.js
++++ b/src/ui/SolidShipView.js
+@@ -135,10 +135,13 @@ export class SolidShipView {
+   render(angle, pitch=0) {
+     if (!this.ready || this.disposed) return false;
+     const r = getRenderer();
++    // Keep the last complete canvas frame while WebGL is recovering.
++    if (r.getContext().isContextLost()) return false;
+     if (r.domElement.width !== this.size) r.setSize(this.size, this.size, false);
+     this.pivot.rotation.y = angle;
+     this.pivot.rotation.x = pitch;
+     r.render(this.scene, this.camera);
++    if (r.getContext().isContextLost()) return false;
+     this.ctx.clearRect(0,0,this.size,this.size);
+     this.ctx.drawImage(r.domElement,0,0);
+     return true;

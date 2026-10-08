@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -8,6 +8,11 @@ const setLive = process.env.STEAM_SET_LIVE || '';
 const desc = process.env.STEAM_BUILD_DESC || 'Nova Swarm Windows release candidate';
 const outputPath = path.resolve(process.env.STEAM_VDF_OUTPUT || 'release/steamworks/app_build_LOCAL.vdf');
 const templatePath = path.resolve('release/steamworks/app_build_TEMPLATE.vdf');
+const payloadRoot = process.env.STEAM_PAYLOAD_ROOT && path.resolve(process.env.STEAM_PAYLOAD_ROOT);
+
+if (payloadRoot && !existsSync(path.join(payloadRoot, 'Nova Swarm.exe'))) {
+  throw new Error(`STEAM_PAYLOAD_ROOT must contain Nova Swarm.exe: ${payloadRoot}`);
+}
 
 if (!appId || !/^\d+$/.test(appId)) {
   throw new Error('STEAM_APP_ID must be set to the numeric Steamworks app ID.');
@@ -22,6 +27,9 @@ const rendered = template
   .replace('STEAM_APP_ID_HERE', appId)
   .replace('STEAM_DEPOT_ID_HERE', depotId)
   .replace('"Desc" "Nova Swarm Windows release candidate"', `"Desc" "${escapeVdf(desc)}"`)
+  .replace(/"ContentRoot"\s+"[^"]*"/, payloadRoot
+    ? `"ContentRoot" "${escapeVdf(payloadRoot.replaceAll(path.sep, '/'))}"`
+    : '$&')
   .replace('"SetLive" ""', `"SetLive" "${escapeVdf(setLive)}"`);
 
 mkdirSync(path.dirname(outputPath), { recursive: true });

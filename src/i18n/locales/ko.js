@@ -1,3 +1,10 @@
+import { getGameOverQualitySourceText } from '../gameOverQualityText.js';
+import { getFirstLightSourceText } from '../firstLightText.js';
+import { getOnslaughtText } from '../onslaughtText.js';
+import { getAudioSettingsHelpText } from '../audioSettingsHelpText.js';
+import { getMysterySourceText } from '../mysteryText.js';
+import {getDiscoveryText} from '../discoveryText.js';
+import { getTractorFleetSourceText } from '../tractorFleetText.js';
 import { getMenuAudioSourceText } from '../menuAudioText.js';
 import { getActivePilotingText } from '../activePilotingText.js';
 import { getLaunchHomeSourceText } from '../launchHomeText.js';
@@ -33,6 +40,7 @@ import { getHighSectorSourceText } from '../highSectorSourceText.js';
 import { getLateGameExperimentSourceText } from '../lateGameExperimentSourceText.js';
 
 const sourceText = Object.freeze({
+  ...getAudioSettingsHelpText('ko'),
   'MOVE — WASD / ARROWS  •  SHOOT — SPACE': '이동 — WASD / 방향키  •  발사 — SPACE',
   'MOVE — STICK / D-PAD  •  SHOOT — A / RT': '이동 — 스틱 / D-PAD  •  발사 — A / RT',
   'PHASE — SHIFT': '위상 — SHIFT',
@@ -874,6 +882,11 @@ const sourceText = Object.freeze({
   'VOICE': '음성',
   'Boss Voices': '보스 음성',
   'CTA VOICE': '재도전 음성',
+  'RETRY VOICE': '재도전 음성',
+  'POST-RUN VOICE': '결과 화면 음성',
+  'TACTICAL WARNINGS': '전술 경고',
+  'Tactical Warnings play incoming threats even with Voice off. Retry Voice controls retry prompts. Chatter Rate affects optional voices.': '일반 음성이 꺼져 있어도 전술 경고는 다가오는 위협을 알립니다. 재도전 음성은 다시 시도하라는 안내를 제어합니다. 잡담 빈도는 선택 음성에만 적용됩니다.',
+  'Tactical Warnings announce incoming threats even with Voice off. Post-Run Voice invites another try on the results screen. Chatter Rate affects optional voices.': '일반 음성이 꺼져 있어도 전술 경고는 다가오는 위협을 알립니다. 결과 화면 음성은 다시 도전하라고 안내합니다. 잡담 빈도는 선택 음성에만 적용됩니다.',
   'Chatter Frequency': '잡담 빈도',
   'CHATTER RATE': '잡담 빈도',
   'Full': '전체',
@@ -1457,6 +1470,7 @@ const sourceText = Object.freeze({
   'Reach sector 15 in overrun and pilot rank 13': '오버런에서 섹터 15에 도달하고 파일럿 랭크 13을 달성하세요',
   'Discover 160 Threat Codex entries and reach pilot rank 14': '위협 Codex 항목 160개를 발견하고 파일럿 랭크 14를 달성하세요',
   'Clear the arcade run 3 times and reach pilot rank 14': '아케이드 런을 3번 클리어하고 파일럿 랭크 14를 달성하세요',
+  "Clear Sector 10 in Mayhem with 2 lives left, or score 500,000 in Mayhem": "메이헴에서 목숨 2개를 남기고 구역 10을 클리어하거나 메이헴에서 500,000점 달성",
   'Clear with 2 lives remaining or score 500,000': '목숨 2개를 남기고 클리어하거나 500,000점을 기록하세요',
   'Clear twice, reach rank 16, and discover 180 threats': '두 번 클리어하고 랭크 16을 달성하며 위협 180개를 발견하세요',
   'HULLS READY': '기체 준비',
@@ -1477,6 +1491,7 @@ const sourceText = Object.freeze({
   'Qualify for the global leaderboard.': '글로벌 순위표에 진입하세요.',
   'Swarm Elite': '스웜 엘리트',
   'Submit a 750,000-point ranked run.': '랭크 런에서 750,000점 기록을 제출하세요.',
+  'Submit a ranked score of at least 250,000 points. Modes: Arcade Tactical, Arcade Pure, Onslaught Tactical.': '250,000점 이상의 랭크 기록을 제출하세요. 모드: Arcade Tactical, Arcade Pure, Onslaught Tactical.',
   'Legacy Ranked Run': '이전 랭크 런',
   'Unknown Run Mode': '알 수 없는 런 모드',
   'First Ranked Run': 'Cheot raengkeu reon',
@@ -1856,6 +1871,8 @@ const overhaulSourceText = Object.freeze({
 
 export const ko = {
   code: 'ko',
+  history: { unknownMode: "모드 정보 없음", sectorUnrecorded: "섹터 기록 없음", sectorUnrecordedHint: "이전 Steam 기록에는 섹터 정보가 저장되지 않았습니다." },
+  recovery: {storageHelp:"저장에 실패했습니다. 게임을 종료하지 말고 디스크 공간을 확보하거나 저장 폴더 접근 권한을 복구하세요. 자동으로 다시 저장합니다. 저장에 성공할 때까지 재시작할 수 없습니다.","title":"문제가 발생하여 게임이 일시정지되었습니다","help":"화면이 복구되면 일시정지 메뉴로 돌아가세요. 재시작하면 진행 중인 비행이 종료되며, 이미 저장된 진행 상황은 유지됩니다. 다시 발생하면 빌드 정보와 recovery/recovery-latest.json을 보고서에 포함해 주세요.","resume":"일시정지 메뉴로 돌아가기","restart":"게임 재시작"},
   name: 'Korean',
   nativeName: '한국어',
   settings: {
@@ -1877,6 +1894,6 @@ export const ko = {
   diagnostics: {
     interfaceLanguage: '인터페이스 언어'
   },
-  sourceText: Object.freeze({ ...getMenuAudioSourceText('ko'), ...getActivePilotingText('ko'), ...getLaunchHomeSourceText('ko'), ...getShipTraitSummarySourceText("ko"), ...getBonusCoreSourceText('ko'), ...getBonusDroneSourceText('ko'), ...getCoreSerpentSourceText('ko'), ...getAstraPresentationSourceText('ko'), ...getFirstRunRetentionSourceText('ko'), ...getModeBriefingReviewSourceText('ko'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getOverrunModeSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko'), ...getTyrianFeedbackSourceText('ko'), ...getCompetitionLearningSourceText('ko'), ...getTacticalDraftClaritySourceText('ko'), ...getWonderCodexSourceText('ko'), ...getHangarLaunchModeSourceText('ko'), ...getNewestTyrianFeedbackSourceText('ko'), ...getSecondPolishSourceText('ko'), ...getTyrian112SourceText('ko'), ...getHighSectorSourceText('ko'), ...getLateGameExperimentSourceText('ko') }),
+  sourceText: Object.freeze({ ...getFirstLightSourceText('ko'), ...getOnslaughtText('ko'), "Steam: Upload pending":"Steam: 업로드 대기 중","Steam: Upload not confirmed":"Steam: 업로드 미확인", "TEST FLIGHT · SECTOR {sector} · CHOOSE ANY SHIP": "시험 비행 · 섹터 {sector} · 모든 함선 선택 가능", ...getMysterySourceText('ko'), ...getDiscoveryText('ko'), ...getTractorFleetSourceText('ko'), ...getMenuAudioSourceText('ko'), ...getActivePilotingText('ko'), ...getLaunchHomeSourceText('ko'), ...getShipTraitSummarySourceText("ko"), ...getBonusCoreSourceText('ko'), ...getBonusDroneSourceText('ko'), ...getCoreSerpentSourceText('ko'), ...getAstraPresentationSourceText('ko'), ...getFirstRunRetentionSourceText('ko'), ...getModeBriefingReviewSourceText('ko'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getOverrunModeSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko'), ...getTyrianFeedbackSourceText('ko'), ...getCompetitionLearningSourceText('ko'), ...getTacticalDraftClaritySourceText('ko'), ...getWonderCodexSourceText('ko'), ...getHangarLaunchModeSourceText('ko'), ...getNewestTyrianFeedbackSourceText('ko'), ...getSecondPolishSourceText('ko'), ...getTyrian112SourceText('ko'), ...getHighSectorSourceText('ko'), ...getLateGameExperimentSourceText('ko'), ...getGameOverQualitySourceText('ko') }),
   patterns
 };

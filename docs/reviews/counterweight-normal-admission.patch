@@ -1,0 +1,40 @@
+diff --git a/src/config/ConvoySurpriseCatalog.js b/src/config/ConvoySurpriseCatalog.js
+--- a/src/config/ConvoySurpriseCatalog.js
++++ b/src/config/ConvoySurpriseCatalog.js
+@@ -1,30 +1,35 @@
+ import {pacingRoll,encounterFamilyReady,recordEncounterFamily} from './EncounterPacing.js';
+ import {REACTOR_TOW} from '../game/ReactorTow.js';
+ import {COUNTERWEIGHT} from '../game/Counterweight.js';
+ const CONTACT_FAMILIES=Object.freeze(['rescue_contact']);
+ // Parts divide the original convoy's six scaled HP. No new bounty or drop.
+ export const CONVOY_SURPRISES=Object.freeze([
+  {id:'twin-jailers',mechanic:'split-rescue-support',hull:0,parts:{left:2,right:2,leftGun:1,rightGun:1}},
+  {id:'crossed-chains',mechanic:'crossing-tether-stop',hull:1,parts:{left:2,right:2,leftTether:1,rightTether:1}},
+  {id:'prisoner-exchange',mechanic:'transfer-interruption',hull:3,parts:{left:2,right:2,relay:1,gun:1}},
+  {id:'last-shuttle',mechanic:'pursuit-propulsion',hull:1,parts:{left:2,right:2,drive:1,gun:1}},
+  {id:'convoy-split',mechanic:'forking-hull',hull:0,parts:{left:2,right:2,gun:2}},
+  {id:'shielded-evacuation',mechanic:'projector-to-cover',hull:2,parts:{left:2,right:2,leftShield:1,rightShield:1}},
+  {id:'stolen-callsign',mechanic:'mimic-emitter',hull:2,parts:{left:2,right:2,emitter:2}},
+  {id:'rescue-tow',mechanic:'tow-extraction',hull:3,parts:{left:2,right:2,gun:2}},
+- {...REACTOR_TOW,mechanic:'relocate-or-cancel-discharge'}
++ {...REACTOR_TOW,mechanic:'relocate-or-cancel-discharge'},
++ {...COUNTERWEIGHT,mechanic:'counterweighted-aim'}
+ ].map(row=>Object.freeze({...row,family:row.family||'rescue_contact',recoveryFamilies:row.recoveryFamilies||CONTACT_FAMILIES,duration:16,parts:Object.freeze(row.parts)})));
+ export const convoySurpriseById=id=>CONVOY_SURPRISES.find(row=>row.id===id)||null;
+ export const convoySurpriseFamilies=id=>convoySurpriseById(id)?.recoveryFamilies||CONTACT_FAMILIES;
+ export const convoySurpriseReady=(game,id)=>convoySurpriseFamilies(id).every(family=>encounterFamilyReady(game,family));
+ export function recordConvoySurprise(game,id){for(const family of convoySurpriseFamilies(id))recordEncounterFamily(game,family);}
+ export function convoySurpriseOrder(seed){
+  const rows=CONVOY_SURPRISES.filter(row=>!['reactor-tow','counterweight'].includes(row.id)).map(row=>row.id);
+  for(let i=rows.length-1;i>0;i--){const j=Math.floor(pacingRoll(seed,i,'rescue-library')*(i+1));[rows[i],rows[j]]=[rows[j],rows[i]];}
+  // Initial introduction hypothesis: one of the first three EXISTING contact
+  // opportunities (sectors 3/6/9 if all are eligible). Preserve the eight rescues'
+  // relative order; no additional spawn, profile history or ranked RNG draw.
+  rows.splice(Math.floor(pacingRoll(seed,0,'reactor-introduction')*3),0,'reactor-tow');
++ // Introduction hypothesis: the two-gun choice follows the simpler reactor
++ // in the next EXISTING opportunity. Preserve all nine earlier cards' order.
++ // No additional spawn, roll, progression history or shortened recovery.
++ rows.splice(rows.indexOf('reactor-tow')+1,0,'counterweight');
+  return rows;
+ }
+ export function convoySurpriseSector(sector){return Number.isInteger(sector)&&sector>=3&&sector%3===0&&![1,2].includes(sector%10);}

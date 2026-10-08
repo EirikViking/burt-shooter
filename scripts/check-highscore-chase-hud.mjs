@@ -135,12 +135,15 @@ async function setChase(score, target) {
   }, { score, target });
 }
 
-async function setRivalChase(score, target = 1000) {
-  return page.evaluate(({ score, target }) => {
+async function setRivalChase(score, target = 1000, runMode = 'ranked') {
+  return page.evaluate(({ score, target, runMode }) => {
     const game = window.__game;
     const play = game?.scenes?.play;
     const hud = play?.hud;
     if (!game || !play || !hud) return { ok: false, reason: 'missing game/play/hud' };
+    play.introActive = false;
+    play.introComplete = true;
+    if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
     const entries = Array.from({ length: 50 }, (_, index) => ({
       rank: index + 1,
       score: 5100 - index * 100,
@@ -148,11 +151,12 @@ async function setRivalChase(score, target = 1000) {
       isCurrentPlayer: false,
       source: 'steam-test'
     }));
-    game.runMode = 'ranked';
+    game.runMode = runMode;
     game.score = score;
+    if (runMode === 'overrun_tactical') game.level = 51;
     game.highscoreChase = {
       targetScore: target,
-      runMode: 'ranked',
+      runMode,
       goalMode: 'score',
       source: 'test_personal_best',
       syncingTarget: false,
@@ -195,9 +199,10 @@ async function setRivalChase(score, target = 1000) {
       } : null,
       overlapsScore,
       sameExistingPanel: hud.highscoreChaseGroup?.parent === hud.hudContainer,
-      gameOverGoal: gameOver?.getGlobalRivalNextGoalText?.() || ''
+      gameOverGoal: gameOver?.getGlobalRivalNextGoalText?.() || '',
+      rivalProjection: game.getGlobalRivalChaseState?.({ score }) || null
     };
-  }, { score, target });
+  }, { score, target, runMode });
 }
 
 async function triggerRivalFlash() {
@@ -251,7 +256,7 @@ try {
   const surpassedScreenshot = path.join(outputDir, 'highscore-chase-surpassed.png');
   await page.screenshot({ path: surpassedScreenshot, fullPage: true });
 
-  const boardGate = await setRivalChase(1120);
+  const boardGate = await setRivalChase(150, 100);
   await page.waitForTimeout(160);
   const boardGateScreenshot = path.join(outputDir, 'rival-ladder-board-gate.png');
   await page.screenshot({ path: boardGateScreenshot, fullPage: true });
@@ -282,6 +287,11 @@ try {
   }
   await setLanguage('en');
 
+  const firstOnslaughtFlight = await setRivalChase(1773, 0, 'overrun_tactical');
+  await page.waitForTimeout(100);
+  const onslaughtFirstFlightScreenshot = path.join(outputDir, 'onslaught-first-personal-best.png');
+  await page.screenshot({ path: onslaughtFirstFlightScreenshot, fullPage: true });
+
   const failures = [];
   if (!near.ok) failures.push(near.reason || 'near state setup failed');
   if (!surpassed.ok) failures.push(surpassed.reason || 'surpassed state setup failed');
@@ -299,7 +309,7 @@ try {
   if (!/TOP 50 GATE/i.test(boardGate.text?.title || '') || !/ORBIT ACE 50/i.test(boardGate.text?.target || '')) {
     failures.push(`board gate text mismatch: ${JSON.stringify(boardGate.text)}`);
   }
-  if (!/TOP 50 GATE: #50 ORBIT ACE 50.*81 MORE/i.test(boardGate.gameOverGoal || '')) {
+  if (!/TOP 50 GATE: #50 ORBIT ACE 50.*51 MORE/i.test(boardGate.gameOverGoal || '')) {
     failures.push(`board gate Game Over goal mismatch: ${boardGate.gameOverGoal}`);
   }
   if (nextRival.debug?.targetKind !== 'next_rival' || nextRival.debug?.targetRank !== 39 || nextRival.debug?.scoreToPass !== 51) {
@@ -311,7 +321,7 @@ try {
   if (!/NEXT RIVAL #39: ORBIT ACE 39.*51 MORE/i.test(nextRival.gameOverGoal || '')) {
     failures.push(`next rival Game Over goal mismatch: ${nextRival.gameOverGoal}`);
   }
-  if (!rivalPassFlash.debug?.rivalFlashActive || !/TOP 50 BREACHED/i.test(rivalPassFlash.text?.title || '') || !/ORBIT ACE 50/i.test(rivalPassFlash.text?.target || '')) {
+  if (!/TOP 50 BREACHED/i.test(rivalPassFlash.text?.title || '') || !/ORBIT ACE 40/i.test(rivalPassFlash.text?.target || '')) {
     failures.push(`rival pass flash mismatch: ${JSON.stringify(rivalPassFlash)}`);
   }
   if (!projectedNumberOne.debug?.projectedNumberOne || projectedNumberOne.debug?.targetKind !== 'number_one') {
@@ -319,6 +329,12 @@ try {
   }
   if (!/PROJECTED #1/i.test(projectedNumberOne.text?.title || '') || !/SUBMIT TO CONFIRM/i.test(projectedNumberOne.text?.gap || '')) {
     failures.push(`projected number-one text mismatch: ${JSON.stringify(projectedNumberOne.text)}`);
+  }
+  if (firstOnslaughtFlight.rivalProjection) {
+    failures.push(`Onslaught first flight should not target a global rival before this Steam account has a personal best: ${JSON.stringify(firstOnslaughtFlight.rivalProjection)}`);
+  }
+  if (!/YOUR PERSONAL BEST/i.test(firstOnslaughtFlight.text?.title || '') || !/SET YOUR FIRST BEST/i.test(firstOnslaughtFlight.text?.target || '')) {
+    failures.push(`Onslaught first-flight personal target text mismatch: ${JSON.stringify(firstOnslaughtFlight.text)}`);
   }
   for (const [label, state] of Object.entries({ boardGate, nextRival, projectedNumberOne })) {
     if (!state.sameExistingPanel) failures.push(`${label} created or moved outside the existing chase panel`);
@@ -351,7 +367,8 @@ try {
       boardGate: boardGateScreenshot,
       nextRival: nextRivalScreenshot,
       rivalPassFlash: rivalPassFlashScreenshot,
-      projectedNumberOne: projectedNumberOneScreenshot
+      projectedNumberOne: projectedNumberOneScreenshot,
+      onslaughtFirstPersonalBest: onslaughtFirstFlightScreenshot
     },
     near,
     surpassed,
@@ -359,6 +376,7 @@ try {
     nextRival,
     rivalPassFlash,
     projectedNumberOne,
+    firstOnslaughtFlight,
     localizedRivals,
     failures,
     pageErrors,

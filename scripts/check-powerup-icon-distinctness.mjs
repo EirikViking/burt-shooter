@@ -85,8 +85,9 @@ async function inspect(type, filePath) {
   const image = sharp(bytes, { failOn: 'error' });
   const metadata = await image.metadata();
   if (metadata.format !== 'png') errors.push(`${type}: expected PNG, got ${metadata.format || 'unknown'}`);
-  if (metadata.width !== REQUIRED_SIZE || metadata.height !== REQUIRED_SIZE) {
-    errors.push(`${type}: expected ${REQUIRED_SIZE}x${REQUIRED_SIZE}, got ${metadata.width}x${metadata.height}`);
+  const nativeSize = type === 'rail_surge' || type === 'row_core' ? 1254 : REQUIRED_SIZE;
+  if (metadata.width !== nativeSize || metadata.height !== nativeSize) {
+    errors.push(`${type}: expected ${nativeSize}x${nativeSize}, got ${metadata.width}x${metadata.height}`);
   }
   if (!metadata.hasAlpha || metadata.channels !== 4) errors.push(`${type}: PNG must have an alpha channel`);
 
@@ -131,8 +132,8 @@ async function inspect(type, filePath) {
   }
 
   // Compare the symbol-dominant inner half so shared Nova framing cannot hide reused artwork.
-  const cropInset = Math.round(REQUIRED_SIZE * 0.25);
-  const cropSize = REQUIRED_SIZE - cropInset * 2;
+  const cropInset = Math.round(nativeSize * 0.25);
+  const cropSize = nativeSize - cropInset * 2;
   const { data: fingerprintPixels } = await sharp(bytes)
     .extract({ left: cropInset, top: cropInset, width: cropSize, height: cropSize })
     .flatten({ background: '#020812' })

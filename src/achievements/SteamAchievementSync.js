@@ -1,4 +1,4 @@
-import { getAchievementIds, isValidAchievementId } from './AchievementCatalog.js';
+import { getAchievementIds, getPublishedAchievementIds, isValidAchievementId } from './AchievementCatalog.js';
 
 const QUEUE_KEY = 'nova_swarm_steam_achievement_queue_v1';
 
@@ -51,6 +51,7 @@ export class SteamAchievementSync {
     this.bridge = options.bridge ?? null;
     this.getBridge = typeof options.getBridge === 'function' ? options.getBridge : () => this.bridge || resolveBridge();
     this.validIds = new Set(options.validIds || getAchievementIds());
+    this.publishedIds = new Set(options.publishedIds || getPublishedAchievementIds());
     this.queue = new Set(readQueue(this.storage).filter((id) => this.validIds.has(id)));
     this.inFlight = new Set();
     this.lastResult = null;
@@ -91,6 +92,10 @@ export class SteamAchievementSync {
 
   async unlock(id) {
     if (!this.validIds.has(id)) return { ok: false, ignored: true, reason: 'invalid_achievement_id' };
+    if (!this.publishedIds.has(id)) {
+      this.queueUnlock(id);
+      return { ok: true, queued: true, reason: 'awaiting_steam_publication' };
+    }
     if (this.inFlight.has(id)) return { ok: true, queued: this.queue.has(id), reason: 'unlock_already_in_flight' };
     this.inFlight.add(id);
     try {
@@ -109,7 +114,7 @@ export class SteamAchievementSync {
   }
 
   async retryQueued() {
-    const ids = [...this.queue];
+    const ids = [...this.queue].filter((id) => this.publishedIds.has(id));
     if (ids.length === 0) return { ok: true, requested: [], synced: [], failed: [] };
     const result = await this.callBridge('syncUnlockedAchievements', { ids });
     this.lastResult = { type: 'retryQueued', result, recordedAt: new Date().toISOString() };
@@ -123,13 +128,15 @@ export class SteamAchievementSync {
   async syncWithLocal(manager) {
     const localIds = typeof manager?.getUnlocked === 'function' ? manager.getUnlocked() : [];
     const requested = [...new Set([...localIds, ...this.queue])].filter((id) => this.validIds.has(id));
-    const result = await this.callBridge('syncUnlockedAchievements', { ids: requested });
+    const ready = requested.filter((id) => this.publishedIds.has(id));
+    requested.filter((id) => !this.publishedIds.has(id)).forEach((id) => this.queueUnlock(id));
+    const result = await this.callBridge('syncUnlockedAchievements', { ids: ready });
     this.lastResult = { type: 'syncWithLocal', result, recordedAt: new Date().toISOString() };
     if (result?.ok || Array.isArray(result?.synced) || Array.isArray(result?.skipped)) {
       for (const id of [...(result.synced || []), ...(result.skipped || [])]) this.queue.delete(id);
       this.persistQueue();
     } else {
-      requested.forEach((id) => this.queueUnlock(id));
+      ready.forEach((id) => this.queueUnlock(id));
     }
     const steamUnlockedIds = (result?.steamUnlockedIds || []).filter((id) => this.validIds.has(id));
     if (steamUnlockedIds.length && typeof manager?.importUnlocked === 'function') {

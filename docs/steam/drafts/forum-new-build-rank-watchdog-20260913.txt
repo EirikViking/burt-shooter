@@ -1,0 +1,5 @@
+TITLE: Test build update
+
+Thanks for the reports. This build fixes stale Career Rank display, keeps rank number/title/badge together, and removes the false startup freeze warning. The earlier Bomb, encounter, results and sound fixes remain included.
+
+Please test the updated Steam beta and check that your own leaderboard row matches Hangar. I hope to have this build live within 24 hours.

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {mkdirSync,writeFileSync} from 'node:fs';
-const out='test-results/colossus-balance';mkdirSync(out,{recursive:true});
+const out=process.env.CHECK_OUTPUT_DIR||'test-results/colossus-balance';mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({channel:'chrome',headless:true});
 const reports=[];
 try{

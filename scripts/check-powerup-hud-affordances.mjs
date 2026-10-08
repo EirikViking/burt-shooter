@@ -219,6 +219,56 @@ try {
   const refreshedArtScreenshot = path.join(outputDir, 'powerup-hud-refreshed-art.png');
   await page.screenshot({ path: refreshedArtScreenshot, fullPage: true });
 
+  const dynamicCornerLaneState = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const hud = play?.hud;
+    const player = play?.player;
+    if (!game || !play || !hud || !player) return { ok: false, reason: 'missing corner-lane game/play/hud/player' };
+    const bounds = (node) => {
+      if (!node?.getBounds) return null;
+      const value = node.getBounds();
+      return { x: value.x, y: value.y, width: value.width, height: value.height };
+    };
+    const overlaps = (a, b) => Boolean(a && b
+      && a.x < b.x + b.width && a.x + a.width > b.x
+      && a.y < b.y + b.height && a.y + a.height > b.y);
+
+    player.getActivePowerupStates = () => ([{
+      type: 'shield', iconType: 'shield', label: 'SHIELD', remainingMs: 9000, durationMs: 15000, color: 0x66ffff
+    }]);
+    play.grazeBreakReady = false;
+    hud.updateActivePowerup();
+    const toast = play.showToastNow('GRAZE BREAK ARMED', {
+      fontSize: 21, fill: '#ff66ff', slot: 'corner', type: 'dangerDodge', duration: 950
+    }, 'corner');
+    play.activeCornerToast = toast;
+
+    player.getActivePowerupStates = () => ([
+      { type: 'shield', iconType: 'shield', label: 'SHIELD', remainingMs: 9000, durationMs: 15000, color: 0x66ffff },
+      { type: 'slow_time', iconType: 'slow_time', label: 'SLOW TIME', remainingMs: 5000, durationMs: 8000, color: 0x9a8cff },
+      { type: 'point_defense', iconType: 'point_defense', label: 'P-DEF', remainingMs: 4200, durationMs: 10000, color: 0x66ffff }
+    ]);
+    play.grazeBreakReady = true;
+    play.grazeBreakExpiresAt = play.getGameplayClockMs() + 6500;
+    hud.updateActivePowerup();
+    toast.__toastTicker?.(20);
+    const group = bounds(hud.activePowerupGroup);
+    const toastBounds = bounds(toast);
+    return { ok: true, group, toast: toastBounds, overlap: overlaps(group, toastBounds) };
+  });
+  await page.waitForTimeout(80);
+  const dynamicCornerLaneScreenshot = path.join(outputDir, 'graze-break-corner-lane.png');
+  await page.screenshot({ path: dynamicCornerLaneScreenshot, fullPage: true });
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    play?.dismissToastDisplay?.(play.activeCornerToast, 'corner', { reason: 'hud_regression_check' });
+    if (play) {
+      play.activeCornerToast = null;
+      play.grazeBreakReady = false;
+    }
+  });
+
   await page.setViewportSize({ width: 640, height: 480 });
   await page.waitForTimeout(250);
   const compactState = await page.evaluate(() => {
@@ -343,6 +393,10 @@ try {
     failures.push(`refreshed-art HUD rows are wrong: ${JSON.stringify(refreshedArtState.rows)}`);
   }
   state.rows?.forEach((row) => validateRowGeometry(row, `desktop ${row.type || 'powerup'}`));
+  if (!dynamicCornerLaneState.ok) failures.push(dynamicCornerLaneState.reason || 'dynamic corner lane setup failed');
+  if (dynamicCornerLaneState.overlap) {
+    failures.push(`GRACE BREAK ARMED overlaps the expanded active-powerup stack: ${JSON.stringify(dynamicCornerLaneState)}`);
+  }
   const shield = state.rows?.find((row) => row.type === 'shield');
   const bomb = state.rows?.find((row) => row.type === 'bomb');
   const slowTime = state.rows?.find((row) => row.type === 'slow_time');
@@ -406,6 +460,8 @@ try {
     localeMatrix,
     state,
     refreshedArtState,
+    dynamicCornerLaneState,
+    dynamicCornerLaneScreenshot,
     compactState,
     failures,
     pageErrors,

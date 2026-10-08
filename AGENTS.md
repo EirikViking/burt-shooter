@@ -1,5 +1,12 @@
 # Nova Swarm Agent Instructions
 
+## User-directed autonomous execution (2026-10-02)
+
+- The user explicitly waives Superpowers manual approval steps for brainstorming, design, specifications, plans and execution-mode choices within the authorized Nova Swarm work.
+- Plan, decide, implement, test and review routine development autonomously. Do not wait for those approvals or finish with a question asking whether to continue.
+- Preserve quality gates and all existing limits on project location, inherited work, destructive actions, costs and publication. This instruction grants no additional authority for those actions.
+- Report actual technical blockers precisely and continue independent work that remains available. Environment security controls still apply.
+
 ## Baseline safety
 
 - Always run git fetch/status/branch/log/worktree checks before coding.

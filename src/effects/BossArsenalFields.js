@@ -43,7 +43,10 @@ export function drawArsenalField(g,h,progress) {
       const u=(j/9+t*(d.material==='rail'?1.1:.48))%1;
       const along=u*length,cross=Math.sin(j*2.4+phase)*halfWidth*.30;
       const [px,py]=point(along,cross),[ex,ey]=point(Math.min(length,along+length*.035),cross);
-      g.moveTo(px,py).lineTo(ex,ey).stroke({color:0xfff7e5,width:Math.max(1,halfWidth*.10),alpha:fade*.72*flash});
+      const chip=Math.max(1,halfWidth*.10);
+      g.poly([px-nx*chip,py-ny*chip,ex-nx*chip,ey-ny*chip,
+        ex+nx*chip,ey+ny*chip,px+nx*chip,py+ny*chip])
+        .fill({color:0xfff7e5,alpha:fade*.62*flash});
     }
   }
   if(h.kind==='wall'){

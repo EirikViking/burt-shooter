@@ -1,5 +1,6 @@
 import { Matrix, Texture } from 'pixi.js';
 import { getReducedMotionEnabled, getFlashIntensityScale } from '../config/AccessibilitySettings.js';
+import {drawEnergyArc,drawEnergyLink,drawEnergySurface} from './AstraEnergyMaterial.js';
 
 let fieldTexture;
 function material() {
@@ -37,8 +38,7 @@ export function drawAstraWarningLane(g, {x=0, y=0, angle=Math.PI/2, start=0,
   const sx=x+c*start, sy=y+s*start, ex=x+c*length, ey=y+s*length;
   const points=[sx-px*halfWidth,sy-py*halfWidth,ex-px*halfWidth,ey-py*halfWidth,
     ex+px*halfWidth,ey+py*halfWidth,sx+px*halfWidth,sy+py*halfWidth];
-  // Charging lanes have a quiet interior and dashed boundaries; damaging
-  // lanes switch to an unbroken edge and luminous core at the supplied state.
+  // The attack-owned polygon stays exact; plasma texture supplies its edges.
   // Geometry and lifecycle continue to belong entirely to the attack owner.
   g.poly(points).fill({color:0x080d18,alpha:alpha*(active ? .32 : .24)});
   g.poly(points).fill({color,alpha:alpha*(active ? .36 : .035+p*.045)});
@@ -46,25 +46,22 @@ export function drawAstraWarningLane(g, {x=0, y=0, angle=Math.PI/2, start=0,
     sx-px*halfWidth,sy-py*halfWidth);
   g.poly(points).fill({texture:material(),matrix,textureSpace:'global',color,
     alpha:alpha*(active ? .8 : .13+p*.15+pulse*p*.07*flash)});
-  const edge=(d0,d1,w,ink,width,opacity)=>{
-    g.moveTo(sx+c*d0+px*w,sy+s*d0+py*w)
-      .lineTo(sx+c*d1+px*w,sy+s*d1+py*w)
-      .stroke({color:ink,width,alpha:alpha*opacity});
-  };
+  drawEnergyLink(g,{x:sx,y:sy,toX:ex,toY:ey,width:halfWidth*1.8,color,alpha:alpha*(active?.62:.12+p*.14)});
+  const edge=(d0,d1,w,ink,width,opacity)=>drawEnergyLink(g,{
+    x:sx+c*d0+px*w,y:sy+s*d0+py*w,
+    toX:sx+c*d1+px*w,toY:sy+s*d1+py*w,
+    width:Math.max(6,width*3),color:ink,alpha:alpha*opacity});
   for(const side of [-1,1]) {
-    const w=halfWidth*side;
-    edge(0,len,w,0x030811,4,.88);
-    if(active) edge(0,len,w,color,2,.95);
+    const w=halfWidth*side*.82;
+    if(active) edge(0,len,w,color,4,.68);
     else {
-      // Fixed dashes do not drift or imply that an attack is already moving.
+      // Stationary plasma pockets mark the boundary during charge.
       const count=Math.max(1,Math.min(16,Math.ceil(len/52))),step=len/count;
-      for(let i=0;i<count;i++) edge(i*step,Math.min(len,(i+.6)*step),w,color,2.2,.82+p*.18);
-      // Charge moves only along the boundary, leaving the safe gaps unobscured.
-      if(p>0) edge(0,len*p,w,0xffdf9c,1,.35+p*.4);
+      for(let i=0;i<count;i++) edge(i*step,Math.min(len,(i+.48)*step),w,color,3,.56+p*.18);
     }
   }
   if(active) {
-    edge(0,len,0,0xfff4dc,Math.min(halfWidth*.45,3),.8*getFlashIntensityScale());
+    edge(0,len,0,0xfff4dc,Math.min(halfWidth*.6,5),.42*getFlashIntensityScale());
   }
   if (!markers) return;
   const size=Math.min(halfWidth*.65,6);
@@ -73,14 +70,11 @@ export function drawAstraWarningLane(g, {x=0, y=0, angle=Math.PI/2, start=0,
     const t=(i+flow)/count;
     const cx=sx+c*len*t,cy=sy+s*len*t;
     const fade=Math.min(1,t*10,(1-t)*10);
-    g.moveTo(cx-c*size+px*size,cy-s*size+py*size).lineTo(cx+c*size*.7,cy+s*size*.7)
-      .lineTo(cx-c*size-px*size,cy-s*size-py*size)
-      .stroke({color:0xffdf9c,width:active?1.6:1.3,alpha:alpha*fade*(.4+p*.35)});
+    drawEnergySurface(g,{kind:'rift',x:cx,y:cy,width:size*1.1,height:size*4,angle:angle-Math.PI/2,color:0xffdf9c,alpha:alpha*fade*(.3+p*.3)});
   }
-  // A short ion filament travels down the center; it never sweeps safe space.
+  // A compact pulse travels down the center; it never sweeps safe space.
   const head=len*(.06+flow*.88),tail=Math.max(0,head-Math.min(30,len*.12));
-  edge(tail,head,0,color,Math.min(halfWidth*.6,4),(.16+p*.2)*flash);
-  edge(Math.max(tail,head-9),head,0,0xffeed4,1.2,(.35+p*.4)*flash);
+  edge(tail,head,0,color,Math.min(halfWidth,7),(.18+p*.22)*flash);
 }
 
 export function drawAstraWarningSector(g,{x=0,y=0,angle,length,spread,color=0xff8356,
@@ -90,11 +84,11 @@ export function drawAstraWarningSector(g,{x=0,y=0,angle,length,spread,color=0xff
   g.poly(points).fill({color,alpha:alpha*(active?.12:.035+progress*.035)});
   for(const side of [-1,1]) {
     const a=angle+half*side,ex=x+Math.cos(a)*length,ey=y+Math.sin(a)*length;
-    g.moveTo(x,y).lineTo(ex,ey).stroke({color:0x090e18,width:3.5,alpha:alpha*.6});
-    g.moveTo(x,y).lineTo(ex,ey).stroke({color,width:1.3,alpha:alpha*(.45+progress*.35)});
+    drawEnergyLink(g,{x,y,toX:ex,toY:ey,width:12,color,
+      alpha:alpha*(.36+progress*.28)});
   }
-  g.moveTo(x+Math.cos(angle-half)*length,y+Math.sin(angle-half)*length);
-  g.arc(x,y,length,angle-half,angle+half).stroke({color,width:1.1,alpha:alpha*.35});
+  drawEnergyArc(g,{x,y,radius:length,start:angle-half,end:angle+half,
+    thickness:10,color,alpha:alpha*.3});
   const motion=!getReducedMotionEnabled(),p=Math.max(0,Math.min(1,progress));
   const phase=motion?(Date.now()*.00042+p*p*.8)%1:.5;
   // Broken wavefronts inside the existing fan, never across its safe exterior.
@@ -102,8 +96,7 @@ export function drawAstraWarningSector(g,{x=0,y=0,angle,length,spread,color=0xff
     const u=(i+phase)/3,r=length*(.12+u*.83),fade=Math.sin(u*Math.PI);
     for(const side of [-1,1]){
       const a=angle+side*half*.18,b=angle+side*half*.86;
-      g.moveTo(x+Math.cos(Math.min(a,b))*r,y+Math.sin(Math.min(a,b))*r);
-      g.arc(x,y,r,Math.min(a,b),Math.max(a,b)).stroke({color,width:1.2,alpha:alpha*fade*(.15+p*.22)*getFlashIntensityScale()});
+      drawEnergyArc(g,{x,y,radius:r,start:Math.min(a,b),end:Math.max(a,b),thickness:Math.min(24,r*.23),color,alpha:alpha*fade*(.18+p*.24)});
     }
   }
 }
@@ -117,25 +110,23 @@ export function drawAstraWarningRing(g,{x=0,y=0,inner,outer,color=0xff715c,
   for(let i=steps;i>=0;i--){const a=start+(end-start)*i/steps;points.push(x+Math.cos(a)*inner,y+Math.sin(a)*inner);}
   g.poly(points).fill({color,alpha:alpha*(active?.13:.055)});
   for(const r of [inner,outer]) {
-    g.moveTo(x+Math.cos(start)*r,y+Math.sin(start)*r);
-    g.arc(x,y,r,start,end).stroke({color:0x070d17,width:5,alpha:alpha*.55});
-    g.moveTo(x+Math.cos(start)*r,y+Math.sin(start)*r);
-    g.arc(x,y,r,start,end).stroke({color,width:active?2.4:1.5,alpha:alpha*(.5+progress*.3)});
+    drawEnergyArc(g,{x,y,radius:r,start,end,thickness:active?12:8,
+      color,alpha:alpha*(.46+progress*.24)});
   }
   const phase=getReducedMotionEnabled()?0:(Date.now()*.00013)%1;
   // Concentric charge waves respect the exact open escape wedge.
   for(let i=0;i<2;i++){
     const u=(i*.5+phase*2)%1,r=inner+(outer-inner)*(.08+u*.84);
-    g.moveTo(x+Math.cos(start)*r,y+Math.sin(start)*r);
-    g.arc(x,y,r,start,end).stroke({color,width:1.2,alpha:alpha*Math.sin(u*Math.PI)*(.15+progress*.16)*getFlashIntensityScale()});
+    drawEnergyArc(g,{x,y,radius:r,start,end,thickness:Math.min(outer-inner,r*.28),color,alpha:alpha*Math.sin(u*Math.PI)*(.24+progress*.18)});
   }
   for(let i=0;i<12;i++) {
     const a=start+(end-start)*(i+.3)/12,r=inner+(outer-inner)*(.18+((phase+i*.19)%1)*.64);
-    g.moveTo(x+Math.cos(a)*r,y+Math.sin(a)*r);
-    g.arc(x,y,r,a,a+Math.min(.08,(end-start)/48)).stroke({color:0xffe5c4,width:2,alpha:alpha*.34});
+    drawEnergySurface(g,{kind:'corona',x:x+Math.cos(a)*r,y:y+Math.sin(a)*r,
+      width:14,height:12,color:0xffe5c4,alpha:alpha*.34});
   }
   if(safeWedge>0)for(const a of [start,end]) {
-    g.moveTo(x+Math.cos(a)*inner,y+Math.sin(a)*inner).lineTo(x+Math.cos(a)*outer,y+Math.sin(a)*outer)
-      .stroke({color:0x9affcb,width:1.8,alpha:alpha*.72});
+    drawEnergyLink(g,{x:x+Math.cos(a)*inner,y:y+Math.sin(a)*inner,
+      toX:x+Math.cos(a)*outer,toY:y+Math.sin(a)*outer,
+      width:12,color:0x9affcb,alpha:alpha*.62});
   }
 }

@@ -1,0 +1,110 @@
+{
+  "file": "docs/solid-fleet-20260908/01.blend",
+  "meshes": [
+    {
+      "name": "SolidHull_01",
+      "vertices": 26664,
+      "polygons": 25652,
+      "uvLayers": 1
+    }
+  ],
+  "images": [
+    "Render Result"
+  ],
+  "materials": [
+    {
+      "name": "Deep teal canopy",
+      "nodes": [
+        "ShaderNodeBsdfPrincipled",
+        "ShaderNodeOutputMaterial"
+      ],
+      "metallic": 0.6800000071525574,
+      "roughness": 0.12999999523162842,
+      "normalLinked": false
+    },
+    {
+      "name": "Graphite machinery recess",
+      "nodes": [
+        "ShaderNodeBsdfPrincipled",
+        "ShaderNodeOutputMaterial"
+      ],
+      "metallic": 0.7300000190734863,
+      "roughness": 0.3400000035762787,
+      "normalLinked": false
+    },
+    {
+      "name": "Heat discolored copper",
+      "nodes": [
+        "ShaderNodeBsdfPrincipled",
+        "ShaderNodeOutputMaterial",
+        "ShaderNodeTexNoise",
+        "ShaderNodeBump"
+      ],
+      "metallic": 0.8299999833106995,
+      "roughness": 0.27000001072883606,
+      "normalLinked": true
+    },
+    {
+      "name": "Hull enamel 0",
+      "nodes": [
+        "ShaderNodeBsdfPrincipled",
+        "ShaderNodeOutputMaterial"
+      ],
+      "metallic": 0.47999998927116394,
+      "roughness": 0.27000001072883606,
+      "normalLinked": false
+    },
+    {
+      "name": "Livery contrast 0",
+      "nodes": [
+        "ShaderNodeBsdfPrincipled",
+        "ShaderNodeOutputMaterial"
+      ],
+      "metallic": 0.5799999833106995,
+      "roughness": 0.25999999046325684,
+      "normalLinked": false
+    },
+    {
+      "name": "Polished machined edges",
+      "nodes": [
+        "ShaderNodeBsdfPrincipled",
+        "ShaderNodeOutputMaterial"
+      ],
+      "metallic": 0.8999999761581421,
+      "roughness": 0.20000000298023224,
+      "normalLinked": false
+    },
+    {
+      "name": "Reactor emission 0",
+      "nodes": [
+        "ShaderNodeBsdfPrincipled",
+        "ShaderNodeOutputMaterial"
+      ],
+      "metallic": 0.11999999731779099,
+      "roughness": 0.23000000417232513,
+      "normalLinked": false
+    },
+    {
+      "name": "Service stencils",
+      "nodes": [
+        "ShaderNodeBsdfPrincipled",
+        "ShaderNodeOutputMaterial"
+      ],
+      "metallic": 0.10000000149011612,
+      "roughness": 0.5,
+      "normalLinked": false
+    },
+    {
+      "name": "Titanium structural alloy",
+      "nodes": [
+        "ShaderNodeBsdfPrincipled",
+        "ShaderNodeOutputMaterial",
+        "ShaderNodeTexNoise",
+        "ShaderNodeBump"
+      ],
+      "metallic": 0.8500000238418579,
+      "roughness": 0.25999999046325684,
+      "normalLinked": true
+    }
+  ]
+}

@@ -1,4 +1,11 @@
+import { chooseOnslaughtLoadout } from '../ui/OnslaughtLoadoutPicker.js';
+import { canGrantRunLife } from './LifeGrantPolicy.js';
+import { ONSLAUGHT_RULESET_V2, validOnslaughtStartAugments } from '../../electron/onslaughtContract.cjs';
+import { DEFAULT_ONSLAUGHT_LOADOUT } from './OnslaughtLoadout.js';
+import { getOnslaughtBest, recordOnslaughtRun, markOnslaughtTried } from '../progression/OnslaughtChallenge.js';
+import { readLastRunMode } from './LastRunMode.js';
 import * as PIXI from 'pixi.js';
+import { getBossEncounterTest } from '../config/BossEncounterTest.js';
 import { GameState } from './GameState.js';
 import { MenuScene } from '../scenes/MenuScene.js';
 import { IntroScene } from '../scenes/IntroScene.js';
@@ -10,6 +17,9 @@ import { HighscoreScene } from '../scenes/HighscoreScene.js';
 import { AchievementsScene } from '../scenes/AchievementsScene.js';
 import { ThreatCodexScene } from '../scenes/ThreatCodexScene.js';
 import { rankManager } from '../managers/RankManager.js';
+import { NUM_RANKS } from '../shared/RankPolicy.js';
+import { rememberLastRunMode } from './LastRunMode.js';
+import { getRankRecoveryIds } from '../achievements/RankAchievementRecovery.js';
 import { getDefaultShipKey, getShipMetadata, incrementShipUsage, isShipUnlocked, isValidShipKey } from '../config/ShipMetadata.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import {
@@ -20,6 +30,10 @@ import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import { getLeaderboardDescriptorForRunMode } from '../leaderboard/LeaderboardTypes.js';
 import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
 import { AchievementManager } from '../achievements/AchievementManager.js';
+import {
+  isOnslaughtTacticalMilestoneEligible,
+  isOnslaughtTacticalRankEligible
+} from '../achievements/OnslaughtTacticalAchievementPolicy.js';
 import {
   EARLY_PILOT_ACHIEVEMENT_ID,
   SWARM_ELITE_ACHIEVEMENT_ID,
@@ -34,6 +48,7 @@ import {
 import { onLanguageChange, translateText } from '../i18n/index.js';
 import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
+import { getEncounterEvolutionTest } from '../config/EncounterEvolutionTest.js';
 import { RunPacingConfig, getRunPacingDebugState } from '../config/RunPacingConfig.js';
 import { RunPressureDirector } from './RunPressureDirector.js';
 import { RunContentDirector } from './RunContentDirector.js';
@@ -66,6 +81,7 @@ import {
   isRankedRunMode,
   getRunModeProfile,
   normalizeRunMode,
+  parseRunMode,
   resolveSectorStartCheckpoint
 } from './RunMode.js';
 import {
@@ -208,6 +224,7 @@ export class Game {
     this.lastSceneSwitchAt = 0;
     this.swarmEliteBackfillPromise = null;
     this.leaderboardAdapter = createLeaderboardAdapter({
+      canRetryPendingSteam: () => this.currentSceneName !== 'play',
       onAcceptedPendingSteamSubmission: (submission) => this.handleAcceptedPendingSteamSubmission(submission)
     });
     this.pendingAchievementToasts = [];
@@ -219,11 +236,15 @@ export class Game {
       onUnlock: (unlock) => this.handleAchievementUnlocked(unlock)
     });
     this.languageUnsubscribe = onLanguageChange(() => this.handleLanguageChanged());
+    this.nativeWindowFocusHandler = () => this.syncGameplayCursor({ force: true });
+    globalThis.window?.addEventListener?.('nova-app-window-focus', this.nativeWindowFocusHandler);
   }
 
   start() {
     this.switchScene('menu');
-    this.achievementManager?.syncWithSteam?.().catch?.(() => {});
+    this.getLeaderboardAdapter().startPendingSteamRecovery();
+    this.achievementManager?.syncWithSteam?.().then?.(() => this.recoverRankAchievements()).catch?.(() => {});
+    this.recoverRankAchievements();
     this.backfillEarlyPilotAchievement();
     this.backfillSwarmEliteAchievement().catch?.(() => {});
   }
@@ -317,7 +338,7 @@ export class Game {
     this.syncGameplayCursor();
   }
 
-  async showShipSelect() {
+  async showShipSelect({ highlightOnslaughtAdvice = false } = {}) {
     // Create ship select scene if not exists OR recreate it to ensure fresh input state
     // Fixing bug where returning from Details broke input
     if (this.scenes.shipSelect && this.scenes.shipSelect !== this.currentScene) {
@@ -330,6 +351,10 @@ export class Game {
     this.shipSelectReturnSpriteKey = null;
     this.scenes.shipSelect = new ShipSelectScene(this, { preferredSpriteKey });
     await this.scenes.shipSelect.create();
+    if (highlightOnslaughtAdvice && this.scenes.shipSelect.onslaughtAdvice
+      && !this.scenes.shipSelect.recommendationDismissed) {
+      this.scenes.shipSelect.jumpToRecommendedShip('onslaught_result');
+    }
 
     this.currentScene = previousScene;
     this.teardownCurrentScene();
@@ -359,13 +384,17 @@ export class Game {
   }
 
   async startGame(spriteKey, options = {}) {
+    const explicitMode = parseRunMode(options.runMode);
+    if (options.runMode != null && !explicitMode) return false;
     this.prepareGameplayInputFocus();
     warmAccessibilitySettingsRuntimeCache();
     warmRuntimeFeatureSwitchCache();
     warmNovaPerformanceFlagsRuntimeCache();
     migrateLegacyHighSectorPrototypeSettings();
     const lateGameExperiment = createLateGamePressureExperimentRun(options.lateGameExperiment);
-    const requestedRunMode = normalizeRunMode(lateGameExperiment?.underlyingRunMode || options.runMode);
+    const encounterTest = getBossEncounterTest();
+    const evolutionTest = getEncounterEvolutionTest();
+    const requestedRunMode = encounterTest ? RUN_MODES.UNRANKED : normalizeRunMode(lateGameExperiment?.underlyingRunMode || options.runMode);
     const prototypeEnabled = Boolean(lateGameExperiment);
     // Classify an authorized debug route before any leaderboard/persistence work.
     // PlayScene initialization is asynchronous and cannot revoke an earlier read.
@@ -394,9 +423,23 @@ export class Game {
     const candidateSpriteKey = requestedRunMode === RUN_MODES.DAILY_SIGNAL
       ? dailySignalContract.loanerShipKey
       : (isValidShipKey(spriteKey) ? spriteKey : getDefaultShipKey());
-    const selectedSpriteKey = requestedRunMode === RUN_MODES.DAILY_SIGNAL
+    let selectedSpriteKey = requestedRunMode === RUN_MODES.DAILY_SIGNAL
       ? candidateSpriteKey
-      : (isShipUnlocked(candidateSpriteKey) ? candidateSpriteKey : getDefaultShipKey());
+      : (encounterTest || isShipUnlocked(candidateSpriteKey) ? candidateSpriteKey : getDefaultShipKey());
+    let onslaughtAugmentIds = null;
+    if (requestedRunMode === RUN_MODES.OVERRUN_TACTICAL) {
+      if (options.reuseOnslaughtLoadout === true && validOnslaughtStartAugments(options.onslaughtAugmentIds)) {
+        onslaughtAugmentIds = [...options.onslaughtAugmentIds];
+      } else if (lateGameExperiment || encounterTest) {
+        onslaughtAugmentIds = [...DEFAULT_ONSLAUGHT_LOADOUT];
+      } else {
+        const selectedLoadout = await chooseOnslaughtLoadout(this, selectedSpriteKey);
+        if (!selectedLoadout || !isShipUnlocked(selectedLoadout.spriteKey)) return false;
+        selectedSpriteKey = selectedLoadout.spriteKey;
+        onslaughtAugmentIds = selectedLoadout.augmentIds;
+        if (!validOnslaughtStartAugments(onslaughtAugmentIds)) return false;
+      }
+    }
     const controllerUiActive = typeof document !== 'undefined'
       && document.documentElement?.classList?.contains('controller-input-active');
     const requestedInputDevice = options.inputDevice === 'controller'
@@ -427,7 +470,7 @@ export class Game {
     const normalRunStartSector = overrunStartState?.available
       ? OVERRUN_START_SECTOR
       : (sectorStartPlaySector || 1);
-    const runStartSector = lateGameExperiment
+    const runStartSector = encounterTest ? encounterTest.sector : lateGameExperiment
       ? lateGameExperiment.startSector
       : normalRunStartSector;
     console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${runStartSector} experiment=${prototypeEnabled}`);
@@ -437,9 +480,13 @@ export class Game {
     this.score = 0;
     this.level = runStartSector;
     this.lives = lateGameExperiment?.lives || 3;
-    this.isDebugRun = prototypeEnabled || debugRoute;
+    this.encounterTest = encounterTest;
+    this.encounterEvolutionTest=evolutionTest;
+    this.lastDreadnoughtSector=null;this.lastReassemblyCrossoverSector=null;this.encounterExpansionEvents=[];
+    this.encounterEvolutionDiagnostics=Boolean(evolutionTest);this.encounterEvolutionLog=[];
+    this.isDebugRun = Boolean(encounterTest) || prototypeEnabled || debugRoute || Boolean(evolutionTest);
     this.runMode = debugRoute && requestedRunMode !== RUN_MODES.DAILY_SIGNAL ? RUN_MODES.UNRANKED : requestedRunMode;
-    this.runModeReason = debugRoute ? 'debug_route' : prototypeEnabled
+    this.runModeReason = encounterTest ? `encounter_test:${encounterTest.id}` : debugRoute ? 'debug_route' : prototypeEnabled
       ? 'late_game_pressure_experiment'
       : isOverrunRunMode(requestedRunMode)
         ? 'overrun_sector_51_career'
@@ -468,7 +515,7 @@ export class Game {
     this.runPolicy = createRunPolicy({
       runMode: this.runMode,
       isDebugRun: this.isDebugRun,
-      prototype: prototypeEnabled
+      prototype: prototypeEnabled || Boolean(encounterTest) || Boolean(evolutionTest)
     });
     this.scoutAnomalyId = scoutAnomaly?.id || null;
     this.scoutAnomaly = scoutAnomaly;
@@ -477,6 +524,11 @@ export class Game {
     this.sectorStartPlaySector = sectorStartPlaySector;
     this.sectorStartHighestReached = sectorStartCheckpoint ? getSectorStartState(startingProgress).highestReachedSector : null;
     this.runStartSector = runStartSector;
+    this.runId = generateUUID();
+    this.onslaughtAugmentIds = onslaughtAugmentIds ? Object.freeze([...onslaughtAugmentIds]) : null;
+    this.rulesetVersion = this.runMode === RUN_MODES.OVERRUN_TACTICAL ? ONSLAUGHT_RULESET_V2 : null;
+    this.competitionStart = null;
+    if (isOverrunRunMode(this.runMode) && !this.isDebugRun) markOnslaughtTried();
     this.runStartSource = options.runStartSource === 'game_over_runback'
       ? 'game_over_runback'
       : null;
@@ -530,8 +582,10 @@ export class Game {
     this.hangarProgressAtRunStart = startingProgress;
     this.liveRankBaseProgress = this.hangarProgressAtRunStart;
     this.runPressureDirector = new RunPressureDirector(this);
+    this.encounterPacing = null; this.encounterScoreLog = [];
+    this.mysteriesSeen = []; this.mysteriesRecent = []; this.mysteryMemories = {}; this.mysteryScheduleLog = [];
     this.contentDirector = new RunContentDirector(this, {
-      seed: lateGameExperiment?.seed
+      seed: evolutionTest?.seed || lateGameExperiment?.seed
         || dailySignalContract?.seed
         || `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
     });
@@ -552,7 +606,7 @@ export class Game {
     this.pendingHighscore = null;
 
     // Diagnostics
-    this.gameId = Math.random().toString(36).substring(7);
+    this.gameId = evolutionTest?.seed || Math.random().toString(36).substring(7);
     this.diag = {
       asEv: 0,
       asPts: 0,
@@ -572,6 +626,7 @@ export class Game {
       this.primeHighscoreChaseTarget();
       this.primeGlobalLeaderboardTargets();
     }
+    if (!prototypeEnabled && !debugRoute && !encounterTest && !evolutionTest) rememberLastRunMode(requestedRunMode);
     if (options.countShipUsage !== false && !this.areRunRewardsSuppressed()) incrementShipUsage(selectedSpriteKey);
     return true;
   }
@@ -688,6 +743,13 @@ export class Game {
       ?? canRunModeUnlockAchievements(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
+  quitRunToMenu() {
+    if (this.currentSceneName === 'play' && isOverrunRunMode(this.runMode) && !this.runFinalized) {
+      this.finalizeRunProgression({ runCleared: false, clearReason: 'voluntary_exit' });
+    }
+    this.switchScene('menu');
+  }
+
   gameOver(options = {}) {
     const fromInterlude = Boolean(options?.fromInterlude);
     const skipInterlude = Boolean(globalThis?.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__);
@@ -779,7 +841,9 @@ export class Game {
     this.switchScene('gameOver');
   }
 
-  showHighscores() {
+  showHighscores({ view = null } = {}) {
+    const mode = readLastRunMode();
+    this.leaderboardView = view || (mode === RUN_MODES.OVERRUN_TACTICAL ? 'onslaught' : 'tactical');
     this.switchScene('highscore');
   }
 
@@ -825,7 +889,9 @@ export class Game {
     if (!eligibility?.eligible) return null;
     return this.achievementManager?.unlock(SWARM_ELITE_ACHIEVEMENT_ID, {
       source: payload.source || 'accepted_ranked_submission',
-      ignoreRunGate: payload.ignoreRunGate === true,
+      // The accepted callback can arrive after navigation or restart. Eligibility
+      // has already been checked against the original submitted run.
+      ignoreRunGate: true,
       score: eligibility.acceptedScore,
       acceptedScore: eligibility.acceptedScore,
       runMode: eligibility.runMode,
@@ -840,11 +906,29 @@ export class Game {
 
   handleAcceptedPendingSteamSubmission({ entry = null, runResult = null, steam = null } = {}) {
     const acceptedRun = runResult || entry?.runResult || {};
+    const sector = acceptedRun.leaderboardKind === 'sector_start';
+    const result = sector ? this.lastSectorLeaderboardResult : this.lastLeaderboardResult;
+    if (acceptedRun.submissionId && result?.submissionId === acceptedRun.submissionId) {
+      if (sector) {
+        result.sectorSteamStatus = steam?.bestUnchanged ? 'best_unchanged' : 'submitted';
+        result.sectorSteamPendingQueued = false;
+        if (this.currentSceneName === 'gameOver') this.currentScene.sectorSteamStatus = result.sectorSteamStatus;
+      } else {
+        result.steamStatus = 'submitted';
+        result.globalStatus = steam?.bestUnchanged ? 'steam_best_unchanged' : 'submitted';
+        result.steamPendingQueued = false;
+        result.steamBestUnchanged = Boolean(steam?.bestUnchanged);
+        result.steamPreviousBestScore = steam?.previousBestScore || 0;
+        if (this.currentSceneName === 'gameOver') this.currentScene.globalStatus = result.globalStatus;
+      }
+      if (this.currentSceneName === 'gameOver') this.currentScene.updateLeaderboardStatusText?.();
+    }
     const eligibility = evaluateSwarmEliteEligibility({
       score: acceptedRun.score,
       runMode: acceptedRun.runMode,
       isDebugRun: acceptedRun.isDebugRun === true,
-      allowAchievements: acceptedRun.eligibleForAchievements !== false,
+      allowAchievements: acceptedRun.runMode === RUN_MODES.OVERRUN_TACTICAL
+        || acceptedRun.eligibleForAchievements !== false,
       eligibleRun: acceptedRun.eligibleForSubmission !== false,
       submissionAccepted: true
     });
@@ -860,7 +944,10 @@ export class Game {
   }
 
   async backfillSwarmEliteAchievement() {
-    if (this.achievementManager?.isUnlocked?.(SWARM_ELITE_ACHIEVEMENT_ID)) return null;
+    const careerRank = Math.min(NUM_RANKS - 1, Number(readHangarProgressState().pilotRank) || 0);
+    const missingRank = Array.from({ length: careerRank }, (_, i) => getRankAchievementId(i + 1))
+      .some(id => !this.achievementManager?.isUnlocked?.(id));
+    if (this.achievementManager?.isUnlocked?.(SWARM_ELITE_ACHIEVEMENT_ID) && !missingRank) return null;
     if (this.swarmEliteBackfillPromise) return this.swarmEliteBackfillPromise;
 
     const modes = [RUN_MODES.RANKED, RUN_MODES.MAYHEM_TACTICAL];
@@ -871,6 +958,7 @@ export class Game {
         includeLocal: false,
         ...leaderboard
       });
+      this.recoverRankAchievements(best);
       return { runMode, leaderboard, best };
     }))
       .then((candidates) => candidates
@@ -911,6 +999,14 @@ export class Game {
       rankIndex,
       rankTitle: this.getRankTitle(rankIndex)
     });
+  }
+
+  recoverRankAchievements(best = null) {
+    const ids = getRankRecoveryIds(readHangarProgressState(), this.achievementManager?.getUnlocked?.() || [], best);
+    return ids.map(id => this.achievementManager?.unlock(id, {
+      source: 'earned_rank_recovery', ignoreRunGate: true, historicalBackfill: true,
+      validationSource: best?.source || 'saved_rank_award'
+    })).filter(Boolean);
   }
 
   handleAchievementUnlocked(unlock) {
@@ -975,6 +1071,7 @@ export class Game {
   getLeaderboardAdapter() {
     if (!this.leaderboardAdapter) {
       this.leaderboardAdapter = createLeaderboardAdapter({
+        canRetryPendingSteam: () => this.currentSceneName !== 'play',
         onAcceptedPendingSteamSubmission: (submission) => this.handleAcceptedPendingSteamSubmission(submission)
       });
     }
@@ -1071,7 +1168,7 @@ export class Game {
     const rankedModeBest = isRankedRunMode(runMode)
       ? getMayhemModeBestScore(runMode, { legacyPureBest: progress?.bestScore })
       : 0;
-    const overrunBest = isOverrun ? getOverrunRunBest(runMode) : null;
+    const overrunBest = runMode === RUN_MODES.OVERRUN_TACTICAL ? getOnslaughtBest() : isOverrun ? getOverrunRunBest(runMode) : null;
     const targetScore = Math.max(0, Math.floor(Number(
       isSectorStart
         ? sectorRecord?.scoreEarned
@@ -1103,7 +1200,7 @@ export class Game {
           : isOverrun
             ? 'overrun_personal_best'
             : 'mayhem_mode_best_score',
-      syncingTarget: isRankedRunMode(runMode),
+      syncingTarget: isRankedRunMode(runMode) || runMode === RUN_MODES.OVERRUN_TACTICAL,
       checkpoint: sectorStartCheckpoint || null,
       surpassed: goalMode === 'daily_clear' ? false : targetScore <= 0,
       celebrationFired: false,
@@ -1117,7 +1214,7 @@ export class Game {
   raiseHighscoreChaseTarget(targetScore, source = 'known_personal_best') {
     const score = Math.max(0, Math.floor(Number(targetScore) || 0));
     const chase = this.highscoreChase;
-    if (!chase || !isRankedRunMode(chase.runMode) || score <= chase.targetScore) return false;
+    if (!chase || !(isRankedRunMode(chase.runMode) || chase.runMode === RUN_MODES.OVERRUN_TACTICAL) || score <= chase.targetScore) return false;
     chase.targetScore = score;
     chase.source = source || chase.source;
     chase.surpassed = score <= 0 || this.score > score;
@@ -1130,9 +1227,9 @@ export class Game {
   }
 
   primeHighscoreChaseTarget() {
-    if (!this.isRankedRun() || this.highscoreChaseTargetPromise) return this.highscoreChaseTargetPromise;
+    if (!this.isScoreSubmissionAllowed() || this.highscoreChaseTargetPromise) return this.highscoreChaseTargetPromise;
     const chase = this.highscoreChase;
-    if (!chase || !isRankedRunMode(chase.runMode)) return null;
+    if (!chase || !(isRankedRunMode(chase.runMode) || chase.runMode === RUN_MODES.OVERRUN_TACTICAL)) return null;
     const leaderboard = this.getRunLeaderboardDescriptor(chase.runMode);
     this.highscoreChaseTargetPromise = this.getLeaderboardAdapter().getKnownPersonalBest({
       useCache: false,
@@ -1140,7 +1237,7 @@ export class Game {
       ...leaderboard
     })
       .then((best) => {
-        if (this.highscoreChase !== chase || !this.isRankedRun()) return null;
+        if (this.highscoreChase !== chase || !this.isScoreSubmissionAllowed()) return null;
         this.raiseHighscoreChaseTarget(best?.score, best?.source || 'known_personal_best');
         if (this.highscoreChase === chase) chase.syncingTarget = false;
         this.updateHighscoreChaseCues();
@@ -1178,6 +1275,14 @@ export class Game {
     const chase = this.highscoreChase;
     if (!chase || chase.targetScore <= 0 || !this.currentScene?.enqueueToast) return;
     const score = Math.max(0, Number(this.score) || 0);
+    if (chase.runMode === RUN_MODES.OVERRUN_TACTICAL) {
+      const snapshot = this.onslaughtRecordSnapshot;
+      if (snapshot?.source === 'fresh_steam' && snapshot.entries?.length) {
+        const knownRecord = Math.max(...snapshot.entries.map(entry => Math.max(0, Number(entry?.score) || 0)));
+        if (score > knownRecord) this.updateOnslaughtRecordChase();
+        if (this.onslaughtRecordBeatPlayed) return;
+      }
+    }
     const ratio = score / chase.targetScore;
     const beatPersonalBest = (
       (isRankedRunMode(chase.runMode) || isOverrunRunMode(chase.runMode))
@@ -1210,7 +1315,7 @@ export class Game {
       this.personalBestLiveCelebrated = true;
       return;
     }
-    if (personalBestOnly) return;
+    if (personalBestOnly || chase.runMode === RUN_MODES.OVERRUN_TACTICAL) return;
     const cues = [
       { key: '25', at: 0.25, text: 'That high score is pretending not to sweat.', sfx: 'combo_tick', volume: 0.42 },
       { key: '50', at: 0.5, text: 'Halfway there. The scoreboard has begun legal review.', sfx: 'combo_breakout', volume: 0.6 },
@@ -1246,6 +1351,10 @@ export class Game {
   resetGlobalLeaderboardCues() {
     this.globalLeaderboardTargets = null;
     this.globalLeaderboardTargetPromise = null;
+    this.onslaughtRecordSnapshot = null;
+    this.onslaughtRecordLastScore = 0;
+    this.onslaughtRecordClosePlayed = false;
+    this.onslaughtRecordBeatPlayed = false;
     this.globalRivalProjectionCache = null;
     this.globalLeaderboardCueState = {
       global: false,
@@ -1257,14 +1366,14 @@ export class Game {
   }
 
   getGlobalRivalChaseState({ score = this.score } = {}) {
-    if (!this.isRankedRun() || !Array.isArray(this.globalLeaderboardTargets) || this.globalLeaderboardTargets.length === 0) {
+    if (!this.isScoreSubmissionAllowed() || !Array.isArray(this.globalLeaderboardTargets) || this.globalLeaderboardTargets.length === 0) {
       return null;
     }
     const chase = this.highscoreChase;
     if (!chase || chase.goalMode !== 'score' || chase.syncingTarget) return null;
     const currentScore = Math.max(0, Math.floor(Number(score) || 0));
     const personalBest = Math.max(0, Math.floor(Number(chase.targetScore) || 0));
-    const personalTargetCleared = personalBest > 0 ? currentScore > personalBest : currentScore > 0;
+    const personalTargetCleared = personalBest > 0 && currentScore > personalBest;
     if (!personalTargetCleared) return null;
     const cache = this.globalRivalProjectionCache;
     if (
@@ -1327,7 +1436,43 @@ export class Game {
   }
 
   primeGlobalLeaderboardTargets() {
-    if (!this.isRankedRun() || this.globalLeaderboardTargetPromise) return this.globalLeaderboardTargetPromise;
+    if (!this.isScoreSubmissionAllowed() || this.globalLeaderboardTargetPromise) return this.globalLeaderboardTargetPromise;
+    if (this.runMode === RUN_MODES.OVERRUN_TACTICAL) {
+      const runId = this.runId;
+      const descriptor = this.getRunLeaderboardDescriptor();
+      this.globalLeaderboardTargetPromise = this.getLeaderboardAdapter().getScores(descriptor.view, {
+        useCache: false,
+        ...descriptor
+      }).then(result => {
+        if (this.runId !== runId || this.runMode !== RUN_MODES.OVERRUN_TACTICAL) return null;
+        const fresh = (result?.status === 'available' || result?.status === 'empty')
+          && !result.cached && !result.offline && !result.requestError;
+        const entries = fresh && Array.isArray(result.entries) ? [...result.entries] : null;
+        this.onslaughtRecordSnapshot = {
+          runId,
+          leaderboardName: descriptor.leaderboardName,
+          rulesetVersion: this.rulesetVersion,
+          source: fresh ? 'fresh_steam' : 'unavailable',
+          receivedAtMs: Date.now(),
+          entries
+        };
+        this.globalLeaderboardTargets = entries;
+        this.onslaughtRecordLastScore = Math.max(0, Number(this.score) || 0);
+        this.updateGlobalLeaderboardVoiceCues();
+        this.updateHighscoreChaseCues({ personalBestOnly: true });
+        return entries;
+      }).catch(error => {
+        if (this.runId === runId) {
+          this.onslaughtRecordSnapshot = { runId, leaderboardName: descriptor.leaderboardName,
+            source: 'unavailable', receivedAtMs: Date.now(), entries: null };
+          this.globalLeaderboardTargets = null;
+        }
+        console.warn('[OnslaughtRecordChase] Target lookup failed', error?.message || error);
+        this.updateHighscoreChaseCues({ personalBestOnly: true });
+        return null;
+      });
+      return this.globalLeaderboardTargetPromise;
+    }
     this.globalLeaderboardTargetPromise = this.getLeaderboardAdapter().getGlobalScoresForPlacement({
       useCache: true,
       ...this.getRunLeaderboardDescriptor()
@@ -1345,7 +1490,59 @@ export class Game {
     return this.globalLeaderboardTargetPromise;
   }
 
+  updateOnslaughtRecordChase() {
+    const snapshot = this.onslaughtRecordSnapshot;
+    if (!snapshot || snapshot.source !== 'fresh_steam' || snapshot.runId !== this.runId
+      || snapshot.leaderboardName !== this.getRunLeaderboardDescriptor().leaderboardName
+      || !Array.isArray(snapshot.entries) || snapshot.entries.length === 0) return;
+    const record = snapshot.entries.reduce((best, entry) => Math.max(best, Math.max(0, Number(entry?.score) || 0)), 0);
+    const score = Math.max(0, Number(this.score) || 0);
+    const previous = this.onslaughtRecordLastScore;
+    this.onslaughtRecordLastScore = score;
+    if (!this.onslaughtRecordBeatPlayed && previous <= record && score > record) {
+      this.onslaughtRecordBeatPlayed = true;
+      this.onslaughtRecordClosePlayed = true;
+      const chase = this.highscoreChase;
+      const personalAlsoBeaten = chase && !chase.syncingTarget && chase.targetScore > 0 && score > chase.targetScore;
+      if (personalAlsoBeaten) {
+        chase.celebrationFired = true;
+        chase.surpassed = true;
+        chase.celebrationScore = score;
+        ['25', '50', '75', '90', '100'].forEach(key => chase.milestones.add(key));
+        this.personalBestLiveCelebrated = true;
+      }
+      const previousLeader = snapshot.entries.find(entry => Number(entry?.score) === record && Number(entry?.rank) === 1);
+      const ownPreviousRecord = previousLeader?.isCurrentPlayer === true;
+      this.currentScene?.showKnownBoardRecordCelebration?.({ ownPreviousRecord, score });
+      AudioManager.playSfx('personal_record_premium', { force: true, volume: 0.86, minIntervalMs: 0 });
+      this.currentScene?.enqueueToast?.(translateText(personalAlsoBeaten
+        ? ownPreviousRecord ? 'YOUR #1, RAISED' : 'KNOWN BOARD RECORD + PERSONAL BEST'
+        : ownPreviousRecord ? 'YOUR #1, RAISED' : 'KNOWN BOARD RECORD BEATEN'), {
+        slot: 'top', type: 'known_board_record', priority: 7, duration: 1800,
+        fontSize: 22, fill: '#fff3a2'
+      });
+      const runId = this.runId;
+      setTimeout(() => {
+        if (this.runId !== runId || this.currentScene !== this.scenes?.play) return;
+        AudioManager.playVoice('mission_control_known_record_beaten', {
+          cooldownMs: 60000, duckMs: 1900, duckFactor: 0.5, volume: 0.86, voicePriority: 3
+        });
+      }, 680);
+      return;
+    }
+    if (!this.onslaughtRecordClosePlayed && record > 0 && score < record && score >= record * 0.9) {
+      this.onslaughtRecordClosePlayed = true;
+      AudioManager.playVoice('mission_control_number_one_close', {
+        cooldownMs: 42000, duckMs: 2600, duckFactor: 0.34, volume: 0.92
+      });
+    }
+  }
+
   updateGlobalLeaderboardVoiceCues() {
+    if (this.runMode === RUN_MODES.OVERRUN_TACTICAL) {
+      this.updateOnslaughtRecordChase();
+      return;
+    }
     if (!this.isRankedRun() || !Array.isArray(this.globalLeaderboardTargets)) return;
     const placement = analyzeGlobalLeaderboardScore(this.score, this.globalLeaderboardTargets);
     this.updateGlobalRivalCue();
@@ -1455,6 +1652,7 @@ export class Game {
       ? String(options.source)
       : 'extra_life';
     const grantCount = Math.max(1, Math.round(Number(requested) || 1));
+    if (!canGrantRunLife({ ...(typeof options === 'object' ? options : {}), sector: this.level, source })) return 0;
     const before = this.lives;
     const maxLives = MAX_PLAYER_LIVES;
     this.lives = Math.min(this.lives + grantCount, maxLives);
@@ -1474,6 +1672,7 @@ export class Game {
         reachedMax: applied && Number.isFinite(maxLives) && after >= maxLives
       });
     }
+    return after - before;
   }
 
   nextLevel() {
@@ -1508,7 +1707,9 @@ export class Game {
       completedAt: overrides.completedAt || new Date().toISOString(),
       levelReached,
       sectorReached: levelReached,
+      runId: this.runId, rulesetVersion: this.rulesetVersion, competitionStart: this.competitionStart,
       startSector: Math.max(1, Number(this.runStartSector) || 1),
+      sectorsCleared: Math.max(0, levelReached - Math.max(1, Number(this.runStartSector) || 1)),
       runElapsedSeconds: Math.max(0, elapsed),
       runTotalElapsedSeconds: Math.max(0, totalElapsed),
       bossesKilled: Number(play?.bossKills) || 0,
@@ -1528,6 +1729,7 @@ export class Game {
       powerupsCollected: Number(play?.powerupsCollectedThisRun) || 0,
       tacticalDraftPicks: Array.isArray(play?.tacticalDraftHistory) ? play.tacticalDraftHistory.map((entry) => ({ ...entry })) : [],
       tacticalAugmentIds,
+      encounterExpansionEvents:(this.encounterExpansionEvents||[]).map(e=>({...e})),
       tacticalConsumedAugmentIds,
       tacticalDoctrine: analyzeTacticalDoctrine(tacticalAugmentIds, tacticalConsumedAugmentIds),
       livesRemaining: this.lives,
@@ -1551,6 +1753,8 @@ export class Game {
       runThemeDiscoveries: discoveries.filter((entry) => entry.category === 'runThemes').length,
       discoveredThreatIds: discoveries.map((entry) => entry.id),
       defeatedBossIds: Array.isArray(play?.defeatedBossIds) ? play.defeatedBossIds.slice() : [],
+      defeatedSnakeIds: Array.isArray(play?.defeatedSnakeIds) ? play.defeatedSnakeIds.slice() : [],
+      snakeDefeats: Array.isArray(play?.snakeDefeats) ? play.snakeDefeats.map(defeat => ({ ...defeat })) : [],
       runTheme: this.contentDirector?.runTheme?.id || null,
       noHitWaves: Number(play?.noHitWavesThisRun) || 0,
       noHitSectors: Number(play?.noHitSectorsThisRun) || 0,
@@ -1605,6 +1809,7 @@ export class Game {
       finalScore: this.score,
       levelReached,
       sectorReached: levelReached,
+      runId: this.runId, rulesetVersion: this.rulesetVersion, competitionStart: this.competitionStart,
       startSector: Math.max(1, Number(this.runStartSector) || 1),
       runElapsedSeconds: Math.max(0, elapsed),
       bossesKilled: Number(play?.bossKills) || 0,
@@ -1790,6 +1995,10 @@ export class Game {
         shipName: ship?.name || null
       });
       this.lastOverrunRunRecord = overrunRecord;
+      if (this.runMode === RUN_MODES.OVERRUN_TACTICAL) {
+        const currentResult = this.getLeaderboardAdapter().createRunResult(this);
+        this.onslaughtRecord = recordOnslaughtRun(currentResult);
+      }
       this.runSummary = {
         ...this.runSummary,
         overrunRunAttempt: overrunRecord.attemptRecord,
@@ -1823,19 +2032,37 @@ export class Game {
         dailySignalRecordSaveFailed: dailyRecord.saveFailed === true
       };
     }
-    if (this.isRankedRun()) {
-      for (const rankIndex of result.newRanksThisRun || []) {
+    const onslaughtTacticalAchievements = this.runMode === RUN_MODES.OVERRUN_TACTICAL
+      && !this.isDebugRun;
+    if (this.isRankedRun() || onslaughtTacticalAchievements) {
+      // Career-active Overrun may have crossed a rank without achievement
+      // eligibility. Reconcile earned ranks on the next eligible result, even
+      // when this particular run did not cross another threshold. The normal
+      // award gate, duplicate protection and Steam retry queue still apply.
+      const earnedRank = Math.max(0, Math.min(NUM_RANKS - 1, Math.floor(Number(result.next?.pilotRank) || 0)));
+      const rankCandidates = onslaughtTacticalAchievements
+        ? (result.newRanksThisRun || []).filter(rankIndex => isOnslaughtTacticalRankEligible(rankIndex, this.runSummary))
+        : Array.from({ length: earnedRank }, (_, index) => index + 1);
+      for (const rankIndex of rankCandidates) {
         const unlock = this.unlockRankAchievement(rankIndex, {
           level: this.level,
           score: finalScore,
-          source: 'pilot_rank_progression'
+          source: 'pilot_rank_progression',
+          onslaughtTacticalEligible: onslaughtTacticalAchievements
         });
         if (unlock?.id) this.runSummary.rankAchievementsUnlocked.push(unlock.id);
+      }
+      if (this.runSummary.rankAchievementsUnlocked.length) {
+        const saved = readHangarProgressState();
+        writeHangarProgressState({ ...saved, rankAchievementsUnlocked: [...new Set([
+          ...(saved.rankAchievementsUnlocked || []), ...this.runSummary.rankAchievementsUnlocked
+        ])] });
       }
       const milestoneUnlocks = getMilestoneAchievementUnlocks({
         summary: this.runSummary,
         progress: result.next
-      });
+      }).filter(entry => !onslaughtTacticalAchievements
+        || isOnslaughtTacticalMilestoneEligible(entry, this.runSummary));
       for (const entry of milestoneUnlocks) {
         const achievement = entry.achievement;
         const unlock = this.unlockAchievement(achievement.id, {
@@ -1851,17 +2078,22 @@ export class Game {
           clearLivesRemaining: this.runSummary.clearLivesRemaining,
           clearLifeLosses: this.runSummary.clearLifeLosses,
           noRepairReceiptsLifeLosses: this.runSummary.noRepairReceiptsLifeLosses,
-          minimumScore: achievement.minimumScore
+          minimumScore: achievement.minimumScore,
+          onslaughtTacticalEligible: onslaughtTacticalAchievements
         });
         if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);
       }
+    }
+    if (isOverrunRunMode(this.runMode) && !this.areRunRewardsSuppressed()) {
+      const achievementRecord = this.achievementManager?.recordOnslaughtRun?.(this.runSummary);
+      this.runSummary.onslaughtAchievementsUnlocked = achievementRecord?.unlocked || [];
     }
     this.lastRunReport = this.lateGameExperiment?.active === true
       ? createLateGameExperimentReport(this.lateGameExperiment, this.runSummary)
       : createRunReport(this.runSummary);
     if (
-      result.careerRankIncreased === true
-      && BigInt(String(result.careerRankAfter || '0')) > 40n
+      updatesCareerProgress
+      && result.careerRankAfter
     ) {
       this.careerRankMetadataRefreshPromise = this.getLeaderboardAdapter()
         .refreshCareerRankMetadata(result.careerRankAfter)
@@ -1893,8 +2125,8 @@ export class Game {
     this.syncGameplayCursor();
   }
 
-  syncGameplayCursor() {
-    return syncGameplayCursorVisibility(this);
+  syncGameplayCursor(options = {}) {
+    return syncGameplayCursorVisibility(this, options);
   }
 
   getViewportWidth() {

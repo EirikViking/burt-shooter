@@ -1,0 +1,21 @@
+TITLE: Next Nova Swarm build: feedback fixes and encounter tuning
+
+Thanks for the detailed feedback this week. I've put together a new build focused on player control, encounter pacing and combat readability, and I'm testing it before release.
+
+[b]Bombs, achievements and results[/b]
+Ordinary fire no longer spends a saved Bomb when you resume firing; deliberate Special Fire still triggers it, including Orbital Fusion. Earned rank achievements have a catch-up path, including the reported missing Redline Ghost award. I've also bounded additional score/results waits so delayed services can fall back to a usable screen.
+
+[b]Less drawn-out encounters[/b]
+I've reduced the inflated health in double-boss encounters and tightened their attack cadence. Snake heads briefly commit before firing, snake durability is lower, and normal snake encounters are spaced further apart. I want more useful chances to attack while keeping the fights dangerous.
+
+[b]Rift, Chain and combat readability[/b]
+Rift now leads moving targets. Chain no longer repeatedly hits attached parts of the same creature within one chain, while retaining jumps between separate enemies. Tractor messages are moved/deferred away from the fight, the planet stays continuous through boss transitions, and spent fire-lane guides clear behind the hazard.
+
+[b]Launch controls, sound and rewards[/b]
+The Hangar mode selector has a much clearer focus outline. Play remembers your last supported mode and selected hull. Creature calls are quieter and less repetitive, harsh midrange is softened, and delayed snake death sounds are prevented from spilling into the next wave. Missed drones/cores have a distinct escape shimmer. Collecting a core can refresh an existing combo timer without creating a combo or increasing its multiplier.
+
+The existing music and illustrated pickup artwork are preserved. The broader art preferences and the remaining small-icon readability concerns still need their own review.
+
+Automated checks cover the affected mechanics, controller navigation and all eight interface languages. I'm now checking the actual feel of slower ships and Pure runs, overlapping fights, late-run results and the sound mix. I don't want to treat a passing automated check as proof that every reported issue feels right in play.
+
+I hope to have this build live within 24 hours. I'll post again once it is available publicly.

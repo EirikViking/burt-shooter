@@ -20,6 +20,7 @@ const COMMON_WINDOW_SIZES = Object.freeze([
   { width: 1600, height: 900, label: '1600 x 900' },
   { width: 1920, height: 1080, label: '1920 x 1080' }
 ]);
+const windowDisplayState = new WeakMap();
 
 function clampInteger(value, fallback, min, max) {
   const number = Math.floor(Number(value));
@@ -40,11 +41,22 @@ function sanitizeDisplaySettings(settings = {}, options = {}) {
   const defaultMode = SUPPORTED_DISPLAY_MODES.has(options.defaultMode) ? options.defaultMode : DISPLAY_MODE_FULLSCREEN;
   const mode = SUPPORTED_DISPLAY_MODES.has(raw.mode) ? raw.mode : defaultMode;
   const uiScale = SUPPORTED_UI_SCALES.includes(Number(raw.uiScale)) ? Number(raw.uiScale) : 1;
-  return {
+  const clean = {
     mode,
     windowSize: sanitizeWindowSize(raw.windowSize || raw.resolution || raw.size, DEFAULT_WINDOW_SIZE),
     uiScale
   };
+  const position = raw.windowPosition && typeof raw.windowPosition === 'object'
+    ? {
+        x: clampInteger(raw.windowPosition.x, 0, -100000, 100000),
+        y: clampInteger(raw.windowPosition.y, 0, -100000, 100000)
+      }
+    : null;
+  if (position) clean.windowPosition = position;
+  if (raw.displayId !== undefined && raw.displayId !== null && String(raw.displayId).trim()) {
+    clean.displayId = String(raw.displayId);
+  }
+  return clean;
 }
 
 function getSettingsPath(userDataPath) {
@@ -72,7 +84,7 @@ function writeDisplaySettings(userDataPath, settings, options = {}) {
   return clean;
 }
 
-function getDisplayBounds(screenModule, window) {
+function getDisplayBounds(screenModule, window, preferredDisplayId = null) {
   const fallback = {
     bounds: { x: 0, y: 0, width: 1920, height: 1080 },
     workArea: { x: 0, y: 0, width: 1920, height: 1040 },
@@ -82,16 +94,33 @@ function getDisplayBounds(screenModule, window) {
   };
   try {
     const bounds = window?.getBounds?.();
+    if (bounds && screenModule?.getDisplayMatching) {
+      const matching = screenModule.getDisplayMatching(bounds);
+      if (matching) return matching;
+    }
     if (bounds && screenModule?.getDisplayNearestPoint) {
-      return screenModule.getDisplayNearestPoint({
+      const nearest = screenModule.getDisplayNearestPoint({
         x: bounds.x + Math.floor(bounds.width / 2),
         y: bounds.y + Math.floor(bounds.height / 2)
-      }) || fallback;
+      });
+      if (nearest) return nearest;
+    }
+    if (preferredDisplayId !== null && preferredDisplayId !== undefined && screenModule?.getAllDisplays) {
+      const preferred = screenModule.getAllDisplays().find((display) => String(display?.id) === String(preferredDisplayId));
+      if (preferred) return preferred;
+    }
+    if (screenModule?.getCursorScreenPoint && screenModule?.getDisplayNearestPoint) {
+      const cursorDisplay = screenModule.getDisplayNearestPoint(screenModule.getCursorScreenPoint());
+      if (cursorDisplay) return cursorDisplay;
     }
     return screenModule?.getPrimaryDisplay?.() || fallback;
   } catch {
     return fallback;
   }
+}
+
+function getStartupDisplay(screenModule, persistedSettings = {}) {
+  return getDisplayBounds(screenModule, null, persistedSettings?.displayId);
 }
 
 function dedupeSizes(sizes) {
@@ -154,33 +183,80 @@ function centerBounds(display, size) {
   };
 }
 
-function applyDisplaySettingsToWindow(window, screenModule, settings = {}) {
+function intersects(rect, area) {
+  return Boolean(rect && area
+    && rect.x < area.x + area.width
+    && rect.x + rect.width > area.x
+    && rect.y < area.y + area.height
+    && rect.y + rect.height > area.y);
+}
+
+function isVisibleOnAnyDisplay(screenModule, bounds) {
+  try {
+    const displays = screenModule?.getAllDisplays?.() || [];
+    return displays.some((display) => intersects(bounds, display?.workArea || display?.bounds));
+  } catch {
+    return false;
+  }
+}
+
+function persistedWindowedBounds(screenModule, display, settings) {
+  if (settings?.windowPosition) {
+    const candidate = {
+      x: settings.windowPosition.x,
+      y: settings.windowPosition.y,
+      ...settings.windowSize
+    };
+    if (isVisibleOnAnyDisplay(screenModule, candidate)) return candidate;
+  }
+  return centerBounds(display, settings.windowSize);
+}
+
+function applyDisplaySettingsToWindow(window, screenModule, settings = {}, options = {}) {
   if (!window || window.isDestroyed?.()) {
     return { ok: false, reason: 'window_unavailable', settings: sanitizeDisplaySettings(settings) };
   }
   const clean = sanitizeDisplaySettings(settings);
-  const display = getDisplayBounds(screenModule, window);
+  const display = getDisplayBounds(screenModule, window, clean.displayId);
+  const state = windowDisplayState.get(window) || { mode: options.previousMode || null, windowedBounds: null };
+  const previousMode = options.previousMode || state.mode;
+  if (previousMode === DISPLAY_MODE_WINDOWED && clean.mode !== DISPLAY_MODE_WINDOWED && !window.isFullScreen?.()) {
+    state.windowedBounds = window.getBounds?.() || null;
+  }
 
-  if (clean.mode === DISPLAY_MODE_FULLSCREEN) {
-    window.setResizable?.(true);
+  if (clean.mode === DISPLAY_MODE_FULLSCREEN || clean.mode === DISPLAY_MODE_BORDERLESS) {
+    const bounds = display?.bounds || centerBounds(display, clean.windowSize);
+    const alreadyOnTargetDisplay = intersects(window.getBounds?.(), bounds);
+    if (window.isFullScreen?.() && !alreadyOnTargetDisplay) window.setFullScreen?.(false);
+    if (!window.isFullScreen?.()) window.setBounds?.(bounds, false);
+    window.setResizable?.(clean.mode !== DISPLAY_MODE_BORDERLESS);
     if (!window.isFullScreen?.()) window.setFullScreen?.(true);
-    return { ok: true, settings: clean, applied: { mode: clean.mode } };
+    state.mode = clean.mode;
+    windowDisplayState.set(window, state);
+    return {
+      ok: true,
+      settings: clean,
+      applied: { mode: clean.mode, bounds, displayId: display?.id == null ? null : String(display.id) }
+    };
   }
 
   if (window.isFullScreen?.()) window.setFullScreen?.(false);
   window.unmaximize?.();
-  window.setResizable?.(clean.mode !== DISPLAY_MODE_BORDERLESS);
-  const bounds = clean.mode === DISPLAY_MODE_BORDERLESS
-    ? (display?.bounds || centerBounds(display, clean.windowSize))
-    : centerBounds(display, clean.windowSize);
+  window.setResizable?.(true);
+  const bounds = state.windowedBounds && isVisibleOnAnyDisplay(screenModule, state.windowedBounds)
+    ? state.windowedBounds
+    : persistedWindowedBounds(screenModule, display, clean);
   window.setBounds?.(bounds, true);
+  state.mode = clean.mode;
+  state.windowedBounds = bounds;
+  windowDisplayState.set(window, state);
   return {
     ok: true,
     settings: clean,
     applied: {
       mode: clean.mode,
       bounds,
-      trueBorderlessRequiresRestart: clean.mode === DISPLAY_MODE_BORDERLESS && window.isFullScreen?.() === false
+      displayId: display?.id == null ? null : String(display.id)
     }
   };
 }
@@ -196,6 +272,8 @@ module.exports = {
   sanitizeWindowSize,
   readDisplaySettings,
   writeDisplaySettings,
+  getDisplayBounds,
+  getStartupDisplay,
   getDisplayInfo,
   applyDisplaySettingsToWindow
 };

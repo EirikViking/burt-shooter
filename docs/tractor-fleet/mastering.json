@@ -1,0 +1,275 @@
+{
+  "process": "60 Hz high pass, 12 kHz low pass, -18 LUFS / -2 dBTP, native pitch, bounded fades",
+  "rows": [
+    {
+      "file": "public/audio/sfx/tractor-fleet/harpoon-charge.mp3",
+      "source": "docs/tractor-fleet/originals/harpoon-charge.mp3",
+      "duration": 1.5,
+      "sha256": "7f9e08c5a0001a462fef249fb252525c9cbf30b0cc25cc73155b870a53805653"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/harpoon-active.mp3",
+      "source": "docs/tractor-fleet/originals/harpoon-active.mp3",
+      "duration": 3,
+      "sha256": "44760fe557dd774bedff6648dab8a6d24e066ef8b6d790519833c00fef6bcd1e"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/harpoon-break.mp3",
+      "source": "docs/tractor-fleet/originals/harpoon-break.mp3",
+      "duration": 1,
+      "sha256": "b581cbe5c13d24d7a5a535984673ed4b8cd6c49f9e8c460fdba7460acdf4a720"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/tide-charge.mp3",
+      "source": "docs/tractor-fleet/originals/tide-charge.mp3",
+      "duration": 1.5,
+      "sha256": "6383c7e6daf4684fa888c3667690506ec4b5e13925a953126f4678ca573e8e4f"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/tide-active.mp3",
+      "source": "docs/tractor-fleet/originals/tide-active.mp3",
+      "duration": 3,
+      "sha256": "296b5e00125f1bcf121a10b0c787df0c46168abf8bccc75763ec5b2bae952742"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/tide-break.mp3",
+      "source": "docs/tractor-fleet/originals/tide-break.mp3",
+      "duration": 1,
+      "sha256": "5ea8f93523de3d1e75eef4c56bf538e636c0074bdcd1166fc35f015d6939d80d"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/pulse-charge.mp3",
+      "source": "docs/tractor-fleet/originals/pulse-charge.mp3",
+      "duration": 1.5,
+      "sha256": "42e0d47d58382c1f655dc7ed03fced0f811eada0349fd25a6bb8b9d99a5da281"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/pulse-active.mp3",
+      "source": "docs/tractor-fleet/originals/pulse-active.mp3",
+      "duration": 3,
+      "sha256": "d7cac2b9ade357765424c6af218f8bc7386874112c6036a27997b6f0b703489d"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/pulse-break.mp3",
+      "source": "docs/tractor-fleet/originals/pulse-break.mp3",
+      "duration": 1,
+      "sha256": "138b89898239c9d79120bde79218a9394198376b764cc160f49d69aaf2ba539d"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/twin-charge.mp3",
+      "source": "docs/tractor-fleet/originals/twin-charge.mp3",
+      "duration": 1.5,
+      "sha256": "452c63a8fd5c027aa5280ce1e352265fa1b3b650eca612c37d78dc6ba325cc0b"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/twin-active.mp3",
+      "source": "docs/tractor-fleet/originals/twin-active.mp3",
+      "duration": 3,
+      "sha256": "24bd12262ea2aa80cb25e780744a9a9934a5ae7f89bf54c4a7eaf69c47af579b"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/twin-break.mp3",
+      "source": "docs/tractor-fleet/originals/twin-break.mp3",
+      "duration": 1,
+      "sha256": "95fe4338d9444d56689d28d1132b953877302b8691a7370877264d7bdbd2161c"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/helix-charge.mp3",
+      "source": "docs/tractor-fleet/originals/helix-charge.mp3",
+      "duration": 1.5,
+      "sha256": "14cf1509ebb5728ba9ccd955c6f971121a326440f9d4f06122af212493d63db2"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/helix-active.mp3",
+      "source": "docs/tractor-fleet/originals/helix-active.mp3",
+      "duration": 3,
+      "sha256": "c18d9797682d5c98ad0c0d611ec3b28cb68b0a4e7c790439d348a9d7c661d6d7"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/helix-break.mp3",
+      "source": "docs/tractor-fleet/originals/helix-break.mp3",
+      "duration": 1,
+      "sha256": "b45cc13d5ba4fc19d62f095b3381640d98e022cfb4cacaff6ba77ee9dfc374ed"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/well-charge.mp3",
+      "source": "docs/tractor-fleet/originals/well-charge.mp3",
+      "duration": 1.5,
+      "sha256": "9bca674ebcadb0a730e3c0904138adf96686ef6966e26dda71987d4151fb75a5"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/well-active.mp3",
+      "source": "docs/tractor-fleet/originals/well-active.mp3",
+      "duration": 3,
+      "sha256": "753028fb135640554e90c3a6bab680633f65650bc5c4c883697c43d5a4272d13"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/well-break.mp3",
+      "source": "docs/tractor-fleet/originals/well-break.mp3",
+      "duration": 1,
+      "sha256": "c4e88615699f998eab6b93391414a99886570e1ba30bd4d7e89b390958ef7e5f"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/shepherd-charge.mp3",
+      "source": "docs/tractor-fleet/originals/shepherd-charge.mp3",
+      "duration": 1.5,
+      "sha256": "15b3cf2c45ef26b10162bbc84b5a40493a072dfb040ac2d14f8b6a24467cf4e9"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/shepherd-active.mp3",
+      "source": "docs/tractor-fleet/originals/shepherd-active.mp3",
+      "duration": 3,
+      "sha256": "587cbd007db193909e3f8375fccf735033dd90d7ae2dc8454a669032a33265de"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/shepherd-break.mp3",
+      "source": "docs/tractor-fleet/originals/shepherd-break.mp3",
+      "duration": 1,
+      "sha256": "6cb583f4d976fdb3b5db5879007552ef519d00e2d75e44569015d87d1804581a"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/anchor-charge.mp3",
+      "source": "docs/tractor-fleet/originals/anchor-charge.mp3",
+      "duration": 1.5,
+      "sha256": "cc6d2bb20aad5ffb7736b1fd1d83bfb270f83a307bcd79aac8de7d091298035b"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/anchor-active.mp3",
+      "source": "docs/tractor-fleet/originals/anchor-active.mp3",
+      "duration": 3,
+      "sha256": "eb5f301cae216955e664af02290054f02dbdc9f954dab2e3bea1dd4ca57709e8"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/anchor-break.mp3",
+      "source": "docs/tractor-fleet/originals/anchor-break.mp3",
+      "duration": 1,
+      "sha256": "efd2935a726f337b09aa236ae26c42a5f6d0b1cec8ce9f69e59ed8e92873a494"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/elevator-charge.mp3",
+      "source": "docs/tractor-fleet/originals/elevator-charge.mp3",
+      "duration": 1.5,
+      "sha256": "9b24b4e8d9572ce551bde431233e5eeea7612c7dc207b439fbc65850995e75bc"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/elevator-active.mp3",
+      "source": "docs/tractor-fleet/originals/elevator-active.mp3",
+      "duration": 3,
+      "sha256": "db00994a3c31479360ebfbb34e847c647a5215555cb849536c3c60ce56fd0ad8"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/elevator-break.mp3",
+      "source": "docs/tractor-fleet/originals/elevator-break.mp3",
+      "duration": 1,
+      "sha256": "d1b738ff5dd5f711b7bc4ef423257e13ade9698f764b10a8c8f36d353aa33ee9"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/winch-charge.mp3",
+      "source": "docs/tractor-fleet/originals/winch-charge.mp3",
+      "duration": 1.5,
+      "sha256": "16a3170dccb5e95f744f225bc8038a2f174b82241ad8f89cd4c5aa70ff5aedf2"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/winch-active.mp3",
+      "source": "docs/tractor-fleet/originals/winch-active.mp3",
+      "duration": 3,
+      "sha256": "b5ba6b7709f14f6af56a63b645700d6489fc23f4b050d494c76b89c1930df213"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/winch-break.mp3",
+      "source": "docs/tractor-fleet/originals/winch-break.mp3",
+      "duration": 1,
+      "sha256": "4b8bc900f982e0ddeb604dffa7881a676fa887e966d0de0bd91695344440559f"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/prism-charge.mp3",
+      "source": "docs/tractor-fleet/originals/prism-charge.mp3",
+      "duration": 1.5,
+      "sha256": "660e2f5e2bbd274ed27e6a50e8229330c5e16042fa3dcfffe7d30e0264ba93ce"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/prism-active.mp3",
+      "source": "docs/tractor-fleet/originals/prism-active.mp3",
+      "duration": 3,
+      "sha256": "3727245e0351360aabcc83bbab709084630dd39a35d3ef5553905454b0bddfed"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/prism-break.mp3",
+      "source": "docs/tractor-fleet/originals/prism-break.mp3",
+      "duration": 1,
+      "sha256": "85400c2c39caf72bafc521ac2e40b298c92991a849c747b09d3b1834c64b856c"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/pendulum-charge.mp3",
+      "source": "docs/tractor-fleet/originals/pendulum-charge.mp3",
+      "duration": 1.5,
+      "sha256": "3072955353f7913e3deb3d2a61e7a0705f1cb9763df1a669b1af38a6a7eaa2d3"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/pendulum-active.mp3",
+      "source": "docs/tractor-fleet/originals/pendulum-active.mp3",
+      "duration": 3,
+      "sha256": "cc1b32593db816bf8d314a980fe2a085c387d370463f00d5e6dc1af52a6cd6c7"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/pendulum-break.mp3",
+      "source": "docs/tractor-fleet/originals/pendulum-break.mp3",
+      "duration": 1,
+      "sha256": "c8f175faf9400d4c87ea31dc0a1ace479bd2b6b494cc8f7ef61533ac15ae5d86"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/zipper-charge.mp3",
+      "source": "docs/tractor-fleet/originals/zipper-charge.mp3",
+      "duration": 1.5,
+      "sha256": "4122ae46a9345d1ed4f4d5eb72e00eda8f7eb07c75945f386c2bf3909e3b411e"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/zipper-active.mp3",
+      "source": "docs/tractor-fleet/originals/zipper-active.mp3",
+      "duration": 3,
+      "sha256": "86a53b36a178cdf50dfae8e02ba2539b1abc3da60b8eeb809c7e9d5ba862e7fe"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/zipper-break.mp3",
+      "source": "docs/tractor-fleet/originals/zipper-break.mp3",
+      "duration": 1,
+      "sha256": "501ac57404f3d2f7a2e823ecd8a2843dbf56e4bde70082ef9de4200d250291cb"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/eclipse-charge.mp3",
+      "source": "docs/tractor-fleet/originals/eclipse-charge.mp3",
+      "duration": 1.5,
+      "sha256": "2f14ee5c425cd6031216f7c3d76d18b2bf083b87afb08411466db2e9c0554646"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/eclipse-active.mp3",
+      "source": "docs/tractor-fleet/originals/eclipse-active.mp3",
+      "duration": 3,
+      "sha256": "764fa70f81c1c18dffcf87a242d11111e5367fca4570ce49826d1f0d5af04db9"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/eclipse-break.mp3",
+      "source": "docs/tractor-fleet/originals/eclipse-break.mp3",
+      "duration": 1,
+      "sha256": "cd19e7d9b03a7e5263b9fbba52ab8e3dcf9d0338d52bebad616898e64d24d56f"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/sling-charge.mp3",
+      "source": "docs/tractor-fleet/originals/sling-charge.mp3",
+      "duration": 1.5,
+      "sha256": "442e6a74a97bd4a297526876567ffd6a8f4c652754f768a92fc6b3ffb8b922c9"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/sling-active.mp3",
+      "source": "docs/tractor-fleet/originals/sling-active.mp3",
+      "duration": 3,
+      "sha256": "f9abe4ed8fe99a158492845b45d042820c4e5286e6210f5d85b3fb59eff2c6d9"
+    },
+    {
+      "file": "public/audio/sfx/tractor-fleet/sling-break.mp3",
+      "source": "docs/tractor-fleet/originals/sling-break.mp3",
+      "duration": 1,
+      "sha256": "f65b4377569178bb6bcb07c02df000fe6fb32f148f92d7d8877458c3b4ff5951"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+Thanks, Tyrian. That distinction is useful, especially the reminder that the existing movement and enemy-bullet play are already working for you.
+
+[quote=Tyrian Mollusk]don't take it as advocating that the game needs Big New Things[/quote]
+Understood. I want to preserve that feel while testing smaller additions with a clear interaction. Different weapon behaviour is worth exploring, but more shot effects alone would not justify making the hostile bullets harder to read. I am treating the Chicken Invaders and Phoenix examples as ideas to examine, not a reason to rebuild the whole game around equipment slots or overdrive.
+
+There are two encounter experiments in the local development build: one Cinder snake can shed destructible armour that briefly blocks projectiles, and rescued convoy pilots can return once during a later rival encounter to help open one side weapon. They use the existing encounters, with bounded health, duration and assistance. They are not released, and automated checks do not tell me whether the first surprise or the third encounter is enjoyable.
+
+For this feedback pass I have concentrated on the concrete control, snake-contact, collection-display and encounter-continuity bugs. More distinctive weapons, defensive-upgrade activation and a clearer passing-convoy opportunity remain separate design work. I am glad the swarm and Veilborn mix is landing well, and I take your point about keeping what makes the game rewarding now.

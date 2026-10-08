@@ -1,3 +1,4 @@
+import {discoverySector, hullDiscoverySector} from './DiscoveryProgression.js';
 import { hashString } from './VisualVariantCatalog.js';
 import { ENEMY_ATTACK_STYLE_DEFS, getEnemyAttackStyle } from './EnemyAttackStyles.js';
 import { ENEMY_MOVEMENT_STYLE_DEFS } from './EnemyMovementStyles.js';
@@ -13,7 +14,9 @@ export const GENERATED_ENEMY_EXTRA_ASSET_COUNT = GENERATED_ENEMY_EXTRA_TOTAL;
 export const GENERATED_ENEMY_ASSET_COUNT = GENERATED_ENEMY_LEGACY_ASSET_COUNT + GENERATED_ENEMY_EXTRA_ASSET_COUNT;
 export const GENERATED_ENEMY_STARTER_COUNT = 10;
 export const GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL = 11;
-export const GENERATED_ENEMY_FULL_UNLOCK_LEVEL = 40;
+export const GENERATED_ENEMY_FULL_UNLOCK_LEVEL = 60;
+// Preserve authored combat tuning while moving only encounter eligibility.
+const AUTHORED_ENEMY_FULL_LEVEL = 40;
 export const SMALL_GENERATED_ENEMY_ROSTER_ENABLED_BY_DEFAULT = false;
 export const SMALL_GENERATED_ENEMY_SPRITE_INDEXES = Object.freeze([
   51, 58, 60, 66, 68, 84, 85, 118
@@ -147,36 +150,34 @@ function round(value, digits = 2) {
 }
 
 function getLegacyEnemyTargetCountForLevel(level) {
-  const safeLevel = clamp(Math.round(Number(level) || 1), 1, GENERATED_ENEMY_FULL_UNLOCK_LEVEL);
+  const safeLevel = clamp(Math.round(Number(level) || 1), 1, AUTHORED_ENEMY_FULL_LEVEL);
   if (safeLevel <= 1) return GENERATED_ENEMY_STARTER_COUNT;
   return Math.min(
     GENERATED_ENEMY_LEGACY_TOTAL,
     Math.ceil(
       GENERATED_ENEMY_STARTER_COUNT +
       (GENERATED_ENEMY_LEGACY_TOTAL - GENERATED_ENEMY_STARTER_COUNT) *
-      ((safeLevel - 1) / (GENERATED_ENEMY_FULL_UNLOCK_LEVEL - 1))
+      ((safeLevel - 1) / (AUTHORED_ENEMY_FULL_LEVEL - 1))
     )
   );
 }
 
 function getExtraEnemyTargetCountForLevel(level) {
-  const safeLevel = clamp(Math.round(Number(level) || 1), 1, GENERATED_ENEMY_FULL_UNLOCK_LEVEL);
+  const safeLevel = clamp(Math.round(Number(level) || 1), 1, AUTHORED_ENEMY_FULL_LEVEL);
   if (safeLevel < GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL) return 0;
   const progress = (safeLevel - (GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1)) /
-    (GENERATED_ENEMY_FULL_UNLOCK_LEVEL - (GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1));
+    (AUTHORED_ENEMY_FULL_LEVEL - (GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1));
   return Math.min(GENERATED_ENEMY_EXTRA_TOTAL, Math.ceil(GENERATED_ENEMY_EXTRA_TOTAL * progress));
 }
 
 export function getGeneratedEnemyTargetCountForLevel(level) {
-  return GENERATED_ENEMY_EARLY_SURGE_TOTAL +
-    getLegacyEnemyTargetCountForLevel(level) +
-    getExtraEnemyTargetCountForLevel(level);
+  return GENERATED_ENEMY_PROFILES.filter(profile=>profile.unlockLevel<=Math.max(1,Number(level)||1)).length;
 }
 
 function buildUnlockLevels() {
-  const unlocks = Array(GENERATED_ENEMY_TOTAL).fill(GENERATED_ENEMY_FULL_UNLOCK_LEVEL);
+  const unlocks = Array(GENERATED_ENEMY_TOTAL).fill(AUTHORED_ENEMY_FULL_LEVEL);
   let legacyCursor = 0;
-  for (let level = 1; level <= GENERATED_ENEMY_FULL_UNLOCK_LEVEL; level += 1) {
+  for (let level = 1; level <= AUTHORED_ENEMY_FULL_LEVEL; level += 1) {
     const target = getLegacyEnemyTargetCountForLevel(level);
     while (legacyCursor < target && legacyCursor < GENERATED_ENEMY_LEGACY_TOTAL) {
       unlocks[legacyCursor] = level;
@@ -184,7 +185,7 @@ function buildUnlockLevels() {
     }
   }
   let extraCursor = 0;
-  for (let level = GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL; level <= GENERATED_ENEMY_FULL_UNLOCK_LEVEL; level += 1) {
+  for (let level = GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL; level <= AUTHORED_ENEMY_FULL_LEVEL; level += 1) {
     const target = getExtraEnemyTargetCountForLevel(level);
     while (extraCursor < target && extraCursor < GENERATED_ENEMY_EXTRA_TOTAL) {
       unlocks[GENERATED_ENEMY_LEGACY_TOTAL + extraCursor] = level;
@@ -421,7 +422,13 @@ function profileFor(index) {
   };
 }
 
-export const GENERATED_ENEMY_PROFILES = Array.from({ length: GENERATED_ENEMY_TOTAL }, (_, index) => profileFor(index));
+export const GENERATED_ENEMY_PROFILES = Array.from({ length: GENERATED_ENEMY_TOTAL }, (_, index) => {
+  const profile=profileFor(index);
+  const variantSector=profile.earlySurge || index>=GENERATED_ENEMY_EARLY_SURGE_START_INDEX
+    ? discoverySector(index-GENERATED_ENEMY_EARLY_SURGE_START_INDEX,GENERATED_ENEMY_EARLY_SURGE_TOTAL) : 1;
+  return {...profile, authoredUnlockLevel:profile.unlockLevel,
+    unlockLevel:Math.max(profile.unlockLevel,hullDiscoverySector(profile.spriteIndex),variantSector)};
+});
 export const GENERATED_ENEMY_TYPES = GENERATED_ENEMY_PROFILES.map((profile) => profile.type);
 
 const PROFILE_BY_TYPE = new Map();

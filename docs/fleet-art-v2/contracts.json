@@ -1,0 +1,1057 @@
+{
+  "baseline": "e67fe3906950b2eb564e57e698deb3ff9913cf71",
+  "gameplayUntouched": true,
+  "sparrowUnchanged": true,
+  "rows": [
+    {
+      "id": "01",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          60,
+          464,
+          451
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          60,
+          464,
+          451
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "bytes": 1856220,
+      "triangles": 23828,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "02",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          124,
+          48,
+          387,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          101,
+          48,
+          410,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1729664,
+      "triangles": 19988,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "03",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          174,
+          47,
+          337,
+          464
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          171,
+          48,
+          340,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1667036,
+      "triangles": 19344,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "04",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          89,
+          464,
+          423
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          84,
+          464,
+          428
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1634588,
+      "triangles": 18488,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "05",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          72,
+          47,
+          439,
+          464
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          57,
+          48,
+          454,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1681744,
+      "triangles": 19504,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "06",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          50,
+          464,
+          462
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          65,
+          464,
+          446
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "bytes": 1809476,
+      "triangles": 20408,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "07",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          90,
+          464,
+          421
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          95,
+          464,
+          416
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "bytes": 1653280,
+      "triangles": 19352,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "08",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          143,
+          48,
+          368,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          138,
+          48,
+          373,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1675460,
+      "triangles": 19432,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "09",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          97,
+          464,
+          415
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          92,
+          464,
+          419
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "bytes": 1659128,
+      "triangles": 19412,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "10",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          72,
+          464,
+          440
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          87,
+          464,
+          425
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1686196,
+      "triangles": 19520,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "11",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          92,
+          48,
+          419,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          65,
+          48,
+          446,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1674936,
+      "triangles": 19492,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "12",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          78,
+          48,
+          433,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          65,
+          48,
+          446,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1630816,
+      "triangles": 18488,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "13",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          77,
+          48,
+          435,
+          464
+        ],
+        "center": [
+          256,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          72,
+          48,
+          439,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1679188,
+      "triangles": 19504,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "14",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          78,
+          464,
+          434
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          83,
+          464,
+          428
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "bytes": 1653132,
+      "triangles": 19352,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "15",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          141,
+          47,
+          371,
+          464
+        ],
+        "center": [
+          256,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          152,
+          48,
+          359,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1665368,
+      "triangles": 19344,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "16",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          117,
+          48,
+          394,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          103,
+          48,
+          408,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1635348,
+      "triangles": 18488,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "17",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          55,
+          48,
+          456,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          59,
+          464,
+          452
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "bytes": 1676076,
+      "triangles": 19472,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "18",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          51,
+          464,
+          460
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          57,
+          464,
+          454
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "bytes": 1833380,
+      "triangles": 22952,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "19",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          51,
+          47,
+          460,
+          464
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          58,
+          48,
+          453,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1664316,
+      "triangles": 19352,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "20",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          171,
+          47,
+          340,
+          464
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          171,
+          48,
+          340,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1687836,
+      "triangles": 19568,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "21",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          147,
+          47,
+          364,
+          464
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          139,
+          48,
+          372,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1687632,
+      "triangles": 19568,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "22",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          87,
+          464,
+          425
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          83,
+          464,
+          429
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1664488,
+      "triangles": 19352,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "23",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          60,
+          48,
+          451,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          62,
+          48,
+          449,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1686664,
+      "triangles": 19536,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "24",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          52,
+          464,
+          459
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          64,
+          464,
+          447
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "bytes": 1672444,
+      "triangles": 19472,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "25",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          65,
+          47,
+          446,
+          464
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          85,
+          464,
+          427
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1706996,
+      "triangles": 20336,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "26",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          72,
+          464,
+          439
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          85,
+          464,
+          427
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1756304,
+      "triangles": 19776,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "27",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          130,
+          47,
+          381,
+          464
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          114,
+          48,
+          397,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1716720,
+      "triangles": 19436,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "28",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          60,
+          47,
+          451,
+          464
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          65,
+          464,
+          446
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "bytes": 1817344,
+      "triangles": 20520,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "29",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          134,
+          47,
+          377,
+          464
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          129,
+          48,
+          382,
+          464
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1716956,
+      "triangles": 20476,
+      "materials": 6,
+      "images": 4
+    },
+    {
+      "id": "30",
+      "before": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          71,
+          47,
+          440,
+          464
+        ],
+        "center": [
+          255.5,
+          255.5
+        ]
+      },
+      "after": {
+        "width": 512,
+        "height": 512,
+        "bounds": [
+          47,
+          64,
+          464,
+          448
+        ],
+        "center": [
+          255.5,
+          256
+        ]
+      },
+      "bytes": 1829028,
+      "triangles": 23200,
+      "materials": 6,
+      "images": 4
+    }
+  ]
+}

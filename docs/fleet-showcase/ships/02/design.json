@@ -1,0 +1,47 @@
+{
+  "id": 2,
+  "name": "Comet Courier",
+  "architecture": "courier",
+  "baselineDesign": [
+    "Comet Courier",
+    1.9,
+    0.95,
+    0.85,
+    1.0,
+    "courier",
+    [
+      [
+        0.2,
+        0.5,
+        -1.12,
+        0.14
+      ],
+      [
+        0.65,
+        0.66,
+        -1.22,
+        0.17
+      ],
+      [
+        1.14,
+        0.34,
+        -1.13,
+        0.1
+      ],
+      [
+        1.27,
+        -0.43,
+        -1.0,
+        0.025
+      ]
+    ]
+  ],
+  "palette": [
+    "eee1bd",
+    "922a1e",
+    "ff4121"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false
+}

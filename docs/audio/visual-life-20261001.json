@@ -1,0 +1,293 @@
+{
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v2",
+  "estimatedCredits": 1316,
+  "creditCeiling": 3000,
+  "creditsBefore": 4668,
+  "remainingBefore": 5332,
+  "cues": [
+    {
+      "id": "corona",
+      "request": {
+        "text": "Compact spacecraft destruction: sharp layered metal snap, hot dense pressure thump, tiny fizzing embers. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 0.85,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "c660da72aee8829e0ec7385554d82e5dbfcbee1dfeb0915e8daff2833b28d7c9",
+      "wavSha256": "382d58cd841b5a5ca93d478b8e71e6d9dd493f1c48fb636ca460297257fb4d18",
+      "bytes": 74166
+    },
+    {
+      "id": "split_fuel",
+      "request": {
+        "text": "Two close sequential fuel-cell detonations, crisp hard casing fracture then a fast rushing fire puff. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "1c6cac3e561c062e2e0ceb0090a9580115a6cafeb929ad106b1637498f687141",
+      "wavSha256": "97745079435ce17510f8b6af3ea8cca1ed9e2039d694e0b730e687a862440422",
+      "bytes": 88278
+    },
+    {
+      "id": "lance",
+      "request": {
+        "text": "A spacecraft ruptures lengthwise, searing metallic rip, focused hard crack, fragments whistle out. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 0.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "f791c1487a04209accab7267c8c914d673aaac0015efe956486ee7183108dc80",
+      "wavSha256": "79bab83bae96d5a419d5836a8db39e4bb55dcf96eafde2302b91e02aaa60b023",
+      "bytes": 70638
+    },
+    {
+      "id": "vortex",
+      "request": {
+        "text": "A small reactor unwinds with a coiling electrical tearing rush and tight implosive metal crunch. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "a1513b2cb707423340aed7aa576a95b66918f564de10f26613e8d82ab831d29b",
+      "wavSha256": "6c9f21e6007dc56033e4aa94f60e73607e0d846faf9afa171d334d24c041ca63",
+      "bytes": 88278
+    },
+    {
+      "id": "collapse",
+      "request": {
+        "text": "A ship hull buckles inward with compressed steel groan then detonates outward with a short weighty crunch. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 1.1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "a9e9ecd1f4d1fb4d7269d9e779938f138dccb2f571a9c2a75ed768615a207178",
+      "wavSha256": "a27674b2001b29c851a3feb131248583cd3f9c96707d5cb30e1222f9aacb4f0d",
+      "bytes": 95334
+    },
+    {
+      "id": "chain_reaction",
+      "request": {
+        "text": "Three rapidly cascading internal spacecraft blasts, each distinct crack, final heavy short impact, no long reverberation. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 1.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "771fcb8335d140b9c6734ce95977ee7ad61385e0c704da99ba0d5c4c8d157d0e",
+      "wavSha256": "e0d93c07985f73690648d9dabf90049fc8e7ebb4fcac25b9893b33aed0669de5",
+      "bytes": 105918
+    },
+    {
+      "id": "petals",
+      "request": {
+        "text": "Ceramic spacecraft armour peels apart, layered brittle fractures, warm pressure burst and falling panel clinks. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 0.9,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "b79f0f764651e673423750f6b38991ebe03a77af39a633ba5c87b31ceb06727b",
+      "wavSha256": "d67f2a5093463eab7533b245a439b5f0890efe268f8d2c3be8e7197be92bf176",
+      "bytes": 77694
+    },
+    {
+      "id": "ring_peel",
+      "request": {
+        "text": "A circular reactor casing splits around its circumference, rippling metallic snaps, airy plasma release. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "10269de453235582c363fd6f7945d5eb350701201f076e1272dee0e6d12ae00d",
+      "wavSha256": "f4fca518788e16e0b228ab72632ad87f69da3fb808431b42ecd6c91691637579",
+      "bytes": 88278
+    },
+    {
+      "id": "crescent",
+      "request": {
+        "text": "One spacecraft side blows open, a compact asymmetric steel impact followed by fast debris swish. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 0.85,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "f9b739ea41784cabe72dd2b9c9bca1b86c196dcb0f148c760c21cbd8961f5fb5",
+      "wavSha256": "218cb7348b1031e4512b6652081bdc970e90997541b36a9e063b5996e3675b7c",
+      "bytes": 74166
+    },
+    {
+      "id": "geyser",
+      "request": {
+        "text": "A broken spacecraft vents upward, hot short pressurized jet, hard initial crack then metallic fizz. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "e70b8490d46ff106a6f6e948e1c0fa6c0d80700f8e065e1148566855a6e82ba0",
+      "wavSha256": "0e574a5caaf1bd0e9a13bdea48da99f524a8cd7f02581bb6dc855ac263bacc20",
+      "bytes": 88278
+    },
+    {
+      "id": "double_core",
+      "request": {
+        "text": "Twin power cores fail in staggered close succession, low punch then brighter energetic crack and brief embers. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 1.1,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "b33b22b18edaf50a08a1c54b22f85e0eaa6a84ca4c7f199c086eb268565e23e5",
+      "wavSha256": "3e4b0176b814906eae0257934a4e7d1df0bbff0044fdcda880f767d78fc345c5",
+      "bytes": 95334
+    },
+    {
+      "id": "shrapnel",
+      "request": {
+        "text": "A small spacecraft disintegrates into hard fragments, dense steel crunch, little bright clinking shards and clean decay. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 0.8,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "41db6ce1d552878b0e0ff941acb7f1cd147ca7f4e134882cefc85ba339be9096",
+      "wavSha256": "28048053fc7350c8dfae8fdd1fe5f8907d55709a8ca4cc73ef6c7f8c387a241a",
+      "bytes": 70638
+    },
+    {
+      "id": "boss_shear",
+      "request": {
+        "text": "Massive armored spacecraft death, immediate internal thump, two staggered hull-shearing metal fractures, final contained powerful reactor detonation, cinematic layered heavy steel, controlled bass. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 2.2,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "72e5f1a83488de4e5e53e681a65801bcad4972557fb3c4e05f519c499438538d",
+      "wavSha256": "4d13519aa208bc4ee5eb0c78725d4620762d2ec5bd7bc29494ab56a89ef610de",
+      "bytes": 194118
+    },
+    {
+      "id": "boss_implode",
+      "request": {
+        "text": "Huge alien spaceship death, immediate deep pressure collapse, hot snapping tendons and plates, broad mechanical rupture, final short dense explosion with embers, rich weight without a long muddy rumble. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 2.3,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "3024192b33ebffe542da7847a6845f5481e4175a87779cdb1959c76620d9ca54",
+      "wavSha256": "214e68e3724a1bcc31d19c0461ee22ef15f14c32e86d2f5f94c7610f67cbeab2",
+      "bytes": 201174
+    },
+    {
+      "id": "boss_cascade",
+      "request": {
+        "text": "Capital ship death in three clear beats: hull compartments detonate, structural beams rip, exposed reactor bursts, crisp satisfying hot debris, rich cinematic depth, clean fast tail. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "0e951ea4fccf40851470108279c0aee2fba4dbeeab8db0884ef3f28f9902b2a1",
+      "wavSha256": "efee3493c40e38e2aa8b9b48dac1ccb3d24f11319df1518503683b2a055e4fa4",
+      "bytes": 211758
+    },
+    {
+      "id": "planet_life",
+      "request": {
+        "text": "Distant playful space-whale commuter passing an orbital garden, soft low organic coo, tiny harness rattles and gentle airless-engine purr, charming physical foley, subtle background only. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "c262205c438ec022c5321a95b3655a73432a22bf774b5e4828482fba75d91bb0",
+      "wavSha256": "93c7d4a89fa73def084a05c6561f912f605292f87f589bc827974bd5d93a3134",
+      "bytes": 211758
+    },
+    {
+      "id": "planet_ring",
+      "request": {
+        "text": "Distant miniature orbital train with tiny antique gear ratchets and soft turbine puff, playful but realistic intricate machinery, one graceful passing gesture, subtle background only. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "7c2591ac054cb6d7e2c0de8e282b7b18371c215ea2b2728eb9db1276272fb578",
+      "wavSha256": "31d04bea686ca2a1958184cd19b69062784688feaa857eb44ead8488666af889",
+      "bytes": 211758
+    },
+    {
+      "id": "planet_ice",
+      "request": {
+        "text": "Distant funny robot curling a little ice moon, light icy scrape, small servos, two restrained crystal ticks and soft sliding finish, subtle background only. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "94de9710864cfb67f4c4b21333d4b613853e24edb05b8ce05315d1f11176cba7",
+      "wavSha256": "c1ac1fae8cbbc9801a64a0a8abafc2653ba296353c3a3554160c317a99a3a8a7",
+      "bytes": 211758
+    },
+    {
+      "id": "planet_stripe",
+      "request": {
+        "text": "Distant jellyfish-like alien saucers casually exchanging soft watery gurgles, delicate glassy taps and gentle pressure puffs, strange charming orbital-life foley, subtle background only. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "0f5f561ad42e39a627a014787d63f6beb89b7217b1ab2f457a134c3bff2a2ea9",
+      "wavSha256": "21a14811d5798ffb964c0d85d95cce34e8dd9805f7f084a3cc0a113d12b1037d",
+      "bytes": 211758
+    },
+    {
+      "id": "planet_sea",
+      "request": {
+        "text": "Distant orbital kite club and flying fish, quiet taut cable creaks, gentle cloth flutters and tiny curious organic clicks, subtle background only. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "61586387790f412cfb3359c8bef1dece4d7e60e22325771dfb376879839bfac4",
+      "wavSha256": "dcaabd00977428c3415156035955c667006228a12fb3835b0d8547aaff80df36",
+      "bytes": 211758
+    },
+    {
+      "id": "planet_lava",
+      "request": {
+        "text": "Distant eccentric maintenance robots serving volcanic tea, quiet metal clunks, short pressure hiss, tiny ceramic teacup clink, playful understated physical foley, subtle background only. One isolated premium game sound. Immediate onset. No speech, music, melody, silence or UI bleep.",
+        "duration_seconds": 2.4,
+        "model_id": "eleven_text_to_sound_v2",
+        "prompt_influence": 0.75,
+        "loop": false
+      },
+      "sourceSha256": "471f2bc5e41aed248acc242afa536c96d699907dad455dcd9a9758572b3a6ee2",
+      "wavSha256": "583296a10064eeca35dfcaf30f028b19d0c3b6e2ff5520fe5e6129bbc2f8c4e5",
+      "bytes": 211758
+    }
+  ],
+  "creditsAfter": 4720,
+  "creditDelta": 52,
+  "remainingAfter": 5280,
+  "finishedAt": "2026-10-01T09:31:55.081Z",
+  "quotaRecheck": {
+    "used": 4966,
+    "limit": 10000,
+    "remaining": 5034,
+    "checkedAt": "2026-10-01T10:24:18.405Z"
+  }
+}

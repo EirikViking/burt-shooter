@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-09-09T14:51:06.031Z",
+  "branches": {
+    "public": "25203769",
+    "sector-continue-test": "25203769",
+    "test-build": "23782673"
+  },
+  "target": "sector-continue-test",
+  "source": "Authenticated SteamCMD app_info_print 4765070",
+  "previousReceipt": "docs/hangar-wingmen-steam-delivery-20260909.json"
+}

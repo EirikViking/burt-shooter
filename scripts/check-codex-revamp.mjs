@@ -196,7 +196,7 @@ function checkCatalog() {
 
   const banned = /mysterious|cosmic entity|harnesses energy|delve|formidable foe|ancient secrets|unleash|data-driven|arcade drama|director weights/i;
   const mechanics = {
-    enemies: ['movement', 'moves', 'fire', 'lane', 'formation', 'clear', 'hull', 'route', 'pressure', 'shots', 'wave', 'pattern', 'gun'],
+    enemies: ['movement', 'moves', 'passes', 'volleys', 'fire', 'lane', 'formation', 'clear', 'hull', 'route', 'pressure', 'shots', 'wave', 'pattern', 'gun'],
     attackPatterns: ['tell', 'ms', 'danger', 'move'],
     waveTactics: ['entry timing', 'lane', 'formation', 'pressure'],
     powerups: ['powerup', 'changes', 'read', 'pick'],

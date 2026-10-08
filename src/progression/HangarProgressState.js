@@ -803,14 +803,8 @@ export function applyRunProgression(summary = {}, {
   next.rankProgress = getCareerRankProgress(next.pilotXpExact);
   const previousCareerRank = getCareerRankProgress(previous.pilotXpExact).displayRankExact;
   const nextCareerRank = next.rankProgress.displayRankExact;
-  if (
-    updateCompetitiveBests
-    && previous.bestSector < 30
-    && next.bestSector >= 30
-    && !previous.overrunUnlockCelebrationSeen
-  ) {
-    next.overrunUnlockCelebrationPending = true;
-  }
+  // Onslaught is available from the first run. Do not queue the retired
+  // Sector-30 unlock celebration for new profiles or later Arcade progress.
   writeHangarProgressState(next);
   return {
     previous,

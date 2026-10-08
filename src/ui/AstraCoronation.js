@@ -1,58 +1,57 @@
-import {Assets,Container,Graphics,Sprite,Texture} from 'pixi.js';
+import {Container, Graphics, Sprite, Texture} from 'pixi.js';
 import {getAccessibilitySettings} from '../config/AccessibilitySettings.js';
+import {SolidShipView} from './SolidShipView.js';
+import {drawEnergySurface, preloadEnergyMaterials} from '../effects/AstraEnergyMaterial.js';
 
-// Bounded presentation only: fixed geometry, no simulation state or gameplay RNG.
+// The victory fly-in uses the same GLB and lighting as the hangar. A late model
+// joins the light reveal only after its first real frame; never a flat fallback.
 export class AstraCoronation extends Container {
- constructor({visual={},milestone=10,shipTexture=null,getShipTexture=null,shipIndex=0}={}){
-  super();this.eventMode='none';this.interactiveChildren=false;this.visual=visual;this.milestone=milestone;
-  this.getShipTexture=getShipTexture;this.fx=new Graphics();this.addChild(this.fx);
-  this.crest=new Sprite(Texture.EMPTY);this.crest.anchor.set(.5);this.addChild(this.crest);
-  this.hull=new Sprite(shipTexture||Texture.EMPTY);this.hull.anchor.set(.5);this.addChild(this.hull);
-  this.label='astra_coronation';
-  Assets.load('/art/astra/coronation-v6.webp').then(texture=>{if(!this.destroyed){this.crest.texture=texture;this.ready=true;}}).catch(error=>console.warn('[AstraCoronation]',error));
-  // Own this small portrait texture, independently of hangar/turntable caches.
-  const portrait=`/art/solid-fleet-20260908/showroom/${String(Math.max(0,Math.min(29,Number(shipIndex)||0))+1).padStart(2,'0')}.webp`;
-  fetch(portrait).then(r=>{if(!r.ok)throw new Error(`Portrait ${r.status}`);return r.blob();})
-   .then(blob=>createImageBitmap(blob,{resizeWidth:384,resizeHeight:384,resizeQuality:'high'}))
-   .then(bitmap=>{if(this.destroyed){bitmap.close();return;}this.portraitBitmap=bitmap;this.ownedHull=Texture.from(bitmap);this.hull.texture=this.ownedHull;})
-   .catch(error=>console.warn('[AstraCoronation] Using gameplay portrait',error));
- }
- update(elapsedMs,width,height,{compact=false}={}){
-  const settings=getAccessibilitySettings(),motion=!settings.prefersReducedMotion;
-  const t=motion?Math.max(0,elapsedMs)/1000:3;
-  const entry=motion?1-Math.pow(1-Math.min(1,t/1.3),3):1;
-  const v=this.visual,p=v.primaryColor||0xffd15c,a=v.accentColor||0x61f6ff;
-  const radius=Math.min(width*.46,height*.43),g=this.fx;g.clear();
-  const latestHull=this.getShipTexture?.();
-  if(!this.ownedHull&&latestHull&&latestHull.width>1)this.hull.texture=latestHull;
-  this.crest.width=this.crest.height=radius*1.94;
-  this.crest.alpha=entry*(compact?.13:1);
-  this.crest.scale.set(this.crest.scale.x*(.94+entry*.06));
-  this.hull.visible=!compact&&this.hull.texture!==Texture.EMPTY;
-  if(this.hull.visible){
-   const scale=radius*1.02/Math.max(this.hull.texture.width,this.hull.texture.height);
-   this.hull.scale.set(scale);this.hull.y=-radius*.035+(motion?Math.sin(t*.9)*radius*.016:0);
-   this.hull.alpha=entry;
+  constructor({visual={}, milestone=10, shipIndex=0}={}) {
+    super();
+    this.label='astra_coronation';this.visual=visual;this.milestone=milestone;
+    this.eventMode='static';this.cursor='grab';
+    this.fx=new Graphics();this.addChild(this.fx);
+    this.hull=new Sprite(Texture.EMPTY);this.hull.anchor.set(.5);this.hull.visible=false;this.addChild(this.hull);
+    this.orbitYaw=0;this.pitch=0;
+    this.solid=new SolidShipView(Math.max(0,Math.min(29,Number(shipIndex)||0)),1024,'menu');
+    preloadEnergyMaterials();
+    this.promise=this.solid.promise.then(()=>{
+      if(this.destroyed||!this.solid.ready)return;
+      this.solid.render(-.22,.08);
+      this.ownedHull=Texture.from(this.solid.canvas);this.hull.texture=this.ownedHull;
+      this.ready=true;this.readyAt=this.elapsed||0;this.hull.visible=true;
+    }).catch(error=>console.warn('[Victory ship]',error));
+    this.on('pointerdown',e=>{if(e.button!==0)return;e.stopPropagation();this.drag=[e.global.x,e.global.y];this.manual=true;this.cursor='grabbing';});
+    this.on('globalpointermove',e=>{if(!this.drag)return;this.orbitYaw+=(e.global.x-this.drag[0])*.009;this.pitch+=(e.global.y-this.drag[1])*.007;this.drag=[e.global.x,e.global.y];});
+    const stop=()=>{this.drag=null;this.cursor='grab';};
+    this.on('pointerup',stop);this.on('pointerupoutside',stop);this.on('pointercancel',stop);
   }
-  const opacity=compact?.18:1,count=12+Math.min(8,Math.floor(this.milestone/10))*4;
-  for(let i=0;i<count;i++){
-   const angle=i/count*Math.PI*2-Math.PI/2,major=i%4===0;
-   const inner=radius*(major?1.03:1.08),outer=radius*(major?1.2:1.13);
-   g.moveTo(Math.cos(angle)*inner,Math.sin(angle)*inner).lineTo(Math.cos(angle)*outer,Math.sin(angle)*outer).stroke({color:major?p:a,width:major?2:1,alpha:(major?.7:.28)*entry*opacity});
+  update(elapsed,width,height,{compact=false}={}) {
+    this.elapsed=elapsed;
+    const settings=getAccessibilitySettings(),motion=!settings.prefersReducedMotion;
+    const t=motion?elapsed/1000:5;
+    const arrival=motion?Math.min(1,Math.max(0,(elapsed-(this.readyAt||0))/1700)):1;
+    const ease=1-(1-arrival)**3;
+    const size=Math.min(width*1.15,height*1.24);
+    this.hull.width=this.hull.height=size*(.8+.2*ease);
+    this.hull.position.set((1-ease)*-size*.26,(1-ease)*size*.18);this.hull.alpha=ease;
+    const angle=this.manual?this.orbitYaw:-.22+Math.sin(Math.min(t,6)*.35)*.25;
+    const pitch=this.manual?this.pitch:.08;
+    if(this.ready && (this.lastAngle===undefined || Math.abs(angle-this.lastAngle)>.001 || pitch!==this.lastPitch)) {
+      if(this.solid.render(angle,pitch))this.ownedHull.source.update();
+      this.lastAngle=angle;this.lastPitch=pitch;
+    }
+    const g=this.fx;g.clear();
+    const strength=(compact?.3:1)*Math.min(1,t)*settings.flashIntensity;
+    // Authored volumetric light, not orbiting wire ornaments.
+    drawEnergySurface(g,{kind:'corona',x:0,y:height*.08,width:size*1.18,height:size*.85,color:this.visual.accentColor||0x61f6ff,alpha:.28*strength});
+    drawEnergySurface(g,{kind:'rift',x:-size*.12,y:size*.22,width:size*.7,height:size*.10,angle:-.32,color:this.visual.primaryColor||0xffd15c,alpha:.50*strength});
+    if(motion&&t<2.8)drawEnergySurface(g,{kind:'pressure',width:size*(.6+t*.42),height:size*(.6+t*.42),color:0xfff0c1,alpha:Math.max(0,1-t/2.8)*.45*strength});
   }
-  for(let i=0;i<3;i++){
-   const r=radius*(1.16+i*.075),start=t*(i%2?-.12:.09)+i*2.1;
-   g.moveTo(Math.cos(start)*r,Math.sin(start)*r).arc(0,0,r,start,start+Math.PI*.52).stroke({color:i%2?a:p,width:i===1?2.2:1,alpha:.32*opacity*entry});
+  destroy(options) {
+    if(this.destroyed)return;
+    this.solid.dispose();
+    super.destroy({...options,children:true,texture:false,textureSource:false});
+    this.ownedHull?.destroy(true);this.ownedHull=null;
   }
-  if(motion&&t<2.7){
-   const burst=Math.min(1,t/2.7),r=radius*(.3+burst*1.9);
-   g.circle(0,0,r).stroke({color:p,width:2,alpha:(1-burst)*.55*settings.flashIntensity*opacity});
-  }
-  for(let i=0;i<28;i++){
-   const q=(t*.11+i*.6180339)%1,side=i%2?1:-1;
-   const x=side*radius*(.72+(i%7)*.065),y=radius*(1.3-q*2.6);
-   g.moveTo(x,y).lineTo(x,y+radius*.035).stroke({color:i%3?a:p,width:1.2,alpha:Math.sin(q*Math.PI)*.42*entry*opacity});
-  }
- }
- destroy(options){if(this.destroyed)return;super.destroy({...options,children:true,texture:false,textureSource:false});this.ownedHull?.destroy(true);this.portraitBitmap?.close();this.ownedHull=null;this.portraitBitmap=null;}
 }

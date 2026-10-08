@@ -1,0 +1,54 @@
+Thanks, Tyrian. I have read the remaining points in posts 147, 148, and 149. I will try to implement most of this during the coming week. Here is what I intend to do with each area.
+
+[quote=Tyrian Mollusk;562542623246546465]borderless[/quote]
+The earlier display repair covered Borderless filling the display, Steam Overlay and recording support, cursor recovery after switching windows, and the unwanted menu bar. I will include those checks again in the packaged build, across the three display modes. If the latest version still fails for you, please tell me which mode and whether Shift+Tab opens anything. I will not assume that a working Steam connection alone proves the overlay works.
+
+[quote=Tyrian Mollusk;591816302688138668]target lane[/quote]
+The source fix delays the guest boss while the primary boss is warning about an attack. I will check the complete attack, including any movement after the warning ends. I will also test more active paired boss movement, while keeping the attack lanes honest and avoiding bosses sitting on top of each other.
+
+[quote=Tyrian Mollusk;591816302688138668]distortion[/quote]
+I will repair the flame endpoint. I will assess range as a separate balance decision while testing the stronger late game patterns, so a visual defect does not force an untested attack change.
+
+[quote=Tyrian Mollusk;591816302688138668]drone[/quote]
+The fix now creates the additional drone when the permanent drone count increases. I will specifically test your Ghost expiry sequence and verify that the drone appears immediately after the Draft.
+
+[quote=Tyrian Mollusk;591816302688138668]cha-ching[/quote]
+I will trace the repeated wing hit sound on Quasar Fan and separate routine hits from reward cues. Repeated hits should not create a burst of cash register sounds.
+
+[quote=Tyrian Mollusk;591816302688138668]achievements[/quote]
+I will investigate the duplicate rows through opening, scrolling, filtering, resizing, and returning to the screen. There is already an ID duplicate guard, so that alone clearly is not enough to dismiss the report. I will group pilot rank milestones separately while retaining their unlock and Steam status.
+
+[quote=Tyrian Mollusk;591816302688138668]targets[/quote]
+I will make these short waves more purposeful, with readable target movement, and keep unrelated reinforcement arrivals from dragging out their completion. The completion message should correspond to the challenge you actually just finished.
+
+[quote=Tyrian Mollusk;591816302688177905]snakes[/quote]
+I am glad the last segments have improved. I will reduce repetitive snake encounters and review the amount of time they occupy in a sector. I will compare babyless snakes, brood waves, and the faster late sector variants in both Pure and Tactical. I will test occasional small brood additions for variety without simply increasing the pressure along the bottom edge. I will also test your idea of moving the action forward during cleanup, but retain it only if the resulting overlap remains readable and enjoyable.
+
+[quote=Tyrian Mollusk;591816302688177905]veilborn[/quote]
+I agree that the swarm fights should remain the centre of the game. I will look at replacing some repeated snake encounters with more varied swarm and Veilborn encounters, and expand variation where it adds a distinct interaction.
+
+[quote=Tyrian Mollusk;591816302688177905]lightning[/quote]
+I will compare ordinary shots, Pierce, and Chain Lightning against snakes and other heavy enemies across modes. I want alternatives to remain viable and the powerful build to remain satisfying. That means addressing excessive fight length and weak interactions as well as checking whether chain damage is too strong, rather than making everything tougher to withstand it.
+
+[quote=Tyrian Mollusk;591816302688177905]green bar[/quote]
+I will check the health display against actual damage and make damage to each segment easier to see. Your armour or separate bar suggestion is useful. I will use the clearest presentation without adding another layer of health to the fight.
+
+[quote=Tyrian Mollusk;591816302688177905]tractor[/quote]
+I will inspect the purple tractor warning and source visibility so you can identify the threat and take the blocking action in time, including when larger enemies overlap it.
+
+[quote=Tyrian Mollusk;591816302688177905]Upgrades[/quote]
+I will trace the offer weighting, higher level eligibility, held choices, bans, and repeated rejected options. I will also test capped damage choices and the value of short Ghost and respawn protection upgrades. A run should not require accepting unwanted choices just to get the useful pool moving again. Point Defense interrupting normal fire will be part of this review; the defensive benefit should not quietly work against the build you wanted.
+
+[quote=Tyrian Mollusk;591816302688177905]six bullets[/quote]
+I found a likely cause in the calculation: the second and third levels can round to the same added shot count, while the third still applies a damage penalty. I will fix and test the actual emitted volley, then check other whole number upgrades for the same problem. I will also test tighter spread at the higher level so the additional shot has useful coverage.
+
+[quote=Tyrian Mollusk;591816302688177905]leaderboard[/quote]
+I will trace your 101 to 147 run through the result, saved record, Steam submission, and displayed entry. The start and reached sectors should agree. I will preserve existing scores and make missing older details explicit rather than present an invented sector range.
+
+[quote=Tyrian Mollusk;591816302688177905]extra hulls[/quote]
+I will check sector rewards against the late loop life restriction and make the actual rewards and stated rule consistent, including the deliberate Tactical repair exception.
+
+[quote=Tyrian Mollusk;591816302688177905]focus[/quote]
+I found that boss entry resets focus and suppresses it until release. I will preserve a held focus input through that transition and check firing continuity on keyboard and controller. Releasing a control during a transition must still be respected.
+
+Please continue reporting issues and suggestions. If something older still matters and I have not addressed it, please remind me. These detailed reports are useful, and I am sorry that some of them have needed repeating.

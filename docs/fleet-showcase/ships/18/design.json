@@ -1,0 +1,47 @@
+{
+  "id": 18,
+  "name": "Ember Burst",
+  "architecture": "burst",
+  "baselineDesign": [
+    "Ember Burst",
+    1.6,
+    1.08,
+    0.87,
+    1.03,
+    "burst",
+    [
+      [
+        0.2,
+        0.64,
+        -1.22,
+        0.17
+      ],
+      [
+        0.87,
+        0.28,
+        -1.16,
+        0.19
+      ],
+      [
+        1.46,
+        -0.07,
+        -0.91,
+        0.09
+      ],
+      [
+        1.64,
+        -0.47,
+        -0.75,
+        0.023
+      ]
+    ]
+  ],
+  "palette": [
+    "e8e9ed",
+    "60518b",
+    "a451ff"
+  ],
+  "textureSize": 1024,
+  "authoringDetail": 0.78,
+  "spriteGeneration": false
+}

@@ -99,16 +99,17 @@ page.on('console', (message) => {
 
 try {
   await page.goto(withQuery(baseUrl, {
-    autostart: '1',
-    debugBossToken: 'NOVA_DEBUG_2026',
-    startLevel: '2',
-    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH
+    skipIntro: '1', offlineLeaderboard: '1', controlSmoke:'1'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+  await page.waitForFunction(()=>window.__game?.scenes?.menu?.astraMenuShip?.ready,null,{timeout:120000});
+  await page.mouse.click(900,650);
+  await page.evaluate(()=>window.__game.startGame('nova-player-ship-01.png',{runMode:'ranked_tactical'}));
 
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state?.scene === 'play' && state?.player?.active;
-  }, { timeout: 30000 });
+    return state?.scene === 'play' && state?.player?.active && window.__game?.scenes?.play?.enemyManager?.state === 'WAVE_ACTIVE';
+  }, null, { timeout: 120000 });
 
   await page.evaluate(() => {
     const game = window.__game;
@@ -116,6 +117,7 @@ try {
     const player = play?.player;
     const enemyManager = play?.enemyManager;
     if (!game || !play || !player || !enemyManager) throw new Error('Missing play scene for tractor hijack check');
+    game.markUnrankedRun('tractor_hijack_qa');play.externalPauseSuppressedUntil=Number.MAX_SAFE_INTEGER;play.setPaused(false);
 
     enemyManager.enemies.forEach(enemy => {
       if (enemy.kind !== 'boss') {

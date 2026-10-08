@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-const colors={void_crown:'#d790ff',stasis_net:'#73eedf',chrono_anchor:'#ffcb72',rail_surge:'#80cfff'};
+const colors={void_crown:'#d790ff',stasis_net:'#73eedf',chrono_anchor:'#ffcb72'};
 const cache=new Map();
 export function readablePowerupTexture(id,original){
  if(!colors[id]||typeof document==='undefined')return original;
@@ -11,6 +11,5 @@ export function readablePowerupTexture(id,original){
  if(id==='void_crown'){c.beginPath();c.moveTo(29,49);c.lineTo(43,65);c.lineTo(64,33);c.lineTo(85,65);c.lineTo(99,49);c.lineTo(90,88);c.lineTo(38,88);c.closePath();c.fill();c.stroke();c.beginPath();c.moveTo(42,99);c.lineTo(86,99);c.stroke();}
  if(id==='stasis_net'){c.lineWidth=6;for(let i=0;i<3;i++){const x=38+i*26;c.beginPath();c.moveTo(x,30);c.lineTo(x,98);c.stroke();c.beginPath();c.moveTo(30,x);c.lineTo(98,x);c.stroke();}c.fillStyle=color;for(const x of [32,96])for(const y of [32,96]){c.beginPath();c.arc(x,y,8,0,Math.PI*2);c.fill();}}
  if(id==='chrono_anchor'){c.beginPath();c.arc(64,32,12,0,Math.PI*2);c.stroke();c.beginPath();c.moveTo(64,45);c.lineTo(64,99);c.moveTo(42,56);c.lineTo(86,56);c.moveTo(32,77);c.quadraticCurveTo(64,119,96,77);c.stroke();c.beginPath();c.moveTo(25,81);c.lineTo(31,65);c.lineTo(43,79);c.moveTo(85,79);c.lineTo(97,65);c.lineTo(103,81);c.stroke();}
- if(id==='rail_surge'){c.strokeStyle=color;c.lineWidth=7;for(const x of [37,91]){c.beginPath();c.moveTo(x,101);c.lineTo(x,37);c.stroke();}c.fillStyle='#f5fbff';c.beginPath();c.moveTo(64,23);c.lineTo(83,52);c.lineTo(72,52);c.lineTo(72,96);c.lineTo(56,96);c.lineTo(56,52);c.lineTo(45,52);c.closePath();c.fill();}
  const texture=PIXI.Texture.from(canvas);texture.source.label=`readable-powerup:${id}`;cache.set(id,texture);return texture;
 }

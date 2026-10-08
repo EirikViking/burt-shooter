@@ -1,3 +1,4 @@
+import { renameModeDisplay } from './onslaughtText.js';
 import { en } from './locales/en.js';
 import { de } from './locales/de.js';
 import { es } from './locales/es.js';
@@ -256,7 +257,12 @@ export function t(key, vars = {}, { locale = currentLanguage } = {}) {
 }
 
 export function translateTextForLocale(localeCode, source, vars = {}) {
-  const sourceText = String(source ?? '');
+  return renameModeDisplay(localeCode, String(source ?? ''), translateLegacyTextForLocale(localeCode, source, vars));
+}
+
+function translateLegacyTextForLocale(localeCode, source, vars = {}) {
+  let sourceText = String(source ?? '');
+  if (localeCode !== 'en' && !(locales[localeCode]?.sourceText?.[sourceText])) sourceText = sourceText.replace(/\bARCADE\b/g,'MAYHEM').replace(/\bArcade\b/g,'Mayhem').replace(/\bONSLAUGHT\b/g,'OVERRUN').replace(/\bOnslaught\b/g,'Overrun');
   if (!sourceText) return sourceText;
   const locale = locales[localeCode] || en;
   if (locale.code === 'en') return interpolate(sourceText, vars);

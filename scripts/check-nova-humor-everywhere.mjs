@@ -24,7 +24,7 @@ for (const category of requiredCategories) {
 }
 
 const allEnglishLines = requiredCategories.flatMap((category) => NOVA_HUMOR_POOLS[category]);
-assert(allEnglishLines.length === 37, `expected 37 authored humor lines, found ${allEnglishLines.length}`);
+assert(allEnglishLines.length === 40, `expected 40 authored humor lines, found ${allEnglishLines.length}`);
 assert(new Set(allEnglishLines).size === allEnglishLines.length, 'Nova humor source lines must be unique');
 
 for (const locale of locales) {

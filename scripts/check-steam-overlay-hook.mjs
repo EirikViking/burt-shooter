@@ -84,6 +84,8 @@ const checks = [
   requireOrderedText('electron/main.cjs', 'steamProfileContext = await resolveSteamProfileContext();', 'const win = createWindow();', 'Steam init/profile resolution before BrowserWindow creation'),
   requireText('electron/main.cjs', "ipcMain.handle('nova-steam-leaderboard:getRuntimeInfo'", 'runtime info IPC'),
   requireText('electron/main.cjs', 'launchedBySteamHint', 'Steam-client launch hint in runtime info'),
+  requireText('electron/steamLeaderboardBridge.cjs', 'isOverlayEnabled()', 'native Steam overlay enabled-state diagnostic'),
+  requireText('electron/main.cjs', "writeRecoveryDiagnostic('steam-runtime-latest.json'", 'Steam-launch runtime diagnostic'),
   requireText('electron-builder.json', '"steam_api64.dll"', '64-bit Steam API DLL packaged beside exe'),
   requireText('electron-builder.json', '"steam_api.dll"', '32-bit Steam API DLL packaged beside exe'),
   requireText('electron-builder.json', '"node_modules/steamworks-ffi-node/**/*"', 'Steamworks native module unpacked'),

@@ -497,7 +497,7 @@ function assertLowRun(snapshot) {
   if (!/Local: Not in local top 50/i.test(text)) {
     throw new Error(`Low-score run did not hide outside-visible local rank:\n${text}`);
   }
-  if (/rank pending|Steam score submitted|Local #44/i.test(text)) {
+  if (/rank pending|Steam score submitted|Local #61/i.test(text)) {
     throw new Error(`Low-score run retained misleading final status:\n${text}`);
   }
   if (!/Next rank:/i.test(text) || !/XP to next:/i.test(text)) {
@@ -652,7 +652,7 @@ try {
     score: 2084,
     level: 2,
     rankIndex: 1,
-    localScores: makeLocalScores(43, 50000, 100),
+    localScores: makeLocalScores(60, 50000, 100),
     steamScores: [
       { playerName: 'STEAM ACE', name: 'STEAM ACE', score: 87628, level: 12, isCurrentPlayer: true, source: 'steam' },
       { playerName: 'ORBIT PAL', score: 28000, level: 7, source: 'steam' },

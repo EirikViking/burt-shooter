@@ -1,0 +1,7 @@
+[quote=Tyrian Mollusk]don't take it as advocating that the game needs Big New Things[/quote]
+Understood. The immediate action from this review is to repair the convoy's confusing movement and keep its opportunity readable. I am preserving the movement, Focus, Phase and enemy-bullet visibility you value.
+
+[quote=Tyrian Mollusk]bullet visibility[/quote]
+That remains a constraint on weapon and visual changes. I have not introduced a new weapon-slot framework or global combat rebalance from this discussion. The existing encounter and presentation work is in the test build; today's additional convoy repair is local and has not been uploaded.
+
+The weapon examples are useful references for distinct actions and decisions. I have not yet played those games myself, so I will not pretend this pass establishes a comparison. Quasar's spread, narrow weapons, slow hulls and defensive Tactical interactions need measured play comparisons before choosing further changes. More effects alone would not address those questions.

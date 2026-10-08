@@ -1,0 +1,1227 @@
+Blender 4.5.13 LTS (hash daeeeca98fb0 built 2026-08-25 01:50:50)
+Read blend: "D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\02\source.blend"
+Fra:1 Mem:12.76M (Peak 12.76M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:12.76M (Peak 12.76M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral fill
+Fra:1 Mem:13.08M (Peak 13.08M) | Time:00:00.41 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Continuous pressure fuselage
+Fra:1 Mem:13.93M (Peak 13.93M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Cockpit integrated coaming
+Fra:1 Mem:14.46M (Peak 14.46M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Pressure canopy glazing
+Fra:1 Mem:14.46M (Peak 14.46M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame
+Fra:1 Mem:14.70M (Peak 14.70M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame.001
+Fra:1 Mem:14.75M (Peak 14.75M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy pressure bow
+Fra:1 Mem:14.75M (Peak 14.75M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated lifting hull
+Fra:1 Mem:14.75M (Peak 14.75M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated propulsion nacelle
+Fra:1 Mem:16.90M (Peak 16.90M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Contoured expansion nozzle
+Fra:1 Mem:16.89M (Peak 16.90M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.001
+Fra:1 Mem:16.93M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.002
+Fra:1 Mem:16.90M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.003
+Fra:1 Mem:16.90M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.004
+Fra:1 Mem:16.90M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.005
+Fra:1 Mem:16.91M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.006
+Fra:1 Mem:16.91M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.007
+Fra:1 Mem:16.91M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.008
+Fra:1 Mem:16.91M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.009
+Fra:1 Mem:16.91M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.010
+Fra:1 Mem:16.92M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.011
+Fra:1 Mem:16.92M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct
+Fra:1 Mem:16.92M (Peak 16.93M) | Time:00:00.50 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat
+Fra:1 Mem:17.07M (Peak 17.07M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing
+Fra:1 Mem:17.07M (Peak 17.07M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canted cargo stabilizer
+Fra:1 Mem:17.09M (Peak 17.09M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated propulsion nacelle.001
+Fra:1 Mem:17.14M (Peak 17.14M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.012
+Fra:1 Mem:17.37M (Peak 17.37M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.013
+Fra:1 Mem:17.38M (Peak 17.38M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.014
+Fra:1 Mem:17.38M (Peak 17.38M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.015
+Fra:1 Mem:17.38M (Peak 17.38M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.016
+Fra:1 Mem:17.41M (Peak 17.41M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.017
+Fra:1 Mem:17.40M (Peak 17.41M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.018
+Fra:1 Mem:17.39M (Peak 17.41M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.019
+Fra:1 Mem:17.39M (Peak 17.41M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.020
+Fra:1 Mem:17.39M (Peak 17.41M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.021
+Fra:1 Mem:17.39M (Peak 17.41M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.022
+Fra:1 Mem:17.40M (Peak 17.41M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.023
+Fra:1 Mem:17.40M (Peak 17.41M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat.001
+Fra:1 Mem:17.40M (Peak 17.41M) | Time:00:00.52 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct.001
+Fra:1 Mem:17.56M (Peak 17.56M) | Time:00:00.53 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing.001
+Fra:1 Mem:17.58M (Peak 17.58M) | Time:00:00.53 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canted cargo stabilizer.001
+Fra:1 Mem:17.76M (Peak 17.76M) | Time:00:00.53 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.54 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.54 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.54 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.54 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:01.77 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:01.77 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:01.77 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:01.77 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:01.77 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:01.77 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:14.15M (Peak 41.43M) | Time:00:01.77 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:14.15M (Peak 41.43M) | Time:00:01.77 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:14.15M (Peak 41.43M) | Time:00:01.77 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:14.83M (Peak 41.43M) | Time:00:01.78 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:14.83M (Peak 41.43M) | Time:00:01.78 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:01.78 | Mem:0.03M, Peak:0.03M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:15.80M (Peak 41.43M) | Time:00:01.78 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH light 48/47 | Building BVH
+Fra:1 Mem:15.80M (Peak 41.43M) | Time:00:01.78 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Broad neutral key 2/47 | Building BVH
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:01.78 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull 10/47 | Building BVH
+Fra:1 Mem:15.80M (Peak 41.43M) | Time:00:01.78 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.002 12/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:01.78 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer.001 47/47 | Building BVH
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:01.78 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer.001 47/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:01.78 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.024 13/47 | Building BVH
+Fra:1 Mem:15.91M (Peak 41.43M) | Time:00:01.78 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.025 14/47 | Building BVH
+Fra:1 Mem:16.04M (Peak 41.43M) | Time:00:01.78 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.025 14/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.12M (Peak 41.43M) | Time:00:01.78 | Mem:1.33M, Peak:1.36M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.026 15/47 | Building BVH
+Fra:1 Mem:16.12M (Peak 41.43M) | Time:00:01.78 | Mem:1.33M, Peak:1.36M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.026 15/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.12M (Peak 41.43M) | Time:00:01.78 | Mem:1.33M, Peak:1.36M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.027 16/47 | Building BVH
+Fra:1 Mem:16.12M (Peak 41.43M) | Time:00:01.78 | Mem:1.33M, Peak:1.36M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.027 16/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.00M (Peak 41.43M) | Time:00:01.79 | Mem:1.36M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.028 17/47 | Building BVH
+Fra:1 Mem:16.00M (Peak 41.43M) | Time:00:01.79 | Mem:1.36M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.028 17/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.99M (Peak 41.43M) | Time:00:01.79 | Mem:1.36M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.029 18/47 | Building BVH
+Fra:1 Mem:15.99M (Peak 41.43M) | Time:00:01.79 | Mem:1.39M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.029 18/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.98M (Peak 41.43M) | Time:00:01.79 | Mem:1.36M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Mesh 46/47 | Building BVH
+Fra:1 Mem:15.98M (Peak 41.43M) | Time:00:01.79 | Mem:1.36M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Mesh 46/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.94M (Peak 41.43M) | Time:00:01.79 | Mem:1.41M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.030 19/47 | Building BVH
+Fra:1 Mem:15.94M (Peak 41.43M) | Time:00:01.79 | Mem:1.41M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.030 19/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.94M (Peak 41.43M) | Time:00:01.79 | Mem:1.41M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.031 20/47 | Building BVH
+Fra:1 Mem:15.94M (Peak 41.43M) | Time:00:01.79 | Mem:1.42M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.031 20/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.94M (Peak 41.43M) | Time:00:01.79 | Mem:1.41M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.032 21/47 | Building BVH
+Fra:1 Mem:15.94M (Peak 41.43M) | Time:00:01.79 | Mem:1.41M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.032 21/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:01.79 | Mem:1.43M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.033 22/47 | Building BVH
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:01.79 | Mem:1.47M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.033 22/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:01.79 | Mem:1.44M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.034 23/47 | Building BVH
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:01.79 | Mem:1.44M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.034 23/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:01.79 | Mem:1.44M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.035 24/47 | Building BVH
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:01.79 | Mem:1.47M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.035 24/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:01.79 | Mem:1.44M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.002 25/47 | Building BVH
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:01.79 | Mem:1.45M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.002 25/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:01.79 | Mem:1.46M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct 26/47 | Building BVH
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:01.79 | Mem:1.47M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct 26/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:01.79 | Mem:1.47M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/47 | Building BVH
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:01.79 | Mem:1.47M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.79 | Mem:1.50M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer 28/47 | Building BVH
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.79 | Mem:1.50M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer 28/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.91M (Peak 41.43M) | Time:00:01.80 | Mem:1.51M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.001 29/47 | Building BVH
+Fra:1 Mem:15.91M (Peak 41.43M) | Time:00:01.80 | Mem:1.68M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.001 29/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.89M (Peak 41.43M) | Time:00:01.80 | Mem:1.53M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.001 45/47 | Building BVH
+Fra:1 Mem:15.89M (Peak 41.43M) | Time:00:01.80 | Mem:1.53M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.001 45/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.89M (Peak 41.43M) | Time:00:01.80 | Mem:1.54M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.001 30/47 | Building BVH
+Fra:1 Mem:15.89M (Peak 41.43M) | Time:00:01.80 | Mem:1.54M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.001 30/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.80 | Mem:1.54M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.003 31/47 | Building BVH
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.80 | Mem:1.55M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.003 31/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.80 | Mem:1.55M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.036 32/47 | Building BVH
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.80 | Mem:1.55M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.036 32/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.80 | Mem:1.55M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.037 33/47 | Building BVH
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.80 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.037 33/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.80 | Mem:1.55M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.038 34/47 | Building BVH
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.80 | Mem:1.55M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.038 34/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.80 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.039 35/47 | Building BVH
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:01.80 | Mem:1.61M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.039 35/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.88M (Peak 41.43M) | Time:00:01.80 | Mem:1.55M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.040 36/47 | Building BVH
+Fra:1 Mem:15.88M (Peak 41.43M) | Time:00:01.80 | Mem:1.57M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.040 36/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.88M (Peak 41.43M) | Time:00:01.80 | Mem:1.55M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.041 37/47 | Building BVH
+Fra:1 Mem:15.88M (Peak 41.43M) | Time:00:01.80 | Mem:1.73M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.041 37/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:01.80 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.042 38/47 | Building BVH
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:01.80 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.042 38/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:01.80 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.043 39/47 | Building BVH
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:01.80 | Mem:1.58M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.043 39/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:01.80 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.044 40/47 | Building BVH
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:01.80 | Mem:1.57M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.044 40/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.82M (Peak 41.43M) | Time:00:01.80 | Mem:1.57M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.003 44/47 | Building BVH
+Fra:1 Mem:15.82M (Peak 41.43M) | Time:00:01.80 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.003 44/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:01.81 | Mem:1.58M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.045 41/47 | Building BVH
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:01.81 | Mem:1.58M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.045 41/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:01.81 | Mem:1.58M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.046 42/47 | Building BVH
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:01.81 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.046 42/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:01.81 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.047 43/47 | Building BVH
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:01.81 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.047 43/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:01.81 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:01.81 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:01.81 | Mem:1.60M, Peak:1.84M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:01.81 | Mem:1.60M, Peak:1.84M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:01.81 | Mem:1.60M, Peak:1.84M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:01.81 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:01.81 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:01.81 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:01.81 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images | Loading panel-normal.png
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:01.81 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images | Loading white-basecolor.png
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:01.81 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images | Loading paint-orm.png
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:02.49 | Mem:18.28M, Peak:18.28M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:02.49 | Mem:18.28M, Peak:18.28M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:02.49 | Mem:18.36M, Peak:18.36M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:02.49 | Mem:18.36M, Peak:18.36M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:32.69M (Peak 41.43M) | Time:00:02.50 | Mem:18.55M, Peak:18.55M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:32.69M (Peak 41.43M) | Time:00:02.50 | Mem:18.55M, Peak:18.55M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:02.50 | Mem:18.47M, Peak:18.55M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:02.51 | Mem:18.56M, Peak:18.56M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:02.51 | Mem:18.56M, Peak:18.56M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:02.51 | Mem:18.56M, Peak:18.56M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:36.70M (Peak 41.43M) | Time:00:02.60 | Mem:370.56M, Peak:370.56M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:83.67M (Peak 83.67M) | Time:00:02.63 | Remaining:00:00.64 | Mem:417.54M, Peak:417.54M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:103.46M (Peak 133.12M) | Time:00:15.00 | Mem:417.54M, Peak:417.54M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:103.46M (Peak 133.12M) | Time:00:15.00 | Mem:417.54M, Peak:417.54M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\02\clay.png'
+Time: 00:16.40 (Saving: 00:01.12)
+
+Fra:1 Mem:14.79M (Peak 14.79M) | Time:00:00.19 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:14.80M (Peak 14.80M) | Time:00:00.19 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral fill
+Fra:1 Mem:15.11M (Peak 15.11M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Continuous pressure fuselage
+Fra:1 Mem:15.97M (Peak 15.97M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Cockpit integrated coaming
+Fra:1 Mem:16.49M (Peak 16.49M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Pressure canopy glazing
+Fra:1 Mem:16.49M (Peak 16.49M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame
+Fra:1 Mem:16.74M (Peak 16.74M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame.001
+Fra:1 Mem:16.78M (Peak 16.78M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy pressure bow
+Fra:1 Mem:16.78M (Peak 16.78M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated lifting hull
+Fra:1 Mem:16.82M (Peak 16.82M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Contoured expansion nozzle
+Fra:1 Mem:16.84M (Peak 16.84M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam
+Fra:1 Mem:16.90M (Peak 16.90M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.001
+Fra:1 Mem:16.88M (Peak 16.90M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.002
+Fra:1 Mem:16.93M (Peak 16.93M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.003
+Fra:1 Mem:16.91M (Peak 16.93M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.004
+Fra:1 Mem:16.93M (Peak 16.93M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.005
+Fra:1 Mem:16.96M (Peak 16.96M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.006
+Fra:1 Mem:16.93M (Peak 16.96M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.007
+Fra:1 Mem:16.93M (Peak 16.96M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.008
+Fra:1 Mem:16.93M (Peak 16.96M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.009
+Fra:1 Mem:16.93M (Peak 16.96M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.010
+Fra:1 Mem:16.94M (Peak 16.96M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.011
+Fra:1 Mem:16.94M (Peak 16.96M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat
+Fra:1 Mem:16.95M (Peak 16.96M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct
+Fra:1 Mem:17.09M (Peak 17.09M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing
+Fra:1 Mem:17.09M (Peak 17.09M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated lifting hull.001
+Fra:1 Mem:17.11M (Peak 17.11M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated propulsion nacelle.001
+Fra:1 Mem:17.16M (Peak 17.16M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.012
+Fra:1 Mem:17.33M (Peak 17.33M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.013
+Fra:1 Mem:17.35M (Peak 17.35M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.014
+Fra:1 Mem:17.39M (Peak 17.39M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.015
+Fra:1 Mem:17.39M (Peak 17.39M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.016
+Fra:1 Mem:17.45M (Peak 17.45M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.017
+Fra:1 Mem:17.39M (Peak 17.45M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.018
+Fra:1 Mem:17.39M (Peak 17.45M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.019
+Fra:1 Mem:17.40M (Peak 17.45M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.020
+Fra:1 Mem:17.40M (Peak 17.45M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.021
+Fra:1 Mem:17.40M (Peak 17.45M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.022
+Fra:1 Mem:17.40M (Peak 17.45M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.023
+Fra:1 Mem:17.40M (Peak 17.45M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat.001
+Fra:1 Mem:17.40M (Peak 17.45M) | Time:00:00.34 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct.001
+Fra:1 Mem:17.56M (Peak 17.56M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing.001
+Fra:1 Mem:17.56M (Peak 17.56M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canted cargo stabilizer.001
+Fra:1 Mem:17.76M (Peak 17.76M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.35 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.53 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:14.15M (Peak 41.43M) | Time:00:00.53 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:14.15M (Peak 41.43M) | Time:00:00.53 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:14.15M (Peak 41.43M) | Time:00:00.53 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:14.83M (Peak 41.43M) | Time:00:00.54 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:14.83M (Peak 41.43M) | Time:00:00.54 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.55 | Mem:0.03M, Peak:0.03M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:15.80M (Peak 41.43M) | Time:00:00.55 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH light 48/47 | Building BVH
+Fra:1 Mem:15.80M (Peak 41.43M) | Time:00:00.55 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Canopy lower frame 7/47 | Building BVH
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.55 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.002 12/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.97M (Peak 41.43M) | Time:00:00.55 | Mem:1.05M, Peak:1.05M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.024 13/47 | Building BVH
+Fra:1 Mem:15.97M (Peak 41.43M) | Time:00:00.55 | Mem:1.05M, Peak:1.05M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.024 13/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.97M (Peak 41.43M) | Time:00:00.55 | Mem:1.05M, Peak:1.05M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.025 14/47 | Building BVH
+Fra:1 Mem:15.97M (Peak 41.43M) | Time:00:00.55 | Mem:1.05M, Peak:1.05M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.025 14/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.98M (Peak 41.43M) | Time:00:00.55 | Mem:1.05M, Peak:1.05M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer.001 47/47 | Building BVH
+Fra:1 Mem:15.98M (Peak 41.43M) | Time:00:00.55 | Mem:1.05M, Peak:1.05M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer.001 47/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.13M (Peak 41.43M) | Time:00:00.55 | Mem:1.51M, Peak:1.51M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.026 15/47 | Building BVH
+Fra:1 Mem:16.13M (Peak 41.43M) | Time:00:00.55 | Mem:1.74M, Peak:1.74M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.026 15/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.05M (Peak 41.43M) | Time:00:00.55 | Mem:1.35M, Peak:1.75M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.027 16/47 | Building BVH
+Fra:1 Mem:16.05M (Peak 41.43M) | Time:00:00.55 | Mem:1.35M, Peak:1.75M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.027 16/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.05M (Peak 41.43M) | Time:00:00.55 | Mem:1.35M, Peak:1.75M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.028 17/47 | Building BVH
+Fra:1 Mem:16.05M (Peak 41.43M) | Time:00:00.55 | Mem:1.36M, Peak:1.75M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.028 17/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.05M (Peak 41.43M) | Time:00:00.55 | Mem:1.35M, Peak:1.75M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.029 18/47 | Building BVH
+Fra:1 Mem:16.05M (Peak 41.43M) | Time:00:00.55 | Mem:1.35M, Peak:1.75M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.029 18/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.05M (Peak 41.43M) | Time:00:00.55 | Mem:1.36M, Peak:1.75M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.030 19/47 | Building BVH
+Fra:1 Mem:16.05M (Peak 41.43M) | Time:00:00.55 | Mem:1.36M, Peak:1.75M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.030 19/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.96M (Peak 41.43M) | Time:00:00.55 | Mem:1.38M, Peak:1.77M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.031 20/47 | Building BVH
+Fra:1 Mem:15.96M (Peak 41.43M) | Time:00:00.55 | Mem:1.38M, Peak:1.77M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.031 20/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.96M (Peak 41.43M) | Time:00:00.56 | Mem:1.41M, Peak:1.77M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.032 21/47 | Building BVH
+Fra:1 Mem:15.96M (Peak 41.43M) | Time:00:00.56 | Mem:1.41M, Peak:1.77M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.032 21/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.95M (Peak 41.43M) | Time:00:00.56 | Mem:1.37M, Peak:1.77M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.033 22/47 | Building BVH
+Fra:1 Mem:15.95M (Peak 41.43M) | Time:00:00.56 | Mem:1.79M, Peak:1.79M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.033 22/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:00.56 | Mem:1.41M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.034 23/47 | Building BVH
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:00.56 | Mem:1.41M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.034 23/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.82M (Peak 41.43M) | Time:00:00.56 | Mem:1.41M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.035 24/47 | Building BVH
+Fra:1 Mem:15.82M (Peak 41.43M) | Time:00:00.56 | Mem:1.41M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.035 24/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.82M (Peak 41.43M) | Time:00:00.56 | Mem:1.41M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.002 25/47 | Building BVH
+Fra:1 Mem:15.82M (Peak 41.43M) | Time:00:00.56 | Mem:1.41M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.002 25/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:00.56 | Mem:1.43M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Mesh 46/47 | Building BVH
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:00.56 | Mem:1.43M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Mesh 46/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:00.56 | Mem:1.46M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct 26/47 | Building BVH
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:00.56 | Mem:1.46M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct 26/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:00.56 | Mem:1.47M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/47 | Building BVH
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:00.56 | Mem:1.47M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:00.56 | Mem:1.50M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer 28/47 | Building BVH
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:00.56 | Mem:1.50M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer 28/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.91M (Peak 41.43M) | Time:00:00.57 | Mem:1.51M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.001 29/47 | Building BVH
+Fra:1 Mem:15.91M (Peak 41.43M) | Time:00:00.57 | Mem:1.52M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.001 29/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.57 | Mem:1.52M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.001 30/47 | Building BVH
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.57 | Mem:1.53M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.001 30/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.57 | Mem:1.53M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.003 31/47 | Building BVH
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.57 | Mem:1.54M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.003 31/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.57 | Mem:1.54M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.036 32/47 | Building BVH
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.57 | Mem:1.54M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.036 32/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.57 | Mem:1.54M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.037 33/47 | Building BVH
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.57 | Mem:1.55M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.037 33/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.57 | Mem:1.54M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.038 34/47 | Building BVH
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.57 | Mem:1.55M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.038 34/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.57 | Mem:1.54M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.039 35/47 | Building BVH
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.57 | Mem:1.60M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.039 35/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.91M (Peak 41.43M) | Time:00:00.57 | Mem:1.54M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.040 36/47 | Building BVH
+Fra:1 Mem:15.91M (Peak 41.43M) | Time:00:00.57 | Mem:1.71M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.040 36/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.88M (Peak 41.43M) | Time:00:00.57 | Mem:1.55M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.001 45/47 | Building BVH
+Fra:1 Mem:15.88M (Peak 41.43M) | Time:00:00.57 | Mem:1.55M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.001 45/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.88M (Peak 41.43M) | Time:00:00.57 | Mem:1.55M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.041 37/47 | Building BVH
+Fra:1 Mem:15.88M (Peak 41.43M) | Time:00:00.57 | Mem:1.63M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.041 37/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:00.57 | Mem:1.56M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.042 38/47 | Building BVH
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:00.57 | Mem:1.59M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.042 38/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:00.57 | Mem:1.56M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.043 39/47 | Building BVH
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:00.57 | Mem:1.58M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.043 39/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:00.58 | Mem:1.56M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.044 40/47 | Building BVH
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:00.58 | Mem:1.56M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.044 40/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.82M (Peak 41.43M) | Time:00:00.58 | Mem:1.56M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.045 41/47 | Building BVH
+Fra:1 Mem:15.82M (Peak 41.43M) | Time:00:00.58 | Mem:1.56M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.045 41/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.58 | Mem:1.56M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.046 42/47 | Building BVH
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.58 | Mem:1.56M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.046 42/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.58 | Mem:1.56M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.047 43/47 | Building BVH
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.58 | Mem:1.56M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.047 43/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.58 | Mem:1.57M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.003 44/47 | Building BVH
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.58 | Mem:1.57M, Peak:1.89M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.003 44/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.59 | Mem:1.59M, Peak:1.89M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.59 | Mem:1.59M, Peak:1.89M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.59 | Mem:1.60M, Peak:1.89M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.59 | Mem:1.60M, Peak:1.89M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.59 | Mem:1.60M, Peak:1.89M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.59 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.59 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.59 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.59 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images | Loading panel-normal.png
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.59 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images | Loading cobalt-basecolor.png
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.59 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images | Loading white-basecolor.png
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.59 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images | Loading paint-orm.png
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:00.62 | Mem:18.28M, Peak:18.28M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:00.62 | Mem:18.28M, Peak:18.28M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:00.62 | Mem:18.36M, Peak:18.36M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:00.62 | Mem:18.36M, Peak:18.36M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:32.69M (Peak 41.43M) | Time:00:00.63 | Mem:18.55M, Peak:18.55M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:32.69M (Peak 41.43M) | Time:00:00.63 | Mem:18.55M, Peak:18.55M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:00.63 | Mem:18.47M, Peak:18.55M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:00.63 | Mem:18.56M, Peak:18.56M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:00.63 | Mem:18.56M, Peak:18.56M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:00.63 | Mem:18.56M, Peak:18.56M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:36.70M (Peak 41.43M) | Time:00:00.66 | Mem:370.56M, Peak:370.56M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:83.67M (Peak 83.67M) | Time:00:00.68 | Remaining:00:00.51 | Mem:417.54M, Peak:417.54M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:103.46M (Peak 133.12M) | Time:00:04.06 | Mem:417.54M, Peak:417.54M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:103.46M (Peak 133.12M) | Time:00:04.06 | Mem:417.54M, Peak:417.54M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\02\underside-clay.png'
+Time: 00:04.38 (Saving: 00:00.14)
+
+Fra:1 Mem:14.79M (Peak 14.79M) | Time:00:00.20 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:14.80M (Peak 14.80M) | Time:00:00.20 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral fill
+Fra:1 Mem:15.11M (Peak 15.11M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Continuous pressure fuselage
+Fra:1 Mem:15.97M (Peak 15.97M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Cockpit integrated coaming
+Fra:1 Mem:16.49M (Peak 16.49M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Pressure canopy glazing
+Fra:1 Mem:16.49M (Peak 16.49M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame
+Fra:1 Mem:16.74M (Peak 16.74M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame.001
+Fra:1 Mem:16.78M (Peak 16.78M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy pressure bow
+Fra:1 Mem:16.83M (Peak 16.83M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated lifting hull
+Fra:1 Mem:16.86M (Peak 16.86M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated propulsion nacelle
+Fra:1 Mem:16.84M (Peak 16.86M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam
+Fra:1 Mem:16.94M (Peak 16.94M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.001
+Fra:1 Mem:16.91M (Peak 16.94M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.002
+Fra:1 Mem:16.93M (Peak 16.94M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.003
+Fra:1 Mem:16.93M (Peak 16.94M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.004
+Fra:1 Mem:16.98M (Peak 16.98M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.005
+Fra:1 Mem:16.93M (Peak 16.98M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.006
+Fra:1 Mem:16.93M (Peak 16.98M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.007
+Fra:1 Mem:16.93M (Peak 16.98M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.008
+Fra:1 Mem:16.93M (Peak 16.98M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.009
+Fra:1 Mem:16.93M (Peak 16.98M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.010
+Fra:1 Mem:16.94M (Peak 16.98M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.011
+Fra:1 Mem:16.94M (Peak 16.98M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat
+Fra:1 Mem:16.94M (Peak 16.98M) | Time:00:00.36 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct
+Fra:1 Mem:17.09M (Peak 17.09M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing
+Fra:1 Mem:17.09M (Peak 17.09M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated lifting hull.001
+Fra:1 Mem:17.11M (Peak 17.11M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Contoured expansion nozzle.001
+Fra:1 Mem:17.19M (Peak 17.19M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.012
+Fra:1 Mem:17.34M (Peak 17.34M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.013
+Fra:1 Mem:17.39M (Peak 17.39M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.014
+Fra:1 Mem:17.39M (Peak 17.39M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.015
+Fra:1 Mem:17.39M (Peak 17.39M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.016
+Fra:1 Mem:17.39M (Peak 17.39M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.017
+Fra:1 Mem:17.39M (Peak 17.39M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.018
+Fra:1 Mem:17.39M (Peak 17.39M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.019
+Fra:1 Mem:17.40M (Peak 17.40M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.020
+Fra:1 Mem:17.40M (Peak 17.40M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.021
+Fra:1 Mem:17.40M (Peak 17.40M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.022
+Fra:1 Mem:17.40M (Peak 17.40M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.023
+Fra:1 Mem:17.40M (Peak 17.40M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat.001
+Fra:1 Mem:17.41M (Peak 17.41M) | Time:00:00.37 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct.001
+Fra:1 Mem:17.56M (Peak 17.56M) | Time:00:00.38 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing.001
+Fra:1 Mem:17.56M (Peak 17.56M) | Time:00:00.38 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canted cargo stabilizer.001
+Fra:1 Mem:17.76M (Peak 17.76M) | Time:00:00.38 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.38 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.38 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.38 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:14.06M (Peak 17.76M) | Time:00:00.38 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:14.14M (Peak 41.43M) | Time:00:00.52 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:14.15M (Peak 41.43M) | Time:00:00.52 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:14.15M (Peak 41.43M) | Time:00:00.52 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:14.15M (Peak 41.43M) | Time:00:00.52 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:14.83M (Peak 41.43M) | Time:00:00.53 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:14.83M (Peak 41.43M) | Time:00:00.53 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.53 | Mem:0.03M, Peak:0.03M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:15.80M (Peak 41.43M) | Time:00:00.53 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH light 48/47 | Building BVH
+Fra:1 Mem:15.80M (Peak 41.43M) | Time:00:00.53 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Mesh 6/47 | Building BVH
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.53 | Mem:1.00M, Peak:1.00M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle 11/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.01M (Peak 41.43M) | Time:00:00.53 | Mem:1.12M, Peak:1.12M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.024 13/47 | Building BVH
+Fra:1 Mem:16.01M (Peak 41.43M) | Time:00:00.53 | Mem:1.12M, Peak:1.12M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.024 13/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.01M (Peak 41.43M) | Time:00:00.53 | Mem:1.17M, Peak:1.17M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.002 12/47 | Building BVH
+Fra:1 Mem:16.01M (Peak 41.43M) | Time:00:00.53 | Mem:1.17M, Peak:1.17M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.002 12/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.02M (Peak 41.43M) | Time:00:00.53 | Mem:1.59M, Peak:1.59M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer.001 47/47 | Building BVH
+Fra:1 Mem:16.02M (Peak 41.43M) | Time:00:00.53 | Mem:1.59M, Peak:1.59M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer.001 47/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.11M (Peak 41.43M) | Time:00:00.53 | Mem:1.53M, Peak:1.59M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.025 14/47 | Building BVH
+Fra:1 Mem:16.11M (Peak 41.43M) | Time:00:00.53 | Mem:1.54M, Peak:1.59M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.025 14/47 | Building OptiX acceleration structure
+Fra:1 Mem:16.01M (Peak 41.43M) | Time:00:00.53 | Mem:1.26M, Peak:1.70M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.026 15/47 | Building BVH
+Fra:1 Mem:16.01M (Peak 41.43M) | Time:00:00.53 | Mem:1.26M, Peak:1.70M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.026 15/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.54 | Mem:1.38M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.027 16/47 | Building BVH
+Fra:1 Mem:15.93M (Peak 41.43M) | Time:00:00.54 | Mem:1.38M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.027 16/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.54 | Mem:1.38M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.028 17/47 | Building BVH
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.54 | Mem:1.38M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.028 17/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.54 | Mem:1.39M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.029 18/47 | Building BVH
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.54 | Mem:1.39M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.029 18/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.54 | Mem:1.39M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.030 19/47 | Building BVH
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.54 | Mem:1.39M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.030 19/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.54 | Mem:1.39M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.031 20/47 | Building BVH
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.54 | Mem:1.39M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.031 20/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:00.54 | Mem:1.39M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Mesh 46/47 | Building BVH
+Fra:1 Mem:15.90M (Peak 41.43M) | Time:00:00.54 | Mem:1.40M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Mesh 46/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.94M (Peak 41.43M) | Time:00:00.54 | Mem:1.42M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.032 21/47 | Building BVH
+Fra:1 Mem:15.94M (Peak 41.43M) | Time:00:00.54 | Mem:1.46M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.032 21/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.55 | Mem:1.42M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.033 22/47 | Building BVH
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.55 | Mem:1.43M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.033 22/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.55 | Mem:1.42M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.034 23/47 | Building BVH
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.55 | Mem:1.42M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.034 23/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.55 | Mem:1.42M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.035 24/47 | Building BVH
+Fra:1 Mem:15.92M (Peak 41.43M) | Time:00:00.55 | Mem:1.42M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.035 24/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:00.55 | Mem:1.44M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.002 25/47 | Building BVH
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:00.55 | Mem:1.44M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.002 25/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:00.55 | Mem:1.46M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct 26/47 | Building BVH
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:00.55 | Mem:1.46M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct 26/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:00.55 | Mem:1.47M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/47 | Building BVH
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:00.55 | Mem:1.47M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:00.55 | Mem:1.51M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer 28/47 | Building BVH
+Fra:1 Mem:15.86M (Peak 41.43M) | Time:00:00.55 | Mem:1.51M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Canted cargo stabilizer 28/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.88M (Peak 41.43M) | Time:00:00.55 | Mem:1.52M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.001 29/47 | Building BVH
+Fra:1 Mem:15.88M (Peak 41.43M) | Time:00:00.55 | Mem:1.53M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.001 29/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.89M (Peak 41.43M) | Time:00:00.55 | Mem:1.53M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.001 30/47 | Building BVH
+Fra:1 Mem:15.89M (Peak 41.43M) | Time:00:00.55 | Mem:1.54M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.001 30/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.89M (Peak 41.43M) | Time:00:00.55 | Mem:1.54M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.003 31/47 | Building BVH
+Fra:1 Mem:15.89M (Peak 41.43M) | Time:00:00.55 | Mem:1.62M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.003 31/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.87M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.001 45/47 | Building BVH
+Fra:1 Mem:15.87M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.001 45/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.87M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.036 32/47 | Building BVH
+Fra:1 Mem:15.87M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.036 32/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.87M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.037 33/47 | Building BVH
+Fra:1 Mem:15.87M (Peak 41.43M) | Time:00:00.56 | Mem:1.57M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.037 33/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.87M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.038 34/47 | Building BVH
+Fra:1 Mem:15.87M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.038 34/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.87M (Peak 41.43M) | Time:00:00.56 | Mem:1.57M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.039 35/47 | Building BVH
+Fra:1 Mem:15.87M (Peak 41.43M) | Time:00:00.56 | Mem:1.57M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.039 35/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.040 36/47 | Building BVH
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.040 36/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.041 37/47 | Building BVH
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:00.56 | Mem:1.57M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.041 37/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.042 38/47 | Building BVH
+Fra:1 Mem:15.85M (Peak 41.43M) | Time:00:00.56 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.042 38/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.043 39/47 | Building BVH
+Fra:1 Mem:15.84M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.043 39/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.044 40/47 | Building BVH
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:00.56 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.044 40/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.82M (Peak 41.43M) | Time:00:00.56 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.045 41/47 | Building BVH
+Fra:1 Mem:15.82M (Peak 41.43M) | Time:00:00.56 | Mem:1.58M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.045 41/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.57 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.046 42/47 | Building BVH
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.57 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.046 42/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.57 | Mem:1.56M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.003 44/47 | Building BVH
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.57 | Mem:1.57M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.003 44/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:00.57 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.047 43/47 | Building BVH
+Fra:1 Mem:15.83M (Peak 41.43M) | Time:00:00.57 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.047 43/47 | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.57 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.57 | Mem:1.59M, Peak:1.84M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.57 | Mem:1.60M, Peak:1.84M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:15.81M (Peak 41.43M) | Time:00:00.57 | Mem:1.60M, Peak:1.84M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.57 | Mem:1.60M, Peak:1.84M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.57 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.57 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.57 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.57 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images | Loading panel-normal.png
+Fra:1 Mem:16.49M (Peak 41.43M) | Time:00:00.57 | Mem:2.28M, Peak:2.28M | Scene, ViewLayer | Updating Images | Loading cobalt-basecolor.png
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:00.59 | Mem:18.28M, Peak:18.28M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:00.59 | Mem:18.28M, Peak:18.28M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:00.59 | Mem:18.36M, Peak:18.36M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:32.50M (Peak 41.43M) | Time:00:00.59 | Mem:18.36M, Peak:18.36M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:32.69M (Peak 41.43M) | Time:00:00.60 | Mem:18.55M, Peak:18.55M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:32.69M (Peak 41.43M) | Time:00:00.60 | Mem:18.55M, Peak:18.55M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:00.60 | Mem:18.47M, Peak:18.55M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:00.60 | Mem:18.56M, Peak:18.56M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:00.60 | Mem:18.56M, Peak:18.56M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:32.70M (Peak 41.43M) | Time:00:00.60 | Mem:18.56M, Peak:18.56M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:36.70M (Peak 41.43M) | Time:00:00.61 | Mem:370.56M, Peak:370.56M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:83.67M (Peak 83.67M) | Time:00:00.63 | Remaining:00:00.43 | Mem:417.54M, Peak:417.54M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:103.46M (Peak 133.12M) | Time:00:03.92 | Mem:417.54M, Peak:417.54M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:103.46M (Peak 133.12M) | Time:00:03.92 | Mem:417.54M, Peak:417.54M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\02\surfaced.png'
+Time: 00:04.13 (Saving: 00:00.11)
+
+Info: Saved as "source.blend"
+INFO Draco mesh compression is available, use library at D:\vibe-coding-e\codex-blender-test\tools\blender-4.5.13-windows-x64\4.5\scripts\addons_core\io_scene_gltf2\extern_draco.dll
+16:46:21 | INFO: Starting glTF 2.0 export
+16:46:21 | INFO: Extracting primitive: Continuous pressure fuselage
+16:46:21 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+16:46:21 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+16:46:21 | INFO: Primitives created: 6
+16:46:21 | INFO: Finished glTF 2.0 export in 0.48696041107177734 s
+Fra:1 Mem:15.37M (Peak 30.87M) | Time:00:00.17 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:15.37M (Peak 30.87M) | Time:00:00.17 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | CometCourierV2
+Fra:1 Mem:17.08M (Peak 30.87M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:16.60M (Peak 30.87M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:16.60M (Peak 30.87M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:16.60M (Peak 30.87M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:16.60M (Peak 30.87M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.36 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:17.84M (Peak 43.98M) | Time:00:00.37 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:17.84M (Peak 43.98M) | Time:00:00.37 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.37 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.37 | Mem:1.54M, Peak:1.54M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.37 | Mem:1.54M, Peak:1.54M | Scene, ViewLayer | Updating Geometry BVH Neutral fill 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.37 | Mem:1.54M, Peak:1.54M | Scene, ViewLayer | Updating Geometry BVH Continuous pressure fuselage 4/4 | Building BVH
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.37 | Mem:1.54M, Peak:1.54M | Scene, ViewLayer | Updating Geometry BVH Continuous pressure fuselage 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.38 | Mem:2.03M, Peak:3.55M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.38 | Mem:2.03M, Peak:3.55M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.38 | Mem:2.04M, Peak:3.55M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.38 | Mem:2.04M, Peak:3.55M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:19.98M (Peak 43.98M) | Time:00:00.38 | Mem:2.04M, Peak:3.55M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:19.98M (Peak 43.98M) | Time:00:00.38 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:19.98M (Peak 43.98M) | Time:00:00.38 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:19.98M (Peak 43.98M) | Time:00:00.38 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:19.98M (Peak 43.98M) | Time:00:00.38 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Images | Loading panel-normal.png
+Fra:1 Mem:23.98M (Peak 43.98M) | Time:00:00.38 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Images | Loading white-basecolor.png
+Fra:1 Mem:27.98M (Peak 43.98M) | Time:00:00.38 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Images | Loading paint-orm.png
+Fra:1 Mem:35.99M (Peak 43.98M) | Time:00:00.40 | Mem:18.65M, Peak:18.65M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:35.99M (Peak 43.98M) | Time:00:00.40 | Mem:18.65M, Peak:18.65M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:35.99M (Peak 43.98M) | Time:00:00.40 | Mem:18.73M, Peak:18.73M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:35.99M (Peak 43.98M) | Time:00:00.40 | Mem:18.73M, Peak:18.73M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:36.25M (Peak 43.98M) | Time:00:00.41 | Mem:18.99M, Peak:18.99M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:36.25M (Peak 43.98M) | Time:00:00.41 | Mem:18.99M, Peak:18.99M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:36.26M (Peak 43.98M) | Time:00:00.41 | Mem:18.91M, Peak:18.99M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:36.26M (Peak 43.98M) | Time:00:00.41 | Mem:19.00M, Peak:19.00M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:36.26M (Peak 43.98M) | Time:00:00.41 | Mem:19.00M, Peak:19.00M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:36.26M (Peak 43.98M) | Time:00:00.41 | Mem:19.00M, Peak:19.00M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:40.26M (Peak 43.98M) | Time:00:00.43 | Mem:371.00M, Peak:371.00M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:116.26M (Peak 116.26M) | Time:00:00.46 | Remaining:00:00.76 | Mem:447.01M, Peak:447.01M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:148.27M (Peak 196.27M) | Time:00:06.18 | Mem:447.01M, Peak:447.01M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:148.27M (Peak 196.27M) | Time:00:06.18 | Mem:447.01M, Peak:447.01M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\02\export\showroom.png'
+Time: 00:06.55 (Saving: 00:00.18)
+
+Fra:1 Mem:15.67M (Peak 15.67M) | Time:00:00.23 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:15.67M (Peak 15.67M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral fill
+Fra:1 Mem:15.67M (Peak 15.67M) | Time:00:00.24 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | CometCourierV2
+Fra:1 Mem:17.08M (Peak 17.88M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:16.60M (Peak 17.88M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:16.60M (Peak 17.88M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:16.60M (Peak 17.88M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:16.60M (Peak 17.88M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:16.69M (Peak 43.98M) | Time:00:00.46 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:17.84M (Peak 43.98M) | Time:00:00.48 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:17.84M (Peak 43.98M) | Time:00:00.48 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.48 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.48 | Mem:1.54M, Peak:1.54M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.48 | Mem:1.54M, Peak:1.54M | Scene, ViewLayer | Updating Geometry BVH Neutral fill 3/4 | Building BVH
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.48 | Mem:1.54M, Peak:1.54M | Scene, ViewLayer | Updating Geometry BVH Continuous pressure fuselage 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.49 | Mem:2.03M, Peak:3.55M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.49 | Mem:2.03M, Peak:3.55M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.49 | Mem:2.04M, Peak:3.55M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:19.36M (Peak 43.98M) | Time:00:00.49 | Mem:2.04M, Peak:3.55M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:19.98M (Peak 43.98M) | Time:00:00.49 | Mem:2.04M, Peak:3.55M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:19.98M (Peak 43.98M) | Time:00:00.49 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:19.98M (Peak 43.98M) | Time:00:00.49 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:19.98M (Peak 43.98M) | Time:00:00.50 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:19.98M (Peak 43.98M) | Time:00:00.50 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Images | Loading panel-normal.png
+Fra:1 Mem:23.98M (Peak 43.98M) | Time:00:00.50 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Images | Loading cobalt-basecolor.png
+Fra:1 Mem:27.98M (Peak 43.98M) | Time:00:00.50 | Mem:2.65M, Peak:3.55M | Scene, ViewLayer | Updating Images | Loading white-basecolor.png
+Fra:1 Mem:35.99M (Peak 43.98M) | Time:00:00.51 | Mem:18.65M, Peak:18.65M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:35.99M (Peak 43.98M) | Time:00:00.51 | Mem:18.65M, Peak:18.65M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:35.99M (Peak 43.98M) | Time:00:00.52 | Mem:18.73M, Peak:18.73M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:35.99M (Peak 43.98M) | Time:00:00.52 | Mem:18.73M, Peak:18.73M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:36.25M (Peak 43.98M) | Time:00:00.52 | Mem:18.99M, Peak:18.99M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:36.25M (Peak 43.98M) | Time:00:00.52 | Mem:18.99M, Peak:18.99M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:36.26M (Peak 43.98M) | Time:00:00.52 | Mem:18.91M, Peak:18.99M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:36.26M (Peak 43.98M) | Time:00:00.52 | Mem:19.00M, Peak:19.00M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:36.26M (Peak 43.98M) | Time:00:00.52 | Mem:19.00M, Peak:19.00M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:36.26M (Peak 43.98M) | Time:00:00.52 | Mem:19.00M, Peak:19.00M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:40.26M (Peak 43.98M) | Time:00:00.55 | Mem:371.00M, Peak:371.00M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:59.26M (Peak 59.26M) | Time:00:00.57 | Remaining:00:00.56 | Mem:390.01M, Peak:390.01M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:67.27M (Peak 79.27M) | Time:00:02.39 | Mem:390.02M, Peak:390.02M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:67.27M (Peak 79.27M) | Time:00:02.39 | Mem:390.02M, Peak:390.02M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\02\export\player.png'
+Time: 00:02.69 (Saving: 00:00.12)
+
+
+FLEET_V2_COMPLETE 2 Comet Courier
+Read blend: "D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\03\source.blend"
+Fra:1 Mem:14.46M (Peak 14.46M) | Time:00:00.18 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:14.46M (Peak 14.46M) | Time:00:00.18 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral fill
+Fra:1 Mem:14.78M (Peak 14.78M) | Time:00:00.22 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Continuous pressure fuselage
+Fra:1 Mem:15.63M (Peak 15.63M) | Time:00:00.26 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Cockpit integrated coaming
+Fra:1 Mem:16.16M (Peak 16.16M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Pressure canopy glazing
+Fra:1 Mem:16.16M (Peak 16.16M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame
+Fra:1 Mem:16.44M (Peak 16.44M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame.001
+Fra:1 Mem:16.44M (Peak 16.44M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy pressure bow
+Fra:1 Mem:16.50M (Peak 16.50M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated lifting hull
+Fra:1 Mem:16.50M (Peak 16.50M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Contoured expansion nozzle
+Fra:1 Mem:16.50M (Peak 16.50M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam
+Fra:1 Mem:16.61M (Peak 16.61M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.001
+Fra:1 Mem:16.60M (Peak 16.61M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.002
+Fra:1 Mem:16.59M (Peak 16.61M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.003
+Fra:1 Mem:16.62M (Peak 16.62M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.004
+Fra:1 Mem:16.59M (Peak 16.62M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.005
+Fra:1 Mem:16.59M (Peak 16.62M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.006
+Fra:1 Mem:16.60M (Peak 16.62M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.007
+Fra:1 Mem:16.60M (Peak 16.62M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.008
+Fra:1 Mem:16.60M (Peak 16.62M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.009
+Fra:1 Mem:16.60M (Peak 16.62M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.010
+Fra:1 Mem:16.60M (Peak 16.62M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.011
+Fra:1 Mem:16.61M (Peak 16.62M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat
+Fra:1 Mem:16.61M (Peak 16.62M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct
+Fra:1 Mem:16.76M (Peak 16.76M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing
+Fra:1 Mem:16.76M (Peak 16.76M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated propulsion nacelle.001
+Fra:1 Mem:16.76M (Peak 16.76M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Contoured expansion nozzle.001
+Fra:1 Mem:16.83M (Peak 16.83M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.012
+Fra:1 Mem:16.99M (Peak 16.99M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.013
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.014
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.015
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.016
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.017
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.018
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.019
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.020
+Fra:1 Mem:17.04M (Peak 17.04M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.021
+Fra:1 Mem:17.04M (Peak 17.04M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.022
+Fra:1 Mem:17.04M (Peak 17.04M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.023
+Fra:1 Mem:17.04M (Peak 17.04M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat.001
+Fra:1 Mem:17.05M (Peak 17.05M) | Time:00:00.31 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct.001
+Fra:1 Mem:17.20M (Peak 17.20M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing.001
+Fra:1 Mem:17.37M (Peak 17.37M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.32 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.05 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.05 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.05 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.05 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.05 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.05 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:13.91M (Peak 41.19M) | Time:00:01.05 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:13.91M (Peak 41.19M) | Time:00:01.05 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:13.91M (Peak 41.19M) | Time:00:01.05 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:14.54M (Peak 41.19M) | Time:00:01.06 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:14.54M (Peak 41.19M) | Time:00:01.06 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:01.06 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:15.46M (Peak 41.19M) | Time:00:01.06 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Broad neutral key 2/45 | Building BVH
+Fra:1 Mem:15.46M (Peak 41.19M) | Time:00:01.06 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.006 12/45 | Building BVH
+Fra:1 Mem:15.46M (Peak 41.19M) | Time:00:01.06 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.006 12/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.68M (Peak 41.19M) | Time:00:01.06 | Mem:0.95M, Peak:0.95M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.072 13/45 | Building BVH
+Fra:1 Mem:15.68M (Peak 41.19M) | Time:00:01.06 | Mem:0.95M, Peak:0.95M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.072 13/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.77M (Peak 41.19M) | Time:00:01.06 | Mem:0.95M, Peak:0.95M | Scene, ViewLayer | Updating Geometry BVH Mesh 45/45 | Building BVH
+Fra:1 Mem:15.78M (Peak 41.19M) | Time:00:01.06 | Mem:0.99M, Peak:0.99M | Scene, ViewLayer | Updating Geometry BVH Mesh 45/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.19M) | Time:00:01.06 | Mem:1.04M, Peak:1.04M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.073 14/45 | Building BVH
+Fra:1 Mem:15.81M (Peak 41.19M) | Time:00:01.06 | Mem:1.04M, Peak:1.04M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.073 14/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.81M (Peak 41.19M) | Time:00:01.06 | Mem:1.29M, Peak:1.30M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.074 15/45 | Building BVH
+Fra:1 Mem:15.81M (Peak 41.19M) | Time:00:01.06 | Mem:1.71M, Peak:1.71M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.074 15/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.73M (Peak 41.19M) | Time:00:01.06 | Mem:1.31M, Peak:1.71M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.075 16/45 | Building BVH
+Fra:1 Mem:15.73M (Peak 41.19M) | Time:00:01.06 | Mem:1.49M, Peak:1.71M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.075 16/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.65M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.076 17/45 | Building BVH
+Fra:1 Mem:15.65M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.076 17/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.65M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.077 18/45 | Building BVH
+Fra:1 Mem:15.65M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.077 18/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.64M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.078 19/45 | Building BVH
+Fra:1 Mem:15.64M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.078 19/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.64M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.079 20/45 | Building BVH
+Fra:1 Mem:15.64M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.079 20/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.64M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.080 21/45 | Building BVH
+Fra:1 Mem:15.64M (Peak 41.19M) | Time:00:01.07 | Mem:1.37M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.080 21/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.63M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.081 22/45 | Building BVH
+Fra:1 Mem:15.63M (Peak 41.19M) | Time:00:01.07 | Mem:1.33M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.081 22/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.07 | Mem:1.34M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.003 44/45 | Building BVH
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.07 | Mem:1.34M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.003 44/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.08 | Mem:1.35M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.007 43/45 | Building BVH
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.08 | Mem:1.35M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.007 43/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.08 | Mem:1.36M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.095 42/45 | Building BVH
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.08 | Mem:1.36M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.095 42/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.08 | Mem:1.36M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.082 23/45 | Building BVH
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.08 | Mem:1.36M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.082 23/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.08 | Mem:1.36M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.083 24/45 | Building BVH
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.08 | Mem:1.36M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.083 24/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.09 | Mem:1.36M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.006 25/45 | Building BVH
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.09 | Mem:1.36M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.006 25/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.61M (Peak 41.19M) | Time:00:01.09 | Mem:1.39M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.002 26/45 | Building BVH
+Fra:1 Mem:15.61M (Peak 41.19M) | Time:00:01.09 | Mem:1.39M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.002 26/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.62M (Peak 41.19M) | Time:00:01.09 | Mem:1.39M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/45 | Building BVH
+Fra:1 Mem:15.62M (Peak 41.19M) | Time:00:01.09 | Mem:1.39M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.65M (Peak 41.19M) | Time:00:01.09 | Mem:1.42M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.003 28/45 | Building BVH
+Fra:1 Mem:15.65M (Peak 41.19M) | Time:00:01.09 | Mem:1.43M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.003 28/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.66M (Peak 41.19M) | Time:00:01.09 | Mem:1.43M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.003 29/45 | Building BVH
+Fra:1 Mem:15.66M (Peak 41.19M) | Time:00:01.09 | Mem:1.43M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.003 29/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.67M (Peak 41.19M) | Time:00:01.09 | Mem:1.44M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.007 30/45 | Building BVH
+Fra:1 Mem:15.67M (Peak 41.19M) | Time:00:01.09 | Mem:1.44M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.007 30/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.67M (Peak 41.19M) | Time:00:01.09 | Mem:1.45M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.084 31/45 | Building BVH
+Fra:1 Mem:15.67M (Peak 41.19M) | Time:00:01.09 | Mem:1.46M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.084 31/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.67M (Peak 41.19M) | Time:00:01.09 | Mem:1.45M, Peak:1.73M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.085 32/45 | Building BVH
+Fra:1 Mem:15.67M (Peak 41.19M) | Time:00:01.09 | Mem:1.86M, Peak:1.86M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.085 32/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:01.10 | Mem:1.48M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.086 33/45 | Building BVH
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:01.10 | Mem:1.48M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.086 33/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:01.10 | Mem:1.49M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.094 41/45 | Building BVH
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:01.10 | Mem:1.49M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.094 41/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:01.10 | Mem:1.49M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.093 40/45 | Building BVH
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:01.10 | Mem:1.49M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.093 40/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:01.11 | Mem:1.49M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.087 34/45 | Building BVH
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:01.11 | Mem:1.54M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.087 34/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.53M (Peak 41.19M) | Time:00:01.11 | Mem:1.50M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.088 35/45 | Building BVH
+Fra:1 Mem:15.53M (Peak 41.19M) | Time:00:01.11 | Mem:1.50M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.088 35/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.11 | Mem:1.48M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.089 36/45 | Building BVH
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.11 | Mem:1.48M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.089 36/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.11 | Mem:1.49M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.090 37/45 | Building BVH
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.11 | Mem:1.52M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.090 37/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.11 | Mem:1.49M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.091 38/45 | Building BVH
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.11 | Mem:1.52M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.091 38/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.11 | Mem:1.49M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.092 39/45 | Building BVH
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.11 | Mem:1.49M, Peak:1.97M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.092 39/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:01.13 | Mem:1.50M, Peak:1.97M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:01.13 | Mem:1.50M, Peak:1.97M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:01.13 | Mem:1.51M, Peak:1.97M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:01.13 | Mem:1.51M, Peak:1.97M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:01.13 | Mem:1.51M, Peak:1.97M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:01.13 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:01.13 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:01.13 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:01.13 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images | Loading panel-normal.png
+Fra:1 Mem:20.11M (Peak 41.19M) | Time:00:01.13 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images | Loading white-basecolor.png
+Fra:1 Mem:24.11M (Peak 41.19M) | Time:00:01.13 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images | Loading paint-orm.png
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:01.31 | Mem:18.16M, Peak:18.16M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:01.31 | Mem:18.16M, Peak:18.16M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:01.31 | Mem:18.24M, Peak:18.24M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:01.31 | Mem:18.24M, Peak:18.24M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.31 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.31 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.31 | Mem:18.35M, Peak:18.43M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.32 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.32 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.32 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:36.32M (Peak 41.19M) | Time:00:01.35 | Mem:370.44M, Peak:370.44M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:83.29M (Peak 83.29M) | Time:00:01.38 | Remaining:00:00.72 | Mem:417.41M, Peak:417.41M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:103.08M (Peak 132.74M) | Time:00:06.15 | Mem:417.42M, Peak:417.42M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:103.08M (Peak 132.74M) | Time:00:06.15 | Mem:417.42M, Peak:417.42M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\03\clay.png'
+Time: 00:06.83 (Saving: 00:00.20)
+
+Fra:1 Mem:14.49M (Peak 14.49M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:14.50M (Peak 14.50M) | Time:00:00.30 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral fill
+Fra:1 Mem:14.81M (Peak 14.81M) | Time:00:00.39 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Continuous pressure fuselage
+Fra:1 Mem:15.66M (Peak 15.66M) | Time:00:00.47 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Cockpit integrated coaming
+Fra:1 Mem:16.19M (Peak 16.19M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Pressure canopy glazing
+Fra:1 Mem:16.19M (Peak 16.19M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame
+Fra:1 Mem:16.48M (Peak 16.48M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame.001
+Fra:1 Mem:16.47M (Peak 16.48M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy pressure bow
+Fra:1 Mem:16.48M (Peak 16.48M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated lifting hull
+Fra:1 Mem:16.53M (Peak 16.53M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Contoured expansion nozzle
+Fra:1 Mem:16.53M (Peak 16.53M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam
+Fra:1 Mem:16.59M (Peak 16.59M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.001
+Fra:1 Mem:16.61M (Peak 16.61M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.002
+Fra:1 Mem:16.63M (Peak 16.63M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.003
+Fra:1 Mem:16.62M (Peak 16.63M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.004
+Fra:1 Mem:16.62M (Peak 16.63M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.005
+Fra:1 Mem:16.65M (Peak 16.65M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.006
+Fra:1 Mem:16.62M (Peak 16.65M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.007
+Fra:1 Mem:16.62M (Peak 16.65M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.008
+Fra:1 Mem:16.62M (Peak 16.65M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.009
+Fra:1 Mem:16.62M (Peak 16.65M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.010
+Fra:1 Mem:16.62M (Peak 16.65M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.011
+Fra:1 Mem:16.63M (Peak 16.65M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat
+Fra:1 Mem:16.63M (Peak 16.65M) | Time:00:00.56 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct
+Fra:1 Mem:16.78M (Peak 16.78M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing
+Fra:1 Mem:16.80M (Peak 16.80M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated lifting hull.001
+Fra:1 Mem:16.99M (Peak 16.99M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated propulsion nacelle.001
+Fra:1 Mem:16.99M (Peak 16.99M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Contoured expansion nozzle.001
+Fra:1 Mem:17.02M (Peak 17.02M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.013
+Fra:1 Mem:17.06M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.014
+Fra:1 Mem:17.03M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.015
+Fra:1 Mem:17.03M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.016
+Fra:1 Mem:17.03M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.017
+Fra:1 Mem:17.04M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.018
+Fra:1 Mem:17.04M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.019
+Fra:1 Mem:17.04M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.020
+Fra:1 Mem:17.04M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.021
+Fra:1 Mem:17.04M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.022
+Fra:1 Mem:17.04M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.023
+Fra:1 Mem:17.05M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat.001
+Fra:1 Mem:17.06M (Peak 17.06M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct.001
+Fra:1 Mem:17.20M (Peak 17.20M) | Time:00:00.60 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing.001
+Fra:1 Mem:17.37M (Peak 17.37M) | Time:00:00.60 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.60 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.61 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.61 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.61 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:00.85 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:00.85 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:00.85 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:00.85 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:00.85 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:00.85 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:13.91M (Peak 41.19M) | Time:00:00.85 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:13.91M (Peak 41.19M) | Time:00:00.85 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:13.91M (Peak 41.19M) | Time:00:00.85 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:14.54M (Peak 41.19M) | Time:00:00.86 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:14.54M (Peak 41.19M) | Time:00:00.86 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.86 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:15.46M (Peak 41.19M) | Time:00:00.86 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH light 46/45 | Building BVH
+Fra:1 Mem:15.46M (Peak 41.19M) | Time:00:00.86 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.002 10/45 | Building BVH
+Fra:1 Mem:15.46M (Peak 41.19M) | Time:00:00.86 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Mesh 6/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.69M (Peak 41.19M) | Time:00:00.86 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Mesh 45/45 | Building BVH
+Fra:1 Mem:15.69M (Peak 41.19M) | Time:00:00.86 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Mesh 45/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.73M (Peak 41.19M) | Time:00:00.86 | Mem:1.02M, Peak:1.02M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.072 13/45 | Building BVH
+Fra:1 Mem:15.73M (Peak 41.19M) | Time:00:00.86 | Mem:1.02M, Peak:1.02M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.073 14/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.69M (Peak 41.19M) | Time:00:00.87 | Mem:1.32M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.074 15/45 | Building BVH
+Fra:1 Mem:15.69M (Peak 41.19M) | Time:00:00.87 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.074 15/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.61M (Peak 41.19M) | Time:00:00.88 | Mem:1.34M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.075 16/45 | Building BVH
+Fra:1 Mem:15.61M (Peak 41.19M) | Time:00:00.88 | Mem:1.37M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.075 16/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:00.88 | Mem:1.34M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.076 17/45 | Building BVH
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:00.88 | Mem:1.35M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.076 17/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:00.88 | Mem:1.34M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.077 18/45 | Building BVH
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:00.88 | Mem:1.38M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.077 18/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.59M (Peak 41.19M) | Time:00:00.88 | Mem:1.35M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.078 19/45 | Building BVH
+Fra:1 Mem:15.59M (Peak 41.19M) | Time:00:00.88 | Mem:1.35M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.078 19/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.59M (Peak 41.19M) | Time:00:00.88 | Mem:1.35M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.079 20/45 | Building BVH
+Fra:1 Mem:15.59M (Peak 41.19M) | Time:00:00.88 | Mem:1.35M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.079 20/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.59M (Peak 41.19M) | Time:00:00.88 | Mem:1.35M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.080 21/45 | Building BVH
+Fra:1 Mem:15.59M (Peak 41.19M) | Time:00:00.88 | Mem:1.53M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.080 21/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:00.89 | Mem:1.37M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.003 44/45 | Building BVH
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:00.89 | Mem:1.37M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.081 22/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.89 | Mem:1.38M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.082 23/45 | Building BVH
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.89 | Mem:1.38M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.082 23/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.89 | Mem:1.38M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.083 24/45 | Building BVH
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.89 | Mem:1.39M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.083 24/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.89 | Mem:1.38M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.006 25/45 | Building BVH
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.89 | Mem:1.39M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.006 25/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:00.89 | Mem:1.40M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.002 26/45 | Building BVH
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:00.89 | Mem:1.41M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.002 26/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:00.89 | Mem:1.41M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/45 | Building BVH
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:00.89 | Mem:1.41M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.53M (Peak 41.19M) | Time:00:00.90 | Mem:1.44M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.003 28/45 | Building BVH
+Fra:1 Mem:15.53M (Peak 41.19M) | Time:00:00.90 | Mem:1.45M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.003 28/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.54M (Peak 41.19M) | Time:00:00.90 | Mem:1.45M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.003 29/45 | Building BVH
+Fra:1 Mem:15.54M (Peak 41.19M) | Time:00:00.90 | Mem:1.46M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.003 29/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.54M (Peak 41.19M) | Time:00:00.90 | Mem:1.46M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.007 30/45 | Building BVH
+Fra:1 Mem:15.54M (Peak 41.19M) | Time:00:00.90 | Mem:1.47M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.007 30/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:00.90 | Mem:1.47M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.084 31/45 | Building BVH
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:00.90 | Mem:1.47M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.084 31/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:00.90 | Mem:1.47M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.085 32/45 | Building BVH
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:00.90 | Mem:1.47M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.085 32/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:00.90 | Mem:1.47M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.007 43/45 | Building BVH
+Fra:1 Mem:15.55M (Peak 41.19M) | Time:00:00.90 | Mem:1.47M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.007 43/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.49M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.086 33/45 | Building BVH
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.49M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.086 33/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.49M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.087 34/45 | Building BVH
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.087 34/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.49M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.088 35/45 | Building BVH
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.49M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.088 35/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.49M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.089 36/45 | Building BVH
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.49M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.089 36/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.090 37/45 | Building BVH
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.090 37/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.091 38/45 | Building BVH
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.091 38/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.092 39/45 | Building BVH
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:00.90 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.092 39/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:00.90 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.093 40/45 | Building BVH
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:00.90 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.093 40/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:00.91 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.094 41/45 | Building BVH
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:00.91 | Mem:1.51M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.094 41/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:00.91 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.095 42/45 | Building BVH
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:00.91 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.095 42/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.92 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.92 | Mem:1.50M, Peak:1.80M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.92 | Mem:1.51M, Peak:1.80M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:00.92 | Mem:1.51M, Peak:1.80M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:00.92 | Mem:1.51M, Peak:1.80M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:00.92 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:00.92 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:00.92 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:00.92 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images | Loading white-basecolor.png
+Fra:1 Mem:20.11M (Peak 41.19M) | Time:00:00.92 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images | Loading cobalt-basecolor.png
+Fra:1 Mem:24.11M (Peak 41.19M) | Time:00:00.92 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images | Loading paint-orm.png
+Fra:1 Mem:28.11M (Peak 41.19M) | Time:00:00.93 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images | Loading panel-normal.png
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:00.96 | Mem:18.16M, Peak:18.16M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:00.96 | Mem:18.16M, Peak:18.16M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:00.96 | Mem:18.24M, Peak:18.24M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:32.13M (Peak 41.19M) | Time:00:00.96 | Mem:18.24M, Peak:18.24M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:00.97 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:00.97 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:00.97 | Mem:18.35M, Peak:18.43M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:00.97 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:00.97 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:00.97 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:36.32M (Peak 41.19M) | Time:00:01.00 | Mem:370.44M, Peak:370.44M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:83.29M (Peak 83.29M) | Time:00:01.03 | Remaining:00:00.62 | Mem:417.41M, Peak:417.41M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:103.08M (Peak 132.74M) | Time:00:06.22 | Mem:417.42M, Peak:417.42M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:103.08M (Peak 132.74M) | Time:00:06.22 | Mem:417.42M, Peak:417.42M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\03\underside-clay.png'
+Time: 00:07.31 (Saving: 00:00.54)
+
+Fra:1 Mem:14.49M (Peak 14.49M) | Time:00:00.41 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:14.49M (Peak 14.49M) | Time:00:00.41 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral fill
+Fra:1 Mem:14.81M (Peak 14.81M) | Time:00:00.51 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Continuous pressure fuselage
+Fra:1 Mem:15.66M (Peak 15.66M) | Time:00:00.58 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Cockpit integrated coaming
+Fra:1 Mem:16.19M (Peak 16.19M) | Time:00:00.67 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Pressure canopy glazing
+Fra:1 Mem:16.19M (Peak 16.19M) | Time:00:00.67 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame
+Fra:1 Mem:16.28M (Peak 16.28M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame.001
+Fra:1 Mem:16.28M (Peak 16.28M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy pressure bow
+Fra:1 Mem:16.29M (Peak 16.29M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated lifting hull
+Fra:1 Mem:16.29M (Peak 16.29M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam
+Fra:1 Mem:16.32M (Peak 16.32M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.001
+Fra:1 Mem:16.36M (Peak 16.36M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.002
+Fra:1 Mem:16.36M (Peak 16.36M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.003
+Fra:1 Mem:16.39M (Peak 16.39M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.004
+Fra:1 Mem:16.38M (Peak 16.39M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.005
+Fra:1 Mem:16.41M (Peak 16.41M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.006
+Fra:1 Mem:16.40M (Peak 16.41M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.007
+Fra:1 Mem:16.38M (Peak 16.41M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.008
+Fra:1 Mem:16.38M (Peak 16.41M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.009
+Fra:1 Mem:16.38M (Peak 16.41M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.010
+Fra:1 Mem:16.39M (Peak 16.41M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.011
+Fra:1 Mem:16.39M (Peak 16.41M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat
+Fra:1 Mem:16.39M (Peak 16.41M) | Time:00:00.68 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct
+Fra:1 Mem:16.78M (Peak 16.78M) | Time:00:00.69 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing
+Fra:1 Mem:16.78M (Peak 16.78M) | Time:00:00.69 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated propulsion nacelle.001
+Fra:1 Mem:16.80M (Peak 16.80M) | Time:00:00.69 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.012
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.013
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.014
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.015
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.016
+Fra:1 Mem:17.03M (Peak 17.03M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.017
+Fra:1 Mem:17.04M (Peak 17.04M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.018
+Fra:1 Mem:17.04M (Peak 17.04M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.019
+Fra:1 Mem:17.04M (Peak 17.04M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.020
+Fra:1 Mem:17.04M (Peak 17.04M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.021
+Fra:1 Mem:17.04M (Peak 17.04M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.022
+Fra:1 Mem:17.04M (Peak 17.04M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.023
+Fra:1 Mem:17.05M (Peak 17.05M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat.001
+Fra:1 Mem:17.11M (Peak 17.11M) | Time:00:00.70 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct.001
+Fra:1 Mem:17.20M (Peak 17.20M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Blended structural fairing.001
+Fra:1 Mem:17.37M (Peak 17.37M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.73 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.73 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.73 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:13.81M (Peak 17.37M) | Time:00:00.73 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.07 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.07 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.07 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.07 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.07 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:13.90M (Peak 41.19M) | Time:00:01.07 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:13.91M (Peak 41.19M) | Time:00:01.07 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:13.91M (Peak 41.19M) | Time:00:01.07 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:13.91M (Peak 41.19M) | Time:00:01.07 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:14.54M (Peak 41.19M) | Time:00:01.08 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:14.54M (Peak 41.19M) | Time:00:01.08 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:01.09 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:15.46M (Peak 41.19M) | Time:00:01.09 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Broad neutral key 2/45 | Building BVH
+Fra:1 Mem:15.46M (Peak 41.19M) | Time:00:01.09 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Mesh 4/45 | Building BVH
+Fra:1 Mem:15.46M (Peak 41.19M) | Time:00:01.09 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Mesh 4/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.54M (Peak 41.19M) | Time:00:01.09 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Canopy lower frame.003 8/45 | Building BVH
+Fra:1 Mem:15.59M (Peak 41.19M) | Time:00:01.09 | Mem:0.94M, Peak:0.94M | Scene, ViewLayer | Updating Geometry BVH Canopy pressure bow.001 9/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.75M (Peak 41.19M) | Time:00:01.09 | Mem:1.02M, Peak:1.02M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.002 11/45 | Building BVH
+Fra:1 Mem:15.75M (Peak 41.19M) | Time:00:01.09 | Mem:1.06M, Peak:1.06M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.002 11/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.76M (Peak 41.19M) | Time:00:01.09 | Mem:1.06M, Peak:1.06M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.002 10/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.76M (Peak 41.19M) | Time:00:01.09 | Mem:1.11M, Peak:1.11M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.006 12/45 | Building BVH
+Fra:1 Mem:15.76M (Peak 41.19M) | Time:00:01.09 | Mem:1.16M, Peak:1.16M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.072 13/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.77M (Peak 41.19M) | Time:00:01.09 | Mem:1.20M, Peak:1.20M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.073 14/45 | Building BVH
+Fra:1 Mem:15.77M (Peak 41.19M) | Time:00:01.09 | Mem:1.20M, Peak:1.20M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.073 14/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.77M (Peak 41.19M) | Time:00:01.09 | Mem:1.20M, Peak:1.20M | Scene, ViewLayer | Updating Geometry BVH Mesh 45/45 | Building BVH
+Fra:1 Mem:15.77M (Peak 41.19M) | Time:00:01.09 | Mem:1.20M, Peak:1.20M | Scene, ViewLayer | Updating Geometry BVH Mesh 45/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.68M (Peak 41.19M) | Time:00:01.09 | Mem:1.30M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.074 15/45 | Building BVH
+Fra:1 Mem:15.68M (Peak 41.19M) | Time:00:01.09 | Mem:1.72M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.074 15/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.10 | Mem:1.33M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.075 16/45 | Building BVH
+Fra:1 Mem:15.60M (Peak 41.19M) | Time:00:01.10 | Mem:1.33M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.075 16/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.10 | Mem:1.35M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.076 17/45 | Building BVH
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.10 | Mem:1.35M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.076 17/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.10 | Mem:1.35M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.077 18/45 | Building BVH
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.10 | Mem:1.36M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.077 18/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.51M (Peak 41.19M) | Time:00:01.10 | Mem:1.35M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.078 19/45 | Building BVH
+Fra:1 Mem:15.51M (Peak 41.19M) | Time:00:01.10 | Mem:1.36M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.078 19/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.51M (Peak 41.19M) | Time:00:01.10 | Mem:1.35M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.079 20/45 | Building BVH
+Fra:1 Mem:15.51M (Peak 41.19M) | Time:00:01.10 | Mem:1.35M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.079 20/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.10 | Mem:1.36M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.003 44/45 | Building BVH
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.10 | Mem:1.36M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.003 44/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.10 | Mem:1.38M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.080 21/45 | Building BVH
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.10 | Mem:1.40M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.080 21/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.10 | Mem:1.36M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.081 22/45 | Building BVH
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.10 | Mem:1.36M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.081 22/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.10 | Mem:1.37M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.082 23/45 | Building BVH
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.10 | Mem:1.37M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.082 23/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.11 | Mem:1.37M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.083 24/45 | Building BVH
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.11 | Mem:1.37M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.083 24/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.11 | Mem:1.38M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.006 25/45 | Building BVH
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.11 | Mem:1.38M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.006 25/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.51M (Peak 41.19M) | Time:00:01.11 | Mem:1.40M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.002 26/45 | Building BVH
+Fra:1 Mem:15.51M (Peak 41.19M) | Time:00:01.11 | Mem:1.40M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Deep intake duct.002 26/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.51M (Peak 41.19M) | Time:00:01.11 | Mem:1.41M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/45 | Building BVH
+Fra:1 Mem:15.51M (Peak 41.19M) | Time:00:01.11 | Mem:1.41M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Mesh 27/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.54M (Peak 41.19M) | Time:00:01.11 | Mem:1.44M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.007 43/45 | Building BVH
+Fra:1 Mem:15.54M (Peak 41.19M) | Time:00:01.11 | Mem:1.45M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Deep ion throat.007 43/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:01.11 | Mem:1.46M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.003 28/45 | Building BVH
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:01.11 | Mem:1.47M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Integrated lifting hull.003 28/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:01.11 | Mem:1.47M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.003 29/45 | Building BVH
+Fra:1 Mem:15.57M (Peak 41.19M) | Time:00:01.11 | Mem:1.47M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Integrated propulsion nacelle.003 29/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.58M (Peak 41.19M) | Time:00:01.12 | Mem:1.48M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.007 30/45 | Building BVH
+Fra:1 Mem:15.58M (Peak 41.19M) | Time:00:01.12 | Mem:1.48M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Contoured expansion nozzle.007 30/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.58M (Peak 41.19M) | Time:00:01.12 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.084 31/45 | Building BVH
+Fra:1 Mem:15.58M (Peak 41.19M) | Time:00:01.12 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.084 31/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.58M (Peak 41.19M) | Time:00:01.12 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.085 32/45 | Building BVH
+Fra:1 Mem:15.58M (Peak 41.19M) | Time:00:01.13 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.085 32/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:01.13 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.086 33/45 | Building BVH
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:01.13 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.086 33/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:01.13 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.087 34/45 | Building BVH
+Fra:1 Mem:15.56M (Peak 41.19M) | Time:00:01.13 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.087 34/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.13 | Mem:1.50M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.088 35/45 | Building BVH
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.13 | Mem:1.50M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.088 35/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.13 | Mem:1.50M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.089 36/45 | Building BVH
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.13 | Mem:1.50M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.089 36/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.14 | Mem:1.56M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.090 37/45 | Building BVH
+Fra:1 Mem:15.52M (Peak 41.19M) | Time:00:01.14 | Mem:1.56M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.090 37/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.50M (Peak 41.19M) | Time:00:01.14 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.095 42/45 | Building BVH
+Fra:1 Mem:15.50M (Peak 41.19M) | Time:00:01.14 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.095 42/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.14 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.091 38/45 | Building BVH
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.14 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.091 38/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.14 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.092 39/45 | Building BVH
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.14 | Mem:1.49M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.092 39/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.15 | Mem:1.50M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.093 40/45 | Building BVH
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.15 | Mem:1.50M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.093 40/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.48M (Peak 41.19M) | Time:00:01.15 | Mem:1.50M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.094 41/45 | Building BVH
+Fra:1 Mem:15.49M (Peak 41.19M) | Time:00:01.15 | Mem:1.50M, Peak:1.78M | Scene, ViewLayer | Updating Geometry BVH Nozzle petal seam.094 41/45 | Building OptiX acceleration structure
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:01.17 | Mem:1.50M, Peak:1.78M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:01.17 | Mem:1.50M, Peak:1.78M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:01.17 | Mem:1.51M, Peak:1.78M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:15.47M (Peak 41.19M) | Time:00:01.17 | Mem:1.51M, Peak:1.78M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:01.17 | Mem:1.51M, Peak:1.78M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:01.18 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:01.18 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:01.18 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:16.11M (Peak 41.19M) | Time:00:01.18 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images | Loading cobalt-basecolor.png
+Fra:1 Mem:20.11M (Peak 41.19M) | Time:00:01.18 | Mem:2.16M, Peak:2.16M | Scene, ViewLayer | Updating Images | Loading white-basecolor.png
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:01.22 | Mem:18.16M, Peak:18.16M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:01.22 | Mem:18.16M, Peak:18.16M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:01.22 | Mem:18.24M, Peak:18.24M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:32.12M (Peak 41.19M) | Time:00:01.22 | Mem:18.24M, Peak:18.24M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.22 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.22 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.22 | Mem:18.35M, Peak:18.43M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.22 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.22 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:32.32M (Peak 41.19M) | Time:00:01.22 | Mem:18.43M, Peak:18.43M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:36.32M (Peak 41.19M) | Time:00:01.25 | Mem:370.44M, Peak:370.44M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:83.29M (Peak 83.29M) | Time:00:01.29 | Remaining:00:00.85 | Mem:417.41M, Peak:417.41M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:103.08M (Peak 132.74M) | Time:00:06.61 | Mem:417.42M, Peak:417.42M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:103.08M (Peak 132.74M) | Time:00:06.61 | Mem:417.42M, Peak:417.42M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\03\surfaced.png'
+Time: 00:07.54 (Saving: 00:00.39)
+
+Info: Saved as "source.blend"
+16:46:53 | INFO: Starting glTF 2.0 export
+16:46:53 | INFO: Extracting primitive: Continuous pressure fuselage.001
+16:46:54 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+16:46:54 | WARNING: More than one shader node tex image used for a texture. The resulting glTF sampler will behave like the first shader node tex image.
+16:46:54 | INFO: Primitives created: 6
+16:46:54 | INFO: Finished glTF 2.0 export in 0.8795297145843506 s
+Fra:1 Mem:15.22M (Peak 30.72M) | Time:00:00.42 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:15.22M (Peak 30.72M) | Time:00:00.42 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral fill
+Fra:1 Mem:15.22M (Peak 30.72M) | Time:00:00.42 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | PixelNeedleV2
+Fra:1 Mem:16.84M (Peak 30.72M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:16.36M (Peak 30.72M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:16.36M (Peak 30.72M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:16.36M (Peak 30.72M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:16.36M (Peak 30.72M) | Time:00:00.45 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.83 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.83 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.83 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.83 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.83 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.83 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.83 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.83 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.83 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:17.56M (Peak 43.74M) | Time:00:00.87 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:17.56M (Peak 43.74M) | Time:00:00.87 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.87 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.87 | Mem:1.48M, Peak:1.48M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.87 | Mem:1.48M, Peak:1.48M | Scene, ViewLayer | Updating Geometry BVH Neutral fill 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.88 | Mem:1.48M, Peak:1.48M | Scene, ViewLayer | Updating Geometry BVH Continuous pressure fuselage.001 4/4 | Building BVH
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.88 | Mem:1.48M, Peak:1.48M | Scene, ViewLayer | Updating Geometry BVH Continuous pressure fuselage.001 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.88 | Mem:1.96M, Peak:3.41M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.88 | Mem:1.96M, Peak:3.41M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.88 | Mem:1.96M, Peak:3.41M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.88 | Mem:1.96M, Peak:3.41M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:19.61M (Peak 43.74M) | Time:00:00.88 | Mem:1.96M, Peak:3.41M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:19.61M (Peak 43.74M) | Time:00:00.88 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:19.61M (Peak 43.74M) | Time:00:00.88 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:19.61M (Peak 43.74M) | Time:00:00.88 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:19.61M (Peak 43.74M) | Time:00:00.88 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Images | Loading panel-normal.png
+Fra:1 Mem:23.61M (Peak 43.74M) | Time:00:00.88 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Images | Loading white-basecolor.png
+Fra:1 Mem:27.61M (Peak 43.74M) | Time:00:00.88 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Images | Loading cobalt-basecolor.png
+Fra:1 Mem:31.61M (Peak 43.74M) | Time:00:00.88 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Images | Loading paint-orm.png
+Fra:1 Mem:35.62M (Peak 43.74M) | Time:00:00.94 | Mem:18.54M, Peak:18.54M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:35.62M (Peak 43.74M) | Time:00:00.94 | Mem:18.54M, Peak:18.54M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:35.62M (Peak 43.74M) | Time:00:00.94 | Mem:18.62M, Peak:18.62M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:35.62M (Peak 43.74M) | Time:00:00.94 | Mem:18.62M, Peak:18.62M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.95 | Mem:18.88M, Peak:18.88M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.95 | Mem:18.88M, Peak:18.88M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.95 | Mem:18.80M, Peak:18.88M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.95 | Mem:18.88M, Peak:18.88M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.95 | Mem:18.88M, Peak:18.88M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.95 | Mem:18.88M, Peak:18.88M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:39.89M (Peak 43.74M) | Time:00:01.06 | Mem:370.88M, Peak:370.88M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:115.89M (Peak 115.89M) | Time:00:01.10 | Remaining:00:00.95 | Mem:446.90M, Peak:446.90M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:147.89M (Peak 195.90M) | Time:00:11.68 | Mem:446.90M, Peak:446.90M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:147.89M (Peak 195.90M) | Time:00:11.68 | Mem:446.90M, Peak:446.90M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\03\export\showroom.png'
+Time: 00:12.20 (Saving: 00:00.21)
+
+Fra:1 Mem:15.51M (Peak 15.51M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:15.51M (Peak 15.51M) | Time:00:00.27 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | PixelNeedleV2
+Fra:1 Mem:16.84M (Peak 17.62M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:16.36M (Peak 17.62M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:16.36M (Peak 17.62M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:16.36M (Peak 17.62M) | Time:00:00.28 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:16.36M (Peak 17.62M) | Time:00:00.29 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
+Fra:1 Mem:16.45M (Peak 43.74M) | Time:00:00.56 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
+Fra:1 Mem:17.56M (Peak 43.74M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
+Fra:1 Mem:17.56M (Peak 43.74M) | Time:00:00.58 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.59 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.59 | Mem:1.48M, Peak:1.48M | Scene, ViewLayer | Updating Geometry BVH light 5/4 | Building BVH
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.59 | Mem:1.48M, Peak:1.48M | Scene, ViewLayer | Updating Geometry BVH Neutral fill 3/4 | Building BVH
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.59 | Mem:1.48M, Peak:1.48M | Scene, ViewLayer | Updating Geometry BVH Neutral fill 3/4 | Building OptiX acceleration structure
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.59 | Mem:1.48M, Peak:1.48M | Scene, ViewLayer | Updating Geometry BVH Continuous pressure fuselage.001 4/4 | Building BVH
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.59 | Mem:1.48M, Peak:1.48M | Scene, ViewLayer | Updating Geometry BVH Continuous pressure fuselage.001 4/4 | Building OptiX acceleration structure
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.59 | Mem:1.96M, Peak:3.41M | Scene, ViewLayer | Updating Scene BVH | Building
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.59 | Mem:1.96M, Peak:3.41M | Scene, ViewLayer | Updating Scene BVH | Building OptiX acceleration structure
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.59 | Mem:1.96M, Peak:3.41M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
+Fra:1 Mem:19.03M (Peak 43.74M) | Time:00:00.59 | Mem:1.96M, Peak:3.41M | Scene, ViewLayer | Updating Mesh | Computing normals
+Fra:1 Mem:19.61M (Peak 43.74M) | Time:00:00.59 | Mem:1.96M, Peak:3.41M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
+Fra:1 Mem:19.61M (Peak 43.74M) | Time:00:00.59 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Objects Flags
+Fra:1 Mem:19.61M (Peak 43.74M) | Time:00:00.60 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Primitive Offsets
+Fra:1 Mem:19.61M (Peak 43.74M) | Time:00:00.60 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Images
+Fra:1 Mem:19.61M (Peak 43.74M) | Time:00:00.60 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Images | Loading panel-normal.png
+Fra:1 Mem:23.61M (Peak 43.74M) | Time:00:00.60 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Images | Loading cobalt-basecolor.png
+Fra:1 Mem:27.61M (Peak 43.74M) | Time:00:00.60 | Mem:2.54M, Peak:3.41M | Scene, ViewLayer | Updating Images | Loading paint-orm.png
+Fra:1 Mem:35.62M (Peak 43.74M) | Time:00:00.66 | Mem:18.54M, Peak:18.54M | Scene, ViewLayer | Updating Camera Volume
+Fra:1 Mem:35.62M (Peak 43.74M) | Time:00:00.66 | Mem:18.54M, Peak:18.54M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:35.62M (Peak 43.74M) | Time:00:00.66 | Mem:18.62M, Peak:18.62M | Scene, ViewLayer | Updating Lights
+Fra:1 Mem:35.62M (Peak 43.74M) | Time:00:00.66 | Mem:18.62M, Peak:18.62M | Scene, ViewLayer | Updating Lights | Computing tree
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.67 | Mem:18.88M, Peak:18.88M | Scene, ViewLayer | Updating Integrator
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.67 | Mem:18.88M, Peak:18.88M | Scene, ViewLayer | Updating Film
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.67 | Mem:18.80M, Peak:18.88M | Scene, ViewLayer | Updating Lookup Tables
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.68 | Mem:18.88M, Peak:18.88M | Scene, ViewLayer | Updating Baking
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.68 | Mem:18.88M, Peak:18.88M | Scene, ViewLayer | Updating Device | Writing constant memory
+Fra:1 Mem:35.88M (Peak 43.74M) | Time:00:00.68 | Mem:18.88M, Peak:18.88M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
+Fra:1 Mem:39.89M (Peak 43.74M) | Time:00:00.72 | Mem:370.88M, Peak:370.88M | Scene, ViewLayer | Sample 0/24
+Fra:1 Mem:58.89M (Peak 58.89M) | Time:00:00.75 | Remaining:00:00.60 | Mem:389.89M, Peak:389.89M | Scene, ViewLayer | Sample 1/24
+Fra:1 Mem:66.89M (Peak 78.90M) | Time:00:02.73 | Mem:389.90M, Peak:389.90M | Scene, ViewLayer | Sample 24/24
+Fra:1 Mem:66.89M (Peak 78.90M) | Time:00:02.73 | Mem:389.90M, Peak:389.90M | Scene, ViewLayer | Finished
+Saved: 'D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\03\export\player.png'
+Time: 00:03.20 (Saving: 00:00.10)
+
+
+FLEET_V2_COMPLETE 3 Pixel Needle
+Read blend: "D:\vibe-coding-e\nova-swarm-forum-129-improvements-20260822\docs\fleet-art-v2\ships\04\source.blend"
+Fra:1 Mem:14.31M (Peak 14.31M) | Time:00:00.44 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Broad neutral key
+Fra:1 Mem:14.31M (Peak 14.31M) | Time:00:00.44 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Neutral fill
+Fra:1 Mem:14.63M (Peak 14.63M) | Time:00:00.54 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Continuous pressure fuselage
+Fra:1 Mem:15.48M (Peak 15.48M) | Time:00:00.64 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Cockpit integrated coaming
+Fra:1 Mem:16.01M (Peak 16.01M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame
+Fra:1 Mem:16.01M (Peak 16.01M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy lower frame.001
+Fra:1 Mem:16.02M (Peak 16.02M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Canopy pressure bow
+Fra:1 Mem:16.03M (Peak 16.03M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam
+Fra:1 Mem:16.03M (Peak 16.03M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated propulsion nacelle
+Fra:1 Mem:16.03M (Peak 16.03M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Contoured expansion nozzle
+Fra:1 Mem:16.14M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.001
+Fra:1 Mem:16.12M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.002
+Fra:1 Mem:16.12M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.003
+Fra:1 Mem:16.12M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.004
+Fra:1 Mem:16.12M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.005
+Fra:1 Mem:16.13M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.006
+Fra:1 Mem:16.13M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.007
+Fra:1 Mem:16.13M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.008
+Fra:1 Mem:16.13M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.009
+Fra:1 Mem:16.13M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.010
+Fra:1 Mem:16.14M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.011
+Fra:1 Mem:16.14M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat
+Fra:1 Mem:16.14M (Peak 16.14M) | Time:00:00.71 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct
+Fra:1 Mem:16.21M (Peak 16.21M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated lifting hull.001
+Fra:1 Mem:16.21M (Peak 16.21M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Integrated propulsion nacelle.001
+Fra:1 Mem:16.28M (Peak 16.28M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Contoured expansion nozzle.001
+Fra:1 Mem:16.29M (Peak 16.29M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.013
+Fra:1 Mem:16.30M (Peak 16.30M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Pressure canopy glazing
+Fra:1 Mem:16.30M (Peak 16.30M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.014
+Fra:1 Mem:16.35M (Peak 16.35M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.015
+Fra:1 Mem:16.35M (Peak 16.35M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.016
+Fra:1 Mem:16.35M (Peak 16.35M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.017
+Fra:1 Mem:16.35M (Peak 16.35M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.018
+Fra:1 Mem:16.54M (Peak 16.54M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.019
+Fra:1 Mem:16.54M (Peak 16.54M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.020
+Fra:1 Mem:16.54M (Peak 16.54M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.021
+Fra:1 Mem:16.54M (Peak 16.54M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.022
+Fra:1 Mem:16.54M (Peak 16.54M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Nozzle petal seam.023
+Fra:1 Mem:16.55M (Peak 16.55M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep ion throat.001
+Fra:1 Mem:16.55M (Peak 16.55M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Deep intake duct.001
+Fra:1 Mem:16.70M (Peak 16.70M) | Time:00:00.72 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
+Fra:1 Mem:13.51M (Peak 16.70M) | Time:00:00.73 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
+Fra:1 Mem:13.51M (Peak 16.70M) | Time:00:00.73 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
+Fra:1 Mem:13.51M (Peak 16.70M) | Time:00:00.73 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
+Fra:1 Mem:13.51M (Peak 16.70M) | Time:00:00.73 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)

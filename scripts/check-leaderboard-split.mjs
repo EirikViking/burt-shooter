@@ -92,15 +92,16 @@ function highGlobalScores() {
   }));
 }
 
-async function preparePage(browser, routeHandler) {
+async function preparePage(browser, routeHandler, { priorRuns = 0 } = {}) {
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.route('**/api/highscores', routeHandler);
-  await page.addInitScript((storageKey) => {
+  await page.addInitScript(({ storageKey, priorRuns }) => {
     localStorage.removeItem(storageKey);
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 0, bestRank: 0, bestLevel: 1 }));
-  }, localKey);
+    if (priorRuns > 0) localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({ totalRuns: priorRuns }));
+  }, { storageKey: localKey, priorRuns });
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
   return { page, pageErrors };
@@ -222,7 +223,7 @@ try {
         return;
       }
       await route.fulfill({ status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(highGlobalScores()) });
-    });
+    }, { priorRuns: 1 });
     await forceGameOver(page, 12000);
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');

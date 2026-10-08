@@ -27,13 +27,23 @@ try {
 }
 
 export default defineConfig({
+  cacheDir: process.env.NOVA_SWARM_VITE_CACHE_DIR || 'node_modules/.vite',
   plugins: [{
     name: 'nova-local-pilot-policy-esm',
     apply: 'serve',
     transform(code, id) {
       // The shared Electron policy is CommonJS. Rollup already handles it in
       // production; Vite's source server needs equivalent named ESM exports.
-      if (!id.replace(/\\/g, '/').split('?')[0].endsWith('/electron/pilotNamePolicy.cjs')) return null;
+      const source = id.replace(/\\/g, '/').split('?')[0];
+      if (source.endsWith('/electron/onslaughtAchievementEvidence.cjs')) {
+        return { code: code
+          .replace(/const \{([^}]+)\} = require\('\.\/onslaughtContract\.cjs'\);/, 'import { $1 } from "./onslaughtContract.cjs";')
+          .replace(/module\.exports = \{([^}]+)\};/, 'export { $1 };'), map: null };
+      }
+      if (source.endsWith('/electron/onslaughtContract.cjs')) {
+        return { code: code.replace(/module\.exports = \{([^}]+)\};/, 'export { $1 };'), map: null };
+      }
+      if (!source.endsWith('/electron/pilotNamePolicy.cjs')) return null;
       return { code: code.replace(/exports\.(\w+) = \1;/g, 'export { $1 };'), map: null };
     }
   }],

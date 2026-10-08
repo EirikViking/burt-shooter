@@ -1,0 +1,19 @@
+# Implementation ledger — docs/surprises-67-plan-20261002.md
+
+## 2026-10-07 — row14 locally verified in normal rotation
+
+Reactor Tow now uses existing contact opportunities and shared recovery, with two pressure-tested choices and articulated core/cable animation. Full web/compiled mechanics/UI, natural finite-life admission, focus/retry, bounded rendering and lifecycle checks passed. **9/67 locally implemented and verified;58 remain. Steam remains8/67; this ninth entry is not uploaded.** See docs/reviews/reactor-tow-admission-20261007.md. New video emailed04:10:05Oslo. Native/release delivery gates and human first/third-sighting/mix judgments remain. Earlier preview status below is historical.
+
+## 2026-10-07 — row14 preview, not a completed catalog entry
+
+Reactor Tow now has an isolated local playable preview, source/compiled checks and an actual27.605s audiovisual preview emailed03:15Oslo. Read docs/reviews/reactor-tow-preview-20261007.md. Cut coupling to shift one warned discharge, or destroy vent to cancel. Six scaledHP, five bounded ordinary shots, no component credit/reward, existing First Light lifecycle and existing art/audio. Ordinary-run admission, natural frequency/anti-repeat, meaningful choices under enemy pressure and final presentation remain unverified/unimplemented. **Count remains8/67,59remaining.** No Steam delivery this increment. Existing rescue count and all prior work preserved.
+
+## 2026-10-02
+
+- Milestone0 complete: Build25671489/private sector-continue-test, no props, backdrop ownership repair, all gates; own temporary/cache/Steam staging removed and verified. No new catalog entry delivered.
+- Verified checkout/HEAD/61 tracked and127 untracked paths match HANDOFF. No other active writer in this checkout. Existing dirty work preserved.
+- Ruling: execute serially in the authorized checkout, with E: scratch/checkpoints and this source documentation ledger — user forbids new worktrees, simultaneous agents, commits and source scratch directories. No skill-requested workspace/commit/reviewer agent is created.
+- Ruling: rescue entries use the existing First Light convoy lifecycle and six scaled health units divided among locks and machinery. Utility targets grant no score/drop/XP, shields absorb shots consistently, and fragments use separate zero-credit finite cover. Ally intervention can hit only the other jailer's gun, with a capped budget, never a rescue lock — protects player-only credit and original rewards.
+- Ruling: retain the original sector1/2 introduction. New rescue opportunities start at sector3 in ordinary waves; initial every-third-sector/15 ordinary combat seconds recovery is a tuning hypothesis. Actual active ordinary enemies are required for new opportunity time; pauses/drafts/warnings cannot earn it. Shared pacing family covers the old rescue and new variants. Failed art admission consumes nothing.
+- Dependencies audited: model part snapshots feed the existing director and view; bomb snapshots cannot expose-and-hit a lock in one blast; visual poses are shared with hit targets; cleanup cancels all owner bullets. Premium assets must be ready before admission; no new encounter enabled before runtime/audio/art verification.
+- Milestone1 implemented and delivered: entries1–8 in private Build25675532 / manifest2141408636682790097. Focused red→green state/ownership/selection, actual projectile64/Player72/localization192 matrices, lifecycle/continuity, compiled and native control checks pass. Eight stronger ElevenLabs cues and idle-wreck removal included. Two frame-time pairs retained; first higher CPU tail not reproduced in reverse order. Exact receipts/manual limits in HANDOFF and docs/reviews/rescue-surprises-20261002.md. Human finite-life frequency/first-third-sighting interest/listening remain pending; no automated fun claim. Entries9–67 pending.
